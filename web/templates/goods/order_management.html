@@ -1,0 +1,29 @@
+<h1>Order Management</h1>
+<table>
+  <thead>
+    <tr>
+      <th>Order ID</th>
+      <th>Customer</th>
+      <th>Product</th>
+      <th>Quantity</th>
+      <th>Total Price</th>
+      <th>Status</th>
+      <th>Created At</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for order in orders %}
+      {% for item in order.items.all %}
+        <tr>
+          <td>{{ order.id }}</td>
+          <td>{{ order.user.username }}</td>
+          <td>{{ item.goods.name }}</td>
+          <td>{{ item.quantity }}</td>
+          <td>${{ item.price_at_purchase }}</td>
+          <td>{{ order.get_status_display }}</td>
+          <td>{{ order.created_at }}</td>
+        </tr>
+      {% endfor %}
+    {% endfor %}
+  </tbody>
+</table>

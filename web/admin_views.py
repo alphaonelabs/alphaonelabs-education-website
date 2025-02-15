@@ -3,11 +3,13 @@ from datetime import timedelta
 from django.apps import apps
 from django.contrib import admin
 from django.contrib.admin.views.decorators import staff_member_required
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django.db.models.functions import TruncDate
 from django.shortcuts import render
 from django.urls import reverse
 from django.utils import timezone
+
+from .models import Order
 
 
 @staff_member_required
@@ -83,5 +85,23 @@ def admin_dashboard(request):
     # Sort stats by total count descending
     stats.sort(key=lambda x: x["count"], reverse=True)
 
+    # Merchandise sales analytics
+    merchandise_sales = (
+        Order.objects.filter(status="completed", created_at__date__gte=start_date.date())
+        .annotate(date=TruncDate("created_at"))
+        .values("date")
+        .annotate(total_sales=Sum("total_price"))
+        .order_by("date")
+    )
+
+    # Initialize sales data with 0 for the last 30 days
+    merchandise_sales_data = {start_date.date() + timedelta(days=i): 0 for i in range(30)}
+
+    for entry in merchandise_sales:
+        if entry["date"] in merchandise_sales_data:
+            merchandise_sales_data[entry["date"]] = entry["total_sales"]
+
+    context["merchandise_sales"] = list(merchandise_sales_data.values())
     context["stats"] = stats
+
     return render(request, "admin/dashboard.html", context)

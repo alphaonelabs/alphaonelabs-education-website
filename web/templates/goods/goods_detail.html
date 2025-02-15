@@ -1,0 +1,6 @@
+<h1>{{ item.name }}</h1>
+<p>Price: ${{ item.price }}</p>
+<p>Description: {{ item.description }}</p>
+<p>Stock: {{ item.stock }}</p>
+<img src="{{ item.image.url }}" alt="{{ item.name }}" />
+<a href="{% url 'goods_list' %}">Back to Goods List</a>

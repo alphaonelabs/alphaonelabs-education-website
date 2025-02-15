@@ -4,6 +4,7 @@ from django.contrib import admin
 from django.urls import include, path
 
 from . import admin_views, views
+from .views import analytics_dashboard, goods_list, order_management
 
 # Non-prefixed URLs
 urlpatterns = [
@@ -167,6 +168,22 @@ urlpatterns += i18n_patterns(
     path("challenges/<int:week_number>/submit/", views.challenge_submit, name="challenge_submit"),
     path("current-weekly-challenge/", views.current_weekly_challenge, name="current_weekly_challenge"),
     path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),
+    # Goods (Merchandise) URLs
+    path("goods/", goods_list, name="goods_list"),
+    path("goods/<int:pk>/", views.goods_detail, name="goods_detail"),
+    path("goods/create/", views.goods_create, name="goods_create"),  # Restricted to teachers
+    path(
+        "goods/<int:pk>/create-payment-intent/",
+        views.create_goods_payment_intent,
+        name="create_goods_payment_intent",
+    ),
+    # Stripe Payment Webhook
+    path("stripe-goods-webhook/", views.stripe_goods_webhook, name="stripe_goods_webhook"),
+    # Order Management
+    path("orders/", views.order_list, name="order_list"),  # New: List all user orders
+    path("orders/<int:pk>/", views.order_detail, name="order_detail"),  # New: View specific order
+    path("order-management/", order_management, name="order_management"),  # For teachers
+    path("analytics/", analytics_dashboard, name="analytics_dashboard"),
     prefix_default_language=True,
 )
 

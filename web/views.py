@@ -38,6 +38,7 @@ from .forms import (
     FeedbackForm,
     ForumCategoryForm,
     ForumTopicForm,
+    GoodsForm,
     InviteStudentForm,
     LearnForm,
     MessageTeacherForm,
@@ -69,6 +70,9 @@ from .models import (
     ForumCategory,
     ForumReply,
     ForumTopic,
+    Goods,
+    Order,
+    OrderItem,
     PeerConnection,
     PeerMessage,
     Profile,
@@ -2676,3 +2680,192 @@ def fetch_video_title(request):
         return JsonResponse({"title": title})
     except requests.RequestException:
         return JsonResponse({"error": "Failed to fetch video title"}, status=500)
+
+
+@login_required
+def goods_list(request):
+    """List all goods available for sale."""
+    goods = Goods.objects.filter(teacher=request.user)
+    return render(request, "goods/goods_list.html", {"goods": goods})
+
+
+@login_required
+def goods_detail(request, pk):
+    """View details of a specific product."""
+    item = get_object_or_404(Goods, pk=pk)
+    return render(request, "goods/goods_detail.html", {"item": item})
+
+
+@login_required
+def goods_create(request):
+    """Allow teachers to create goods."""
+    if request.method == "POST":
+        form = GoodsForm(request.POST, request.FILES)
+        if form.is_valid():
+            goods = form.save(commit=False)
+            goods.teacher = request.user  # Assign logged-in user as the teacher
+            goods.save()
+            return redirect("goods_list")
+    else:
+        form = GoodsForm()
+    return render(request, "goods/goods_form.html", {"form": form})
+
+
+@login_required
+def create_goods_payment_intent(request, pk):
+    """Create a Stripe Payment Intent for purchasing goods."""
+    item = get_object_or_404(Goods, pk=pk)
+
+    # Check if stock is available
+    if item.stock <= 0:
+        return JsonResponse({"error": "This item is out of stock."}, status=400)
+
+    try:
+        intent = stripe.PaymentIntent.create(
+            amount=int(item.final_price() * 100),  # Convert price to cents
+            currency="usd",
+            metadata={"goods_id": item.id, "user_id": request.user.id},
+        )
+        return JsonResponse({"clientSecret": intent.client_secret})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=403)
+
+
+@csrf_exempt
+def stripe_goods_webhook(request):
+    """Handle Stripe payment events via webhook."""
+    payload = request.body
+    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
+    except ValueError:
+        return HttpResponse(status=400)
+    except stripe.error.SignatureVerificationError:
+        return HttpResponse(status=400)
+
+    if event.type == "payment_intent.succeeded":
+        payment_intent = event.data.object
+        handle_successful_goods_payment(payment_intent)
+    elif event.type == "payment_intent.payment_failed":
+        payment_intent = event.data.object
+        handle_failed_goods_payment(payment_intent)
+
+    return HttpResponse(status=200)
+
+
+def handle_successful_goods_payment(payment_intent):
+    """Process a successful payment and create an order."""
+    goods_id = payment_intent.metadata.get("goods_id")
+    user_id = payment_intent.metadata.get("user_id")
+
+    goods = get_object_or_404(Goods, id=goods_id)
+    user = get_object_or_404(User, id=user_id)
+
+    # Ensure there is enough stock
+    if goods.stock <= 0:
+        return
+
+    # Create order and order item
+    order = Order.objects.create(
+        user=user,
+        total_price=goods.final_price(),
+        status="completed",
+        payment_status="paid",
+        transaction_id=payment_intent.id,
+    )
+
+    OrderItem.objects.create(
+        order=order,
+        goods=goods,
+        quantity=1,
+        price_at_purchase=goods.final_price(),
+    )
+
+    # Deduct stock
+    goods.stock -= 1
+    goods.save()
+
+    # Send confirmation email
+    send_order_confirmation(order)
+
+
+def handle_failed_goods_payment(payment_intent):
+    """Handle failed payment by marking order as failed."""
+    user_id = payment_intent.metadata.get("user_id")
+
+    try:
+        user = User.objects.get(id=user_id)
+        order = Order.objects.filter(user=user, status="pending").last()
+
+        if order:
+            order.status = "failed"
+            order.save()
+    except (Goods.DoesNotExist, User.DoesNotExist, Order.DoesNotExist):
+        pass  # Log error if needed
+
+
+def send_order_confirmation(order):
+    """Send an email confirmation after a successful order."""
+    subject = "Your Order Confirmation"
+    message = (
+        f"Thank you for your purchase! Your order for {order.items.first().goods.name} "
+        f"has been confirmed.\nTotal Price: ${order.total_price}"
+    )
+
+    send_mail(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        [order.user.email],
+        fail_silently=True,
+    )
+
+
+@login_required
+def order_management(request):
+    """Allow teachers to manage orders for their goods."""
+    orders = Order.objects.filter(items__goods__teacher=request.user).distinct()
+    return render(request, "goods/order_management.html", {"orders": orders})
+
+
+@login_required
+def order_list(request):
+    """List all orders for the logged-in user."""
+    orders = Order.objects.filter(user=request.user).order_by("-created_at")
+    return render(request, "goods/order_list.html", {"orders": orders})
+
+
+@login_required
+def order_detail(request, pk):
+    """View details of a specific order."""
+    order = get_object_or_404(Order, pk=pk, user=request.user)
+    return render(request, "goods/order_detail.html", {"order": order})
+
+
+@login_required
+def analytics_dashboard(request):
+    """Provide insights into sales, revenue, and customer engagement."""
+    total_sales = Order.objects.filter(status="completed").count()
+    total_revenue = Order.objects.filter(status="completed").aggregate(Sum("total_price"))["total_price__sum"] or 0
+    unique_customers = Order.objects.filter(status="completed").values("user").distinct().count()
+
+    # Top-selling products
+    top_products = (
+        OrderItem.objects.values("goods__name").annotate(total_sold=Count("goods")).order_by("-total_sold")[:5]
+    )
+
+    # Top customers
+    top_customers = (
+        Order.objects.values("user__username").annotate(total_spent=Sum("total_price")).order_by("-total_spent")[:5]
+    )
+
+    context = {
+        "total_sales": total_sales,
+        "total_revenue": total_revenue,
+        "unique_customers": unique_customers,
+        "top_products": top_products,
+        "top_customers": top_customers,
+    }
+
+    return render(request, "goods/analytics_dashboard.html", context)

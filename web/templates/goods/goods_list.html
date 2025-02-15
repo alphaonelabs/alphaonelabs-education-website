@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Manage Goods - {{ user.get_full_name|default:user.username }}
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold">Manage Goods</h1>
+      <a href="{% url 'add_good' %}"
+         class="bg-teal-500 hover:bg-teal-600 text-white font-semibold px-4 py-2 rounded-lg flex items-center">
+        <i class="fas fa-plus mr-2"></i> Add New Product
+      </a>
+    </div>
+    <!-- Goods List -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
+      <div class="p-6">
+        <h2 class="text-xl font-semibold mb-4">Your Products</h2>
+        {% if goods %}
+          <div class="space-y-6">
+            {% for good in goods %}
+              <div class="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-0 last:pb-0">
+                <div class="flex justify-between items-start">
+                  <div class="flex items-start space-x-4">
+                    <div class="flex-shrink-0">
+                      {% if good.image %}
+                        <img src="{{ good.image.url }}"
+                             alt="{{ good.name }}"
+                             class="w-24 h-24 object-cover rounded-lg"
+                             height="96"
+                             width="96" />
+                      {% else %}
+                        <div class="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                          <i class="fas fa-box text-gray-400 dark:text-gray-500 text-2xl"></i>
+                        </div>
+                      {% endif %}
+                    </div>
+                    <div>
+                      <h3 class="font-medium">{{ good.name }}</h3>
+                      <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ good.description|truncatewords:30 }}</p>
+                      <div class="flex items-center mt-2 space-x-4">
+                        <span class="text-sm text-gray-500 dark:text-gray-400">
+                          <i class="fas fa-boxes mr-1"></i> {{ good.stock }} in stock
+                        </span>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">
+                          <i class="fas fa-dollar-sign mr-1"></i> ${{ good.price }}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex space-x-2">
+                    <a href="{% url 'edit_good' good.id %}"
+                       class="text-blue-500 hover:text-blue-600 dark:text-blue-400">
+                      <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'delete_good' good.id %}"
+                       class="text-red-500 hover:text-red-600 dark:text-red-400">
+                      <i class="fas fa-trash"></i>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <p class="text-gray-500 dark:text-gray-400">You haven't added any products yet.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock content %}

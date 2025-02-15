@@ -1,0 +1,12 @@
+<h1>Order Details</h1>
+<p>Order ID: {{ order.id }}</p>
+<p>Total Price: ${{ order.total_price }}</p>
+<p>Status: {{ order.get_status_display }}</p>
+<p>Created At: {{ order.created_at }}</p>
+<h2>Items</h2>
+<ul>
+  {% for item in order.items.all %}
+    <li>{{ item.quantity }} x {{ item.goods.name }} - ${{ item.price_at_purchase }}</li>
+  {% endfor %}
+</ul>
+<a href="{% url 'order_list' %}">Back to Orders</a>

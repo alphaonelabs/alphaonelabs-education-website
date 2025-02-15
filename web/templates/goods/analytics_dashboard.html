@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="container mx-auto px-6 py-10">
+    <h1 class="text-3xl font-bold text-gray-900">📊 Sales Analytics Dashboard</h1>
+    <p class="text-lg text-gray-600 mt-2">Monitor sales performance and customer activity.</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+      <div class="bg-blue-600 text-white p-6 rounded-lg shadow-lg">
+        <h2 class="text-xl font-semibold">💰 Total Revenue</h2>
+        <p class="text-2xl font-bold">${{ total_revenue }}</p>
+      </div>
+      <div class="bg-green-600 text-white p-6 rounded-lg shadow-lg">
+        <h2 class="text-xl font-semibold">📦 Total Sales</h2>
+        <p class="text-2xl font-bold">{{ total_sales }}</p>
+      </div>
+      <div class="bg-yellow-600 text-white p-6 rounded-lg shadow-lg">
+        <h2 class="text-xl font-semibold">👥 Unique Customers</h2>
+        <p class="text-2xl font-bold">{{ unique_customers }}</p>
+      </div>
+    </div>
+    <div class="mt-8">
+      <h2 class="text-2xl font-bold text-gray-800">🔥 Top-Selling Products</h2>
+      <ul class="mt-3">
+        {% for product in top_products %}
+          <li class="text-lg">{{ product.goods__name }} - {{ product.total_sold }} sold</li>
+        {% endfor %}
+      </ul>
+    </div>
+    <div class="mt-8">
+      <h2 class="text-2xl font-bold text-gray-800">🏆 Top Customers</h2>
+      <ul class="mt-3">
+        {% for customer in top_customers %}
+          <li class="text-lg">{{ customer.user__username }} - Spent ${{ customer.total_spent }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+{% endblock %}

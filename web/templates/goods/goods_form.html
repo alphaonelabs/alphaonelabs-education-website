@@ -1,0 +1,14 @@
+<h1>
+  {% if form.instance.pk %}
+    Edit
+  {% else %}
+    Add
+  {% endif %}
+  Goods
+</h1>
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Save</button>
+</form>
+<a href="{% url 'goods_list' %}">Back to Goods List</a>

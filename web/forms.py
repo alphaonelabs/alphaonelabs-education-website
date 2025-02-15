@@ -2,6 +2,7 @@ from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
 from django import forms
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.db import IntegrityError
 from django.utils.crypto import get_random_string
 from django.utils.text import slugify
@@ -13,6 +14,7 @@ from .models import (
     Course,
     CourseMaterial,
     ForumCategory,
+    Goods,
     Profile,
     Review,
     Session,
@@ -50,6 +52,7 @@ __all__ = [
     "BlogPostForm",
     "MessageTeacherForm",
     "FeedbackForm",
+    "GoodsForm",
 ]
 
 
@@ -847,3 +850,37 @@ class ChallengeSubmissionForm(forms.ModelForm):
                 attrs={"rows": 5, "placeholder": "Describe your results or reflections..."}
             ),
         }
+
+
+class GoodsForm(forms.ModelForm):
+    class Meta:
+        model = Goods
+        fields = ["name", "description", "price", "stock", "image"]
+        widgets = {
+            "name": TailwindInput(),
+            "description": TailwindTextarea(attrs={"rows": 4}),
+            "price": TailwindNumberInput(attrs={"min": "0", "step": "0.01"}),
+            "stock": TailwindNumberInput(attrs={"min": "0"}),
+            "image": TailwindFileInput(attrs={"accept": "image/*"}),
+        }
+
+    def clean_price(self):
+        price = self.cleaned_data.get("price")
+        if price is not None and price < 0:
+            raise ValidationError("Price cannot be negative.")
+        return price
+
+    def clean_stock(self):
+        stock = self.cleaned_data.get("stock")
+        if stock is not None and stock < 0:
+            raise ValidationError("Stock cannot be negative.")
+        return stock
+
+    def clean_image(self):
+        image = self.cleaned_data.get("image")
+        if image:
+            if not image.content_type.startswith("image"):
+                raise ValidationError("Invalid file type. Please upload an image.")
+            if image.size > 5 * 1024 * 1024:  # 5MB limit
+                raise ValidationError("Image file is too large (max 5MB).")
+        return image
