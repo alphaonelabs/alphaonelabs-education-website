@@ -85,6 +85,7 @@ from .models import (
     WebRequest,
 )
 from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
+from .referrals import send_referral_reward_email
 from .social import get_social_stats
 from .utils import get_or_create_cart
 
@@ -136,27 +137,14 @@ def index(request):
 
 
 def signup(request):
-    """Handle user signup and referral processing."""
     if request.method == "POST":
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
-            user = form.save(request)
-
-            # Handle referral if present in session
-            referrer_code = request.session.get("referrer_code")
-            if referrer_code:
-                handle_referral(user, referrer_code)
-                del request.session["referrer_code"]
-
+            form.save(request)
+            # User is automatically logged in by allauth after signup
             return redirect("index")
     else:
-        # Store referral code in session if present in URL
-        referrer_code = request.GET.get("ref")
-        if referrer_code:
-            request.session["referrer_code"] = referrer_code
-
         form = UserRegistrationForm()
-
     return render(request, "account/signup.html", {"form": form})
 
 
@@ -773,49 +761,6 @@ def handle_failed_payment(payment_intent):
         enrollment.save()
     except (Course.DoesNotExist, User.DoesNotExist, Enrollment.DoesNotExist):
         pass  # Log error or handle appropriately
-
-
-def handle_referral(user, referrer_code):
-    """Handle referral rewards when a new user registers or enrolls."""
-    try:
-        referrer = Profile.objects.get(referral_code=referrer_code)
-
-        # Set the referrer
-        user.profile.referred_by = referrer
-        user.profile.save()
-
-        # If the referrer is a teacher, check if this is their first student
-        if referrer.is_teacher and referrer.total_referrals == 1:
-            referrer.add_referral_earnings(5)
-            send_referral_reward_email(referrer.user, user, 5, "first_student")
-
-        # For regular users, reward is given when the referred user enrolls
-        # This is handled in the enroll_course view
-    except Profile.DoesNotExist:
-        pass
-
-
-def send_referral_reward_email(user, referred_user, amount, reward_type):
-    """Send email notification about referral reward."""
-    subject = "You've earned a referral reward!"
-    if reward_type == "first_student":
-        message = (
-            f"Congratulations! You've earned ${amount} for getting your first student "
-            f"{referred_user.get_full_name()}!"
-        )
-    else:
-        message = (
-            f"Congratulations! You've earned ${amount} because {referred_user.get_full_name()} "
-            f"enrolled in their first course!"
-        )
-
-    send_mail(
-        subject,
-        message,
-        settings.DEFAULT_FROM_EMAIL,
-        [user.email],
-        fail_silently=True,
-    )
 
 
 @login_required
@@ -1503,14 +1448,6 @@ def api_forum_reply_create(request):
         },
         status=201,
     )
-
-
-# @login_required
-# def logout_view(request):
-#     if request.method == "POST":
-#         logout(request)
-#         return redirect("index")
-#     return redirect("index")
 
 
 @login_required

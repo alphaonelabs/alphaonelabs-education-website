@@ -47,6 +47,14 @@ class UserRegistrationFormTests(TestCase):
 
     def test_valid_registration_form(self):
         """Test user registration with valid data"""
+        # Create a user and get their automatically created profile
+        existing_user = User.objects.create_user(
+            username="existing_user", email="existing@example.com", password="testpass123"
+        )
+        # Set the referral code on the automatically created profile
+        existing_user.profile.referral_code = "TEST123"
+        existing_user.profile.save()
+
         # For valid test, allow captcha to pass
         self.mock_captcha.side_effect = lambda x: True
 
@@ -60,8 +68,11 @@ class UserRegistrationFormTests(TestCase):
             "is_teacher": False,
             "captcha_0": "dummy-hash",
             "captcha_1": "PASSED",
+            "referral_code": "TEST123",
         }
         form = UserRegistrationForm(data=form_data)
+        if not form.is_valid():
+            print("Form errors:", form.errors)
         self.assertTrue(form.is_valid())
 
     def test_invalid_registration_form(self):

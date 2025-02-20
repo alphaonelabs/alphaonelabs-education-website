@@ -20,6 +20,7 @@ from .models import (
     Session,
     Subject,
 )
+from .referrals import handle_referral
 from .widgets import (
     TailwindCaptchaTextInput,
     TailwindCheckboxInput,
@@ -72,6 +73,12 @@ class UserRegistrationForm(SignupForm):
         label="Register as a teacher",
         widget=TailwindCheckboxInput(),
     )
+    referral_code = forms.CharField(
+        max_length=20,
+        required=True,
+        widget=TailwindInput(attrs={"placeholder": "Enter referral code"}),
+        help_text="Required - Ask an existing member for their referral code",
+    )
     captcha = CaptchaField(widget=TailwindCaptchaTextInput)
 
     def __init__(self, *args, **kwargs):
@@ -98,7 +105,7 @@ class UserRegistrationForm(SignupForm):
 
         # Preserve values on form errors
         if self.data:
-            for field_name in ["first_name", "last_name", "email"]:
+            for field_name in ["first_name", "last_name", "email", "referral_code"]:
                 if field_name in self.data:
                     self.fields[field_name].widget.attrs["value"] = self.data[field_name]
 
@@ -111,6 +118,12 @@ class UserRegistrationForm(SignupForm):
             except User.DoesNotExist:
                 return username
         return username
+
+    def clean_referral_code(self):
+        referral_code = self.cleaned_data.get("referral_code")
+        if not Profile.objects.filter(referral_code=referral_code).exists():
+            raise forms.ValidationError("Invalid referral code. Please check and try again.")
+        return referral_code
 
     def save(self, request):
         # First call parent's save to create the user and send verification email
@@ -128,6 +141,11 @@ class UserRegistrationForm(SignupForm):
         if self.cleaned_data.get("is_teacher"):
             user.profile.is_teacher = True
             user.profile.save()
+
+        # Handle the referral
+        referral_code = self.cleaned_data.get("referral_code")
+        if referral_code:
+            handle_referral(user, referral_code)
 
         # Return the user object
         return user

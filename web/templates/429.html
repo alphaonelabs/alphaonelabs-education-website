@@ -4,36 +4,22 @@
   Too Many Requests - Alpha One Labs
 {% endblock title %}
 {% block content %}
-  <div class="flex flex-col items-center justify-center min-h-[60vh] px-4">
-    <!-- Error Icon -->
-    <div class="text-6xl text-orange-500 mb-6">
-      <i class="fas fa-clock"></i>
-    </div>
-    <!-- Error Title -->
-    <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-4 text-center">Rate Limit Exceeded</h1>
-    <!-- Error Message -->
-    <div class="text-lg text-gray-600 dark:text-gray-400 text-center max-w-lg mb-8">
-      <p>You've made too many requests in a short time period.</p>
-      <p class="mt-2">Please wait a few minutes before trying again.</p>
-    </div>
-    <!-- Action Buttons -->
-    <div class="flex flex-col sm:flex-row gap-4">
-      <button onclick="history.back()"
-              class="inline-flex items-center px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-full text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-        <i class="fas fa-arrow-left mr-2"></i>
-        Go Back
-      </button>
-      <a href="{% url 'index' %}"
-         class="inline-flex items-center px-6 py-2 bg-orange-500 border border-transparent rounded-full text-white hover:bg-orange-600 transition-colors">
-        <i class="fas fa-home mr-2"></i>
-        Return Home
-      </a>
-    </div>
-    <!-- Help Text -->
-    <div class="mt-8 text-sm text-gray-500 dark:text-gray-400 text-center">
-      <p>
-        If you believe this is an error, please <a href="{% url 'contact' %}" class="text-orange-500 hover:underline">contact support</a>.
-      </p>
+  <div class="container mx-auto px-4 py-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 max-w-2xl mx-auto">
+      <div class="text-center">
+        <i class="fas fa-exclamation-triangle text-6xl text-yellow-500 mb-4"></i>
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Too Many Requests</h1>
+        <p class="text-gray-600 dark:text-gray-300 mb-6">
+          You've made too many requests in a short period. Please wait a moment before trying again.
+        </p>
+        <div class="space-y-4">
+          <a href="{% url 'index' %}"
+             class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-200">
+            <i class="fas fa-home mr-2"></i>
+            Return to Home
+          </a>
+        </div>
+      </div>
     </div>
   </div>
-{% endblock content %}
+{% endblock %}
