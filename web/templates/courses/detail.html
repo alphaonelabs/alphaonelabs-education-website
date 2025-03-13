@@ -406,8 +406,22 @@
                             <div class="flex justify-between items-start">
                               <div>
                                 <h3 class="font-semibold">
-                                  {% if is_enrolled or not material.requires_enrollment %}
-                                    {% if material.external_url %}
+                                  {% if is_enrolled or not material.requires_enrollment or is_teacher %}
+                                    {% if material.material_type == 'video' %}
+                                      <span class="text-blue-600 hover:text-blue-800 dark:text-blue-400 cursor-pointer" 
+                                            onclick="toggleVideoPlayer('video-{{ material.id }}')">
+                                        {{ material.title }}
+                                        <i class="fas fa-video ml-1 text-sm"></i>
+                                      </span>
+                                      <div id="video-{{ material.id }}-container" class="video-container mt-2 hidden">
+                                        <div id="video-{{ material.id }}" 
+                                             data-video-player
+                                             data-video-url="{% if material.external_url %}{{ material.external_url }}{% else %}{% url 'download_material' course.slug material.id %}{% endif %}"
+                                             data-video-type="{% if material.external_url %}auto{% else %}html5{% endif %}"
+                                             data-title="{{ material.title }}">
+                                        </div>
+                                      </div>
+                                    {% elif material.external_url %}
                                       <a href="{{ material.external_url }}"
                                          target="_blank"
                                          class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
@@ -422,8 +436,10 @@
                                       </a>
                                     {% endif %}
                                   {% else %}
-                                    {{ material.preview_content }}
-                                    <span class="ml-2 text-sm text-gray-500">(Enroll to access)</span>
+                                    <span class="text-gray-600 dark:text-gray-400">
+                                      {{ material.title }}
+                                      <i class="fas fa-lock ml-1 text-sm"></i>
+                                    </span>
                                   {% endif %}
                                 </h3>
                                 {% if material.description %}
@@ -440,7 +456,7 @@
                               {% endif %}
                             </div>
                             <div class="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-400">
-                              <span class="flex items-center">
+                              <span class="material-type-badge {{ material.material_type }}">
                                 <i class="fas {% if material.material_type == 'video' %}fa-video{% elif material.material_type == 'image' %}fa-image{% elif material.material_type == 'document' %}fa-file-alt{% elif material.material_type == 'presentation' %}fa-file-powerpoint{% elif material.material_type == 'exercise' %}fa-tasks{% elif material.material_type == 'quiz' %}fa-question-circle{% else %}fa-file{% endif %} mr-1"></i>
                                 {{ material.get_material_type_display }}
                               </span>
@@ -534,5 +550,28 @@
               })
               .catch(error => console.error('Error loading calendar:', error));
       }
+      function toggleVideoPlayer(videoId) {
+      const container = document.getElementById(`${videoId}-container`);
+      
+      if (container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        
+        // Initialize the player if it hasn't been initialized yet
+        if (!container.dataset.initialized) {
+          const playerElement = document.getElementById(videoId);
+          if (playerElement) {
+            new VideoPlayer({
+              containerId: videoId,
+              videoUrl: playerElement.dataset.videoUrl,
+              videoType: playerElement.dataset.videoType,
+              title: playerElement.dataset.title
+            });
+            container.dataset.initialized = 'true';
+          }
+        }
+      } else {
+        container.classList.add('hidden');
+      }
+    }
   </script>
 {% endblock content %}

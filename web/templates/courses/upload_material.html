@@ -4,6 +4,7 @@
   Upload Material - {{ course.title }}
 {% endblock title %}
 {% block content %}
+<link rel="stylesheet" href="{% static 'css/video-upload.css' %}" />
   <div class="container mx-auto px-4 py-8">
     <div class="max-w-3xl mx-auto">
       <div class="mb-8">
@@ -40,11 +41,41 @@
       </div>
     </div>
   </div>
+  <script src="{% static 'js/video-upload.js' %}" defer></script>
   <script>
       document.addEventListener("DOMContentLoaded", function() {
-          const externalUrlField = document.getElementById("id_external_url");
-          const titleField = document.getElementById("id_title");
-
+        const externalUrlField = document.getElementById("id_external_url");
+        const titleField = document.getElementById("id_title");
+        const fileInput = document.getElementById("id_file");
+        const materialTypeSelect = document.getElementById("id_material_type");
+        
+        // Hide file input when material type is video
+        if (materialTypeSelect && fileInput) {
+            materialTypeSelect.addEventListener("change", function() {
+                const isVideo = materialTypeSelect.value === 'video';
+                if (isVideo) {
+                    // Hide the file input parent div when video is selected
+                    const fileInputParent = fileInput.closest('div');
+                    if (fileInputParent) {
+                        fileInputParent.style.display = 'none';
+                    }
+                } else {
+                    // Show the file input for non-video material types
+                    const fileInputParent = fileInput.closest('div');
+                    if (fileInputParent) {
+                        fileInputParent.style.display = '';
+                    }
+                }
+            });
+            
+            // Initial check
+            if (materialTypeSelect.value === 'video') {
+                const fileInputParent = fileInput.closest('div');
+                if (fileInputParent) {
+                    fileInputParent.style.display = 'none';
+                }
+            }
+        }
           externalUrlField.addEventListener("change", function() {
               const url = externalUrlField.value;
               if (url) {

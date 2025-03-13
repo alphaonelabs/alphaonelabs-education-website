@@ -94,6 +94,8 @@
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"
             integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
             crossorigin="anonymous"></script>
+    <!-- Video Player JS -->
+    <script src="{% static 'js/video-player/video-player.js' %}" defer></script>
     <script>
         // Toggle the language dropdown
         function toggleLanguageDropdown() {
@@ -138,6 +140,8 @@
     {% block extra_head %}
     {% endblock extra_head %}
     <link rel="stylesheet" href="{% static 'css/markdown.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/video-player.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/video-thumbnail.css' %}" />
   </head>
   <body class="min-h-screen flex flex-col bg-white text-gray-900 dark:bg-black dark:text-gray-100 transition-colors duration-300">
     <!-- HEADER -->
