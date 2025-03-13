@@ -391,6 +391,10 @@ class CourseMaterial(models.Model):
     material_type = models.CharField(max_length=20, choices=MATERIAL_TYPES)
     file = models.FileField(upload_to="course_materials/", blank=True)
     external_url = models.URLField(blank=True, help_text="URL for external content like YouTube videos")
+    thumbnail = models.ImageField(upload_to="course_thumbnails/", blank=True, null=True, 
+                            help_text="Custom thumbnail for video content")
+    video_duration = models.PositiveIntegerField(null=True, blank=True, 
+                                           help_text="Duration in seconds (for videos)")
     session = models.ForeignKey(
         Session,
         on_delete=models.SET_NULL,

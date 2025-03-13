@@ -1,0 +1,152 @@
+.video-thumbnail {
+    position: relative;
+    overflow: hidden;
+    border-radius: 0.5rem;
+    transition: transform 0.2s;
+  }
+  
+  .video-thumbnail:hover {
+    transform: scale(1.02);
+  }
+  
+  .video-thumbnail img {
+    width: 100%;
+    height: 12rem;
+    object-fit: cover;
+    border-radius: 0.5rem;
+  }
+  
+  .video-thumbnail .absolute {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.3);
+    opacity: 0.8;
+    transition: opacity 0.2s;
+  }
+  
+  .video-thumbnail:hover .absolute {
+    opacity: 1;
+  }
+  
+  .video-thumbnail .bg-black {
+    background-color: rgba(0, 0, 0, 0.7);
+    border-radius: 9999px;
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+  }
+  
+  .video-thumbnail:hover .bg-black {
+    transform: scale(1.1);
+  }
+  
+  .video-container {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+  
+  .dark .video-container {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Material type badges */
+  .material-type-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  
+  .material-type-badge.video {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: #3b82f6;
+  }
+  
+  .material-type-badge.document {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+  }
+  
+  .material-type-badge.image {
+    background-color: rgba(236, 72, 153, 0.1);
+    color: #ec4899;
+  }
+  
+  .material-type-badge.presentation {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+  }
+  
+  .material-type-badge.exercise {
+    background-color: rgba(139, 92, 246, 0.1);
+    color: #8b5cf6;
+  }
+  
+  .material-type-badge.quiz {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+  }
+  
+  .material-type-badge.assignment {
+    background-color: rgba(6, 182, 212, 0.1);
+    color: #06b6d4;
+  }
+  
+  .material-type-badge.other {
+    background-color: rgba(107, 114, 128, 0.1);
+    color: #6b7280;
+  }
+  
+  /* Dark mode adjustments */
+  .dark .material-type-badge.video {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+  }
+  
+  .dark .material-type-badge.document {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+  }
+  
+  .dark .material-type-badge.image {
+    background-color: rgba(236, 72, 153, 0.2);
+    color: #f9a8d4;
+  }
+  
+  .dark .material-type-badge.presentation {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fcd34d;
+  }
+  
+  .dark .material-type-badge.exercise {
+    background-color: rgba(139, 92, 246, 0.2);
+    color: #c4b5fd;
+  }
+  
+  .dark .material-type-badge.quiz {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #fca5a5;
+  }
+  
+  .dark .material-type-badge.assignment {
+    background-color: rgba(6, 182, 212, 0.2);
+    color: #67e8f9;
+  }
+  
+  .dark .material-type-badge.other {
+    background-color: rgba(107, 114, 128, 0.2);
+    color: #d1d5db;
+  }
