@@ -7,7 +7,9 @@ from django.db import models
 from django.http import HttpResponseRedirect
 from django.urls import path, reverse
 from django.utils.html import format_html
-
+from .models import (
+    LearningResource, Issue, IssueComment,PullRequest, PRComment, MentorProfile
+)
 from .models import (
     Achievement,
     BlogComment,
@@ -514,3 +516,44 @@ class OrderItemAdmin(admin.ModelAdmin):
 # Unregister the default User admin and register our custom one
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
+
+
+@admin.register(LearningResource)
+class LearningResourceAdmin(admin.ModelAdmin):
+    list_display = ('title', 'created_by', 'created_at')
+    search_fields = ('title', 'content')
+    list_filter = ('created_at',)
+
+
+@admin.register(Issue)
+class IssueAdmin(admin.ModelAdmin):
+    list_display = ('title', 'status', 'created_by', 'created_at')
+    search_fields = ('title', 'description')
+    list_filter = ('status', 'created_at')
+
+
+@admin.register(IssueComment)
+class IssueCommentAdmin(admin.ModelAdmin):
+    list_display = ('issue', 'author', 'created_at')
+    search_fields = ('content',)
+    list_filter = ('created_at',)
+
+
+@admin.register(PullRequest)
+class PullRequestAdmin(admin.ModelAdmin):
+    list_display = ('title', 'status', 'created_by', 'created_at')
+    search_fields = ('title', 'description')
+    list_filter = ('status', 'created_at')
+
+
+@admin.register(PRComment)
+class PRCommentAdmin(admin.ModelAdmin):
+    list_display = ('pr', 'author', 'created_at')
+    search_fields = ('content',)
+    list_filter = ('created_at',)
+
+
+@admin.register(MentorProfile)
+class MentorProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'expertise', 'github_username')
+    search_fields = ('user__username', 'expertise', 'bio')

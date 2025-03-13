@@ -19,6 +19,7 @@ from django.utils import timezone
 from django.utils.text import slugify
 from markdownx.models import MarkdownxField
 from PIL import Image
+from django.urls import reverse
 
 
 class Notification(models.Model):
@@ -1144,3 +1145,98 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity}x {self.goods.name}"
+
+
+class LearningResource(models.Model):
+    title = models.CharField(max_length=200)
+    content = models.TextField()
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='learning_resources')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return self.title
+    
+    def get_absolute_url(self):
+        return reverse('resource-detail', kwargs={'pk': self.pk})
+
+
+class Issue(models.Model):
+    STATUS_CHOICES = [
+        ('open', 'Open'),
+        ('in_progress', 'In Progress'),
+        ('resolved', 'Resolved'),
+        ('closed', 'Closed'),
+    ]
+    
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_issues')
+    assigned_to = models.ManyToManyField(User, related_name='assigned_issues', blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return self.title
+    
+    def get_absolute_url(self):
+        return reverse('issue-detail', kwargs={'pk': self.pk})
+
+
+class IssueComment(models.Model):
+    issue = models.ForeignKey(Issue, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='issue_comments')
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f'Comment by {self.author.username} on {self.issue.title}'
+
+
+class PullRequest(models.Model):
+    STATUS_CHOICES = [
+        ('open', 'Open'),
+        ('under_review', 'Under Review'),
+        ('changes_requested', 'Changes Requested'),
+        ('approved', 'Approved'),
+        ('merged', 'Merged'),
+        ('closed', 'Closed'),
+    ]
+    
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    pr_url = models.URLField(help_text="URL to the PR on GitHub/GitLab")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_prs')
+    reviewers = models.ManyToManyField(User, related_name='review_prs', blank=True)
+    related_issue = models.ForeignKey(Issue, on_delete=models.SET_NULL, null=True, blank=True, 
+                                      related_name='pull_requests')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return self.title
+    
+    def get_absolute_url(self):
+        return reverse('pr-detail', kwargs={'pk': self.pk})
+
+
+class PRComment(models.Model):
+    pr = models.ForeignKey(PullRequest, on_delete=models.CASCADE, related_name='comments')
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pr_comments')
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f'Comment by {self.author.username} on {self.pr.title}'
+
+
+class MentorProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='mentor_profile')
+    bio = models.TextField(blank=True)
+    expertise = models.CharField(max_length=255, blank=True)
+    github_username = models.CharField(max_length=100, blank=True)
+    
+    def __str__(self):
+        return f'Mentor: {self.user.username}'

@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-6">
+        <a href="{% url 'resource-list' %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+            ← Back to Resources
+        </a>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+        <div class="flex justify-between items-start mb-4">
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200">{{ object.title }}</h1>
+            
+            {% if request.user == object.created_by %}
+                <div class="flex space-x-2">
+                    <a href="{% url 'resource-update' object.pk %}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition duration-200">Edit</a>
+                    <a href="{% url 'resource-delete' object.pk %}" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition duration-200">Delete</a>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-6">
+            <span>Created by: {{ object.created_by.username }}</span>
+            <span class="mx-2">•</span>
+            <span>{{ object.created_at|date:"F j, Y, g:i a" }}</span>
+            {% if object.updated_at and object.updated_at != object.created_at %}
+                <span class="mx-2">•</span>
+                <span>Updated: {{ object.updated_at|date:"F j, Y, g:i a" }}</span>
+            {% endif %}
+        </div>
+        
+        <div class="prose max-w-none text-gray-700 dark:text-gray-300">
+            {{ object.content|linebreaks }}
+        </div>
+    </div>
+</div>
+{% endblock %} 

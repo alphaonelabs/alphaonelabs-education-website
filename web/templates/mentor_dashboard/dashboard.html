@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">GSOC Mentor Dashboard</h1>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Learning Resources Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300">Learning Resources</h2>
+                <a href="{% url 'resource-create' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200">Add New</a>
+            </div>
+            
+            {% if resources %}
+                <div class="space-y-4">
+                    {% for resource in resources %}
+                        <div class="border-b border-gray-200 dark:border-gray-700 pb-3">
+                            <a href="{% url 'resource-detail' resource.pk %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium">
+                                {{ resource.title }}
+                            </a>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ resource.created_at|date:"M d, Y" }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-4">
+                    <a href="{% url 'resource-list' %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">View all resources →</a>
+                </div>
+            {% else %}
+                <p class="text-gray-600 dark:text-gray-300">No learning resources yet. Create one to get started!</p>
+            {% endif %}
+        </div>
+        
+        <!-- Issues Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300">Issues</h2>
+                <a href="{% url 'issue-create' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200">Add New</a>
+            </div>
+            
+            {% if issues %}
+                <div class="space-y-4">
+                    {% for issue in issues %}
+                        <div class="border-b border-gray-200 dark:border-gray-700 pb-3">
+                            <a href="{% url 'issue-detail' issue.pk %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium">
+                                {{ issue.title }}
+                            </a>
+                            <div class="flex items-center mt-1">
+                                <span class="inline-block px-2 py-1 text-xs rounded-full 
+                                    {% if issue.status == 'open' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300
+                                    {% elif issue.status == 'in_progress' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300
+                                    {% elif issue.status == 'resolved' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300
+                                    {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300{% endif %}">
+                                    {{ issue.get_status_display }}
+                                </span>
+                                <span class="text-sm text-gray-600 dark:text-gray-400 ml-2">
+                                    Updated {{ issue.updated_at|date:"M d, Y" }}
+                                </span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-4">
+                    <a href="{% url 'issue-list' %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">View all issues →</a>
+                </div>
+            {% else %}
+                <p class="text-gray-600 dark:text-gray-300">No issues yet. Create one to get started!</p>
+            {% endif %}
+        </div>
+        
+        <!-- Pull Requests Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300">Pull Requests</h2>
+                <a href="{% url 'pr-create' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200">Add New</a>
+            </div>
+            
+            {% if prs %}
+                <div class="space-y-4">
+                    {% for pr in prs %}
+                        <div class="border-b border-gray-200 dark:border-gray-700 pb-3">
+                            <a href="{% url 'pr-detail' pr.pk %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 font-medium">
+                                {{ pr.title }}
+                            </a>
+                            <div class="flex items-center mt-1">
+                                <span class="inline-block px-2 py-1 text-xs rounded-full 
+                                    {% if pr.status == 'open' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300
+                                    {% elif pr.status == 'under_review' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300
+                                    {% elif pr.status == 'changes_requested' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300
+                                    {% elif pr.status == 'approved' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300
+                                    {% elif pr.status == 'merged' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300
+                                    {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300{% endif %}">
+                                    {{ pr.get_status_display }}
+                                </span>
+                                <span class="text-sm text-gray-600 dark:text-gray-400 ml-2">
+                                    Updated {{ pr.updated_at|date:"M d, Y" }}
+                                </span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="mt-4">
+                    <a href="{% url 'pr-list' %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">View all PRs →</a>
+                </div>
+            {% else %}
+                <p class="text-gray-600 dark:text-gray-300">No pull requests yet. Add one to get started!</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock content %}

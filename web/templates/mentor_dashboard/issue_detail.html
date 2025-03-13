@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="mb-6">
+        <a href="{% url 'issue-list' %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+            ← Back to Issues
+        </a>
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+        <div class="flex items-start justify-between mb-4">
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200">{{ object.title }}</h1>
+            <span class="inline-block px-3 py-1 text-sm rounded-full 
+                {% if object.status == 'open' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300
+                {% elif object.status == 'in_progress' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300
+                {% elif object.status == 'resolved' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300
+                {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300{% endif %}">
+                {{ object.get_status_display }}
+            </span>
+        </div>
+        
+        <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-4">
+            <span>Created by: {{ object.created_by.username }}</span>
+            <span class="mx-2">•</span>
+            <span>{{ object.created_at|date:"F j, Y, g:i a" }}</span>
+            {% if object.updated_at and object.updated_at != object.created_at %}
+                <span class="mx-2">•</span>
+                <span>Updated: {{ object.updated_at|date:"F j, Y, g:i a" }}</span>
+            {% endif %}
+        </div>
+        
+        <div class="prose max-w-none text-gray-700 dark:text-gray-300 mb-6">
+            {{ object.description|linebreaks }}
+        </div>
+        
+        {% if object.assigned_to.all %}
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Assigned To:</h3>
+                <div class="flex flex-wrap gap-2">
+                    {% for user in object.assigned_to.all %}
+                        <span class="inline-block px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-full">
+                            {{ user.username }}
+                        </span>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+        
+        {% if object.pull_requests.all %}
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-2">Related Pull Requests:</h3>
+                <ul class="space-y-2">
+                    {% for pr in object.pull_requests.all %}
+                        <li>
+                            <a href="{% url 'pr-detail' pr.pk %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                {{ pr.title }}
+                            </a>
+                            <span class="inline-block px-2 py-0.5 text-xs rounded-full ml-2
+                                {% if pr.status == 'open' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300
+                                {% elif pr.status == 'under_review' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300
+                                {% elif pr.status == 'changes_requested' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300
+                                {% elif pr.status == 'approved' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300
+                                {% elif pr.status == 'merged' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300
+                                {% else %}bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300{% endif %}">
+                                {{ pr.get_status_display }}
+                            </span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Comments Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+        <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Comments</h2>
+        
+        {% if comments %}
+            <div class="space-y-6 mb-6">
+                {% for comment in comments %}
+                    <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+                        <div class="flex items-center mb-2">
+                            <span class="font-medium text-gray-800 dark:text-gray-200">{{ comment.author.username }}</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-400 ml-2">
+                                {{ comment.created_at|date:"F j, Y, g:i a" }}
+                            </span>
+                        </div>
+                        <div class="text-gray-600 dark:text-gray-300">
+                            {{ comment.content|linebreaks }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-600 dark:text-gray-400 mb-6">No comments yet</p>
+        {% endif %}
+        
+        <!-- Add Comment Form -->
+        <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">Add Comment</h3>
+        <form method="post" action="{% url 'add-issue-comment' object.pk %}">
+            {% csrf_token %}
+            <div class="mb-4">
+                <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Your comment</label>
+                <textarea id="content" name="content" rows="4" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300" required></textarea>
+            </div>
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-200">
+                Submit Comment
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %} 

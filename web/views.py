@@ -29,7 +29,7 @@ from django.utils.crypto import get_random_string
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import CreateView, DeleteView, ListView, UpdateView, DetailView
 
 from .calendar_sync import generate_google_calendar_link, generate_ical_feed, generate_outlook_calendar_link
 from .decorators import teacher_required
@@ -90,6 +90,9 @@ from .models import (
     StudyGroup,
     TimeSlot,
     WebRequest,
+)
+from .models import (
+    LearningResource, Issue, IssueComment,PullRequest, PRComment,
 )
 from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
 from .referrals import send_referral_reward_email
@@ -3097,3 +3100,165 @@ class StorefrontDetailView(LoginRequiredMixin, generic.DetailView):
 
     def get_object(self):
         return get_object_or_404(Storefront, store_slug=self.kwargs["store_slug"])
+
+
+@login_required
+def dashboard(request):
+    resources = LearningResource.objects.order_by('-created_at')[:5]
+    issues = Issue.objects.order_by('-updated_at')[:5]
+    prs = PullRequest.objects.order_by('-updated_at')[:5]
+    
+    context = {
+        'resources': resources,
+        'issues': issues,
+        'prs': prs,
+    }
+    return render(request, 'mentor_dashboard/dashboard.html', context)
+
+
+# Learning Resources Views
+class ResourceListView(LoginRequiredMixin, ListView):
+    model = LearningResource
+    template_name = 'mentor_dashboard/resource_list.html'
+    context_object_name = 'resources'
+    ordering = ['-created_at']
+    paginate_by = 10
+
+
+class ResourceDetailView(LoginRequiredMixin, DetailView):
+    model = LearningResource
+    template_name = 'mentor_dashboard/resource_detail.html'
+
+
+class ResourceCreateView(LoginRequiredMixin, CreateView):
+    model = LearningResource
+    template_name = 'mentor_dashboard/resource_form.html'
+    fields = ['title', 'content']
+    
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse('resource-detail', kwargs={'pk': self.object.pk})
+
+
+class ResourceUpdateView(LoginRequiredMixin, UpdateView):
+    model = LearningResource
+    template_name = 'mentor_dashboard/resource_form.html'
+    fields = ['title', 'content']
+    
+    def get_success_url(self):
+        return reverse('resource-detail', kwargs={'pk': self.object.pk})
+
+
+class ResourceDeleteView(LoginRequiredMixin, DeleteView):
+    model = LearningResource
+    template_name = 'mentor_dashboard/resource_confirm_delete.html'
+    success_url = reverse_lazy('resource-list')
+    
+    def test_func(self):
+        resource = self.get_object()
+        return self.request.user == resource.created_by
+    
+    def delete(self, request, *args, **kwargs):
+        messages.success(self.request, 'Learning resource deleted successfully!')
+        return super().delete(request, *args, **kwargs)
+
+
+# Issue Views
+class IssueListView(LoginRequiredMixin, ListView):
+    model = Issue
+    template_name = 'mentor_dashboard/issue_list.html'
+    context_object_name = 'issues'
+    ordering = ['-updated_at']
+    paginate_by = 10
+
+
+class IssueDetailView(LoginRequiredMixin, DetailView):
+    model = Issue
+    template_name = 'mentor_dashboard/issue_detail.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['comments'] = self.object.comments.order_by('created_at')
+        return context
+
+
+class IssueCreateView(LoginRequiredMixin, CreateView):
+    model = Issue
+    template_name = 'mentor_dashboard/issue_form.html'
+    fields = ['title', 'description', 'status', 'assigned_to']
+    
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse('issue-detail', kwargs={'pk': self.object.pk})
+
+
+# PR Views
+class PRListView(LoginRequiredMixin, ListView):
+    model = PullRequest
+    template_name = 'mentor_dashboard/pr_list.html'
+    context_object_name = 'prs'
+    ordering = ['-updated_at']
+    paginate_by = 10
+
+
+class PRDetailView(LoginRequiredMixin, DetailView):
+    model = PullRequest
+    template_name = 'mentor_dashboard/pr_detail.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['comments'] = self.object.comments.order_by('created_at')
+        return context
+
+
+class PRCreateView(LoginRequiredMixin, CreateView):
+    model = PullRequest
+    template_name = 'mentor_dashboard/pr_form.html'
+    fields = ['title', 'description', 'pr_url', 'status', 'reviewers', 'related_issue']
+    
+    def form_valid(self, form):
+        form.instance.created_by = self.request.user
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse('pr-detail', kwargs={'pk': self.object.pk})
+
+
+@login_required
+def add_issue_comment(request, pk):
+    issue = get_object_or_404(Issue, pk=pk)
+    if request.method == 'POST':
+        content = request.POST.get('content')
+        if content:
+            comment = IssueComment.objects.create(
+                issue=issue,
+                author=request.user,
+                content=content
+            )
+            messages.success(request, 'Comment added successfully!')
+        else:
+            messages.error(request, 'Comment cannot be empty!')
+    return redirect('issue-detail', pk=pk)
+
+
+@login_required
+def add_pr_comment(request, pk):
+    pr = get_object_or_404(PullRequest, pk=pk)
+    if request.method == 'POST':
+        content = request.POST.get('content')
+        if content:
+            comment = PRComment.objects.create(
+                pr=pr,
+                author=request.user,
+                content=content
+            )
+            messages.success(request, 'Feedback added successfully!')
+        else:
+            messages.error(request, 'Feedback cannot be empty!')
+    return redirect('pr-detail', pk=pk)

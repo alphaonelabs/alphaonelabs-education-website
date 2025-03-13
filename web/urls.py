@@ -206,6 +206,23 @@ urlpatterns += i18n_patterns(
     ),
     path("analytics/", sales_analytics, name="sales_analytics"),
     path("analytics/data/", sales_data, name="sales_data"),
+    path('dashboard/', views.dashboard, name='mentor-dashboard'), 
+    # Learning Resources
+    path('resources/', views.ResourceListView.as_view(), name='resource-list'),
+    path('resources/<int:pk>/', views.ResourceDetailView.as_view(), name='resource-detail'),
+    path('resources/new/', views.ResourceCreateView.as_view(), name='resource-create'),
+    path('resources/<int:pk>/update/', views.ResourceUpdateView.as_view(), name='resource-update'),
+    path('resources/<int:pk>/delete/', views.ResourceDeleteView.as_view(), name='resource-delete'),
+    # Issues
+    path('issues/', views.IssueListView.as_view(), name='issue-list'),
+    path('issues/<int:pk>/', views.IssueDetailView.as_view(), name='issue-detail'),
+    path('issues/new/', views.IssueCreateView.as_view(), name='issue-create'),
+    path('issues/<int:pk>/comment/', views.add_issue_comment, name='add-issue-comment'),
+    # Pull Requests
+    path('prs/', views.PRListView.as_view(), name='pr-list'),
+    path('prs/<int:pk>/', views.PRDetailView.as_view(), name='pr-detail'),
+    path('prs/new/', views.PRCreateView.as_view(), name='pr-create'),
+    path('prs/<int:pk>/comment/', views.add_pr_comment, name='add-pr-comment'),
     prefix_default_language=True,
 )
 
