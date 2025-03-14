@@ -1,12 +1,15 @@
 import os
 import sys
 from pathlib import Path
-
+from dotenv import load_dotenv
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+load_dotenv()
 SECRET_KEY = "django-insecure-5kyff0s@l_##j3jawec5@b%!^^e(j7v)ouj4b7q6kru#o#a)o3"
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+
 
 
 env = environ.Env()
@@ -73,21 +76,25 @@ CSRF_TRUSTED_ORIGINS = [
 # Error handling
 handler404 = "web.views.custom_404"
 handler500 = "web.views.custom_500"
-
 INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "django.contrib.sites",
-    "django.contrib.humanize",
-    "allauth",
-    "allauth.account",
-    "captcha",
-    "markdownx",
-    "web",
+    # Django apps
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    
+    # Third-party apps
+    'allauth',
+    'allauth.account',
+    'captcha',  # Add this line
+    # Other third-party apps
+    
+    # Local apps
+    'ai',
+    'web',
+    # Other project apps
 ]
 
 if DEBUG and not TESTING:
@@ -115,17 +122,21 @@ ROOT_URLCONF = "web.urls"
 
 TEMPLATES = [
     {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates", BASE_DIR / "web/templates"],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-                "web.context_processors.last_modified",
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates'),  # This line is important!
+        ],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
             ],
+            'libraries': {
+                'url_tags': 'ai_assistant.templatetags.url_tags',
+            },
         },
     },
 ]
@@ -347,5 +358,30 @@ MARKDOWNX_MARKDOWN_EXTENSIONS = [
 MARKDOWNX_URLS_PATH = "/markdownx/markdownify/"
 MARKDOWNX_UPLOAD_URLS_PATH = "/markdownx/upload/"
 MARKDOWNX_MEDIA_PATH = "markdownx/"  # Path within MEDIA_ROOT
-
+# Add to settings.py if not already present
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'ai': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
 USE_X_FORWARDED_HOST = True

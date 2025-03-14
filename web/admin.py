@@ -39,7 +39,6 @@ from .models import (
     WebRequest,
 )
 
-
 class ProfileInline(admin.StackedInline):
     model = Profile
     can_delete = False
@@ -387,11 +386,6 @@ class ChallengeAdmin(admin.ModelAdmin):
 @admin.register(ChallengeSubmission)
 class ChallengeSubmissionAdmin(admin.ModelAdmin):
     list_display = ("user", "challenge", "submitted_at")
-
-
-# Unregister the default User admin and register our custom one
-admin.site.unregister(User)
-admin.site.register(User, CustomUserAdmin)
 
 
 @admin.register(Storefront)

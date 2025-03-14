@@ -1,0 +1,158 @@
+{% extends "ai/ai_base.html" %}
+{% load static %}
+
+{% block title %}AI Assistant Settings | {{ block.super }}{% endblock %}
+
+{% block ai_content %}
+<div class="card shadow-sm">
+    <div class="card-header bg-light">
+        <h4 class="mb-0">AI Assistant Preferences</h4>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            
+            <div class="mb-4">
+                <h5>Learning Style</h5>
+                <p class="text-muted">How would you prefer information to be presented?</p>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="learning_style" id="visual" value="visual" {% if profile.learning_style == 'visual' %}checked{% endif %}>
+                            <label class="form-check-label" for="visual">
+                                <strong>Visual</strong>
+                                <div class="text-muted small">Diagrams, charts, illustrations</div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="learning_style" id="auditory" value="auditory" {% if profile.learning_style == 'auditory' %}checked{% endif %}>
+                            <label class="form-check-label" for="auditory">
+                                <strong>Auditory</strong>
+                                <div class="text-muted small">Explanations, discussions, analogies</div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="learning_style" id="reading" value="reading" {% if profile.learning_style == 'reading' %}checked{% endif %}>
+                            <label class="form-check-label" for="reading">
+                                <strong>Reading/Writing</strong>
+                                <div class="text-muted small">Text-based explanations and examples</div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="learning_style" id="kinesthetic" value="kinesthetic" {% if profile.learning_style == 'kinesthetic' %}checked{% endif %}>
+                            <label class="form-check-label" for="kinesthetic">
+                                <strong>Kinesthetic</strong>
+                                <div class="text-muted small">Practice exercises, interactive learning</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Difficulty Level</h5>
+                <p class="text-muted">How challenging should explanations be?</p>
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="difficulty_preference" id="easy" value="easy" {% if profile.difficulty_preference == 'easy' %}checked{% endif %}>
+                            <label class="form-check-label" for="easy">
+                                <strong>Easy</strong>
+                                <div class="text-muted small">Simple, beginner-friendly explanations</div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="difficulty_preference" id="moderate" value="moderate" {% if profile.difficulty_preference == 'moderate' %}checked{% endif %}>
+                            <label class="form-check-label" for="moderate">
+                                <strong>Moderate</strong>
+                                <div class="text-muted small">Balanced explanations for intermediate learners</div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="difficulty_preference" id="challenging" value="challenging" {% if profile.difficulty_preference == 'challenging' %}checked{% endif %}>
+                            <label class="form-check-label" for="challenging">
+                                <strong>Challenging</strong>
+                                <div class="text-muted small">Advanced explanations with deeper details</div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="difficulty_preference" id="adaptive" value="adaptive" {% if profile.difficulty_preference == 'adaptive' %}checked{% endif %}>
+                            <label class="form-check-label" for="adaptive">
+                                <strong>Adaptive</strong>
+                                <div class="text-muted small">Adjusts based on your understanding</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Response Length</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="response_length" id="concise" value="concise" {% if profile.response_length == 'concise' %}checked{% endif %}>
+                            <label class="form-check-label" for="concise">
+                                <strong>Concise</strong>
+                                <div class="text-muted small">Brief, to-the-point answers</div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="response_length" id="detailed" value="detailed" {% if profile.response_length == 'detailed' %}checked{% endif %}>
+                            <label class="form-check-label" for="detailed">
+                                <strong>Detailed</strong>
+                                <div class="text-muted small">Thorough explanations with examples</div>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="response_length" id="comprehensive" value="comprehensive" {% if profile.response_length == 'comprehensive' %}checked{% endif %}>
+                            <label class="form-check-label" for="comprehensive">
+                                <strong>Comprehensive</strong>
+                                <div class="text-muted small">Extensive explanations with context</div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <h5>Additional Options</h5>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" name="include_examples" id="includeExamples" {% if profile.include_examples %}checked{% endif %}>
+                    <label class="form-check-label" for="includeExamples">
+                        Include examples in explanations
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="include_visuals" id="includeVisuals" {% if profile.include_visuals %}checked{% endif %}>
+                    <label class="form-check-label" for="includeVisuals">
+                        Include visual aids when possible
+                    </label>
+                </div>
+            </div>
+            
+            <div class="text-end">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save me-1"></i> Save Preferences
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,603 @@
+{% extends "ai/ai_base.html" %}
+{% load static %}
+
+{% block title %}Assistant{% endblock %}
+
+{% block ai_content %}
+<!-- Sidebar Navigation -->
+<div id="sidebar" class="sidebar">
+  <div class="sidebar-header">
+    <h4>Navigation</h4>
+    <button id="closeSidebar" class="close-btn">&times;</button>
+  </div>
+  <ul class="sidebar-menu">
+    <li><a href="/ai/dashboard/">Chat Dashboard</a></li>
+    <li><a href="/ai/progress/">Progress</a></li>
+    <li><a href="/ai/settings/">Settings</a></li>
+    <li><a href="/">Home</a></li>
+  </ul>
+</div>
+
+<!-- Hamburger Button to Open Sidebar -->
+<button id="openSidebar" class="hamburger">
+  <i class="fas fa-bars"></i>
+</button>
+
+<!-- Full Screen Chat Container -->
+<div class="chat-container">
+  <!-- Chat Header with minimal title and embedded subject dropdown -->
+  <div class="chat-header">
+    <div class="header-content">
+      <div class="header-title-container">
+        <i class="fas fa-robot text-light me-2"></i>
+        <span class="header-title">Assistant</span>
+      </div>
+      <!-- Embedded Subject Selector -->
+      <div class="subject-selector">
+        <button class="subject-btn" id="subjectToggle">
+          <i class="fas fa-book-open me-1"></i>
+          <span id="current-subject">General</span>
+          <i class="fas fa-chevron-down ms-1"></i>
+        </button>
+        <ul class="subject-menu" id="subjectMenu">
+          <li data-subject="general">General</li>
+          <li data-subject="mathematics">Mathematics</li>
+          <li data-subject="science">Science</li>
+          <li data-subject="programming">Programming</li>
+          <li data-subject="history">History</li>
+          <li data-subject="languages">Languages</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Messages Area -->
+  <div class="chat-body" id="chat-messages">
+    <div class="message ai-message">
+      <div class="message-bubble">
+        <p>Hello, {{ request.user.username }}! I'm your assistant. How can I help you today?</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Input Area - Now with Full Width -->
+  <div class="chat-footer">
+    <form id="chat-form">
+      <div class="input-wrapper">
+        <input type="text" id="message-input" placeholder="Ask me anything...">
+        <button type="submit" class="send-btn">
+          <i class="fas fa-paper-plane"></i>
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+/* Full Screen and Teal Theme Matching */
+body {
+  overflow: hidden; /* Prevent scrolling */
+}
+
+/* Custom Teal Color Scheme */
+:root {
+  --teal-dark: rgb(17, 94, 89);
+  --teal-light: rgb(20, 110, 105);
+  --teal-lighter: rgba(17, 94, 89, 0.1);
+  --teal-accent: rgb(129, 230, 217);
+  --text-dark: #333333;
+}
+
+/* Sidebar Styling with teal theme */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: -280px;
+  width: 280px;
+  height: 100vh;
+  background: var(--teal-dark);
+  color: #fff;
+  padding: 20px;
+  transition: left 0.3s ease;
+  z-index: 1050;
+  box-shadow: 0 0 20px rgba(0,0,0,0.2);
+}
+.sidebar.active {
+  left: 0;
+}
+.sidebar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.close-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 26px;
+  cursor: pointer;
+}
+.sidebar-menu {
+  list-style: none;
+  padding: 0;
+}
+.sidebar-menu li {
+  margin-bottom: 15px;
+}
+.sidebar-menu li a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  display: block;
+  padding: 8px 10px;
+  border-radius: 4px;
+}
+.sidebar-menu li a:hover {
+  background: rgba(255,255,255,0.1);
+}
+
+/* Hamburger Button Styling */
+.hamburger {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  background: var(--teal-dark);
+  border: none;
+  color: #fff;
+  font-size: 22px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  z-index: 1000;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+/* Full Screen Chat Container */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: #fff;
+  overflow: hidden;
+  z-index: 100;
+}
+
+/* Chat Header */
+.chat-header {
+  background: var(--teal-dark);
+  padding: 15px 20px;
+  color: #fff;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 50px; /* Space for hamburger */
+}
+.header-title-container {
+  display: flex;
+  align-items: center;
+}
+.header-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* Embedded Subject Selector with updated colors */
+.subject-selector {
+  position: relative;
+}
+.subject-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border: none;
+  border-radius: 25px;
+  padding: 6px 12px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+.subject-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+.subject-menu {
+  list-style: none;
+  padding: 0;
+  margin: 5px 0 0 0;
+  background: #fff;
+  position: absolute;
+  right: 0;
+  width: 150px;
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  display: none;
+  z-index: 100;
+}
+.subject-menu li {
+  padding: 10px;
+  cursor: pointer;
+  color: var(--text-dark);
+  transition: background 0.2s ease;
+}
+.subject-menu li:hover {
+  background: var(--teal-lighter);
+  color: var(--teal-dark);
+}
+
+/* Chat Body */
+.chat-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 25px;
+  background: #f5f5f5;
+  background-image: radial-gradient(var(--teal-lighter) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+/* Chat Footer - Updated for full width input */
+.chat-footer {
+  padding: 15px;
+  background: #fff;
+  border-top: 1px solid #e0e0e0;
+}
+
+#chat-form {
+  width: 100%;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  background: #f5f5f5;
+  border-radius: 30px;
+  padding: 5px 10px 5px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.input-wrapper:focus-within {
+  box-shadow: 0 0 0 2px var(--teal-lighter);
+  background: #fff;
+}
+
+/* FIX: Input field styling to make text visible */
+#message-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 10px 0;
+  font-size: 1rem;
+  outline: none;
+  color: var(--text-dark); /* Explicitly set text color to dark */
+}
+
+#message-input::placeholder {
+  color: #999; /* Ensure placeholder text is visible but lighter */
+}
+
+/* Send Button */
+.send-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--teal-dark);
+  color: white;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-left: 8px;
+}
+
+.send-btn:hover {
+  background: var(--teal-light);
+  transform: scale(1.05);
+}
+
+/* General Message Styling */
+.message {
+  display: flex;
+  margin-bottom: 20px;
+  animation: fadeIn 0.4s ease;
+}
+.message-bubble {
+  padding: 16px 22px;
+  border-radius: 18px;
+  max-width: 80%;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+  line-height: 1.6;
+}
+/* AI Message */
+.ai-message {
+  justify-content: flex-start;
+}
+.ai-message .message-bubble {
+  background: #fff;
+  color: var(--text-dark);
+  border: 1px solid #e1e1e1;
+  border-bottom-left-radius: 6px;
+}
+/* User Message */
+.user-message {
+  justify-content: flex-end;
+}
+.user-message .message-bubble {
+  background: var(--teal-dark);
+  color: #fff;
+  border: none;
+  border-bottom-right-radius: 6px;
+}
+/* System Message */
+.system-message {
+  display: flex;
+  justify-content: center;
+  margin: 15px 0;
+}
+.system-bubble {
+  background: var(--teal-lighter);
+  color: var(--teal-dark);
+  padding: 8px 16px;
+  border-radius: 15px;
+  font-size: 0.9rem;
+  animation: fadeIn 0.4s ease;
+}
+/* Typing Indicator */
+.typing-indicator {
+  display: flex;
+  padding: 12px 16px;
+  background: #fff;
+  border-radius: 18px;
+  width: 70px;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  border: 1px solid #e1e1e1;
+  animation: fadeIn 0.4s ease;
+}
+.typing-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--teal-dark);
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: bounce 1.5s infinite ease-in-out;
+}
+.typing-dot:nth-child(1) { animation-delay: 0s; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+/* Markdown Content Styling */
+.ai-message .message-bubble h1,
+.ai-message .message-bubble h2,
+.ai-message .message-bubble h3 {
+  font-size: 1.2rem;
+  margin-top: 10px;
+  margin-bottom: 8px;
+  color: var(--teal-dark);
+}
+.ai-message .message-bubble pre {
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 10px;
+  overflow-x: auto;
+  margin: 10px 0;
+}
+.ai-message .message-bubble code {
+  background: #f0f2f5;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-family: monospace;
+}
+
+/* Links in AI messages */
+.ai-message .message-bubble a {
+  color: var(--teal-dark);
+  text-decoration: underline;
+  font-weight: 500;
+}
+.ai-message .message-bubble a:hover {
+  color: var(--teal-light);
+}
+
+/* Animations */
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Responsive Adjustments for smaller screens */
+@media (max-width: 576px) {
+  .header-content {
+    padding-left: 40px;
+  }
+  .header-title {
+    font-size: 1.1rem;
+  }
+  .subject-btn {
+    padding: 5px 10px;
+    font-size: 0.9rem;
+  }
+  .chat-body {
+    padding: 15px;
+  }
+  .message-bubble {
+    padding: 12px 16px;
+    max-width: 90%;
+  }
+  .input-wrapper {
+    padding: 3px 8px 3px 15px;
+  }
+  .send-btn {
+    width: 38px;
+    height: 38px;
+  }
+}
+</style>
+{% endblock %}
+
+{% block ai_extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const chatForm = document.getElementById('chat-form');
+  const messageInput = document.getElementById('message-input');
+  const chatMessages = document.getElementById('chat-messages');
+  const currentSubject = document.getElementById('current-subject');
+  const subjectToggle = document.getElementById('subjectToggle');
+  const subjectMenu = document.getElementById('subjectMenu');
+  const openSidebar = document.getElementById('openSidebar');
+  const sidebar = document.getElementById('sidebar');
+  const closeSidebar = document.getElementById('closeSidebar');
+  let selectedSubject = 'general';
+  
+  // Auto-scroll and focus
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+  messageInput.focus();
+  
+  // Toggle subject menu visibility
+  subjectToggle.addEventListener('click', function(e) {
+    e.stopPropagation();
+    subjectMenu.style.display = subjectMenu.style.display === 'block' ? 'none' : 'block';
+  });
+  // Close subject menu if clicking outside
+  document.addEventListener('click', function() {
+    subjectMenu.style.display = 'none';
+  });
+  subjectMenu.querySelectorAll('li').forEach(item => {
+    item.addEventListener('click', function(e) {
+      e.stopPropagation();
+      selectedSubject = this.dataset.subject;
+      currentSubject.textContent = this.textContent.trim();
+      subjectMenu.style.display = 'none';
+      // Optionally add visual feedback
+      addSystemMessage(`Subject changed to "${this.textContent.trim()}".`);
+    });
+  });
+  
+  // Sidebar toggling
+  openSidebar.addEventListener('click', function(e) {
+    e.stopPropagation();
+    sidebar.classList.add('active');
+  });
+  closeSidebar.addEventListener('click', function() {
+    sidebar.classList.remove('active');
+  });
+  sidebar.addEventListener('click', function(e) {
+    e.stopPropagation();
+  });
+  document.addEventListener('click', function() {
+    sidebar.classList.remove('active');
+  });
+  
+  chatForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const message = messageInput.value.trim();
+    if (!message) return;
+    
+    // Add user message
+    addMessage('user', message);
+    messageInput.value = '';
+    messageInput.focus();
+    
+    // Add typing indicator
+    const typingId = addTypingIndicator();
+    
+    // Make API call
+    fetch('/ai/chat/completion/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken')
+      },
+      body: JSON.stringify({
+        message: message,
+        subject: selectedSubject
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      removeTypingIndicator(typingId);
+      if (data.success) {
+        addMessage('ai', data.response.text);
+      } else {
+        console.error('Error:', data.error);
+        addSystemMessage("Sorry, I couldn't process your request.");
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+      removeTypingIndicator(typingId);
+      addSystemMessage("Sorry, there was a problem connecting to the server.");
+    });
+  });
+  
+  function addMessage(type, content) {
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('message', `${type}-message`);
+    let formattedContent = content;
+    if (type === 'ai') {
+      formattedContent = marked.parse(content);
+    }
+    messageDiv.innerHTML = `
+      <div class="message-bubble">
+        ${type === 'ai' ? formattedContent : `<p>${formattedContent}</p>`}
+      </div>
+    `;
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
+  }
+  
+  function addSystemMessage(content) {
+    const messageDiv = document.createElement('div');
+    messageDiv.classList.add('system-message');
+    messageDiv.innerHTML = `
+      <div class="system-bubble">
+        <p>${content}</p>
+      </div>
+    `;
+    chatMessages.appendChild(messageDiv);
+    scrollToBottom();
+  }
+  
+  function addTypingIndicator() {
+    const id = 'typing-' + Date.now();
+    const indicatorDiv = document.createElement('div');
+    indicatorDiv.id = id;
+    indicatorDiv.classList.add('typing-indicator');
+    indicatorDiv.innerHTML = `
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+      <div class="typing-dot"></div>
+    `;
+    chatMessages.appendChild(indicatorDiv);
+    scrollToBottom();
+    return id;
+  }
+  
+  function removeTypingIndicator(id) {
+    const indicator = document.getElementById(id);
+    if (indicator) {
+      indicator.style.opacity = '0';
+      setTimeout(() => indicator.remove(), 300);
+    }
+  }
+  
+  function scrollToBottom() {
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+});
+</script>
+{% endblock %}
