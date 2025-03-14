@@ -9,7 +9,10 @@ from markdownx.fields import MarkdownxFormField
 
 from .models import (
     BlogPost,
-    LiveChallengeSubmission,
+    LiveChallengeOption,
+    LiveChallengeQuestion,
+    LiveChallengeSubmission, 
+    LiveChallengeSubmissionAnswer,
     ChallengeSubmission,
     Course,
     CourseMaterial,
@@ -885,15 +888,26 @@ class ChallengeSubmissionForm(forms.ModelForm):
             ),
         }
 
+
+
 class LiveChallengeSubmissionForm(forms.ModelForm):
     class Meta:
         model = LiveChallengeSubmission
-        fields = ["submission_text"]
-        widgets = {
-            "submission_text": forms.Textarea(
-                attrs={"rows": 5, "placeholder": "Describe your results or reflections..."}
-            ),
-        }
+        fields = []  # No direct fields; answers are submitted separately
+
+
+class LiveChallengeSubmissionAnswerForm(forms.ModelForm):
+    class Meta:
+        model = LiveChallengeSubmissionAnswer
+        fields = ["question", "selected_option"]
+
+    question = forms.ModelChoiceField(
+        queryset=LiveChallengeQuestion.objects.all(), widget=forms.HiddenInput()
+    )
+    selected_option = forms.ModelChoiceField(
+        queryset=LiveChallengeOption.objects.all(),
+        widget=forms.RadioSelect(),
+    )
 
 
 class TailwindInput(forms.widgets.Input):

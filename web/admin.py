@@ -16,8 +16,11 @@ from .models import (
     CartItem,
     Challenge,
     ChallengeSubmission,
-    LiveChallenge, 
+    LiveChallenge,
+    LiveChallengeQuestion,
+    LiveChallengeOption,
     LiveChallengeSubmission,
+    LiveChallengeSubmissionAnswer,
     Course,
     CourseMaterial,
     CourseProgress,
@@ -390,16 +393,57 @@ class ChallengeAdmin(admin.ModelAdmin):
 class ChallengeSubmissionAdmin(admin.ModelAdmin):
     list_display = ("user", "challenge", "submitted_at")
 
-# Live challenges admin roles
+ #live challenge admin roles
+
+class LiveChallengeQuestionInline(admin.TabularInline):
+    model = LiveChallengeQuestion
+    extra = 1  # Allows adding new questions inline
+
+
+class LiveChallengeOptionInline(admin.TabularInline):
+    model = LiveChallengeOption
+    extra = 3  # Allows adding multiple options inline
 
 
 @admin.register(LiveChallenge)
 class LiveChallengeAdmin(admin.ModelAdmin):
     list_display = ("title", "start_time", "end_time", "is_active")
+    list_filter = ("is_active", "start_time", "end_time")
+    search_fields = ("title",)
+    inlines = [LiveChallengeQuestionInline]  # Enables inline question editing
+
+
+@admin.register(LiveChallengeQuestion)
+class LiveChallengeQuestionAdmin(admin.ModelAdmin):
+    list_display = ("text", "live_challenge")
+    search_fields = ("text",)
+    list_filter = ("live_challenge",)
+    inlines = [LiveChallengeOptionInline]  # Enables inline option editing
+
+
+@admin.register(LiveChallengeOption)
+class LiveChallengeOptionAdmin(admin.ModelAdmin):
+    list_display = ("text", "question", "is_correct")
+    list_filter = ("question", "is_correct")
+
 
 @admin.register(LiveChallengeSubmission)
 class LiveChallengeSubmissionAdmin(admin.ModelAdmin):
-    list_display = ("user", "live_challenge", "submitted_at")
+    list_display = ("user", "live_challenge", "submitted_at", "num_answers")
+    list_filter = ("user", "live_challenge", "submitted_at")
+    search_fields = ("user__username", "live_challenge__title")
+    readonly_fields = ("user", "live_challenge", "submitted_at")  # Prevent editing
+
+    def num_answers(self, obj):
+        return obj.answers.count()  # Count submitted answers
+    num_answers.short_description = "Answers Submitted"
+
+
+@admin.register(LiveChallengeSubmissionAnswer)
+class LiveChallengeSubmissionAnswerAdmin(admin.ModelAdmin):
+    list_display = ("submission", "question", "selected_option")
+    list_filter = ("submission", "question", "selected_option")
+    search_fields = ("submission__user__username", "question__text")
 
 
 

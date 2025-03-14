@@ -1,0 +1,85 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mx-auto p-6">
+  <h2 class="text-3xl font-bold text-gray-800">{{ challenge.title }}</h2>
+  <p class="text-gray-600 mt-2">{{ challenge.description }}</p>
+  <p class="mt-2"><strong>Start Time:</strong> {{ challenge.start_time }}</p>
+  <p><strong>End Time:</strong> {{ challenge.end_time }}</p>
+
+  {% if user_submission %}
+  <p class="mt-4 p-3 bg-green-100 text-green-800 rounded-lg">
+    ✅ You have already submitted your answers!
+  </p>
+  {% else %}
+  <a
+    href="{% url 'live_challenge_submit' challenge.id %}"
+    class="mt-4 inline-block bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition"
+  >
+    Submit Your Answers
+  </a>
+  {% endif %}
+
+  <h3 class="text-2xl font-semibold mt-6">📌 Questions</h3>
+  <ul class="list-disc ml-5 mt-2">
+    {% for question in questions %}
+    <li class="mt-2">
+      <strong class="text-gray-800">{{ question.text }}</strong>
+      <ul class="list-disc ml-6 text-gray-600">
+        {% for option in question.options.all %}
+        <li>{{ option.text }}</li>
+        {% endfor %}
+      </ul>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <h3 class="text-2xl font-semibold mt-6">📡 Live Submissions</h3>
+  <ul id="live-submissions" class="bg-gray-100 p-3 rounded-lg mt-2">
+    <!-- WebSocket updates will be inserted here -->
+  </ul>
+
+  <h3 class="text-2xl font-semibold mt-6">🏆 Leaderboard</h3>
+  <div class="overflow-x-auto mt-2">
+    <table
+      class="min-w-full bg-white shadow-md rounded-lg border border-gray-200"
+    >
+      <thead>
+        <tr class="bg-gray-100 text-gray-700">
+          <th class="px-4 py-2">Rank</th>
+          <th class="px-4 py-2">User</th>
+          <th class="px-4 py-2">Score</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+</div>
+
+<script>
+  const socket = new WebSocket(
+    "ws://" + window.location.host + "/ws/live_challenge/{{ challenge.id }}/"
+  );
+
+  socket.onmessage = function (event) {
+    const data = JSON.parse(event.data);
+
+    // Update Live Submissions
+    const submissionsList = document.getElementById("live-submissions");
+    const newSubmission = document.createElement("li");
+    newSubmission.textContent = `${data.username} ${data.message}`;
+    newSubmission.className = "p-2 bg-gray-200 rounded-md mt-1";
+    submissionsList.prepend(newSubmission);
+
+    // Update Leaderboard
+    const leaderboardBody = document.getElementById("leaderboard-body");
+    leaderboardBody.innerHTML = ""; // Clear previous leaderboard
+    data.leaderboard.forEach(([user, score], index) => {
+      const row = document.createElement("tr");
+      row.className = "border-b border-gray-200 text-gray-700 text-center";
+      row.innerHTML = `<td class="px-4 py-2">${index + 1}</td>
+                       <td class="px-4 py-2">${user}</td>
+                       <td class="px-4 py-2">${score}</td>`;
+      leaderboardBody.appendChild(row);
+    });
+  };
+</script>
+
+{% endblock %}

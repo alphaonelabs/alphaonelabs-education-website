@@ -1,0 +1,62 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="flex justify-center items-center p-8">
+  <div
+    class="w-2/3 p-4 border rounded-lg shadow-lg bg-white dark:bg-gray-900 text-black dark:text-white"
+  >
+    <h2 class="text-center text-2xl font-bold mb-6">
+      🏆 Leaderboard - {{ challenge.title }}
+    </h2>
+
+    {% if submissions %}
+    <table
+      class="w-full border-collapse border border-gray-300 dark:border-gray-700 text-center"
+    >
+      <thead>
+        <tr class="bg-gray-200 dark:bg-gray-800">
+          <th class="border border-gray-300 dark:border-gray-700 px-4 py-2">
+            🏅 Rank
+          </th>
+          <th class="border border-gray-300 dark:border-gray-700 px-4 py-2">
+            👤 User
+          </th>
+          <th class="border border-gray-300 dark:border-gray-700 px-4 py-2">
+            🎯 Score
+          </th>
+          <th class="border border-gray-300 dark:border-gray-700 px-4 py-2">
+            ⏳ Submitted At
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for submission in submissions %}
+        <tr
+          class="{% if forloop.first %} bg-yellow-500 dark:bg-yellow-700 font-bold {% elif forloop.counter == 2 %} bg-gray-400 dark:bg-gray-600 {% elif forloop.counter == 3 %} bg-orange-400 dark:bg-orange-600 {% else %} bg-gray-100 dark:bg-gray-800 {% endif %}"
+        >
+          <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">
+            {{ forloop.counter }}
+          </td>
+          <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">
+            {{ submission.user.username }}
+          </td>
+          <td
+            class="border border-gray-300 dark:border-gray-700 px-4 py-2 text-lg"
+          >
+            {{ submission.score }}
+          </td>
+          <td class="border border-gray-300 dark:border-gray-700 px-4 py-2">
+            {{ submission.submitted_at|date:"d M Y, H:i A" }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="text-center text-gray-600 dark:text-gray-300">
+      No submissions yet. Be the first to submit!
+    </p>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

@@ -30,6 +30,7 @@ from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.http import Http404
 
 from .calendar_sync import generate_google_calendar_link, generate_ical_feed, generate_outlook_calendar_link
 from .decorators import teacher_required
@@ -37,6 +38,7 @@ from .forms import (
     BlogPostForm,
     ChallengeSubmissionForm,
     LiveChallengeSubmissionForm,
+    LiveChallengeSubmissionAnswerForm,
     CourseForm,
     CourseMaterialForm,
     FeedbackForm,
@@ -69,7 +71,10 @@ from .models import (
     Challenge,
     ChallengeSubmission,
     LiveChallenge, 
-    LiveChallengeSubmission,
+    LiveChallengeSubmission, 
+    LiveChallengeQuestion, 
+    LiveChallengeOption, 
+    LiveChallengeSubmissionAnswer,
     Course,
     CourseMaterial,
     CourseProgress,
@@ -147,6 +152,7 @@ def index(request):
 
     # Get live challenges
     live_challenge = LiveChallenge.objects.filter(start_time__lte=timezone.now(), end_time__gte=timezone.now()).first()
+    # print(live_challenge.id,"from the views")
 
     # Get signup form if needed
     form = None
@@ -2687,7 +2693,7 @@ def challenge_detail(request, week_number):
 @login_required
 def challenge_submit(request, week_number):
     """Allow users to submit solutions for weekly challenges."""
-    challenge = get_object_or_404(Challenge, week_number=week_number)
+    challenge = get_object_or_404(Challenge)
 
     # Check if the user has already submitted
     existing_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
@@ -2706,78 +2712,135 @@ def challenge_submit(request, week_number):
     else:
         form = ChallengeSubmissionForm()
 
-    return render(request, "web/challenge_submit.html", {"challenge": challenge, "form": form})
+    return render(request, "web/live_challenge_submit.html", {"challenge": challenge, "form": form})
 
 
-# live_challenge_views
+# live challenges views
+from django.shortcuts import render
+from django.utils import timezone
+from .models import LiveChallenge, LiveChallengeSubmission
 
-def live_challenge(request):
-    """Fetch the currently active Live Challenge."""
-    live_challenge = LiveChallenge.objects.filter(start_time__lte=timezone.now(), end_time__gte=timezone.now()).first()
+def current_live_challenge(request):
+    """Fetch the currently active Live Challenge and check if the user has submitted."""
     
-    user_submission = None
-    if request.user.is_authenticated and live_challenge:
-        user_submission = LiveChallengeSubmission.objects.filter(user=request.user, live_challenge=live_challenge).first()
-
-    return render(
-        request,
-        "web/current_live_challenge.html",
-        {
-            "live_challenge": live_challenge,
-            "user_submission": user_submission,
-        },
-    )
-
-
-def live_challenge_detail(request, challenge_id):
-    """View details of a specific live challenge."""
-    challenge = get_object_or_404(LiveChallenge, id=challenge_id)
-    submissions = LiveChallengeSubmission.objects.filter(live_challenge=challenge)
+    live_challenge = LiveChallenge.objects.filter(
+        start_time__lte=timezone.now(),
+        end_time__gte=timezone.now(),
+        is_active=True
+    ).first()
     
+    if not live_challenge:
+        print("No live challenge found that matches the criteria.")
+        return render(request, "web/current_live_challenge.html", {"live_challenge": None})
+
     user_submission = None
+    has_submitted = False
+
     if request.user.is_authenticated:
-        user_submission = LiveChallengeSubmission.objects.filter(user=request.user, live_challenge=challenge).first()
-
+        user_submission = LiveChallengeSubmission.objects.filter(
+            user=request.user, live_challenge=live_challenge
+        ).first() 
+        
+        has_submitted = user_submission is not None
+    
+    if has_submitted:
+        print("User has already submitted this challenge.")
+        return render(request, "web/current_live_challenge.html", {"live_challenge": None, "has_submitted": True})
+    
     return render(
         request,
-        "web/live_challenge_detail.html",
+        "web/index.html",
         {
-            "challenge": challenge,
-            "submissions": submissions,
+            "challenge": live_challenge,
+            "questions": live_challenge.questions.prefetch_related("options"),
+            "has_submitted": has_submitted,
             "user_submission": user_submission,
         },
     )
 
+@login_required
+def submit_challenge(request, challenge_id):
+    """Handle challenge submission and score calculation."""
+    try:
+        challenge = get_object_or_404(LiveChallenge, id=challenge_id)
+    except Http404:
+        print(f"Challenge with id {challenge_id} not found.")
+        messages.error(request, "Challenge not found.")
+        return redirect("home")
+    
+    if request.method == "POST":
+        # Prevent users from submitting the challenge more than once
+        if LiveChallengeSubmission.objects.filter(user=request.user, live_challenge=challenge).exists():
+            messages.warning(request, "You have already submitted this challenge.")
+            return redirect("leaderboard", challenge_id=challenge.id)
+
+        # Create a new submission for the user
+        submission = LiveChallengeSubmission.objects.create(user=request.user, live_challenge=challenge)
+        score = 0
+
+        # Loop through all questions of the challenge and process answers
+        for question in challenge.questions.prefetch_related("options"):
+            selected_option_id = request.POST.get(f"question_{question.id}")  # Ensure input name matches template
+
+            if selected_option_id:
+                try:
+                    selected_option = LiveChallengeOption.objects.get(id=selected_option_id, question=question)
+                    # Create a new submission answer entry
+                    LiveChallengeSubmissionAnswer.objects.create(
+                        submission=submission, question=question, selected_option=selected_option
+                    )
+
+                    # Increase score if the selected option is correct
+                    if selected_option.is_correct:
+                        score += 10  # Adjust scoring logic as needed
+
+                except LiveChallengeOption.DoesNotExist:
+                    messages.error(request, f"Invalid selection for question {question.id}")
+
+        # Save the score for the submission
+        submission.score = score
+        submission.save()
+
+        # Inform the user about their submission and score
+        messages.success(request, f"Challenge submitted! Your score: {score}")
+        return redirect("leaderboard", challenge_id=challenge.id)
+
+    # If the request method is not POST, just redirect to the challenge details page
+    return redirect("submit_challenge", challenge_id=challenge.id)
 
 @login_required
 def live_challenge_submit(request, challenge_id):
-    """Allow users to submit solutions for a live challenge."""
+    """Display the live challenge and allow the user to submit answers."""
     challenge = get_object_or_404(LiveChallenge, id=challenge_id)
 
-    # Ensure challenge is live before submission
-    if not challenge.is_live():
-        messages.error(request, "This challenge is not live!")
-        return redirect("live_challenge_detail", challenge_id=challenge_id)
+    # Check if the user has already submitted the challenge
+    has_submitted = LiveChallengeSubmission.objects.filter(
+        user=request.user, live_challenge=challenge
+    ).exists()
 
-    # Check if the user has already submitted
-    existing_submission = LiveChallengeSubmission.objects.filter(user=request.user, live_challenge=challenge).first()
-    if existing_submission:
-        messages.info(request, "You have already submitted for this challenge.")
-        return redirect("live_challenge_detail", challenge_id=challenge_id)
+    # Get the questions for the live challenge
+    questions = challenge.questions.prefetch_related("options")
 
-    if request.method == "POST":
-        form = LiveChallengeSubmissionForm(request.POST)
-        if form.is_valid():
-            submission = form.save(commit=False)
-            submission.user = request.user
-            submission.live_challenge = challenge
-            submission.save()
-            messages.success(request, "Your submission has been recorded!")
-            return redirect("live_challenge_detail", challenge_id=challenge_id)
-    else:
-        form = LiveChallengeSubmissionForm()
+    return render(
+        request,
+        "live_challenge_submit.html", 
+        {
+            "challenge": challenge,
+            "questions": questions,
+            "has_submitted": has_submitted,
+        },
+    )
 
-    return render(request, "web/live_challenge_submit.html", {"challenge": challenge, "form": form})
+@login_required
+def leaderboard(request, challenge_id):
+    """Display the leaderboard with highest scores first."""
+    # Retrieve the live challenge and raise 404 if not found
+    challenge = get_object_or_404(LiveChallenge, id=challenge_id)
+
+    # Retrieve all submissions for this challenge, ordered by score
+    submissions = LiveChallengeSubmission.objects.filter(live_challenge=challenge).order_by("-score", "submitted_at")
+
+    return render(request, "leaderboard.html", {"challenge": challenge, "submissions": submissions})
 
 
 @require_GET

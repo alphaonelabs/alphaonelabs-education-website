@@ -1,0 +1,133 @@
+{% extends "base.html" %} {% block content %}
+<div class="flex justify-center items-start p-8 space-x-6">
+  <div class="w-2/3 p-4 border rounded-lg shadow-lg h-[500px]">
+    <h2 class="text-center text-xl font-bold mb-4">
+      Submit Answers for {{ challenge.title }}
+    </h2>
+
+    {% if has_submitted %}
+    <div class="text-center bg-yellow-300 p-4 rounded-lg font-semibold">
+      ✅ You have already submitted your answers for this challenge.
+    </div>
+    {% else %}
+
+    <div id="timer" class="bg-red-500 text-white p-2 text-center font-semibold">
+      Time Left: 5:00
+    </div>
+
+    <form
+      id="challenge-form"
+      method="post"
+      action="{% url 'submit_challenge' challenge.id %}"
+    >
+      {% csrf_token %}
+
+      <div id="question-container">
+        {% for question in questions %}
+        <div
+          class="question-slide {% if not forloop.first %}hidden{% endif %}"
+          data-question-id="{{ question.id }}"
+        >
+          <fieldset class="mb-3 p-2 border rounded-lg">
+            <legend class="font-semibold">{{ question.text }}</legend>
+            {% for option in question.options.all %}
+            <label class="block p-1 cursor-pointer">
+              <input
+                type="radio"
+                name="question_{{ question.id }}"
+                value="{{ option.id }}"
+                class="mr-2"
+                required
+              />
+              {{ option.text }}
+            </label>
+            {% endfor %}
+          </fieldset>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="flex justify-between mt-4">
+        <button
+          type="button"
+          id="prev-btn"
+          class="px-4 py-2 bg-gray-500 text-white rounded"
+        >
+          Previous
+        </button>
+        <button
+          type="button"
+          id="next-btn"
+          class="px-4 py-2 bg-blue-500 text-white rounded"
+        >
+          Next
+        </button>
+      </div>
+
+      <button
+        type="submit"
+        id="submit-btn"
+        class="hidden mt-4 w-full py-2 bg-green-500 text-white rounded"
+      >
+        Submit Answers
+      </button>
+    </form>
+
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  let timeLeft = 300;
+  function updateTimer() {
+    let minutes = Math.floor(timeLeft / 60);
+    let seconds = timeLeft % 60;
+    document.getElementById("timer").innerText = `Time Left: ${minutes}:${
+      seconds < 10 ? "0" : ""
+    }${seconds}`;
+
+    if (timeLeft <= 0) {
+      clearInterval(timer);
+      document.getElementById("challenge-form").submit();
+    }
+    timeLeft--;
+  }
+  let timer = setInterval(updateTimer, 1000);
+
+  // Question slider logic
+  let currentQuestionIndex = 0;
+  const questions = document.querySelectorAll(".question-slide");
+  const prevBtn = document.getElementById("prev-btn");
+  const nextBtn = document.getElementById("next-btn");
+  const submitBtn = document.getElementById("submit-btn");
+
+  function showQuestion(index) {
+    questions.forEach((q, i) => q.classList.toggle("hidden", i !== index));
+    prevBtn.style.display = index === 0 ? "none" : "block";
+    nextBtn.style.display = index === questions.length - 1 ? "none" : "block";
+    submitBtn.style.display = index === questions.length - 1 ? "block" : "none";
+  }
+
+  prevBtn.addEventListener("click", () => {
+    if (currentQuestionIndex > 0) {
+      currentQuestionIndex--;
+      showQuestion(currentQuestionIndex);
+    }
+  });
+
+  nextBtn.addEventListener("click", () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      currentQuestionIndex++;
+      showQuestion(currentQuestionIndex);
+    }
+  });
+
+  showQuestion(currentQuestionIndex);
+
+  // Submit Button Event Listener
+  document.getElementById("submit-btn").addEventListener("click", function (e) {
+    e.preventDefault();
+    document.getElementById("challenge-form").submit(); // Manually submit the form
+  });
+</script>
+{% endblock %}

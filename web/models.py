@@ -1079,12 +1079,13 @@ class ChallengeSubmission(models.Model):
         return f"{self.user.username}'s submission for Week {self.challenge.week_number}"
 
 
+#Live challenge models
 class LiveChallenge(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
-    start_time = models.DateTimeField()  # Exact start time for the live challenge
-    end_time = models.DateTimeField()    # Exact end time for the live challenge
-    is_active = models.BooleanField(default=False)  # To toggle live status manually if needed
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    is_active = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Live Challenge: {self.title} ({'Active' if self.is_active else 'Inactive'})"
@@ -1095,14 +1096,40 @@ class LiveChallenge(models.Model):
         return self.start_time <= now <= self.end_time
 
 
+class LiveChallengeQuestion(models.Model):
+    live_challenge = models.ForeignKey(LiveChallenge, on_delete=models.CASCADE, related_name="questions")
+    text = models.TextField()
+
+    def __str__(self):
+        return f"Question: {self.text[:50]}..."  # Show first 50 chars
+
+
+class LiveChallengeOption(models.Model):
+    question = models.ForeignKey(LiveChallengeQuestion, on_delete=models.CASCADE, related_name="options")
+    text = models.CharField(max_length=255)
+    is_correct = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Option: {self.text} ({'Correct' if self.is_correct else 'Incorrect'})"
+
+
 class LiveChallengeSubmission(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     live_challenge = models.ForeignKey(LiveChallenge, on_delete=models.CASCADE)
-    submission_text = models.TextField()
     submitted_at = models.DateTimeField(auto_now_add=True)
+    score = models.IntegerField(default=0)
 
     def __str__(self):
-        return f"{self.user.username}'s submission for {self.live_challenge.title}"
+        return f"{self.user.username}'s submission for {self.live_challenge.title} - Score: {self.score}"
+
+
+class LiveChallengeSubmissionAnswer(models.Model):
+    submission = models.ForeignKey(LiveChallengeSubmission, on_delete=models.CASCADE, related_name="answers")
+    question = models.ForeignKey(LiveChallengeQuestion, on_delete=models.CASCADE)
+    selected_option = models.ForeignKey(LiveChallengeOption, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.submission.user.username}'s answer: {self.selected_option.text}"
 
 class ProductImage(models.Model):
     goods = models.ForeignKey(Goods, on_delete=models.CASCADE, related_name="goods_images")

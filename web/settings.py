@@ -75,7 +75,6 @@ handler404 = "web.views.custom_404"
 handler500 = "web.views.custom_500"
 
 INSTALLED_APPS = [
-    'channels',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -142,17 +141,7 @@ CAPTCHA_2X_IMAGE = True
 CAPTCHA_TEST_MODE = False
 
 WSGI_APPLICATION = "web.wsgi.application"
-# adding asgi application fr django channel
-ASGI_APPLICATION = "web.asgi.application"
 
-CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            "hosts": [('127.0.0.1', 6379)],
-        },
-    },
-}
 
 DATABASES = {
     "default": {

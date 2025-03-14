@@ -396,27 +396,36 @@
             <p class="text-left text-gray-500 dark:text-gray-400">No challenge available for this week.</p>
           {% endif %}
         </div>
-         <!-- Live Challenge -->
+
+        <!-- Live challenges -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800">
           <h2 class="text-xl font-semibold mb-4 flex items-center">
             <span class="mr-2">🔥</span> Live Challenge
           </h2>
-          {% if live_challenge and live_challenge.id %}
+
+          {% if live_challenge %}
             <div class="text-left">
               <p class="text-lg font-semibold mb-2">Challenge Name:</p>
-              <p class="text-gray-700 dark:text-gray-300 mb-4">title goes here</p>
+              <p class="text-gray-800 dark:text-gray-300 mb-4">{{ live_challenge.title }}</p>
 
               <p class="text-lg font-semibold mb-2">Details:</p>
-              <p class="text-gray-700 dark:text-gray-300 mb-4">desc goes here</p>
+              <p class="text-gray-700 dark:text-gray-300 mb-4">{{ live_challenge.description }}</p>
 
               <p class="text-lg font-semibold mb-2">Time Left:</p>
               <p id="timer" class="text-red-500 font-bold text-xl mb-6"></p>
 
               {% if user.is_authenticated %}
-                <a href="{% url 'live_challenge_submit' live_challenge.id %}"
-                  class="inline-block bg-red-600 text-white px-5 py-2.5 rounded-lg hover:bg-red-700 transition-shadow shadow-md">
-                  Participate Now
-                </a>
+                {% if has_submitted %}
+                  <div class="text-green-600 dark:text-green-400 font-semibold">
+                    ✅ You have already participated!
+                  </div>
+                {% else %}
+                  <a href="{% url 'live_challenge_submit' live_challenge.id %}"
+                    class="inline-block bg-red-600 text-white px-5 py-2.5 rounded-lg hover:bg-red-700 transition-shadow shadow-md">
+                    Participate Now
+                  </a>
+
+                {% endif %}
               {% else %}
                 <p class="text-red-600 dark:text-red-400 mt-4">Please log in to participate.</p>
               {% endif %}
@@ -425,6 +434,34 @@
             <p class="text-left text-gray-500 dark:text-gray-400">No live challenge currently active.</p>
           {% endif %}
         </div>
+
+        <script>
+          // Timer countdown
+          function updateTimer() {
+            const endTime = new Date("{{ live_challenge.end_time|date:'c' }}").getTime();
+            const timerElement = document.getElementById("timer");
+
+            const interval = setInterval(function () {
+              const now = new Date().getTime();
+              const timeLeft = endTime - now;
+
+              if (timeLeft <= 0) {
+                timerElement.innerHTML = "⏳ Challenge Ended!";
+                clearInterval(interval);
+                return;
+              }
+
+              const hours = Math.floor((timeLeft / (1000 * 60 * 60)) % 24);
+              const minutes = Math.floor((timeLeft / (1000 * 60)) % 60);
+              const seconds = Math.floor((timeLeft / 1000) % 60);
+
+              timerElement.innerHTML = `${hours}h ${minutes}m ${seconds}s remaining`;
+            }, 1000);
+          }
+
+          document.addEventListener("DOMContentLoaded", updateTimer);
+        </script>
+
 
         <!-- Recent Forum Post -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
