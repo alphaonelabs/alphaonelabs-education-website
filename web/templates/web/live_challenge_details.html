@@ -1,0 +1,63 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mx-auto py-8">
+  <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
+    <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+      {{ challenge.title }}
+    </h1>
+    <p class="text-gray-700 dark:text-gray-300 mb-4">
+      {{ challenge.description }}
+    </p>
+
+    <p class="text-gray-600 dark:text-gray-400">
+      Time Remaining:
+      <span id="timer" class="text-red-500 font-bold text-xl"></span>
+    </p>
+
+    {% if user.is_authenticated %} {% if user_submission %}
+    <p class="text-green-600 dark:text-green-400 mt-4">
+      ✅ You have already submitted this challenge!
+    </p>
+    {% else %}
+    <a
+      href="{% url 'live_challenge_submit' challenge.id %}"
+      class="mt-4 inline-block bg-red-600 text-white px-5 py-2.5 rounded-lg hover:bg-red-700 transition-shadow shadow-md"
+    >
+      Submit Challenge
+    </a>
+    {% endif %} {% else %}
+    <p class="text-red-600 dark:text-red-400 mt-4">
+      Please log in to submit your challenge.
+    </p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  // Timer Script
+  function startTimer(endTime) {
+    function updateTimer() {
+      const now = new Date().getTime();
+      const timeLeft = endTime - now;
+
+      if (timeLeft <= 0) {
+        document.getElementById("timer").innerHTML = "Time's up!";
+        return;
+      }
+
+      const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+      document.getElementById("timer").innerHTML =
+        minutes + "m " + seconds + "s";
+      setTimeout(updateTimer, 1000);
+    }
+
+    updateTimer();
+  }
+
+  const endTime = new Date(
+    "{{ challenge.end_date|date:'Y-m-d H:i:s' }}"
+  ).getTime();
+  startTimer(endTime);
+</script>
+
+{% endblock %}

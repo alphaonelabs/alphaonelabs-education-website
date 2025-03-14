@@ -1,0 +1,20 @@
+{% extends "base.html" %} {% block content %}
+<h1>{{ challenge.title }}</h1>
+<p>{{ challenge.description }}</p>
+
+{% if submission %}
+<h2>Your Submission:</h2>
+<p>{{ submission.submission_text }}</p>
+{% else %}
+<h2>Submit Your Solution</h2>
+<form method="post">
+  {% csrf_token %}
+  <textarea name="submission_text" rows="5"></textarea>
+  <button type="submit">Submit</button>
+</form>
+{% endif %}
+
+<a href="{% url 'challenge_submissions' challenge.id %}"
+  >View All Submissions</a
+>
+{% endblock %}

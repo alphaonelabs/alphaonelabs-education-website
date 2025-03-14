@@ -1,0 +1,12 @@
+{% extends "base.html" %} {% block content %}
+<h1>Weekly Challenges</h1>
+<ul>
+  {% for challenge in challenges %}
+  <li>
+    <a href="{% url 'challenge_detail' challenge.id %}"
+      >{{ challenge.week_number }}: {{ challenge.title }}</a
+    >
+  </li>
+  {% endfor %}
+</ul>
+{% endblock %}

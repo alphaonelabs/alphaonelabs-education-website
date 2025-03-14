@@ -9,6 +9,7 @@ from markdownx.fields import MarkdownxFormField
 
 from .models import (
     BlogPost,
+    LiveChallengeSubmission,
     ChallengeSubmission,
     Course,
     CourseMaterial,
@@ -877,6 +878,16 @@ class FeedbackForm(forms.Form):
 class ChallengeSubmissionForm(forms.ModelForm):
     class Meta:
         model = ChallengeSubmission
+        fields = ["submission_text"]
+        widgets = {
+            "submission_text": forms.Textarea(
+                attrs={"rows": 5, "placeholder": "Describe your results or reflections..."}
+            ),
+        }
+
+class LiveChallengeSubmissionForm(forms.ModelForm):
+    class Meta:
+        model = LiveChallengeSubmission
         fields = ["submission_text"]
         widgets = {
             "submission_text": forms.Textarea(

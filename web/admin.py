@@ -16,6 +16,8 @@ from .models import (
     CartItem,
     Challenge,
     ChallengeSubmission,
+    LiveChallenge, 
+    LiveChallengeSubmission,
     Course,
     CourseMaterial,
     CourseProgress,
@@ -387,6 +389,18 @@ class ChallengeAdmin(admin.ModelAdmin):
 @admin.register(ChallengeSubmission)
 class ChallengeSubmissionAdmin(admin.ModelAdmin):
     list_display = ("user", "challenge", "submitted_at")
+
+# Live challenges admin roles
+
+
+@admin.register(LiveChallenge)
+class LiveChallengeAdmin(admin.ModelAdmin):
+    list_display = ("title", "start_time", "end_time", "is_active")
+
+@admin.register(LiveChallengeSubmission)
+class LiveChallengeSubmissionAdmin(admin.ModelAdmin):
+    list_display = ("user", "live_challenge", "submitted_at")
+
 
 
 # Unregister the default User admin and register our custom one

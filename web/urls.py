@@ -169,6 +169,10 @@ urlpatterns += i18n_patterns(
     path("challenges/<int:week_number>/submit/", views.challenge_submit, name="challenge_submit"),
     path("current-weekly-challenge/", views.current_weekly_challenge, name="current_weekly_challenge"),
     path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),
+    # Live Challenge URLs
+    path("livechallenges/<int:challenge_id>/", views.live_challenge_detail, name="live_challenge_detail"),
+    path("livechallenges/<int:challenge_id>/submit/", views.live_challenge_submit, name="live_challenge_submit"),
+    path("current-live-challenge/", views.live_challenge, name="live_challenge"),
     # Storefront Management
     path("store/create/", login_required(views.StorefrontCreateView.as_view()), name="storefront_create"),
     path(

@@ -1079,6 +1079,31 @@ class ChallengeSubmission(models.Model):
         return f"{self.user.username}'s submission for Week {self.challenge.week_number}"
 
 
+class LiveChallenge(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    start_time = models.DateTimeField()  # Exact start time for the live challenge
+    end_time = models.DateTimeField()    # Exact end time for the live challenge
+    is_active = models.BooleanField(default=False)  # To toggle live status manually if needed
+
+    def __str__(self):
+        return f"Live Challenge: {self.title} ({'Active' if self.is_active else 'Inactive'})"
+
+    def is_live(self):
+        """Check if the challenge is currently live"""
+        now = timezone.now()
+        return self.start_time <= now <= self.end_time
+
+
+class LiveChallengeSubmission(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    live_challenge = models.ForeignKey(LiveChallenge, on_delete=models.CASCADE)
+    submission_text = models.TextField()
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s submission for {self.live_challenge.title}"
+
 class ProductImage(models.Model):
     goods = models.ForeignKey(Goods, on_delete=models.CASCADE, related_name="goods_images")
     image = models.ImageField(upload_to="goods_images/", help_text="Product display image")
