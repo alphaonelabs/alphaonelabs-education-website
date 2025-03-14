@@ -20,6 +20,7 @@ from .models import (
     Session,
     Storefront,
     Subject,
+    Meetup,
 )
 from .referrals import handle_referral
 from .widgets import (
@@ -56,6 +57,7 @@ __all__ = [
     "FeedbackForm",
     "GoodsForm",
     "StorefrontForm",
+    "MeetupForm",
 ]
 
 
@@ -998,3 +1000,9 @@ class StorefrontForm(forms.ModelForm):
             "logo",
             "is_active",
         ]
+
+
+class MeetupForm(forms.ModelForm):
+    class Meta:
+        model = Meetup
+        fields = ["title", "description", "date", "link"]

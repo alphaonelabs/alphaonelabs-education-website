@@ -7,6 +7,7 @@ from django.db import models
 from django.http import HttpResponseRedirect
 from django.urls import path, reverse
 from django.utils.html import format_html
+from .models import Meetup
 
 from .models import (
     Achievement,
@@ -514,3 +515,4 @@ class OrderItemAdmin(admin.ModelAdmin):
 # Unregister the default User admin and register our custom one
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
+admin.site.register(Meetup)

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ meetup.title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+{% extends "base.html" %}
+
+
+{% block content %}
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-3xl font-semibold mb-6">{{ meetup.title }}</h1>
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+            <p class="text-gray-600 dark:text-gray-400 mb-4">{{ meetup.description }}</p>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">Date: {{ meetup.date }}</p>
+            <a href="{{ meetup.link }}" class="text-blue-600 dark:text-blue-400">Join Meetup</a>
+        </div>
+    </div>
+</body>
+{% endblock %}
+</html>

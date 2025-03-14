@@ -44,6 +44,7 @@ from .forms import (
     GoodsForm,
     InviteStudentForm,
     LearnForm,
+    MeetupForm,
     MessageTeacherForm,
     ProfileUpdateForm,
     ReviewForm,
@@ -76,6 +77,7 @@ from .models import (
     ForumReply,
     ForumTopic,
     Goods,
+    Meetup,
     Order,
     OrderItem,
     PeerConnection,
@@ -626,14 +628,14 @@ def course_search(request):
     if query:
         courses = courses.filter(
             Q(title__icontains=query)
-            | Q(description__icontains=query)
+            | Q(description__icontains(query))
             | Q(tags__icontains=query)
-            | Q(learning_objectives__icontains=query)
-            | Q(prerequisites__icontains=query)
-            | Q(teacher__username__icontains=query)
-            | Q(teacher__first_name__icontains=query)
-            | Q(teacher__last_name__icontains=query)
-            | Q(teacher__profile__expertise__icontains=query)
+            | Q(learning_objectives__icontains(query))
+            | Q(prerequisites__icontains(query))
+            | Q(teacher__username__icontains(query))
+            | Q(teacher__first_name__icontains(query))
+            | Q(teacher__last_name__icontains(query))
+            | Q(teacher__profile__expertise__icontains(query))
         )
 
     if subject:
@@ -3097,3 +3099,24 @@ class StorefrontDetailView(LoginRequiredMixin, generic.DetailView):
 
     def get_object(self):
         return get_object_or_404(Storefront, store_slug=self.kwargs["store_slug"])
+
+
+def meetup_list(request):
+    meetups = Meetup.objects.all()
+    return render(request, "web/meetup_list.html", {"meetups": meetups})
+
+
+def meetup_detail(request, meetup_id):
+    meetup = get_object_or_404(Meetup, pk=meetup_id)
+    return render(request, "web/meetup_detail.html", {"meetup": meetup})
+
+
+def create_meetup(request):
+    if request.method == "POST":
+        form = MeetupForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect("meetup_list")
+    else:
+        form = MeetupForm()
+    return render(request, "web/create_meetup.html", {"form": form})

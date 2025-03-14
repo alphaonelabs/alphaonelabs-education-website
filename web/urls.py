@@ -11,6 +11,9 @@ from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_d
 urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs
     path("captcha/", include("captcha.urls")),  # CAPTCHA URLs should not be language-prefixed
+    path("meetups/", views.meetup_list, name="meetup_list"),
+    path("meetups/<int:meetup_id>/", views.meetup_detail, name="meetup_detail"),
+    path("meetups/create/", views.create_meetup, name="create_meetup"),
 ]
 
 if settings.DEBUG:

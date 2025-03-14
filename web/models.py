@@ -1144,3 +1144,13 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity}x {self.goods.name}"
+
+
+class Meetup(models.Model):
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    date = models.DateTimeField()
+    link = models.URLField()
+
+    def __str__(self):
+        return self.title
