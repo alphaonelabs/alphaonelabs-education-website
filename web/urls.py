@@ -210,6 +210,7 @@ urlpatterns += i18n_patterns(
     ),
     path("analytics/", sales_analytics, name="sales_analytics"),
     path("analytics/data/", sales_data, name="sales_data"),
+    path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
     prefix_default_language=True,
 )
 
