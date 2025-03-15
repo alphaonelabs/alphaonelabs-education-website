@@ -4,7 +4,7 @@
     <div
       class="absolute top-6 right-6 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg"
     >
-      ⏳ <span id="countdown-timer">5:00</span>
+      ⏳ <span id="countdown-timer">Loading...</span>
     </div>
 
     {% if quiz %}
@@ -54,26 +54,37 @@
 </div>
 
 <script>
-  // submit the quiz when timer gets over
   document.addEventListener("DOMContentLoaded", function () {
-    let timeLeft = 5 * 60;
+    const quizId = {{ quiz.id }};  // Unique quiz ID
+    const storageKey = `quiz_${quizId}_end_time`;
     const timerElement = document.getElementById("countdown-timer");
     const submitButton = document.getElementById("submit-button");
     const quizForm = document.getElementById("quiz-form");
 
-    function updateTimer() {
-      let minutes = Math.floor(timeLeft / 60);
-      let seconds = timeLeft % 60;
-      timerElement.innerText = `${minutes}:${
-        seconds < 10 ? "0" : ""
-      }${seconds}`;
+    let now = Math.floor(Date.now() / 1000); // Current time in seconds
+    let storedEndTime = localStorage.getItem(storageKey);
+    let timeLeft;
 
+    if (storedEndTime) {
+      // Get remaining time based on stored end time
+      timeLeft = Math.max(0, parseInt(storedEndTime) - now);
+    } else {
+      // Set new timer duration and store end time
+      timeLeft = {{ quiz.duration_minutes|default:5 }} * 60;
+      localStorage.setItem(storageKey, now + timeLeft);
+    }
+
+    function updateTimer() {
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
         timerElement.innerText = "Time's up!";
+        submitButton.disabled = true;
         alert("Time's up! Your quiz will now be submitted.");
         quizForm.submit();
       } else {
+        let minutes = Math.floor(timeLeft / 60);
+        let seconds = timeLeft % 60;
+        timerElement.innerText = `${minutes}:${seconds.toString().padStart(2, '0')}`;
         timeLeft--;
       }
     }

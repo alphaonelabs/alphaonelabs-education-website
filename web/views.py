@@ -30,7 +30,6 @@ from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
-from django.utils.timezone import now
 from django.utils.timezone import make_aware, now
 from datetime import datetime
 
@@ -2732,13 +2731,12 @@ def current_live_quiz(request,quiz_id):
     ).first()
     
     if not quiz:
-        print("No active quiz found.")
-        return render(request, "web/current_live_challenge.html", {"quiz": None})
+        messages.error(request, "The requested quiz was not found or is no longer active.")
+        return redirect("index")
 
     user_submission = None
     has_submitted = False
     questions = quiz.questions.prefetch_related("options").all()
-    print("questions are:",questions);
     if request.user.is_authenticated:
         user_submission = QuizSubmission.objects.filter(user=request.user, quiz=quiz).first() 
         has_submitted = user_submission is not None
@@ -2797,23 +2795,7 @@ def submit_quiz(request, quiz_id):
     return redirect("submit_challenge", quiz_id=quiz.id)
 
 
-# @login_required
-# def live_challenge_submit(request, quiz_id):
-#     """Display the live quiz and allow the user to submit answers."""
-#     quiz = get_object_or_404(Quiz, id=quiz_id)
 
-#     has_submitted = QuizSubmission.objects.filter(user=request.user, quiz=quiz).exists()
-#     questions = quiz.quizquestion_set.prefetch_related("quizoption_set")
-
-#     return render(
-#         request,
-#         "web/live_challenge_submit.html", 
-#         {
-#             "quiz": quiz,
-#             "questions": questions,
-#             "has_submitted": has_submitted,
-#         },
-#     )
 
 @login_required
 def leaderboard(request, quiz_id):

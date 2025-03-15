@@ -1086,9 +1086,10 @@ class Quiz(models.Model):
     start_time = models.TimeField()
     end_date = models.DateField()
     end_time = models.TimeField()
+    duration_minutes = models.IntegerField()
 
     def __str__(self):
-        return f"{self.title} (From {self.start_date} {self.start_time} to {self.end_date} {self.end_time})"
+        return f"{self.title} (From {self.start_date} {self.start_time} to {self.end_date} {self.end_time}) (for {self.duration_minutes} minutes)"
 
 class QuizQuestion(models.Model):
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="questions")
