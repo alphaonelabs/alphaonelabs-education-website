@@ -1,0 +1,367 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}AI Learning Assistant{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        height: 70vh;
+        border-radius: 10px;
+        background-color: #f8f9fa;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .chat-header {
+        background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 10px 10px 0 0;
+        font-weight: bold;
+    }
+    
+    .chat-messages {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 15px;
+    }
+    
+    .chat-input {
+        padding: 15px;
+        background-color: white;
+        border-top: 1px solid #e9ecef;
+        border-radius: 0 0 10px 10px;
+    }
+    
+    .user-message, .ai-message {
+        margin-bottom: 15px;
+        padding: 10px 15px;
+        border-radius: 18px;
+        max-width: 70%;
+        word-wrap: break-word;
+    }
+    
+    .user-message {
+        background-color: #007bff;
+        color: white;
+        margin-left: auto;
+        border-bottom-right-radius: 5px;
+    }
+    
+    .ai-message {
+        background-color: #e9ecef;
+        color: #343a40;
+        margin-right: auto;
+        border-bottom-left-radius: 5px;
+    }
+    
+    .message-time {
+        font-size: 0.75rem;
+        margin-top: 5px;
+        opacity: 0.7;
+    }
+    
+    .rating-buttons {
+        margin-top: 5px;
+        font-size: 0.8rem;
+    }
+    
+    .rating-buttons span {
+        cursor: pointer;
+        margin-right: 5px;
+    }
+    
+    .provider-badge {
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 10px;
+        margin-left: 5px;
+    }
+    
+    .provider-gemini {
+        background-color: #34A853;
+        color: white;
+    }
+    
+    .provider-openai {
+        background-color: #10A37F;
+        color: white;
+    }
+    
+    .thinking {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        font-style: italic;
+        color: #6c757d;
+    }
+    
+    .dot-typing {
+        display: inline-block;
+        margin-right: 8px;
+    }
+    
+    .dot-typing::after {
+        content: '...';
+        animation: dotTyping 1.5s infinite;
+    }
+    
+    @keyframes dotTyping {
+        0% { content: '.'; }
+        25% { content: '..'; }
+        50% { content: '...'; }
+        75% { content: '....'; }
+    }
+    
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>AI Learning Assistant</span>
+                        <div>
+                            <select id="subject-selector" class="form-control form-control-sm d-inline-block" style="width: auto;">
+                                <option value="general">General</option>
+                                <option value="math">Mathematics</option>
+                                <option value="science">Science</option>
+                                <option value="language">Language</option>
+                                <option value="history">History</option>
+                                <option value="computer_science">Computer Science</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-messages" id="chat-messages">
+                    {% for message in chat_history %}
+                    <div class="user-message">
+                        {{ message.question }}
+                        <div class="message-time">{{ message.created_at|date:"M d, g:i a" }}</div>
+                    </div>
+                    <div class="ai-message">
+                        {{ message.answer|linebreaksbr }}
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="message-time">
+                                {{ message.created_at|date:"M d, g:i a" }}
+                                <span class="provider-badge provider-{{ message.ai_provider }}">{{ message.ai_provider }}</span>
+                            </div>
+                            <div class="rating-buttons" data-interaction="{{ message.id }}">
+                                {% if message.feedback_rating %}
+                                    <span>Rated: {{ message.feedback_rating }}/5</span>
+                                {% else %}
+                                    <span>Rate: 
+                                        <span class="rate-btn" data-rating="1">1</span>
+                                        <span class="rate-btn" data-rating="2">2</span>
+                                        <span class="rate-btn" data-rating="3">3</span>
+                                        <span class="rate-btn" data-rating="4">4</span>
+                                        <span class="rate-btn" data-rating="5">5</span>
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="ai-message">
+                        Welcome to your AI Learning Assistant! How can I help you learn today?
+                        <div class="message-time">Just now</div>
+                    </div>
+                    {% endfor %}
+                </div>
+                <div class="chat-input">
+                    <form id="question-form" class="input-group">
+                        <input type="text" id="question-input" class="form-control" placeholder="Ask your learning question..." required>
+                        <div class="input-group-append">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-user-graduate"></i> Your Learning Profile
+                </div>
+                <div class="card-body">
+                    <p><strong>Learning Style:</strong> {{ profile.learning_style|default:"Not set" }}</p>
+                    <p><strong>Current Level:</strong> {{ profile.difficulty_level|title }}</p>
+                    <p><strong>Strengths:</strong> 
+                        {% for strength in profile.strengths %}
+                            <span class="badge bg-success">{{ strength }}</span>
+                        {% empty %}
+                            Not set
+                        {% endfor %}
+                    </p>
+                    <a href="{% url 'profile' %}" class="btn btn-sm btn-outline-primary">Update Profile</a>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-lightbulb"></i> Tips for Learning
+                </div>
+                <div class="card-body">
+                    <ul class="small mb-0">
+                        <li>Ask specific questions to get more precise answers</li>
+                        <li>Request step-by-step explanations for complex topics</li>
+                        <li>Use "Explain like I'm 5" for simplified explanations</li>
+                        <li>Ask for examples or practice problems</li>
+                        <li>Try "Summarize what we've learned" at the end of a session</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatMessages = document.getElementById('chat-messages');
+        const questionForm = document.getElementById('question-form');
+        const questionInput = document.getElementById('question-input');
+        const subjectSelector = document.getElementById('subject-selector');
+        
+        // Scroll to bottom of chat
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Handle form submission
+        questionForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const question = questionInput.value.trim();
+            const subject = subjectSelector.value;
+            
+            if (!question) return;
+            
+            // Add user message
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.className = 'user-message';
+            userMessageDiv.innerHTML = `
+                ${question}
+                <div class="message-time">Just now</div>
+            `;
+            chatMessages.appendChild(userMessageDiv);
+            
+            // Add thinking indicator
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.className = 'thinking ai-message';
+            thinkingDiv.innerHTML = `
+                <span class="dot-typing"></span> AI is thinking...
+            `;
+            chatMessages.appendChild(thinkingDiv);
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Clear input
+            questionInput.value = '';
+            
+            // Send request to API
+            fetch('{% url "ask_question" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    question: question,
+                    subject: subject
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Remove thinking indicator
+                chatMessages.removeChild(thinkingDiv);
+                
+                // Add AI message
+                const aiMessageDiv = document.createElement('div');
+                aiMessageDiv.className = 'ai-message';
+                aiMessageDiv.innerHTML = `
+                    ${data.answer.replace(/\n/g, '<br>')}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="message-time">
+                            Just now
+                            <span class="provider-badge provider-${data.provider}">${data.provider}</span>
+                        </div>
+                        <div class="rating-buttons" data-interaction="${data.id}">
+                            <span>Rate: 
+                                <span class="rate-btn" data-rating="1">1</span>
+                                <span class="rate-btn" data-rating="2">2</span>
+                                <span class="rate-btn" data-rating="3">3</span>
+                                <span class="rate-btn" data-rating="4">4</span>
+                                <span class="rate-btn" data-rating="5">5</span>
+                            </span>
+                        </div>
+                    </div>
+                `;
+                chatMessages.appendChild(aiMessageDiv);
+                
+                // Scroll to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                
+                // Add event listeners for rating buttons
+                addRatingEventListeners();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                
+                // Remove thinking indicator
+                chatMessages.removeChild(thinkingDiv);
+                
+                // Add error message
+                const errorMessageDiv = document.createElement('div');
+                errorMessageDiv.className = 'ai-message';
+                errorMessageDiv.innerHTML = `
+                    Sorry, there was an error processing your request. Please try again.
+                    <div class="message-time">Just now</div>
+                `;
+                chatMessages.appendChild(errorMessageDiv);
+                
+                // Scroll to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            });
+        });
+        
+        // Function to add event listeners to rating buttons
+        function addRatingEventListeners() {
+            document.querySelectorAll('.rate-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const rating = this.getAttribute('data-rating');
+                    const interactionId = this.closest('.rating-buttons').getAttribute('data-interaction');
+                    
+                    // Send rating to API
+                    fetch(`/ai/api/rate/${interactionId}/`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({ rating: rating })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        // Update UI to show rating
+                        this.closest('.rating-buttons').innerHTML = `<span>Rated: ${rating}/5</span>`;
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                    });
+                });
+            });
+        }
+        
+        // Add event listeners for existing rating buttons
+        addRatingEventListeners();
+    });
+</script>
+{% endblock %}

@@ -3,13 +3,16 @@ from django.conf.urls.i18n import i18n_patterns
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
+from django.urls import path, include
 
 from . import admin_views, views
 from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_data
 
 # Non-prefixed URLs
 urlpatterns = [
-    path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs
+    path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs 
+    path('admin/', admin.site.urls),
+    path('ai/', include('ai.urls')),
     path("captcha/", include("captcha.urls")),  # CAPTCHA URLs should not be language-prefixed
 ]
 

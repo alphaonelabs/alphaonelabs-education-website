@@ -191,6 +191,11 @@
                class="hover:underline flex items-center">
               <i class="fa-solid fa-store mr-1"></i> Products
             </a>
+            <!-- Replace AI Dashboard link with AI Chat -->
+            <a class="hover:underline flex items-center" href="/ai/chat/">
+              <i class="fas fa-comments mr-1"></i>
+              AI Chat
+            </a>
           </div>
           <!-- Language and Dark Mode -->
           <div class="flex items-center space-x-2">
@@ -386,6 +391,11 @@
                  class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                 <i class="fa-solid fa-blog"></i>
                 <span>Blog</span>
+              </a>
+              <!-- Replace AI Dashboard link with AI Chat -->
+              <a class="hover:underline flex items-center" href="/ai/chat/">
+                <i class="fas fa-comments mr-1"></i>
+                AI Chat
               </a>
               {% if user.is_authenticated %}
                 <a href="{% url 'profile' %}"

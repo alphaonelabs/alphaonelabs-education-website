@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+    /* Remove any elements that might interfere with full screen */
+    header, footer, .site-header, .site-footer, .navbar {
+        display: none !important;
+    }
+    
+    body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden; /* Prevent scrolling */
+        height: 100vh;
+        background: #f5f5f5;
+    }
+    
+    html {
+        overflow-y: hidden; /* Prevent vertical scrolling */
+    }
+    
+    .container-fluid {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
+    }
+    
+    .ai-container {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: none !important;
+    }
+    
+    .row {
+        margin: 0 !important;
+    }
+    
+    .col-12 {
+        padding: 0 !important;
+    }
+    
+    .ai-main-content {
+        padding: 0 !important;
+        margin: 0 !important;
+        overflow: hidden;
+    }
+    
+    /* Custom Teal Color Scheme */
+    :root {
+        --teal-dark: rgb(17, 94, 89);
+        --teal-light: rgb(20, 110, 105);
+        --teal-lighter: rgba(17, 94, 89, 0.1);
+        --teal-accent: rgb(129, 230, 217);
+        --text-dark: #333333;
+    }
+    
+    /* Sidebar styling removed as it's not needed in this theme */
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="ai-container">
+        <div class="row">
+            <div class="col-12">
+                <div class="ai-main-content">
+                    {% block ai_content %}{% endblock %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if not request.path == '/ai/chat/' %}
+<!-- Sidebar without headers and navigation items -->
+<div id="sidebar" class="sidebar">
+  <!-- Sidebar content removed -->
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Sidebar functionality removed since it's not needed in this theme.
+document.addEventListener('DOMContentLoaded', function() {
+    // No additional JavaScript needed.
+});
+</script>
+{% block ai_extra_js %}{% endblock %}
+{% endblock %}
