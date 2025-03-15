@@ -406,7 +406,7 @@
                             <div class="flex justify-between items-start">
                               <div>
                                 <h3 class="font-semibold">
-                                  {% if is_enrolled or not material.requires_enrollment %}
+                                  {% if is_enrolled or not material.requires_enrollment or is_teacher %}
                                     {% if material.external_url %}
                                       <a href="{{ material.external_url }}"
                                          target="_blank"

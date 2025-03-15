@@ -3097,3 +3097,7 @@ class StorefrontDetailView(LoginRequiredMixin, generic.DetailView):
 
     def get_object(self):
         return get_object_or_404(Storefront, store_slug=self.kwargs["store_slug"])
+
+
+def gsoc_landing_page(request):
+    return render(request, "gsoc_landing_page.html")
