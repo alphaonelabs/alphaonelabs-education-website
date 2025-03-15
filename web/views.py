@@ -30,6 +30,9 @@ from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.utils.timezone import now
+from django.utils.timezone import make_aware, now
+from datetime import datetime
 
 from .calendar_sync import generate_google_calendar_link, generate_ical_feed, generate_outlook_calendar_link
 from .decorators import teacher_required
@@ -67,6 +70,10 @@ from .models import (
     CartItem,
     Challenge,
     ChallengeSubmission,
+    Quiz, 
+    QuizOption,
+    QuizQuestion,
+    QuizSubmission,
     Course,
     CourseMaterial,
     CourseProgress,
@@ -142,6 +149,16 @@ def index(request):
     # Get current challenge
     current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
 
+    # Get live challenges
+    live_quiz = list(Quiz.objects.filter(start_time__lte=timezone.now(), end_time__gte=timezone.now()))
+    # print(live_challenge.id,"from the views)
+
+   # Get quizzes that the user has already submitted
+    has_submitted = set()
+    if request.user.is_authenticated:
+        has_submitted = set(QuizSubmission.objects.filter(user=request.user).values_list("quiz_id", flat=True))
+
+
     # Get signup form if needed
     form = None
     if not request.user.is_authenticated or not request.user.profile.is_teacher:
@@ -152,6 +169,8 @@ def index(request):
         "top_referrers": top_referrers,
         "featured_courses": featured_courses,
         "current_challenge": current_challenge,
+        "has_submitted":has_submitted, 
+        "quiz":live_quiz,
         "form": form,
     }
     return render(request, "index.html", context)
@@ -2644,7 +2663,7 @@ def content_dashboard(request):
         },
     )
 
-
+# challenge views
 def current_weekly_challenge(request):
     current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
     # Check if the user has submitted the current challenge
@@ -2679,10 +2698,11 @@ def challenge_detail(request, week_number):
 
 @login_required
 def challenge_submit(request, week_number):
-    challenge = get_object_or_404(Challenge, week_number=week_number)
-    # Check if the user has already submitted this challenge
-    existing_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
+    """Allow users to submit solutions for weekly challenges."""
+    challenge = get_object_or_404(Challenge)
 
+    # Check if the user has already submitted
+    existing_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
     if existing_submission:
         return redirect("challenge_detail", week_number=week_number)
 
@@ -2698,8 +2718,115 @@ def challenge_submit(request, week_number):
     else:
         form = ChallengeSubmissionForm()
 
-    return render(request, "web/challenge_submit.html", {"challenge": challenge, "form": form})
+    return render(request, "web/live_challenge_submit.html", {"challenge": challenge, "form": form})
 
+
+# Quiz views
+
+
+def current_live_quiz(request,quiz_id):
+    """Fetch the currently active Quiz and check if the user has submitted."""
+    
+    quiz = Quiz.objects.filter(
+        id = quiz_id
+    ).first()
+    
+    if not quiz:
+        print("No active quiz found.")
+        return render(request, "web/current_live_challenge.html", {"quiz": None})
+
+    user_submission = None
+    has_submitted = False
+    questions = quiz.questions.prefetch_related("options").all()
+    print("questions are:",questions);
+    if request.user.is_authenticated:
+        user_submission = QuizSubmission.objects.filter(user=request.user, quiz=quiz).first() 
+        has_submitted = user_submission is not None
+
+    if has_submitted:
+        print("User has already submitted this quiz.")
+        return render(request, "web/current_live_quiz.html", {"quiz": None, "has_submitted": True})
+    
+    return render(
+        request,
+        "web/current_live_quiz.html",
+        { 
+            "quiz": quiz,
+            "questions": questions,
+            "has_submitted": has_submitted,
+            "user_submission": user_submission,
+        },
+    )
+
+
+
+
+@login_required
+def submit_quiz(request, quiz_id):
+    """Handle quiz submission and store total score."""
+    quiz = get_object_or_404(Quiz.objects.prefetch_related("questions__options"), id=quiz_id)
+
+    # Check if the user has already submitted this quiz
+    if QuizSubmission.objects.filter(user=request.user, quiz=quiz).exists():
+        messages.warning(request, "You have already submitted this quiz.")
+        return redirect("leaderboard", quiz_id=quiz.id)
+
+    if request.method == "POST":
+        score = 0  # Total score counter
+
+        for question in quiz.questions.all():
+            selected_option_id = request.POST.get(f"question_{question.id}")
+
+            if selected_option_id:
+                try:
+                    selected_option = QuizOption.objects.get(id=selected_option_id, question=question)
+
+                    # Award points only if the selected answer is correct
+                    if selected_option.is_correct:
+                        score += 10  # Adjust scoring logic if needed
+
+                except QuizOption.DoesNotExist:
+                    messages.error(request, f"Invalid selection for question {question.id}")
+
+        # Store the final submission with total score
+        QuizSubmission.objects.create(user=request.user, quiz=quiz, score=score)
+
+        messages.success(request, f"Quiz submitted! Your score: {score}")
+        return redirect("leaderboard", quiz_id=quiz.id)
+
+    return redirect("submit_challenge", quiz_id=quiz.id)
+
+
+# @login_required
+# def live_challenge_submit(request, quiz_id):
+#     """Display the live quiz and allow the user to submit answers."""
+#     quiz = get_object_or_404(Quiz, id=quiz_id)
+
+#     has_submitted = QuizSubmission.objects.filter(user=request.user, quiz=quiz).exists()
+#     questions = quiz.quizquestion_set.prefetch_related("quizoption_set")
+
+#     return render(
+#         request,
+#         "web/live_challenge_submit.html", 
+#         {
+#             "quiz": quiz,
+#             "questions": questions,
+#             "has_submitted": has_submitted,
+#         },
+#     )
+
+@login_required
+def leaderboard(request, quiz_id):
+    """Display the leaderboard with highest scores first."""
+    quiz = get_object_or_404(Quiz, id=quiz_id)
+
+    # Retrieve all submissions for this quiz, ordered by highest score
+    submissions = QuizSubmission.objects.filter(quiz=quiz).order_by("-score", "submitted_at")
+    end_datetime = make_aware(datetime.combine(quiz.end_date, quiz.end_time))
+    quiz_ended = now() > end_datetime 
+
+    return render(request, "web/leaderboard.html", {"quiz": quiz, "submissions": submissions,"quiz_ended":quiz_ended})
+ 
 
 @require_GET
 def fetch_video_title(request):

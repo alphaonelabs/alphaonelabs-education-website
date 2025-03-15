@@ -396,6 +396,85 @@
             <p class="text-left text-gray-500 dark:text-gray-400">No challenge available for this week.</p>
           {% endif %}
         </div>
+       
+      <!-- Quiz Section -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800">
+          <h2 class="text-xl font-semibold mb-4 flex items-center">
+            <span class="mr-2">🔥</span> Quiz
+          </h2>
+
+          {% if quiz %}
+          <div class="relative">
+            <div id="quiz-container">
+              {% for quiz in quiz %}
+              <div class="quiz-item {% if forloop.first %}active{% else %}hidden{% endif %}" data-quiz-id="{{ quiz.id }}">
+                <div class="text-left">
+                  <p class="text-lg font-semibold mb-2">Quiz Name:</p>
+                  <p class="text-gray-700 dark:text-gray-300 mb-4">{{ quiz.title }}</p>
+                  <p class="text-lg font-semibold mb-2">Details:</p>
+                  <p class="text-gray-700 dark:text-gray-300 mb-4">{{ quiz.description }}</p>
+                  <p class="text-lg font-semibold mb-2">Attempt by:</p>
+                  <p>{{ quiz.end_time }}, {{ quiz.end_date }}</p>
+
+                  {% if user.is_authenticated %}
+                    {% if quiz.id in has_submitted %}
+                      <a href="{% url 'leaderboard' quiz.id %}" class="inline-block bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 transition-shadow shadow-md">
+                        See Leaderboard
+                      </a>
+                    {% else %}
+                      <a href="{% url 'current_live_quiz' quiz.id %}" class="inline-block bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 transition-shadow shadow-md">
+                        Participate in the Quiz
+                      </a>
+                    {% endif %}
+                  {% else %}
+                    <p class="text-red-600 dark:text-red-400 mt-4">Please log in to submit your result.</p>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+
+            
+            <button id="prevQuiz" class="absolute left-[-45px] top-1/2 pr-50 mr-50  transform -translate-y-1/2 bg-gray-600 text-white px-3 py-2 rounded-full shadow-md">
+              ←
+            </button>
+            <button id="nextQuiz" class="absolute right-[-45px] top-1/2 transform -translate-y-1/2 bg-gray-600 text-white px-3 py-2 rounded-full shadow-md">
+              →
+            </button>
+          </div>
+
+          {% else %}
+          <p class="text-left text-gray-500 dark:text-gray-400">No challenge available for this week.</p>
+          {% endif %}
+        </div>
+
+        <script>
+          document.addEventListener("DOMContentLoaded", function () {
+            const quizzes = document.querySelectorAll(".quiz-item");
+            let currentIndex = 0;
+
+            function updateQuizDisplay() {
+              quizzes.forEach((quiz, index) => {
+                quiz.classList.toggle("active", index === currentIndex);
+                quiz.classList.toggle("hidden", index !== currentIndex);
+              });
+            }
+
+            document.getElementById("prevQuiz").addEventListener("click", function () {
+              currentIndex = (currentIndex - 1 + quizzes.length) % quizzes.length;
+              updateQuizDisplay();
+            });
+
+            document.getElementById("nextQuiz").addEventListener("click", function () {
+              currentIndex = (currentIndex + 1) % quizzes.length;
+              updateQuizDisplay();
+            });
+
+            updateQuizDisplay();
+          });
+        </script>
+
+
         <!-- Recent Forum Post -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
           <h2 class="text-lg font-semibold mb-2 flex items-center">

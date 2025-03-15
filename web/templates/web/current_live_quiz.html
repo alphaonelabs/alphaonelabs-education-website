@@ -1,0 +1,86 @@
+{% extends "base.html" %} {% block content %}
+<div class="container mx-auto p-6 relative">
+  <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 relative">
+    <div
+      class="absolute top-6 right-6 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg"
+    >
+      ⏳ <span id="countdown-timer">5:00</span>
+    </div>
+
+    {% if quiz %}
+    <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mb-4">
+      🏆 {{ quiz.title }}
+    </h2>
+
+    <p class="text-gray-700 dark:text-gray-300 mb-4">{{ quiz.description }}</p>
+
+    {% if has_submitted %}
+    <p class="text-green-600 dark:text-green-400 font-semibold">
+      ✅ You have already submitted this quiz.
+    </p>
+    {% else %}
+    <form id="quiz-form" method="post" action="{% url 'submit_quiz' quiz.id %}">
+      {% csrf_token %} {% for question in quiz.questions.all %}
+      <div class="mb-4">
+        <p class="text-lg font-semibold">{{ question.question_text }}</p>
+        {% for option in question.options.all %}
+        <label class="block mt-2">
+          <input
+            type="radio"
+            name="question_{{ question.id }}"
+            value="{{ option.id }}"
+            required
+          />
+          {{ option.option_text }}
+        </label>
+        {% endfor %}
+      </div>
+      {% endfor %}
+
+      <button
+        type="submit"
+        id="submit-button"
+        class="mt-4 bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 transition-shadow shadow-md"
+      >
+        Submit Quiz
+      </button>
+    </form>
+    {% endif %} {% else %}
+    <p class="text-gray-500 dark:text-gray-400 text-lg">
+      No active quiz at the moment.
+    </p>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  // submit the quiz when timer gets over
+  document.addEventListener("DOMContentLoaded", function () {
+    let timeLeft = 5 * 60;
+    const timerElement = document.getElementById("countdown-timer");
+    const submitButton = document.getElementById("submit-button");
+    const quizForm = document.getElementById("quiz-form");
+
+    function updateTimer() {
+      let minutes = Math.floor(timeLeft / 60);
+      let seconds = timeLeft % 60;
+      timerElement.innerText = `${minutes}:${
+        seconds < 10 ? "0" : ""
+      }${seconds}`;
+
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        timerElement.innerText = "Time's up!";
+        alert("Time's up! Your quiz will now be submitted.");
+        quizForm.submit();
+      } else {
+        timeLeft--;
+      }
+    }
+
+    updateTimer();
+    const timerInterval = setInterval(updateTimer, 1000);
+  });
+</script>
+
+{% endblock %}

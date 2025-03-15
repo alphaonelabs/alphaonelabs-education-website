@@ -1,0 +1,90 @@
+{% extends "base.html" %} {% block content %}
+
+<div class="container mx-auto px-4 py-8">
+  <h2 class="text-center text-3xl font-bold text-gray-900 dark:text-gray-100">
+    {{ quiz.title }} - Leaderboard
+  </h2>
+
+  {% if submissions %}
+  <div class="overflow-x-auto mt-6">
+    <table
+      class="min-w-full bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden"
+    >
+      <thead class="bg-gray-200 dark:bg-gray-700">
+        <tr>
+          <th class="px-6 py-3 text-left text-gray-700 dark:text-gray-300">
+            Rank
+          </th>
+          <th class="px-6 py-3 text-left text-gray-700 dark:text-gray-300">
+            User
+          </th>
+          <th class="px-6 py-3 text-left text-gray-700 dark:text-gray-300">
+            Score
+          </th>
+          <th class="px-6 py-3 text-left text-gray-700 dark:text-gray-300">
+            Submission Time
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for submission in submissions %}
+        <tr class="border-b border-gray-300 dark:border-gray-600">
+          <td class="px-6 py-4 text-gray-900 dark:text-gray-100 font-medium">
+            {{ forloop.counter }}
+          </td>
+          <td class="px-6 py-4 text-gray-900 dark:text-gray-100">
+            {{ submission.user.username }}
+          </td>
+          <td class="px-6 py-4 text-gray-900 dark:text-gray-100">
+            {{ submission.score }}
+          </td>
+          <td class="px-6 py-4 text-gray-600 dark:text-gray-400">
+            {{ submission.submitted_at|date:"M d, Y H:i" }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-center text-gray-600 dark:text-gray-400 mt-4">
+    No submissions yet. Be the first to take the quiz!
+  </p>
+  {% endif %}
+
+  <!-- show prizes only after quiz has ended, add custom prizes here -->
+  {% if not quiz_ended %}
+  <div class="mt-8 p-6 bg-gray-100 dark:bg-gray-900 rounded-lg shadow-md">
+    <h3
+      class="text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-4"
+    >
+      🎁 Prizes for Top Rank Holders
+    </h3>
+    <ul class="list-disc list-inside text-gray-700 dark:text-gray-300">
+      <li>
+        🥇 <span class="font-semibold">1st Place</span> - ₹500 Amazon Gift Card
+      </li>
+      <li>
+        🥈 <span class="font-semibold">2nd Place</span> - ₹300 Amazon Gift Card
+      </li>
+      <li>
+        🥉 <span class="font-semibold">3rd Place</span> - ₹200 Amazon Gift Card
+      </li>
+    </ul>
+    <p class="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">
+      Prizes will be distributed to the winners after verification.
+    </p>
+  </div>
+  {% endif %}
+
+  <div class="text-center mt-6">
+    <a
+      href="{% url 'index' %}"
+      class="px-6 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition"
+    >
+      Back to Quizzes
+    </a>
+  </div>
+</div>
+
+{% endblock %}
