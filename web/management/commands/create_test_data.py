@@ -19,12 +19,15 @@ from web.models import (
     ForumCategory,
     ForumReply,
     ForumTopic,
+    Goods,
     PeerConnection,
     PeerMessage,
+    ProductImage,
     Profile,
     Review,
     Session,
     SessionAttendance,
+    Storefront,
     StudyGroup,
     Subject,
 )
@@ -55,6 +58,8 @@ class Command(BaseCommand):
             Subject,
             Profile,
             User,
+            Goods,
+            ProductImage,
         ]
         for model in models:
             model.objects.all().delete()
@@ -286,5 +291,69 @@ class Command(BaseCommand):
                     BlogComment.objects.create(
                         post=post, author=random.choice(students), content="Great post!", is_approved=True
                     )
+
+        # Create test storefronts
+        storefronts = []
+        for teacher in teachers:
+            storefront = Storefront.objects.create(
+                teacher=teacher,
+                name=f"Storefront for {teacher.username}",
+                description=f"Description for storefront of {teacher.username}",
+                is_active=True,
+            )
+            storefronts.append(storefront)
+            self.stdout.write(f"Created storefront: {storefront.name}")
+
+        # Create test products (goods)
+        goods = []
+        goods_data = [
+            {
+                "name": "Algebra Basics Workbook",
+                "description": "A comprehensive workbook for learning algebra basics.",
+                "price": Decimal("19.99"),
+                "discount_price": Decimal("14.99"),
+                "stock": 100,
+                "product_type": "physical",
+                "category": "Books",
+                "is_available": True,
+                "storefront": random.choice(storefronts),
+            },
+            {
+                "name": "Python Programming eBook",
+                "description": "An in-depth guide to Python programming.",
+                "price": Decimal("29.99"),
+                "discount_price": Decimal("24.99"),
+                "product_type": "digital",
+                "file": None,  # Add a valid file path if needed
+                "category": "eBooks",
+                "is_available": True,
+                "storefront": random.choice(storefronts),
+            },
+            {
+                "name": "Science Experiment Kit",
+                "description": "A kit for conducting various science experiments.",
+                "price": Decimal("39.99"),
+                "stock": 50,
+                "product_type": "physical",
+                "category": "Kits",
+                "is_available": True,
+                "storefront": random.choice(storefronts),
+            },
+        ]
+
+        for data in goods_data:
+            product = Goods.objects.create(**data)
+            goods.append(product)
+            self.stdout.write(f"Created product: {product.name}")
+
+        # Create product images
+        for product in goods:
+            for i in range(2):
+                ProductImage.objects.create(
+                    goods=product,
+                    image="path/to/image.jpg",
+                    alt_text=f"Image {i + 1} for {product.name}",
+                )
+            self.stdout.write(f"Created images for product: {product.name}")
 
         self.stdout.write(self.style.SUCCESS("Successfully created test data"))
