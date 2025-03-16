@@ -129,20 +129,27 @@
         :root {
             color-scheme: light;
         }
-
+        html, body {
+          overflow-x: hidden;
+          box-sizing: border-box;
+          }
         /* Hide elements with x-cloak until Alpine.js is ready */
         [x-cloak] {
             display: none !important;
+        }
+        *, *::before, *::after {
+          box-sizing: inherit;
         }
     </style>
     {% block extra_head %}
     {% endblock extra_head %}
     <link rel="stylesheet" href="{% static 'css/markdown.css' %}" />
   </head>
-  <body class="min-h-screen flex flex-col bg-white text-gray-900 dark:bg-black dark:text-gray-100 transition-colors duration-300">
+  <body class="min-h-screen flex flex-col bg-white text-gray-900 dark:bg-black dark:text-gray-100 transition-colors duration-300 overflow-x-hidden">
+
     <!-- HEADER -->
     <header class="w-full bg-teal-600 dark:bg-teal-800 text-white">
-      <div class="max-w-[90rem] mx-auto px-4 flex items-center justify-between h-[60px] relative">
+      <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-[60px] relative">
         <!-- Logo and Title -->
         <a href="{% url 'index' %}" class="flex items-center space-x-2">
           <img src="{% static 'images/logo.png' %}"
@@ -469,74 +476,46 @@
     <!-- FOOTER -->
     <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto">
       <div class="container mx-auto px-4 py-8">
-        <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
           <!-- Quick Links -->
-          <div class="flex space-x-6">
-            <a href="{% url 'blog_list' %}"
-               class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
+          <div class="flex flex-wrap justify-center md:justify-start items-center gap-4">
+            <a href="{% url 'blog_list' %}" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
               <i class="fas fa-blog mr-2"></i>Blog
             </a>
-            <a href="{% url 'forum_categories' %}"
-               class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
+            <a href="{% url 'forum_categories' %}" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
               <i class="fas fa-comments mr-2"></i>Forum
             </a>
-            <a href="{% url 'feedback' %}"
-               class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
+            <a href="{% url 'feedback' %}" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
               <i class="fas fa-comment-dots mr-2"></i>Feedback
             </a>
-            <a href="{% url 'system_status' %}"
-               class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
+            <a href="{% url 'system_status' %}" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
               <i class="fas fa-chart-line mr-2"></i>Status
             </a>
-            <a href="{% url 'content_dashboard' %}"
-               class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
+            <a href="{% url 'content_dashboard' %}" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
               <i class="fas fa-tasks mr-2"></i>Content
             </a>
-            <a href="https://github.com/alphaonelabs/education-website/wiki/GSOC-2025-Ideas"
-               target="_blank"
-               rel="noopener"
-               class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
-              <i class="fas fa-code mr-2"></i> GSOC'25
+            <a href="https://github.com/alphaonelabs/education-website/wiki/GSOC-2025-Ideas" target="_blank" rel="noopener" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
+              <i class="fas fa-code mr-2"></i>GSOC'25
             </a>
-            <a href="{% url 'terms' %}"
-               class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
+            <a href="{% url 'terms' %}" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
               <i class="fas fa-file-contract mr-2"></i>Terms
             </a>
           </div>
           <!-- Social Links -->
-          <div class="flex space-x-4">
-            <a href="https://twitter.com/alphaonelabs"
-               target="_blank"
-               rel="noopener"
-               class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
-              <img src="{% static 'images/x-logo.svg' %}"
-                   alt="X (Twitter) Logo"
-                   class="w-5 h-5 mt-1"
-                   width="20"
-                   height="20" />
+          <div class="flex flex-wrap justify-center md:justify-end items-center gap-4">
+            <a href="https://twitter.com/alphaonelabs" target="_blank" rel="noopener" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+              <img src="{% static 'images/x-logo.svg' %}" alt="X (Twitter) Logo" class="w-5 h-5 mt-1" width="20" height="20" />
             </a>
-            <a href="https://instagram.com/alphaonelabs"
-               target="_blank"
-               rel="noopener"
-               class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+            <a href="https://instagram.com/alphaonelabs" target="_blank" rel="noopener" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
               <i class="fab fa-instagram text-xl"></i>
             </a>
-            <a href="https://facebook.com/alphaonelabs"
-               target="_blank"
-               rel="noopener"
-               class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+            <a href="https://facebook.com/alphaonelabs" target="_blank" rel="noopener" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
               <i class="fab fa-facebook text-xl"></i>
             </a>
-            <a href="https://youtube.com/alphaonelabs"
-               target="_blank"
-               rel="noopener"
-               class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+            <a href="https://youtube.com/alphaonelabs" target="_blank" rel="noopener" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
               <i class="fab fa-youtube text-xl"></i>
             </a>
-            <a href="https://github.com/AlphaOneLabs"
-               target="_blank"
-               rel="noopener"
-               class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
+            <a href="https://github.com/AlphaOneLabs" target="_blank" rel="noopener" class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400">
               <i class="fab fa-github text-xl"></i>
             </a>
           </div>
@@ -544,10 +523,10 @@
         <!-- Copyright -->
         <div class="text-center mt-8 text-sm text-gray-500 dark:text-gray-400">
           <p>&copy; {% now "Y" %} Alpha One Labs. All rights reserved.</p>
-          <p class="mt-1">Last updated:  {{ last_modified|date:"m/d/Y h:ia" }}</p>
+          <p class="mt-1">Last updated: {{ last_modified|date:"m/d/Y h:ia" }}</p>
         </div>
       </div>
-    </footer>
+    </footer>    
     <script>
         function toggleMobileMenu() {
             const menu = document.getElementById('mobile-menu');
