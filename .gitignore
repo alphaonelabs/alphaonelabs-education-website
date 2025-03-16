@@ -4,3 +4,20 @@ db.sqlite3
 /staticfiles
 .vscode/settings.json
 .vscode/launch.json
+
+# Ignore Python compiled files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Ignore virtual environments
+venv/
+env/
+
+
+# Ignore logs and cache
+*.log
+*.cache
+.DS_Store
+

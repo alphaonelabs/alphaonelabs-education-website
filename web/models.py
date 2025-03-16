@@ -1115,7 +1115,7 @@ class QuizSubmission(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.quiz.title} - Score: {self.score}"
     
-class Meta:
+    class Meta:
         unique_together = ("user", "quiz")
 
 class ProductImage(models.Model):

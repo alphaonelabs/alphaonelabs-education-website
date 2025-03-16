@@ -444,6 +444,7 @@
         <script>
           document.addEventListener("DOMContentLoaded", function () {
             const quizzes = document.querySelectorAll(".quiz-item");
+            if(quizzes.length==0)return ;
             let currentIndex = 0;
 
             function updateQuizDisplay() {

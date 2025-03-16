@@ -150,7 +150,6 @@ def index(request):
 
     # Get live challenges
     live_quiz = list(Quiz.objects.filter(start_time__lte=timezone.now(), end_time__gte=timezone.now()))
-    # print(live_challenge.id,"from the views)
 
    # Get quizzes that the user has already submitted
     has_submitted = set()
@@ -2743,7 +2742,6 @@ def current_live_quiz(request,quiz_id):
         has_submitted = user_submission is not None
 
     if has_submitted:
-        print("User has already submitted this quiz.")
         return render(request, "web/current_live_quiz.html", {"quiz": None, "has_submitted": True})
     
     return render(
