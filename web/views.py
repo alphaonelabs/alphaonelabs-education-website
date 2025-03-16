@@ -32,6 +32,7 @@ from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import CreateView, DeleteView, ListView, UpdateView
 from django.utils.timezone import make_aware, now
 from datetime import datetime
+from django.views.decorators.csrf import csrf_protect
 
 from .calendar_sync import generate_google_calendar_link, generate_ical_feed, generate_outlook_calendar_link
 from .decorators import teacher_required
@@ -71,7 +72,6 @@ from .models import (
     ChallengeSubmission,
     Quiz, 
     QuizOption,
-    QuizQuestion,
     QuizSubmission,
     Course,
     CourseMaterial,
@@ -2698,7 +2698,7 @@ def challenge_detail(request, week_number):
 @login_required
 def challenge_submit(request, week_number):
     """Allow users to submit solutions for weekly challenges."""
-    challenge = get_object_or_404(Challenge)
+    challenge = get_object_or_404(Challenge,week_number = week_number)
 
     # Check if the user has already submitted
     existing_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
@@ -2730,6 +2730,7 @@ def current_live_quiz(request,quiz_id):
         id = quiz_id
     ).first()
     
+    # improved no quiz handling
     if not quiz:
         messages.error(request, "The requested quiz was not found or is no longer active.")
         return redirect("index")
@@ -2760,6 +2761,7 @@ def current_live_quiz(request,quiz_id):
 
 
 @login_required
+@csrf_protect
 def submit_quiz(request, quiz_id):
     """Handle quiz submission and store total score."""
     quiz = get_object_or_404(Quiz.objects.prefetch_related("questions__options"), id=quiz_id)
@@ -2775,7 +2777,7 @@ def submit_quiz(request, quiz_id):
         for question in quiz.questions.all():
             selected_option_id = request.POST.get(f"question_{question.id}")
 
-            if selected_option_id:
+            if selected_option_id and selected_option_id.isdigit():
                 try:
                     selected_option = QuizOption.objects.get(id=selected_option_id, question=question)
 
@@ -2785,6 +2787,8 @@ def submit_quiz(request, quiz_id):
 
                 except QuizOption.DoesNotExist:
                     messages.error(request, f"Invalid selection for question {question.id}")
+            else:
+                pass
 
         # Store the final submission with total score
         QuizSubmission.objects.create(user=request.user, quiz=quiz, score=score)

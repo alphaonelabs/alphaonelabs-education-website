@@ -79,8 +79,14 @@
         clearInterval(timerInterval);
         timerElement.innerText = "Time's up!";
         submitButton.disabled = true;
-        alert("Time's up! Your quiz will now be submitted.");
-        quizForm.submit();
+        // Add a visible notification element at the top of the form
+        const notification = document.createElement('div');
+        notification.className = 'bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4';
+        notification.textContent = "Time's up! Your quiz is being submitted...";
+        quizForm.prepend(notification);
+        setTimeout(() => {
+           quizForm.submit();
+        }, 1500);
       } else {
         let minutes = Math.floor(timeLeft / 60);
         let seconds = timeLeft % 60;

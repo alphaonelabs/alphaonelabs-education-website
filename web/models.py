@@ -1114,7 +1114,9 @@ class QuizSubmission(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.quiz.title} - Score: {self.score}"
-
+    
+class Meta:
+        unique_together = ("user", "quiz")
 
 class ProductImage(models.Model):
     goods = models.ForeignKey(Goods, on_delete=models.CASCADE, related_name="goods_images")

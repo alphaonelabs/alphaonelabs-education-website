@@ -400,14 +400,14 @@
           <div class="relative">
             <div id="quiz-container">
               {% for quiz_item in quiz %}
-              <div class="quiz-item {% if forloop.first %}active{% else %}hidden{% endif %}" data-quiz-id="{{ quiz.id }}">
+              <div class="quiz-item {% if forloop.first %}active{% else %}hidden{% endif %}" data-quiz-id="{{ quiz_item.id }}">
                 <div class="text-left">
                   <p class="text-lg font-semibold mb-2">Quiz Name:</p>
                   <p class="text-gray-700 dark:text-gray-300 mb-4">{{ quiz_item.title }}</p>
                   <p class="text-lg font-semibold mb-2">Details:</p>
                   <p class="text-gray-700 dark:text-gray-300 mb-4">{{ quiz_item.description }}</p>
                   <p class="text-lg font-semibold mb-2">Attempt by:</p>
-                  <p>{{ quiz_item.end_time }}, {{ quiz_item.end_date }}</p>
+                  <p>{{ quiz_item.end_date|date:"F j, Y" }} at {{ quiz_item.end_time|time:"g:i A" }}</p>
 
                   {% if user.is_authenticated %}
                     {% if quiz_item.id in has_submitted %}
@@ -428,16 +428,16 @@
             </div>
 
             
-            <button id="prevQuiz" class="absolute left-[-45px] top-1/2 pr-50 mr-50  transform -translate-y-1/2 bg-gray-600 text-white px-3 py-2 rounded-full shadow-md">
+            <button id="prevQuiz" class="absolute left-[-45px] top-1/2 pr-50 mr-50  transform -translate-y-1/2 bg-gray-600 text-white px-3 py-2 rounded-full shadow-md" aria-label="Previous quiz">
               ←
             </button>
-            <button id="nextQuiz" class="absolute right-[-45px] top-1/2 transform -translate-y-1/2 bg-gray-600 text-white px-3 py-2 rounded-full shadow-md">
+            <button id="nextQuiz" class="absolute right-[-45px] top-1/2 transform -translate-y-1/2 bg-gray-600 text-white px-3 py-2 rounded-full shadow-md" aria-label="Next quiz">
               →
             </button>
           </div>
 
           {% else %}
-          <p class="text-left text-gray-500 dark:text-gray-400">No challenge available for this week.</p>
+          <p class="text-left text-gray-500 dark:text-gray-400">No quizzes available right now.</p>
           {% endif %}
         </div>
 
