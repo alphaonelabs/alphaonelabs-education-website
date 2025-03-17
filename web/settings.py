@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+from cryptography.fernet import Fernet
 
 import environ
 
@@ -8,6 +9,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "django-insecure-5kyff0s@l_##j3jawec5@b%!^^e(j7v)ouj4b7q6kru#o#a)o3"
 
+# Encryption settings
+ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY', None)
+if not ENCRYPTION_KEY:
+    # Only in development - in production always set via environment
+    ENCRYPTION_KEY = Fernet.generate_key()
+    print("WARNING: Generated temporary encryption key. In production, set ENCRYPTION_KEY environment variable!")
 
 env = environ.Env()
 
