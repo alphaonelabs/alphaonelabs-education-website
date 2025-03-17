@@ -3592,15 +3592,36 @@ def create_group_enrollment(request, course_id):
         
         # Create group discount if applicable
         if min_members >= 3:
-            discount = Discount.objects.create(
-                name=f"Group Discount for {name}",
-                code=f"GROUP{group.id}",
-                description=f"Group discount for {name} - {course.title}",
-                discount_type="group",
-                percentage=Decimal('10.00'),  # 10% discount for groups
-                course=course
-            )
-            group.discount = discount
+            try:
+                # Check for existing group discount
+                existing_discount = Discount.objects.get(discount_type="group", course=course)
+                # Update existing discount if needed
+                if existing_discount.percentage != Decimal('10.00'):
+                    existing_discount.percentage = Decimal('10.00')
+                    existing_discount.save()
+                group.discount = existing_discount
+            except Discount.DoesNotExist:
+                # Create new discount if none exists
+                discount = Discount.objects.create(
+                    name=f"Group Discount for {name}",
+                    code=f"GROUP{group.id}",
+                    description=f"Group discount for {name} - {course.title}",
+                    discount_type="group",
+                    percentage=Decimal('10.00'),  # 10% discount for groups
+                    course=course,
+                    is_active=True,
+                    valid_from=timezone.now()
+                )
+                group.discount = discount
+            except Discount.MultipleObjectsReturned:
+                # Handle case where multiple discounts exist
+                messages.warning(request, 'Multiple group discounts found. Using the most recent one.')
+                latest_discount = Discount.objects.filter(
+                    discount_type="group", 
+                    course=course
+                ).order_by('-created_at').first()
+                group.discount = latest_discount
+            
             group.save()
         
         messages.success(request, 'Group enrollment created successfully!')
