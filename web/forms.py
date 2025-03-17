@@ -998,3 +998,15 @@ class StorefrontForm(forms.ModelForm):
             "logo",
             "is_active",
         ]
+
+
+class StudentEnrollmentForm(forms.Form):
+    first_name = forms.CharField(
+        max_length=30, required=True, widget=TailwindInput(attrs={"placeholder": "First Name"}), label="First Name"
+    )
+    last_name = forms.CharField(
+        max_length=30, required=True, widget=TailwindInput(attrs={"placeholder": "Last Name"}), label="Last Name"
+    )
+    email = forms.EmailField(
+        required=True, widget=TailwindEmailInput(attrs={"placeholder": "Student Email"}), label="Student Email"
+    )

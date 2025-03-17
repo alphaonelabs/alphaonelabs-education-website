@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+          content="Thank you for your donation to AlphaOne Labs. Your support helps us provide quality education to students around the world." />
+    <meta name="keywords"
+          content="donation, thank you, education, AlphaOne Labs, support" />
+    <title>Thank You for Your Donation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            background-color: #f8fafc;
+        }
+
+        .logo {
+            max-width: 150px;
+            margin-bottom: 20px;
+        }
+
+        .content {
+            padding: 20px 0;
+        }
+
+        .donation-details {
+            background-color: #f8fafc;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .donation-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eaeaea;
+        }
+
+        .donation-row:last-child {
+            border-bottom: none;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px 0;
+            font-size: 12px;
+            color: #666;
+            border-top: 1px solid #eaeaea;
+        }
+
+        .button {
+            display: inline-block;
+            background-color: #3b82f6;
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="header">
+        <h1>Thank You for Your Donation!</h1>
+      </div>
+      <div class="content">
+        <p>Dear {{ donation.display_name }},</p>
+        <p>
+          Thank you for your generous donation to {{ site_name }}. Your support helps us continue our mission to provide quality education to students around the world.
+        </p>
+        <div class="donation-details">
+          <h3>Donation Details:</h3>
+          <div class="donation-row">
+            <span>Amount:</span>
+            <span>${{ donation.amount }}</span>
+          </div>
+          <div class="donation-row">
+            <span>Type:</span>
+            <span>{{ donation.get_donation_type_display }}</span>
+          </div>
+          <div class="donation-row">
+            <span>Date:</span>
+            <span>{{ donation.created_at|date:"F j, Y" }}</span>
+          </div>
+          {% if donation.message %}
+            <div class="donation-row">
+              <span>Your Message:</span>
+              <span>{{ donation.message }}</span>
+            </div>
+          {% endif %}
+        </div>
+        <p>
+          {% if donation.is_recurring %}
+            Your monthly subscription has been set up successfully. Your card will be charged monthly until you cancel your subscription.
+          {% else %}
+            Your one-time donation has been processed successfully.
+          {% endif %}
+        </p>
+        <p>If you have any questions about your donation, please don't hesitate to contact us.</p>
+        <p>Thank you again for your support!</p>
+        <p>
+          Sincerely,
+          <br />
+          The {{ site_name }} Team
+        </p>
+      </div>
+      <div class="footer">
+        <p>{{ site_name }} | Education for Everyone</p>
+        <p>This is an automated email. Please do not reply to this message.</p>
+      </div>
+    </div>
+  </body>
+</html>

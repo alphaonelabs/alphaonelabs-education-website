@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block title %}
+  {% trans "Donate" %} | {{ block.super }}
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-12">
+    <div class="max-w-5xl mx-auto">
+      <!-- Header Section -->
+      <div class="text-center mb-12">
+        <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-4">{% trans "Support Our Mission" %}</h1>
+        <p class="text-xl text-gray-600 dark:text-gray-300 mb-6">
+          {% trans "Your donation helps us provide quality education to more students around the world." %}
+        </p>
+        {% if total_donations > 0 %}
+          <div class="bg-blue-50 dark:bg-gray-800 rounded-lg p-4 inline-block">
+            <p class="text-blue-600 dark:text-blue-400 font-medium">
+              {% trans "Total donations so far:" %} ${{ total_donations }}
+            </p>
+          </div>
+        {% endif %}
+      </div>
+      <!-- Main Content -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <!-- Donation Form -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <div class="mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">{% trans "Make a Donation" %}</h2>
+            <!-- Donation Type Tabs -->
+            <div class="flex border-b border-gray-200 dark:border-gray-700 mb-6">
+              <button id="one-time-tab"
+                      class="py-2 px-4 font-medium text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400">
+                {% trans "One-time" %}
+              </button>
+              <button id="monthly-tab"
+                      class="py-2 px-4 font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+                {% trans "Monthly" %}
+              </button>
+            </div>
+            <!-- Donation Form -->
+            <form id="donation-form" class="space-y-6">
+              <!-- Amount Selection -->
+              <div>
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{% trans "Select Amount" %}</label>
+                <div class="grid grid-cols-3 gap-2 mb-3">
+                  {% for amount in donation_amounts %}
+                    <button type="button"
+                            class="amount-btn bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg transition duration-200"
+                            data-amount="{{ amount }}">${{ amount }}</button>
+                  {% endfor %}
+                </div>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-700 dark:text-gray-300">$</span>
+                  <input type="number"
+                         id="custom-amount"
+                         class="w-full px-4 py-2 pl-8 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300"
+                         placeholder="Custom amount" />
+                </div>
+              </div>
+              <!-- Personal Information -->
+              <div class="space-y-4">
+                <div>
+                  <label for="donation-email"
+                         class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {% trans "Email" %}
+                  </label>
+                  <input type="email"
+                         id="donation-email"
+                         class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300"
+                         {% if user.is_authenticated %}value="{{ user.email }}" readonly{% endif %} />
+                </div>
+                <div>
+                  <label for="donation-message"
+                         class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {% trans "Message (Optional)" %}
+                  </label>
+                  <textarea id="donation-message"
+                            rows="3"
+                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300"
+                            placeholder="{% trans 'Share why you\'re donating...' %}"></textarea>
+                </div>
+                <div class="flex items-center">
+                  <input type="checkbox"
+                         id="anonymous-donation"
+                         class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
+                  <label for="anonymous-donation"
+                         class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                    {% trans "Make my donation anonymous" %}
+                  </label>
+                </div>
+              </div>
+              <!-- Payment Information -->
+              <div id="one-time-payment" class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{% trans "Card Information" %}</label>
+                  <div id="card-element"
+                       class="p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                  </div>
+                  <div id="card-errors" class="mt-2 text-red-600 text-sm"></div>
+                </div>
+                <button type="submit"
+                        id="submit-one-time"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
+                  <span id="button-text">{% trans "Donate Now" %}</span>
+                  <div id="spinner" class="hidden">
+                    <svg class="animate-spin h-5 w-5 text-white ml-2"
+                         xmlns="http://www.w3.org/2000/svg"
+                         fill="none"
+                         viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                      </path>
+                    </svg>
+                  </div>
+                </button>
+              </div>
+              <!-- Subscription Payment (Hidden by default) -->
+              <div id="subscription-payment" class="hidden space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{% trans "Card Information" %}</label>
+                  <div id="subscription-card-element"
+                       class="p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
+                  </div>
+                  <div id="subscription-card-errors" class="mt-2 text-red-600 text-sm"></div>
+                </div>
+                <button type="submit"
+                        id="submit-subscription"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
+                  <span id="subscription-button-text">{% trans "Subscribe Monthly" %}</span>
+                  <div id="subscription-spinner" class="hidden">
+                    <svg class="animate-spin h-5 w-5 text-white ml-2"
+                         xmlns="http://www.w3.org/2000/svg"
+                         fill="none"
+                         viewBox="0 0 24 24">
+                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                      </path>
+                    </svg>
+                  </div>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <!-- Information and Recent Donations -->
+        <div class="space-y-8">
+          <!-- Why Donate Section -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">{% trans "Why Donate?" %}</h2>
+            <div class="space-y-4 text-gray-600 dark:text-gray-300">
+              <p>{% trans "Your donation helps us:" %}</p>
+              <ul class="list-disc pl-5 space-y-2">
+                <li>{% trans "Provide scholarships to students in need" %}</li>
+                <li>{% trans "Develop new educational content and resources" %}</li>
+                <li>{% trans "Improve our platform and technology" %}</li>
+                <li>{% trans "Expand our reach to underserved communities" %}</li>
+              </ul>
+              <p class="mt-4">
+                {% trans "We're committed to making quality education accessible to everyone, regardless of their financial situation." %}
+              </p>
+            </div>
+          </div>
+          <!-- Recent Donations -->
+          {% if recent_donations %}
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">{% trans "Recent Donations" %}</h2>
+              <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for donation in recent_donations %}
+                  <li class="py-3">
+                    <div class="flex justify-between">
+                      <div>
+                        <p class="font-medium text-gray-800 dark:text-gray-200">{{ donation.display_name }}</p>
+                        {% if donation.message %}
+                          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ donation.message }}</p>
+                        {% endif %}
+                      </div>
+                      <div class="text-right">
+                        <p class="font-medium text-gray-800 dark:text-gray-200">${{ donation.amount }}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-500">{{ donation.created_at|date:"M d, Y" }}</p>
+                      </div>
+                    </div>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <!-- Stripe JS -->
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          // Initialize Stripe
+          const stripe = Stripe('{{ stripe_public_key }}');
+
+          // Create Elements instances
+          const elements = stripe.elements({
+              appearance: {
+                  theme: document.documentElement.classList.contains('dark') ? 'night' : 'stripe',
+                  variables: {
+                      colorPrimary: '#3b82f6',
+                  }
+              }
+          });
+
+          // Create card Elements
+          const cardElement = elements.create('card');
+          cardElement.mount('#card-element');
+
+          const subscriptionCardElement = elements.create('card');
+          subscriptionCardElement.mount('#subscription-card-element');
+
+          // Handle tab switching
+          const oneTimeTab = document.getElementById('one-time-tab');
+          const monthlyTab = document.getElementById('monthly-tab');
+          const oneTimePayment = document.getElementById('one-time-payment');
+          const subscriptionPayment = document.getElementById('subscription-payment');
+
+          oneTimeTab.addEventListener('click', function() {
+              oneTimeTab.classList.add('text-blue-600', 'dark:text-blue-400', 'border-b-2', 'border-blue-600', 'dark:border-blue-400');
+              oneTimeTab.classList.remove('text-gray-500', 'dark:text-gray-400');
+
+              monthlyTab.classList.remove('text-blue-600', 'dark:text-blue-400', 'border-b-2', 'border-blue-600', 'dark:border-blue-400');
+              monthlyTab.classList.add('text-gray-500', 'dark:text-gray-400');
+
+              oneTimePayment.classList.remove('hidden');
+              subscriptionPayment.classList.add('hidden');
+          });
+
+          monthlyTab.addEventListener('click', function() {
+              monthlyTab.classList.add('text-blue-600', 'dark:text-blue-400', 'border-b-2', 'border-blue-600', 'dark:border-blue-400');
+              monthlyTab.classList.remove('text-gray-500', 'dark:text-gray-400');
+
+              oneTimeTab.classList.remove('text-blue-600', 'dark:text-blue-400', 'border-b-2', 'border-blue-600', 'dark:border-blue-400');
+              oneTimeTab.classList.add('text-gray-500', 'dark:text-gray-400');
+
+              subscriptionPayment.classList.remove('hidden');
+              oneTimePayment.classList.add('hidden');
+          });
+
+          // Handle amount selection
+          const amountButtons = document.querySelectorAll('.amount-btn');
+          const customAmountInput = document.getElementById('custom-amount');
+
+          amountButtons.forEach(button => {
+              button.addEventListener('click', function() {
+                  // Remove active class from all buttons
+                  amountButtons.forEach(btn => {
+                      btn.classList.remove('bg-blue-100', 'dark:bg-blue-900', 'text-blue-700', 'dark:text-blue-300');
+                      btn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+                  });
+
+                  // Add active class to clicked button
+                  this.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+                  this.classList.add('bg-blue-100', 'dark:bg-blue-900', 'text-blue-700', 'dark:text-blue-300');
+
+                  // Set custom amount input to empty
+                  customAmountInput.value = '';
+              });
+          });
+
+          // Handle form submission for one-time donation
+          const donationForm = document.getElementById('donation-form');
+          const submitButton = document.getElementById('submit-one-time');
+          const buttonText = document.getElementById('button-text');
+          const spinner = document.getElementById('spinner');
+          const cardErrors = document.getElementById('card-errors');
+
+          donationForm.addEventListener('submit', async function(event) {
+              event.preventDefault();
+
+              // Determine if it's a one-time or subscription payment
+              const isSubscription = !oneTimePayment.classList.contains('hidden');
+
+              // Get amount
+              let amount = customAmountInput.value;
+              if (!amount) {
+                  const activeButton = document.querySelector('.amount-btn.bg-blue-100, .amount-btn.dark\\:bg-blue-900');
+                  if (activeButton) {
+                      amount = activeButton.getAttribute('data-amount');
+                  }
+              }
+
+              if (!amount || parseFloat(amount) <= 0) {
+                  cardErrors.textContent = '{% trans "Please select or enter a valid donation amount." %}';
+                  return;
+              }
+
+              // Get email
+              const email = document.getElementById('donation-email').value;
+              if (!email) {
+                  cardErrors.textContent = '{% trans "Please enter your email address." %}';
+                  return;
+              }
+
+              // Get message and anonymous status
+              const message = document.getElementById('donation-message').value;
+              const anonymous = document.getElementById('anonymous-donation').checked;
+
+              if (isSubscription) {
+                  // Handle subscription payment
+                  handleSubscriptionPayment(amount, email, message, anonymous);
+              } else {
+                  // Handle one-time payment
+                  handleOneTimePayment(amount, email, message, anonymous);
+              }
+          });
+
+          // Handle one-time payment
+          async function handleOneTimePayment(amount, email, message, anonymous) {
+              // Show loading state
+              submitButton.disabled = true;
+              buttonText.textContent = '{% trans "Processing..." %}';
+              spinner.classList.remove('hidden');
+              cardErrors.textContent = '';
+
+              try {
+                  // Create payment intent
+                  const response = await fetch('{% url "create_donation_payment_intent" %}', {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json',
+                          'X-CSRFToken': getCookie('csrftoken')
+                      },
+                      body: JSON.stringify({
+                          amount: amount,
+                          message: message,
+                          anonymous: anonymous
+                      })
+                  });
+
+                  const data = await response.json();
+
+                  if (data.error) {
+                      throw new Error(data.error);
+                  }
+
+                  // Confirm payment
+                  const {
+                      error,
+                      paymentIntent
+                  } = await stripe.confirmCardPayment(data.clientSecret, {
+                      payment_method: {
+                          card: cardElement,
+                          billing_details: {
+                              email: email
+                          }
+                      }
+                  });
+
+                  if (error) {
+                      throw new Error(error.message);
+                  }
+
+                  // Payment succeeded, redirect to success page
+                  window.location.href = `{% url "donation_success" %}?donation_id=${data.donation_id}`;
+
+              } catch (error) {
+                  cardErrors.textContent = error.message;
+                  submitButton.disabled = false;
+                  buttonText.textContent = '{% trans "Donate Now" %}';
+                  spinner.classList.add('hidden');
+              }
+          }
+
+          // Handle subscription payment
+          async function handleSubscriptionPayment(amount, email, message, anonymous) {
+              // Show loading state
+              const subscriptionButton = document.getElementById('submit-subscription');
+              const subscriptionButtonText = document.getElementById('subscription-button-text');
+              const subscriptionSpinner = document.getElementById('subscription-spinner');
+              const subscriptionCardErrors = document.getElementById('subscription-card-errors');
+
+              subscriptionButton.disabled = true;
+              subscriptionButtonText.textContent = '{% trans "Processing..." %}';
+              subscriptionSpinner.classList.remove('hidden');
+              subscriptionCardErrors.textContent = '';
+
+              try {
+                  // Create payment method
+                  const {
+                      paymentMethod,
+                      error
+                  } = await stripe.createPaymentMethod({
+                      type: 'card',
+                      card: subscriptionCardElement,
+                      billing_details: {
+                          email: email
+                      }
+                  });
+
+                  if (error) {
+                      throw new Error(error.message);
+                  }
+
+                  // Create subscription
+                  const response = await fetch('{% url "create_donation_subscription" %}', {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json',
+                          'X-CSRFToken': getCookie('csrftoken')
+                      },
+                      body: JSON.stringify({
+                          amount: amount,
+                          message: message,
+                          anonymous: anonymous,
+                          payment_method_id: paymentMethod.id
+                      })
+                  });
+
+                  const data = await response.json();
+
+                  if (data.error) {
+                      throw new Error(data.error);
+                  }
+
+                  // Confirm subscription
+                  const {
+                      error: confirmError
+                  } = await stripe.confirmCardPayment(data.client_secret);
+
+                  if (confirmError) {
+                      throw new Error(confirmError.message);
+                  }
+
+                  // Subscription succeeded, redirect to success page
+                  window.location.href = `{% url "donation_success" %}?donation_id=${data.donation_id}`;
+
+              } catch (error) {
+                  subscriptionCardErrors.textContent = error.message;
+                  subscriptionButton.disabled = false;
+                  subscriptionButtonText.textContent = '{% trans "Subscribe Monthly" %}';
+                  subscriptionSpinner.classList.add('hidden');
+              }
+          }
+
+          // Helper function to get CSRF token
+          function getCookie(name) {
+              let cookieValue = null;
+              if (document.cookie && document.cookie !== '') {
+                  const cookies = document.cookie.split(';');
+                  for (let i = 0; i < cookies.length; i++) {
+                      const cookie = cookies[i].trim();
+                      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                          break;
+                      }
+                  }
+              }
+              return cookieValue;
+          }
+      });
+  </script>
+{% endblock extra_js %}

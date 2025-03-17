@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-md mx-auto bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
+      <!-- Header -->
+      <div class="mb-6">
+        <h2 class="text-3xl font-extrabold text-gray-900 dark:text-gray-100 text-center">
+          Enroll Student in – {{ course.title }}
+        </h2>
+        <p class="mt-2 text-center text-sm text-gray-600 dark:text-gray-300">
+          Enter the student's details below to create a new account and enroll them.
+        </p>
+      </div>
+      <!-- Enrollment Form -->
+      <form method="post" class="space-y-6">
+        {% csrf_token %}
+        <div class="space-y-4">
+          <!-- First Name Field -->
+          <div>
+            <label for="id_first_name"
+                   class="block text-sm font-medium text-gray-700 dark:text-gray-300">First Name</label>
+            <input type="text"
+                   name="first_name"
+                   id="id_first_name"
+                   placeholder="First Name"
+                   maxlength="30"
+                   required
+                   class="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md px-4 py-2 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+            {% if form.first_name.errors %}<p class="text-red-500 text-xs mt-1">{{ form.first_name.errors.0 }}</p>{% endif %}
+          </div>
+          <!-- Last Name Field -->
+          <div>
+            <label for="id_last_name"
+                   class="block text-sm font-medium text-gray-700 dark:text-gray-300">Last Name</label>
+            <input type="text"
+                   name="last_name"
+                   id="id_last_name"
+                   placeholder="Last Name"
+                   maxlength="30"
+                   required
+                   class="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md px-4 py-2 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+            {% if form.last_name.errors %}<p class="text-red-500 text-xs mt-1">{{ form.last_name.errors.0 }}</p>{% endif %}
+          </div>
+          <!-- Student Email Field -->
+          <div>
+            <label for="id_email"
+                   class="block text-sm font-medium text-gray-700 dark:text-gray-300">Student Email</label>
+            <input type="email"
+                   name="email"
+                   id="id_email"
+                   placeholder="Student Email"
+                   maxlength="320"
+                   required
+                   class="mt-1 block w-full border border-gray-300 dark:border-gray-700 rounded-md px-4 py-2 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-teal-500" />
+            {% if form.email.errors %}<p class="text-red-500 text-xs mt-1">{{ form.email.errors.0 }}</p>{% endif %}
+          </div>
+        </div>
+        {% if form.non_field_errors %}<div class="text-red-500 text-sm">{{ form.non_field_errors }}</div>{% endif %}
+        <div class="mt-6 flex justify-between">
+          <a href="{% url 'course_detail' course.slug %}"
+             class="w-1/2 inline-flex justify-center py-2 px-4 border border-transparent rounded-md text-sm font-medium text-gray-700 bg-gray-200 hover:bg-gray-300">
+            Back to Course
+          </a>
+          <button type="submit"
+                  class="w-1/2 ml-4 flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+            Enroll Student
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
