@@ -1102,7 +1102,9 @@ class ProductImage(models.Model):
     alt_text = models.CharField(max_length=125, blank=True, help_text="Accessibility description for screen readers")
 
     def __str__(self):
-        return f"Image for {self.goods.name}"
+            if self.challenge.challenge_type == 'weekly':
+                return f"{self.user.username}'s submission for Week {self.challenge.week_number}"
+            return f"{self.user.username}'s submission for {self.challenge.title}"
 
 
 class Order(models.Model):
