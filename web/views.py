@@ -2794,7 +2794,7 @@ def submit_quiz(request, quiz_id):
         messages.success(request, f"Quiz submitted! Your score: {score}")
         return redirect("leaderboard", quiz_id=quiz.id)
 
-    return redirect("submit_challenge", quiz_id=quiz.id)
+    return redirect("current_live_quiz", quiz_id=quiz.id)
 
 
 
