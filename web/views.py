@@ -153,7 +153,7 @@ def index(request):
     featured_courses = Course.objects.filter(status="published", is_featured=True).order_by("-created_at")[:3]
 
     # Get current challenge
-    current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
+    current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now())
 
     # Get signup form if needed
     form = None
@@ -2688,7 +2688,7 @@ def active_challenges(request):
     )
 
 def challenge_detail(request, challenge_id):
-    challenge = get_object_or_404(Challenge, week_number=week_number)
+    challenge = get_object_or_404(Challenge, id=challenge_id)
     submissions = ChallengeSubmission.objects.filter(challenge=challenge)
     # Check if the current user has submitted this challenge
     user_submission = None
@@ -2704,12 +2704,12 @@ def challenge_detail(request, challenge_id):
 
 @login_required
 def challenge_submit(request, challenge_id):
-    challenge = get_object_or_404(Challenge, week_number=week_number)
+    challenge = get_object_or_404(Challenge, id=challenge_id)
     # Check if the user has already submitted this challenge
     existing_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
 
     if existing_submission:
-        return redirect("challenge_detail", week_number=week_number)
+        return redirect("challenge_detail", challenge_id=challenge_id)
 
     if request.method == "POST":
         form = ChallengeSubmissionForm(request.POST)
@@ -2719,7 +2719,7 @@ def challenge_submit(request, challenge_id):
             submission.challenge = challenge
             submission.save()
             messages.success(request, "Your submission has been recorded!")
-            return redirect("challenge_detail", week_number=week_number)
+            return redirect("challenge_detail", challenge_id=challenge_id)
     else:
         form = ChallengeSubmissionForm()
 

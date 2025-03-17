@@ -1093,7 +1093,11 @@ class ChallengeSubmission(models.Model):
     submitted_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.user.username}'s submission for Week {self.challenge.week_number}"
+        if self.challenge.challenge_type == 'weekly':
+            return f"{self.user.username}'s submission for Week {self.challenge.week_number}"
+        return f"{self.user.username}'s submission for {self.challenge.title}"
+
+    
 
 
 class ProductImage(models.Model):
