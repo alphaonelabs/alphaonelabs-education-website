@@ -2663,20 +2663,20 @@ def active_challenges(request):
     current_time = timezone.now()
     weekly_challenge = Challenge.objects.filter(
         challenge_type='weekly',
-        start_date__lte=current_time, 
+        start_date__lte=current_time,
         end_date__gte=current_time
     ).first()
-    
+
     one_time_challenges = Challenge.objects.filter(
         challenge_type='one_time',
-        start_date__lte=current_time, 
+        start_date__lte=current_time,
         end_date__gte=current_time
     )
-    
+
     user_submission = None
     if request.user.is_authenticated and weekly_challenge:
         user_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=weekly_challenge).first()
-    
+
     return render(
         request,
         "web/current_weekly_challenge.html",
@@ -2686,6 +2686,7 @@ def active_challenges(request):
             "user_submission": user_submission,
         },
     )
+
 
 def challenge_detail(request, challenge_id):
     challenge = get_object_or_404(Challenge, id=challenge_id)

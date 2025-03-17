@@ -13,7 +13,14 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='challenge',
             name='challenge_type',
-            field=models.CharField(choices=[('weekly', 'Weekly Challenge'), ('one_time', 'One-time Challenge')], default='weekly', max_length=10),
+            field=models.CharField(
+                choices=[
+                    ('weekly',
+                     'Weekly Challenge'),
+                    ('one_time',
+                     'One-time Challenge')],
+                default='weekly',
+                max_length=10),
         ),
         migrations.AlterField(
             model_name='challenge',
@@ -22,6 +29,9 @@ class Migration(migrations.Migration):
         ),
         migrations.AddConstraint(
             model_name='challenge',
-            constraint=models.UniqueConstraint(condition=models.Q(('challenge_type', 'weekly')), fields=('week_number',), name='unique_week_number_for_weekly_challenges'),
+            constraint=models.UniqueConstraint(
+                condition=models.Q(
+                    ('challenge_type', 'weekly')), fields=(
+                    'week_number',), name='unique_week_number_for_weekly_challenges'),
         ),
     ]
