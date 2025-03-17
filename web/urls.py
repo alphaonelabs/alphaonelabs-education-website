@@ -219,6 +219,8 @@ urlpatterns += i18n_patterns(
     path('join-group/<str:invitation_token>/', views.join_group, name='join_group'),
     path('group/<int:group_id>/', views.group_detail, name='group_detail'),
     path('course/<int:course_id>/apply-discount/', views.apply_discount, name='apply_discount'),
+    path('share-group/<str:invitation_token>/', views.share_group, name='share_group'),
+    path('group/<int:group_id>/leave/', views.leave_group, name='leave_group'),
     prefix_default_language=True,
 )
 
