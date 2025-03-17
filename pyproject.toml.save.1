@@ -1,0 +1,53 @@
+[tool.poetry]
+name = "education-website"
+version = "0.1.0"
+description = "Alpha One Labs Educational Platform"
+authors = ["Alpha One Labs <info@alphaonelabs.com>"]
+packages = [
+    { include = "web" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+django ="^1.36.4" 
+django-environ = "^0.11.2"
+django-simple-captcha = "^0.5.20"
+requests = "^2.31.0"
+django-sendgrid-v5 = "^1.2.3"
+djlint = "^1.36.4"
+stripe = "^11.4.1"
+google-auth-oauthlib = "^1.2.0"
+google-auth-httplib2 = "^0.2.0"
+google-api-python-client = "^2.118.0"
+icalendar = "^5.0.11"
+whitenoise = "^6.8.2"
+django-allauth = "^65.3.1"
+django-storages = "^1.14.4"
+django-markdownx = "^4.0.7"
+django-browser-reload = "^1.18.0"
+
+[tool.poetry.group.dev.dependencies]
+djlint = "^1.34.1"
+pre-commit = "^3.6.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.djlint]
+profile = "django"
+indent = 2
+blank_line_after_tag = "load,extends"
+close_void_tags = true
+format_css = true
+format_js = true
+
+[tool.black]
+line-length = 120
+target-version = ['py312']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "ruff"
+multi_line_output = 3
+line_length = 120
