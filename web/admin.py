@@ -19,6 +19,7 @@ from .models import (
     Course,
     CourseMaterial,
     CourseProgress,
+    Donation,
     Enrollment,
     ForumCategory,
     ForumReply,
@@ -514,3 +515,27 @@ class OrderItemAdmin(admin.ModelAdmin):
 # Unregister the default User admin and register our custom one
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
+
+
+@admin.register(Donation)
+class DonationAdmin(admin.ModelAdmin):
+    list_display = ("email", "amount", "donation_type", "status", "created_at", "display_name")
+    list_filter = ("donation_type", "status", "created_at", "anonymous")
+    search_fields = ("email", "message", "user__username", "user__email")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (
+            "Donation Information",
+            {"fields": ("user", "email", "amount", "donation_type", "status", "message", "anonymous")},
+        ),
+        (
+            "Stripe Information",
+            {"fields": ("stripe_payment_intent_id", "stripe_subscription_id", "stripe_customer_id")},
+        ),
+        ("Timestamps", {"fields": ("created_at", "updated_at")}),
+    )
+
+    def display_name(self, obj):
+        return obj.display_name
+
+    display_name.short_description = "Name"
