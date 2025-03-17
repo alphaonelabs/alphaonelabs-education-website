@@ -3590,7 +3590,14 @@ def donation_cancel(request):
 @login_required
 def create_group_enrollment(request, course_id):
     course = get_object_or_404(Course, id=course_id)
+    discount = Discount.objects.get(discount_type="group", course=course)
     
+    context = {
+        'course': course,
+        'discount': discount,
+        'min_members': 3  # or get this from settings/configuration
+    }
+    # rest of the view code...
     if request.method == 'POST':
         name = request.POST.get('name')
         min_members = int(request.POST.get('min_members', 3))
