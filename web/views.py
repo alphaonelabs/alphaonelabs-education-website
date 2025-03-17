@@ -25,8 +25,7 @@ from django.http import (
     FileResponse,
     HttpResponse,
     HttpResponseForbidden,
-    JsonResponse,
-    Http404
+    JsonResponse
 )
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -279,7 +278,7 @@ def profile(request):
                 "enrollments": enrollments,
                 "completed_courses": completed_courses,
                 "avg_progress": avg_progress,
-                "certificates":certificates
+                "certificates": certificates
             }
         )
 
@@ -3152,6 +3151,27 @@ def delete_certificate(request, uuid):
         return redirect("certificate_list")
     
     return render(request, "certificates/delete_confirm.html", {"certificate": certificate})
+
+@login_required
+def certificate_detail(request, uuid):
+    """
+    View function to display details of a certificate.
+    Allows the owner to view, get embed code, and manage their certificate.
+    """
+    certificate = get_object_or_404(Certificate, uuid=uuid)
+
+    # Check if the request is for an embedded view
+    embed = request.GET.get("embed", False)
+
+    return render(
+        request,
+        "certificate_detail.html",
+        {
+            "certificate": certificate,
+            "embed": embed,
+        },
+    )
+
 
 @login_required
 @teacher_required

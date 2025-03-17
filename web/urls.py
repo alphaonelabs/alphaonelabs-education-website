@@ -214,7 +214,7 @@ urlpatterns += i18n_patterns(
     path("analytics/", sales_analytics, name="sales_analytics"),
     path("analytics/data/", sales_data, name="sales_data"),
     path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
-    # Add to urls.py
+    # Certificate URLs
     path("certificates/", views.certificate_list, name="certificate_list"),
     path("certificates/upload/", views.upload_certificate, name="upload_certificate"),
     path("certificates/<uuid:uuid>/", views.certificate_detail, name="certificate_detail"),
