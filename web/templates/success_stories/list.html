@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}Success Stories{% endblock %}
+{% block content %}
+  <main class="flex-1 w-full max-w-7xl mx-auto px-4 md:px-6 py-8">
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold mb-2">Success Stories</h1>
+      <p class="text-gray-600 dark:text-gray-300">
+        Inspiring stories from our community members who have achieved their educational goals.
+      </p>
+      {% if user.is_authenticated %}
+        <div class="mt-4">
+          <a href="{% url 'create_success_story' %}"
+             class="inline-flex items-center bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg transition-colors">
+            <i class="fas fa-plus-circle mr-2"></i> Share Your Success Story
+          </a>
+        </div>
+      {% endif %}
+    </div>
+    {% if stories %}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for story in stories %}
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
+            {% if story.featured_image %}
+              <div class="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-700">
+                <img src="{{ story.featured_image.url }}"
+                     alt="{{ story.title }}"
+                     class="object-cover w-full h-full" />
+              </div>
+            {% else %}
+              <div class="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                <i class="fas fa-graduation-cap text-gray-300 dark:text-gray-500 text-5xl"></i>
+              </div>
+            {% endif %}
+            <div class="p-4">
+              <h2 class="text-xl font-semibold mb-2 line-clamp-2">
+                <a href="{% url 'success_story_detail' slug=story.slug %}"
+                   class="hover:text-orange-500 transition-colors">{{ story.title }}</a>
+              </h2>
+              <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-3">
+                <span class="mr-2">{{ story.author.get_full_name|default:story.author.username }}</span>
+                <span class="text-xs">{{ story.published_at|date:"F j, Y" }}</span>
+              </div>
+              {% if story.excerpt %}
+                <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 mb-3">{{ story.excerpt }}</p>
+              {% else %}
+                <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 mb-3">
+                  {{ story.content|striptags|truncatewords:30 }}
+                </p>
+              {% endif %}
+              <div class="mt-4">
+                <a href="{% url 'success_story_detail' slug=story.slug %}"
+                   class="text-orange-500 hover:text-orange-600 font-medium transition-colors">
+                  Read More <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      {% if stories.has_other_pages %}
+        <div class="mt-8 flex justify-center">
+          <nav class="inline-flex rounded-md shadow">
+            {% if stories.has_previous %}
+              <a href="?page={{ stories.previous_page_number }}"
+                 class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50">Previous</a>
+            {% endif %}
+            {% for i in stories.paginator.page_range %}
+              {% if i == stories.number %}
+                <span class="px-3 py-2 text-sm font-medium text-white bg-orange-500 border border-orange-500">{{ i }}</span>
+              {% elif i > stories.number|add:"-3" and i < stories.number|add:"3" %}
+                <a href="?page={{ i }}"
+                   class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50">{{ i }}</a>
+              {% endif %}
+            {% endfor %}
+            {% if stories.has_next %}
+              <a href="?page={{ stories.next_page_number }}"
+                 class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50">Next</a>
+            {% endif %}
+          </nav>
+        </div>
+      {% endif %}
+    {% else %}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full mb-4">
+          <i class="fas fa-graduation-cap text-gray-400 dark:text-gray-500 text-2xl"></i>
+        </div>
+        <h3 class="text-lg font-medium mb-2">No success stories yet</h3>
+        <p class="text-gray-500 dark:text-gray-400 mb-6">Be the first to share your educational journey and inspire others!</p>
+        {% if user.is_authenticated %}
+          <a href="{% url 'create_success_story' %}"
+             class="inline-flex items-center bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+            <i class="fas fa-plus-circle mr-2"></i> Share Your Success Story
+          </a>
+        {% endif %}
+      </div>
+    {% endif %}
+  </main>
+{% endblock %}

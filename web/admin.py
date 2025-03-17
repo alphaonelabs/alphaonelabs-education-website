@@ -37,6 +37,7 @@ from .models import (
     SessionAttendance,
     Storefront,
     Subject,
+    SuccessStory,
     WebRequest,
 )
 
@@ -334,6 +335,15 @@ class BlogPostAdmin(admin.ModelAdmin):
     list_display = ("title", "author", "status", "published_at", "created_at")
     list_filter = ("status", "created_at", "published_at")
     search_fields = ("title", "content", "author__username", "tags")
+    prepopulated_fields = {"slug": ("title",)}
+    raw_id_fields = ("author",)
+
+
+@admin.register(SuccessStory)
+class SuccessStoryAdmin(admin.ModelAdmin):
+    list_display = ("title", "author", "status", "published_at", "created_at")
+    list_filter = ("status", "created_at", "published_at")
+    search_fields = ("title", "content", "author__username")
     prepopulated_fields = {"slug": ("title",)}
     raw_id_fields = ("author",)
 
