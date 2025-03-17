@@ -2674,7 +2674,7 @@ def active_challenges(request):
         },
     )
 
-def challenge_detail(request, week_number):
+def challenge_detail(request, challenge_id):
     challenge = get_object_or_404(Challenge, week_number=week_number)
     submissions = ChallengeSubmission.objects.filter(challenge=challenge)
     # Check if the current user has submitted this challenge
@@ -2690,7 +2690,7 @@ def challenge_detail(request, week_number):
 
 
 @login_required
-def challenge_submit(request, week_number):
+def challenge_submit(request, challenge_id):
     challenge = get_object_or_404(Challenge, week_number=week_number)
     # Check if the user has already submitted this challenge
     existing_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()

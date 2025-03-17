@@ -1,4 +1,5 @@
-{% extends "base.html" %} {% block content %}
+{% extends "base.html" %} 
+{% block content %}
 <div class="container mx-auto px-4 py-8">
   <h1 class="text-3xl font-bold mb-4 text-center">Challenges</h1>
 
@@ -12,7 +13,8 @@
       {{ current_challenge.end_date }}
     </p>
   </div>
-  {% endif %} {% if one_time_challenges %}
+  {% endif %} 
+  {% if one_time_challenges %}
   <h2 class="text-2xl font-bold mb-4">One-time Challenges</h2>
   {% for challenge in one_time_challenges %}
   <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mb-4">
@@ -23,8 +25,9 @@
       challenge.end_date }}
     </p>
   </div>
-  {% endfor %} {% endif %} {% if not current_challenge and not
-  one_time_challenges %}
+  {% endfor %} 
+  {% endif %} 
+  {% if not current_challenge and not one_time_challenges %}
   <p class="text-center text-gray-500 dark:text-gray-400">
     No challenges available at this time.
   </p>

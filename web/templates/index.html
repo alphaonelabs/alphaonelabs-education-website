@@ -377,7 +377,7 @@
                 {{ current_challenge.start_date }} to {{ current_challenge.end_date }}
               </p>
               {% if user.is_authenticated %}
-                <a href="{% url 'challenge_submit' current_challenge.week_number %}"
+                <a href="{% url 'challenge_submit' current_challenge.id %}"
                    class="inline-block bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 transition-shadow shadow-md">
                   Complete My Challenge
                 </a>
