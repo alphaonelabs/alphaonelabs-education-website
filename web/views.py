@@ -3127,18 +3127,15 @@ def upload_certificate(request):
     
     return render(request, "certificates/upload.html", {"form": form})
 
-def certificate_detail(request, uuid):
-    certificate = get_object_or_404(Certificate, uuid=uuid)
-    
-    # Only allow viewing if certificate is public or user is the owner
-    if not certificate.is_public and (not request.user.is_authenticated or request.user != certificate.user):
-        raise Http404("Certificate not found")
-    
-    is_embed = request.GET.get('embed') == 'true'
-    template = "certificates/embed.html" if is_embed else "certificates/detail.html"
-    
-    return render(request, template, {"certificate": certificate})
-
+from django.contrib.auth import get_user_model, login
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.models import User
+from django.core.mail import send_mail
+from django.core.paginator import Paginator
+from django.db import IntegrityError, models, transaction
+from django.db.models import Avg, Count, Q, Sum
+from django.http import FileResponse, HttpResponse, HttpResponseForbidden, JsonResponse, Http404
 @login_required
 def delete_certificate(request, uuid):
     certificate = get_object_or_404(Certificate, uuid=uuid, user=request.user)
