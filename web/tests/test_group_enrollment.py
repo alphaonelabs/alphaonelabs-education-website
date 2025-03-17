@@ -64,7 +64,7 @@ class GroupEnrollmentTest(BaseGroupEnrollmentTest):
         # Add any additional setup specific to group enrollment tests
 
     def test_create_group_enrollment(self):
-        self.client.login(username="student1", password="pass")
+        self.client.login(username="student1", password="testpass123")
         url = reverse("create_group_enrollment", args=[self.course.id])
         data = {
             "name": "Test Group",
@@ -89,7 +89,7 @@ class GroupEnrollmentTest(BaseGroupEnrollmentTest):
         GroupMember.objects.create(group=group, user=self.students[0])
         
         # Test joining the group
-        self.client.login(username="student2", password="pass")
+        self.client.login(username="student2", password="testpass123")
         url = reverse("join_group", args=[group.invitation_token])
         response = self.client.post(url)
         
@@ -113,7 +113,7 @@ class GroupEnrollmentTest(BaseGroupEnrollmentTest):
         # Check discount
         self.assertTrue(group.is_eligible_for_discount())
         self.assertEqual(group.discount.percentage, 10.00)  # 10% discount
-        self.assertEqual(group.discount.apply_discount, 90.00)  # $100 - 10%
+        self.assertEqual(group.discount.apply_discount(100), 90.00)
 
     def test_duplicate_group_membership(self):
         # Create a group
@@ -126,7 +126,7 @@ class GroupEnrollmentTest(BaseGroupEnrollmentTest):
         GroupMember.objects.create(group=group, user=self.students[0])
         
         # Try to join the same group again
-        self.client.login(username="student1", password="pass")
+        self.client.login(username="student1", password="testpass123")
         url = reverse("join_group", args=[group.invitation_token])
         response = self.client.post(url)
         
