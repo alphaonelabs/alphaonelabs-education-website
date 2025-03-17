@@ -1000,7 +1000,6 @@ class StorefrontForm(forms.ModelForm):
             "is_active",
         ]
 
-
 class CertificateForm(forms.ModelForm):
     class Meta:
         model = Certificate
@@ -1009,3 +1008,13 @@ class CertificateForm(forms.ModelForm):
             "issue_date": forms.DateInput(attrs={"type": "date"}),
             "expiry_date": forms.DateInput(attrs={"type": "date"}),
         }
+class StudentEnrollmentForm(forms.Form):
+    first_name = forms.CharField(
+        max_length=30, required=True, widget=TailwindInput(attrs={"placeholder": "First Name"}), label="First Name"
+    )
+    last_name = forms.CharField(
+        max_length=30, required=True, widget=TailwindInput(attrs={"placeholder": "Last Name"}), label="Last Name"
+    )
+    email = forms.EmailField(
+        required=True, widget=TailwindEmailInput(attrs={"placeholder": "Student Email"}), label="Student Email"
+    )

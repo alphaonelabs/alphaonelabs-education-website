@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block title %}
+  {% trans "Donation Successful" %} | {{ block.super }}
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-16">
+    <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+      <div class="text-center mb-8">
+        <!-- Success Icon -->
+        <div class="inline-flex items-center justify-center h-24 w-24 rounded-full bg-green-100 dark:bg-green-900 mb-6">
+          <svg class="h-12 w-12 text-green-600 dark:text-green-400"
+               xmlns="http://www.w3.org/2000/svg"
+               fill="none"
+               viewBox="0 0 24 24"
+               stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+          </svg>
+        </div>
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-4">{% trans "Thank You for Your Donation!" %}</h1>
+        <p class="text-xl text-gray-600 dark:text-gray-300">
+          {% if donation.is_recurring %}
+            {% trans "Your monthly subscription has been set up successfully." %}
+          {% else %}
+            {% trans "Your donation has been processed successfully." %}
+          {% endif %}
+        </p>
+      </div>
+      <!-- Donation Details -->
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 mb-8">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-4">{% trans "Donation Details" %}</h2>
+        <div class="space-y-3">
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">{% trans "Amount" %}</span>
+            <span class="font-medium text-gray-800 dark:text-gray-200">${{ donation.amount }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">{% trans "Type" %}</span>
+            <span class="font-medium text-gray-800 dark:text-gray-200">{{ donation.get_donation_type_display }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-600 dark:text-gray-400">{% trans "Date" %}</span>
+            <span class="font-medium text-gray-800 dark:text-gray-200">{{ donation.created_at|date:"F j, Y" }}</span>
+          </div>
+          {% if donation.message %}
+            <div class="pt-3 border-t border-gray-200 dark:border-gray-600">
+              <span class="block text-gray-600 dark:text-gray-400 mb-1">{% trans "Your Message" %}</span>
+              <p class="font-medium text-gray-800 dark:text-gray-200">{{ donation.message }}</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      <!-- Next Steps -->
+      <div class="text-center">
+        <p class="text-gray-600 dark:text-gray-300 mb-6">
+          {% if donation.is_recurring %}
+            {% trans "You will receive a confirmation email shortly. Your card will be charged monthly until you cancel your subscription." %}
+          {% else %}
+            {% trans "You will receive a confirmation email shortly with the details of your donation." %}
+          {% endif %}
+        </p>
+        <div class="flex flex-col sm:flex-row justify-center gap-4">
+          <a href="{% url 'index' %}"
+             class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition duration-200 text-center">
+            {% trans "Return to Homepage" %}
+          </a>
+          {% if user.is_authenticated %}
+            <a href="{% url 'profile' %}"
+               class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-6 py-3 rounded-lg transition duration-200 text-center">
+              {% trans "View Your Profile" %}
+            </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}

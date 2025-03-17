@@ -1146,7 +1146,6 @@ class OrderItem(models.Model):
     def __str__(self):
         return f"{self.quantity}x {self.goods.name}"
 
-
 class Certificate(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="certificates")
     title = models.CharField(max_length=200)
@@ -1175,3 +1174,50 @@ class Certificate(models.Model):
     def get_embed_code(self):
         site_url = settings.SITE_URL
         return f'<iframe src="{site_url}{self.get_absolute_url()}?embed=true" width="600" height="400" frameborder="0"></iframe>'
+
+class Donation(models.Model):
+    """Model for storing donation information."""
+
+    DONATION_TYPES = (
+        ("one_time", "One-time Donation"),
+        ("subscription", "Monthly Subscription"),
+    )
+
+    DONATION_STATUS = (
+        ("pending", "Pending"),
+        ("completed", "Completed"),
+        ("failed", "Failed"),
+        ("refunded", "Refunded"),
+        ("cancelled", "Cancelled"),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="donations")
+    email = models.EmailField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    donation_type = models.CharField(max_length=20, choices=DONATION_TYPES)
+    status = models.CharField(max_length=20, choices=DONATION_STATUS, default="pending")
+    stripe_payment_intent_id = models.CharField(max_length=100, blank=True, default="")
+    stripe_subscription_id = models.CharField(max_length=100, blank=True, default="")
+    stripe_customer_id = models.CharField(max_length=100, blank=True, default="")
+    message = models.TextField(blank=True)
+    anonymous = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.email} - {self.amount} ({self.get_donation_type_display()})"
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    @property
+    def is_recurring(self):
+        return self.donation_type == "subscription"
+
+    @property
+    def display_name(self):
+        if self.anonymous:
+            return "Anonymous"
+        if self.user:
+            return self.user.get_full_name() or self.user.username
+        return self.email.split("@")[0]  # Use part before @ in email
