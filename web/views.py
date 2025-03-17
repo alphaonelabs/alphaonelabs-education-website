@@ -20,7 +20,6 @@ from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.db import IntegrityError, models, transaction
 from django.db.models import Avg, Count, Q, Sum
-<<<<<<< HEAD
 
 from django.http import (
     FileResponse,
@@ -28,9 +27,6 @@ from django.http import (
     HttpResponseForbidden,
     JsonResponse
 )
-=======
-from django.http import FileResponse, HttpResponse, HttpResponseForbidden, JsonResponse
->>>>>>> 74fc92f (Add digital Certificate management and Profile update)
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import NoReverseMatch, reverse, reverse_lazy
@@ -3124,11 +3120,7 @@ class StorefrontDetailView(LoginRequiredMixin, generic.DetailView):
 def gsoc_landing_page(request):
     return render(request, "gsoc_landing_page.html")
 
-<<<<<<< HEAD
 #certificate views
-=======
-
->>>>>>> 74fc92f (Add digital Certificate management and Profile update)
 @login_required
 def certificate_list(request):
     certificates = Certificate.objects.filter(user=request.user)
@@ -3169,7 +3161,7 @@ def certificate_detail(request, uuid):
     certificate = get_object_or_404(Certificate, uuid=uuid)
 
     # Check if user has permission to view the certificate
-    if certificate.user == request.user and not request.GET.get("embed", False):
+    if certificate.user != request.user and not request.GET.get("embed", False):
        messages.error(request, "You don't have permission to view this certificate.")
        return redirect("certificate_list")
 
