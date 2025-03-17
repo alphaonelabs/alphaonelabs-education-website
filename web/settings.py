@@ -240,13 +240,13 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Email settings
 if DEBUG:
-    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-    print("Using console email backend for development")
+    EMAIL_BACKEND = "web.email_backend.SlackNotificationEmailBackend"
+    print("Using console email backend with Slack notifications for development")
     DEFAULT_FROM_EMAIL = "noreply@example.com"  # Default for development
     SENDGRID_API_KEY = None  # Not needed in development
 else:
     # Production email settings
-    EMAIL_BACKEND = "sendgrid_backend.SendgridBackend"
+    EMAIL_BACKEND = "web.email_backend.SlackNotificationEmailBackend"
     SENDGRID_API_KEY = env.str("SENDGRID_API_KEY", default=env.str("SENDGRID_PASSWORD", default=""))
     EMAIL_HOST = "smtp.sendgrid.net"
     EMAIL_PORT = 587
@@ -278,6 +278,9 @@ TWITTER_USERNAME = env.str("TWITTER_USERNAME", default="alphaonelabs")
 
 # Slack Integration
 SLACK_WEBHOOK_URL = env.str("SLACK_WEBHOOK_URL", default="")
+
+# Slack webhook for email notifications
+EMAIL_SLACK_WEBHOOK = env.str("EMAIL_SLACK_WEBHOOK", default=SLACK_WEBHOOK_URL)
 
 LANGUAGES = [
     ("en", "English"),
