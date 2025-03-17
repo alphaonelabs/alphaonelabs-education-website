@@ -103,6 +103,9 @@ from .models import (
     StudyGroup,
     TimeSlot,
     WebRequest,
+    GroupEnrollment,
+    GroupMember,
+    Discount,
 )
 from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
 from .referrals import send_referral_reward_email
@@ -3582,3 +3585,133 @@ def donation_success(request):
 def donation_cancel(request):
     """Handle donation cancellation."""
     return redirect("donate")
+
+
+@login_required
+def create_group_enrollment(request, course_id):
+    course = get_object_or_404(Course, id=course_id)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        min_members = int(request.POST.get('min_members', 3))
+        
+        # Create group enrollment
+        group = GroupEnrollment.objects.create(
+            name=name,
+            creator=request.user,
+            course=course,
+            min_members=min_members
+        )
+        
+        # Add creator as first member
+        GroupMember.objects.create(group=group, user=request.user)
+        
+        # Create group discount if applicable
+        if min_members >= 3:
+            discount = Discount.objects.create(
+                name=f"Group Discount for {name}",
+                code=f"GROUP{group.id}",
+                description=f"Group discount for {name} - {course.title}",
+                discount_type="group",
+                percentage=Decimal('10.00'),  # 10% discount for groups
+                course=course
+            )
+            group.discount = discount
+            group.save()
+        
+        messages.success(request, 'Group enrollment created successfully!')
+        return redirect('group_detail', group_id=group.id)
+    
+    return render(request, 'web/create_group_enrollment.html', {
+        'course': course
+    })
+
+@login_required
+def join_group(request, invitation_token):
+    group = get_object_or_404(GroupEnrollment, invitation_token=invitation_token)
+    
+    if request.method == 'POST':
+        # Check if user is already a member
+        if GroupMember.objects.filter(group=group, user=request.user).exists():
+            messages.warning(request, 'You are already a member of this group.')
+            return redirect('group_detail', group_id=group.id)
+        
+        # Add user to group
+        GroupMember.objects.create(group=group, user=request.user)
+        messages.success(request, 'Successfully joined the group!')
+        return redirect('group_detail', group_id=group.id)
+    
+    return render(request, 'web/join_group.html', {
+        'group': group
+    })
+
+@login_required
+def group_detail(request, group_id):
+    group = get_object_or_404(GroupEnrollment, id=group_id)
+    members = GroupMember.objects.filter(group=group)
+    
+    return render(request, 'web/group_detail.html', {
+        'group': group,
+        'members': members
+    })
+
+@login_required
+def apply_discount(request, course_id):
+    course = get_object_or_404(Course, id=course_id)
+    
+    if request.method == 'POST':
+        code = request.POST.get('code')
+        try:
+            discount = Discount.objects.get(code=code, course=course)
+            
+            if not discount.is_valid():
+                messages.error(request, 'This discount code is no longer valid.')
+                return redirect('course_detail', slug=course.slug)
+            
+            # Store discount in session for use during checkout
+            request.session['discount_code'] = code
+            request.session['discount_amount'] = str(discount.calculate_discount(course.price))
+            
+            messages.success(request, 'Discount applied successfully!')
+            return redirect('course_detail', slug=course.slug)
+            
+        except Discount.DoesNotExist:
+            messages.error(request, 'Invalid discount code.')
+            return redirect('course_detail', slug=course.slug)
+    
+    return redirect('course_detail', slug=course.slug)
+
+@login_required
+def share_group(request, invitation_token):
+    group = get_object_or_404(GroupEnrollment, invitation_token=invitation_token)
+    
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        message = request.POST.get('message', '')
+        
+        if email:
+            invitation_link = request.build_absolute_uri(
+                reverse('join_group', kwargs={'invitation_token': group.invitation_token})
+            )
+            
+            subject = f'Join {group.name} - {group.course.title}'
+            body = f"""
+            {request.user.username} has invited you to join their group for {group.course.title}.
+            
+            Group Details:
+            - Name: {group.name}
+            - Course: {group.course.title}
+            - Members: {group.member_count}/{group.min_members}
+            
+            {message}
+            
+            Click here to join: {invitation_link}
+            """
+            
+            send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
+            messages.success(request, 'Invitation sent successfully!')
+            return redirect('group_detail', group_id=group.id)
+    
+    return render(request, 'web/share_group.html', {
+        'group': group
+    })

@@ -214,6 +214,11 @@ urlpatterns += i18n_patterns(
     path("analytics/", sales_analytics, name="sales_analytics"),
     path("analytics/data/", sales_data, name="sales_data"),
     path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
+    # Group Enrollment URLs
+    path('course/<int:course_id>/create-group/', views.create_group_enrollment, name='create_group_enrollment'),
+    path('join-group/<str:invitation_token>/', views.join_group, name='join_group'),
+    path('group/<int:group_id>/', views.group_detail, name='group_detail'),
+    path('course/<int:course_id>/apply-discount/', views.apply_discount, name='apply_discount'),
     prefix_default_language=True,
 )
 

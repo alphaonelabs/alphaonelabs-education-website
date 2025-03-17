@@ -260,6 +260,103 @@ class Course(models.Model):
         return sum(review.rating for review in reviews) / len(reviews)
 
 
+class Discount(models.Model):
+    DISCOUNT_TYPES = [
+        ("referral", "Referral Discount"),
+        ("group", "Group Discount"),
+        ("promotional", "Promotional Discount"),
+        ("seasonal", "Seasonal Discount"),
+    ]
+    
+    name = models.CharField(max_length=100)
+    code = models.CharField(max_length=20, unique=True)
+    description = models.TextField(blank=True)
+    discount_type = models.CharField(max_length=20, choices=DISCOUNT_TYPES)
+    percentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    valid_from = models.DateTimeField(default=timezone.now)
+    valid_until = models.DateTimeField(null=True, blank=True)
+    max_uses = models.PositiveIntegerField(null=True, blank=True)
+    uses_count = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    # For course-specific discounts
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True, related_name='discounts')
+    
+    def __str__(self):
+        return f"{self.name} ({self.code})"
+    
+    def is_valid(self):
+        now = timezone.now()
+        if not self.is_active:
+            return False
+        if self.valid_until and now > self.valid_until:
+            return False
+        if now < self.valid_from:
+            return False
+        if self.max_uses and self.uses_count >= self.max_uses:
+            return False
+        return True
+    
+    def calculate_discount(self, original_price):
+        if not self.is_valid():
+            return 0
+        
+        if self.percentage:
+            return (original_price * self.percentage) / 100
+        elif self.amount:
+            return min(self.amount, original_price)  # Don't discount more than the price
+        return 0
+    
+    def apply_discount(self, original_price):
+        discount_amount = self.calculate_discount(original_price)
+        return original_price - discount_amount
+    
+    def use_discount(self):
+        self.uses_count += 1
+        self.save()
+
+
+class GroupEnrollment(models.Model):
+    name = models.CharField(max_length=100)
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_groups')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    discount = models.ForeignKey(Discount, on_delete=models.CASCADE, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    invitation_token = models.CharField(max_length=64, unique=True, blank=True)
+    min_members = models.PositiveIntegerField(default=3)
+    
+    def __str__(self):
+        return f"{self.name} - {self.course.title}"
+    
+    def save(self, *args, **kwargs):
+        if not self.invitation_token:
+            self.invitation_token = uuid.uuid4().hex
+        super().save(*args, **kwargs)
+    
+    @property
+    def member_count(self):
+        return GroupMember.objects.filter(group=self).count()
+    
+    def is_eligible_for_discount(self):
+        return self.member_count >= self.min_members
+
+
+class GroupMember(models.Model):
+    group = models.ForeignKey(GroupEnrollment, on_delete=models.CASCADE, related_name='group_members')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    is_enrolled = models.BooleanField(default=False)
+    
+    class Meta:
+        unique_together = ('group', 'user')
+        
+    def __str__(self):
+        return f"{self.user.username} in {self.group.name}"
+
+
 class Session(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="sessions")
     title = models.CharField(max_length=200)
