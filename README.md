@@ -131,6 +131,22 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 
 9. Visit http://localhost:8000 in your browser
 
+### Docker Setup
+
+1. Build the Docker image
+
+   ```bash
+   docker build -t education-website .
+   ```
+
+2. Run the Docker container
+
+   ```bash
+   docker run -d -p 8000:8000 education-website
+   ```
+
+3. Visit http://localhost:8000 in your browser
+
 ## Environment Variables Configuration
 
 Copy `.env.sample` to `.env` and configure the variables.
