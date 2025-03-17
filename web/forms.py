@@ -20,6 +20,7 @@ from .models import (
     Session,
     Storefront,
     Subject,
+    Certificate
 )
 from .referrals import handle_referral
 from .widgets import (
@@ -998,3 +999,13 @@ class StorefrontForm(forms.ModelForm):
             "logo",
             "is_active",
         ]
+
+
+class CertificateForm(forms.ModelForm):
+    class Meta:
+        model = Certificate
+        fields = ["title", "description", "image", "issued_by", "course", "issue_date", "expiry_date", "is_public"]
+        widgets = {
+            "issue_date": forms.DateInput(attrs={"type": "date"}),
+            "expiry_date": forms.DateInput(attrs={"type": "date"}),
+        }

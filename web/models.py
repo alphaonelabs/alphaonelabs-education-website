@@ -1144,3 +1144,33 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity}x {self.goods.name}"
+
+
+class Certificate(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="certificates")
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    image = models.ImageField(upload_to="certificates/")
+    issued_by = models.CharField(max_length=200)
+    course = models.ForeignKey(
+        Course, on_delete=models.SET_NULL, null=True, blank=True, related_name="certificates"
+    )
+    issue_date = models.DateField(default=timezone.now)
+    expiry_date = models.DateField(null=True, blank=True)
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    is_public = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-issue_date"]
+
+    def __str__(self):
+        return f"{self.title} - {self.user.username}"
+
+    def get_absolute_url(self):
+        return reverse("certificate_detail", kwargs={"uuid": self.uuid})
+    
+    def get_embed_code(self):
+        site_url = settings.SITE_URL
+        return f'<iframe src="{site_url}{self.get_absolute_url()}?embed=true" width="600" height="400" frameborder="0"></iframe>'

@@ -52,6 +52,7 @@ from .forms import (
     TeacherSignupForm,
     TeachForm,
     UserRegistrationForm,
+    CertificateForm
 )
 from .marketing import (
     generate_social_share_content,
@@ -90,6 +91,7 @@ from .models import (
     StudyGroup,
     TimeSlot,
     WebRequest,
+    Certificate
 )
 from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
 from .referrals import send_referral_reward_email
@@ -255,12 +257,14 @@ def profile(request):
                 progress_count += 1
 
         avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+        certificates = Certificate.objects.filter(user=request.user)
 
         context.update(
             {
                 "enrollments": enrollments,
                 "completed_courses": completed_courses,
                 "avg_progress": avg_progress,
+                "certificates":certificates
             }
         )
 
@@ -3101,3 +3105,47 @@ class StorefrontDetailView(LoginRequiredMixin, generic.DetailView):
 
 def gsoc_landing_page(request):
     return render(request, "gsoc_landing_page.html")
+
+# Add to views.py
+@login_required
+def certificate_list(request):
+    certificates = Certificate.objects.filter(user=request.user)
+    return render(request, "certificates/list.html", {"certificates": certificates})
+
+@login_required
+def upload_certificate(request):
+    if request.method == "POST":
+        form = CertificateForm(request.POST, request.FILES)
+        if form.is_valid():
+            certificate = form.save(commit=False)
+            certificate.user = request.user
+            certificate.save()
+            messages.success(request, "Certificate uploaded successfully!")
+            return redirect("certificate_list")
+    else:
+        form = CertificateForm()
+    
+    return render(request, "certificates/upload.html", {"form": form})
+
+def certificate_detail(request, uuid):
+    certificate = get_object_or_404(Certificate, uuid=uuid)
+    
+    # Only allow viewing if certificate is public or user is the owner
+    if not certificate.is_public and (not request.user.is_authenticated or request.user != certificate.user):
+        raise Http404("Certificate not found")
+    
+    is_embed = request.GET.get('embed') == 'true'
+    template = "certificates/embed.html" if is_embed else "certificates/detail.html"
+    
+    return render(request, template, {"certificate": certificate})
+
+@login_required
+def delete_certificate(request, uuid):
+    certificate = get_object_or_404(Certificate, uuid=uuid, user=request.user)
+    
+    if request.method == "POST":
+        certificate.delete()
+        messages.success(request, "Certificate deleted successfully!")
+        return redirect("certificate_list")
+    
+    return render(request, "certificates/delete_confirm.html", {"certificate": certificate})

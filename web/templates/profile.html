@@ -354,6 +354,51 @@
           </div>
         {% endif %}
       </div>
+      <!-- profile template  -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-xl font-semibold">Certificates & Badges</h2>
+          <a href="{% url 'certificate_list' %}" class="text-teal-600 hover:text-teal-700 text-sm">
+            <i class="fas fa-external-link-alt mr-1"></i> Manage All
+          </a>
+        </div>
+        
+        {% if certificates %}
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {% for certificate in certificates|slice:":4" %}
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 flex items-center space-x-3">
+                <div class="flex-shrink-0 w-16 h-16 rounded overflow-hidden">
+                  <img src="{{ certificate.image.url }}" alt="{{ certificate.title }}" class="w-full h-full object-cover">
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium truncate">{{ certificate.title }}</p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">{{ certificate.issued_by }}</p>
+                  <a href="{% url 'certificate_detail' certificate.uuid %}" class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                    <i class="fas fa-eye mr-1"></i> View
+                  </a>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          {% if certificates.count > 4 %}
+            <div class="mt-4 text-center">
+              <a href="{% url 'certificate_list' %}" class="text-teal-600 hover:text-teal-700 dark:text-teal-400 text-sm font-medium">
+                View all {{ certificates.count }} certificates
+              </a>
+            </div>
+          {% endif %}
+        {% else %}
+          <div class="text-center py-8">
+            <div class="text-gray-400 dark:text-gray-500 mb-4">
+              <i class="fas fa-certificate text-4xl"></i>
+            </div>
+            <p class="text-gray-600 dark:text-gray-300 mb-4">You haven't added any certificates yet.</p>
+            <a href="{% url 'upload_certificate' %}" class="inline-flex items-center bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded">
+              <i class="fas fa-plus mr-2"></i> Add Certificate
+            </a>
+          </div>
+        {% endif %}
+      </div>
     </div>
   </div>
 {% endblock content %}

@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="min-h-screen flex items-center justify-center bg-gray-100">
+    <div class="bg-white p-6 rounded-lg shadow-lg max-w-md w-full">
+        <h2 class="text-xl font-semibold text-gray-800">Confirm Deletion</h2>
+        <p class="mt-2 text-gray-600">
+            Are you sure you want to delete the certificate: <span class="font-bold text-red-600">{{ certificate.name }}</span>?
+        </p>
+
+        <form method="post" class="mt-4 flex justify-between">
+            {% csrf_token %}
+            <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition">
+                Yes, Delete
+            </button>
+            <a href="{% url 'certificate_list' %}" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
+                Cancel
+            </a>
+        </form>
+    </div>
+</div>
+{% endblock %}

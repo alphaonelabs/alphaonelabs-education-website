@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}{{ certificate.title }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <div class="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+    <div class="relative">
+      <img src="{{ certificate.image.url }}" alt="{{ certificate.title }}" class="w-full object-contain max-h-[400px]">
+    </div>
+    <div class="p-6">
+      <h1 class="text-2xl font-bold mb-2">{{ certificate.title }}</h1>
+      <div class="text-sm text-gray-600 dark:text-gray-300 mb-4">
+        <p><strong>Issued by:</strong> {{ certificate.issued_by }}</p>
+        <p><strong>Issue date:</strong> {{ certificate.issue_date }}</p>
+        {% if certificate.expiry_date %}
+          <p><strong>Expiry date:</strong> {{ certificate.expiry_date }}</p>
+        {% endif %}
+        {% if certificate.course %}
+          <p><strong>Course:</strong> <a href="{% url 'course_detail' certificate.course.slug %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">{{ certificate.course.title }}</a></p>
+        {% endif %}
+      </div>
+      
+      {% if certificate.description %}
+      <div class="mt-4">
+        <h2 class="text-lg font-semibold mb-2">Description</h2>
+        <p class="text-gray-700 dark:text-gray-300">{{ certificate.description }}</p>
+      </div>
+      {% endif %}
+      
+      {% if request.user == certificate.user %}
+      <div class="mt-6 flex gap-4">
+        <a href="{% url 'certificate_list' %}" class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded">
+          <i class="fas fa-arrow-left mr-2"></i> Back to Certificates
+        </a>
+        <button id="get-embed-code" class="bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded">
+          <i class="fas fa-code mr-2"></i> Get Embed Code
+        </button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  
+  <!-- Modal for embed code (similar to list.html) -->
+  {% if request.user == certificate.user %}
+  <div id="embed-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-lg w-full">
+      <h3 class="text-xl font-semibold mb-4">Embed This Certificate</h3>
+      <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">Copy the code below to embed this certificate on your website:</p>
+      <textarea id="embed-code" class="w-full h-24 p-2 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-sm font-mono" readonly><iframe src="{{ request.scheme }}://{{ request.get_host }}{% url 'certificate_detail' certificate.uuid %}?embed=true" width="600" height="400" frameborder="0"></iframe></textarea>
+      <div class="flex justify-end gap-4 mt-4">
+        <button id="copy-code" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded">
+          <i class="fas fa-copy mr-2"></i> Copy Code
+        </button>
+        <button id="close-modal" class="bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    {% if request.user == certificate.user %}
+    const modal = document.getElementById('embed-modal');
+    const embedBtn = document.getElementById('get-embed-code');
+    const copyBtn = document.getElementById('copy-code');
+    const closeBtn = document.getElementById('close-modal');
+    
+    // Open modal with embed code
+    embedBtn.addEventListener('click', function() {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    });
+    
+    // Copy button
+    copyBtn.addEventListener('click', function() {
+      const embedCodeTextarea = document.getElementById('embed-code');
+      embedCodeTextarea.select();
+      document.execCommand('copy');
+      this.textContent = 'Copied!';
+      setTimeout(() => {
+        this.innerHTML = '<i class="fas fa-copy mr-2"></i> Copy Code';
+      }, 2000);
+    });
+    
+    // Close modal
+    closeBtn.addEventListener('click', function() {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    });
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    });
+    {% endif %}
+  });
+</script>
+{% endblock %}

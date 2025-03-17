@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ certificate.title }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-transparent">
+  <div class="p-2">
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
+      <div class="relative pb-[60%]">
+        <img src="{{ certificate.image.url }}" alt="{{ certificate.title }}" class="absolute h-full w-full object-cover">
+      </div>
+      <div class="p-4">
+        <h1 class="text-xl font-bold mb-1">{{ certificate.title }}</h1>
+        <p class="text-sm text-gray-600">Issued by {{ certificate.issued_by }} on {{ certificate.issue_date }}</p>
+        <p class="text-sm text-gray-600">Awarded to {{ certificate.user.get_full_name|default:certificate.user.username }}</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

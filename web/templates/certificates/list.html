@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+
+{% block title %}My Certificates{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold">My Certificates</h1>
+    <a href="{% url 'upload_certificate' %}" class="bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded">
+      <i class="fas fa-plus mr-2"></i> Upload Certificate
+    </a>
+  </div>
+
+  {% if certificates %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for certificate in certificates %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+          <div class="relative pb-[60%]">
+            <img src="{{ certificate.image.url }}" alt="{{ certificate.title }}" class="absolute h-full w-full object-cover">
+          </div>
+          <div class="p-4">
+            <h2 class="text-lg font-semibold">{{ certificate.title }}</h2>
+            <p class="text-sm text-gray-600 dark:text-gray-300">Issued by: {{ certificate.issued_by }}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Issued: {{ certificate.issue_date }}</p>
+            
+            <div class="mt-4 flex gap-2">
+              <a href="{% url 'certificate_detail' certificate.uuid %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 text-sm">
+                <i class="fas fa-eye mr-1"></i> View
+              </a>
+              <button data-certificate-id="{{ certificate.uuid }}" class="get-embed-code text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 text-sm">
+                <i class="fas fa-code mr-1"></i> Get Embed Code
+              </button>
+              <a href="{% url 'delete_certificate' certificate.uuid %}" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 text-sm">
+                <i class="fas fa-trash mr-1"></i> Delete
+              </a>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="text-center py-12 bg-white dark:bg-gray-800 rounded-lg shadow">
+      <div class="text-gray-400 dark:text-gray-500 mb-4">
+        <i class="fas fa-certificate text-6xl"></i>
+      </div>
+      <h2 class="text-xl font-semibold mb-2">No Certificates Yet</h2>
+      <p class="text-gray-600 dark:text-gray-300 mb-6">Upload your first certificate to showcase your achievements.</p>
+      <a href="{% url 'upload_certificate' %}" class="bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded">
+        <i class="fas fa-plus mr-2"></i> Upload Certificate
+      </a>
+    </div>
+  {% endif %}
+  
+  <!-- Modal for embed code -->
+  <div id="embed-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 max-w-lg w-full">
+      <h3 class="text-xl font-semibold mb-4">Embed This Certificate</h3>
+      <p class="text-sm text-gray-600 dark:text-gray-300 mb-4">Copy the code below to embed this certificate on your website:</p>
+      <textarea id="embed-code" class="w-full h-24 p-2 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-sm font-mono" readonly></textarea>
+      <div class="flex justify-end gap-4 mt-4">
+        <button id="copy-code" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded">
+          <i class="fas fa-copy mr-2"></i> Copy Code
+        </button>
+        <button id="close-modal" class="bg-gray-300 hover:bg-gray-400 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const modal = document.getElementById('embed-modal');
+    const embedCodeTextarea = document.getElementById('embed-code');
+    const copyBtn = document.getElementById('copy-code');
+    const closeBtn = document.getElementById('close-modal');
+    
+    // Open modal with embed code
+    document.querySelectorAll('.get-embed-code').forEach(button => {
+      button.addEventListener('click', function() {
+        const certificateId = this.dataset.certificateId;
+        const embedCode = `<iframe src="${window.location.origin}/certificates/${certificateId}/?embed=true" width="600" height="400" frameborder="0"></iframe>`;
+        embedCodeTextarea.value = embedCode;
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      });
+    });
+    
+    // Copy button
+    copyBtn.addEventListener('click', function() {
+      embedCodeTextarea.select();
+      document.execCommand('copy');
+      this.textContent = 'Copied!';
+      setTimeout(() => {
+        this.innerHTML = '<i class="fas fa-copy mr-2"></i> Copy Code';
+      }, 2000);
+    });
+    
+    // Close modal
+    closeBtn.addEventListener('click', function() {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    });
+    
+    // Close modal when clicking outside
+    modal.addEventListener('click', function(e) {
+      if (e.target === modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    });
+  });
+</script>
+{% endblock %}
