@@ -49,7 +49,8 @@ class GroupEnrollmentTest(TestCase):
         }
         response = self.client.post(url, data)
         
-        self.assertRedirects(response, reverse("group_detail", args=[1]))
+        new_group = GroupEnrollment.objects.get(name="Test Group")
+        self.assertRedirects(response, reverse("group_detail", args=[new_group.id]))
         self.assertTrue(GroupEnrollment.objects.filter(name="Test Group").exists())
         self.assertTrue(GroupMember.objects.filter(group__name="Test Group", user=self.student1).exists())
         self.assertTrue(Discount.objects.filter(code__startswith="GROUP").exists())
