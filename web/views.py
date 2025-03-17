@@ -3127,15 +3127,6 @@ def upload_certificate(request):
     
     return render(request, "certificates/upload.html", {"form": form})
 
-from django.contrib.auth import get_user_model, login
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.models import User
-from django.core.mail import send_mail
-from django.core.paginator import Paginator
-from django.db import IntegrityError, models, transaction
-from django.db.models import Avg, Count, Q, Sum
-from django.http import FileResponse, HttpResponse, HttpResponseForbidden, JsonResponse, Http404
 @login_required
 def delete_certificate(request, uuid):
     certificate = get_object_or_404(Certificate, uuid=uuid, user=request.user)
