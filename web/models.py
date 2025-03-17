@@ -1106,8 +1106,7 @@ class ProductImage(models.Model):
     alt_text = models.CharField(max_length=125, blank=True, help_text="Accessibility description for screen readers")
 
     def __str__(self):
-def __str__(self):
-    return f"Image for {self.goods.name}"
+        return f"Image for {self.goods.name}"
 
 
 class Order(models.Model):

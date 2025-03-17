@@ -362,78 +362,41 @@
           </form>
         </div>
         <!-- Weekly Challenge -->
+        <div class="container mx-auto px-4 py-8">
+          <h1 class="text-3xl font-bold mb-6 text-center">🏆 Weekly Challenges</h1>
         
-<div class="container mx-auto px-4 py-8">
-  <h1 class="text-3xl font-bold mb-6 text-center">🏆 Weekly Challenges</h1>
-
-  {% if current_challenge %}
-  <div id="challenge-container" class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800">
-    {% for challenge in current_challenge %}
-    <div class="challenge-item {% if forloop.first %}block{% else %}hidden{% endif %}">
-      <!-- Challenge Title -->
-      <h2 class="text-xl font-semibold mb-4">{{ challenge.title }}</h2>
-      
-      <!-- Challenge Description -->
-      <p class="text-gray-700 dark:text-gray-300 mb-4">{{ challenge.description }}</p>
-
-      <!-- Challenge Duration -->
-      <p class="text-gray-600 dark:text-gray-400 mb-4">
-        <strong>Duration:</strong> {{ challenge.start_date }} to {{ challenge.end_date }}
-      </p>
-
-      <!-- Submission Button -->
-      {% if user.is_authenticated %}
-        <a href="{% url 'challenge_submit' challenge.id %}" 
-           class="inline-block bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 transition-shadow shadow-md">
-          Complete My Challenge
-        </a>
-      {% else %}
-        <p class="text-red-600 dark:text-red-400 mt-4">Please log in to submit your result.</p>
-      {% endif %}
-    </div>
-    {% endfor %}
-    
-    <!-- Navigation Buttons -->
-    <div class="flex justify-between mt-6">
-      <button id="prev-btn" class="bg-gray-300 dark:bg-gray-700 text-black dark:text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-400 dark:hover:bg-gray-600 transition">
-        ◀ Previous
-      </button>
-      <button id="next-btn" class="bg-gray-300 dark:bg-gray-700 text-black dark:text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-400 dark:hover:bg-gray-600 transition">
-        Next ▶
-      </button>
-    </div>
-  </div>
-
-  {% else %}
-  <p class="text-center text-gray-500 dark:text-gray-400">
-    No challenges available at this time.
-  </p>
-  {% endif %}
-</div>
-
-<!-- JavaScript for Navigation -->
-<script>
-  const challenges = document.querySelectorAll('.challenge-item');
-  let currentIndex = 0;
-
-  function showChallenge(index) {
-    challenges.forEach((challenge, i) => {
-      challenge.style.display = i === index ? 'block' : 'none';
-    });
-  }
-
-  document.getElementById("prev-btn").addEventListener("click", () => {
-    currentIndex = (currentIndex - 1 + challenges.length) % challenges.length;
-    showChallenge(currentIndex);
-  });
-
-  document.getElementById("next-btn").addEventListener("click", () => {
-    currentIndex = (currentIndex + 1) % challenges.length;
-    showChallenge(currentIndex);
-  });
-
-  showChallenge(currentIndex);
-</script>
+          {% if current_challenge %}
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800">
+            <!-- Only display the first challenge (current week) -->
+            <div class="challenge-item">
+              <!-- Challenge Title -->
+              <h2 class="text-xl font-semibold mb-4">{{ current_challenge.0.title }}</h2>
+              
+              <!-- Challenge Description -->
+              <p class="text-gray-700 dark:text-gray-300 mb-4">{{ current_challenge.0.description }}</p>
+        
+              <!-- Challenge Duration -->
+              <p class="text-gray-600 dark:text-gray-400 mb-4">
+                <strong>Duration:</strong> {{ current_challenge.0.start_date }} to {{ current_challenge.0.end_date }}
+              </p>
+        
+              <!-- Submission Button -->
+              {% if user.is_authenticated %}
+                <a href="{% url 'challenge_submit' current_challenge.0.id %}" 
+                   class="inline-block bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 transition-shadow shadow-md">
+                  Complete My Challenge
+                </a>
+              {% else %}
+                <p class="text-red-600 dark:text-red-400 mt-4">Please log in to submit your result.</p>
+              {% endif %}
+            </div>
+          </div>
+          {% else %}
+          <p class="text-center text-gray-500 dark:text-gray-400">
+            No challenges available at this time.
+          </p>
+          {% endif %}
+        </div>
 
 
         <!-- Recent Forum Post -->
