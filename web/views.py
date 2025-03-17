@@ -1766,6 +1766,17 @@ def create_cart_payment_intent(request):
         return JsonResponse({"error": str(e)}, status=403)
 
 
+def validate_discount(discount_id, course):
+    """Helper function to validate discount during checkout"""
+    try:
+        discount = Discount.objects.get(id=discount_id, course=course)
+        if not discount.is_valid():
+            return None
+        return discount
+    except Discount.DoesNotExist:
+        return None
+
+
 def checkout_success(request):
     """Handle successful checkout and payment confirmation."""
     payment_intent_id = request.GET.get("payment_intent")
@@ -1791,78 +1802,39 @@ def checkout_success(request):
         # Handle guest checkout
         if not request.user.is_authenticated:
             email = payment_intent.receipt_email
-            if not email:
-                messages.error(request, "No email provided for guest checkout.")
-                return redirect("cart_view")
-
-            # Create a new user account with transaction and better username generation
-            with transaction.atomic():
-                base_username = email.split("@")[0][:15]  # Limit length
-                timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
-                username = f"{base_username}_{timestamp}"
-
-                # In the unlikely case of a collision, append random string
-                while User.objects.filter(username=username).exists():
-                    username = f"{base_username}_{timestamp}_{get_random_string(4)}"
-
-                # Create the user
-                user = User.objects.create_user(
-                    username=username,
-                    email=email,
-                    password=get_random_string(length=32),  # Random password for reset
-                )
-
-                # Associate the cart with the new user
-                cart.user = user
-                cart.session_key = ""  # Empty string instead of None
-                cart.save()
-
-                # Send welcome email with password reset link
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    "username": email.split("@")[0],
+                    "is_active": True,
+                },
+            )
+            if created:
                 send_welcome_email(user)
-
-                # Log in the new user
-                login(request, user, backend="django.contrib.auth.backends.ModelBackend")
         else:
             user = request.user
 
-        # Lists to track enrollments for the receipt
+        # Initialize variables
         enrollments = []
         session_enrollments = []
         goods_items = []
-        total_amount = 0
-
-        # Define shipping_address
-        shipping_address = request.POST.get("address") if cart.has_goods else None
-
-        # Check if the cart contains goods requiring shipping
-        has_goods = any(item.goods for item in cart.items.all())
-
-        # Extract shipping address from Stripe PaymentIntent
+        total_amount = Decimal("0")
+        has_goods = False
         shipping_address = None
-        if has_goods:
-            shipping_data = getattr(payment_intent, "shipping", None)
-            if shipping_data:
-                # Construct structured shipping address
-                shipping_address = {
-                    "line1": shipping_data.address.line1,
-                    "line2": shipping_data.address.line2 or "",
-                    "city": shipping_data.address.city,
-                    "state": shipping_data.address.state,
-                    "postal_code": shipping_data.address.postal_code,
-                    "country": shipping_data.address.country,
-                }
 
-        # Create the Order with shipping address
-        order = Order.objects.create(
-            user=user,  # User is defined earlier in guest/auth logic
-            total_price=0,  # Updated later
-            status="completed",
-            shipping_address=shipping_address,
-            terms_accepted=True,
-        )
+        # Check for discount and validate it
+        discount_id = request.session.get('discount_id')
+        if discount_id:
+            for item in cart.items.all():
+                if item.course:
+                    discount = validate_discount(discount_id, item.course)
+                    if not discount:
+                        messages.warning(request, "The discount code is no longer valid.")
+                        del request.session['discount_id']
+                        del request.session['discount_amount']
+                        break
 
-        storefront = None
-        # Process enrollments
+        # Process cart items
         for item in cart.items.all():
             if item.course:
                 # Create enrollment for full course
@@ -1890,6 +1862,7 @@ def checkout_success(request):
                 # Track goods items for the receipt
                 goods_items.append(item)
                 total_amount += item.final_price
+                has_goods = True
 
                 # Create order item for goods
                 OrderItem.objects.create(
@@ -1909,8 +1882,12 @@ def checkout_success(request):
             order.storefront = goods_items[0].goods.storefront
         order.save()
 
-        # Clear the cart
+        # Clear the cart and discount session data
         cart.items.all().delete()
+        if 'discount_id' in request.session:
+            del request.session['discount_id']
+        if 'discount_amount' in request.session:
+            del request.session['discount_amount']
 
         if storefront:
             order.storefront = storefront
@@ -3675,8 +3652,8 @@ def apply_discount(request, course_id):
                 messages.error(request, 'This discount code is no longer valid.')
                 return redirect('course_detail', slug=course.slug)
             
-            # Store discount in session for use during checkout
-            request.session['discount_code'] = code
+            # Store discount ID and amount in session for use during checkout
+            request.session['discount_id'] = discount.id
             request.session['discount_amount'] = str(discount.calculate_discount(course.price))
             
             messages.success(request, 'Discount applied successfully!')
