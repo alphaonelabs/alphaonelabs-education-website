@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  {% if is_edit %}
+    Edit
+  {% else %}
+    Create
+  {% endif %}
+  Success Story
+{% endblock %}
+{% block extra_head %}
+  {{ form.media }}
+  <link rel="stylesheet" href="{% static 'css/markdown.css' %}" />
+{% endblock %}
+{% block content %}
+  <main class="flex-1 w-full max-w-4xl mx-auto px-4 md:px-6 py-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 md:p-8">
+      <h1 class="text-2xl font-bold mb-6">
+        {% if is_edit %}
+          Edit
+        {% else %}
+          Create
+        {% endif %}
+        Success Story
+      </h1>
+      <form method="post" enctype="multipart/form-data" class="space-y-6">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-4 rounded-md mb-6">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
+        <div class="space-y-4">
+          <!-- Title -->
+          <div>
+            <label for="{{ form.title.id_for_label }}"
+                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Title <span class="text-red-500">*</span>
+            </label>
+            {{ form.title }}
+            {% if form.title.errors %}
+              <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.title.errors }}</p>
+            {% endif %}
+          </div>
+          <!-- Content -->
+          <div>
+            <label for="{{ form.content.id_for_label }}"
+                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Content <span class="text-red-500">*</span>
+            </label>
+            {{ form.content }}
+            {% if form.content.errors %}
+              <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.content.errors }}</p>
+            {% endif %}
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.content.help_text }}</p>
+          </div>
+          <!-- Excerpt -->
+          <div>
+            <label for="{{ form.excerpt.id_for_label }}"
+                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Excerpt</label>
+            {{ form.excerpt }}
+            {% if form.excerpt.errors %}
+              <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.excerpt.errors }}</p>
+            {% endif %}
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              A brief summary of your success story (displayed in previews)
+            </p>
+          </div>
+          <!-- Featured Image -->
+          <div class="hidden">
+            <label for="{{ form.featured_image.id_for_label }}"
+                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Featured Image</label>
+            {% if success_story.featured_image %}
+              <div class="mb-2">
+                <img src="{{ success_story.featured_image.url }}"
+                     alt="Current featured image"
+                     class="h-32 object-cover rounded-md" />
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Current image</p>
+              </div>
+            {% endif %}
+            {{ form.featured_image }}
+            {% if form.featured_image.errors %}
+              <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.featured_image.errors }}</p>
+            {% endif %}
+          </div>
+          <!-- Status -->
+          <div class="hidden">
+            <label for="{{ form.status.id_for_label }}"
+                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+            {{ form.status }}
+            {% if form.status.errors %}
+              <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.status.errors }}</p>
+            {% endif %}
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Draft: Save but don't publish yet. Published: Make visible to everyone.
+            </p>
+          </div>
+        </div>
+        <div class="pt-6 flex justify-end space-x-3">
+          <a href="{% if is_edit %}{% url 'success_story_detail' slug=success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}"
+             class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+            Cancel
+          </a>
+          <button type="submit"
+                  class="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors">
+            {% if is_edit %}
+              Update
+            {% else %}
+              Create
+            {% endif %}
+            Success Story
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+{% endblock %}
