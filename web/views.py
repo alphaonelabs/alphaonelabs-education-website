@@ -2645,22 +2645,34 @@ def content_dashboard(request):
     )
 
 
+# challenge views
 def current_weekly_challenge(request):
-    current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
-    # Check if the user has submitted the current challenge
+    current_time = timezone.now()
+    weekly_challenge = Challenge.objects.filter(
+        challenge_type='weekly',
+        start_date__lte=current_time, 
+        end_date__gte=current_time
+    ).first()
+    
+    one_time_challenges = Challenge.objects.filter(
+        challenge_type='one_time',
+        start_date__lte=current_time, 
+        end_date__gte=current_time
+    )
+    
     user_submission = None
-    if request.user.is_authenticated and current_challenge:
-        user_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=current_challenge).first()
-
+    if request.user.is_authenticated and weekly_challenge:
+        user_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=weekly_challenge).first()
+    
     return render(
         request,
         "web/current_weekly_challenge.html",
         {
-            "current_challenge": current_challenge,
-            "user_submission": user_submission,  # Pass the user's submission to the template
+            "current_challenge": weekly_challenge,
+            "one_time_challenges": one_time_challenges,
+            "user_submission": user_submission,
         },
     )
-
 
 def challenge_detail(request, week_number):
     challenge = get_object_or_404(Challenge, week_number=week_number)
