@@ -113,6 +113,7 @@ from .models import (
     Subject,
     SuccessStory,
     TimeSlot,
+    UserBadge,
     WebRequest,
 )
 from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
@@ -246,8 +247,11 @@ def profile(request):
             }
         )
 
+    badges = UserBadge.objects.filter(user=request.user).select_related("badge")
+
     context = {
         "form": form,
+        "badges": badges,
     }
 
     # Add teacher-specific stats

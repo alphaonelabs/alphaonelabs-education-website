@@ -351,6 +351,25 @@
                 </div>
               {% endif %}
             </div>
+            <div class="p-6">
+              <h2 class="text-xl font-semibold mb-6">My Badges</h2>
+              {% if badges %}
+                {% for user_badge in badges %}
+                  <div class="badge-item">
+                    <img src="{{ user_badge.badge.image.url }}"
+                         alt="{{ user_badge.badge.name }}" />
+                    <p>{{ user_badge.badge.name }}</p>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <div class="text-center py-8">
+                  <div class="text-gray-400 dark:text-gray-500 mb-4">
+                    <i class="fas fa-award text-4xl"></i>
+                  </div>
+                  <p class="text-gray-600 dark:text-gray-300 mb-4">You haven't earned any badges yet.</p>
+                </div>
+              {% endif %}
+            </div>
           </div>
         {% endif %}
       </div>
