@@ -34,28 +34,28 @@ def get_or_create_cart(request):
         cart, created = Cart.objects.get_or_create(session_key=session_key)
     return cart
 
+
 def validate_quiz_has_questions(quiz):
     """
     Validate that a quiz has at least one question.
-    
+
     Args:
         quiz: Quiz object to validate
-        
+
     Returns:
         tuple: (is_valid, message)
     """
     question_count = quiz.questions.count()
     if question_count == 0:
         return False, "This quiz has no questions."
-    
+
     # Check each question has at least one correct option
     invalid_questions = []
     for question in quiz.questions.all():
         if not question.options.filter(is_correct=True).exists():
             invalid_questions.append(question.question_text)
-    
+
     if invalid_questions:
         return False, f"The following questions have no correct answer: {', '.join(invalid_questions)}"
-    
+
     return True, "Quiz is valid"
- 

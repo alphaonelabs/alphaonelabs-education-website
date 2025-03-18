@@ -1,81 +1,7 @@
-import calendar
-import json
-import os
-import re
-import shutil
-import subprocess
-import time
-from datetime import timedelta
-from decimal import Decimal
-import logging
-logger = logging.getLogger(__name__)
-import requests
-import stripe
-from django.conf import settings
-from django.contrib import messages
-from django.contrib.auth import get_user_model, login
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.models import User
-from django.core.mail import send_mail
-from django.core.paginator import Paginator
-from django.db import IntegrityError, models, transaction
-from django.db.models import Avg, Count, Q, Sum
-from django.http import (
-    FileResponse,
-    HttpResponse,
-    HttpResponseForbidden,
-    JsonResponse,
-)
-from django.shortcuts import get_object_or_404, redirect, render
-from django.template.loader import render_to_string
-from django.urls import NoReverseMatch, reverse, reverse_lazy
-from django.utils import timezone
-from django.utils.crypto import get_random_string
-from django.utils.html import strip_tags
-from django.views import generic
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET, require_POST
-from django.utils.timezone import make_aware
-from datetime import datetime
-from django.views.decorators.csrf import csrf_protect
-from django.views.generic import (
-    CreateView,
-    DeleteView,
-    ListView,
-    UpdateView,
-)
-
-from .calendar_sync import generate_google_calendar_link, generate_ical_feed, generate_outlook_calendar_link
-from .decorators import teacher_required
-from .forms import (
-    BlogPostForm,
-    ChallengeSubmissionForm,
-    CourseForm,
-    CourseMaterialForm,
-    FeedbackForm,
-    ForumCategoryForm,
-    ForumTopicForm,
-    GoodsForm,
-    InviteStudentForm,
-    LearnForm,
-    MessageTeacherForm,
-    ProfileUpdateForm,
-    ReviewForm,
-    SessionForm,
-    StorefrontForm,
-    StudentEnrollmentForm,
-    SuccessStoryForm,
-    TeacherSignupForm,
-    TeachForm,
-    UserRegistrationForm,
-)
-from .marketing import (
-    generate_social_share_content,
-    get_course_analytics,
-    get_promotion_recommendations,
-    send_course_promotion_email,
-)
+from .utils import get_or_create_cart
+from .social import get_social_stats
+from .referrals import send_referral_reward_email
+from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
 from .models import (
     Achievement,
     BlogComment,
@@ -84,7 +10,7 @@ from .models import (
     CartItem,
     Challenge,
     ChallengeSubmission,
-    Quiz, 
+    Quiz,
     QuizOption,
     QuizSubmission,
     Course,
@@ -113,10 +39,83 @@ from .models import (
     TimeSlot,
     WebRequest,
 )
-from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
-from .referrals import send_referral_reward_email
-from .social import get_social_stats
-from .utils import get_or_create_cart
+from .marketing import (
+    generate_social_share_content,
+    get_course_analytics,
+    get_promotion_recommendations,
+    send_course_promotion_email,
+)
+from .forms import (
+    BlogPostForm,
+    ChallengeSubmissionForm,
+    CourseForm,
+    CourseMaterialForm,
+    FeedbackForm,
+    ForumCategoryForm,
+    ForumTopicForm,
+    GoodsForm,
+    InviteStudentForm,
+    LearnForm,
+    MessageTeacherForm,
+    ProfileUpdateForm,
+    ReviewForm,
+    SessionForm,
+    StorefrontForm,
+    StudentEnrollmentForm,
+    SuccessStoryForm,
+    TeacherSignupForm,
+    TeachForm,
+    UserRegistrationForm,
+)
+from .decorators import teacher_required
+from .calendar_sync import generate_google_calendar_link, generate_ical_feed, generate_outlook_calendar_link
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    ListView,
+    UpdateView,
+)
+from django.views.decorators.csrf import csrf_protect
+from datetime import datetime
+from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.csrf import csrf_exempt
+from django.views import generic
+from django.utils.html import strip_tags
+from django.utils.crypto import get_random_string
+from django.utils import timezone
+from django.urls import NoReverseMatch, reverse, reverse_lazy
+from django.template.loader import render_to_string
+from django.shortcuts import get_object_or_404, redirect, render
+from django.http import (
+    FileResponse,
+    HttpResponse,
+    HttpResponseForbidden,
+    JsonResponse,
+)
+from django.db.models import Avg, Count, Q, Sum
+from django.db import IntegrityError, models, transaction
+from django.core.paginator import Paginator
+from django.core.mail import send_mail
+from django.contrib.auth.models import User
+from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model, login
+from django.contrib import messages
+from django.conf import settings
+import stripe
+import requests
+import calendar
+import json
+import os
+import re
+import shutil
+import subprocess
+import time
+from datetime import timedelta
+from decimal import Decimal
+import logging
+logger = logging.getLogger(__name__)
+
 
 GOOGLE_CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "google_credentials.json")
 
@@ -167,7 +166,7 @@ def index(request):
     # Get live challenges
     live_quiz = Quiz.get_active_quizzes()
 
-   # Get quizzes that the user has already submitted
+    # Get quizzes that the user has already submitted
     has_submitted = set()
     if request.user.is_authenticated:
         has_submitted = set(QuizSubmission.objects.filter(user=request.user).values_list("quiz_id", flat=True))
@@ -188,7 +187,7 @@ def index(request):
         "top_referrers": top_referrers,
         "featured_courses": featured_courses,
         "current_challenge": current_challenge,
-        "has_submitted":has_submitted, 
+        "has_submitted":has_submitted,
         "quiz":live_quiz,
         "latest_post": latest_post,
         "latest_success_story": latest_success_story,
@@ -2685,6 +2684,8 @@ def content_dashboard(request):
     )
 
 # challenge views
+
+
 def current_weekly_challenge(request):
     current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
     # Check if the user has submitted the current challenge
@@ -2720,7 +2721,7 @@ def challenge_detail(request, week_number):
 @login_required
 def challenge_submit(request, week_number):
     """Allow users to submit solutions for weekly challenges."""
-    challenge = get_object_or_404(Challenge,week_number = week_number)
+    challenge = get_object_or_404(Challenge,week_number=week_number)
 
     # Check if the user has already submitted
     existing_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
@@ -2747,11 +2748,11 @@ def challenge_submit(request, week_number):
 @login_required
 def current_live_quiz(request, quiz_id):
     """Fetch the quiz by ID and check if the user has submitted."""
-    
+
     quiz = Quiz.objects.filter(
-        id = quiz_id
+        id=quiz_id
     ).first()
-    
+
     # improved no quiz handling
     if not quiz:
         messages.error(request, "The requested quiz was not found or is no longer active.")
@@ -2759,20 +2760,21 @@ def current_live_quiz(request, quiz_id):
 
     user_submission = None
     has_submitted = False
-    
+
     # Fetch questions only if needed
     questions = quiz.questions.prefetch_related("options").all()
     if request.user.is_authenticated:
-        user_submission = QuizSubmission.objects.filter(user=request.user, quiz=quiz).first() 
+        user_submission = QuizSubmission.objects.filter(user=request.user, quiz=quiz).first()
         has_submitted = user_submission is not None
 
     return render(request, "web/current_live_quiz.html", {
-            "quiz": quiz,
-            "has_submitted": has_submitted,
-            "user_submission": user_submission,
-            "questions":questions
+        "quiz": quiz,
+        "has_submitted": has_submitted,
+        "user_submission": user_submission,
+        "questions":questions
     })
-        
+
+
 @login_required
 @csrf_protect
 def submit_quiz(request, quiz_id):
@@ -2783,7 +2785,7 @@ def submit_quiz(request, quiz_id):
     if QuizSubmission.objects.filter(user=request.user, quiz=quiz).exists():
         messages.warning(request, "You have already submitted this quiz.")
         return redirect("leaderboard", quiz_id=quiz.id)
-    
+
     if request.method == "POST":
         score = 0  # Total score counter
 
@@ -2795,7 +2797,7 @@ def submit_quiz(request, quiz_id):
                     selected_option = QuizOption.objects.get(id=selected_option_id, question=question)
 
                     if selected_option.is_correct:
-                        score += 10 
+                        score += 10
 
                 except QuizOption.DoesNotExist:
                     messages.error(request, f"Invalid selection for question {question.id}")
@@ -2804,7 +2806,7 @@ def submit_quiz(request, quiz_id):
                 logger.debug(f"User {request.user.username} did not answer question {question.id}")
         # Store the final submission with total score
         QuizSubmission.objects.create(user=request.user, quiz=quiz, score=score)
-        
+
         # Store detailed results for feedback if needed
         results = []
         for question in quiz.questions.all():
@@ -2822,23 +2824,21 @@ def submit_quiz(request, quiz_id):
         request.session['quiz_results'] = results
         messages.success(request, f"Quiz submitted! Your score: {score}")
         return redirect("leaderboard", quiz_id=quiz.id)
-    
+
     return redirect("current_live_quiz", quiz_id=quiz.id)
-
-
 
 
 @login_required
 def leaderboard(request, quiz_id):
     """
     Display the leaderboard with highest scores first.
-    
+
     Also shows quiz results if the user just submitted the quiz.
-    
+
     Args:
         request: HTTP request object
         quiz_id: ID of the quiz to show leaderboard for
-        
+
     Returns:
         Rendered leaderboard template
     """
@@ -2847,19 +2847,19 @@ def leaderboard(request, quiz_id):
 
         # Retrieve all submissions for this quiz, ordered by highest score
         submissions = QuizSubmission.objects.filter(quiz=quiz).order_by("-score", "submitted_at")
-        
+
         # Get quiz_results from session if present
         quiz_results = request.session.get('quiz_results', None)
         if quiz_results:
             # Clear from session after retrieving
             del request.session['quiz_results']
             request.session.modified = True
-        
+
         end_datetime = timezone.make_aware(datetime.combine(quiz.end_date, quiz.end_time))
-        quiz_ended = timezone.now() > end_datetime 
+        quiz_ended = timezone.now() > end_datetime
 
         return render(request, "web/leaderboard.html", {
-            "quiz": quiz, 
+            "quiz": quiz,
             "submissions": submissions,
             "quiz_ended": quiz_ended,
             "quiz_results": quiz_results
@@ -2868,33 +2868,7 @@ def leaderboard(request, quiz_id):
         logger.error(f"Error in leaderboard view: {str(e)}")
         messages.error(request, "An error occurred while loading the leaderboard.")
         return redirect("index")
-    
 
-def validate_quiz_has_questions(quiz):
-    """
-    Validate that a quiz has at least one question.
-    
-    Args:
-        quiz: Quiz object to validate
-        
-    Returns:
-        tuple: (is_valid, message)
-    """
-    question_count = quiz.questions.count()
-    if question_count == 0:
-        return False, "This quiz has no questions."
-    
-    # Check each question has at least one correct option
-    invalid_questions = []
-    for question in quiz.questions.all():
-        if not question.options.filter(is_correct=True).exists():
-            invalid_questions.append(question.question_text)
-    
-    if invalid_questions:
-        return False, f"The following questions have no correct answer: {', '.join(invalid_questions)}"
-    
-    return True, "Quiz is valid"
- 
 
 @require_GET
 def fetch_video_title(request):

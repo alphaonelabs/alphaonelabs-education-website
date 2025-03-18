@@ -19,9 +19,9 @@ from .models import (
     CartItem,
     Challenge,
     ChallengeSubmission,
-    Quiz, 
+    Quiz,
     QuizOption,
-    QuizQuestion, 
+    QuizQuestion,
     QuizSubmission,
     Course,
     CourseMaterial,
@@ -409,29 +409,33 @@ class ChallengeSubmissionAdmin(admin.ModelAdmin):
 
 @admin.register(Quiz)
 class QuizAdmin(admin.ModelAdmin):
-    list_display = ("title", "description", "start_date", "end_date", "start_time", "end_time", "duration_minutes")   
+    list_display = ("title", "description", "start_date", "end_date", "start_time", "end_time", "duration_minutes")
 
     def save_model(self, request, obj, form, change):
         """ Validate the quiz before saving it. """
         is_valid, message = validate_quiz_has_questions(obj)
-        
+
         if not is_valid:
             messages.error(request, message)
-            raise ValidationError(message) 
+            raise ValidationError(message)
 
         super().save_model(request, obj, form, change)
+
 
 @admin.register(QuizSubmission)
 class QuizSubmissionAdmin(admin.ModelAdmin):
     list_display = ("user", "score", "submitted_at", "quiz")
 
+
 @admin.register(QuizOption)
 class QuizOptionAdmin(admin.ModelAdmin):
     list_display = ("question", "option_text", "is_correct")
 
+
 @admin.register(QuizQuestion)
 class QuizQuestionAdmin(admin.ModelAdmin):
     list_display = ("quiz", "question_text")
+
 
 # Unregister the default User admin and register our custom one
 admin.site.unregister(User)
