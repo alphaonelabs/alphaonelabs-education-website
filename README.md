@@ -73,21 +73,21 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 
 ### Local Development Setup
 
-1. Clone the repository
+1. Clone the repository:
 
    ```bash
    git clone https://github.com/yourusername/education-website.git
    cd education-website
    ```
 
-2. Set up a virtual environment
+2. Set up a virtual environment:
 
    ```bash
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. Install dependencies
+3. Install dependencies:
 
    ```bash
    # Using pip
@@ -97,65 +97,59 @@ Alpha One Labs is an education platform designed to facilitate both learning and
    poetry install
    ```
 
-4. Set up environment variables
+4. Set up environment variables:
 
    ```bash
    cp .env.sample .env
    # Edit .env with your configuration
    ```
 
-5. Run migrations
+5. Run migrations:
 
    ```bash
    python manage.py migrate
    ```
 
-6. Create a superuser
+6. Create a superuser:
 
    ```bash
    python manage.py createsuperuser
    ```
 
-7. Create test data
+7. Create test data:
 
    ```bash
    python manage.py create_test_data
    ```
 
-8. Run the development server
+8. Run the development server:
 
    ```bash
    python manage.py runserver
    ```
 
-9. Visit http://localhost:8000 in your browser
+9. Visit [http://localhost:8000](http://localhost:8000) in your browser.
 
 ### Docker Setup
 
-1. Build the Docker image
+1. Build the Docker image:
 
    ```bash
    docker build -t education-website .
    ```
 
-2. Run the Docker container
+2. Run the Docker container:
 
    ```bash
    docker run -d -p 8000:8000 education-website
    ```
-   <h3>Admin Credentials:</h3>
 
-   
-   Email
-   ```bash
-   admin@example.com
-   ```
-   Password
-   ```bash
-   adminpassword
-   ```
-   
-4. Visit http://localhost:8000 in your browser
+3. Visit [http://localhost:8000](http://localhost:8000) in your browser.
+
+### Admin Credentials:
+
+- **Email:** `admin@example.com`
+- **Password:** `adminpassword`
 
 ## Environment Variables Configuration
 
@@ -165,23 +159,24 @@ Copy `.env.sample` to `.env` and configure the variables.
 
 ### Code Style
 
-- Follow PEP 8 guidelines for Python code
-- Use Black for code formatting
-- Use isort for import sorting
-- Follow Django's coding style guide
-- Use ESLint for JavaScript code
+- Follow PEP 8 guidelines for Python code.
+- Use **Black** for code formatting.
+- Use **isort** for import sorting.
+- Follow Django's coding style guide.
+- Use **ESLint** for JavaScript code.
 
 ### Git Workflow
 
-1. Create a new branch for each feature/bugfix
-2. Follow conventional commits for commit messages
-3. Submit pull requests for review
-4. Ensure all tests pass before merging
+1. Create a new branch for each feature/bugfix.
+2. Follow **conventional commits** for commit messages.
+3. Submit **pull requests** for review.
+4. Ensure all **tests pass** before merging.
 
 ### Testing
 
-- Write unit tests for new features
+- Write unit tests for new features.
 - Run tests before committing:
+
   ```bash
   python manage.py test
   ```
@@ -197,23 +192,4 @@ pre-commit run --all-files
 
 ### Documentation
 
-- Document all new features and API endpoints
-- Update README.md when adding major features
-- Use docstrings for Python functions and classes
-- Comment complex logic
-
-## Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on how to submit pull requests, report issues, and contribute to the project.
-
-## Support
-
-If you encounter any issues or need support, please:
-
-1. Search existing [Issues](https://github.com/alphaonelabs/education-website/issues)
-2. Create a new issue if your problem persists
-
-## Acknowledgments
-
-- Thanks to all contributors who have helped shape this project
-- Built with ❤️ by the Alpha One Labs team
+- Document all **n
