@@ -1238,9 +1238,22 @@ class QuizSubmission(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.quiz.title} - Score: {self.score}"
     
+    def clean(self):
+        """Validate that submission is within the quiz time window."""
+        super().clean()
+        
+        # Check if the quiz has ended
+        now = timezone.now()
+        end_datetime = timezone.make_aware(
+            datetime.combine(self.quiz.end_date, self.quiz.end_time)
+        )
+        
+        if now > end_datetime:
+            raise ValidationError("Cannot submit after the quiz has ended.")
+    
     class Meta:
         unique_together = ("user", "quiz")
-        
+    
 class QuizAnswerSubmission(models.Model):
     submission = models.ForeignKey(QuizSubmission, on_delete=models.CASCADE, related_name="answers")
     question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE)
