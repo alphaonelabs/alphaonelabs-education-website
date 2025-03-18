@@ -16,6 +16,7 @@ from .models import (
     Goods,
     ProductImage,
     Profile,
+    ProgressTracker,
     Review,
     Session,
     Storefront,
@@ -57,6 +58,7 @@ __all__ = [
     "FeedbackForm",
     "GoodsForm",
     "StorefrontForm",
+    "ProgressTrackerForm",
     "SuccessStoryForm",
 ]
 
@@ -1020,6 +1022,15 @@ class StorefrontForm(forms.ModelForm):
             "logo",
             "is_active",
         ]
+
+
+class ProgressTrackerForm(forms.ModelForm):
+    class Meta:
+        model = ProgressTracker
+        fields = ["title", "description", "current_value", "target_value", "color", "public"]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 3}),
+        }
 
 
 class StudentEnrollmentForm(forms.Form):

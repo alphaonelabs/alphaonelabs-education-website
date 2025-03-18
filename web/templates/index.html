@@ -33,13 +33,17 @@
                   <a href="{% url 'course_detail' course.slug %}">
                     <img src="{{ course.image.url }}"
                          alt="{{ course.title }}"
-                         class="w-full h-full object-cover" />
+                         class="w-full h-full object-cover"
+                         height=""
+                         width="" />
                   </a>
                 {% else %}
                   <a href="{% url 'course_detail' course.slug %}">
                     <img src="{% static 'images/default-course.jpg' %}"
                          alt="{{ course.title }}"
-                         class="w-full h-full object-cover" />
+                         class="w-full h-full object-cover"
+                         height=""
+                         width="" />
                   </a>
                 {% endif %}
               </div>
@@ -160,13 +164,17 @@
                   <a href="{% url 'goods_detail' pk=product.id %}">
                     <img src="{{ product.image.url }}"
                          alt="{{ product.name }}"
-                         class="w-full h-full object-cover" />
+                         class="w-full h-full object-cover"
+                         height=""
+                         width="" />
                   </a>
                 {% else %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
                     <img src="{% static 'images/placeholder.png' %}"
                          alt="{{ product.name }}"
-                         class="w-full h-full object-cover" />
+                         class="w-full h-full object-cover"
+                         height=""
+                         width="" />
                   </a>
                 {% endif %}
               </div>
@@ -228,7 +236,9 @@
                 <img src="{% static 'images/gsoc-logo.png' %}"
                      alt="Google Summer of Code"
                      class="h-16 w-16 object-contain"
-                     onerror="this.src='https://summerofcode.withgoogle.com/assets/media/gsoc-2024-badge.svg'" />
+                     onerror="this.src='https://summerofcode.withgoogle.com/assets/media/gsoc-2024-badge.svg'"
+                     height=""
+                     width="" />
               </div>
               <div>
                 <h3 class="text-xl font-bold mb-2">Join us for Google Summer of Code 2025! 🚀</h3>
@@ -361,6 +371,47 @@
             </button>
           </form>
         </div>
+        <!-- Progress Trackers Dashboard -->
+        {% if user.is_authenticated %}
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center">
+              <i class="fa-solid fa-chart-line text-blue-600 dark:text-blue-400 mr-2"></i>
+              Progress Trackers
+            </h2>
+            {% if user.progress_trackers.exists %}
+              <div class="space-y-4">
+                {% for tracker in user.progress_trackers.all|slice:":3" %}
+                  <div>
+                    <div class="flex justify-between mb-1">
+                      <span class="text-gray-700 dark:text-gray-300">{{ tracker.title }}</span>
+                      <span class="text-gray-600 dark:text-gray-400">{{ tracker.percentage }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                      <div class="bg-{{ tracker.color }} h-3 rounded-full"
+                           style="width: {{ tracker.percentage }}%"></div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+              <div class="mt-4 text-center">
+                <a href="{% url 'tracker_list' %}"
+                   class="text-blue-600 hover:text-blue-800 dark:text-blue-400 inline-flex items-center">
+                  <span>View All Trackers</span>
+                  <i class="fas fa-arrow-right ml-2 text-xs"></i>
+                </a>
+              </div>
+            {% else %}
+              <p class="text-gray-600 dark:text-gray-400 mb-4">You haven't created any progress trackers yet.</p>
+              <div class="text-center">
+                <a href="{% url 'create_tracker' %}"
+                   class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center justify-center">
+                  <i class="fas fa-plus mr-2"></i>
+                  Create Your First Tracker
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
         <!-- Weekly Challenge -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800">
           <h2 class="text-xl font-semibold mb-4 flex items-center">

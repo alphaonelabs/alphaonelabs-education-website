@@ -326,7 +326,7 @@
         </nav>
         <!-- Mobile Menu (hidden by default) -->
         <div id="mobile-menu"
-             class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+             class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden">
           <div class="absolute right-0 top-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg overflow-y-auto">
             <!-- Close button -->
             <button class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -554,7 +554,7 @@
         </div>
         <!-- Copyright -->
         <div class="text-center mt-8 text-sm text-gray-500 dark:text-gray-400">
-          <p>&copy; {% now "Y" %} Alpha One Labs. All rights reserved.</p>
+          <p>© {% now "Y" %} Alpha One Labs. All rights reserved.</p>
           <p class="mt-1">Last updated: {{ last_modified|date:"m/d/Y h:ia" }}</p>
         </div>
       </div>
