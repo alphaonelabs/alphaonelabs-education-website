@@ -192,4 +192,23 @@ pre-commit run --all-files
 
 ### Documentation
 
-- Document all **n
+- Document all new features and API endpoints
+- Update README.md when adding major features
+- Use docstrings for Python functions and classes
+- Comment complex logic
+
+## Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details on how to submit pull requests, report issues, and contribute to the project.
+
+## Support
+
+If you encounter any issues or need support, please:
+
+1. Search existing [Issues](https://github.com/alphaonelabs/education-website/issues)
+2. Create a new issue if your problem persists
+
+## Acknowledgments
+
+- Thanks to all contributors who have helped shape this project
+- Built with ❤️ by the Alpha One Labs team
