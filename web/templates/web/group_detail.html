@@ -1,81 +1,80 @@
 {% extends "base.html" %}
-
 {% load static %}
 {% load web_extras %}
 
 {% block content %}
-  <div class="container mx-auto px-4 py-8">
+<div class="container mx-auto px-4 py-8">
     <div class="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ group.name }}</h1>
-        {% if user == group.creator %}
-          <a href="{% url 'share_group' group.invitation_token %}"
-             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200">
-            Share Invitation Link
-          </a>
-        {% endif %}
-      </div>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div>
-          <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">Course Details</h2>
-          <p class="text-gray-600 dark:text-gray-400">{{ group.course.title }}</p>
-          <p class="text-gray-600 dark:text-gray-400">Original Price: ${{ group.course.price }}</p>
-          {% if group.discount %}
-            <p class="text-green-600 dark:text-green-400">Group Discount: {{ group.discount.percentage }}% off</p>
-            <p class="text-green-600 dark:text-green-400">Final Price: ${{ group.discount.apply_discount|floatformat:2 }}</p>
-          {% endif %}
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ group.name }}</h1>
+            {% if user == group.creator %}
+            <a href="{% url 'share_group' group.invitation_token %}" 
+                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200">
+                Share Invitation Link
+            </a>
+            {% endif %}
         </div>
-        <div>
-          <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">Group Status</h2>
-          <p class="text-gray-600 dark:text-gray-400">Members: {{ group.member_count }}/{{ group.min_members }}</p>
-          {% if group.is_eligible_for_discount %}
-            <p class="text-green-600 dark:text-green-400">Group discount is active!</p>
-          {% else %}
-            <p class="text-yellow-600 dark:text-yellow-400">
-              Need {{ group.min_members|sub:group.member_count }} more members for discount
-            </p>
-          {% endif %}
-        </div>
-      </div>
-      <div class="mb-8">
-        <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-4">Group Members</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {% for member in members %}
-            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-              <div class="flex items-center space-x-3">
-                <div class="flex-shrink-0">
-                  {% if member.user.profile.avatar %}
-                    <img class="h-10 w-10 rounded-full"
-                         src="{{ member.user.profile.avatar.url }}"
-                         alt="{{ member.user.username }}" />
-                  {% else %}
-                    <div class="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
-                      <span class="text-gray-600 dark:text-gray-300">{{ member.user.username|first|upper }}</span>
-                    </div>
-                  {% endif %}
-                </div>
-                <div>
-                  <p class="text-sm font-medium text-gray-900 dark:text-white">{{ member.user.username }}</p>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    {% if member.is_enrolled %}
-                      <span class="text-green-600 dark:text-green-400">Enrolled</span>
-                    {% else %}
-                      <span class="text-yellow-600 dark:text-yellow-400">Pending</span>
-                    {% endif %}
-                  </p>
-                </div>
-              </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+                <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">Course Details</h2>
+                <p class="text-gray-600 dark:text-gray-400">{{ group.course.title }}</p>
+                <p class="text-gray-600 dark:text-gray-400">Original Price: ${{ group.course.price }}</p>
+                {% if group.discount %}
+                <p class="text-green-600 dark:text-green-400">Group Discount: {{ group.discount.percentage }}% off</p>
+                <p class="text-green-600 dark:text-green-400">Final Price: ${{ group.discount.apply_discount|floatformat:2 }}</p>
+                {% endif %}
             </div>
-          {% endfor %}
+            
+            <div>
+                <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">Group Status</h2>
+                <p class="text-gray-600 dark:text-gray-400">Members: {{ group.member_count }}/{{ group.min_members }}</p>
+                {% if group.is_eligible_for_discount %}
+                <p class="text-green-600 dark:text-green-400">Group discount is active!</p>
+                {% else %}
+                <p class="text-yellow-600 dark:text-yellow-400">Need {{ group.min_members|sub:group.member_count }} more members for discount</p>
+                {% endif %}
+            </div>
         </div>
-      </div>
-      {% if not group.is_eligible_for_discount %}
+        
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-4">Group Members</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for member in members %}
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-shrink-0">
+                            {% if member.user.profile.avatar %}
+                            <img class="h-10 w-10 rounded-full" src="{{ member.user.profile.avatar.url }}" alt="{{ member.user.username }}">
+                            {% else %}
+                            <div class="h-10 w-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center">
+                                <span class="text-gray-600 dark:text-gray-300">{{ member.user.username|first|upper }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-900 dark:text-white">{{ member.user.username }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                {% if member.is_enrolled %}
+                                <span class="text-green-600 dark:text-green-400">Enrolled</span>
+                                {% else %}
+                                <span class="text-yellow-600 dark:text-yellow-400">Pending</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        {% if not group.is_eligible_for_discount %}
         <div class="bg-yellow-50 dark:bg-yellow-900 rounded-lg p-4">
-          <p class="text-yellow-700 dark:text-yellow-300">
-            Share this group with friends to get the group discount! Need {{ group.min_members|sub:group.member_count }} more members.
-          </p>
+            <p class="text-yellow-700 dark:text-yellow-300">
+                Share this group with friends to get the group discount! Need {{ group.min_members|sub:group.member_count }} more members.
+            </p>
         </div>
-      {% endif %}
+        {% endif %}
     </div>
-  </div>
-{% endblock %}
+</div>
+{% endblock %} 

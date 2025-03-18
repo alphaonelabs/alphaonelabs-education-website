@@ -15,6 +15,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 from markdownx.models import MarkdownxField
@@ -267,7 +268,7 @@ class Discount(models.Model):
         ("promotional", "Promotional Discount"),
         ("seasonal", "Seasonal Discount"),
     ]
-
+    
     name = models.CharField(max_length=100)
     code = models.CharField(max_length=20, unique=True)
     description = models.TextField(blank=True)
@@ -281,13 +282,13 @@ class Discount(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    
     # For course-specific discounts
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True, related_name="discounts")
-
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True, related_name='discounts')
+    
     def __str__(self):
         return f"{self.name} ({self.code})"
-
+    
     def is_valid(self):
         now = timezone.now()
         if not self.is_active:
@@ -299,21 +300,21 @@ class Discount(models.Model):
         if self.max_uses and self.uses_count >= self.max_uses:
             return False
         return True
-
+    
     def calculate_discount(self, original_price):
         if not self.is_valid():
             return 0
-
+        
         if self.percentage:
             return (original_price * self.percentage) / 100
         elif self.amount:
             return min(self.amount, original_price)  # Don't discount more than the price
         return 0
-
+    
     def apply_discount(self, original_price):
         discount_amount = self.calculate_discount(original_price)
         return original_price - discount_amount
-
+    
     def use_discount(self):
         self.uses_count += 1
         self.save()
@@ -321,38 +322,38 @@ class Discount(models.Model):
 
 class GroupEnrollment(models.Model):
     name = models.CharField(max_length=100)
-    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_group_enrollments")
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_groups')
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
     discount = models.ForeignKey(Discount, on_delete=models.CASCADE, null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     invitation_token = models.CharField(max_length=64, unique=True, blank=True)
     min_members = models.PositiveIntegerField(default=3)
-
+    
     def __str__(self):
         return f"{self.name} - {self.course.title}"
-
+    
     def save(self, *args, **kwargs):
         if not self.invitation_token:
             self.invitation_token = uuid.uuid4().hex
         super().save(*args, **kwargs)
-
+    
     @property
     def member_count(self):
         return GroupMember.objects.filter(group=self).count()
-
+    
     def is_eligible_for_discount(self):
         return self.member_count >= self.min_members
 
 
 class GroupMember(models.Model):
-    group = models.ForeignKey(GroupEnrollment, on_delete=models.CASCADE, related_name="group_members")
+    group = models.ForeignKey(GroupEnrollment, on_delete=models.CASCADE, related_name='group_members')
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     joined_at = models.DateTimeField(auto_now_add=True)
     is_enrolled = models.BooleanField(default=False)
-
+    
     class Meta:
-        unique_together = ("group", "user")
-
+        unique_together = ('group', 'user')
+        
     def __str__(self):
         return f"{self.user.username} in {self.group.name}"
 
@@ -794,7 +795,7 @@ class StudyGroup(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="study_groups")
-    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_study_groups")
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_groups")
     members = models.ManyToManyField(User, related_name="joined_groups")
     max_members = models.IntegerField(default=10)
     is_private = models.BooleanField(default=False)
@@ -880,6 +881,51 @@ class BlogComment(models.Model):
 
     def __str__(self):
         return f"Comment by {self.author.username} on {self.post.title}"
+
+
+class SuccessStory(models.Model):
+    STATUS_CHOICES = [
+        ("published", "Published"),
+        ("archived", "Archived"),
+    ]
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True, max_length=200)
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="success_stories")
+    content = MarkdownxField()
+    excerpt = models.TextField(blank=True)
+    featured_image = models.ImageField(
+        upload_to="success_stories/images/", blank=True, help_text="Featured image for the success story"
+    )
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="published")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-published_at", "-created_at"]
+        verbose_name = "Success Story"
+        verbose_name_plural = "Success Stories"
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        if self.status == "published" and not self.published_at:
+            self.published_at = timezone.now()
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse("success_story_detail", kwargs={"slug": self.slug})
+
+    @property
+    def reading_time(self):
+        """Estimate reading time in minutes."""
+        words_per_minute = 200
+        word_count = len(self.content.split())
+        minutes = word_count / words_per_minute
+        return max(1, round(minutes))
 
 
 @receiver(user_signed_up)

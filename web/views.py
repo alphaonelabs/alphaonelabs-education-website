@@ -12,7 +12,7 @@ import requests
 import stripe
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
@@ -61,6 +61,7 @@ from .forms import (
     SessionForm,
     StorefrontForm,
     StudentEnrollmentForm,
+    SuccessStoryForm,
     TeacherSignupForm,
     TeachForm,
     UserRegistrationForm,
@@ -82,7 +83,6 @@ from .models import (
     Course,
     CourseMaterial,
     CourseProgress,
-    Discount,
     Donation,
     Enrollment,
     EventCalendar,
@@ -90,8 +90,6 @@ from .models import (
     ForumReply,
     ForumTopic,
     Goods,
-    GroupEnrollment,
-    GroupMember,
     Order,
     OrderItem,
     PeerConnection,
@@ -104,8 +102,12 @@ from .models import (
     SessionEnrollment,
     Storefront,
     StudyGroup,
+    SuccessStory,
     TimeSlot,
     WebRequest,
+    GroupEnrollment,
+    GroupMember,
+    Discount,
 )
 from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
 from .referrals import send_referral_reward_email
@@ -158,6 +160,12 @@ def index(request):
     # Get current challenge
     current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
 
+    # Get latest blog post
+    latest_post = BlogPost.objects.filter(status="published").order_by("-published_at").first()
+
+    # Get latest success story
+    latest_success_story = SuccessStory.objects.filter(status="published").order_by("-published_at").first()
+
     # Get signup form if needed
     form = None
     if not request.user.is_authenticated or not request.user.profile.is_teacher:
@@ -168,6 +176,8 @@ def index(request):
         "top_referrers": top_referrers,
         "featured_courses": featured_courses,
         "current_challenge": current_challenge,
+        "latest_post": latest_post,
+        "latest_success_story": latest_success_story,
         "form": form,
     }
     return render(request, "index.html", context)
@@ -1601,33 +1611,84 @@ def blog_detail(request, slug):
 def student_dashboard(request):
     """Dashboard view for students showing their enrollments, progress, and upcoming sessions."""
     if request.user.profile.is_teacher:
-        return redirect("teacher_dashboard")
+        messages.error(request, "This dashboard is for students only.")
+        return redirect("profile")
+
+    enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
+    upcoming_sessions = Session.objects.filter(
+        course__enrollments__student=request.user, start_time__gt=timezone.now()
+    ).order_by("start_time")[:5]
+
+    # Get progress for each enrollment
+    progress_data = []
+    total_progress = 0
+    for enrollment in enrollments:
+        progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+        progress_data.append(
+            {
+                "enrollment": enrollment,
+                "progress": progress,
+            }
+        )
+        total_progress += progress.completion_percentage
+
+    # Calculate average progress
+    avg_progress = round(total_progress / len(progress_data)) if progress_data else 0
 
     context = {
-        "enrollments": Enrollment.objects.filter(student=request.user),
-        "completed_courses": CourseProgress.objects.filter(student=request.user, completed=True).count(),
+        "enrollments": enrollments,
+        "upcoming_sessions": upcoming_sessions,
+        "progress_data": progress_data,
+        "avg_progress": avg_progress,
     }
-    return render(request, "web/student_dashboard.html", context)
+    return render(request, "dashboard/student.html", context)
 
 
 @login_required
 @teacher_required
 def teacher_dashboard(request):
-    """Teacher dashboard view."""
-    if not request.user.profile.is_teacher:
-        return redirect("home")
+    """Dashboard view for teachers showing their courses, student progress, and upcoming sessions."""
+    courses = Course.objects.filter(teacher=request.user)
+    upcoming_sessions = Session.objects.filter(course__teacher=request.user, start_time__gt=timezone.now()).order_by(
+        "start_time"
+    )[:5]
 
-    # Get total revenue from completed orders
-    total_revenue = (
-        Order.objects.filter(course__teacher=request.user).aggregate(Sum("total_amount"))["total_amount__sum"] or 0
-    )
+    # Get enrollment and progress stats for each course
+    course_stats = []
+    total_students = 0
+    total_completed = 0
+    total_earnings = Decimal("0.00")
+    for course in courses:
+        enrollments = course.enrollments.filter(status="approved")
+        course_total_students = enrollments.count()
+        course_completed = enrollments.filter(status="completed").count()
+        total_students += course_total_students
+        total_completed += course_completed
+        # Calculate earnings (90% of course price for each enrollment, 10% platform fee)
+        course_earnings = Decimal(str(course_total_students)) * course.price * Decimal("0.9")
+        total_earnings += course_earnings
+        course_stats.append(
+            {
+                "course": course,
+                "total_students": course_total_students,
+                "completed": course_completed,
+                "completion_rate": (course_completed / course_total_students * 100) if course_total_students > 0 else 0,
+                "earnings": course_earnings,
+            }
+        )
+
+    # Get the teacher's storefront if it exists
+    storefront = Storefront.objects.filter(teacher=request.user).first()
 
     context = {
-        "courses": Course.objects.filter(teacher=request.user),
-        "total_students": Enrollment.objects.filter(course__teacher=request.user).count(),
-        "total_revenue": total_revenue,
+        "courses": courses,
+        "upcoming_sessions": upcoming_sessions,
+        "course_stats": course_stats,
+        "completion_rate": (total_completed / total_students * 100) if total_students > 0 else 0,
+        "total_earnings": round(total_earnings, 2),
+        "storefront": storefront,
     }
-    return render(request, "web/teacher_dashboard.html", context)
+    return render(request, "dashboard/teacher.html", context)
 
 
 def custom_404(request, exception):
@@ -1726,72 +1787,64 @@ def validate_discount(discount_id, course):
         return None
 
 
-def send_order_confirmation_email(order):
-    """Send confirmation email for a successful order."""
-    subject = f"Order Confirmation - #{order.id}"
-    message = render_to_string(
-        "emails/order_confirmation.html",
-        {
-            "order": order,
-            "items": order.items.all(),
-        },
-    )
-    plain_message = strip_tags(message)
-    send_mail(
-        subject,
-        plain_message,
-        settings.DEFAULT_FROM_EMAIL,
-        [order.user.email],
-        html_message=message,
-        fail_silently=False,
-    )
-
-
-def send_group_invitation_email(request, group, email, message):
-    """Send group invitation email."""
-    invitation_link = request.build_absolute_uri(
-        reverse("join_group", kwargs={"invitation_token": group.invitation_token})
-    )
-
-    subject = f"Join {group.name} - {group.course.title}"
-    body = f"""
-    {request.user.username} has invited you to join their group for {group.course.title}.
-
-    Group Details:
-    - Name: {group.name}
-    - Course: {group.course.title}
-    - Members: {group.member_count}/{group.min_members}
-
-    {message}
-
-    Click here to join: {invitation_link}
-    """
-
-    send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
-
-
 def checkout_success(request):
-    """Handle successful checkout."""
-    try:
-        # Get payment intent ID from session
-        payment_intent_id = request.session.get("payment_intent_id")
-        if not payment_intent_id:
-            messages.error(request, "No payment found.")
-            return redirect("cart")
+    """Handle successful checkout and payment confirmation."""
+    payment_intent_id = request.GET.get("payment_intent")
 
-        # Get user and cart
-        user = request.user
+    if not payment_intent_id:
+        messages.error(request, "No payment information found.")
+        return redirect("cart_view")
+
+    try:
+        # Verify the payment intent
+        payment_intent = stripe.PaymentIntent.retrieve(payment_intent_id)
+
+        if payment_intent.status != "succeeded":
+            messages.error(request, "Payment was not successful.")
+            return redirect("cart_view")
+
         cart = get_or_create_cart(request)
+
+        if not cart.items.exists():
+            messages.error(request, "Cart is empty.")
+            return redirect("cart_view")
+
+        # Handle guest checkout
+        if not request.user.is_authenticated:
+            email = payment_intent.receipt_email
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    "username": email.split("@")[0],
+                    "is_active": True,
+                },
+            )
+            if created:
+                send_welcome_email(user)
+        else:
+            user = request.user
 
         # Initialize variables
         enrollments = []
         session_enrollments = []
-        total_amount = 0
         goods_items = []
-        storefront = None
-        order = None
+        total_amount = Decimal("0")
+        has_goods = False
+        shipping_address = None
 
-        # Process each cart item
+        # Check for discount and validate it
+        discount_id = request.session.get('discount_id')
+        if discount_id:
+            for item in cart.items.all():
+                if item.course:
+                    discount = validate_discount(discount_id, item.course)
+                    if not discount:
+                        messages.warning(request, "The discount code is no longer valid.")
+                        del request.session['discount_id']
+                        del request.session['discount_amount']
+                        break
+
+        # Process cart items
         for item in cart.items.all():
             if item.course:
                 # Create enrollment for full course
@@ -1803,6 +1856,10 @@ def checkout_success(request):
                 enrollments.append(enrollment)
                 total_amount += item.course.price
 
+                # Send confirmation emails
+                send_enrollment_confirmation(enrollment)
+                notify_teacher_new_enrollment(enrollment)
+
             elif item.session:
                 # Create enrollment for individual session
                 session_enrollment = SessionEnrollment.objects.create(
@@ -1812,53 +1869,67 @@ def checkout_success(request):
                 total_amount += item.session.price
 
             elif item.goods:
+                # Track goods items for the receipt
                 goods_items.append(item)
+                total_amount += item.final_price
+                has_goods = True
+
+                # Create order item for goods
+                OrderItem.objects.create(
+                    order=order,
+                    goods=item.goods,
+                    quantity=1,
+                    price_at_purchase=item.goods.price,
+                    discounted_price_at_purchase=item.goods.discount_price,
+                )
+                # Capture storefront from the first goods item
                 if not storefront:
                     storefront = item.goods.storefront
-                total_amount += item.goods.price
 
-        # Create order for goods if any
-        if goods_items:
-            order = Order.objects.create(
-                user=user,
-                storefront=storefront,
-                status="completed",
-                payment_intent_id=payment_intent_id,
-                total_price=total_amount,
-            )
+        # Update order details
+        order.total_price = total_amount
+        if storefront:
+            order.storefront = goods_items[0].goods.storefront
+        order.save()
 
-            # Create order items
-            for item in goods_items:
-                OrderItem.objects.create(
-                    order=order, goods=item.goods, quantity=1, price_at_purchase=item.goods.price, status="pending"
-                )
-
-        # Clear the cart and session data
+        # Clear the cart and discount session data
         cart.items.all().delete()
-        if "payment_intent_id" in request.session:
-            del request.session["payment_intent_id"]
-        if "discount_id" in request.session:
-            del request.session["discount_id"]
+        if 'discount_id' in request.session:
+            del request.session['discount_id']
+        if 'discount_amount' in request.session:
+            del request.session['discount_amount']
 
-        # Show success message
-        messages.success(request, "Payment successful! Thank you for your purchase.")
+        if storefront:
+            order.storefront = storefront
+            order.save(update_fields=["storefront"])
 
-        # Render receipt page
+        # Render the receipt page
         return render(
             request,
-            "web/checkout_success.html",
+            "cart/receipt.html",
             {
+                "payment_intent_id": payment_intent_id,
+                "order_date": timezone.now(),
+                "user": user,
                 "enrollments": enrollments,
                 "session_enrollments": session_enrollments,
                 "goods_items": goods_items,
                 "total": total_amount,
                 "order": order,
+                "shipping_address": shipping_address,
             },
         )
 
+    except stripe.error.StripeError as e:
+        # send slack message
+        send_slack_message(f"Payment verification failed: {str(e)}")
+        messages.error(request, f"Payment verification failed: {str(e)}")
+        return redirect("cart_view")
     except Exception as e:
-        messages.error(request, f"An error occurred: {str(e)}")
-        return redirect("cart")
+        # send slack message
+        send_slack_message(f"Failed to process checkout: {str(e)}")
+        messages.error(request, f"Failed to process checkout: {str(e)}")
+        return redirect("cart_view")
 
 
 def send_welcome_email(user):
@@ -3031,7 +3102,100 @@ class StorefrontDetailView(LoginRequiredMixin, generic.DetailView):
         return get_object_or_404(Storefront, store_slug=self.kwargs["store_slug"])
 
 
+def success_story_list(request):
+    """View for listing published success stories."""
+    success_stories = SuccessStory.objects.filter(status="published").order_by("-published_at")
+
+    # Paginate results
+    paginator = Paginator(success_stories, 9)  # 9 stories per page
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "success_stories": page_obj,
+        "is_paginated": paginator.num_pages > 1,
+        "page_obj": page_obj,
+    }
+    return render(request, "success_stories/list.html", context)
+
+
+def success_story_detail(request, slug):
+    """View for displaying a single success story."""
+    success_story = get_object_or_404(SuccessStory, slug=slug, status="published")
+
+    # Get related success stories (same author or similar content)
+    related_stories = (
+        SuccessStory.objects.filter(status="published").exclude(id=success_story.id).order_by("-published_at")[:3]
+    )
+
+    context = {
+        "success_story": success_story,
+        "related_stories": related_stories,
+    }
+    return render(request, "success_stories/detail.html", context)
+
+
+@login_required
+def create_success_story(request):
+    """View for creating a new success story."""
+    if request.method == "POST":
+        form = SuccessStoryForm(request.POST, request.FILES)
+        if form.is_valid():
+            success_story = form.save(commit=False)
+            success_story.author = request.user
+            success_story.save()
+            messages.success(request, "Success story created successfully!")
+            return redirect("success_story_detail", slug=success_story.slug)
+    else:
+        form = SuccessStoryForm()
+
+    context = {
+        "form": form,
+    }
+    return render(request, "success_stories/create.html", context)
+
+
+@login_required
+def edit_success_story(request, slug):
+    """View for editing an existing success story."""
+    success_story = get_object_or_404(SuccessStory, slug=slug, author=request.user)
+
+    if request.method == "POST":
+        form = SuccessStoryForm(request.POST, request.FILES, instance=success_story)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Success story updated successfully!")
+            return redirect("success_story_detail", slug=success_story.slug)
+    else:
+        form = SuccessStoryForm(instance=success_story)
+
+    context = {
+        "form": form,
+        "success_story": success_story,
+        "is_edit": True,
+    }
+    return render(request, "success_stories/create.html", context)
+
+
+@login_required
+def delete_success_story(request, slug):
+    """View for deleting a success story."""
+    success_story = get_object_or_404(SuccessStory, slug=slug, author=request.user)
+
+    if request.method == "POST":
+        success_story.delete()
+        messages.success(request, "Success story deleted successfully!")
+        return redirect("success_story_list")
+
+    context = {
+        "success_story": success_story,
+    }
+    return render(request, "success_stories/delete_confirm.html", context)
+
+
 def gsoc_landing_page(request):
+    # Function implementation goes here
+    pass
     return render(request, "gsoc_landing_page.html")
 
 
@@ -3505,28 +3669,38 @@ def donation_cancel(request):
 
 @login_required
 def create_group_enrollment(request, course_id):
-    """Create a new group enrollment."""
     course = get_object_or_404(Course, id=course_id)
     discount = Discount.objects.get(discount_type="group", course=course)
-
-    if request.method == "POST":
-        name = request.POST.get("name")
-        min_members = int(request.POST.get("min_members", 3))
-
+    
+    context = {
+        'course': course,
+        'discount': discount,
+        'min_members': 3  # or get this from settings/configuration
+    }
+    # rest of the view code...
+    if request.method == 'POST':
+        name = request.POST.get('name')
+        min_members = int(request.POST.get('min_members', 3))
+        
         # Create group enrollment
-        group = GroupEnrollment.objects.create(name=name, creator=request.user, course=course, min_members=min_members)
-
+        group = GroupEnrollment.objects.create(
+            name=name,
+            creator=request.user,
+            course=course,
+            min_members=min_members
+        )
+        
         # Add creator as first member
         GroupMember.objects.create(group=group, user=request.user)
-
+        
         # Create group discount if applicable
         if min_members >= 3:
             try:
                 # Check for existing group discount
                 existing_discount = Discount.objects.get(discount_type="group", course=course)
                 # Update existing discount if needed
-                if existing_discount.percentage != Decimal("10.00"):
-                    existing_discount.percentage = Decimal("10.00")
+                if existing_discount.percentage != Decimal('10.00'):
+                    existing_discount.percentage = Decimal('10.00')
                     existing_discount.save()
                 group.discount = existing_discount
             except Discount.DoesNotExist:
@@ -3535,143 +3709,117 @@ def create_group_enrollment(request, course_id):
                     name=f"Group Discount for {name}",
                     code=f"GROUP{group.id}",
                     description=f"Group discount for {name} - {course.title}",
-                    course=course,
                     discount_type="group",
-                    percentage=Decimal("10.00"),
+                    percentage=Decimal('10.00'),  # 10% discount for groups
+                    course=course,
+                    is_active=True,
+                    valid_from=timezone.now()
                 )
                 group.discount = discount
             except Discount.MultipleObjectsReturned:
                 # Handle case where multiple discounts exist
-                messages.warning(request, "Multiple group discounts found. Using the most recent one.")
-                latest_discount = (
-                    Discount.objects.filter(discount_type="group", course=course).order_by("-created_at").first()
-                )
+                messages.warning(request, 'Multiple group discounts found. Using the most recent one.')
+                latest_discount = Discount.objects.filter(
+                    discount_type="group", 
+                    course=course
+                ).order_by('-created_at').first()
                 group.discount = latest_discount
+            
+            group.save()
+        
+        messages.success(request, 'Group enrollment created successfully!')
+        return redirect('group_detail', group_id=group.id)
+    
+    return render(request, 'web/create_group_enrollment.html', {
+        'course': course
+    })
 
-        group.save()
-        messages.success(request, "Group enrollment created successfully!")
-        return redirect("group_detail", group_id=group.id)
-
-    return render(request, "web/create_group_enrollment.html", {"course": course, "discount": discount})
-
-
+@login_required
 def join_group(request, invitation_token):
-    """Join a group using an invitation token."""
     group = get_object_or_404(GroupEnrollment, invitation_token=invitation_token)
-
-    if request.method == "POST":
+    
+    if request.method == 'POST':
         # Check if user is already a member
         if GroupMember.objects.filter(group=group, user=request.user).exists():
-            messages.warning(request, "You are already a member of this group.")
-            return redirect("group_detail", group_id=group.id)
-
+            messages.warning(request, 'You are already a member of this group.')
+            return redirect('group_detail', group_id=group.id)
+        
         # Add user to group
         GroupMember.objects.create(group=group, user=request.user)
-        messages.success(request, "Successfully joined the group!")
-        return redirect("group_detail", group_id=group.id)
+        messages.success(request, 'Successfully joined the group!')
+        return redirect('group_detail', group_id=group.id)
+    
+    return render(request, 'web/join_group.html', {
+        'group': group
+    })
 
-    return render(request, "web/join_group.html", {"group": group})
-
-
+@login_required
 def group_detail(request, group_id):
-    """View group details."""
     group = get_object_or_404(GroupEnrollment, id=group_id)
     members = GroupMember.objects.filter(group=group)
+    
+    return render(request, 'web/group_detail.html', {
+        'group': group,
+        'members': members
+    })
 
-    return render(request, "web/group_detail.html", {"group": group, "members": members})
-
-
+@login_required
 def apply_discount(request, course_id):
-    """Apply a discount code to a course."""
     course = get_object_or_404(Course, id=course_id)
-
-    if request.method == "POST":
-        code = request.POST.get("code")
+    
+    if request.method == 'POST':
+        code = request.POST.get('code')
         try:
             discount = Discount.objects.get(code=code, course=course)
-
+            
             if not discount.is_valid():
-                messages.error(request, "This discount code is no longer valid.")
-                return redirect("course_detail", slug=course.slug)
-
-            request.session["discount_id"] = discount.id
-            messages.success(request, f'Discount code "{code}" applied successfully!')
-            return redirect("course_detail", slug=course.slug)
-
+                messages.error(request, 'This discount code is no longer valid.')
+                return redirect('course_detail', slug=course.slug)
+            
+            # Store discount ID and amount in session for use during checkout
+            request.session['discount_id'] = discount.id
+            request.session['discount_amount'] = str(discount.calculate_discount(course.price))
+            
+            messages.success(request, 'Discount applied successfully!')
+            return redirect('course_detail', slug=course.slug)
+            
         except Discount.DoesNotExist:
-            messages.error(request, "Invalid discount code.")
-            return redirect("course_detail", slug=course.slug)
+            messages.error(request, 'Invalid discount code.')
+            return redirect('course_detail', slug=course.slug)
+    
+    return redirect('course_detail', slug=course.slug)
 
-    return redirect("course_detail", slug=course.slug)
-
-
+@login_required
 def share_group(request, invitation_token):
-    """Share group invitation."""
     group = get_object_or_404(GroupEnrollment, invitation_token=invitation_token)
-
-    if request.method == "POST":
-        email = request.POST.get("email")
-        message = request.POST.get("message", "")
-
-        # Send invitation email
-        send_group_invitation_email(request, group, email, message)
-        messages.success(request, f"Invitation sent to {email}!")
-        return redirect("group_detail", group_id=group.id)
-
-    return render(request, "web/share_group.html", {"group": group})
-
-
-def leave_group(request, group_id):
-    """Leave a group enrollment."""
-    group = get_object_or_404(GroupEnrollment, id=group_id)
-    member = get_object_or_404(GroupMember, group=group, user=request.user)
-
-    if request.method == "POST":
-        # Check if user is the creator
-        if group.creator == request.user:
-            messages.error(request, "As the creator, you cannot leave the group. You can delete it instead.")
-            return redirect("group_detail", group_id=group.id)
-
-        # Remove the user from the group
-        member.delete()
-        messages.success(request, "You have left the group successfully.")
-        return redirect("course_detail", slug=group.course.slug)
-
-    return render(request, "web/leave_group_confirm.html", {"group": group})
-
-
-def storefront_payment_success(request):
-    """Handle successful storefront payment."""
-    try:
-        # Get the order from the session
-        order_id = request.session.get("order_id")
-        if not order_id:
-            messages.error(request, "No order found in session.")
-            return redirect("storefront")
-
-        order = Order.objects.get(id=order_id)
-        storefront = order.storefront
-
-        # Clear the order from session
-        del request.session["order_id"]
-
-        # Update order status
-        order.status = "completed"
-        order.save()
-
-        # Send confirmation email
-        send_order_confirmation_email(order)
-
-        # Update storefront stats
-        storefront.total_sales += order.total_amount
-        storefront.save()
-
-        messages.success(request, "Payment successful! Thank you for your purchase.")
-        return redirect("storefront_order_detail", order_id=order.id)
-
-    except Order.DoesNotExist:
-        messages.error(request, "Order not found.")
-        return redirect("storefront")
-    except Exception as e:
-        messages.error(request, f"An error occurred: {str(e)}")
-        return redirect("storefront")
+    
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        message = request.POST.get('message', '')
+        
+        if email:
+            invitation_link = request.build_absolute_uri(
+                reverse('join_group', kwargs={'invitation_token': group.invitation_token})
+            )
+            
+            subject = f'Join {group.name} - {group.course.title}'
+            body = f"""
+            {request.user.username} has invited you to join their group for {group.course.title}.
+            
+            Group Details:
+            - Name: {group.name}
+            - Course: {group.course.title}
+            - Members: {group.member_count}/{group.min_members}
+            
+            {message}
+            
+            Click here to join: {invitation_link}
+            """
+            
+            send_mail(subject, body, settings.DEFAULT_FROM_EMAIL, [email], fail_silently=False)
+            messages.success(request, 'Invitation sent successfully!')
+            return redirect('group_detail', group_id=group.id)
+    
+    return render(request, 'web/share_group.html', {
+        'group': group
+    })
