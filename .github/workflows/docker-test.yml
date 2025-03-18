@@ -55,7 +55,7 @@ jobs:
       - name: Test Django admin access
         run: |
           # Check if the admin login page is accessible
-          curl -s http://localhost:8000/admin/ | grep -q "Django administration" && echo "Admin page is accessible!" || (echo "Admin page is not accessible!" && exit 1)
+          curl -s http://localhost:8000/en/admin/ | grep -q "Django administration" && echo "Admin page is accessible!" || (echo "Admin page is not accessible!" && exit 1)
 
       - name: Stop Docker container
         if: always()
