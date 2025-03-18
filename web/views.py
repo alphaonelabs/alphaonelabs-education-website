@@ -7,7 +7,8 @@ import subprocess
 import time
 from datetime import timedelta
 from decimal import Decimal
-
+import logging
+logger = logging.getLogger(__name__)
 import requests
 import stripe
 from django.conf import settings
@@ -164,7 +165,7 @@ def index(request):
     current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
 
     # Get live challenges
-    live_quiz = list(Quiz.objects.filter(start_time__lte=timezone.now(), end_time__gte=timezone.now()))
+    live_quiz = Quiz.get_active_quizzes()
 
    # Get quizzes that the user has already submitted
     has_submitted = set()
@@ -2743,9 +2744,9 @@ def challenge_submit(request, week_number):
 
 # Quiz views
 
-
-def current_live_quiz(request,quiz_id):
-    """Fetch the currently active Quiz and check if the user has submitted."""
+@login_required
+def current_live_quiz(request, quiz_id):
+    """Fetch the quiz by ID and check if the user has submitted."""
     
     quiz = Quiz.objects.filter(
         id = quiz_id
@@ -2758,27 +2759,19 @@ def current_live_quiz(request,quiz_id):
 
     user_submission = None
     has_submitted = False
+    
+    # Fetch questions only if needed
     questions = quiz.questions.prefetch_related("options").all()
     if request.user.is_authenticated:
         user_submission = QuizSubmission.objects.filter(user=request.user, quiz=quiz).first() 
         has_submitted = user_submission is not None
 
     if has_submitted:
-        return render(request, "web/current_live_quiz.html", {"quiz": None, "has_submitted": True})
-    
-    return render(
-        request,
-        "web/current_live_quiz.html",
-        { 
+        return render(request, "web/current_live_quiz.html", {
             "quiz": quiz,
-            "questions": questions,
-            "has_submitted": has_submitted,
-            "user_submission": user_submission,
-        },
-    )
-
-
-
+            "has_submitted": True,
+            "user_submission": user_submission
+        })
 
 @login_required
 @csrf_protect
@@ -2823,15 +2816,70 @@ def submit_quiz(request, quiz_id):
 
 @login_required
 def leaderboard(request, quiz_id):
-    """Display the leaderboard with highest scores first."""
-    quiz = get_object_or_404(Quiz, id=quiz_id)
+    """
+    Display the leaderboard with highest scores first.
+    
+    Also shows quiz results if the user just submitted the quiz.
+    
+    Args:
+        request: HTTP request object
+        quiz_id: ID of the quiz to show leaderboard for
+        
+    Returns:
+        Rendered leaderboard template
+    """
+    try:
+        quiz = get_object_or_404(Quiz, id=quiz_id)
 
-    # Retrieve all submissions for this quiz, ordered by highest score
-    submissions = QuizSubmission.objects.filter(quiz=quiz).order_by("-score", "submitted_at")
-    end_datetime = make_aware(datetime.combine(quiz.end_date, quiz.end_time))
-    quiz_ended = now() > end_datetime 
+        # Retrieve all submissions for this quiz, ordered by highest score
+        submissions = QuizSubmission.objects.filter(quiz=quiz).order_by("-score", "submitted_at")
+        
+        # Get quiz_results from session if present
+        quiz_results = request.session.get('quiz_results', None)
+        if quiz_results:
+            # Clear from session after retrieving
+            del request.session['quiz_results']
+            request.session.modified = True
+        
+        end_datetime = timezone.make_aware(datetime.combine(quiz.end_date, quiz.end_time))
+        quiz_ended = timezone.now() > end_datetime 
 
-    return render(request, "web/leaderboard.html", {"quiz": quiz, "submissions": submissions,"quiz_ended":quiz_ended})
+        return render(request, "web/leaderboard.html", {
+            "quiz": quiz, 
+            "submissions": submissions,
+            "quiz_ended": quiz_ended,
+            "quiz_results": quiz_results
+        })
+    except Exception as e:
+        logger.error(f"Error in leaderboard view: {str(e)}")
+        messages.error(request, "An error occurred while loading the leaderboard.")
+        return redirect("index")
+    
+
+def validate_quiz_has_questions(quiz):
+    """
+    Validate that a quiz has at least one question.
+    
+    Args:
+        quiz: Quiz object to validate
+        
+    Returns:
+        tuple: (is_valid, message)
+    """
+    question_count = quiz.questions.count()
+    if question_count == 0:
+        return False, "This quiz has no questions."
+    
+    # Check each question has at least one correct option
+    invalid_questions = []
+    for question in quiz.questions.all():
+        if not question.options.filter(is_correct=True).exists():
+            invalid_questions.append(question.question_text)
+    
+    if invalid_questions:
+        return False, f"The following questions have no correct answer: {', '.join(invalid_questions)}"
+    
+    return True, "Quiz is valid"
  
 
 @require_GET

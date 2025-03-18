@@ -4,6 +4,7 @@ import string
 import time
 import uuid
 from io import BytesIO
+from datetime import datetime
 
 from allauth.account.signals import user_signed_up
 from django.conf import settings
@@ -1125,7 +1126,12 @@ class ChallengeSubmission(models.Model):
         return f"{self.user.username}'s submission for Week {self.challenge.week_number}"
     
 # Live challenge models
+
 class Quiz(models.Model):
+    """
+    Quiz model representing a timed quiz with questions and options.
+    Contains start and end times, duration, and description.
+    """
     title = models.CharField(max_length=200)
     description = models.TextField()
     start_date = models.DateField()
@@ -1136,6 +1142,48 @@ class Quiz(models.Model):
 
     def __str__(self):
         return f"{self.title} (From {self.start_date} {self.start_time} to {self.end_date} {self.end_time}) (for {self.duration_minutes} minutes)"
+    
+    def clean(self):
+        """Validate quiz dates and times."""
+        super().clean()
+        
+        # Convert to timezone-aware datetime objects for comparison
+        start_datetime = timezone.make_aware(
+            datetime.combine(self.start_date, self.start_time)
+        )
+        end_datetime = timezone.make_aware(
+            datetime.combine(self.end_date, self.end_time)
+        )
+        
+        if start_datetime >= end_datetime:
+            raise ValidationError("End date/time must be after start date/time")
+        
+        if self.duration_minutes <= 0:
+            raise ValidationError("Duration must be positive")
+            
+    def is_active(self):
+        """Check if the quiz is currently active."""
+        
+        now = timezone.now()
+        start_datetime = timezone.make_aware(
+            datetime.combine(self.start_date, self.start_time)
+        )
+        end_datetime = timezone.make_aware(
+            datetime.combine(self.end_date, self.end_time)
+        )
+        
+        return start_datetime <= now <= end_datetime
+    
+    def get_active_quizzes():
+        active_quizzes = []
+        for quiz in Quiz.objects.all():
+            start_dt = timezone.make_aware(datetime.combine(quiz.start_date, quiz.start_time))
+            end_dt = timezone.make_aware(datetime.combine(quiz.end_date, quiz.end_time))
+            now = timezone.now()
+            if start_dt <= now <= end_dt:
+                active_quizzes.append(quiz)
+        return active_quizzes
+
 
 class QuizQuestion(models.Model):
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="questions")

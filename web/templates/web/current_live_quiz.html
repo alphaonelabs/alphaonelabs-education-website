@@ -54,50 +54,65 @@
 </div>
 
 <script>
+  // Add to existing script in template
   document.addEventListener("DOMContentLoaded", function () {
-    const quizId = {{ quiz.id }};  // Unique quiz ID
-    const storageKey = `quiz_${quizId}_end_time`;
-    const timerElement = document.getElementById("countdown-timer");
-    const submitButton = document.getElementById("submit-button");
     const quizForm = document.getElementById("quiz-form");
+    const submitButton = document.getElementById("submit-button");
 
-    let now = Math.floor(Date.now() / 1000); // Current time in seconds
-    let storedEndTime = localStorage.getItem(storageKey);
-    let timeLeft;
+    // Add confirmation dialog for submission
+    quizForm.addEventListener("submit", function (e) {
+      // Check if all questions are answered
+      const questions = document.querySelectorAll('[id^="question_"]');
+      let allAnswered = true;
 
-    if (storedEndTime) {
-      // Get remaining time based on stored end time
-      timeLeft = Math.max(0, parseInt(storedEndTime) - now);
-    } else {
-      // Set new timer duration and store end time
-      timeLeft = {{ quiz.duration_minutes|default:5 }} * 60;
-      localStorage.setItem(storageKey, now + timeLeft);
-    }
+      questions.forEach(function (question) {
+        const questionId = question.dataset.questionId;
+        const answered = document.querySelector(
+          `input[name="question_${questionId}"]:checked`
+        );
+        if (!answered) {
+          allAnswered = false;
+        }
+      });
 
+      if (!allAnswered) {
+        if (
+          !confirm(
+            "You haven't answered all questions. Are you sure you want to submit?"
+          )
+        ) {
+          e.preventDefault();
+          return false;
+        }
+      } else {
+        if (!confirm("Are you sure you want to submit your quiz?")) {
+          e.preventDefault();
+          return false;
+        }
+      }
+    });
+
+    // Timer warning
     function updateTimer() {
-      if (timeLeft <= 0) {
-        clearInterval(timerInterval);
-        timerElement.innerText = "Time's up!";
-        submitButton.disabled = true;
-        // Add a visible notification element at the top of the form
-        const notification = document.createElement('div');
-        notification.className = 'bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-4';
-        notification.textContent = "Time's up! Your quiz is being submitted...";
-        quizForm.prepend(notification);
-        setTimeout(() => {
-           quizForm.submit();
-        }, 1500);
+      if (timeLeft <= 60 && timeLeft > 55) {
+        // Flash warning at 1 minute remaining
+        timerElement.classList.add("animate-pulse", "bg-yellow-500");
+
+        // Add warning notification
+        const warningDiv = document.createElement("div");
+        warningDiv.className =
+          "my-4 p-3 bg-yellow-100 text-yellow-700 rounded-lg";
+        warningDiv.innerHTML =
+          "⚠️ <strong>1 minute remaining!</strong> Please submit your quiz soon.";
+        quizForm.prepend(warningDiv);
       } else {
         let minutes = Math.floor(timeLeft / 60);
         let seconds = timeLeft % 60;
-        timerElement.innerText = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        timerElement.innerText = `${minutes}:${seconds
+          .toString()
+          .padStart(2, "0")}`;
         timeLeft--;
       }
     }
-
-    updateTimer();
-    const timerInterval = setInterval(updateTimer, 1000);
   });
 </script>
-
-{% endblock %}

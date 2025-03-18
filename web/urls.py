@@ -183,9 +183,9 @@ urlpatterns += i18n_patterns(
     path("current-weekly-challenge/", views.current_weekly_challenge, name="current_weekly_challenge"),
     path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),
     # Quiz URLS
-    path("quiz/<int:quiz_id>",views.current_live_quiz,name="current_live_quiz"),
-    path("quiz/<int:quiz_id>/submit",views.submit_quiz,name="submit_quiz"),
-    path("quiz/<int:quiz_id>/leaderboard",views.leaderboard,name="leaderboard"),
+    path("quiz/<int:quiz_id>/", views.current_live_quiz, name="current_live_quiz"),
+    path("quiz/<int:quiz_id>/submit/", views.submit_quiz, name="submit_quiz"),
+    path("quiz/<int:quiz_id>/leaderboard/", views.leaderboard, name="leaderboard"),
     # Storefront Management
     path("store/create/", login_required(views.StorefrontCreateView.as_view()), name="storefront_create"),
     path(

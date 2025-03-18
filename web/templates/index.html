@@ -407,7 +407,7 @@
                   <p class="text-lg font-semibold mb-2">Details:</p>
                   <p class="text-gray-700 dark:text-gray-300 mb-4">{{ quiz_item.description }}</p>
                   <p class="text-lg font-semibold mb-2">Attempt by:</p>
-                  <p>{{ quiz_item.end_date|date:"F j, Y" }} at {{ quiz_item.end_time|time:"g:i A" }}</p>
+                  <p>{{ quiz_item.end_date|date:"F j, Y" }} at {{ quiz_item.end_time|time:"g:i A" }} (UTC)</p>
 
                   {% if user.is_authenticated %}
                     {% if quiz_item.id in has_submitted %}
@@ -428,10 +428,10 @@
             </div>
 
             
-            <button id="prevQuiz" class="absolute left-[-45px] top-1/2 pr-50 mr-50  transform -translate-y-1/2 bg-gray-600 text-white px-3 py-2 rounded-full shadow-md" aria-label="Previous quiz">
+            <button id="prevQuiz" class=" text-black dark:text-white absolute left-[-45px] top-1/2 pr-50 mr-50  transform -translate-y-1/2 bg-gray-200 dark:bg-gray-800 px-3 py-2 rounded-full shadow-md" aria-label="Previous quiz">
               ←
             </button>
-            <button id="nextQuiz" class="absolute right-[-45px] top-1/2 transform -translate-y-1/2 bg-gray-600 text-white px-3 py-2 rounded-full shadow-md" aria-label="Next quiz">
+            <button id="nextQuiz" class="text-black dark:text-white absolute right-[-45px] top-1/2 transform -translate-y-1/2 bg-gray-200 dark:bg-gray-800 px-3 py-2 rounded-full shadow-md" aria-label="Next quiz">
               →
             </button>
           </div>

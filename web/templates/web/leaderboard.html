@@ -52,8 +52,44 @@
   </p>
   {% endif %}
 
+  <!--  Show quiz results -->
+  {% if quiz_results %}
+  <div class="my-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+    <h3 class="text-xl font-bold mb-4 text-gray-900 dark:text-gray-100">
+      Your Quiz Results
+    </h3>
+    <div class="space-y-4">
+      {% for result in quiz_results %}
+      <div
+        class="p-4 rounded-lg {% if result.is_correct %}bg-green-100 dark:bg-green-900{% else %}bg-red-100 dark:bg-red-900{% endif %}"
+      >
+        <p class="font-medium text-gray-800 dark:text-gray-200">
+          {{ result.question }}
+        </p>
+        <p class="mt-2">
+          <span class="font-medium">Your answer:</span>
+          <span
+            class="{% if result.is_correct %}text-green-600 dark:text-green-400{% else %}text-red-600 dark:text-red-400{% endif %}"
+          >
+            {{ result.selected }}
+          </span>
+        </p>
+        {% if not result.is_correct %}
+        <p class="mt-1">
+          <span class="font-medium">Correct answer:</span>
+          <span class="text-green-600 dark:text-green-400"
+            >{{ result.correct }}</span
+          >
+        </p>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   <!-- show prizes only after quiz has ended, add custom prizes here -->
-  {% if not quiz_ended %}
+  {% if quiz_ended %}
   <div class="mt-8 p-6 bg-gray-100 dark:bg-gray-900 rounded-lg shadow-md">
     <h3
       class="text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-4"
