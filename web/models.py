@@ -18,6 +18,7 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 from markdownx.models import MarkdownxField
 from PIL import Image
 
@@ -1190,6 +1191,54 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity}x {self.goods.name}"
+
+
+def validate_image_size(image):
+    """Validate that the image file is not too large."""
+    file_size = image.size
+    limit_mb = 2
+    if file_size > limit_mb * 1024 * 1024:
+        raise ValidationError(f"Image file is too large. Size should not exceed {limit_mb} MB.")
+
+
+def validate_image_extension(image):
+    """Validate that the file is a valid image type."""
+    import os
+
+    ext = os.path.splitext(image.name)[1]
+    valid_extensions = [".jpg", ".jpeg", ".png", ".gif"]
+    if ext.lower() not in valid_extensions:
+        raise ValidationError("Unsupported file type. Please use JPEG, PNG, or GIF images.")
+
+
+class Meme(models.Model):
+    title = models.CharField(max_length=200, blank=False, help_text=_("A descriptive title for the meme"))
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.SET_NULL,
+        related_name="memes",
+        null=True,
+        blank=False,
+        help_text=_("The educational subject this meme relates to"),
+    )
+    caption = models.TextField(help_text=_("The text content of the meme"), blank=True)
+    image = models.ImageField(
+        upload_to="memes/",
+        validators=[validate_image_size, validate_image_extension],
+        help_text=_("Upload a meme image (JPG, PNG, or GIF, max 2MB)"),
+    )
+    uploader = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, related_name="memes", null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["-created_at"]), models.Index(fields=["subject"])]
+        verbose_name = _("Meme")
+        verbose_name_plural = _("Memes")
 
 
 class Donation(models.Model):

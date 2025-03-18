@@ -56,6 +56,7 @@ from .forms import (
     GoodsForm,
     InviteStudentForm,
     LearnForm,
+    MemeForm,
     MessageTeacherForm,
     ProfileUpdateForm,
     ProgressTrackerForm,
@@ -92,6 +93,7 @@ from .models import (
     ForumReply,
     ForumTopic,
     Goods,
+    Meme,
     Order,
     OrderItem,
     PeerConnection,
@@ -105,6 +107,7 @@ from .models import (
     SessionEnrollment,
     Storefront,
     StudyGroup,
+    Subject,
     SuccessStory,
     TimeSlot,
     WebRequest,
@@ -3220,6 +3223,36 @@ def gsoc_landing_page(request):
     # Function implementation goes here
     pass
     return render(request, "gsoc_landing_page.html")
+
+
+def meme_list(request):
+    memes = Meme.objects.all().order_by("-created_at")
+    subjects = Subject.objects.filter(memes__isnull=False).distinct()
+    # Filter by subject if provided
+    subject_filter = request.GET.get("subject")
+    if subject_filter:
+        memes = memes.filter(subject__slug=subject_filter)
+    paginator = Paginator(memes, 12)  # Show 12 memes per page
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "memes.html", {"memes": page_obj, "subjects": subjects, "selected_subject": subject_filter})
+
+
+@login_required
+def add_meme(request):
+    if request.method == "POST":
+        form = MemeForm(request.POST, request.FILES)
+        if form.is_valid():
+            meme = form.save(commit=False)  # The form handles subject creation logic internally
+            meme.uploader = request.user
+            meme.save()
+            messages.success(request, "Your meme has been uploaded successfully!")
+            return redirect("meme_list")
+    else:
+        form = MemeForm()
+    subjects = Subject.objects.all().order_by("name")
+    return render(request, "add_meme.html", {"form": form, "subjects": subjects})
 
 
 @login_required
