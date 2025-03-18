@@ -121,5 +121,28 @@
         </div>
       </div>
     </div>
+    <!-- Certificates Section -->
+    <div class="mt-12">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Your Certificates</h2>
+        {% if certificates %}
+          <ul class="space-y-4">
+            {% for certificate in certificates %}
+              <li class="border-b border-gray-200 dark:border-gray-700 pb-2">
+                <a href="{% url 'certificate_detail' certificate.certificate_id %}"
+                   class="text-teal-500 hover:text-teal-600 dark:text-teal-400 font-medium">
+                  Certificate for <span class="font-bold">{{ certificate.course.title }}</span>
+                </a>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Earned on {{ certificate.completion_date|date:"F d, Y" }}</p>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-gray-500 dark:text-gray-400">
+            You have not completed any courses yet. Complete a course to earn a certificate!
+          </p>
+        {% endif %}
+      </div>
+    </div>
   </div>
 {% endblock content %}

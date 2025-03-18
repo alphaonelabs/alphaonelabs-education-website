@@ -14,6 +14,7 @@ from .models import (
     BlogPost,
     Cart,
     CartItem,
+    Certificate,
     Challenge,
     ChallengeSubmission,
     Course,
@@ -549,3 +550,14 @@ class DonationAdmin(admin.ModelAdmin):
         return obj.display_name
 
     display_name.short_description = "Name"
+
+
+class CertificateAdmin(admin.ModelAdmin):
+    list_display = ("user", "course", "completion_date", "certificate_id")
+    list_filter = ("completion_date", "course")
+    search_fields = ("user__username", "course__title", "certificate_id")
+    ordering = ("-completion_date",)
+    readonly_fields = ("certificate_id", "completion_date")
+
+
+admin.site.register(Certificate, CertificateAdmin)

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Certificate of Completion</title>
+    <!-- Open Graph meta tags for social sharing -->
+    <meta property="og:title" content="Certificate of Completion" />
+    <meta property="og:description"
+          content="I just completed {{ certificate.course_name }}! Check out my certificate." />
+    <meta property="og:image" content="{{ certificate.certificate_file.url }}" />
+    <meta property="og:url" content="{{ request.build_absolute_uri }}" />
+  </head>
+  <body>
+    <h1>Congratulations, {{ request.user.get_full_name|default:request.user.username }}!</h1>
+    <h2>Your Certificate for "{{ certificate.course_name }}"</h2>
+    <!-- Display the certificate PDF in an iframe -->
+    <iframe src="{{ request.scheme }}://{{ request.get_host }}{{ certificate.certificate_file.url }}"
+            width="600"
+            height="800"></iframe>
+    <!-- Social Sharing Buttons -->
+    <div class="social-share">
+      <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri }}&title=Certificate%20of%20Completion&summary=I%20just%20completed%20{{ certificate.course_name }}!&source=YourSite"
+         target="_blank">Share on LinkedIn</a>
+      <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri }}&text=I%20just%20completed%20{{ certificate.course_name }}!%20Check%20out%20my%20certificate."
+         target="_blank">Share on Twitter</a>
+      <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}"
+         target="_blank">Share on Facebook</a>
+    </div>
+  </body>
+</html>

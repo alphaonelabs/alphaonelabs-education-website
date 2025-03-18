@@ -78,6 +78,7 @@ from .models import (
     BlogPost,
     Cart,
     CartItem,
+    Certificate,
     Challenge,
     ChallengeSubmission,
     Course,
@@ -1606,7 +1607,7 @@ def blog_detail(request, slug):
 
 @login_required
 def student_dashboard(request):
-    """Dashboard view for students showing their enrollments, progress, and upcoming sessions."""
+    """Dashboard view for students showing their enrollments, progress, upcoming sessions, and certificates."""
     if request.user.profile.is_teacher:
         messages.error(request, "This dashboard is for students only.")
         return redirect("profile")
@@ -1629,14 +1630,17 @@ def student_dashboard(request):
         )
         total_progress += progress.completion_percentage
 
-    # Calculate average progress
     avg_progress = round(total_progress / len(progress_data)) if progress_data else 0
+
+    # Get certificates for the student, most recent first
+    certificates = request.user.certificates.all().order_by("-completion_date")
 
     context = {
         "enrollments": enrollments,
         "upcoming_sessions": upcoming_sessions,
         "progress_data": progress_data,
         "avg_progress": avg_progress,
+        "certificates": certificates,
     }
     return render(request, "dashboard/student.html", context)
 
@@ -3685,3 +3689,11 @@ def donation_success(request):
 def donation_cancel(request):
     """Handle donation cancellation."""
     return redirect("donate")
+
+
+def certificate_detail(request, certificate_id):
+    certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
+    context = {
+        "certificate": certificate,
+    }
+    return render(request, "courses/certificate_detail.html", context)

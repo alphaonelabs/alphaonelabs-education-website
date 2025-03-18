@@ -1238,3 +1238,15 @@ class Donation(models.Model):
         if self.user:
             return self.user.get_full_name() or self.user.username
         return self.email.split("@")[0]  # Use part before @ in email
+
+
+class Certificate(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="certificates")
+    # Temporarily allow null/blank to avoid migration issues, then enforce later if desired.
+    course = models.ForeignKey("Course", on_delete=models.CASCADE, related_name="certificates", null=True, blank=True)
+    completion_date = models.DateField(auto_now_add=True)
+    certificate_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+
+    def __str__(self):
+        course_title = self.course.title if self.course else "No Course"
+        return f"Certificate for {self.user.username} - {course_title}"
