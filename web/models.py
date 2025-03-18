@@ -1257,3 +1257,42 @@ class Donation(models.Model):
         if self.user:
             return self.user.get_full_name() or self.user.username
         return self.email.split("@")[0]  # Use part before @ in email
+
+
+class ProgressTracker(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="progress_trackers")
+    title = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    current_value = models.IntegerField(default=0)
+    target_value = models.IntegerField()
+    color = models.CharField(
+        max_length=20,
+        default="blue-600",
+        choices=[
+            ("blue-600", "Primary"),
+            ("green-600", "Success"),
+            ("yellow-600", "Warning"),
+            ("red-600", "Danger"),
+            ("gray-600", "Secondary"),
+        ],
+    )
+    public = models.BooleanField(default=True)
+    embed_code = models.CharField(max_length=36, unique=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.embed_code:
+            import uuid
+
+            self.embed_code = str(uuid.uuid4())
+        super().save(*args, **kwargs)
+
+    @property
+    def percentage(self):
+        if self.target_value == 0:
+            return 0
+        return min(100, int((self.current_value / self.target_value) * 100))
+
+    def __str__(self):
+        return f"{self.title} ({self.percentage}%)"
