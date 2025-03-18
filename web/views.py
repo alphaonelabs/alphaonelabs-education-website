@@ -2672,15 +2672,11 @@ def content_dashboard(request):
 def active_challenges(request):
     current_time = timezone.now()
     weekly_challenge = Challenge.objects.filter(
-        challenge_type='weekly',
-        start_date__lte=current_time,
-        end_date__gte=current_time
+        challenge_type="weekly", start_date__lte=current_time, end_date__gte=current_time
     ).first()
 
     one_time_challenges = Challenge.objects.filter(
-        challenge_type='one_time',
-        start_date__lte=current_time,
-        end_date__gte=current_time
+        challenge_type="one_time", start_date__lte=current_time, end_date__gte=current_time
     )
 
     user_submission = None

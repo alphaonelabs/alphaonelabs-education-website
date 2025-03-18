@@ -6,9 +6,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('web', '0023_challenge_challenge_type_alter_challenge_week_number_and_more'),
-        ('web', '0023_donation'),
+        ("web", "0023_challenge_challenge_type_alter_challenge_week_number_and_more"),
+        ("web", "0023_donation"),
     ]
 
-    operations = [
-    ]
+    operations = []
