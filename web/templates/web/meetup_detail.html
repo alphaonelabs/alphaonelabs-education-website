@@ -12,7 +12,11 @@
             <p class="text-gray-600 dark:text-gray-400 mb-4">Date: {{ meetup.date }}</p>
             <p class="text-gray-600 dark:text-gray-400">Location: {{ meetup.location }}</p> <!-- Added location -->
             <p class="text-gray-600 dark:text-gray-400">Type: {{ meetup.get_type_display }}</p> <!-- Added type -->
+            {% if meetup.event_type == 'in_person' %}
+            <p>Location: {{ meetup.location }}</p>
+          {% endif %}
             <a href="{{ meetup.link }}" class="text-blue-600 dark:text-blue-400">Join Meetup</a>
+            <a href="{% url 'edit_meetup' slug=meetup.slug %}">Edit Meetup</a>
         </div>
     </div>
 {% endblock %}

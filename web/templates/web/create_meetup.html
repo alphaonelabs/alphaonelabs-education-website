@@ -1,23 +1,23 @@
 {% extends "base.html" %}
-{% block title %}Create Meetup{% endblock %}
+{% block title %}Edit Meetup{% endblock %}%}
 
 {% load static %}
 
 {% block content %}
 <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
     <div class="container mx-auto px-4 py-8">
-        <h1 class="text-3xl font-semibold mb-6">Create a New Meetup</h1>
+        <h1 class="text-3xl font-semibold mb-6">Edit Meetup</h1>tup</h1>
         <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
             <form method="post" class="space-y-4">
                 {% csrf_token %}
-                <div>
-                    <label for="title" class="block text-sm font-medium mb-1">Title</label>
-                    <input type="text" id="title" name="title" class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800" required>
-                </div>
-                <div>
-                    <label for="description" class="block text-sm font-medium mb-1">Description</label>
-                    <textarea id="description" name="description" class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800" required></textarea>
-                </div>
+                {{ form.as_p }}
+                <button type="submit" class="bg-teal-600 hover:bg-teal-700 z-10 text-black font-bold px-4 py-2 rounded-lg">Save</button>
+            </form> <input type="text" id="title" name="title" class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800" required>
+        </div>  </div>
+    </div>      <div>
+</body>             <label for="description" class="block text-sm font-medium mb-1">Description</label>
+{% endblock %}      <textarea id="description" name="description" class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800" required></textarea>
+</html>         </div>
                 <div>
                     <label for="date" class="block text-sm font-medium mb-1">Date</label>
                     <input type="datetime-local" id="date" name="date" class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800" required>
