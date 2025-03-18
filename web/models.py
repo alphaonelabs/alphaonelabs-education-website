@@ -15,6 +15,7 @@ from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
 from markdownx.models import MarkdownxField
@@ -785,6 +786,51 @@ class BlogComment(models.Model):
         return f"Comment by {self.author.username} on {self.post.title}"
 
 
+class SuccessStory(models.Model):
+    STATUS_CHOICES = [
+        ("published", "Published"),
+        ("archived", "Archived"),
+    ]
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True, max_length=200)
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="success_stories")
+    content = MarkdownxField()
+    excerpt = models.TextField(blank=True)
+    featured_image = models.ImageField(
+        upload_to="success_stories/images/", blank=True, help_text="Featured image for the success story"
+    )
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="published")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    published_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-published_at", "-created_at"]
+        verbose_name = "Success Story"
+        verbose_name_plural = "Success Stories"
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        if self.status == "published" and not self.published_at:
+            self.published_at = timezone.now()
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        return reverse("success_story_detail", kwargs={"slug": self.slug})
+
+    @property
+    def reading_time(self):
+        """Estimate reading time in minutes."""
+        words_per_minute = 200
+        word_count = len(self.content.split())
+        minutes = word_count / words_per_minute
+        return max(1, round(minutes))
+
+
 @receiver(user_signed_up)
 def set_user_type(sender, request, user, **kwargs):
     """Set the user type (teacher/student) when they sign up."""
@@ -1167,3 +1213,49 @@ class Meetup(models.Model):
 
     def __str__(self):
         return self.title
+class Donation(models.Model):
+    """Model for storing donation information."""
+
+    DONATION_TYPES = (
+        ("one_time", "One-time Donation"),
+        ("subscription", "Monthly Subscription"),
+    )
+
+    DONATION_STATUS = (
+        ("pending", "Pending"),
+        ("completed", "Completed"),
+        ("failed", "Failed"),
+        ("refunded", "Refunded"),
+        ("cancelled", "Cancelled"),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="donations")
+    email = models.EmailField()
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    donation_type = models.CharField(max_length=20, choices=DONATION_TYPES)
+    status = models.CharField(max_length=20, choices=DONATION_STATUS, default="pending")
+    stripe_payment_intent_id = models.CharField(max_length=100, blank=True, default="")
+    stripe_subscription_id = models.CharField(max_length=100, blank=True, default="")
+    stripe_customer_id = models.CharField(max_length=100, blank=True, default="")
+    message = models.TextField(blank=True)
+    anonymous = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.email} - {self.amount} ({self.get_donation_type_display()})"
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    @property
+    def is_recurring(self):
+        return self.donation_type == "subscription"
+
+    @property
+    def display_name(self):
+        if self.anonymous:
+            return "Anonymous"
+        if self.user:
+            return self.user.get_full_name() or self.user.username
+        return self.email.split("@")[0]  # Use part before @ in email

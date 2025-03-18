@@ -130,19 +130,31 @@
             color-scheme: light;
         }
 
+        html,
+        body {
+            overflow-x: hidden;
+            box-sizing: border-box;
+        }
+
         /* Hide elements with x-cloak until Alpine.js is ready */
         [x-cloak] {
             display: none !important;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: inherit;
         }
     </style>
     {% block extra_head %}
     {% endblock extra_head %}
     <link rel="stylesheet" href="{% static 'css/markdown.css' %}" />
   </head>
-  <body class="min-h-screen flex flex-col bg-white text-gray-900 dark:bg-black dark:text-gray-100 transition-colors duration-300">
+  <body class="min-h-screen flex flex-col bg-white text-gray-900 dark:bg-black dark:text-gray-100 transition-colors duration-300 overflow-x-hidden">
     <!-- HEADER -->
     <header class="w-full bg-teal-600 dark:bg-teal-800 text-white">
-      <div class="max-w-[90rem] mx-auto px-4 flex items-center justify-between h-[60px] relative">
+      <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-[60px] relative">
         <!-- Logo and Title -->
         <a href="{% url 'index' %}" class="flex items-center space-x-2">
           <img src="{% static 'images/logo.png' %}"
@@ -438,7 +450,6 @@
         </div>
       </div>
     </header>
-    <!-- Update the messages div positioning -->
     {% if messages %}
       <div class="fixed left-1/2 transform -translate-x-1/2 top-20 z-50 w-full max-w-lg space-y-2">
         {% for message in messages %}
@@ -469,9 +480,9 @@
     <!-- FOOTER -->
     <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto">
       <div class="container mx-auto px-4 py-8">
-        <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
           <!-- Quick Links -->
-          <div class="flex space-x-6">
+          <div class="flex flex-wrap justify-center md:justify-start items-center gap-4">
             <a href="{% url 'blog_list' %}"
                class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
               <i class="fas fa-blog mr-2"></i>Blog
@@ -496,7 +507,7 @@
                target="_blank"
                rel="noopener"
                class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
-              <i class="fas fa-code mr-2"></i> GSOC'25
+              <i class="fas fa-code mr-2"></i>GSOC'25
             </a>
             <a href="{% url 'terms' %}"
                class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
@@ -504,7 +515,7 @@
             </a>
           </div>
           <!-- Social Links -->
-          <div class="flex space-x-4">
+          <div class="flex flex-wrap justify-center md:justify-end items-center gap-4">
             <a href="https://twitter.com/alphaonelabs"
                target="_blank"
                rel="noopener"
@@ -544,7 +555,7 @@
         <!-- Copyright -->
         <div class="text-center mt-8 text-sm text-gray-500 dark:text-gray-400">
           <p>&copy; {% now "Y" %} Alpha One Labs. All rights reserved.</p>
-          <p class="mt-1">Last updated:  {{ last_modified|date:"m/d/Y h:ia" }}</p>
+          <p class="mt-1">Last updated: {{ last_modified|date:"m/d/Y h:ia" }}</p>
         </div>
       </div>
     </footer>

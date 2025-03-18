@@ -20,6 +20,7 @@ from .models import (
     Course,
     CourseMaterial,
     CourseProgress,
+    Donation,
     Enrollment,
     ForumCategory,
     ForumReply,
@@ -37,6 +38,7 @@ from .models import (
     SessionAttendance,
     Storefront,
     Subject,
+    SuccessStory,
     WebRequest,
 )
 
@@ -338,6 +340,15 @@ class BlogPostAdmin(admin.ModelAdmin):
     raw_id_fields = ("author",)
 
 
+@admin.register(SuccessStory)
+class SuccessStoryAdmin(admin.ModelAdmin):
+    list_display = ("title", "author", "status", "published_at", "created_at")
+    list_filter = ("status", "created_at", "published_at")
+    search_fields = ("title", "content", "author__username")
+    prepopulated_fields = {"slug": ("title",)}
+    raw_id_fields = ("author",)
+
+
 @admin.register(BlogComment)
 class BlogCommentAdmin(admin.ModelAdmin):
     list_display = ("post", "author", "is_approved", "created_at")
@@ -516,3 +527,27 @@ class OrderItemAdmin(admin.ModelAdmin):
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Meetup)
+
+
+@admin.register(Donation)
+class DonationAdmin(admin.ModelAdmin):
+    list_display = ("email", "amount", "donation_type", "status", "created_at", "display_name")
+    list_filter = ("donation_type", "status", "created_at", "anonymous")
+    search_fields = ("email", "message", "user__username", "user__email")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (
+            "Donation Information",
+            {"fields": ("user", "email", "amount", "donation_type", "status", "message", "anonymous")},
+        ),
+        (
+            "Stripe Information",
+            {"fields": ("stripe_payment_intent_id", "stripe_subscription_id", "stripe_customer_id")},
+        ),
+        ("Timestamps", {"fields": ("created_at", "updated_at")}),
+    )
+
+    def display_name(self, obj):
+        return obj.display_name
+
+    display_name.short_description = "Name"
