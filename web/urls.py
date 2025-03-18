@@ -32,12 +32,6 @@ urlpatterns += i18n_patterns(
     path("blog/create/", views.create_blog_post, name="create_blog_post"),
     path("blog/tag/<str:tag>/", views.blog_tag, name="blog_tag"),
     path("blog/<slug:slug>/", views.blog_detail, name="blog_detail"),
-    # Success Stories URLs
-    path("success-stories/", views.success_story_list, name="success_story_list"),
-    path("success-stories/create/", views.create_success_story, name="create_success_story"),
-    path("success-stories/<slug:slug>/", views.success_story_detail, name="success_story_detail"),
-    path("success-stories/<slug:slug>/edit/", views.edit_success_story, name="edit_success_story"),
-    path("success-stories/<slug:slug>/delete/", views.delete_success_story, name="delete_success_story"),
     # Authentication URLs
     path("accounts/signup/", views.signup_view, name="account_signup"),  # Our custom signup view
     path("accounts/", include("allauth.urls")),
@@ -220,6 +214,13 @@ urlpatterns += i18n_patterns(
     path("analytics/", sales_analytics, name="sales_analytics"),
     path("analytics/data/", sales_data, name="sales_data"),
     path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
+    # Group Enrollment URLs
+    path("course/<int:course_id>/create-group/", views.create_group_enrollment, name="create_group_enrollment"),
+    path("join-group/<str:invitation_token>/", views.join_group, name="join_group"),
+    path("group/<int:group_id>/", views.group_detail, name="group_detail"),
+    path("course/<int:course_id>/apply-discount/", views.apply_discount, name="apply_discount"),
+    path("share-group/<str:invitation_token>/", views.share_group, name="share_group"),
+    path("group/<int:group_id>/leave/", views.leave_group, name="leave_group"),
     prefix_default_language=True,
 )
 

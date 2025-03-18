@@ -1,0 +1,43 @@
+<div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+  <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Course Price</h2>
+  <div class="space-y-4">
+    <div class="flex justify-between items-center">
+      <span class="text-gray-600 dark:text-gray-400">Original Price:</span>
+      <span class="text-lg font-semibold text-gray-900 dark:text-white">${{ course.price }}</span>
+    </div>
+    {% if request.session.discount_amount %}
+      <div class="flex justify-between items-center text-green-600 dark:text-green-400">
+        <span>Discount Applied:</span>
+        <span>-${{ request.session.discount_amount }}</span>
+      </div>
+      <div class="flex justify-between items-center">
+        <span class="text-gray-600 dark:text-gray-400">Final Price:</span>
+        <span class="text-lg font-semibold text-gray-900 dark:text-white">
+          ${{ course.price|sub:request.session.discount_amount|floatformat:2 }}
+        </span>
+      </div>
+    {% endif %}
+    <div class="mt-6 space-y-4">
+      <form method="post"
+            action="{% url 'apply_discount' course.id %}"
+            class="flex space-x-2">
+        {% csrf_token %}
+        <input type="text"
+               name="code"
+               placeholder="Enter discount code"
+               class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500" />
+        <button type="submit"
+                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-200">
+          Apply
+        </button>
+      </form>
+      <div class="text-center">
+        <p class="text-gray-600 dark:text-gray-400">or</p>
+        <a href="{% url 'create_group_enrollment' course.id %}"
+           class="inline-block mt-2 text-blue-600 hover:text-blue-800 dark:text-blue-400">
+          Create a Group for 10% Discount
+        </a>
+      </div>
+    </div>
+  </div>
+</div>

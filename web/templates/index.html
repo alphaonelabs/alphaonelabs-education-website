@@ -238,7 +238,7 @@
               </div>
             </div>
             <a href="{% url 'gsoc_landing_page' %}"
-               class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
+               class="hidden sm:inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap">
               <span>Get Started with GSoC</span>
               <i class="fas fa-arrow-right ml-2"></i>
             </a>
@@ -413,19 +413,6 @@
             {{ latest_post.excerpt|default:"Learn how new technologies are shaping the way we teach and learn, including AI-driven insights and personalized curriculum..." }}
           </p>
           <a href="{% if latest_post %}{% url 'blog_detail' latest_post.slug %}{% else %}{% url 'blog_list' %}{% endif %}"
-             class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block mt-2">Read More →</a>
-        </div>
-        <!-- Success Stories -->
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h2 class="text-lg font-semibold mb-2 flex items-center">
-            <i class="fa-solid fa-trophy text-yellow-600 dark:text-yellow-400 mr-2"></i>
-            Success Story
-          </h2>
-          <p class="text-sm">
-            <strong class="block text-gray-900 dark:text-gray-200 mb-1">{{ latest_success_story.title|default:"From Beginner to Expert in 3 Months" }}</strong>
-            {{ latest_success_story.excerpt|default:"Discover how our platform helped a complete beginner transform into a confident expert through personalized learning paths and dedicated mentorship..." }}
-          </p>
-          <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}"
              class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block mt-2">Read More →</a>
         </div>
         <!-- Recent Contributors -->

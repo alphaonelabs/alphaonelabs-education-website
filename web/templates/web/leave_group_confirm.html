@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Leave Group</h1>
+      <div class="mb-6">
+        <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">{{ group.name }}</h2>
+        <p class="text-gray-600 dark:text-gray-400">Course: {{ group.course.title }}</p>
+        <div class="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900 rounded-lg">
+          <p class="text-yellow-600 dark:text-yellow-400">
+            <strong>Warning:</strong> Leaving this group may affect the group discount eligibility for all members.
+            Are you sure you want to leave?
+          </p>
+        </div>
+      </div>
+      <div class="flex space-x-4">
+        <form method="post" class="flex-1">
+          {% csrf_token %}
+          <button type="submit"
+                  class="w-full bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition duration-200">
+            Yes, Leave Group
+          </button>
+        </form>
+        <a href="{% url 'group_detail' group_id=group.id %}"
+           class="flex-1 inline-block text-center bg-gray-300 dark:bg-gray-700 hover:bg-gray-400 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 px-6 py-2 rounded-lg transition duration-200">
+          Cancel
+        </a>
+      </div>
+    </div>
+  </div>
+{% endblock %}
