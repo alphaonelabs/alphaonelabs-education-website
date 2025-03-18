@@ -1151,12 +1151,19 @@ class Meetup(models.Model):
         ("virtual", "Virtual"),
         ("in_person", "In Person"),
     ]
+
     title = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True, blank=True)  # Added slug field
     description = models.TextField()
     date = models.DateTimeField()
     link = models.URLField()
-    location = models.CharField(max_length=255)  # Added location field
-    type = models.CharField(max_length=10, choices=MEETUP_TYPE_CHOICES, default="virtual")  # Added type field
+    location = models.CharField(max_length=255)
+    type = models.CharField(max_length=10, choices=MEETUP_TYPE_CHOICES, default="virtual")
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title

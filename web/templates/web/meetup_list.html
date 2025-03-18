@@ -1,15 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Meetups and Webinars</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-</head>
 {% extends "base.html" %}
 
 {% load static %}
-
+{% block title %}Meetups and Webinars{% endblock %}
 {% block content %}
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
     <div class="container mx-auto px-4 py-8">
         <h1 class="text-3xl font-semibold mb-6">Meetups and Webinars</h1>
         <ul class="space-y-4">
@@ -18,10 +11,11 @@
                     <h2 class="text-2xl font-semibold mb-2"><a href="{% url 'meetup_detail' meetup.id %}" class="text-blue-600 dark:text-blue-400">{{ meetup.title }}</a></h2>
                     <p class="text-gray-600 dark:text-gray-400">{{ meetup.description }}</p>
                     <p class="text-gray-600 dark:text-gray-400">Date: {{ meetup.date }}</p>
+                    <p class="text-gray-600 dark:text-gray-400">Location: {{ meetup.location }}</p> <!-- Added location -->
+                    <p class="text-gray-600 dark:text-gray-400">Type: {{ meetup.get_type_display }}</p> <!-- Added type -->
                 </li>
             {% endfor %}
         </ul>
     </div>
-</body>
 {% endblock %}
 </html>

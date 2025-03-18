@@ -20,16 +20,27 @@ from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.db import IntegrityError, models, transaction
 from django.db.models import Avg, Count, Q, Sum
-from django.http import FileResponse, HttpResponse, HttpResponseForbidden, JsonResponse
+from django.http import (
+    FileResponse,
+    HttpResponse,
+    HttpResponseForbidden,
+    JsonResponse,
+)
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django.utils.html import strip_tags
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    ListView,
+    UpdateView,
+)
 
 from .calendar_sync import generate_google_calendar_link, generate_ical_feed, generate_outlook_calendar_link
 from .decorators import teacher_required
@@ -50,6 +61,8 @@ from .forms import (
     ReviewForm,
     SessionForm,
     StorefrontForm,
+    StudentEnrollmentForm,
+    SuccessStoryForm,
     TeacherSignupForm,
     TeachForm,
     UserRegistrationForm,
@@ -71,6 +84,7 @@ from .models import (
     Course,
     CourseMaterial,
     CourseProgress,
+    Donation,
     Enrollment,
     EventCalendar,
     ForumCategory,
@@ -90,6 +104,7 @@ from .models import (
     SessionEnrollment,
     Storefront,
     StudyGroup,
+    SuccessStory,
     TimeSlot,
     WebRequest,
 )
@@ -144,6 +159,12 @@ def index(request):
     # Get current challenge
     current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
 
+    # Get latest blog post
+    latest_post = BlogPost.objects.filter(status="published").order_by("-published_at").first()
+
+    # Get latest success story
+    latest_success_story = SuccessStory.objects.filter(status="published").order_by("-published_at").first()
+
     # Get signup form if needed
     form = None
     if not request.user.is_authenticated or not request.user.profile.is_teacher:
@@ -154,6 +175,8 @@ def index(request):
         "top_referrers": top_referrers,
         "featured_courses": featured_courses,
         "current_challenge": current_challenge,
+        "latest_post": latest_post,
+        "latest_success_story": latest_success_story,
         "form": form,
     }
     return render(request, "index.html", context)
@@ -628,14 +651,14 @@ def course_search(request):
     if query:
         courses = courses.filter(
             Q(title__icontains=query)
-            | Q(description__icontains(query))
+            | Q(description__icontains=query)
             | Q(tags__icontains=query)
-            | Q(learning_objectives__icontains(query))
-            | Q(prerequisites__icontains(query))
-            | Q(teacher__username__icontains(query))
-            | Q(teacher__first_name__icontains(query))
-            | Q(teacher__last_name__icontains(query))
-            | Q(teacher__profile__expertise__icontains(query))
+            | Q(learning_objectives__icontains=query)
+            | Q(prerequisites__icontains=query)
+            | Q(teacher__username__icontains=query)
+            | Q(teacher__first_name__icontains=query)
+            | Q(teacher__last_name__icontains=query)
+            | Q(teacher__profile__expertise__icontains=query)
         )
 
     if subject:
@@ -3106,17 +3129,587 @@ def meetup_list(request):
     return render(request, "web/meetup_list.html", {"meetups": meetups})
 
 
-def meetup_detail(request, meetup_id):
-    meetup = get_object_or_404(Meetup, pk=meetup_id)
+def meetup_detail(request, slug):
+    meetup = get_object_or_404(Meetup, slug=slug)
     return render(request, "web/meetup_detail.html", {"meetup": meetup})
 
 
 def create_meetup(request):
+    if not request.user.is_authenticated:
+        messages.error(request, "You must be logged in to create a meetup")
+        return redirect('account_login')
+
     if request.method == "POST":
         form = MeetupForm(request.POST)
         if form.is_valid():
+            meetup = form.save(commit=False)
+            meetup.creator = request.user
             form.save()
+            messages.success(request, "Meetup created successfully!")
             return redirect("meetup_list")
     else:
         form = MeetupForm()
     return render(request, "web/create_meetup.html", {"form": form})
+def success_story_list(request):
+    """View for listing published success stories."""
+    success_stories = SuccessStory.objects.filter(status="published").order_by("-published_at")
+
+    # Paginate results
+    paginator = Paginator(success_stories, 9)  # 9 stories per page
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "success_stories": page_obj,
+        "is_paginated": paginator.num_pages > 1,
+        "page_obj": page_obj,
+    }
+    return render(request, "success_stories/list.html", context)
+
+
+def success_story_detail(request, slug):
+    """View for displaying a single success story."""
+    success_story = get_object_or_404(SuccessStory, slug=slug, status="published")
+
+    # Get related success stories (same author or similar content)
+    related_stories = (
+        SuccessStory.objects.filter(status="published").exclude(id=success_story.id).order_by("-published_at")[:3]
+    )
+
+    context = {
+        "success_story": success_story,
+        "related_stories": related_stories,
+    }
+    return render(request, "success_stories/detail.html", context)
+
+
+@login_required
+def create_success_story(request):
+    """View for creating a new success story."""
+    if request.method == "POST":
+        form = SuccessStoryForm(request.POST, request.FILES)
+        if form.is_valid():
+            success_story = form.save(commit=False)
+            success_story.author = request.user
+            success_story.save()
+            messages.success(request, "Success story created successfully!")
+            return redirect("success_story_detail", slug=success_story.slug)
+    else:
+        form = SuccessStoryForm()
+
+    context = {
+        "form": form,
+    }
+    return render(request, "success_stories/create.html", context)
+
+
+@login_required
+def edit_success_story(request, slug):
+    """View for editing an existing success story."""
+    success_story = get_object_or_404(SuccessStory, slug=slug, author=request.user)
+
+    if request.method == "POST":
+        form = SuccessStoryForm(request.POST, request.FILES, instance=success_story)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Success story updated successfully!")
+            return redirect("success_story_detail", slug=success_story.slug)
+    else:
+        form = SuccessStoryForm(instance=success_story)
+
+    context = {
+        "form": form,
+        "success_story": success_story,
+        "is_edit": True,
+    }
+    return render(request, "success_stories/create.html", context)
+
+
+@login_required
+def delete_success_story(request, slug):
+    """View for deleting a success story."""
+    success_story = get_object_or_404(SuccessStory, slug=slug, author=request.user)
+
+    if request.method == "POST":
+        success_story.delete()
+        messages.success(request, "Success story deleted successfully!")
+        return redirect("success_story_list")
+
+    context = {
+        "success_story": success_story,
+    }
+    return render(request, "success_stories/delete_confirm.html", context)
+
+
+def gsoc_landing_page(request):
+    # Function implementation goes here
+    pass
+    return render(request, "gsoc_landing_page.html")
+
+
+@login_required
+@teacher_required
+def add_student_to_course(request, slug):
+    course = get_object_or_404(Course, slug=slug)
+    if course.teacher != request.user:
+        return HttpResponseForbidden("You are not authorized to enroll students in this course.")
+    if request.method == "POST":
+        form = StudentEnrollmentForm(request.POST)
+        if form.is_valid():
+            first_name = form.cleaned_data["first_name"]
+            last_name = form.cleaned_data["last_name"]
+            email = form.cleaned_data["email"]
+
+            # Check if a user with this email already exists.
+            if User.objects.filter(email=email).exists():
+                form.add_error("email", "A user with this email already exists.")
+            else:
+                # Generate a username by combining the first name and the email prefix.
+                email_prefix = email.split("@")[0]
+                generated_username = f"{first_name}_{email_prefix}".lower()
+
+                # Ensure the username is unique; if not, append a random string.
+                while User.objects.filter(username=generated_username).exists():
+                    generated_username = f"{generated_username}{get_random_string(4)}"
+                # Create a new student account with an auto-generated password.
+                random_password = get_random_string(10)
+                try:
+                    student = User.objects.create_user(
+                        username=generated_username,
+                        email=email,
+                        password=random_password,
+                        first_name=first_name,
+                        last_name=last_name,
+                    )
+                    # Mark the new user as a student (not a teacher).
+                    student.profile.is_teacher = False
+                    student.profile.save()
+
+                    # Enroll the new student in the course if not already enrolled.
+                    if Enrollment.objects.filter(course=course, student=student).exists():
+                        form.add_error(None, "Student is already enrolled.")
+                    else:
+                        Enrollment.objects.create(course=course, student=student, status="approved")
+                        messages.success(request, f"{first_name} {last_name} has been enrolled in the course.")
+
+                        # Send enrollment notification and password reset link to student
+                        reset_link = request.build_absolute_uri(reverse("account_reset_password"))
+                        context = {
+                            "student": student,
+                            "course": course,
+                            "teacher": request.user,
+                            "reset_link": reset_link,
+                        }
+                        html_message = render_to_string("emails/student_enrollment.html", context)
+                        send_mail(
+                            f"You have been enrolled in {course.title}",
+                            f"You have been enrolled in {course.title} by\
+                                {request.user.get_full_name() or request.user.username}. "
+                            f"Please visit {reset_link} to set your password.",
+                            settings.DEFAULT_FROM_EMAIL,
+                            [email],
+                            html_message=html_message,
+                            fail_silently=False,
+                        )
+                        return redirect("course_detail", slug=course.slug)
+                except IntegrityError:
+                    form.add_error(None, "Failed to create user account. Please try again.")
+    else:
+        form = StudentEnrollmentForm()
+
+    return render(request, "courses/add_student.html", {"form": form, "course": course})
+
+
+def donate(request):
+    """Display the donation page with options for one-time donations and subscriptions."""
+    # Get recent public donations to display
+    recent_donations = Donation.objects.filter(status="completed", anonymous=False).order_by("-created_at")[:5]
+
+    # Calculate total donations
+    total_donations = Donation.objects.filter(status="completed").aggregate(total=Sum("amount"))["total"] or 0
+
+    # Get donation amounts for the preset buttons
+    donation_amounts = [5, 10, 25, 50, 100]
+
+    context = {
+        "stripe_public_key": settings.STRIPE_PUBLISHABLE_KEY,
+        "recent_donations": recent_donations,
+        "total_donations": total_donations,
+        "donation_amounts": donation_amounts,
+    }
+
+    return render(request, "donate.html", context)
+
+
+@login_required
+def create_donation_payment_intent(request):
+    """Create a payment intent for a one-time donation."""
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        amount = data.get("amount")
+        message = data.get("message", "")
+        anonymous = data.get("anonymous", False)
+
+        if not amount or float(amount) <= 0:
+            return JsonResponse({"error": "Invalid donation amount"}, status=400)
+
+        # Convert amount to cents for Stripe
+        amount_cents = int(float(amount) * 100)
+
+        # Create a payment intent
+        intent = stripe.PaymentIntent.create(
+            amount=amount_cents,
+            currency="usd",
+            metadata={
+                "donation_type": "one_time",
+                "user_id": request.user.id,
+                "message": message[:100] if message else "",  # Limit message length
+                "anonymous": "true" if anonymous else "false",
+            },
+        )
+
+        # Create a donation record
+        donation = Donation.objects.create(
+            user=request.user,
+            email=request.user.email,
+            amount=amount,
+            donation_type="one_time",
+            status="pending",
+            stripe_payment_intent_id=intent.id,
+            message=message,
+            anonymous=anonymous,
+        )
+
+        return JsonResponse(
+            {
+                "clientSecret": intent.client_secret,
+                "donation_id": donation.id,
+            }
+        )
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+
+@login_required
+def create_donation_subscription(request):
+    """Create a subscription for recurring donations."""
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        amount = data.get("amount")
+        message = data.get("message", "")
+        anonymous = data.get("anonymous", False)
+        payment_method_id = data.get("payment_method_id")
+
+        if not amount or float(amount) <= 0:
+            return JsonResponse({"error": "Invalid donation amount"}, status=400)
+
+        if not payment_method_id:
+            return JsonResponse({"error": "Payment method is required"}, status=400)
+
+        # Convert amount to cents for Stripe
+        amount_cents = int(float(amount) * 100)
+
+        # Check if user already has a Stripe customer ID
+        customer_id = None
+        if hasattr(request.user, "profile") and request.user.profile.stripe_customer_id:
+            customer_id = request.user.profile.stripe_customer_id
+
+        # Create or get customer
+        if customer_id:
+            customer = stripe.Customer.retrieve(customer_id)
+        else:
+            customer = stripe.Customer.create(
+                email=request.user.email,
+                name=request.user.get_full_name() or request.user.username,
+                payment_method=payment_method_id,
+                invoice_settings={"default_payment_method": payment_method_id},
+            )
+
+            # Save customer ID to user profile
+            if hasattr(request.user, "profile"):
+                request.user.profile.stripe_customer_id = customer.id
+                request.user.profile.save()
+
+        # Create a subscription product and price if they don't exist
+        # Note: In a production environment, you might want to create these
+        # products and prices in the Stripe dashboard and reference them here
+        product = stripe.Product.create(
+            name=f"Monthly Donation - ${amount}",
+            type="service",
+        )
+
+        price = stripe.Price.create(
+            product=product.id,
+            unit_amount=amount_cents,
+            currency="usd",
+            recurring={"interval": "month"},
+        )
+
+        # Create the subscription
+        subscription = stripe.Subscription.create(
+            customer=customer.id,
+            items=[{"price": price.id}],
+            payment_behavior="default_incomplete",
+            expand=["latest_invoice.payment_intent"],
+            metadata={
+                "donation_type": "subscription",
+                "user_id": request.user.id,
+                "message": message[:100] if message else "",
+                "anonymous": "true" if anonymous else "false",
+                "amount": amount,
+            },
+        )
+
+        # Create a donation record
+        donation = Donation.objects.create(
+            user=request.user,
+            email=request.user.email,
+            amount=amount,
+            donation_type="subscription",
+            status="pending",
+            stripe_subscription_id=subscription.id,
+            stripe_customer_id=customer.id,
+            message=message,
+            anonymous=anonymous,
+        )
+
+        return JsonResponse(
+            {
+                "subscription_id": subscription.id,
+                "client_secret": subscription.latest_invoice.payment_intent.client_secret,
+                "donation_id": donation.id,
+            }
+        )
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+
+@csrf_exempt
+def donation_webhook(request):
+    """Handle Stripe webhooks for donations."""
+    payload = request.body
+    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
+    except ValueError:
+        # Invalid payload
+        return HttpResponse(status=400)
+    except stripe.error.SignatureVerificationError:
+        # Invalid signature
+        return HttpResponse(status=400)
+
+    # Handle payment intent events
+    if event.type == "payment_intent.succeeded":
+        payment_intent = event.data.object
+        handle_successful_donation_payment(payment_intent)
+    elif event.type == "payment_intent.payment_failed":
+        payment_intent = event.data.object
+        handle_failed_donation_payment(payment_intent)
+
+    # Handle subscription events
+    elif event.type == "customer.subscription.created":
+        subscription = event.data.object
+        handle_subscription_created(subscription)
+    elif event.type == "customer.subscription.updated":
+        subscription = event.data.object
+        handle_subscription_updated(subscription)
+    elif event.type == "customer.subscription.deleted":
+        subscription = event.data.object
+        handle_subscription_cancelled(subscription)
+    elif event.type == "invoice.payment_succeeded":
+        invoice = event.data.object
+        handle_invoice_paid(invoice)
+    elif event.type == "invoice.payment_failed":
+        invoice = event.data.object
+        handle_invoice_failed(invoice)
+
+    return HttpResponse(status=200)
+
+
+def handle_successful_donation_payment(payment_intent):
+    """Handle successful one-time donation payments."""
+    try:
+        # Find the donation by payment intent ID
+        donation = Donation.objects.get(stripe_payment_intent_id=payment_intent.id)
+        donation.status = "completed"
+        donation.save()
+
+        # Send thank you email
+        send_donation_thank_you_email(donation)
+
+    except Donation.DoesNotExist:
+        # This might be a payment for something else
+        pass
+
+
+def handle_failed_donation_payment(payment_intent):
+    """Handle failed one-time donation payments."""
+    try:
+        # Find the donation by payment intent ID
+        donation = Donation.objects.get(stripe_payment_intent_id=payment_intent.id)
+        donation.status = "failed"
+        donation.save()
+
+    except Donation.DoesNotExist:
+        # This might be a payment for something else
+        pass
+
+
+def handle_subscription_created(subscription):
+    """Handle newly created subscriptions."""
+    try:
+        # Find the donation by subscription ID
+        donation = Donation.objects.get(stripe_subscription_id=subscription.id)
+
+        # Update status based on subscription status
+        if subscription.status == "active":
+            donation.status = "completed"
+        elif subscription.status == "incomplete":
+            donation.status = "pending"
+        elif subscription.status == "canceled":
+            donation.status = "cancelled"
+
+        donation.save()
+
+    except Donation.DoesNotExist:
+        # This might be a subscription for something else
+        pass
+
+
+def handle_subscription_updated(subscription):
+    """Handle subscription updates."""
+    try:
+        # Find the donation by subscription ID
+        donation = Donation.objects.get(stripe_subscription_id=subscription.id)
+
+        # Update status based on subscription status
+        if subscription.status == "active":
+            donation.status = "completed"
+        elif subscription.status == "past_due":
+            donation.status = "pending"
+        elif subscription.status == "canceled":
+            donation.status = "cancelled"
+
+        donation.save()
+
+    except Donation.DoesNotExist:
+        # This might be a subscription for something else
+        pass
+
+
+def handle_subscription_cancelled(subscription):
+    """Handle cancelled subscriptions."""
+    try:
+        # Find the donation by subscription ID
+        donation = Donation.objects.get(stripe_subscription_id=subscription.id)
+        donation.status = "cancelled"
+        donation.save()
+
+    except Donation.DoesNotExist:
+        # This might be a subscription for something else
+        pass
+
+
+def handle_invoice_paid(invoice):
+    """Handle successful subscription invoice payments."""
+    if invoice.subscription:
+        try:
+            # Find the donation by subscription ID
+            donation = Donation.objects.get(stripe_subscription_id=invoice.subscription)
+
+            # Create a new donation record for this payment
+            Donation.objects.create(
+                user=donation.user,
+                email=donation.email,
+                amount=donation.amount,
+                donation_type="subscription",
+                status="completed",
+                stripe_subscription_id=donation.stripe_subscription_id,
+                stripe_customer_id=donation.stripe_customer_id,
+                message=donation.message,
+                anonymous=donation.anonymous,
+            )
+
+            # Send thank you email
+            send_donation_thank_you_email(donation)
+
+        except Donation.DoesNotExist:
+            # This might be a subscription for something else
+            pass
+
+
+def handle_invoice_failed(invoice):
+    """Handle failed subscription invoice payments."""
+    if invoice.subscription:
+        try:
+            # Find the donation by subscription ID
+            donation = Donation.objects.get(stripe_subscription_id=invoice.subscription)
+
+            # Create a new donation record for this failed payment
+            Donation.objects.create(
+                user=donation.user,
+                email=donation.email,
+                amount=donation.amount,
+                donation_type="subscription",
+                status="failed",
+                stripe_subscription_id=donation.stripe_subscription_id,
+                stripe_customer_id=donation.stripe_customer_id,
+                message=donation.message,
+                anonymous=donation.anonymous,
+            )
+
+        except Donation.DoesNotExist:
+            # This might be a subscription for something else
+            pass
+
+
+def send_donation_thank_you_email(donation):
+    """Send a thank you email for donations."""
+    subject = "Thank You for Your Donation!"
+    from_email = settings.DEFAULT_FROM_EMAIL
+    to_email = donation.email
+
+    # Prepare context for email template
+    context = {
+        "donation": donation,
+        "site_name": settings.SITE_NAME,
+    }
+
+    # Render email template
+    html_message = render_to_string("emails/donation_thank_you.html", context)
+    plain_message = strip_tags(html_message)
+
+    # Send email
+    send_mail(subject, plain_message, from_email, [to_email], html_message=html_message)
+
+
+def donation_success(request):
+    """Display a success page after a successful donation."""
+    donation_id = request.GET.get("donation_id")
+
+    if donation_id:
+        try:
+            donation = Donation.objects.get(id=donation_id)
+            context = {
+                "donation": donation,
+            }
+            return render(request, "donation_success.html", context)
+        except Donation.DoesNotExist:
+            pass
+
+    # If no valid donation ID, redirect to the donate page
+    return redirect("donate")
+
+
+def donation_cancel(request):
+    """Handle donation cancellation."""
+    return redirect("donate")
