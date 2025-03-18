@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.conf.urls.i18n import i18n_patterns
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
@@ -15,6 +16,8 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns.append(path("__reload__/", include("django_browser_reload.urls")))  # Browser reload URLs
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)  # Add this line
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # Language-prefixed URLs
 urlpatterns += i18n_patterns(
@@ -178,10 +181,13 @@ urlpatterns += i18n_patterns(
     path("calendar/<str:share_token>/data", views.get_calendar_data, name="get_calendar_data"),
     path("status/", views.system_status, name="system_status"),
     # Challenge URLs
-    path("challenges/<int:challenge_id>/", views.challenge_detail, name="challenge_detail"),
-    path("challenges/<int:challenge_id>/submit/", views.challenge_submit, name="challenge_submit"),
-    path("current-weekly-challenge/", views.active_challenges, name="active_challenge"),
+    path("challenges/<int:week_number>/", views.challenge_detail, name="challenge_detail"),
+    path("challenges/<int:week_number>/submit/", views.challenge_submit, name="challenge_submit"),
+    path("current-weekly-challenge/", views.current_weekly_challenge, name="current_weekly_challenge"),
+    # Educational Videos URLs
     path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),
+    path("videos/", views.educational_videos_list, name="educational_videos_list"),
+    path("videos/upload/", login_required(views.upload_educational_video), name="upload_educational_video"),
     # Storefront Management
     path("store/create/", login_required(views.StorefrontCreateView.as_view()), name="storefront_create"),
     path(
@@ -219,6 +225,8 @@ urlpatterns += i18n_patterns(
     ),
     path("analytics/", sales_analytics, name="sales_analytics"),
     path("analytics/data/", sales_data, name="sales_data"),
+    path("memes/", views.meme_list, name="meme_list"),
+    path("memes/add/", views.add_meme, name="add_meme"),
     path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
     path("trackers/", views.tracker_list, name="tracker_list"),
     path("trackers/create/", views.create_tracker, name="create_tracker"),

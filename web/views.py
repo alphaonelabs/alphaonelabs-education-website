@@ -50,12 +50,14 @@ from .forms import (
     ChallengeSubmissionForm,
     CourseForm,
     CourseMaterialForm,
+    EducationalVideoForm,
     FeedbackForm,
     ForumCategoryForm,
     ForumTopicForm,
     GoodsForm,
     InviteStudentForm,
     LearnForm,
+    MemeForm,
     MessageTeacherForm,
     ProfileUpdateForm,
     ProgressTrackerForm,
@@ -86,12 +88,14 @@ from .models import (
     CourseMaterial,
     CourseProgress,
     Donation,
+    EducationalVideo,
     Enrollment,
     EventCalendar,
     ForumCategory,
     ForumReply,
     ForumTopic,
     Goods,
+    Meme,
     Order,
     OrderItem,
     PeerConnection,
@@ -105,6 +109,7 @@ from .models import (
     SessionEnrollment,
     Storefront,
     StudyGroup,
+    Subject,
     SuccessStory,
     TimeSlot,
     WebRequest,
@@ -3231,6 +3236,36 @@ def gsoc_landing_page(request):
     return render(request, "gsoc_landing_page.html")
 
 
+def meme_list(request):
+    memes = Meme.objects.all().order_by("-created_at")
+    subjects = Subject.objects.filter(memes__isnull=False).distinct()
+    # Filter by subject if provided
+    subject_filter = request.GET.get("subject")
+    if subject_filter:
+        memes = memes.filter(subject__slug=subject_filter)
+    paginator = Paginator(memes, 12)  # Show 12 memes per page
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "memes.html", {"memes": page_obj, "subjects": subjects, "selected_subject": subject_filter})
+
+
+@login_required
+def add_meme(request):
+    if request.method == "POST":
+        form = MemeForm(request.POST, request.FILES)
+        if form.is_valid():
+            meme = form.save(commit=False)  # The form handles subject creation logic internally
+            meme.uploader = request.user
+            meme.save()
+            messages.success(request, "Your meme has been uploaded successfully!")
+            return redirect("meme_list")
+    else:
+        form = MemeForm()
+    subjects = Subject.objects.all().order_by("name")
+    return render(request, "add_meme.html", {"form": form, "subjects": subjects})
+
+
 @login_required
 @teacher_required
 def add_student_to_course(request, slug):
@@ -3697,6 +3732,67 @@ def donation_success(request):
 def donation_cancel(request):
     """Handle donation cancellation."""
     return redirect("donate")
+
+
+def educational_videos_list(request):
+    """View for listing educational videos with optional category filtering."""
+    # Get category filter from query params
+    selected_category = request.GET.get("category")
+
+    # Base queryset
+    videos = EducationalVideo.objects.select_related("uploader", "category").order_by("-uploaded_at")
+
+    # Apply category filter if provided
+    if selected_category:
+        videos = videos.filter(category__slug=selected_category)
+        selected_category_obj = get_object_or_404(Subject, slug=selected_category)
+        selected_category_display = selected_category_obj.name
+    else:
+        selected_category_display = None
+
+    # Get category counts for sidebar
+    category_counts = dict(
+        EducationalVideo.objects.values("category__name", "category__slug")
+        .annotate(count=Count("id"))
+        .values_list("category__slug", "count")
+    )
+
+    # Get all subjects for the dropdown
+    subjects = Subject.objects.all().order_by("order", "name")
+
+    # Paginate results
+    paginator = Paginator(videos, 12)  # 12 videos per page
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "videos": page_obj,
+        "is_paginated": paginator.num_pages > 1,
+        "page_obj": page_obj,
+        "subjects": subjects,
+        "selected_category": selected_category,
+        "selected_category_display": selected_category_display,
+        "category_counts": category_counts,
+    }
+
+    return render(request, "videos/list.html", context)
+
+
+@login_required
+def upload_educational_video(request):
+    """View for uploading a new educational video."""
+    if request.method == "POST":
+        form = EducationalVideoForm(request.POST)
+        if form.is_valid():
+            video = form.save(commit=False)
+            video.uploader = request.user
+            video.save()
+
+            return redirect("educational_videos_list")
+    else:
+        form = EducationalVideoForm()
+
+    return render(request, "videos/upload.html", {"form": form})
 
 
 @login_required
