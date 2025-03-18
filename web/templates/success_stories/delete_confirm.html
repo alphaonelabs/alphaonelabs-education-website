@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}Delete Success Story{% endblock %}
+{% block content %}
+  <main class="flex-1 w-full max-w-3xl mx-auto px-4 md:px-6 py-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 md:p-8">
+      <h1 class="text-2xl font-bold mb-6 text-red-600 dark:text-red-400">Delete Success Story</h1>
+      <div class="mb-6">
+        <p class="text-gray-700 dark:text-gray-300 mb-4">
+          Are you sure you want to delete the success story "<strong>{{ success_story.title }}</strong>"?
+        </p>
+        <p class="text-gray-700 dark:text-gray-300 mb-4">
+          This action cannot be undone. The success story will be permanently removed from the system.
+        </p>
+      </div>
+      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
+        <h2 class="text-lg font-semibold mb-2">{{ success_story.title }}</h2>
+        <div class="text-sm text-gray-500 dark:text-gray-400 mb-2">
+          Published on {{ success_story.published_at|date:"F j, Y" }}
+        </div>
+        <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-3">
+          {{ success_story.excerpt|default:success_story.content|striptags|truncatewords:30 }}
+        </p>
+      </div>
+      <div class="flex justify-end space-x-3">
+        <a href="{% url 'success_story_detail' slug=success_story.slug %}"
+           class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+          Cancel
+        </a>
+        <form method="post">
+          {% csrf_token %}
+          <button type="submit"
+                  class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+            Delete Permanently
+          </button>
+        </form>
+      </div>
+    </div>
+  </main>
+{% endblock %}
