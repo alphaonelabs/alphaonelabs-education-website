@@ -1199,10 +1199,13 @@ class Quiz(models.Model):
             )
         )
 
-
 class QuizQuestion(models.Model):
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="questions")
     question_text = models.TextField()
+    order = models.PositiveIntegerField(default=0)
+   
+    class Meta:
+       ordering = ['order']
 
     def __str__(self):
         return self.question_text
@@ -1237,6 +1240,14 @@ class QuizSubmission(models.Model):
     
     class Meta:
         unique_together = ("user", "quiz")
+        
+class QuizAnswerSubmission(models.Model):
+    submission = models.ForeignKey(QuizSubmission, on_delete=models.CASCADE, related_name="answers")
+    question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE)
+    selected_option = models.ForeignKey(QuizOption, on_delete=models.CASCADE)
+    
+    class Meta:
+        unique_together = ("submission", "question")
 
 class ProductImage(models.Model):
     goods = models.ForeignKey(Goods, on_delete=models.CASCADE, related_name="goods_images")

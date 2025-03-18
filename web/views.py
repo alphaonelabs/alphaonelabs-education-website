@@ -36,7 +36,7 @@ from django.utils.html import strip_tags
 from django.views import generic
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
-from django.utils.timezone import make_aware, now
+from django.utils.timezone import make_aware
 from datetime import datetime
 from django.views.decorators.csrf import csrf_protect
 from django.views.generic import (
@@ -2766,20 +2766,13 @@ def current_live_quiz(request, quiz_id):
         user_submission = QuizSubmission.objects.filter(user=request.user, quiz=quiz).first() 
         has_submitted = user_submission is not None
 
-    if has_submitted:
-        return render(request, "web/current_live_quiz.html", {
+    return render(request, "web/current_live_quiz.html", {
             "quiz": quiz,
-            "has_submitted": True,
+            "has_submitted": has_submitted,
             "user_submission": user_submission,
             "questions":questions
-        })
-    else:
-        return render(request, "web/current_live_quiz.html", {
-            "quiz": quiz,
-            "has_submitted": False,
-            "user_submission": user_submission,
-            "questions":questions
-        })
+    })
+        
 @login_required
 @csrf_protect
 def submit_quiz(request, quiz_id):
@@ -2790,7 +2783,7 @@ def submit_quiz(request, quiz_id):
     if QuizSubmission.objects.filter(user=request.user, quiz=quiz).exists():
         messages.warning(request, "You have already submitted this quiz.")
         return redirect("leaderboard", quiz_id=quiz.id)
-
+    
     if request.method == "POST":
         score = 0  # Total score counter
 
@@ -2801,21 +2794,35 @@ def submit_quiz(request, quiz_id):
                 try:
                     selected_option = QuizOption.objects.get(id=selected_option_id, question=question)
 
-                    # Award points only if the selected answer is correct
                     if selected_option.is_correct:
-                        score += 10  # Adjust scoring logic if needed
+                        score += 10 
 
                 except QuizOption.DoesNotExist:
                     messages.error(request, f"Invalid selection for question {question.id}")
             else:
-                pass
-
+                # Track unanswered questions - could be used for analytics or showing feedback
+                logger.debug(f"User {request.user.username} did not answer question {question.id}")
         # Store the final submission with total score
         QuizSubmission.objects.create(user=request.user, quiz=quiz, score=score)
-
+        
+        # Store detailed results for feedback if needed
+        results = []
+        for question in quiz.questions.all():
+            selected_id = request.POST.get(f"question_{question.id}")
+            if selected_id and selected_id.isdigit():
+                selected = QuizOption.objects.get(id=selected_id)
+                correct_answer = QuizOption.objects.filter(question=question, is_correct=True).first()
+                results.append({
+                    'question_id': question.id,
+                    'question_text': question.question_text,
+                    'selected_answer': selected.option_text,
+                    'correct_answer': correct_answer.option_text if correct_answer else "No correct answer defined",
+                    'is_correct': selected.is_correct
+                })
+        request.session['quiz_results'] = results
         messages.success(request, f"Quiz submitted! Your score: {score}")
         return redirect("leaderboard", quiz_id=quiz.id)
-
+    
     return redirect("current_live_quiz", quiz_id=quiz.id)
 
 
