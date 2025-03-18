@@ -117,13 +117,19 @@ Alpha One Labs is an education platform designed to facilitate both learning and
    python manage.py createsuperuser
    ```
 
-7. Run the development server
+7. Create test data
+
+   ```bash
+   python manage.py create_test_data
+   ```
+
+8. Run the development server
 
    ```bash
    python manage.py runserver
    ```
 
-8. Visit http://localhost:8000 in your browser
+9. Visit http://localhost:8000 in your browser
 
 ## Environment Variables Configuration
 

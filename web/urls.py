@@ -26,10 +26,22 @@ urlpatterns += i18n_patterns(
     path("learn/", views.learn, name="learn"),
     path("teach/", views.teach, name="teach"),
     path("about/", views.about, name="about"),
+    path("donate/", views.donate, name="donate"),
+    path("donate/payment-intent/", views.create_donation_payment_intent, name="create_donation_payment_intent"),
+    path("donate/subscription/", views.create_donation_subscription, name="create_donation_subscription"),
+    path("donate/success/", views.donation_success, name="donation_success"),
+    path("donate/cancel/", views.donation_cancel, name="donation_cancel"),
+    path("donate/webhook/", views.donation_webhook, name="donation_webhook"),
     path("blog/", views.blog_list, name="blog_list"),
     path("blog/create/", views.create_blog_post, name="create_blog_post"),
     path("blog/tag/<str:tag>/", views.blog_tag, name="blog_tag"),
     path("blog/<slug:slug>/", views.blog_detail, name="blog_detail"),
+    # Success Stories URLs
+    path("success-stories/", views.success_story_list, name="success_story_list"),
+    path("success-stories/create/", views.create_success_story, name="create_success_story"),
+    path("success-stories/<slug:slug>/", views.success_story_detail, name="success_story_detail"),
+    path("success-stories/<slug:slug>/edit/", views.edit_success_story, name="edit_success_story"),
+    path("success-stories/<slug:slug>/delete/", views.delete_success_story, name="delete_success_story"),
     # Authentication URLs
     path("accounts/signup/", views.signup_view, name="account_signup"),  # Our custom signup view
     path("accounts/", include("allauth.urls")),
@@ -52,6 +64,7 @@ urlpatterns += i18n_patterns(
     path("courses/<slug:slug>/add-session/", views.add_session, name="add_session"),
     path("courses/<slug:slug>/confirm-rolled-sessions/", views.confirm_rolled_sessions, name="confirm_rolled_sessions"),
     path("courses/<slug:slug>/message-students/", views.message_enrolled_students, name="message_students"),
+    path("courses/<slug:slug>/add-student/", views.add_student_to_course, name="add_student_to_course"),
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
     # Payment URLs
     path(
@@ -210,6 +223,7 @@ urlpatterns += i18n_patterns(
     ),
     path("analytics/", sales_analytics, name="sales_analytics"),
     path("analytics/data/", sales_data, name="sales_data"),
+    path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
     prefix_default_language=True,
 )
 

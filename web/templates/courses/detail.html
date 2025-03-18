@@ -327,6 +327,11 @@
                         <i class="fas fa-envelope mr-2"></i>
                         Message Students
                       </a>
+                      <a href="{% url 'add_student_to_course' course.slug %}"
+                         class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition duration-200">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        Enroll Student
+                      </a>
                     </div>
                   {% endif %}
                 </div>
@@ -406,7 +411,7 @@
                             <div class="flex justify-between items-start">
                               <div>
                                 <h3 class="font-semibold">
-                                  {% if is_enrolled or not material.requires_enrollment %}
+                                  {% if is_enrolled or not material.requires_enrollment or is_teacher %}
                                     {% if material.external_url %}
                                       <a href="{{ material.external_url }}"
                                          target="_blank"
