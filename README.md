@@ -69,7 +69,6 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 
 - Python 3.10 or higher
 - pip or poetry for package management
-- Node.js and npm (for Tailwind CSS)
 - Git
 
 ### Local Development Setup
@@ -144,8 +143,19 @@ Alpha One Labs is an education platform designed to facilitate both learning and
    ```bash
    docker run -d -p 8000:8000 education-website
    ```
+   <h3>Admin Credentials:</h3>
 
-3. Visit http://localhost:8000 in your browser
+   
+   Email
+   ```bash
+   admin@example.com
+   ```
+   Password
+   ```bash
+   adminpassword
+   ```
+   
+4. Visit http://localhost:8000 in your browser
 
 ## Environment Variables Configuration
 
