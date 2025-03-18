@@ -3670,7 +3670,11 @@ def donation_cancel(request):
 @login_required
 def create_group_enrollment(request, course_id):
     course = get_object_or_404(Course, id=course_id)
-    discount = Discount.objects.get(discount_type="group", course=course)
+    discount = None
+    try:
+        discount = Discount.objects.get(discount_type="group", course=course)
+    except Discount.DoesNotExist:
+        pass
     
     context = {
         'course': course,
@@ -3733,7 +3737,6 @@ def create_group_enrollment(request, course_id):
     return render(request, 'web/create_group_enrollment.html', {
         'course': course
     })
-
 @login_required
 def join_group(request, invitation_token):
     group = get_object_or_404(GroupEnrollment, invitation_token=invitation_token)
