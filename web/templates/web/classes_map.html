@@ -3,30 +3,7 @@
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<style>
-    #map-container {
-        height: 500px;
-        width: 100%;
-        margin-bottom: 20px;
-    }
-    .filters-container {
-        margin-bottom: 20px;
-        padding: 15px;
-        background-color: #f8f9fa;
-        border-radius: 5px;
-    }
-    .session-list {
-        max-height: 400px;
-        overflow-y: auto;
-    }
-    .session-card {
-        margin-bottom: 10px;
-        cursor: pointer;
-    }
-    .session-card:hover {
-        background-color: #f5f5f5;
-    }
-</style>
+<link rel="stylesheet" href="{% static 'css/classes_map.css' %}" />
 {% endblock %}
 
 {% block content %}
@@ -127,13 +104,42 @@
         // Store markers by session ID for easy reference
         const markers = {};
         let userMarker = null;
+
+    // Try to get user location on page load
+    if (navigator.geolocation) {
+        // Add a notification to inform users
+        const locationNotice = L.control({position: 'bottomleft'});
+        locationNotice.onAdd = function() {
+            const div = L.DomUtil.create('div', 'location-notice');
+            div.innerHTML = '<div class="alert alert-info">Detecting your location...</div>';
+            return div;
+        };
+        locationNotice.addTo(map);
+           
+        // Request user location
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                map.setView([position.coords.latitude, position.coords.longitude], 13);
+                map.removeControl(locationNotice);
+            },
+            function(error) {
+                console.log("Couldn't get initial location:", error.message);
+                map.removeControl(locationNotice);
+            }
+        );
+    }
         
         // Load session data from API
+        const mapContainer = document.getElementById('map-container');
+        mapContainer.innerHTML = '<div class="d-flex justify-content-center align-items-center h-100"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+        
         fetch('{% url "map_data_api" %}' + window.location.search)
             .then(response => response.json())
             .then(data => {
+                mapContainer.innerHTML = ''; // Clear the loading indicator
                 if (data.sessions.length === 0) {
                     console.log('No sessions found');
+                    mapContainer.innerHTML = '<div class="alert alert-info">No classes found matching your criteria.</div>';
                     return;
                 }
                 
@@ -175,7 +181,10 @@
                     map.fitBounds(bounds, { padding: [50, 50] });
                 }
             })
-            .catch(error => console.error('Error loading map data:', error));
+            .catch(error=>{
+                console.log('Error loading map data:', error);
+                mapContainer.innerHTML = '<div class="alert alert-danger">Error loading map data. Please try again later.</div>';
+            })
             
         // Add geolocation control
         const locateControl = L.control({ position: 'topleft' });

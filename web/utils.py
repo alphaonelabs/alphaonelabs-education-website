@@ -54,7 +54,7 @@ def geocode_address(address):
     url = f"https://api.opencagedata.com/geocode/v1/json?q={address}&key={api_key}"
     
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=5)
         data = response.json()
         
         if data['total_results'] > 0:
@@ -62,5 +62,7 @@ def geocode_address(address):
             return (location['lat'], location['lng'])
         return None
     except Exception as e:
-        print(f"Geocoding error: {e}")
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Geocoding error for address '{address}': {e}")
         return None

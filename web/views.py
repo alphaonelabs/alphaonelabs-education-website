@@ -3751,8 +3751,22 @@ def map_data_api(request):
         ~Q(longitude=None)
     ).select_related('course', 'course__teacher', 'course__subject')
     
-    # Apply filters (similar to classes_map view)
-    # ...
+    # Apply filters
+    # Get filter parameters
+    subject_id = request.GET.get('subject')
+    age_group = request.GET.get('age_group')
+    teaching_style = request.GET.get('teaching_style')
+   
+   # Apply filters if provided
+    if subject_id:
+       sessions = sessions.filter(course__subject_id=subject_id)
+   
+    if age_group:
+       sessions = sessions.filter(course__level=age_group)
+   
+    if teaching_style:
+       # Assuming you'll add this field to the Course model later
+       sessions = sessions.filter(course__teaching_style=teaching_style)
     
     # Prepare data for JSON response
     map_data = []

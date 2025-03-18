@@ -1,0 +1,22 @@
+#map-container {
+    height: 500px;
+    width: 100%;
+    margin-bottom: 20px;
+}
+.filters-container {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+.session-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+.session-card {
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+.session-card:hover {
+    background-color: #f5f5f5;
+}
