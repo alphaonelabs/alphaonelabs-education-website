@@ -220,6 +220,9 @@ urlpatterns += i18n_patterns(
     path("analytics/", sales_analytics, name="sales_analytics"),
     path("analytics/data/", sales_data, name="sales_data"),
     path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
+    # Map URLs
+    path("classes-map/", views.classes_map, name="classes_map"),
+    path("api/map-data/", views.map_data_api, name="map_data_api"),
     prefix_default_language=True,
 )
 

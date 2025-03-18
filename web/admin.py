@@ -214,6 +214,24 @@ class SessionAdmin(admin.ModelAdmin):
 
 @admin.register(Enrollment)
 class EnrollmentAdmin(admin.ModelAdmin):
+    fieldsets = (
+        (None, {
+            'fields': ('course', 'title', 'description', 'start_time', 'end_time')
+        }),
+        ('Location Information', {
+            'fields': ('is_virtual', 'meeting_link', 'meeting_id', 'location', 'latitude', 'longitude'),
+            'classes': ('collapse',),
+        }),
+        ('Pricing', {
+            'fields': ('price',),
+            'classes': ('collapse',),
+        }),
+        ('Rollover Settings', {
+            'fields': ('enable_rollover', 'rollover_pattern', 'original_start_time', 'original_end_time', 
+                      'is_rolled_over', 'teacher_confirmed'),
+            'classes': ('collapse',),
+        }),
+    )
     list_display = ("student", "course", "status", "enrollment_date", "completion_date")
     list_filter = ("status", "enrollment_date")
     search_fields = ("student__username", "course__title")

@@ -276,6 +276,14 @@ class Session(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+        help_text="Latitude coordinate for mapping"
+    )
+    longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+        help_text="Longitude coordinate for mapping"
+    )
 
     # Rollover fields
     enable_rollover = models.BooleanField(
@@ -373,6 +381,13 @@ class Session(models.Model):
             delete_calendar_event(self)
         super().delete(*args, **kwargs)
 
+    def has_location_data(self):
+        """Check if this session has valid location data for mapping."""
+        return bool(self.location and self.latitude is not None and self.longitude is not None)
+    
+    def get_absolute_url(self):
+        """Return the URL for this session."""
+        return reverse('course_detail', kwargs={'slug': self.course.slug}) + f'#session-{self.id}'
 
 class CourseMaterial(models.Model):
     MATERIAL_TYPES = [
