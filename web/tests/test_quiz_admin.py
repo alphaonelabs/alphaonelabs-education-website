@@ -2,11 +2,12 @@ from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import timedelta
+from django.urls import reverse
 
 from web.models import Quiz, QuizQuestion, QuizOption
 
 User = get_user_model()
-
+ADMIN_URL_PREFIX = "/en/a-dmin-url123/"
 
 class QuizAdminTests(TestCase):
     def setUp(self):
@@ -29,10 +30,10 @@ class QuizAdminTests(TestCase):
             end_time=timezone.now().time(),
             duration_minutes=60
         )
-
+    
     def test_quiz_admin_list(self):
         """Test that quizzes appear in admin list view"""
-        admin_url = "/admin/web/quiz/"
+        admin_url = f"{ADMIN_URL_PREFIX}web/quiz/"
         response = self.client.get(admin_url)
 
         self.assertEqual(response.status_code, 200)
@@ -40,7 +41,7 @@ class QuizAdminTests(TestCase):
 
     def test_quiz_admin_add(self):
         """Test adding a quiz through admin"""
-        admin_url = "/admin/web/quiz/add/"
+        admin_url = f"{ADMIN_URL_PREFIX}web/quiz/add/"
 
         quiz_data = {
             "title": "New Admin Quiz",
@@ -62,7 +63,7 @@ class QuizAdminTests(TestCase):
 
     def test_quiz_question_admin_add(self):
         """Test adding a quiz question through admin"""
-        admin_url = "/admin/web/quizquestion/add/"
+        admin_url = f"{ADMIN_URL_PREFIX}web/quizquestion/add/"
 
         question_data = {
             "quiz": self.quiz.title,
@@ -85,7 +86,7 @@ class QuizAdminTests(TestCase):
             question_text="What is the capital of France?"
         )
 
-        admin_url = "/admin/web/quizoption/add/"
+        admin_url = f"{ADMIN_URL_PREFIX}web/quizoption/add/"
 
         option_data = {
             "question": question.id,
