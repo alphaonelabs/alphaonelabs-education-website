@@ -1147,10 +1147,16 @@ class OrderItem(models.Model):
 
 
 class Meetup(models.Model):
+    MEETUP_TYPE_CHOICES = [
+        ("virtual", "Virtual"),
+        ("in_person", "In Person"),
+    ]
     title = models.CharField(max_length=200)
     description = models.TextField()
     date = models.DateTimeField()
     link = models.URLField()
+    location = models.CharField(max_length=255)  # Added location field
+    type = models.CharField(max_length=10, choices=MEETUP_TYPE_CHOICES, default="virtual")  # Added type field
 
     def __str__(self):
         return self.title
