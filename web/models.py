@@ -1138,7 +1138,11 @@ class Quiz(models.Model):
     start_time = models.TimeField()
     end_date = models.DateField()
     end_time = models.TimeField()
-    duration_minutes = models.IntegerField()
+    duration_minutes = models.IntegerField(validators=[MinValueValidator(1)])
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.title} (From {self.start_date} {self.start_time} to {self.end_date} {self.end_time}) (for {self.duration_minutes} minutes)"
@@ -1174,15 +1178,26 @@ class Quiz(models.Model):
         
         return start_datetime <= now <= end_datetime
     
-    def get_active_quizzes():
-        active_quizzes = []
-        for quiz in Quiz.objects.all():
-            start_dt = timezone.make_aware(datetime.combine(quiz.start_date, quiz.start_time))
-            end_dt = timezone.make_aware(datetime.combine(quiz.end_date, quiz.end_time))
-            now = timezone.now()
-            if start_dt <= now <= end_dt:
-                active_quizzes.append(quiz)
-        return active_quizzes
+    @classmethod
+    def get_active_quizzes(cls):
+        """Get all currently active quizzes using database-level filtering."""
+        now = timezone.now()
+        now_date = now.date()
+        now_time = now.time()
+        
+        # Filter quizzes that are currently active
+        return cls.objects.filter(
+            # Quiz start is in the past or right now
+            (
+                models.Q(start_date__lt=now_date) | 
+                (models.Q(start_date=now_date) & models.Q(start_time__lte=now_time))
+            ),
+            # Quiz end is in the future or right now
+            (
+                models.Q(end_date__gt=now_date) | 
+               (models.Q(end_date=now_date) & models.Q(end_time__gte=now_time))
+            )
+        )
 
 
 class QuizQuestion(models.Model):
@@ -1196,9 +1211,20 @@ class QuizOption(models.Model):
     question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE, related_name="options")
     option_text = models.TextField()
     is_correct = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+    
+    class Meta:
+          ordering = ['order']
 
     def __str__(self):
         return f"Option: {self.option_text} (Correct: {self.is_correct})"
+        
+    @classmethod
+    def validate_question_has_correct_option(cls, question):
+        """Ensure that a question has at least one correct option."""
+        has_correct = cls.objects.filter(question=question, is_correct=True).exists()
+        if not has_correct:
+            raise ValidationError(f"Question '{question}' must have at least one correct option.")
 
 class QuizSubmission(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

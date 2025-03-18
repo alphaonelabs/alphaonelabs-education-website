@@ -2770,9 +2770,16 @@ def current_live_quiz(request, quiz_id):
         return render(request, "web/current_live_quiz.html", {
             "quiz": quiz,
             "has_submitted": True,
-            "user_submission": user_submission
+            "user_submission": user_submission,
+            "questions":questions
         })
-
+    else:
+        return render(request, "web/current_live_quiz.html", {
+            "quiz": quiz,
+            "has_submitted": False,
+            "user_submission": user_submission,
+            "questions":questions
+        })
 @login_required
 @csrf_protect
 def submit_quiz(request, quiz_id):
