@@ -15,8 +15,11 @@
     <h2>Your Certificate for "{{ certificate.course_name }}"</h2>
     <!-- Display the certificate PDF in an iframe -->
     <iframe src="{{ request.scheme }}://{{ request.get_host }}{{ certificate.certificate_file.url }}"
-            width="600"
-            height="800"></iframe>
+            width="100%" 
+            height="800"
+            sandbox="allow-same-origin allow-scripts allow-popups"
+            class="max-w-full"
+            title="Certificate for {{ certificate.course_name }}"></iframe>
     <!-- Social Sharing Buttons -->
     <div class="social-share">
       <a href="https://www.linkedin.com/shareArticle?mini=true&url={{ request.build_absolute_uri }}&title=Certificate%20of%20Completion&summary=I%20just%20completed%20{{ certificate.course_name }}!&source=YourSite"
