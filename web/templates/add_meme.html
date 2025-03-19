@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Add Educational Meme
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto mt-8 px-4 max-w-2xl">
+    <h1 class="text-2xl font-bold mb-6">Add a New Educational Meme</h1>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <form method="post" enctype="multipart/form-data" class="space-y-4">
+        {% csrf_token %}
+        <div>
+          <label for="{{ form.title.id_for_label }}" class="block mb-2 font-medium">Title</label>
+          {{ form.title }}
+          {% if form.title.errors %}<p class="text-red-500 text-sm mt-1">{{ form.title.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label for="{{ form.subject.id_for_label }}" class="block mb-2 font-medium">Subject</label>
+          {{ form.subject }}
+          {% if form.subject.errors %}<p class="text-red-500 text-sm mt-1">{{ form.subject.errors.0 }}</p>{% endif %}
+          <p class="text-sm text-gray-500 mt-1">{{ form.subject.help_text }}</p>
+        </div>
+        <div>
+          <label for="{{ form.new_subject.id_for_label }}"
+                 class="block mb-2 font-medium">Or create new subject</label>
+          {{ form.new_subject }}
+          <p class="text-sm text-gray-500 mt-1">If your subject isn't listed above, enter a new one here</p>
+        </div>
+        <div>
+          <label for="{{ form.caption.id_for_label }}" class="block mb-2 font-medium">Caption</label>
+          {{ form.caption }}
+          {% if form.caption.errors %}<p class="text-red-500 text-sm mt-1">{{ form.caption.errors.0 }}</p>{% endif %}
+        </div>
+        <div>
+          <label for="{{ form.image.id_for_label }}" class="block mb-2 font-medium">Meme Image</label>
+          {{ form.image }}
+          {% if form.image.errors %}<p class="text-red-500 text-sm mt-1">{{ form.image.errors.0 }}</p>{% endif %}
+          <p class="text-sm text-gray-500 mt-1">Recommended: PNG or JPEG, max 2MB</p>
+          <div id="imagePreview" class="hidden mt-4 border rounded p-4">
+            <p class="text-sm font-medium mb-2">Image Preview:</p>
+            <div class="flex justify-center">
+              <img id="preview"
+                   src=""
+                   alt="Preview"
+                   class="max-h-64 max-w-full object-contain" />
+            </div>
+            <p class="text-xs text-gray-500 mt-2 text-center">
+              Preview is for reference only and may appear differently on the site.
+            </p>
+          </div>
+        </div>
+        {% if form.non_field_errors %}
+          <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+          </div>
+        {% endif %}
+        <div class="pt-4">
+          <button type="submit"
+                  class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-6 rounded-lg">Upload Meme</button>
+          <a href="{% url 'meme_list' %}"
+             class="ml-4 text-gray-600 dark:text-gray-400 hover:underline">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script>
+      document.getElementById('{{ form.image.id_for_label }}').addEventListener('change', function(e) {
+          const preview = document.getElementById('preview');
+          const previewContainer = document.getElementById('imagePreview');
+
+          if (this.files && this.files[0]) {
+              const reader = new FileReader();
+              reader.onload = function(e) {
+                  preview.src = e.target.result;
+                  previewContainer.classList.remove('hidden');
+              }
+              reader.readAsDataURL(this.files[0]);
+          } else {
+              previewContainer.classList.add('hidden');
+          }
+      });
+      const subjectField = document.getElementById('{{ form.subject.id_for_label }}');
+      const newSubjectField = document.getElementById('{{ form.new_subject.id_for_label }}');
+
+      subjectField.addEventListener('change', function() {
+          if (this.value) {
+              newSubjectField.value = '';
+          }
+      });
+
+      newSubjectField.addEventListener('input', function() {
+          if (this.value.trim()) {
+              subjectField.selectedIndex = 0;
+          }
+      });
+  </script>
+{% endblock content %}

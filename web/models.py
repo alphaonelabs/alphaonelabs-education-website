@@ -19,6 +19,7 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 from markdownx.models import MarkdownxField
 from PIL import Image
 
@@ -521,6 +522,25 @@ class CourseProgress(models.Model):
 
     def __str__(self):
         return f"{self.enrollment.student.username}'s progress in {self.enrollment.course.title}"
+
+
+class EducationalVideo(models.Model):
+    """Model for educational videos shared by users."""
+
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    video_url = models.URLField(help_text="URL for external content like YouTube videos")
+    category = models.ForeignKey(Subject, on_delete=models.PROTECT, related_name="educational_videos")
+    uploader = models.ForeignKey(User, on_delete=models.CASCADE, related_name="educational_videos")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Educational Video"
+        verbose_name_plural = "Educational Videos"
+        ordering = ["-uploaded_at"]
+
+    def __str__(self):
+        return self.title
 
 
 class Achievement(models.Model):
@@ -1346,6 +1366,54 @@ class OrderItem(models.Model):
         return f"{self.quantity}x {self.goods.name}"
 
 
+def validate_image_size(image):
+    """Validate that the image file is not too large."""
+    file_size = image.size
+    limit_mb = 2
+    if file_size > limit_mb * 1024 * 1024:
+        raise ValidationError(f"Image file is too large. Size should not exceed {limit_mb} MB.")
+
+
+def validate_image_extension(image):
+    """Validate that the file is a valid image type."""
+    import os
+
+    ext = os.path.splitext(image.name)[1]
+    valid_extensions = [".jpg", ".jpeg", ".png", ".gif"]
+    if ext.lower() not in valid_extensions:
+        raise ValidationError("Unsupported file type. Please use JPEG, PNG, or GIF images.")
+
+
+class Meme(models.Model):
+    title = models.CharField(max_length=200, blank=False, help_text=_("A descriptive title for the meme"))
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.SET_NULL,
+        related_name="memes",
+        null=True,
+        blank=False,
+        help_text=_("The educational subject this meme relates to"),
+    )
+    caption = models.TextField(help_text=_("The text content of the meme"), blank=True)
+    image = models.ImageField(
+        upload_to="memes/",
+        validators=[validate_image_size, validate_image_extension],
+        help_text=_("Upload a meme image (JPG, PNG, or GIF, max 2MB)"),
+    )
+    uploader = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, related_name="memes", null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["-created_at"]), models.Index(fields=["subject"])]
+        verbose_name = _("Meme")
+        verbose_name_plural = _("Memes")
+
+
 class Donation(models.Model):
     """Model for storing donation information."""
 
@@ -1392,3 +1460,75 @@ class Donation(models.Model):
         if self.user:
             return self.user.get_full_name() or self.user.username
         return self.email.split("@")[0]  # Use part before @ in email
+
+
+class Certificate(models.Model):
+    # Certificate Model
+    certificate_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    completion_date = models.DateField(auto_now_add=True)
+    course = models.ForeignKey(
+        "web.Course", on_delete=models.CASCADE, related_name="certificates", null=True, blank=True
+    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="certificates")
+
+    # New fields added as per feedback
+    created_at = models.DateTimeField(auto_now_add=True)
+    modified_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        course_title = self.course.title if self.course else "No Course"
+        return f"Certificate for {self.user.username} - {course_title}"
+
+    def clean(self):
+        """Validate that the user has completed the course."""
+        from django.core.exceptions import ValidationError
+
+        if self.course and self.user:
+            # Check if the user is enrolled in the course
+            enrollment = Enrollment.objects.filter(student=self.user, course=self.course, status="completed").exists()
+
+            if not enrollment:
+                raise ValidationError("User has not completed this course.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class ProgressTracker(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="progress_trackers")
+    title = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    current_value = models.IntegerField(default=0)
+    target_value = models.IntegerField()
+    color = models.CharField(
+        max_length=20,
+        default="blue-600",
+        choices=[
+            ("blue-600", "Primary"),
+            ("green-600", "Success"),
+            ("yellow-600", "Warning"),
+            ("red-600", "Danger"),
+            ("gray-600", "Secondary"),
+        ],
+    )
+    public = models.BooleanField(default=True)
+    embed_code = models.CharField(max_length=36, unique=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.embed_code:
+            import uuid
+
+            self.embed_code = str(uuid.uuid4())
+        super().save(*args, **kwargs)
+
+    @property
+    def percentage(self):
+        if self.target_value == 0:
+            return 0
+        return min(100, int((self.current_value / self.target_value) * 100))
+
+    def __str__(self):
+        return f"{self.title} ({self.percentage}%)"
