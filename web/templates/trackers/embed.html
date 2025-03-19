@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Progress tracker for {{ tracker.title }}" />
+    <meta name="keywords"
+          content="progress tracker, goals, metrics, tracking, {{ tracker.title }}" />
+    <title>{{ tracker.title }} - Progress Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+  </head>
+  <body class="bg-transparent">
+    <div class="p-4 font-sans">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2 flex items-center">
+        <i class="fas fa-chart-line text-{{ tracker.color }} mr-2"></i> {{ tracker.title }}
+      </h2>
+      <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 mb-2">
+        <div class="bg-{{ tracker.color }} h-4 rounded-full transition-all duration-500 ease-in-out"
+             style="width: {{ tracker.percentage }}%"></div>
+      </div>
+      <div class="flex justify-between text-sm">
+        <span class="text-gray-700 dark:text-gray-300 font-medium">
+          <i class="fas fa-percentage text-{{ tracker.color }} text-xs mr-1"></i> {{ tracker.percentage }}% Complete
+        </span>
+        <span class="text-gray-600 dark:text-gray-400">
+          <i class="fas fa-bullseye text-{{ tracker.color }} text-xs mr-1"></i> {{ tracker.current_value }} / {{ tracker.target_value }}
+        </span>
+      </div>
+    </div>
+  </body>
+</html>

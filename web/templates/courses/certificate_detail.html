@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Certificate of Completion - {{ certificate.course.title }}
+{% endblock title %}
+{% block content %}
+  <div class="min-h-screen flex items-center justify-center bg-gray-100 py-12 px-4">
+    <div class="max-w-4xl w-full bg-white dark:bg-gray-800 shadow-2xl rounded-xl p-12 sm:p-16 text-center">
+      <h1 class="text-5xl font-extrabold text-gray-800 dark:text-white mb-6">Certificate of Completion</h1>
+      <p class="text-2xl text-gray-600 dark:text-gray-300 mb-8">This certifies that</p>
+      <h2 class="text-4xl font-bold text-gray-900 dark:text-white mb-4">{{ certificate.user.get_full_name }}</h2>
+      <p class="text-2xl text-gray-600 dark:text-gray-300 mb-4">has successfully completed the course</p>
+      <h2 class="text-3xl font-semibold text-gray-800 dark:text-white mb-6">{{ certificate.course.title }}</h2>
+      <p class="text-xl text-gray-500 dark:text-gray-400">on {{ certificate.completion_date|date:"F d, Y" }}</p>
+      <!-- Social Share Buttons -->
+      <div class="mt-12 flex justify-center space-x-4">
+        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri }}"
+           target="_blank"
+           class="px-6 py-3 bg-blue-700 hover:bg-blue-800 text-white rounded-lg">Share on LinkedIn</a>
+        <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri }}&text=I%20just%20completed%20{{ certificate.course.title }}!"
+           target="_blank"
+           class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Share on Twitter</a>
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri }}"
+           target="_blank"
+           class="px-6 py-3 bg-blue-800 hover:bg-blue-900 text-white rounded-lg">Share on Facebook</a>
+      </div>
+    </div>
+  </div>
+{% endblock content %}

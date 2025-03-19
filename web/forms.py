@@ -1,3 +1,5 @@
+import re
+
 from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
 from django import forms
@@ -12,10 +14,13 @@ from .models import (
     ChallengeSubmission,
     Course,
     CourseMaterial,
+    EducationalVideo,
     ForumCategory,
     Goods,
+    Meme,
     ProductImage,
     Profile,
+    ProgressTracker,
     Review,
     Session,
     Storefront,
@@ -57,7 +62,10 @@ __all__ = [
     "FeedbackForm",
     "GoodsForm",
     "StorefrontForm",
+    "EducationalVideoForm",
+    "ProgressTrackerForm",
     "SuccessStoryForm",
+    "MemeForm",
 ]
 
 
@@ -567,6 +575,50 @@ class CustomLoginForm(LoginForm):
         return cleaned_data
 
 
+class EducationalVideoForm(forms.ModelForm):
+    """
+    Form for creating and editing educational videos.
+    Validates that video URLs are from YouTube or Vimeo with proper video ID formats.
+    """
+
+    class Meta:
+        model = EducationalVideo
+        fields = ["title", "description", "video_url", "category"]
+        widgets = {
+            "title": TailwindInput(attrs={"placeholder": "Video title"}),
+            "description": TailwindTextarea(
+                attrs={
+                    "rows": 4,
+                    "placeholder": "Describe what viewers will learn from this video",
+                }
+            ),
+            "video_url": TailwindInput(attrs={"placeholder": "YouTube or Vimeo URL", "type": "url"}),
+            "category": TailwindSelect(
+                attrs={
+                    "class": (
+                        "w-full px-4 py-2 border border-gray-300 dark:border-gray-600"
+                        " rounded-lg focus:ring-2 focus:ring-blue-500"
+                    )
+                }
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Order subjects by name
+        self.fields["category"].queryset = Subject.objects.all().order_by("order", "name")
+
+    def clean_video_url(self):
+        url = self.cleaned_data.get("video_url")
+        if url:
+            # More robust validation with regex
+            youtube_pattern = r"^(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)[a-zA-Z0-9_-]{11}.*$"
+            vimeo_pattern = r"^(https?://)?(www\.)?vimeo\.com/[0-9]{8,}.*$"
+            if not (re.match(youtube_pattern, url) or re.match(vimeo_pattern, url)):
+                raise forms.ValidationError("Please enter a valid YouTube or Vimeo URL")
+        return url
+
+
 class SuccessStoryForm(forms.ModelForm):
     content = MarkdownxFormField(
         label="Content", help_text="Use markdown for formatting. You can use **bold**, *italic*, lists, etc."
@@ -1020,6 +1072,97 @@ class StorefrontForm(forms.ModelForm):
             "logo",
             "is_active",
         ]
+
+
+class ProgressTrackerForm(forms.ModelForm):
+    class Meta:
+        model = ProgressTracker
+        fields = ["title", "description", "current_value", "target_value", "color", "public"]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 3}),
+        }
+
+
+class MemeForm(forms.ModelForm):
+    new_subject = forms.CharField(
+        max_length=100,
+        required=False,
+        widget=TailwindInput(
+            attrs={
+                "placeholder": "Enter a new subject name",
+                "class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500",
+            }
+        ),
+        help_text="If your subject isn't listed, enter a new one here",
+    )
+
+    class Meta:
+        model = Meme
+        fields = ["title", "subject", "new_subject", "caption", "image"]
+        widgets = {
+            "title": TailwindInput(
+                attrs={
+                    "placeholder": "Enter a descriptive title",
+                    "required": True,
+                }
+            ),
+            "subject": TailwindSelect(
+                attrs={
+                    "class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                }
+            ),
+            "caption": TailwindTextarea(
+                attrs={
+                    "placeholder": "Add a caption for your meme",
+                    "rows": 3,
+                }
+            ),
+            "image": TailwindFileInput(
+                attrs={
+                    "accept": "image/png,image/jpeg,image/gif",
+                    "required": True,
+                    "help_text": "Upload a meme image (JPG, PNG, or GIF, max 2MB)",
+                }
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["subject"].required = False
+        self.fields["subject"].help_text = "Select an existing subject"
+
+        # Improve error messages
+        self.fields["image"].error_messages = {
+            "required": "Please select an image file.",
+            "invalid": "Please upload a valid image file.",
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        subject = cleaned_data.get("subject")
+        new_subject = cleaned_data.get("new_subject")
+
+        if not subject and not new_subject:
+            raise forms.ValidationError("You must either select an existing subject or create a new one.")
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        meme = super().save(commit=False)
+
+        # Create new subject if provided
+        new_subject_name = self.cleaned_data.get("new_subject")
+        if new_subject_name and not self.cleaned_data.get("subject"):
+            from django.utils.text import slugify
+
+            subject, created = Subject.objects.get_or_create(
+                name=new_subject_name, defaults={"slug": slugify(new_subject_name)}
+            )
+            meme.subject = subject
+
+        if commit:
+            meme.save()
+        return meme
 
 
 class StudentEnrollmentForm(forms.Form):

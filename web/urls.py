@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.conf.urls.i18n import i18n_patterns
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
@@ -11,10 +12,14 @@ from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_d
 urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs
     path("captcha/", include("captcha.urls")),  # CAPTCHA URLs should not be language-prefixed
+    path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
+    path("certificate/generate/<int:enrollment_id>/", views.generate_certificate, name="generate_certificate"),
 ]
 
 if settings.DEBUG:
     urlpatterns.append(path("__reload__/", include("django_browser_reload.urls")))  # Browser reload URLs
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)  # Add this line
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # Language-prefixed URLs
 urlpatterns += i18n_patterns(
@@ -181,7 +186,10 @@ urlpatterns += i18n_patterns(
     path("challenges/<int:week_number>/", views.challenge_detail, name="challenge_detail"),
     path("challenges/<int:week_number>/submit/", views.challenge_submit, name="challenge_submit"),
     path("current-weekly-challenge/", views.current_weekly_challenge, name="current_weekly_challenge"),
+    # Educational Videos URLs
     path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),
+    path("videos/", views.educational_videos_list, name="educational_videos_list"),
+    path("videos/upload/", login_required(views.upload_educational_video), name="upload_educational_video"),
     # Storefront Management
     path("store/create/", login_required(views.StorefrontCreateView.as_view()), name="storefront_create"),
     path(
@@ -219,10 +227,20 @@ urlpatterns += i18n_patterns(
     ),
     path("analytics/", sales_analytics, name="sales_analytics"),
     path("analytics/data/", sales_data, name="sales_data"),
+    path("memes/", views.meme_list, name="meme_list"),
+    path("memes/add/", views.add_meme, name="add_meme"),
     path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
     # Map URLs
     path("classes-map/", views.classes_map, name="classes_map"),
     path("api/map-data/", views.map_data_api, name="map_data_api"),
+
+    path("trackers/", views.tracker_list, name="tracker_list"),
+    path("trackers/create/", views.create_tracker, name="create_tracker"),
+    path("trackers/<int:tracker_id>/", views.tracker_detail, name="tracker_detail"),
+    path("trackers/<int:tracker_id>/update/", views.update_tracker, name="update_tracker"),
+    path("trackers/<int:tracker_id>/progress/", views.update_progress, name="update_progress"),
+    path("trackers/embed/<str:embed_code>/", views.embed_tracker, name="embed_tracker"),
+
     prefix_default_language=True,
 )
 
