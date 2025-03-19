@@ -2765,6 +2765,9 @@ def current_live_quiz(request, quiz_id):
 
     # Fetch questions only if needed
     questions = quiz.questions.prefetch_related("options").all()
+    paginator = Paginator(questions, 10)  # 10 questions per page
+    page_number = request.GET.get("page", 1)
+    questions_page = paginator.get_page(page_number)
     if request.user.is_authenticated:
         user_submission = QuizSubmission.objects.filter(user=request.user, quiz=quiz).first()
         has_submitted = user_submission is not None
@@ -2773,7 +2776,8 @@ def current_live_quiz(request, quiz_id):
         "quiz": quiz,
         "has_submitted": has_submitted,
         "user_submission": user_submission,
-        "questions":questions
+        "questions":questions_page,
+        "paginator":paginator
     })
 
 
@@ -2833,11 +2837,13 @@ def leaderboard(request, quiz_id):
     """
     Display the leaderboard with highest scores first.
     Also shows quiz results if the user just submitted the quiz.
+    
     Args:
-        request: HTTP request object
-        quiz_id: ID of the quiz to show leaderboard for
+        request (HttpRequest): The request object
+        quiz_id (int): ID of the quiz to show leaderboard for
+        
     Returns:
-        Rendered leaderboard template
+        HttpResponse: Rendered leaderboard template or redirect to index on error
     """
     try:
         quiz = get_object_or_404(Quiz, id=quiz_id)
@@ -2849,7 +2855,6 @@ def leaderboard(request, quiz_id):
             # Clear from session after retrieving
             del request.session['quiz_results']
             request.session.modified = True
-        end_datetime = timezone.make_aware(datetime.combine(quiz.end_date, quiz.end_time))
         return render(request, "web/leaderboard.html", {
             "quiz": quiz,
             "submissions": submissions,

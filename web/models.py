@@ -1182,8 +1182,6 @@ class Quiz(models.Model):
         if start_datetime >= end_datetime:
             raise ValidationError("End date/time must be after start date/time")
         
-        if self.duration_minutes <= 0:
-            raise ValidationError("Duration must be positive")
             
     def is_active(self):
         """Check if the quiz is currently active."""
@@ -1250,6 +1248,7 @@ class QuizOption(models.Model):
         if not has_correct:
             raise ValidationError(f"Question '{question}' must have at least one correct option.")
         
+    @classmethod
     def validate_only_one_correct_option(cls, question):
         correct_count = cls.objects.filter(question=question, is_correct=True).count()
         if correct_count > 1:
