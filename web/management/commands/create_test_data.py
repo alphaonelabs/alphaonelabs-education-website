@@ -2,10 +2,10 @@ import random
 from datetime import timedelta
 from decimal import Decimal
 
-from django.db.models import Q
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.text import slugify
 
@@ -13,6 +13,7 @@ from web.models import (
     Achievement,
     BlogComment,
     BlogPost,
+    Challenge,
     Course,
     CourseMaterial,
     CourseProgress,
@@ -20,7 +21,9 @@ from web.models import (
     ForumCategory,
     ForumReply,
     ForumTopic,
+    FriendLeaderboard,
     Goods,
+    LeaderboardEntry,
     PeerConnection,
     PeerMessage,
     ProductImage,
@@ -31,9 +34,6 @@ from web.models import (
     Storefront,
     StudyGroup,
     Subject,
-    Challenge,
-    LeaderboardEntry,
-    FriendLeaderboard,
 )
 
 
@@ -110,7 +110,7 @@ class Command(BaseCommand):
                 description=f"Description for challenge {i + 1}",
                 week_number=i + 1,
                 start_date=timezone.now().date(),
-                end_date=(timezone.now() + timedelta(days=7)).date()
+                end_date=(timezone.now() + timedelta(days=7)).date(),
             )
             challenges.append(challenge)
             self.stdout.write(f"Created challenge: {challenge.title}")
@@ -132,7 +132,7 @@ class Command(BaseCommand):
             if challenge_list:
                 completed_challenges = random.sample(challenge_list, min(challenge_count, len(challenge_list)))
                 for challenge in completed_challenges:
-                    submission = LeaderboardEntry.objects.create(
+                    LeaderboardEntry.objects.create(
                         user=student,
                         points=score,  # Use points instead of score
                         weekly_points=weekly_points,
@@ -140,11 +140,9 @@ class Command(BaseCommand):
                         challenge_count=challenge_count,
                         current_streak=current_streak,
                         highest_streak=highest_streak,
-                        challenge=challenges[0] if challenges else None
+                        challenge=challenges[0] if challenges else None,
                     )
-
                     self.stdout.write(f"Created submission for {student.username} - Challenge {challenge.week_number}")
-
 
         # Create friend connections for leaderboards
         for student in students:
@@ -152,10 +150,9 @@ class Command(BaseCommand):
             friend_board = FriendLeaderboard.objects.create(user=student)
 
             # Add random friends (from students already connected via PeerConnection)
-            connected_peers = list(PeerConnection.objects.filter(
-                (Q(sender=student) | Q(receiver=student)),
-                status='accepted'
-            ))
+            connected_peers = list(
+                PeerConnection.objects.filter((Q(sender=student) | Q(receiver=student)), status="accepted")
+            )
 
             friends = []
             for connection in connected_peers:
@@ -180,7 +177,7 @@ class Command(BaseCommand):
                 challenge_count=random.randint(0, 10),
                 current_streak=random.randint(0, 5),
                 highest_streak=random.randint(0, 8),
-                challenge=challenge
+                challenge=challenge,
             )
 
         print(f"Created {len(users)} leaderboard entries!")

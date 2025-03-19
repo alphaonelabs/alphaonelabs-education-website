@@ -173,6 +173,7 @@ class LeaderboardEntry(models.Model):
     with separate tracking for weekly and monthly points to enable different
     time-based leaderboards.
     """
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="leaderboard_entries")
     # Replace score with points or keep both
     points = models.IntegerField(default=0)
@@ -181,7 +182,9 @@ class LeaderboardEntry(models.Model):
     challenge_count = models.IntegerField(default=0)
     current_streak = models.IntegerField(default=0)
     highest_streak = models.IntegerField(default=0)
-    challenge = models.ForeignKey('Challenge', on_delete=models.CASCADE, null=True, blank=True, related_name="leaderboard_entries")
+    challenge = models.ForeignKey(
+        "Challenge", on_delete=models.CASCADE, null=True, blank=True, related_name="leaderboard_entries"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -200,6 +203,7 @@ class FriendLeaderboard(models.Model):
     This model allows users to compete with their friends by maintaining
     a custom leaderboard of connected users.
     """
+
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="friend_leaderboard")
     friends = models.ManyToManyField(User, related_name="in_friend_leaderboards")
 
@@ -1202,15 +1206,11 @@ class ChallengeSubmission(models.Model):
             entry.challenge_count += 1
 
             # Update streak
-            today = timezone.now().date()
-            last_week_challenge = Challenge.objects.filter(
-                week_number=self.challenge.week_number - 1
-            ).first()
+            last_week_challenge = Challenge.objects.filter(week_number=self.challenge.week_number - 1).first()
 
             if last_week_challenge:
                 last_week_submission = ChallengeSubmission.objects.filter(
-                    user=self.user,
-                    challenge=last_week_challenge
+                    user=self.user, challenge=last_week_challenge
                 ).exists()
 
                 if last_week_submission:

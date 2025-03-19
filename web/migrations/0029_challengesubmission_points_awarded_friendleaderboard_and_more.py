@@ -8,40 +8,54 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('web', '0028_certificate'),
+        ("web", "0028_certificate"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='challengesubmission',
-            name='points_awarded',
+            model_name="challengesubmission",
+            name="points_awarded",
             field=models.IntegerField(default=10),
         ),
         migrations.CreateModel(
-            name='FriendLeaderboard',
+            name="FriendLeaderboard",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('friends', models.ManyToManyField(related_name='in_friend_leaderboards', to=settings.AUTH_USER_MODEL)),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='friend_leaderboard', to=settings.AUTH_USER_MODEL)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("friends", models.ManyToManyField(related_name="in_friend_leaderboards", to=settings.AUTH_USER_MODEL)),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="friend_leaderboard",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
         ),
         migrations.CreateModel(
-            name='LeaderboardEntry',
+            name="LeaderboardEntry",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('points', models.IntegerField(default=0)),
-                ('weekly_points', models.IntegerField(default=0)),
-                ('monthly_points', models.IntegerField(default=0)),
-                ('challenge_count', models.IntegerField(default=0)),
-                ('current_streak', models.IntegerField(default=0)),
-                ('highest_streak', models.IntegerField(default=0)),
-                ('last_updated', models.DateTimeField(auto_now=True)),
-                ('user', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='leaderboard_entry', to=settings.AUTH_USER_MODEL)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("points", models.IntegerField(default=0)),
+                ("weekly_points", models.IntegerField(default=0)),
+                ("monthly_points", models.IntegerField(default=0)),
+                ("challenge_count", models.IntegerField(default=0)),
+                ("current_streak", models.IntegerField(default=0)),
+                ("highest_streak", models.IntegerField(default=0)),
+                ("last_updated", models.DateTimeField(auto_now=True)),
+                (
+                    "user",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="leaderboard_entry",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'verbose_name_plural': 'Leaderboard Entries',
-                'ordering': ['-points'],
+                "verbose_name_plural": "Leaderboard Entries",
+                "ordering": ["-points"],
             },
         ),
     ]

@@ -6,42 +6,42 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('web', '0030_alter_leaderboardentry_options_and_more'),
+        ("web", "0030_alter_leaderboardentry_options_and_more"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='leaderboardentry',
-            options={'ordering': ['-points'], 'verbose_name_plural': 'Leaderboard Entries'},
+            name="leaderboardentry",
+            options={"ordering": ["-points"], "verbose_name_plural": "Leaderboard Entries"},
         ),
         migrations.RenameField(
-            model_name='leaderboardentry',
-            old_name='score',
-            new_name='challenge_count',
+            model_name="leaderboardentry",
+            old_name="score",
+            new_name="challenge_count",
         ),
         migrations.AddField(
-            model_name='leaderboardentry',
-            name='current_streak',
+            model_name="leaderboardentry",
+            name="current_streak",
             field=models.IntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='leaderboardentry',
-            name='highest_streak',
+            model_name="leaderboardentry",
+            name="highest_streak",
             field=models.IntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='leaderboardentry',
-            name='monthly_points',
+            model_name="leaderboardentry",
+            name="monthly_points",
             field=models.IntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='leaderboardentry',
-            name='points',
+            model_name="leaderboardentry",
+            name="points",
             field=models.IntegerField(default=0),
         ),
         migrations.AddField(
-            model_name='leaderboardentry',
-            name='weekly_points',
+            model_name="leaderboardentry",
+            name="weekly_points",
             field=models.IntegerField(default=0),
         ),
     ]

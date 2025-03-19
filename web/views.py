@@ -95,7 +95,9 @@ from .models import (
     ForumCategory,
     ForumReply,
     ForumTopic,
+    FriendLeaderboard,
     Goods,
+    LeaderboardEntry,
     Meme,
     Order,
     OrderItem,
@@ -114,7 +116,6 @@ from .models import (
     SuccessStory,
     TimeSlot,
     WebRequest,
-    LeaderboardEntry,
 )
 from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
 from .referrals import send_referral_reward_email
@@ -154,24 +155,23 @@ def index(request):
     latest_success_story = SuccessStory.objects.filter(status="published").order_by("-published_at").first()
 
     # Get top latest 3 leaderboard users
-    top_leaderboard_users = LeaderboardEntry.objects.select_related('user').order_by('-points')[:3]
+    top_leaderboard_users = LeaderboardEntry.objects.select_related("user").order_by("-points")[:3]
 
     # Get top referrers (needed for the test to pass)
     top_referrers = Profile.objects.annotate(
         total_signups=models.Count("referrals"),
         total_enrollments=models.Count(
-            "referrals__user__enrollments",
-            filter=models.Q(referrals__user__enrollments__status="approved")
+            "referrals__user__enrollments", filter=models.Q(referrals__user__enrollments__status="approved")
         ),
         total_clicks=models.Count(
             "referrals__user",
             filter=models.Q(
-                referrals__user__username__in=WebRequest.objects.filter(
-                    path__contains="ref="
-                ).values_list("user", flat=True)
+                referrals__user__username__in=WebRequest.objects.filter(path__contains="ref=").values_list(
+                    "user", flat=True
+                )
             ),
         ),
-    ).order_by('-total_signups', '-total_enrollments')[:3]
+    ).order_by("-total_signups", "-total_enrollments")[:3]
 
     # Get signup form if needed
     form = None
@@ -184,8 +184,8 @@ def index(request):
         "current_challenge": current_challenge,
         "latest_post": latest_post,
         "latest_success_story": latest_success_story,
-        'top_referrers': top_referrers,
-        'top_leaderboard_users': top_leaderboard_users,
+        "top_referrers": top_referrers,
+        "top_leaderboard_users": top_leaderboard_users,
         "form": form,
     }
     return render(request, "index.html", context)
@@ -235,16 +235,16 @@ def all_leaderboards(request):
         Rendered leaderboards template with context containing all leaderboard entries
     """
     # Global Leaderboard
-    global_entries = LeaderboardEntry.objects.all().order_by('-points')[:10]
+    global_entries = LeaderboardEntry.objects.all().order_by("-points")[:10]
 
     # Weekly Leaderboard
-    weekly_entries = LeaderboardEntry.objects.all().order_by('-weekly_points')[:10]
+    weekly_entries = LeaderboardEntry.objects.all().order_by("-weekly_points")[:10]
 
     # Monthly Leaderboard
-    monthly_entries = LeaderboardEntry.objects.all().order_by('-monthly_points')[:10]
+    monthly_entries = LeaderboardEntry.objects.all().order_by("-monthly_points")[:10]
 
     # Challenge Submissions
-    challenge_entries = ChallengeSubmission.objects.select_related('user', 'challenge').order_by('-points_awarded')[:10]
+    challenge_entries = ChallengeSubmission.objects.select_related("user", "challenge").order_by("-points_awarded")[:10]
 
     # User's rank info (if authenticated)
     user_rank = None
@@ -256,7 +256,9 @@ def all_leaderboards(request):
             user_entry = LeaderboardEntry.objects.get(user=request.user)
             user_rank = LeaderboardEntry.objects.filter(points__gt=user_entry.points).count() + 1
             user_weekly_rank = LeaderboardEntry.objects.filter(weekly_points__gt=user_entry.weekly_points).count() + 1
-            user_monthly_rank = LeaderboardEntry.objects.filter(monthly_points__gt=user_entry.monthly_points).count() + 1
+            user_monthly_rank = (
+                LeaderboardEntry.objects.filter(monthly_points__gt=user_entry.monthly_points).count() + 1
+            )
         except LeaderboardEntry.DoesNotExist:
             pass
 
@@ -269,8 +271,7 @@ def all_leaderboards(request):
 
             # Get all friends from PeerConnection model
             accepted_connections = PeerConnection.objects.filter(
-                (Q(sender=request.user) | Q(receiver=request.user)),
-                status='accepted'
+                (Q(sender=request.user) | Q(receiver=request.user)), status="accepted"
             )
 
             friends = []
@@ -284,24 +285,24 @@ def all_leaderboards(request):
             friend_board.friends.set(friends)
 
             # Get leaderboard entries for friends
-            friend_entries = LeaderboardEntry.objects.filter(
-                user__in=friend_board.friends.all()
-            ).order_by('-points')[:10]
-        except:
+            friend_entries = LeaderboardEntry.objects.filter(user__in=friend_board.friends.all()).order_by("-points")[
+                :10
+            ]
+        except Exception:
             pass
 
     context = {
-        'global_entries': global_entries,
-        'weekly_entries': weekly_entries,
-        'monthly_entries': monthly_entries,
-        'challenge_entries': challenge_entries,
-        'friend_entries': friend_entries,
-        'user_rank': user_rank,
-        'user_weekly_rank': user_weekly_rank,
-        'user_monthly_rank': user_monthly_rank
+        "global_entries": global_entries,
+        "weekly_entries": weekly_entries,
+        "monthly_entries": monthly_entries,
+        "challenge_entries": challenge_entries,
+        "friend_entries": friend_entries,
+        "user_rank": user_rank,
+        "user_weekly_rank": user_weekly_rank,
+        "user_monthly_rank": user_monthly_rank,
     }
 
-    return render(request, 'leaderboards/leaderboards.html', context)
+    return render(request, "leaderboards/leaderboards.html", context)
 
 
 @login_required
