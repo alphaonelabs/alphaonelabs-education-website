@@ -8,6 +8,8 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
 
+from django.contrib.auth.models import User
+
 from web.models import (
     Achievement,
     BlogComment,
@@ -77,23 +79,6 @@ class Command(BaseCommand):
         self.clear_data()
 
 
-        # Add this section to your handle method after creating students and before courses
-        # Create weekly challenges
-        challenges = []
-        now = timezone.now()
-        for i in range(1, 11):  # Create 10 weekly challenges
-            start_date = now - timedelta(weeks=10-i)
-            end_date = start_date + timedelta(days=6)
-            challenge = Challenge.objects.create(
-                title=f"Weekly Challenge {i}",
-                description=f"This is the description for weekly challenge {i}. Complete this challenge to earn points!",
-                week_number=i,
-                start_date=start_date.date(),
-                end_date=end_date.date(),
-            )
-            challenges.append(challenge)
-            self.stdout.write(f"Created challenge: {challenge.title}")
-
         # Create challenge submissions and leaderboard entries
         for student in students:
             # Create a leaderboard entry for each student
@@ -116,7 +101,7 @@ class Command(BaseCommand):
             self.stdout.write(f"Created leaderboard entry for {student.username} with {points} points")
             
             # Submit random challenges for this student
-            completed_challenges = random.sample(challenges, min(challenge_count, len(challenges)))
+            completed_challenges = random.sample(Challenge, min(challenge_count, len(Challenge)))
             for challenge in completed_challenges:
                 submission = ChallengeSubmission.objects.create(
                     user=student,
@@ -146,6 +131,19 @@ class Command(BaseCommand):
             
             friend_board.friends.add(*friends)
             self.stdout.write(f"Created friend leaderboard for {student.username} with {len(friends)} friends")
+
+        # Create entries for existing users
+        users = User.objects.all()
+        for user in users:
+            # Random score between 100 and 1000
+            score = random.randint(100, 1000)
+            LeaderboardEntry.objects.create(
+                user=user,
+                score=score,
+                challenge=challenge
+            )
+
+        print(f"Created {len(users)} leaderboard entries!")
 
 
 
