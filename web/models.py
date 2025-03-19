@@ -170,6 +170,11 @@ class Course(models.Model):
         ("published", "Published"),
         ("archived", "Archived"),
     ]
+    TEACHING_STYLES = [
+        ("lecture", "Lecture"),
+        ("interactive", "Interactive"),
+        ("self-paced", "Self-paced"),
+    ]
 
     title = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, max_length=200)
@@ -209,6 +214,12 @@ class Course(models.Model):
     )
     tags = models.CharField(max_length=200, blank=True, help_text="Comma-separated tags")
     is_featured = models.BooleanField(default=False)
+    teaching_style = models.CharField(
+        max_length=20,
+        choices=TEACHING_STYLES,
+        default="lecture",
+        help_text="The primary teaching style for this course",
+    )
 
     def save(self, *args, **kwargs):
         if not self.slug:
