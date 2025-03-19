@@ -169,18 +169,24 @@ class WebRequest(models.Model):
 
 class LeaderboardEntry(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="leaderboard_entries")
-    score = models.IntegerField(default=0)
-    # Use string reference to avoid the NameError
+    # Replace score with points or keep both
+    points = models.IntegerField(default=0)
+    weekly_points = models.IntegerField(default=0)
+    monthly_points = models.IntegerField(default=0)
+    challenge_count = models.IntegerField(default=0)
+    current_streak = models.IntegerField(default=0)
+    highest_streak = models.IntegerField(default=0)
+    # Keep your existing fields
     challenge = models.ForeignKey('Challenge', on_delete=models.CASCADE, null=True, blank=True, related_name="leaderboard_entries")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     class Meta:
         verbose_name_plural = "Leaderboard Entries"
-        ordering = ["-score"]
+        ordering = ["-points"]  # Update ordering to use points
         
     def __str__(self):
-        return f"{self.user.username} - {self.score} points"
+        return f"{self.user.username} - {self.points} points"
 
 class FriendLeaderboard(models.Model):
     """Model to track user's friends for leaderboard comparisons"""

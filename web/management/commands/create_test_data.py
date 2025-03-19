@@ -130,7 +130,7 @@ class Command(BaseCommand):
             
             entry = LeaderboardEntry.objects.create(
                 user=student,
-                score=score,  # Using score instead of points to match your model
+                points=score,  # Using score instead of points to match your model
                 challenge=challenges[0] if challenges else None  # Select first challenge or None
             )
             self.stdout.write(f"Created leaderboard entry for {student.username} with {score} points")
@@ -140,12 +140,17 @@ class Command(BaseCommand):
             if challenge_list:
                 completed_challenges = random.sample(challenge_list, min(challenge_count, len(challenge_list)))
                 for challenge in completed_challenges:
-                    submission = ChallengeSubmission.objects.create(
+                    submission = LeaderboardEntry.objects.create(
                         user=student,
-                        challenge=challenge,
-                        submission_text=f"This is {student.username}'s submission for challenge {challenge.week_number}.",
-                        points_awarded=random.randint(5, 15)  # Assuming points vary per submission
+                        points=score,  # Use points instead of score
+                        weekly_points=weekly_points,
+                        monthly_points=monthly_points,
+                        challenge_count=challenge_count,
+                        current_streak=current_streak,
+                        highest_streak=highest_streak,
+                        challenge=challenges[0] if challenges else None
                     )
+
                     self.stdout.write(f"Created submission for {student.username} - Challenge {challenge.week_number}")
 
 
@@ -198,7 +203,12 @@ class Command(BaseCommand):
             score = random.randint(100, 1000)
             LeaderboardEntry.objects.create(
                 user=user,
-                score=score,
+                points=score,  # Change score to points
+                weekly_points=random.randint(0, 100),
+                monthly_points=random.randint(0, 300),
+                challenge_count=random.randint(0, 10),
+                current_streak=random.randint(0, 5),
+                highest_streak=random.randint(0, 8),
                 challenge=challenge
             )
 
