@@ -7,10 +7,7 @@ from django.db import models
 from django.http import HttpResponseRedirect
 from django.urls import path, reverse
 from django.utils.html import format_html
-from django.core.exceptions import ValidationError
-
 from .utils import validate_quiz_has_questions
-
 from .models import (
     Achievement,
     BlogComment,

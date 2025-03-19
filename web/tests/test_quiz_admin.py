@@ -3,7 +3,8 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from datetime import timedelta
 from django.urls import reverse
-
+from django.db import connection
+from django.test.utils import CaptureQueriesContext
 from web.models import Quiz, QuizQuestion, QuizOption
 
 User = get_user_model()
@@ -54,20 +55,11 @@ class QuizAdminTests(TestCase):
             "_save": "Save", 
         }
     
-        response = self.client.post(admin_url, quiz_data)
-
         with self.captured_queries:
             response = self.client.post(admin_url, quiz_data)
     
         if response.status_code != 302:
-            print(f"SQL Queries: {len(self.captured_queries.captured_queries)}")
-            for i, query in enumerate(self.captured_queries.captured_queries):
-                print(f"Query {i}: {query['sql']}")
-    
-        # Print response details for debugging
-        if response.status_code != 302:
-            print(f"Response status: {response.status_code}")
-            print(f"Response content: {response.content.decode()[:500]}...")
+            self.fail(f"Expected redirect, got {response.status_code}: {response.content.decode()[:500]}")
     
         # Check for 302 redirect on success
         self.assertEqual(response.status_code, 302)
@@ -124,10 +116,8 @@ class QuizAdminTests(TestCase):
             follow=True  # Follow redirects
         )
         
-        # Print debug info on failure
-        if response.status_code != 200 or not QuizOption.objects.filter(option_text='Test option').exists():
-            print(f"Status Code: {response.status_code}")
-            print(f"Response: {response.content[:500]}")
+        if not QuizOption.objects.filter(option_text='Test option').exists():
+            self.fail(f"Quiz option not created. Status: {response.status_code}, Response: {response.content.decode()[:500]}")
         
         # Check for object creation instead of status code
         self.assertTrue(QuizOption.objects.filter(option_text='Test option').exists())

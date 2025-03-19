@@ -5,7 +5,7 @@ import re
 import shutil
 import subprocess
 import time
-from datetime import timedelta,datetime
+from datetime import datetime,timedelta
 from decimal import Decimal
 import requests
 import stripe
@@ -189,8 +189,8 @@ def index(request):
         "top_referrers": top_referrers,
         "featured_courses": featured_courses,
         "current_challenge": current_challenge,
-        "has_submitted":has_submitted,
-        "quiz":live_quiz,
+        "has_submitted": has_submitted,
+        "quiz": live_quiz,
         "latest_post": latest_post,
         "latest_success_story": latest_success_story,
         "form": form,

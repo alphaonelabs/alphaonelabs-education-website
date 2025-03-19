@@ -1260,6 +1260,8 @@ class QuizOption(models.Model):
         super().save(*args, **kwargs)
         #After saving, validate that the question has at least one correct option
         self.__class__.validate_question_has_correct_option(self.question)
+        # Additionally, enforce only one correct option if needed
+        self.__class__.validate_only_one_correct_option(self.question)
 
 class QuizSubmission(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
