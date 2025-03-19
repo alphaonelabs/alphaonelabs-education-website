@@ -165,6 +165,38 @@ class WebRequest(models.Model):
         return f"{self.path} - {self.count} views"
 
 
+class LeaderboardEntry(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="leaderboard_entry")
+    points = models.IntegerField(default=0)
+    weekly_points = models.IntegerField(default=0)  # For weekly rankings
+    monthly_points = models.IntegerField(default=0)  # For monthly rankings
+    challenge_count = models.IntegerField(default=0)  # Number of challenges completed
+    current_streak = models.IntegerField(default=0)  # Consecutive weeks with submissions
+    highest_streak = models.IntegerField(default=0)  # Highest streak achieved
+    last_updated = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-points']
+        verbose_name_plural = "Leaderboard Entries"
+        
+    def __str__(self):
+        return f"{self.user.username}'s leaderboard stats"
+    
+    @property
+    def rank(self):
+        """Get the user's current global rank"""
+        return LeaderboardEntry.objects.filter(points__gt=self.points).count() + 1
+
+
+class FriendLeaderboard(models.Model):
+    """Model to track user's friends for leaderboard comparisons"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="friend_leaderboard")
+    friends = models.ManyToManyField(User, related_name="in_friend_leaderboards")
+    
+    def __str__(self):
+        return f"{self.user.username}'s friend leaderboard"
+
+
 class Course(models.Model):
     STATUS_CHOICES = [
         ("draft", "Draft"),
@@ -1140,9 +1172,52 @@ class ChallengeSubmission(models.Model):
     challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE)
     submission_text = models.TextField()
     submitted_at = models.DateTimeField(auto_now_add=True)
-
+    points_awarded = models.IntegerField(default=10)  # Base points for completing challenge
+    
     def __str__(self):
         return f"{self.user.username}'s submission for Week {self.challenge.week_number}"
+    
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        super().save(*args, **kwargs)
+        
+        if is_new:
+            # Update leaderboard when a new submission is created
+            entry, created = LeaderboardEntry.objects.get_or_create(user=self.user)
+            
+            # Add points
+            entry.points += self.points_awarded
+            entry.weekly_points += self.points_awarded
+            entry.monthly_points += self.points_awarded
+            entry.challenge_count += 1
+            
+            # Update streak
+            today = timezone.now().date()
+            last_week_challenge = Challenge.objects.filter(
+                week_number=self.challenge.week_number-1
+            ).first()
+            
+            if last_week_challenge:
+                last_week_submission = ChallengeSubmission.objects.filter(
+                    user=self.user,
+                    challenge=last_week_challenge
+                ).exists()
+                
+                if last_week_submission:
+                    # Continue the streak
+                    entry.current_streak += 1
+                else:
+                    # Reset streak
+                    entry.current_streak = 1
+            else:
+                # First challenge or no previous challenge
+                entry.current_streak = 1
+                
+            # Update highest streak if needed
+            if entry.current_streak > entry.highest_streak:
+                entry.highest_streak = entry.current_streak
+                
+            entry.save()
 
 
 class ProductImage(models.Model):

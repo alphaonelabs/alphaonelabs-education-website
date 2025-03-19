@@ -30,6 +30,10 @@ from web.models import (
     Storefront,
     StudyGroup,
     Subject,
+    Challenge,
+    ChallengeSubmission,
+    LeaderboardEntry,
+    FriendLeaderboard,
 )
 
 
@@ -71,6 +75,79 @@ class Command(BaseCommand):
 
         # Clear existing data
         self.clear_data()
+
+
+        # Add this section to your handle method after creating students and before courses
+        # Create weekly challenges
+        challenges = []
+        now = timezone.now()
+        for i in range(1, 11):  # Create 10 weekly challenges
+            start_date = now - timedelta(weeks=10-i)
+            end_date = start_date + timedelta(days=6)
+            challenge = Challenge.objects.create(
+                title=f"Weekly Challenge {i}",
+                description=f"This is the description for weekly challenge {i}. Complete this challenge to earn points!",
+                week_number=i,
+                start_date=start_date.date(),
+                end_date=end_date.date(),
+            )
+            challenges.append(challenge)
+            self.stdout.write(f"Created challenge: {challenge.title}")
+
+        # Create challenge submissions and leaderboard entries
+        for student in students:
+            # Create a leaderboard entry for each student
+            points = random.randint(0, 500)
+            weekly_points = random.randint(0, 100)
+            monthly_points = random.randint(0, 300)
+            challenge_count = random.randint(0, 10)
+            current_streak = random.randint(0, 5)
+            highest_streak = max(current_streak, random.randint(current_streak, 8))
+            
+            entry = LeaderboardEntry.objects.create(
+                user=student,
+                points=points,
+                weekly_points=weekly_points,
+                monthly_points=monthly_points,
+                challenge_count=challenge_count,
+                current_streak=current_streak,
+                highest_streak=highest_streak,
+            )
+            self.stdout.write(f"Created leaderboard entry for {student.username} with {points} points")
+            
+            # Submit random challenges for this student
+            completed_challenges = random.sample(challenges, min(challenge_count, len(challenges)))
+            for challenge in completed_challenges:
+                submission = ChallengeSubmission.objects.create(
+                    user=student,
+                    challenge=challenge,
+                    submission_text=f"This is {student.username}'s submission for challenge {challenge.week_number}.",
+                    points_awarded=random.randint(5, 15)  # Assuming points vary per submission
+                )
+                self.stdout.write(f"Created submission for {student.username} - Challenge {challenge.week_number}")
+
+        # Create friend connections for leaderboards
+        for student in students:
+            # Create friend leaderboard for each student
+            friend_board = FriendLeaderboard.objects.create(user=student)
+            
+            # Add random friends (from students already connected via PeerConnection)
+            connected_peers = list(PeerConnection.objects.filter(
+                (Q(sender=student) | Q(receiver=student)),
+                status='accepted'
+            ))
+            
+            friends = []
+            for connection in connected_peers:
+                if connection.sender == student:
+                    friends.append(connection.receiver)
+                else:
+                    friends.append(connection.sender)
+            
+            friend_board.friends.add(*friends)
+            self.stdout.write(f"Created friend leaderboard for {student.username} with {len(friends)} friends")
+
+
 
         # Create test users (teachers and students)
         teachers = []
