@@ -56,7 +56,9 @@ def geocode_address(address):
     if not api_key:
         return None
 
-    url = f"https://api.opencagedata.com/geocode/v1/json?q={address}&key={api_key}"
+    from urllib.parse import quote
+    encoded_address = quote(address)
+    url = f"https://api.opencagedata.com/geocode/v1/json?q={encoded_address}&key={api_key}"
 
     try:
         response = requests.get(url, timeout=5)
@@ -67,9 +69,6 @@ def geocode_address(address):
             return (location["lat"], location["lng"])
         return None
     except Exception as e:
-        import logging
-
-        logger = logging.getLogger(__name__)
         logger.error(f"Geocoding error for address '{address}': {e}")
         return None
 
