@@ -1,6 +1,8 @@
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils.text import slugify
+from django.utils import timezone
 
 from web.models import Course, Enrollment, Goods, Order, OrderItem, Profile, Storefront, Subject, SuccessStory
 
@@ -260,3 +262,29 @@ class SuccessStoryModelTest(TestCase):
     def test_get_absolute_url(self):
         expected_url = reverse("success_story_detail", kwargs={"slug": self.story.slug})
         self.assertEqual(self.story.get_absolute_url(), expected_url)
+
+    def test_slug_generation_on_save(self):
+        story = SuccessStory.objects.create(title="New Story", author=self.user, content="Some content.")
+        self.assertEqual(story.slug, slugify("New Story"))
+
+    def test_published_at_set_on_publish(self):
+        story = SuccessStory.objects.create(
+            title="Another Story",
+            author=self.user,
+            content="Some content.",
+            status="archived",
+        )
+        self.assertIsNone(story.published_at)
+
+        story.status = "published"
+        story.save()
+        self.assertIsNotNone(story.published_at)
+        self.assertAlmostEqual(story.published_at, timezone.now(), delta=timezone.timedelta(seconds=1))
+
+    def test_reading_time_calculation(self):
+        short_story = SuccessStory.objects.create(title="Short Story", author=self.user, content="A quick read.")
+        self.assertEqual(short_story.reading_time, 1)
+
+        long_content = " ".join(["word"] * 400)  # 400 words
+        long_story = SuccessStory.objects.create(title="Long Story", author=self.user, content=long_content)
+        self.assertEqual(long_story.reading_time, 2)  # 400/200 = 2 minutes

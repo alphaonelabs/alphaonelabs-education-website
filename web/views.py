@@ -3763,13 +3763,7 @@ def classes_map(request):
     age_groups = [choice for choice in Course._meta.get_field("level").choices]
 
     # Teaching style options (future: consider adding this as a field to Course model)
-    # These are manually defined since there's no corresponding model field yet
-    teaching_styles = [
-        ("interactive", "Interactive"),
-        ("lecture", "Lecture"),
-        ("hands_on", "Hands-on"),
-        ("self_paced", "Self-paced"),
-    ]
+    teaching_styles = Course.TEACHING_STYLES
 
     context = {
         "sessions": sessions,
@@ -3803,8 +3797,12 @@ def map_data_api(request):
         sessions = sessions.filter(course__level=age_group)
 
     if teaching_style:
-        # Assuming you'll add this field to the Course model later
-        sessions = sessions.filter(course__teaching_style=teaching_style)
+        try:
+            # Attempt to filter, but don't fail if field doesn't exist
+            sessions = sessions.filter(course__teaching_style=teaching_style)
+        except Exception as e:
+            # Log the error but continue without this filter
+            logger.error(f"Error filtering by teaching_style: {e}")
 
     # Prepare data for JSON response
     map_data = []
