@@ -70,9 +70,7 @@
   let drawing = false;
   let startX = 0;
   let startY = 0;
-  let snapshot = null; // For shape preview
-  
-  // UI elements
+  let snapshot = null;
   const toolSelect = document.getElementById('toolSelect');
   const penColorInput = document.getElementById('penColor');
   const penWidthInput = document.getElementById('penWidth');
@@ -81,15 +79,12 @@
   const uploadBtn = document.getElementById('uploadBoard');
   const loadInput = document.getElementById('loadInput');
   const downloadBtn = document.getElementById('downloadBoard');
-  
-  // Default settings
-  let currentTool = toolSelect.value; // default: pen
+  let currentTool = toolSelect.value;
   let penColor = penColorInput.value;
   let penWidth = parseInt(penWidthInput.value, 10);
   let imageScale = 1.0;
-  let uploadedImage = null;  // holds the uploaded image
-  
-  // Update tool setting on change
+  let uploadedImage = null; 
+
   toolSelect.addEventListener('change', function() {
     currentTool = this.value;
     if (currentTool === 'pen') {
@@ -108,28 +103,20 @@
   penWidthInput.addEventListener('input', function() {
     penWidth = parseInt(this.value, 10);
   });
-  
-  // Image scale control
   imageScaleInput.addEventListener('input', function() {
     imageScale = parseInt(this.value, 10) / 100;
     if (uploadedImage) {
       redrawBackground();
     }
   });
-  
-  // Clear canvas and remove stored image
   clearBtn.addEventListener('click', () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     localStorage.removeItem('whiteboardImage');
     uploadedImage = null;
   });
-  
-  // Upload (Load) functionality: trigger file input on click
   uploadBtn.addEventListener('click', () => {
     loadInput.click();
   });
-  
-  // Handle file selection: load image and store in localStorage
   loadInput.addEventListener('change', (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -143,22 +130,17 @@
         uploadedImage = img;
         imageScale = parseInt(imageScaleInput.value, 10) / 100;
         redrawBackground();
-        // Store image data in localStorage
         localStorage.setItem('whiteboardImage', dataURL);
       };
     };
     reader.readAsDataURL(file);
   });
-  
-  // Redraw background image with current scale factor
   function redrawBackground() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     const newWidth = uploadedImage.width * imageScale;
     const newHeight = uploadedImage.height * imageScale;
     ctx.drawImage(uploadedImage, 0, 0, newWidth, newHeight);
   }
-  
-  // Automatically load stored image on page load if available
   window.addEventListener('load', () => {
     const dataURL = localStorage.getItem('whiteboardImage');
     if (dataURL) {
@@ -171,8 +153,6 @@
       };
     }
   });
-  
-  // Download current canvas as PNG image
   downloadBtn.addEventListener('click', () => {
     const dataURL = canvas.toDataURL("image/png");
     const link = document.createElement('a');
@@ -180,8 +160,6 @@
     link.download = "whiteboard.png";
     link.click();
   });
-  
-  // Utility functions for shape drawing
   function takeSnapshot() {
     snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
   }
@@ -191,10 +169,8 @@
       ctx.putImageData(snapshot, 0, 0);
     }
   }
-  
-  // Function to draw an arrow from (fromX, fromY) to (toX, toY)
   function drawArrow(fromX, fromY, toX, toY) {
-    const headlen = 10; // length of arrowhead in pixels
+    const headlen = 10; 
     const angle = Math.atan2(toY - fromY, toX - fromX);
     ctx.beginPath();
     ctx.moveTo(fromX, fromY);
@@ -208,8 +184,6 @@
     ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
     ctx.stroke();
   }
-  
-  // Mouse events for drawing
   canvas.addEventListener('mousedown', (e) => {
     drawing = true;
     startX = e.offsetX;
@@ -219,7 +193,6 @@
       ctx.beginPath();
       ctx.moveTo(startX, startY);
     } else if (currentTool === 'text') {
-      // For text, prompt user immediately and draw text
       const text = prompt("Enter text to add:");
       if (text) {
         ctx.font = `${penWidth * 5}px sans-serif`;
@@ -228,7 +201,6 @@
       }
       drawing = false;
     } else {
-      // For shapes (line, rectangle, circle, arrow), take a snapshot
       takeSnapshot();
     }
   });
@@ -253,7 +225,6 @@
       ctx.lineTo(currentX, currentY);
       ctx.stroke();
     } else if (currentTool === 'line' || currentTool === 'rectangle' || currentTool === 'circle' || currentTool === 'arrow') {
-      // For shapes, restore snapshot and draw preview
       restoreSnapshot();
       ctx.lineWidth = penWidth;
       ctx.strokeStyle = penColor;
@@ -273,7 +244,6 @@
         ctx.arc(startX, startY, radius, 0, Math.PI * 2);
         ctx.stroke();
       } else if (currentTool === 'arrow') {
-        // For arrow preview, draw a simple line (arrowhead drawn on mouseup)
         ctx.beginPath();
         ctx.moveTo(startX, startY);
         ctx.lineTo(currentX, currentY);

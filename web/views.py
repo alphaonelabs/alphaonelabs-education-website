@@ -3231,7 +3231,7 @@ def gsoc_landing_page(request):
 def whiteboard(request):
     return render(request, "whiteboard.html")
 
-    
+
 def meme_list(request):
     memes = Meme.objects.all().order_by("-created_at")
     subjects = Subject.objects.filter(memes__isnull=False).distinct()
