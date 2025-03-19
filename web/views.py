@@ -5,9 +5,8 @@ import re
 import shutil
 import subprocess
 import time
-from datetime import timedelta
+from datetime import timedelta,datetime
 from decimal import Decimal
-
 import requests
 import stripe
 from django.conf import settings
@@ -34,7 +33,7 @@ from django.utils.crypto import get_random_string
 from django.utils.html import strip_tags
 from django.views import generic
 from django.views.decorators.clickjacking import xframe_options_exempt
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import (
     CreateView,
@@ -2828,42 +2827,29 @@ def submit_quiz(request, quiz_id):
             return redirect("leaderboard", quiz_id=quiz.id)
     return redirect("current_live_quiz", quiz_id=quiz.id)
 
+
 @login_required
 def leaderboard(request, quiz_id):
     """
     Display the leaderboard with highest scores first.
-
     Also shows quiz results if the user just submitted the quiz.
-
     Args:
         request: HTTP request object
         quiz_id: ID of the quiz to show leaderboard for
-
     Returns:
         Rendered leaderboard template
     """
     try:
         quiz = get_object_or_404(Quiz, id=quiz_id)
-
         # Retrieve all submissions for this quiz, ordered by highest score
         submissions = QuizSubmission.objects.filter(quiz=quiz).order_by("-score", "submitted_at")
-
         # Get quiz_results from session if present
         quiz_results = request.session.get('quiz_results', None)
         if quiz_results:
             # Clear from session after retrieving
             del request.session['quiz_results']
             request.session.modified = True
-
         end_datetime = timezone.make_aware(datetime.combine(quiz.end_date, quiz.end_time))
-        quiz_ended = timezone.now() > end_datetime
-
-        return render(request, "web/leaderboard.html", {
-            "quiz": quiz,
-            "submissions": submissions,
-            "quiz_ended": quiz_ended,
-            "quiz_results": quiz_results
-        })
     except Exception as e:
         logger.error(f"Error in leaderboard view: {str(e)}")
         messages.error(request, "An error occurred while loading the leaderboard.")
