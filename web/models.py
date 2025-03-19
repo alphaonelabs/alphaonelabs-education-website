@@ -50,7 +50,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(max_length=500, blank=True)
     expertise = models.CharField(max_length=200, blank=True)
-    achievements = models.IntegerField(default=0)  
+    overall_score = models.IntegerField(default=0)  
     username_is_public = models.BooleanField(default=False)
     avatar = models.ImageField(upload_to="avatars/", blank=True, default="")
     is_teacher = models.BooleanField(default=False)
@@ -238,7 +238,7 @@ class Course(models.Model):
             bottom = (height + min_dim) / 2
             img = img.crop((left, top, right, bottom))
             # Resize the image to 300x300 pixels
-            img = img.resize((500, 500), Image.Resampling.LANCZOS)
+            img = img.resize((300, 300), Image.Resampling.LANCZOS)
             # Save the resized image
             buffer = BytesIO()
             img.save(buffer, format="JPEG", quality=90)

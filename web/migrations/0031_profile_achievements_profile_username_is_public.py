@@ -11,13 +11,13 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name="profile",
-            name="achievements",
-            field=models.IntegerField(default=0),
+          model_name="profile",
+          name="achievements",
+          field=models.PositiveIntegerField(default=0, help_text="Number of achievements earned by the user."),
         ),
         migrations.AddField(
             model_name="profile",
             name="username_is_public",
-            field=models.BooleanField(default=False),
+            field=models.BooleanField(default=False, help_text="Indicates if the user's username is publicly visible."),
         ),
     ]

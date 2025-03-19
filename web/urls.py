@@ -58,7 +58,6 @@ urlpatterns += i18n_patterns(
     path("courses/search/", views.course_search, name="course_search"),
     path("courses/<slug:slug>/", views.course_detail, name="course_detail"),
     path("courses/<slug:course_slug>/enroll/", views.enroll_course, name="enroll_course"),
-    path("courses/<slug:slug>/add-session/", views.add_session, name="add_session"),
     path("courses/<slug:slug>/edit/", views.update_course, name="update_course"),
     path("sessions/<int:session_id>/edit/", views.edit_session, name="edit_session"),
     path("courses/<slug:slug>/add-review/", views.add_review, name="add_review"),

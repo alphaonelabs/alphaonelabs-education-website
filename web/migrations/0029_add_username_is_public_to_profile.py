@@ -13,6 +13,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="profile",
             name="username_is_public",
-            field=models.BooleanField(default=False, help_text="Allow your username to appear on public leaderboards"),
+            field=models.BooleanField(
+                default=False, 
+                help_text="Allow your username to appear on public leaderboards",
+                db_index=True,
+                verbose_name="Username Public Visibility"
+            ),
         ),
     ]
