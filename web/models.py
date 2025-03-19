@@ -1320,7 +1320,33 @@ class Meetup(models.Model):
         default='online',
         max_length=10
     )
-    creator = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, default=1)  # Creator field
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        super().clean()
+        
+        # Validate that link is provided for online meetups
+        if self.event_type == 'online' and not self.link:
+            raise ValidationError('Online meetups require a meeting link')
+        
+        # Validate that location is provided for in-person meetups
+        if self.event_type == 'in_person' and not self.location:
+            raise ValidationError('In-person meetups require a location')
+
+    def save(self, *args, **kwargs):
+        self.full_clean()  # Call full_clean to enforce validation
+        if not self.slug:
+            self.slug = slugify(self.title)
+            while Meetup.objects.filter(slug=self.slug).exists():
+                self.slug = f"{self.slug}-{Meetup.objects.filter(slug__startswith=self.slug).count() + 1}"
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
+
+
 class Certificate(models.Model):
     # Certificate Model
     certificate_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
@@ -1376,19 +1402,12 @@ class ProgressTracker(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def save(self, *args, **kwargs):
-        if not self.slug:
-            self.slug = slugify(self.title)
-            while Meetup.objects.filter(slug=self.slug).exists():
-                self.slug = f"{self.slug}-{Meetup.objects.filter(slug__startswith=self.slug).count() + 1}"
-        super().save(*args, **kwargs)
-
     def __str__(self):
         return self.title
 
+    def save(self, *args, **kwargs):
         if not self.embed_code:
             import uuid
-
             self.embed_code = str(uuid.uuid4())
         super().save(*args, **kwargs)
 

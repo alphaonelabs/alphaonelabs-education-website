@@ -1221,7 +1221,6 @@ class MeetupForm(forms.ModelForm):
                       "focus:outline-none focus:ring-2 "
                       "focus:ring-teal-300 dark:focus:ring-teal-800 "
                       "bg-white dark:bg-gray-800",
-                    "required": True,
                 }
             ),
             "location": forms.TextInput(
@@ -1231,7 +1230,6 @@ class MeetupForm(forms.ModelForm):
                       "focus:outline-none focus:ring-2 "
                       "focus:ring-teal-300 dark:focus:ring-teal-800 "
                       "bg-white dark:bg-gray-800",
-                    "required": True,
                 }
             ),
             "event_type": forms.Select(attrs={
