@@ -1,7 +1,8 @@
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
+from django.urls import reverse
 
-from web.models import Course, Enrollment, Goods, Order, OrderItem, Profile, Storefront, Subject
+from web.models import Course, Enrollment, Goods, Order, OrderItem, Profile, Session, Storefront, Subject
 
 
 @override_settings(STRIPE_SECRET_KEY="dummy_key")
@@ -243,3 +244,14 @@ class OrderModelTests(TestCase):
         order.status = "completed"
         order.save()
         self.assertEqual(order.status, "completed")
+
+
+class SessionModelTests(TestCase):
+    def setUp(self):
+        self.course = Course.objects.create(title="Test Course", slug="test-course")
+        self.session = Session.objects.create(course=self.course)
+
+    def test_get_absolute_url(self):
+        """Test that get_absolute_url returns the correct URL."""
+        expected_url = reverse("course_detail", kwargs={"slug": self.course.slug}) + f"#session-{self.session.id}"
+        self.assertEqual(self.session.get_absolute_url(), expected_url)
