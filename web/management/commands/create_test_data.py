@@ -79,10 +79,49 @@ class Command(BaseCommand):
         self.clear_data()
 
 
-        # Create challenge submissions and leaderboard entries
+        # Create test users (teachers and students)
+        teachers = []
+        for i in range(3):
+            user = User.objects.create_user(
+                username=f"teacher{i}",
+                email=f"teacher{i}@example.com",
+                password="testpass123",
+                first_name=f"Teacher{i}",
+                last_name="Smith",
+            )
+            Profile.objects.filter(user=user).update(is_teacher=True)
+            teachers.append(user)
+            self.stdout.write(f"Created teacher: {user.username}")
+
+        students = []
+        for i in range(10):
+            user = User.objects.create_user(
+                username=f"student{i}",
+                email=f"student{i}@example.com",
+                password="testpass123",
+                first_name=f"Student{i}",
+                last_name="Doe",
+            )
+            students.append(user)
+            self.stdout.write(f"Created student: {user.username}")
+            
+        # Create challenges first
+        challenges = []
+        for i in range(5):
+            challenge = Challenge.objects.create(
+                title=f"Weekly Challenge {i+1}",
+                description=f"Description for challenge {i+1}",
+                week_number=i+1,
+                start_date=timezone.now().date(),
+                end_date=(timezone.now() + timedelta(days=7)).date()
+            )
+            challenges.append(challenge)
+            self.stdout.write(f"Created challenge: {challenge.title}")
+
+        # Now create the leaderboard entries and challenge submissions
         for student in students:
             # Create a leaderboard entry for each student
-            points = random.randint(0, 500)
+            score = random.randint(0, 500)
             weekly_points = random.randint(0, 100)
             monthly_points = random.randint(0, 300)
             challenge_count = random.randint(0, 10)
@@ -91,25 +130,45 @@ class Command(BaseCommand):
             
             entry = LeaderboardEntry.objects.create(
                 user=student,
-                points=points,
-                weekly_points=weekly_points,
-                monthly_points=monthly_points,
-                challenge_count=challenge_count,
-                current_streak=current_streak,
-                highest_streak=highest_streak,
+                score=score,  # Using score instead of points to match your model
+                challenge=challenges[0] if challenges else None  # Select first challenge or None
             )
-            self.stdout.write(f"Created leaderboard entry for {student.username} with {points} points")
+            self.stdout.write(f"Created leaderboard entry for {student.username} with {score} points")
             
             # Submit random challenges for this student
-            completed_challenges = random.sample(Challenge, min(challenge_count, len(Challenge)))
-            for challenge in completed_challenges:
-                submission = ChallengeSubmission.objects.create(
-                    user=student,
-                    challenge=challenge,
-                    submission_text=f"This is {student.username}'s submission for challenge {challenge.week_number}.",
-                    points_awarded=random.randint(5, 15)  # Assuming points vary per submission
-                )
-                self.stdout.write(f"Created submission for {student.username} - Challenge {challenge.week_number}")
+            challenge_list = list(Challenge.objects.all())
+            if challenge_list:
+                completed_challenges = random.sample(challenge_list, min(challenge_count, len(challenge_list)))
+                for challenge in completed_challenges:
+                    submission = ChallengeSubmission.objects.create(
+                        user=student,
+                        challenge=challenge,
+                        submission_text=f"This is {student.username}'s submission for challenge {challenge.week_number}.",
+                        points_awarded=random.randint(5, 15)  # Assuming points vary per submission
+                    )
+                    self.stdout.write(f"Created submission for {student.username} - Challenge {challenge.week_number}")
+
+
+        # Create friend connections for leaderboards
+        for student in students:
+            # Create friend leaderboard for each student
+            friend_board = FriendLeaderboard.objects.create(user=student)
+            
+            # Add random friends (from students already connected via PeerConnection)
+            connected_peers = list(PeerConnection.objects.filter(
+                (Q(sender=student) | Q(receiver=student)),
+                status='accepted'
+            ))
+            
+            friends = []
+            for connection in connected_peers:
+                if connection.sender == student:
+                    friends.append(connection.receiver)
+                else:
+                    friends.append(connection.sender)
+            
+            friend_board.friends.add(*friends)
+            self.stdout.write(f"Created friend leaderboard for {student.username} with {len(friends)} friends")
 
         # Create friend connections for leaderboards
         for student in students:
@@ -144,34 +203,6 @@ class Command(BaseCommand):
             )
 
         print(f"Created {len(users)} leaderboard entries!")
-
-
-
-        # Create test users (teachers and students)
-        teachers = []
-        for i in range(3):
-            user = User.objects.create_user(
-                username=f"teacher{i}",
-                email=f"teacher{i}@example.com",
-                password="testpass123",
-                first_name=f"Teacher{i}",
-                last_name="Smith",
-            )
-            Profile.objects.filter(user=user).update(is_teacher=True)
-            teachers.append(user)
-            self.stdout.write(f"Created teacher: {user.username}")
-
-        students = []
-        for i in range(10):
-            user = User.objects.create_user(
-                username=f"student{i}",
-                email=f"student{i}@example.com",
-                password="testpass123",
-                first_name=f"Student{i}",
-                last_name="Doe",
-            )
-            students.append(user)
-            self.stdout.write(f"Created student: {user.username}")
 
         # Create subjects
         subjects = []
