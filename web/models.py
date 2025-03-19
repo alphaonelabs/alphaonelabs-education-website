@@ -51,6 +51,8 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(max_length=500, blank=True)
     expertise = models.CharField(max_length=200, blank=True)
+    avatar = models.ImageField(upload_to="avatars/", blank=True, default="")
+    is_teacher = models.BooleanField(default=False)
     referral_code = models.CharField(max_length=20, unique=True, blank=True)
     referred_by = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="referrals")
     referral_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
