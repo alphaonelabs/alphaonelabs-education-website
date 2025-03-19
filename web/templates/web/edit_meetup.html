@@ -1,23 +1,45 @@
 {% extends "base.html" %}
 
-{% block title %}Create Meetup{% endblock %}
 {% load static %}
 
+{% block title %}Edit Meetup{% endblock %}
 {% block content %}
-  <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
-    <div class="container mx-auto px-4 py-8">
-      <h1 class="text-3xl font-semibold mb-6">Create a New Meetup</h1>
-      <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-        <form method="post" class="space-y-4">
-          {% csrf_token %}
-          {{ form.as_p }}
-          <button type="submit"
-                  class="bg-teal-600 hover:bg-teal-700 z-10 text-black font-bold px-4 py-2 rounded-lg">Create</button>
-          font-bold px-4 py-2 rounded-lg">Save
-        </button>
-      </form>
-    </div>
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-semibold mb-6">Edit Meetup</h1>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      <div>
+        <label for="id_title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
+        {{ form.title }}
+        {{ form.title.errors }}
+      </div>
+      <div>
+        <label for="id_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+        {{ form.description }}
+        {{ form.description.errors }}
+      </div>
+      <div>
+        <label for="id_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
+        {{ form.date }}
+        {{ form.date.errors }}
+      </div>
+      <div>
+        <label for="id_link" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Link</label>
+        {{ form.link }}
+        {{ form.link.errors }}
+      </div>
+      <div>
+        <label for="id_location" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Location</label>
+        {{ form.location }}
+        {{ form.location.errors }}
+      </div>
+      <div>
+        <label for="id_event_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Event Type</label>
+        {{ form.event_type }}
+        {{ form.event_type.errors }}
+      </div>
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded">Save</button>
+    </form>
   </div>
-</body>
 {% endblock %}
-</html>

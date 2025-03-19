@@ -1241,33 +1241,26 @@ class Donation(models.Model):
 
 
 class Meetup(models.Model):
-    MEETUP_TYPE_CHOICES = [
-        ("virtual", "Virtual"),
-        ("in_person", "In Person"),
-    ]
-
     title = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, blank=True)
     description = models.TextField()
     date = models.DateTimeField()
-    link = models.URLField()
+    link = models.URLField(blank=True)
     location = models.CharField(max_length=255, blank=True)
-    type = models.CharField(max_length=10, choices=MEETUP_TYPE_CHOICES, default="virtual")
-    EVENT_TYPE_CHOICES = [
-        ("online", "Online"),
-        ("in_person", "In Person"),
-    ]
-    event_type = models.CharField(max_length=10, choices=EVENT_TYPE_CHOICES, default="online")
+    event_type = models.CharField(
+        choices=[('online', 'Online'), ('in_person', 'In Person')],
+        default='online',
+        max_length=10
+    )
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, default=1)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            original_slug = slugify(self.title)
-            slug = original_slug
-            counter = 1
-            while Meetup.objects.filter(slug=slug).exists():
-                slug = f"{original_slug}-{counter}"
-                counter += 1
-            self.slug = slug
+            self.slug = slugify(self.title)
+            while Meetup.objects.filter(slug=self.slug).exists():
+                self.slug = f"{self.slug}-{Meetup.objects.filter(slug__startswith=self.slug).count() + 1}"
         super().save(*args, **kwargs)
 
     def __str__(self):

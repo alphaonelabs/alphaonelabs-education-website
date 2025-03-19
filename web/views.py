@@ -10,6 +10,7 @@ from decimal import Decimal
 
 import requests
 import stripe
+from django.utils.text import slugify
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
@@ -3124,40 +3125,47 @@ class StorefrontDetailView(LoginRequiredMixin, generic.DetailView):
         return get_object_or_404(Storefront, store_slug=self.kwargs["store_slug"])
 
 
-def meetup_list(request):
-    meetups = Meetup.objects.all()
-    return render(request, "web/meetup_list.html", {"meetups": meetups})
 
+def meetup_list(request):
+    meetups = Meetup.objects.all().order_by('-created_at')
+    paginator = Paginator(meetups, 10)  # Show 10 meetups per page
+
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'web/meetup_list.html', {'page_obj': page_obj})
 
 def meetup_detail(request, slug):
     meetup = get_object_or_404(Meetup, slug=slug)
     return render(request, "web/meetup_detail.html", {"meetup": meetup})
 
-
 @login_required
 def create_meetup(request):
-    if request.method == "POST":
+    if request.method == 'POST':
         form = MeetupForm(request.POST)
         if form.is_valid():
-            form.save()
-            return redirect("meetup_list")
+            meetup = form.save(commit=False)
+            meetup.creator = request.user
+            meetup.slug = slugify(meetup.title)
+            meetup.save()
+            return redirect('meetup_list')
     else:
         form = MeetupForm()
-    return render(request, "web/create_meetup.html", {"form": form})
-
+    return render(request, 'web/create_meetup.html', {'form': form})
 
 @login_required
 def edit_meetup(request, slug):
     meetup = get_object_or_404(Meetup, slug=slug)
-    if request.method == "POST":
+    if meetup.creator != request.user:
+        return redirect('meetup_list')  # Or raise a permission denied error
+    if request.method == 'POST':
         form = MeetupForm(request.POST, instance=meetup)
         if form.is_valid():
             form.save()
-            return redirect("meetup_detail", slug=meetup.slug)
+            return redirect('meetup_detail', slug=meetup.slug)
     else:
         form = MeetupForm(instance=meetup)
-    return render(request, "web/edit_meetup.html", {"form": form})
-
+    return render(request, 'web/edit_meetup.html', {'form': form})
 
 def success_story_list(request):
     """View for listing published success stories."""
