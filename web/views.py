@@ -1,4 +1,4 @@
-from asyncio.log import logger
+import logging
 import calendar
 import json
 import os
@@ -119,9 +119,11 @@ from .models import (
 from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
 from .referrals import send_referral_reward_email
 from .social import get_social_stats
-from .utils import get_or_create_cart
+from .utils import apply_map_filters, get_or_create_cart
 
 GOOGLE_CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "google_credentials.json")
+
+logger = logging.getLogger(__name__)
 
 # Initialize Stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -3741,19 +3743,7 @@ def classes_map(request):
     teaching_style = request.GET.get("teaching_style")
 
     # Apply filters if provided
-    if subject_id:
-        sessions = sessions.filter(course__subject_id=subject_id)
-
-    if age_group:
-        sessions = sessions.filter(course__level=age_group)
-
-    if teaching_style:
-        try:
-            # Attempt to filter, but don't fail if field doesn't exist
-            sessions = sessions.filter(course__teaching_style=teaching_style)
-        except Exception as e:
-            # Log the error but continue without this filter
-            logger.error(f"Error filtering by teaching_style: {e}")
+    sessions = apply_map_filters(sessions, subject_id, age_group, teaching_style)
 
     # Get all subjects for the filter dropdown
     subjects = Subject.objects.all().order_by("name")
@@ -3790,19 +3780,7 @@ def map_data_api(request):
     teaching_style = request.GET.get("teaching_style")
 
     # Apply filters if provided
-    if subject_id:
-        sessions = sessions.filter(course__subject_id=subject_id)
-
-    if age_group:
-        sessions = sessions.filter(course__level=age_group)
-
-    if teaching_style:
-        try:
-            # Attempt to filter, but don't fail if field doesn't exist
-            sessions = sessions.filter(course__teaching_style=teaching_style)
-        except Exception as e:
-            # Log the error but continue without this filter
-            logger.error(f"Error filtering by teaching_style: {e}")
+    sessions = apply_map_filters(sessions, subject_id, age_group, teaching_style)
 
     # Prepare data for JSON response
     map_data = []

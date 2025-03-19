@@ -1,7 +1,12 @@
 import requests
 from django.conf import settings
+import logging
+from django.db.models.fields import FieldDoesNotExist
+from django.core.exceptions import FieldError
 
 from web.models import Cart
+
+logger = logging.getLogger(__name__)
 
 
 def send_slack_message(message):
@@ -67,3 +72,22 @@ def geocode_address(address):
         logger = logging.getLogger(__name__)
         logger.error(f"Geocoding error for address '{address}': {e}")
         return None
+
+
+def apply_map_filters(sessions, subject_id, age_group, teaching_style):
+    """Apply common filters to session querysets for map views"""
+    if subject_id:
+        sessions = sessions.filter(course__subject_id=subject_id)
+
+    if age_group:
+        sessions = sessions.filter(course__level=age_group)
+
+    if teaching_style:
+        try:
+            # Attempt to filter, but don't fail if field doesn't exist
+            sessions = sessions.filter(course__teaching_style=teaching_style)
+        except (FieldError, FieldDoesNotExist) as e:
+            # Log the error but continue without this filter
+            logger.error(f"Error filtering by teaching_style: {e}")
+
+    return sessions
