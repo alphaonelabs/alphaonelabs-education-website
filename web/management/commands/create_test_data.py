@@ -105,7 +105,7 @@ class Command(BaseCommand):
             )
             students.append(user)
             self.stdout.write(f"Created student: {user.username}")
-            
+
         # Create challenges first
         challenges = []
         for i in range(5):
@@ -128,14 +128,14 @@ class Command(BaseCommand):
             challenge_count = random.randint(0, 10)
             current_streak = random.randint(0, 5)
             highest_streak = max(current_streak, random.randint(current_streak, 8))
-            
+
             entry = LeaderboardEntry.objects.create(
                 user=student,
                 points=score,  # Using score instead of points to match your model
                 challenge=challenges[0] if challenges else None  # Select first challenge or None
             )
             self.stdout.write(f"Created leaderboard entry for {student.username} with {score} points")
-            
+
             # Submit random challenges for this student
             challenge_list = list(Challenge.objects.all())
             if challenge_list:
@@ -159,20 +159,20 @@ class Command(BaseCommand):
         for student in students:
             # Create friend leaderboard for each student
             friend_board = FriendLeaderboard.objects.create(user=student)
-            
+
             # Add random friends (from students already connected via PeerConnection)
             connected_peers = list(PeerConnection.objects.filter(
                 (Q(sender=student) | Q(receiver=student)),
                 status='accepted'
             ))
-            
+
             friends = []
             for connection in connected_peers:
                 if connection.sender == student:
                     friends.append(connection.receiver)
                 else:
                     friends.append(connection.sender)
-            
+
             friend_board.friends.add(*friends)
             self.stdout.write(f"Created friend leaderboard for {student.username} with {len(friends)} friends")
 

@@ -46,12 +46,11 @@ class Notification(models.Model):
         return f"{self.title} - {self.user.username}"
 
 
+
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(max_length=500, blank=True)
     expertise = models.CharField(max_length=200, blank=True)
-    avatar = models.ImageField(upload_to="avatars/", blank=True, default="")
-    is_teacher = models.BooleanField(default=False)
     referral_code = models.CharField(max_length=20, unique=True, blank=True)
     referred_by = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="referrals")
     referral_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -165,9 +164,14 @@ class WebRequest(models.Model):
         return f"{self.path} - {self.count} views"
 
 
-
-
 class LeaderboardEntry(models.Model):
+    """
+    Tracks points earned by users for platform activities.
+    
+    Points are accumulated for various activities such as completing challenges,
+    with separate tracking for weekly and monthly points to enable different
+    time-based leaderboards.
+    """
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="leaderboard_entries")
     # Replace score with points or keep both
     points = models.IntegerField(default=0)
@@ -179,19 +183,24 @@ class LeaderboardEntry(models.Model):
     challenge = models.ForeignKey('Challenge', on_delete=models.CASCADE, null=True, blank=True, related_name="leaderboard_entries")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
         verbose_name_plural = "Leaderboard Entries"
         ordering = ["-points"]  # Update ordering to use points
-        
+
     def __str__(self):
         return f"{self.user.username} - {self.points} points"
 
 class FriendLeaderboard(models.Model):
-    """Model to track user's friends for leaderboard comparisons"""
+    """
+    Manages friend connections for personalized leaderboards.
+    
+    This model allows users to compete with their friends by maintaining
+    a custom leaderboard of connected users.
+    """
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="friend_leaderboard")
     friends = models.ManyToManyField(User, related_name="in_friend_leaderboards")
-    
+
     def __str__(self):
         return f"{self.user.username}'s friend leaderboard"
 
@@ -1172,36 +1181,36 @@ class ChallengeSubmission(models.Model):
     submission_text = models.TextField()
     submitted_at = models.DateTimeField(auto_now_add=True)
     points_awarded = models.IntegerField(default=10)  # Base points for completing challenge
-    
+
     def __str__(self):
         return f"{self.user.username}'s submission for Week {self.challenge.week_number}"
-    
+
     def save(self, *args, **kwargs):
         is_new = self.pk is None
         super().save(*args, **kwargs)
-        
+
         if is_new:
             # Update leaderboard when a new submission is created
             entry, created = LeaderboardEntry.objects.get_or_create(user=self.user)
-            
+
             # Add points
             entry.points += self.points_awarded
             entry.weekly_points += self.points_awarded
             entry.monthly_points += self.points_awarded
             entry.challenge_count += 1
-            
+
             # Update streak
             today = timezone.now().date()
             last_week_challenge = Challenge.objects.filter(
                 week_number=self.challenge.week_number-1
             ).first()
-            
+
             if last_week_challenge:
                 last_week_submission = ChallengeSubmission.objects.filter(
                     user=self.user,
                     challenge=last_week_challenge
                 ).exists()
-                
+
                 if last_week_submission:
                     # Continue the streak
                     entry.current_streak += 1
@@ -1211,11 +1220,11 @@ class ChallengeSubmission(models.Model):
             else:
                 # First challenge or no previous challenge
                 entry.current_streak = 1
-                
+
             # Update highest streak if needed
             if entry.current_streak > entry.highest_streak:
                 entry.highest_streak = entry.current_streak
-                
+
             entry.save()
 
 

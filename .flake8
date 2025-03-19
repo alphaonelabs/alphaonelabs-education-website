@@ -1,6 +1,6 @@
 [flake8]
 max-line-length = 120
-exclude = .git,__pycache__,build,dist
+exclude = .git,__pycache__,build,dist,migrations
 # Ignore certain errors/warnings
 ignore =
     # E203: whitespace before ':' - Black handles this
