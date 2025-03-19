@@ -224,13 +224,13 @@ def signup_view(request):
 def all_leaderboards(request):
     """
     Display all leaderboard types on a single page with separate sections.
-    
+
     Shows global, weekly, monthly, and friend leaderboards in one unified interface.
     For authenticated users, calculates and displays their ranking in each category.
-    
+
     Args:
         request: The HTTP request object
-        
+
     Returns:
         Rendered leaderboards template with context containing all leaderboard entries
     """
@@ -302,6 +302,7 @@ def all_leaderboards(request):
     }
 
     return render(request, 'leaderboards/leaderboards.html', context)
+
 
 @login_required
 def profile(request):
@@ -387,6 +388,7 @@ def profile(request):
     context["created_calendars"] = created_calendars
 
     return render(request, "profile.html", context)
+
 
 @login_required
 def create_course(request):

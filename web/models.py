@@ -46,7 +46,6 @@ class Notification(models.Model):
         return f"{self.title} - {self.user.username}"
 
 
-
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(max_length=500, blank=True)
@@ -169,7 +168,7 @@ class WebRequest(models.Model):
 class LeaderboardEntry(models.Model):
     """
     Tracks points earned by users for platform activities.
-    
+
     Points are accumulated for various activities such as completing challenges,
     with separate tracking for weekly and monthly points to enable different
     time-based leaderboards.
@@ -193,10 +192,11 @@ class LeaderboardEntry(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.points} points"
 
+
 class FriendLeaderboard(models.Model):
     """
     Manages friend connections for personalized leaderboards.
-    
+
     This model allows users to compete with their friends by maintaining
     a custom leaderboard of connected users.
     """
@@ -1204,7 +1204,7 @@ class ChallengeSubmission(models.Model):
             # Update streak
             today = timezone.now().date()
             last_week_challenge = Challenge.objects.filter(
-                week_number=self.challenge.week_number-1
+                week_number=self.challenge.week_number - 1
             ).first()
 
             if last_week_challenge:

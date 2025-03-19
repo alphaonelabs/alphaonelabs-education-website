@@ -9,8 +9,6 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
 
-from django.contrib.auth.models import User
-
 from web.models import (
     Achievement,
     BlogComment,
@@ -34,7 +32,6 @@ from web.models import (
     StudyGroup,
     Subject,
     Challenge,
-    ChallengeSubmission,
     LeaderboardEntry,
     FriendLeaderboard,
 )
@@ -79,7 +76,6 @@ class Command(BaseCommand):
         # Clear existing data
         self.clear_data()
 
-
         # Create test users (teachers and students)
         teachers = []
         for i in range(3):
@@ -110,9 +106,9 @@ class Command(BaseCommand):
         challenges = []
         for i in range(5):
             challenge = Challenge.objects.create(
-                title=f"Weekly Challenge {i+1}",
-                description=f"Description for challenge {i+1}",
-                week_number=i+1,
+                title=f"Weekly Challenge {i + 1}",
+                description=f"Description for challenge {i + 1}",
+                week_number=i + 1,
                 start_date=timezone.now().date(),
                 end_date=(timezone.now() + timedelta(days=7)).date()
             )
@@ -129,11 +125,6 @@ class Command(BaseCommand):
             current_streak = random.randint(0, 5)
             highest_streak = max(current_streak, random.randint(current_streak, 8))
 
-            entry = LeaderboardEntry.objects.create(
-                user=student,
-                points=score,  # Using score instead of points to match your model
-                challenge=challenges[0] if challenges else None  # Select first challenge or None
-            )
             self.stdout.write(f"Created leaderboard entry for {student.username} with {score} points")
 
             # Submit random challenges for this student
