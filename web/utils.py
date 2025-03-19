@@ -3,6 +3,7 @@ from django.conf import settings
 import logging
 from django.db.models.fields import FieldDoesNotExist
 from django.core.exceptions import FieldError
+from urllib.parse import quote
 
 from web.models import Cart
 
@@ -56,7 +57,6 @@ def geocode_address(address):
     if not api_key:
         return None
 
-    from urllib.parse import quote
     encoded_address = quote(address)
     url = f"https://api.opencagedata.com/geocode/v1/json?q={encoded_address}&key={api_key}"
 
@@ -65,21 +65,33 @@ def geocode_address(address):
         data = response.json()
 
         if data["total_results"] > 0:
+            # Check confidence score if available
+            if "confidence" in data["results"][0] and data["results"][0]["confidence"] < 5:
+                logger.warning(f"Low confidence geocoding for '{address}': {data['results'][0]['confidence']}/10")
             location = data["results"][0]["geometry"]
             return (location["lat"], location["lng"])
         return None
-    except Exception as e:
+    except requests.RequestException as e:
         logger.error(f"Geocoding error for address '{address}': {e}")
+        return None
+    except ValueError as e:
+        logger.error(f"JSON parsing error for address '{address}': {e}")
         return None
 
 
 def apply_map_filters(sessions, subject_id, age_group, teaching_style):
     """Apply common filters to session querysets for map views"""
     if subject_id:
-        sessions = sessions.filter(course__subject_id=subject_id)
+        try:
+            sessions = sessions.filter(course__subject_id=subject_id)
+        except (FieldError, FieldDoesNotExist) as e:
+            logger.error(f"Error filtering by subject_id: {e}")
 
     if age_group:
-        sessions = sessions.filter(course__level=age_group)
+        try:
+            sessions = sessions.filter(course__level=age_group)
+        except (FieldError, FieldDoesNotExist) as e:
+            logger.error(f"Error filtering by age_group: {e}")
 
     if teaching_style:
         try:
