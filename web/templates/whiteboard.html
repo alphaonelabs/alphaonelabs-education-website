@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Advanced Whiteboard{% endblock title %}
+
+{% block content %}
+<div class="container mx-auto p-4">
+  <h1 class="text-2xl font-bold mb-4">Advanced Whiteboard</h1>
+  
+  <!-- Toolbar -->
+  <div class="flex flex-wrap items-center gap-4 mb-4">
+    <!-- Tool selector -->
+    <div class="flex items-center gap-2">
+      <label for="toolSelect" class="font-medium">Tool:</label>
+      <select id="toolSelect" class="border rounded p-1">
+        <option value="pen">Pen</option>
+        <option value="eraser">Eraser</option>
+        <option value="highlighter">Highlighter</option>
+        <option value="line">Line</option>
+        <option value="rectangle">Rectangle</option>
+        <option value="circle">Circle</option>
+      </select>
+    </div>
+    
+    <!-- Color picker -->
+    <div class="flex items-center gap-2">
+      <label for="penColor" class="font-medium">Color:</label>
+      <input type="color" id="penColor" value="#000000" class="border rounded p-1">
+    </div>
+    
+    <!-- Pen width -->
+    <div class="flex items-center gap-2">
+      <label for="penWidth" class="font-medium">Width:</label>
+      <input type="range" id="penWidth" min="1" max="10" value="2" class="w-24">
+    </div>
+    
+    <!-- Clear button -->
+    <button id="clearBoard" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+      Clear
+    </button>
+  </div>
+  
+  <!-- Canvas -->
+  <div class="overflow-auto">
+    <canvas id="whiteboard" class="border border-gray-300" width="800" height="600">
+      Your browser does not support the HTML5 canvas.
+    </canvas>
+  </div>
+</div>
+
+<script>
+  const canvas = document.getElementById('whiteboard');
+  const ctx = canvas.getContext('2d');
+  let drawing = false;
+  let startX = 0;
+  let startY = 0;
+  let snapshot = null; // Snapshot of canvas before drawing a shape
+  
+  // UI elements
+  const toolSelect = document.getElementById('toolSelect');
+  const penColorInput = document.getElementById('penColor');
+  const penWidthInput = document.getElementById('penWidth');
+  const clearBtn = document.getElementById('clearBoard');
+  
+  // Default settings
+  let currentTool = toolSelect.value; // 'pen'
+  let penColor = penColorInput.value;
+  let penWidth = parseInt(penWidthInput.value, 10);
+  
+  // Update settings on UI changes
+  toolSelect.addEventListener('change', function() {
+    currentTool = this.value;
+    // For pen and highlighter, adjust globalAlpha accordingly
+    if (currentTool === 'pen') {
+      ctx.globalAlpha = 1.0;
+    } else if (currentTool === 'highlighter') {
+      ctx.globalAlpha = 0.3;
+    } else {
+      ctx.globalAlpha = 1.0;
+    }
+  });
+  
+  penColorInput.addEventListener('change', function() {
+    penColor = this.value;
+  });
+  
+  penWidthInput.addEventListener('input', function() {
+    penWidth = parseInt(this.value, 10);
+  });
+  
+  clearBtn.addEventListener('click', () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  });
+  
+  // Utility functions for shape drawing
+  function takeSnapshot() {
+    snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  }
+  
+  function restoreSnapshot() {
+    if (snapshot) {
+      ctx.putImageData(snapshot, 0, 0);
+    }
+  }
+  
+  // Mouse event handlers
+  canvas.addEventListener('mousedown', (e) => {
+    drawing = true;
+    startX = e.offsetX;
+    startY = e.offsetY;
+    if (currentTool === 'pen' || currentTool === 'eraser' || currentTool === 'highlighter') {
+      ctx.beginPath();
+      ctx.moveTo(startX, startY);
+    } else {
+      // For shapes, save current canvas state
+      takeSnapshot();
+    }
+  });
+  
+  canvas.addEventListener('mousemove', (e) => {
+    if (!drawing) return;
+    const currentX = e.offsetX;
+    const currentY = e.offsetY;
+    
+    if (currentTool === 'pen' || currentTool === 'eraser' || currentTool === 'highlighter') {
+      // Freehand drawing
+      if (currentTool === 'eraser') {
+        ctx.strokeStyle = "#FFFFFF";
+        ctx.globalAlpha = 1.0;
+      } else if (currentTool === 'pen') {
+        ctx.strokeStyle = penColor;
+        ctx.globalAlpha = 1.0;
+      } else if (currentTool === 'highlighter') {
+        ctx.strokeStyle = penColor; // or fixed highlighter color like "#FFFF00"
+        ctx.globalAlpha = 0.3;
+      }
+      ctx.lineWidth = penWidth;
+      ctx.lineTo(currentX, currentY);
+      ctx.stroke();
+    } else {
+      // Drawing shapes: restore snapshot and draw shape preview
+      restoreSnapshot();
+      ctx.lineWidth = penWidth;
+      ctx.strokeStyle = penColor;
+      
+      if (currentTool === 'line') {
+        ctx.beginPath();
+        ctx.moveTo(startX, startY);
+        ctx.lineTo(currentX, currentY);
+        ctx.stroke();
+      } else if (currentTool === 'rectangle') {
+        const width = currentX - startX;
+        const height = currentY - startY;
+        ctx.strokeRect(startX, startY, width, height);
+      } else if (currentTool === 'circle') {
+        const radius = Math.sqrt(Math.pow(currentX - startX, 2) + Math.pow(currentY - startY, 2));
+        ctx.beginPath();
+        ctx.arc(startX, startY, radius, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+    }
+  });
+  
+  canvas.addEventListener('mouseup', () => {
+    drawing = false;
+  });
+  
+  canvas.addEventListener('mouseleave', () => {
+    drawing = false;
+  });
+</script>
+{% endblock content %}
