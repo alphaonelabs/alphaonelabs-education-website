@@ -1066,3 +1066,4 @@ class MeetupForm(forms.ModelForm):
                 'required': True
             }, choices=[('virtual', 'Virtual'), ('in_person', 'In Person')])
         }
+

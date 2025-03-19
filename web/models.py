@@ -1240,7 +1240,6 @@ class Donation(models.Model):
         return self.email.split("@")[0]  # Use part before @ in email
 
 
-
 class Meetup(models.Model):
     MEETUP_TYPE_CHOICES = [
         ("virtual", "Virtual"),
@@ -1267,3 +1266,4 @@ class Meetup(models.Model):
 
     def __str__(self):
         return self.title
+
