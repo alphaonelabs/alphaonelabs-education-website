@@ -1,9 +1,13 @@
+# In your app's management/commands directory, create a file named update_slugs.py
+
 from django.core.management.base import BaseCommand
 from django.utils.text import slugify
+
 from web.models import Meetup
 
+
 class Command(BaseCommand):
-    help = 'Update slugs to ensure they are unique'
+    help = "Update slugs to ensure they are unique"
 
     def handle(self, *args, **kwargs):
         meetups = Meetup.objects.all()
@@ -16,4 +20,4 @@ class Command(BaseCommand):
                 counter += 1
             meetup.slug = slug
             meetup.save()
-        self.stdout.write(self.style.SUCCESS('Successfully updated slugs'))
+        self.stdout.write(self.style.SUCCESS("Successfully updated slugs"))

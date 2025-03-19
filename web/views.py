@@ -3134,45 +3134,30 @@ def meetup_detail(request, slug):
     return render(request, "web/meetup_detail.html", {"meetup": meetup})
 
 
+@login_required
 def create_meetup(request):
-    if not request.user.is_authenticated:
-        messages.error(request, "You must be logged in to create a meetup")
-        return redirect('account_login')
-
     if request.method == "POST":
         form = MeetupForm(request.POST)
         if form.is_valid():
-            meetup = form.save(commit=False)
-            meetup.creator = request.user
             form.save()
-            messages.success(request, "Meetup created successfully!")
             return redirect("meetup_list")
     else:
         form = MeetupForm()
     return render(request, "web/create_meetup.html", {"form": form})
 
-@login_required
-def create_meetup(request):
-    if request.method == 'POST':
-        form = MeetupForm(request.POST)
-        if form.is_valid():
-            form.save()
-            return redirect('meetup_list')
-    else:
-        form = MeetupForm()
-    return render(request, 'web/create_meetup.html', {'form': form})
 
 @login_required
 def edit_meetup(request, slug):
     meetup = get_object_or_404(Meetup, slug=slug)
-    if request.method == 'POST':
+    if request.method == "POST":
         form = MeetupForm(request.POST, instance=meetup)
         if form.is_valid():
             form.save()
-            return redirect('meetup_detail', slug=meetup.slug)
+            return redirect("meetup_detail", slug=meetup.slug)
     else:
         form = MeetupForm(instance=meetup)
-    return render(request, 'web/edit_meetup.html', {'form': form})
+    return render(request, "web/edit_meetup.html", {"form": form})
+
 
 def success_story_list(request):
     """View for listing published success stories."""

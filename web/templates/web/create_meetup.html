@@ -1,46 +1,63 @@
 {% extends "base.html" %}
-{% block title %}Edit Meetup{% endblock %}%}
 
+{% block title %}Edit Meetup{% endblock %}
 {% load static %}
 
 {% block content %}
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+  <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
     <div class="container mx-auto px-4 py-8">
-        <h1 class="text-3xl font-semibold mb-6">Edit Meetup</h1>tup</h1>
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-            <form method="post" class="space-y-4">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <button type="submit" class="bg-teal-600 hover:bg-teal-700 z-10 text-black font-bold px-4 py-2 rounded-lg">Save</button>
-            </form> <input type="text" id="title" name="title" class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800" required>
-        </div>  </div>
-    </div>      <div>
-</body>             <label for="description" class="block text-sm font-medium mb-1">Description</label>
-{% endblock %}      <textarea id="description" name="description" class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800" required></textarea>
-</html>         </div>
-                <div>
-                    <label for="date" class="block text-sm font-medium mb-1">Date</label>
-                    <input type="datetime-local" id="date" name="date" class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800" required>
+      <h1 class="text-3xl font-semibold mb-6">Edit Meetup</h1>
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+        <form method="post" class="space-y-4">
+          {% csrf_token %}
+          {{ form.as_p }}
+          <!-- <div>
+                    <label for="title" class="block text-sm font-medium mb-1">Title</label>
+                    <input type="text" id="title" name="title" class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800" required />
                 </div>
                 <div>
-                    <label for="link" class="block text-sm font-medium mb-1">Link</label>
-                    <input type="url" id="link" name="link" class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800" required>
+                    <label for="description" class="block text-sm font-medium mb-1">Description</label>
+                    <textarea id="description" name="description" class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800" required></textarea>
+                                </div>
+                                <div>
+                                <label for="date" class="block text-sm font-medium mb-1">Date</label>
+                                <input type="datetime-local"
+                                       id="date"
+                                       name="date"
+                                       class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800"
+                                       required />
+                        </div>
+                        <div>
+                        <label for="link" class="block text-sm font-medium mb-1">Link</label>
+                        <input type="url"
+                               id="link"
+                               name="link"
+                               class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800"
+                               required />
                 </div>
                 <div>
                     <label for="location" class="block text-sm font-medium mb-1">Location</label>
-                    <input type="text" id="location" name="location" class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800" required>
+                    <input type="text"
+                           id="location"
+                           name="location"
+                           class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800"
+                           required />
                 </div>
                 <div>
                     <label for="type" class="block text-sm font-medium mb-1">Type</label>
-                    <select id="type" name="type" class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800" required>
+                    <select id="type"
+                            name="type"
+                            class="block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800"
+                            required>
                         <option value="virtual">Virtual</option>
                         <option value="in_person">In Person</option>
                     </select>
-                </div>
-                <button type="submit" class="bg-teal-600 hover:bg-teal-700 z-10 text-black font-bold px-4 py-2 rounded-lg">Create</button>
-            </form>
-        </div>
-    </div>
+                </div> -->
+<button type="submit"
+        class="bg-teal-600 hover:bg-teal-700 z-10 text-black font-bold px-4 py-2 rounded-lg">Save</button>
+</form>
+</div>
+</div>
 </body>
 {% endblock %}
 </html>

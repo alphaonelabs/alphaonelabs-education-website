@@ -1,20 +1,23 @@
 {% extends "base.html" %}
-{% block title %}Create Meetup{% endblock %}
 
+{% block title %}Create Meetup{% endblock %}
 {% load static %}
 
 {% block content %}
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+  <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
     <div class="container mx-auto px-4 py-8">
-        <h1 class="text-3xl font-semibold mb-6">Create a New Meetup</h1>
-        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-            <form method="post" class="space-y-4">
-                {% csrf_token %}
-                {{ form.as_p }}
-                <button type="submit" class="bg-teal-600 hover:bg-teal-700 z-10 text-black font-bold px-4 py-2 rounded-lg">Create</button>font-bold px-4 py-2 rounded-lg">Save</button>
-            </form>
-        </div>
+      <h1 class="text-3xl font-semibold mb-6">Create a New Meetup</h1>
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+        <form method="post" class="space-y-4">
+          {% csrf_token %}
+          {{ form.as_p }}
+          <button type="submit"
+                  class="bg-teal-600 hover:bg-teal-700 z-10 text-black font-bold px-4 py-2 rounded-lg">Create</button>
+          font-bold px-4 py-2 rounded-lg">Save
+        </button>
+      </form>
     </div>
+  </div>
 </body>
 {% endblock %}
 </html>

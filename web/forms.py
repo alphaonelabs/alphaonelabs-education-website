@@ -14,13 +14,13 @@ from .models import (
     CourseMaterial,
     ForumCategory,
     Goods,
+    Meetup,
     ProductImage,
     Profile,
     Review,
     Session,
     Storefront,
     Subject,
-    Meetup,
     SuccessStory,
 )
 from .referrals import handle_referral
@@ -1023,6 +1023,7 @@ class StorefrontForm(forms.ModelForm):
             "is_active",
         ]
 
+
 class StudentEnrollmentForm(forms.Form):
     first_name = forms.CharField(
         max_length=30, required=True, widget=TailwindInput(attrs={"placeholder": "First Name"}), label="First Name"
@@ -1038,32 +1039,67 @@ class StudentEnrollmentForm(forms.Form):
 class MeetupForm(forms.ModelForm):
     class Meta:
         model = Meetup
-        fields = ['title', 'description', 'date', 'link', 'location', 'event_type']
+        fields = ["title", "description", "date", "link", "location", "event_type"]
         widgets = {
-            'title': forms.TextInput(attrs={
-                'class': 'block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800',
-                'required': True
-            }),
-            'description': forms.Textarea(attrs={
-                'class': 'block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800',
-                'required': True
-            }),
-            'date': forms.DateTimeInput(attrs={
-                'type': 'datetime-local',
-                'class': 'block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800',
-                'required': True
-            }),
-            'link': forms.URLInput(attrs={
-                'class': 'block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800',
-                'required': True
-            }),
-            'location': forms.TextInput(attrs={
-                'class': 'block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800',
-                'required': True
-            }),
-            'event_type': forms.Select(attrs={
-                'class': 'block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800',
-                'required': True
-            }, choices=[('virtual', 'Virtual'), ('in_person', 'In Person')])
+            "title": forms.TextInput(
+                attrs={
+                    "class": "block w-full border border-gray-300"
+                    "dark:border-gray-600 rounded p-2 "
+                    "focus:outline-none focus:ring-2 "
+                    "focus:ring-teal-300 dark:focus:ring-teal-800 "
+                    "bg-white dark:bg-gray-800",
+                    "required": True,
+                }
+            ),
+            "description": forms.Textarea(
+                attrs={
+                    "class": "block w-full border border-gray-300 "
+                    "dark:border-gray-600 rounded p-2 "
+                    "focus:outline-none focus:ring-2 "
+                    "focus:ring-teal-300 dark:focus:ring-teal-800 "
+                    "bg-white dark:bg-gray-800",
+                    "required": True,
+                }
+            ),
+            "date": forms.DateTimeInput(
+                attrs={
+                    "type": "datetime-local",
+                    "class": "block w-full border border-gray-300 "
+                    "dark:border-gray-600 rounded p-2 focus:outline-none "
+                    "focus:ring-2 focus:ring-teal-300 "
+                    "dark:focus:ring-teal-800 bg-white dark:bg-gray-800",
+                    "required": True,
+                }
+            ),
+            "link": forms.URLInput(
+                attrs={
+                    "class": "block w-full border border-gray-300 "
+                    "dark:border-gray-600 rounded p-2 "
+                    "focus:outline-none focus:ring-2 "
+                    "focus:ring-teal-300 dark:focus:ring-teal-800 "
+                    "bg-white dark:bg-gray-800",
+                    "required": True,
+                }
+            ),
+            "location": forms.TextInput(
+                attrs={
+                    "class": "block w-full border border-gray-300 "
+                    "dark:border-gray-600 rounded p-2 "
+                    "focus:outline-none focus:ring-2 "
+                    "focus:ring-teal-300 dark:focus:ring-teal-800 "
+                    "bg-white dark:bg-gray-800",
+                    "required": True,
+                }
+            ),
+            "event_type": forms.Select(
+                attrs={
+                    "class": "block w-full border border-gray-300 "
+                    "dark:border-gray-600 rounded p-2 "
+                    "focus:outline-none focus:ring-2 "
+                    "focus:ring-teal-300 dark:focus:ring-teal-800 "
+                    "bg-white dark:bg-gray-800",
+                    "required": True,
+                },
+                choices=[("virtual", "Virtual"), ("in_person", "In Person")],
+            ),
         }
-

@@ -1247,23 +1247,28 @@ class Meetup(models.Model):
     ]
 
     title = models.CharField(max_length=200)
-    slug = models.SlugField(unique=True, blank=True)  # Added slug field
+    slug = models.SlugField(unique=True, blank=True)
     description = models.TextField()
     date = models.DateTimeField()
     link = models.URLField()
-    location = models.CharField(max_length=255, blank=True, null=True)
+    location = models.CharField(max_length=255, blank=True)
     type = models.CharField(max_length=10, choices=MEETUP_TYPE_CHOICES, default="virtual")
     EVENT_TYPE_CHOICES = [
-        ('online', 'Online'),
-        ('in_person', 'In Person'),
+        ("online", "Online"),
+        ("in_person", "In Person"),
     ]
-    event_type = models.CharField(max_length=10, choices=EVENT_TYPE_CHOICES, default='online')
+    event_type = models.CharField(max_length=10, choices=EVENT_TYPE_CHOICES, default="online")
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = slugify(self.title)
+            original_slug = slugify(self.title)
+            slug = original_slug
+            counter = 1
+            while Meetup.objects.filter(slug=slug).exists():
+                slug = f"{original_slug}-{counter}"
+                counter += 1
+            self.slug = slug
         super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title
-
