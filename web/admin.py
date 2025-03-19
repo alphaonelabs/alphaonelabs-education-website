@@ -411,9 +411,7 @@ class ChallengeSubmissionAdmin(admin.ModelAdmin):
 @admin.register(Quiz)
 class QuizAdmin(admin.ModelAdmin):
     list_display = ("title", "description", "start_date", "end_date", "start_time", "end_time", "duration_minutes")
-
-    class QuizAdmin(admin.ModelAdmin):
-        def save_model(self, request, obj, form, change):
+    def save_model(self, request, obj, form, change):
             """ First, save the quiz instance, then validate it. """
             super().save_model(request, obj, form, change)  # Save first
 
@@ -421,7 +419,8 @@ class QuizAdmin(admin.ModelAdmin):
             is_valid, message = validate_quiz_has_questions(obj)
 
             if not is_valid:
-                messages.error(request, message) 
+                messages.error(request, message)
+        
 
 
 @admin.register(QuizSubmission)

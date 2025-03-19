@@ -1286,22 +1286,21 @@ class QuizAnswerSubmission(models.Model):
     
     class Meta:
         unique_together = ("submission", "question")
+    
+    def clean(self):
+        """Ensure the selected option belongs to the question."""
+        super().clean()
+        if self.selected_option.question.id != self.question.id:
+            raise ValidationError("The selected option does not belong to this question.")
+            
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 class ProductImage(models.Model):
     goods = models.ForeignKey(Goods, on_delete=models.CASCADE, related_name="goods_images")
     image = models.ImageField(upload_to="goods_images/", help_text="Product display image")
     alt_text = models.CharField(max_length=125, blank=True, help_text="Accessibility description for screen readers")
-
-    def clean(self):
-      
-      """Ensure the selected option belongs to the question."""
-      super().clean()
-      if self.selected_option.question.id != self.question.id:
-        raise ValidationError("The selected option does not belong to this question.")
-            
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)
     
     def __str__(self):
         return f"Image for {self.goods.name}"
