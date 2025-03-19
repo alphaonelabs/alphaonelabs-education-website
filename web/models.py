@@ -523,6 +523,25 @@ class CourseProgress(models.Model):
         return f"{self.enrollment.student.username}'s progress in {self.enrollment.course.title}"
 
 
+class EducationalVideo(models.Model):
+    """Model for educational videos shared by users."""
+
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    video_url = models.URLField(help_text="URL for external content like YouTube videos")
+    category = models.ForeignKey(Subject, on_delete=models.PROTECT, related_name="educational_videos")
+    uploader = models.ForeignKey(User, on_delete=models.CASCADE, related_name="educational_videos")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Educational Video"
+        verbose_name_plural = "Educational Videos"
+        ordering = ["-uploaded_at"]
+
+    def __str__(self):
+        return self.title
+
+
 class Achievement(models.Model):
     TYPES = [
         ("attendance", "Perfect Attendance"),
@@ -1287,6 +1306,39 @@ class Donation(models.Model):
         if self.user:
             return self.user.get_full_name() or self.user.username
         return self.email.split("@")[0]  # Use part before @ in email
+
+
+class Certificate(models.Model):
+    # Certificate Model
+    certificate_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    completion_date = models.DateField(auto_now_add=True)
+    course = models.ForeignKey(
+        "web.Course", on_delete=models.CASCADE, related_name="certificates", null=True, blank=True
+    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="certificates")
+
+    # New fields added as per feedback
+    created_at = models.DateTimeField(auto_now_add=True)
+    modified_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        course_title = self.course.title if self.course else "No Course"
+        return f"Certificate for {self.user.username} - {course_title}"
+
+    def clean(self):
+        """Validate that the user has completed the course."""
+        from django.core.exceptions import ValidationError
+
+        if self.course and self.user:
+            # Check if the user is enrolled in the course
+            enrollment = Enrollment.objects.filter(student=self.user, course=self.course, status="completed").exists()
+
+            if not enrollment:
+                raise ValidationError("User has not completed this course.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class ProgressTracker(models.Model):

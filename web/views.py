@@ -50,6 +50,7 @@ from .forms import (
     ChallengeSubmissionForm,
     CourseForm,
     CourseMaterialForm,
+    EducationalVideoForm,
     FeedbackForm,
     ForumCategoryForm,
     ForumTopicForm,
@@ -81,12 +82,14 @@ from .models import (
     BlogPost,
     Cart,
     CartItem,
+    Certificate,
     Challenge,
     ChallengeSubmission,
     Course,
     CourseMaterial,
     CourseProgress,
     Donation,
+    EducationalVideo,
     Enrollment,
     EventCalendar,
     ForumCategory,
@@ -1622,7 +1625,7 @@ def student_dashboard(request):
         course__enrollments__student=request.user, start_time__gt=timezone.now()
     ).order_by("start_time")[:5]
 
-    # Get progress for each enrollment
+    # Get progress for each enrollment and set a flag for certificate existence
     progress_data = []
     total_progress = 0
     for enrollment in enrollments:
@@ -3721,6 +3724,98 @@ def donation_success(request):
 def donation_cancel(request):
     """Handle donation cancellation."""
     return redirect("donate")
+
+
+def educational_videos_list(request):
+    """View for listing educational videos with optional category filtering."""
+    # Get category filter from query params
+    selected_category = request.GET.get("category")
+
+    # Base queryset
+    videos = EducationalVideo.objects.select_related("uploader", "category").order_by("-uploaded_at")
+
+    # Apply category filter if provided
+    if selected_category:
+        videos = videos.filter(category__slug=selected_category)
+        selected_category_obj = get_object_or_404(Subject, slug=selected_category)
+        selected_category_display = selected_category_obj.name
+    else:
+        selected_category_display = None
+
+    # Get category counts for sidebar
+    category_counts = dict(
+        EducationalVideo.objects.values("category__name", "category__slug")
+        .annotate(count=Count("id"))
+        .values_list("category__slug", "count")
+    )
+
+    # Get all subjects for the dropdown
+    subjects = Subject.objects.all().order_by("order", "name")
+
+    # Paginate results
+    paginator = Paginator(videos, 12)  # 12 videos per page
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "videos": page_obj,
+        "is_paginated": paginator.num_pages > 1,
+        "page_obj": page_obj,
+        "subjects": subjects,
+        "selected_category": selected_category,
+        "selected_category_display": selected_category_display,
+        "category_counts": category_counts,
+    }
+
+    return render(request, "videos/list.html", context)
+
+
+@login_required
+def upload_educational_video(request):
+    """View for uploading a new educational video."""
+    if request.method == "POST":
+        form = EducationalVideoForm(request.POST)
+        if form.is_valid():
+            video = form.save(commit=False)
+            video.uploader = request.user
+            video.save()
+
+            return redirect("educational_videos_list")
+    else:
+        form = EducationalVideoForm()
+
+    return render(request, "videos/upload.html", {"form": form})
+
+
+def certificate_detail(request, certificate_id):
+    certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
+    if request.user != certificate.user and not request.user.is_staff:
+        return HttpResponseForbidden("You don't have permission to view this certificate")
+    context = {
+        "certificate": certificate,
+    }
+    return render(request, "courses/certificate_detail.html", context)
+
+
+@login_required
+def generate_certificate(request, enrollment_id):
+    # Retrieve the enrollment for the current user
+    enrollment = get_object_or_404(Enrollment, id=enrollment_id, student=request.user)
+    # Ensure the course is completed before generating a certificate
+    if enrollment.status != "completed":
+        messages.error(request, "You can only generate a certificate for a completed course.")
+        return redirect("student_dashboard")
+
+    # Check if a certificate already exists for this course and user
+    certificate = Certificate.objects.filter(user=request.user, course=enrollment.course).first()
+    if certificate:
+        messages.info(request, "Certificate already generated.")
+        return redirect("certificate_detail", certificate_id=certificate.certificate_id)
+
+    # Create a new certificate record manually
+    certificate = Certificate.objects.create(user=request.user, course=enrollment.course)
+    messages.success(request, "Certificate generated successfully!")
+    return redirect("certificate_detail", certificate_id=certificate.certificate_id)
 
 
 @login_required

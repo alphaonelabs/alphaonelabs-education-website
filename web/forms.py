@@ -1,3 +1,5 @@
+import re
+
 from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
 from django import forms
@@ -12,6 +14,7 @@ from .models import (
     ChallengeSubmission,
     Course,
     CourseMaterial,
+    EducationalVideo,
     ForumCategory,
     Goods,
     Meme,
@@ -59,6 +62,7 @@ __all__ = [
     "FeedbackForm",
     "GoodsForm",
     "StorefrontForm",
+    "EducationalVideoForm",
     "ProgressTrackerForm",
     "SuccessStoryForm",
     "MemeForm",
@@ -569,6 +573,50 @@ class CustomLoginForm(LoginForm):
                 )
 
         return cleaned_data
+
+
+class EducationalVideoForm(forms.ModelForm):
+    """
+    Form for creating and editing educational videos.
+    Validates that video URLs are from YouTube or Vimeo with proper video ID formats.
+    """
+
+    class Meta:
+        model = EducationalVideo
+        fields = ["title", "description", "video_url", "category"]
+        widgets = {
+            "title": TailwindInput(attrs={"placeholder": "Video title"}),
+            "description": TailwindTextarea(
+                attrs={
+                    "rows": 4,
+                    "placeholder": "Describe what viewers will learn from this video",
+                }
+            ),
+            "video_url": TailwindInput(attrs={"placeholder": "YouTube or Vimeo URL", "type": "url"}),
+            "category": TailwindSelect(
+                attrs={
+                    "class": (
+                        "w-full px-4 py-2 border border-gray-300 dark:border-gray-600"
+                        " rounded-lg focus:ring-2 focus:ring-blue-500"
+                    )
+                }
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Order subjects by name
+        self.fields["category"].queryset = Subject.objects.all().order_by("order", "name")
+
+    def clean_video_url(self):
+        url = self.cleaned_data.get("video_url")
+        if url:
+            # More robust validation with regex
+            youtube_pattern = r"^(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)[a-zA-Z0-9_-]{11}.*$"
+            vimeo_pattern = r"^(https?://)?(www\.)?vimeo\.com/[0-9]{8,}.*$"
+            if not (re.match(youtube_pattern, url) or re.match(vimeo_pattern, url)):
+                raise forms.ValidationError("Please enter a valid YouTube or Vimeo URL")
+        return url
 
 
 class SuccessStoryForm(forms.ModelForm):
