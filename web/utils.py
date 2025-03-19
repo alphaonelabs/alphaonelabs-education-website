@@ -72,6 +72,9 @@ def geocode_address(address):
 
     try:
         response = requests.get(url, timeout=5)
+        if response.status_code == 429:  # Too Many Requests
+            logger.warning(f"Rate limit exceeded for OpenCage API")
+            return None
         data = response.json()
 
         if data["total_results"] > 0:
@@ -105,24 +108,18 @@ def apply_map_filters(sessions, subject_id, age_group, teaching_style):
     Returns:
         QuerySet: The filtered sessions queryset
     """
-    if subject_id:
-        try:
-            sessions = sessions.filter(course__subject_id=subject_id)
-        except (FieldError, FieldDoesNotExist) as e:
-            logger.error(f"Error filtering by subject_id: {e}")
+    filters = [
+        ("subject_id", "course__subject_id", subject_id),
+        ("age_group", "course__level", age_group),
+        ("teaching_style", "course__teaching_style", teaching_style),
+    ]
 
-    if age_group:
-        try:
-            sessions = sessions.filter(course__level=age_group)
-        except (FieldError, FieldDoesNotExist) as e:
-            logger.error(f"Error filtering by age_group: {e}")
-
-    if teaching_style:
-        try:
-            # Attempt to filter, but don't fail if field doesn't exist
-            sessions = sessions.filter(course__teaching_style=teaching_style)
-        except (FieldError, FieldDoesNotExist) as e:
-            # Log the error but continue without this filter
-            logger.error(f"Error filtering by teaching_style: {e}")
+    for filter_name, field_path, value in filters:
+        if value:
+            try:
+                filter_kwargs = {field_path: value}
+                sessions = sessions.filter(**filter_kwargs)
+            except (FieldError, FieldDoesNotExist) as e:
+                logger.error(f"Error filtering by {filter_name}: {e}")
 
     return sessions
