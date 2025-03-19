@@ -2,6 +2,7 @@ import random
 from datetime import timedelta
 from decimal import Decimal
 
+from django.db.models import Q
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -153,27 +154,6 @@ class Command(BaseCommand):
 
                     self.stdout.write(f"Created submission for {student.username} - Challenge {challenge.week_number}")
 
-
-        # Create friend connections for leaderboards
-        for student in students:
-            # Create friend leaderboard for each student
-            friend_board = FriendLeaderboard.objects.create(user=student)
-            
-            # Add random friends (from students already connected via PeerConnection)
-            connected_peers = list(PeerConnection.objects.filter(
-                (Q(sender=student) | Q(receiver=student)),
-                status='accepted'
-            ))
-            
-            friends = []
-            for connection in connected_peers:
-                if connection.sender == student:
-                    friends.append(connection.receiver)
-                else:
-                    friends.append(connection.sender)
-            
-            friend_board.friends.add(*friends)
-            self.stdout.write(f"Created friend leaderboard for {student.username} with {len(friends)} friends")
 
         # Create friend connections for leaderboards
         for student in students:

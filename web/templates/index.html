@@ -419,6 +419,9 @@
             Leaderboard Champions
           </h2>
           <div class="space-y-3">
+            <p class="text-gray-600 dark:text-gray-400 mb-6">
+                Global leaderboard
+            </p>
             {% for entry in top_leaderboard_users %}
               <div class="flex items-center p-2 {% if forloop.counter == 1 %}bg-yellow-50 dark:bg-yellow-900/30{% elif forloop.counter == 2 %}bg-gray-50 dark:bg-gray-700/50{% elif forloop.counter == 3 %}bg-amber-50 dark:bg-amber-900/30{% endif %} rounded-lg">
                 <div class="flex-shrink-0 mr-3 relative">
@@ -450,17 +453,17 @@
           
           <!-- Leaderboard Navigation Buttons -->
           <div class="mt-4 space-y-2">
-            <a href="{% url 'global_leaderboard' %}" class="block text-center bg-orange-500 hover:bg-orange-600 text-white font-medium px-4 py-2 rounded-lg transition-colors">
+            <a href="{% url 'leaderboards' %}" class="block text-center bg-orange-500 hover:bg-orange-600 text-white font-medium px-4 py-2 rounded-lg transition-colors">
               <i class="fas fa-list-ol mr-2"></i>Full Leaderboard
             </a>
-            <div class="flex space-x-2">
+            <!-- <div class="flex space-x-2">
               <a href="{% url 'friend_leaderboard' %}" class="flex-1 text-center bg-green-500 hover:bg-green-600 text-white font-medium px-2 py-2 rounded-lg text-sm transition-colors">
                 <i class="fas fa-user-friends mr-1"></i>Friends
               </a>
               <a href="{% url 'weekly_leaderboard' %}" class="flex-1 text-center bg-purple-500 hover:bg-purple-600 text-white font-medium px-2 py-2 rounded-lg text-sm transition-colors">
                 <i class="fas fa-calendar-week mr-1"></i>Weekly
               </a>
-            </div>
+            </div> -->
           </div>
         </div>
         <!-- Weekly Challenge -->

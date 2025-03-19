@@ -141,25 +141,6 @@ def index(request):
     # Get current user's profile if authenticated
     profile = request.user.profile if request.user.is_authenticated else None
 
-    # # Get top referrers
-    # top_referrers = (
-    #     Profile.objects.annotate(
-    #         total_signups=Count("referrals"),
-    #         total_enrollments=Count(
-    #             "referrals__user__enrollments", filter=Q(referrals__user__enrollments__status="approved")
-    #         ),
-    #         total_clicks=Count(
-    #             "referrals__user",
-    #             filter=Q(
-    #                 referrals__user__username__in=WebRequest.objects.filter(path__contains="ref=").values_list(
-    #                     "user__username", flat=True
-    #                 )
-    #             ),
-    #         ),
-    #     )
-    #     .filter(total_signups__gt=0)
-    #     .order_by("-total_signups")[:5]
-    # )
     top_referrers = [] 
 
     # Get featured courses
@@ -182,12 +163,6 @@ def index(request):
     if not request.user.is_authenticated or not request.user.profile.is_teacher:
         form = TeacherSignupForm()
 
-    print("Fetching top leaderboard users...")
-    print(LeaderboardEntry.objects.count())  # Check if any entries exist
-    print(LeaderboardEntry.objects.order_by('-points')[:3])  # See the top 3 entries
-    print("@@@@@@@@@@@@@@@@@", top_leaderboard_users)
-    for user in top_leaderboard_users:
-        print("@@@@@@@@@@@@@@@@@", user.user)
     context = {
         "profile": profile,
         "top_referrers": top_referrers,
