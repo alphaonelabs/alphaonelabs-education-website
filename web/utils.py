@@ -4,6 +4,7 @@ import logging
 from django.db.models.fields import FieldDoesNotExist
 from django.core.exceptions import FieldError
 from urllib.parse import quote
+from django.core.cache import cache
 
 from web.models import Cart
 
@@ -52,10 +53,19 @@ def geocode_address(address):
     if not address:
         return None
 
+    # Check cache first
+    cache_key = f"geocode:{address}"
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        return cached_result
+
     # Using OpenCage Geocoder
     api_key = getattr(settings, "OPENCAGE_API_KEY", "")
     if not api_key:
         return None
+
+    # Get confidence threshold from settings
+    confidence_threshold = getattr(settings, "GEOCODING_CONFIDENCE_THRESHOLD", 5)
 
     encoded_address = quote(address)
     url = f"https://api.opencagedata.com/geocode/v1/json?q={encoded_address}&key={api_key}"
@@ -66,10 +76,13 @@ def geocode_address(address):
 
         if data["total_results"] > 0:
             # Check confidence score if available
-            if "confidence" in data["results"][0] and data["results"][0]["confidence"] < 5:
+            if "confidence" in data["results"][0] and data["results"][0]["confidence"] < confidence_threshold:
                 logger.warning(f"Low confidence geocoding for '{address}': {data['results'][0]['confidence']}/10")
             location = data["results"][0]["geometry"]
-            return (location["lat"], location["lng"])
+            result = (location["lat"], location["lng"])
+            # Cache the result for 24 hours
+            cache.set(cache_key, result, 60 * 60 * 24)
+            return result
         return None
     except requests.RequestException as e:
         logger.error(f"Geocoding error for address '{address}': {e}")
@@ -80,7 +93,18 @@ def geocode_address(address):
 
 
 def apply_map_filters(sessions, subject_id, age_group, teaching_style):
-    """Apply common filters to session querysets for map views"""
+    """
+    Apply common filters to session querysets for map views.
+
+    Parameters:
+        sessions (QuerySet): The base queryset of sessions to filter
+        subject_id (int, optional): ID of the subject to filter by
+        age_group (str, optional): Age group/level to filter by
+        teaching_style (str, optional): Teaching style to filter by
+
+    Returns:
+        QuerySet: The filtered sessions queryset
+    """
     if subject_id:
         try:
             sessions = sessions.filter(course__subject_id=subject_id)
