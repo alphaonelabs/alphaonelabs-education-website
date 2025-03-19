@@ -412,6 +412,57 @@
             {% endif %}
           </div>
         {% endif %}
+        <!-- Leaderboard -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <h2 class="text-lg font-semibold mb-4 flex items-center">
+            <i class="fa-solid fa-trophy text-yellow-600 dark:text-yellow-400 mr-2"></i>
+            Leaderboard Champions
+          </h2>
+          <div class="space-y-3">
+            {% for entry in top_leaderboard_users %}
+              <div class="flex items-center p-2 {% if forloop.counter == 1 %}bg-yellow-50 dark:bg-yellow-900/30{% elif forloop.counter == 2 %}bg-gray-50 dark:bg-gray-700/50{% elif forloop.counter == 3 %}bg-amber-50 dark:bg-amber-900/30{% endif %} rounded-lg">
+                <div class="flex-shrink-0 mr-3 relative">
+                  {% if entry.user.profile.avatar %}
+                    <img src="{{ entry.user.profile.avatar.url }}" alt="{{ entry.user }}" class="w-10 h-10 rounded-full">
+                  {% else %}
+                    <div class="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-white">
+                      {{ entry.user.username|make_list|first|upper }}
+                    </div>
+                  {% endif %}
+                  <div class="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white
+                    {% if forloop.counter == 1 %}bg-yellow-500{% elif forloop.counter == 2 %}bg-gray-500{% elif forloop.counter == 3 %}bg-amber-600{% endif %}">
+                    {{ forloop.counter }}
+                  </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-medium truncate">{{ entry.user.username }}</p>
+                  <div class="flex text-xs text-gray-500 dark:text-gray-400 space-x-2">
+                    <span title="Points"><i class="fas fa-star text-yellow-500 mr-1"></i>{{ entry.points }}</span>
+                    <span title="Challenges Completed"><i class="fas fa-check-circle text-green-500 mr-1"></i>{{ entry.challenge_count }}</span>
+                    <span title="Streak"><i class="fas fa-fire text-orange-500 mr-1"></i>{{ entry.current_streak }}</span>
+                  </div>
+                </div>
+              </div>
+            {% empty %}
+              <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-2">No entries yet. Complete challenges to earn your spot!</p>
+            {% endfor %}
+          </div>
+          
+          <!-- Leaderboard Navigation Buttons -->
+          <div class="mt-4 space-y-2">
+            <a href="{% url 'global_leaderboard' %}" class="block text-center bg-orange-500 hover:bg-orange-600 text-white font-medium px-4 py-2 rounded-lg transition-colors">
+              <i class="fas fa-list-ol mr-2"></i>Full Leaderboard
+            </a>
+            <div class="flex space-x-2">
+              <a href="{% url 'friend_leaderboard' %}" class="flex-1 text-center bg-green-500 hover:bg-green-600 text-white font-medium px-2 py-2 rounded-lg text-sm transition-colors">
+                <i class="fas fa-user-friends mr-1"></i>Friends
+              </a>
+              <a href="{% url 'weekly_leaderboard' %}" class="flex-1 text-center bg-purple-500 hover:bg-purple-600 text-white font-medium px-2 py-2 rounded-lg text-sm transition-colors">
+                <i class="fas fa-calendar-week mr-1"></i>Weekly
+              </a>
+            </div>
+          </div>
+        </div>
         <!-- Weekly Challenge -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800">
           <h2 class="text-xl font-semibold mb-4 flex items-center">

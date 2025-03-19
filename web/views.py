@@ -114,6 +114,7 @@ from .models import (
     SuccessStory,
     TimeSlot,
     WebRequest,
+    LeaderboardEntry,
 )
 from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
 from .referrals import send_referral_reward_email
@@ -140,25 +141,26 @@ def index(request):
     # Get current user's profile if authenticated
     profile = request.user.profile if request.user.is_authenticated else None
 
-    # Get top referrers
-    top_referrers = (
-        Profile.objects.annotate(
-            total_signups=Count("referrals"),
-            total_enrollments=Count(
-                "referrals__user__enrollments", filter=Q(referrals__user__enrollments__status="approved")
-            ),
-            total_clicks=Count(
-                "referrals__user",
-                filter=Q(
-                    referrals__user__username__in=WebRequest.objects.filter(path__contains="ref=").values_list(
-                        "user", flat=True
-                    )
-                ),
-            ),
-        )
-        .filter(total_signups__gt=0)
-        .order_by("-total_signups")[:5]
-    )
+    # # Get top referrers
+    # top_referrers = (
+    #     Profile.objects.annotate(
+    #         total_signups=Count("referrals"),
+    #         total_enrollments=Count(
+    #             "referrals__user__enrollments", filter=Q(referrals__user__enrollments__status="approved")
+    #         ),
+    #         total_clicks=Count(
+    #             "referrals__user",
+    #             filter=Q(
+    #                 referrals__user__username__in=WebRequest.objects.filter(path__contains="ref=").values_list(
+    #                     "user__username", flat=True
+    #                 )
+    #             ),
+    #         ),
+    #     )
+    #     .filter(total_signups__gt=0)
+    #     .order_by("-total_signups")[:5]
+    # )
+    top_referrers = [] 
 
     # Get featured courses
     featured_courses = Course.objects.filter(status="published", is_featured=True).order_by("-created_at")[:3]
@@ -172,11 +174,20 @@ def index(request):
     # Get latest success story
     latest_success_story = SuccessStory.objects.filter(status="published").order_by("-published_at").first()
 
+    # Get top 3 leaderboard users
+    top_leaderboard_users = LeaderboardEntry.objects.select_related('user').order_by('-points')[:3]
+
     # Get signup form if needed
     form = None
     if not request.user.is_authenticated or not request.user.profile.is_teacher:
         form = TeacherSignupForm()
 
+    print("Fetching top leaderboard users...")
+    print(LeaderboardEntry.objects.count())  # Check if any entries exist
+    print(LeaderboardEntry.objects.order_by('-points')[:3])  # See the top 3 entries
+    print("@@@@@@@@@@@@@@@@@", top_leaderboard_users)
+    for user in top_leaderboard_users:
+        print("@@@@@@@@@@@@@@@@@", user.user)
     context = {
         "profile": profile,
         "top_referrers": top_referrers,
@@ -184,6 +195,7 @@ def index(request):
         "current_challenge": current_challenge,
         "latest_post": latest_post,
         "latest_success_story": latest_success_story,
+        'top_leaderboard_users': top_leaderboard_users,
         "form": form,
     }
     return render(request, "index.html", context)
@@ -301,6 +313,85 @@ def profile(request):
     context["created_calendars"] = created_calendars
 
     return render(request, "profile.html", context)
+
+
+@login_required
+def global_leaderboard(request):
+    """Display the global leaderboard of all users"""
+    leaderboard_entries = LeaderboardEntry.objects.all().order_by('-points')[:100]
+    
+    # Get the current user's rank
+    try:
+        user_entry = LeaderboardEntry.objects.get(user=request.user)
+        user_rank = user_entry.rank
+    except LeaderboardEntry.DoesNotExist:
+        user_entry = None
+        user_rank = None
+    
+    return render(request, 'web/leaderboards/global.html', {
+        'leaderboard_entries': leaderboard_entries,
+        'user_entry': user_entry,
+        'user_rank': user_rank
+    })
+
+@login_required
+def friend_leaderboard(request):
+    """Display leaderboard with user's friends"""
+    # Get or create friend leaderboard
+    friend_board, created = FriendLeaderboard.objects.get_or_create(user=request.user)
+    
+    # Get all friends (from PeerConnection model)
+    accepted_connections = PeerConnection.objects.filter(
+        (Q(sender=request.user) | Q(receiver=request.user)),
+        status='accepted'
+    )
+    
+    friends = []
+    for connection in accepted_connections:
+        if connection.sender == request.user:
+            friends.append(connection.receiver)
+        else:
+            friends.append(connection.sender)
+    
+    # Update friend list
+    friend_board.friends.set(friends)
+    
+    # Get leaderboard entries for friends
+    friend_entries = LeaderboardEntry.objects.filter(
+        user__in=friend_board.friends.all()
+    ).order_by('-points')
+    
+    # Get current user's entry
+    try:
+        user_entry = LeaderboardEntry.objects.get(user=request.user)
+    except LeaderboardEntry.DoesNotExist:
+        user_entry = None
+    
+    return render(request, 'web/leaderboards/friends.html', {
+        'friend_entries': friend_entries,
+        'user_entry': user_entry,
+    })
+
+@login_required  
+def weekly_leaderboard(request):
+    """Display weekly leaderboard"""
+    # Reset weekly points every Monday using a scheduled task
+    leaderboard_entries = LeaderboardEntry.objects.all().order_by('-weekly_points')[:50]
+    
+    try:
+        user_entry = LeaderboardEntry.objects.get(user=request.user)
+        user_weekly_rank = LeaderboardEntry.objects.filter(
+            weekly_points__gt=user_entry.weekly_points
+        ).count() + 1
+    except LeaderboardEntry.DoesNotExist:
+        user_entry = None
+        user_weekly_rank = None
+    
+    return render(request, 'web/leaderboards/weekly.html', {
+        'leaderboard_entries': leaderboard_entries,
+        'user_entry': user_entry,
+        'user_weekly_rank': user_weekly_rank
+    })
 
 
 @login_required

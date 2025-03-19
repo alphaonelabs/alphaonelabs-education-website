@@ -8,6 +8,8 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.text import slugify
 
+from django.contrib.auth.models import User
+
 from web.models import (
     Achievement,
     BlogComment,
@@ -30,6 +32,10 @@ from web.models import (
     Storefront,
     StudyGroup,
     Subject,
+    Challenge,
+    ChallengeSubmission,
+    LeaderboardEntry,
+    FriendLeaderboard,
 )
 
 
@@ -71,6 +77,75 @@ class Command(BaseCommand):
 
         # Clear existing data
         self.clear_data()
+
+
+        # Create challenge submissions and leaderboard entries
+        for student in students:
+            # Create a leaderboard entry for each student
+            points = random.randint(0, 500)
+            weekly_points = random.randint(0, 100)
+            monthly_points = random.randint(0, 300)
+            challenge_count = random.randint(0, 10)
+            current_streak = random.randint(0, 5)
+            highest_streak = max(current_streak, random.randint(current_streak, 8))
+            
+            entry = LeaderboardEntry.objects.create(
+                user=student,
+                points=points,
+                weekly_points=weekly_points,
+                monthly_points=monthly_points,
+                challenge_count=challenge_count,
+                current_streak=current_streak,
+                highest_streak=highest_streak,
+            )
+            self.stdout.write(f"Created leaderboard entry for {student.username} with {points} points")
+            
+            # Submit random challenges for this student
+            completed_challenges = random.sample(Challenge, min(challenge_count, len(Challenge)))
+            for challenge in completed_challenges:
+                submission = ChallengeSubmission.objects.create(
+                    user=student,
+                    challenge=challenge,
+                    submission_text=f"This is {student.username}'s submission for challenge {challenge.week_number}.",
+                    points_awarded=random.randint(5, 15)  # Assuming points vary per submission
+                )
+                self.stdout.write(f"Created submission for {student.username} - Challenge {challenge.week_number}")
+
+        # Create friend connections for leaderboards
+        for student in students:
+            # Create friend leaderboard for each student
+            friend_board = FriendLeaderboard.objects.create(user=student)
+            
+            # Add random friends (from students already connected via PeerConnection)
+            connected_peers = list(PeerConnection.objects.filter(
+                (Q(sender=student) | Q(receiver=student)),
+                status='accepted'
+            ))
+            
+            friends = []
+            for connection in connected_peers:
+                if connection.sender == student:
+                    friends.append(connection.receiver)
+                else:
+                    friends.append(connection.sender)
+            
+            friend_board.friends.add(*friends)
+            self.stdout.write(f"Created friend leaderboard for {student.username} with {len(friends)} friends")
+
+        # Create entries for existing users
+        users = User.objects.all()
+        for user in users:
+            # Random score between 100 and 1000
+            score = random.randint(100, 1000)
+            LeaderboardEntry.objects.create(
+                user=user,
+                score=score,
+                challenge=challenge
+            )
+
+        print(f"Created {len(users)} leaderboard entries!")
+
+
 
         # Create test users (teachers and students)
         teachers = []
