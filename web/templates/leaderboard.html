@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+<main class="max-w-4xl mx-auto mt-10 p-6 bg-white shadow-md rounded-lg">
+    <h1 class="text-2xl font-bold mb-4">Leaderboard 🏆</h1>
+
+    <ul class="border-t">
+        {% for student in top_students %}
+        <li class="border-b py-4 flex justify-between items-center">
+            <span class="font-semibold">{{ student.user.username }}</span>
+            <span class="text-gray-600">Achievements: {{ student.achievements }}</span>
+            
+            <!-- Share Button -->
+            <button 
+                class="bg-blue-500 text-white px-3 py-1 rounded"
+                onclick="shareAchievement('{{ student.user.username }}', '{{ student.achievements }}')">
+                Share
+            </button>
+        </li>
+        {% empty %}
+        <li class="text-gray-500 px-4 py-2">No public scores available.</li>
+        {% endfor %}
+    </ul>
+</main>
+
+<script>
+    function shareAchievement(username, achievements) {
+        const shareText = `Check out ${username}'s achievements: ${achievements} points! 🏆`;
+        if (navigator.share) {
+            navigator.share({
+                title: "Leaderboard",
+                text: shareText,
+                url: window.location.href
+            }).catch(err => console.log("Error sharing:", err));
+        } else {
+            alert("Sharing not supported on this device. Copy and share manually: " + shareText);
+        }
+    }
+</script>
+{% endblock %}

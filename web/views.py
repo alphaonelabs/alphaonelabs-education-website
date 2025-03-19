@@ -119,6 +119,7 @@ from .notifications import notify_session_reminder, notify_teacher_new_enrollmen
 from .referrals import send_referral_reward_email
 from .social import get_social_stats
 from .utils import get_or_create_cart
+from .models import Profile
 
 GOOGLE_CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "google_credentials.json")
 
@@ -129,6 +130,10 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 def sitemap(request):
     return render(request, "sitemap.html")
 
+def leaderboard_view(request):
+    """ Display top-performing students who have opted to be public. """
+    top_students = Profile.objects.filter(username_is_public=True).order_by("-achievements")[:10]
+    return render(request, "leaderboard.html", {"top_students": top_students})
 
 def index(request):
     """Homepage view."""

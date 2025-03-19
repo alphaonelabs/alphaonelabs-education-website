@@ -6,6 +6,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#ffffff">
     <meta name="description"
           content="Alpha One Labs - Open Source Education Platform" />
     <meta name="keywords"
@@ -170,7 +171,7 @@
           <i class="fas fa-bars text-xl"></i>
         </button>
         <!-- Nav and additional actions -->
-        <nav class="hidden md:flex items-center space-x-4">
+        <nav class="hidden md:flex items-center space-x-3">
           <!-- Search bar (visible on larger screens) -->
           <div class="relative hidden lg:inline-block w-[250px]">
             <form action="{% url 'course_search' %}" method="get" class="m-0">
@@ -206,6 +207,10 @@
             <a href="{% url 'meme_list' %}"
                class="hover:underline flex items-center">
               <i class="fa-solid fa-face-smile mr-1"></i> Edu Memes
+            </a>
+            <a href="{% url 'leaderboard' %}"
+               class="hover:underline flex items-center">
+              <i class="fa-solid fa-trophy mr-1"></i> Leaderboard
             </a>
           </div>
           <!-- Language and Dark Mode -->

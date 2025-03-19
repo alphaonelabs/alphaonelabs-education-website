@@ -6,12 +6,13 @@ from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
 from . import admin_views, views
-from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_data
+from .views import GoodsListingView, leaderboard_view, add_goods_to_cart, sales_analytics, sales_data
 
 # Non-prefixed URLs
 urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs
     path("captcha/", include("captcha.urls")),  # CAPTCHA URLs should not be language-prefixed
+    path("leaderboard/", leaderboard_view, name="leaderboard"),
     path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
     path("certificate/generate/<int:enrollment_id>/", views.generate_certificate, name="generate_certificate"),
 ]
@@ -57,7 +58,6 @@ urlpatterns += i18n_patterns(
     path("courses/search/", views.course_search, name="course_search"),
     path("courses/<slug:slug>/", views.course_detail, name="course_detail"),
     path("courses/<slug:course_slug>/enroll/", views.enroll_course, name="enroll_course"),
-    path("courses/<slug:slug>/add-session/", views.add_session, name="add_session"),
     path("courses/<slug:slug>/edit/", views.update_course, name="update_course"),
     path("sessions/<int:session_id>/edit/", views.edit_session, name="edit_session"),
     path("courses/<slug:slug>/add-review/", views.add_review, name="add_review"),
