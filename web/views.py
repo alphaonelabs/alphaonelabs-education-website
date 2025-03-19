@@ -82,6 +82,7 @@ from .models import (
     BlogPost,
     Cart,
     CartItem,
+    Certificate,
     Challenge,
     ChallengeSubmission,
     Course,
@@ -1624,7 +1625,7 @@ def student_dashboard(request):
         course__enrollments__student=request.user, start_time__gt=timezone.now()
     ).order_by("start_time")[:5]
 
-    # Get progress for each enrollment
+    # Get progress for each enrollment and set a flag for certificate existence
     progress_data = []
     total_progress = 0
     for enrollment in enrollments:
@@ -3793,6 +3794,37 @@ def upload_educational_video(request):
         form = EducationalVideoForm()
 
     return render(request, "videos/upload.html", {"form": form})
+
+
+def certificate_detail(request, certificate_id):
+    certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
+    if request.user != certificate.user and not request.user.is_staff:
+        return HttpResponseForbidden("You don't have permission to view this certificate")
+    context = {
+        "certificate": certificate,
+    }
+    return render(request, "courses/certificate_detail.html", context)
+
+
+@login_required
+def generate_certificate(request, enrollment_id):
+    # Retrieve the enrollment for the current user
+    enrollment = get_object_or_404(Enrollment, id=enrollment_id, student=request.user)
+    # Ensure the course is completed before generating a certificate
+    if enrollment.status != "completed":
+        messages.error(request, "You can only generate a certificate for a completed course.")
+        return redirect("student_dashboard")
+
+    # Check if a certificate already exists for this course and user
+    certificate = Certificate.objects.filter(user=request.user, course=enrollment.course).first()
+    if certificate:
+        messages.info(request, "Certificate already generated.")
+        return redirect("certificate_detail", certificate_id=certificate.certificate_id)
+
+    # Create a new certificate record manually
+    certificate = Certificate.objects.create(user=request.user, course=enrollment.course)
+    messages.success(request, "Certificate generated successfully!")
+    return redirect("certificate_detail", certificate_id=certificate.certificate_id)
 
 
 @login_required

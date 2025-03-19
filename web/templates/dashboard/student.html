@@ -121,5 +121,40 @@
         </div>
       </div>
     </div>
+    <!-- Your Certificates Section -->
+    <div class="mt-12">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Your Certificates</h2>
+        {% if certificates %}
+          <ul class="space-y-4">
+            {% for certificate in certificates %}
+              <li class="border-b border-gray-200 dark:border-gray-700 pb-2">
+                <a href="{% url 'certificate_detail' certificate.certificate_id %}"
+                   class="text-teal-500 hover:text-teal-600 dark:text-teal-400 font-medium">
+                  View Certificate for <span class="font-bold">{{ certificate.course.title }}</span>
+                </a>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Earned on {{ certificate.completion_date|date:"F d, Y" }}</p>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <p class="text-gray-500 dark:text-gray-400"></p>
+        {% endif %}
+        <!-- Display generate buttons for enrollments with completed status but no certificate -->
+        {% for enrollment in enrollments %}
+          {% if enrollment.status|lower == "completed" %}
+            <div class="mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+              <p class="text-gray-700 dark:text-gray-300">
+                Course: <span class="font-bold">{{ enrollment.course.title }}</span>
+              </p>
+              <a href="{% url 'generate_certificate' enrollment.id %}"
+                 class="inline-block mt-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded">Generate</a>
+            </div>
+          {% endif %}
+        {% empty %}
+          <p class="text-gray-500 dark:text-gray-400">No completed courses available for certificate generation.</p>
+        {% endfor %}
+      </div>
+    </div>
   </div>
-{% endblock content %}
+{% endblock %}
