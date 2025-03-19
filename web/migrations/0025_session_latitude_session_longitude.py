@@ -6,18 +6,22 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('web', '0024_create_success_story'),
+        ("web", "0024_create_success_story"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='session',
-            name='latitude',
-            field=models.DecimalField(blank=True, decimal_places=6, help_text='Latitude coordinate for mapping', max_digits=9, null=True),
+            model_name="session",
+            name="latitude",
+            field=models.DecimalField(
+                blank=True, decimal_places=6, help_text="Latitude coordinate for mapping", max_digits=9, null=True
+            ),
         ),
         migrations.AddField(
-            model_name='session',
-            name='longitude',
-            field=models.DecimalField(blank=True, decimal_places=6, help_text='Longitude coordinate for mapping', max_digits=9, null=True),
+            model_name="session",
+            name="longitude",
+            field=models.DecimalField(
+                blank=True, decimal_places=6, help_text="Longitude coordinate for mapping", max_digits=9, null=True
+            ),
         ),
     ]

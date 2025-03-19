@@ -39,30 +39,31 @@ def geocode_address(address):
     """
     Convert a text address to latitude and longitude coordinates.
     Returns a tuple of (latitude, longitude) or None if geocoding fails.
-    
+
     Need to add a GEOCODING_API_KEY to your settings.py
     and sign up for a service like Google Maps, Mapbox, or OpenCage.
     """
     if not address:
         return None
-        
+
     # Using OpenCage Geocoder
-    api_key = getattr(settings, 'OPENCAGE_API_KEY', '')
+    api_key = getattr(settings, "OPENCAGE_API_KEY", "")
     if not api_key:
         return None
-        
+
     url = f"https://api.opencagedata.com/geocode/v1/json?q={address}&key={api_key}"
-    
+
     try:
         response = requests.get(url, timeout=5)
         data = response.json()
-        
-        if data['total_results'] > 0:
-            location = data['results'][0]['geometry']
-            return (location['lat'], location['lng'])
+
+        if data["total_results"] > 0:
+            location = data["results"][0]["geometry"]
+            return (location["lat"], location["lng"])
         return None
     except Exception as e:
         import logging
+
         logger = logging.getLogger(__name__)
         logger.error(f"Geocoding error for address '{address}': {e}")
         return None

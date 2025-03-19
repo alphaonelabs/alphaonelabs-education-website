@@ -105,7 +105,7 @@ from .models import (
     SuccessStory,
     TimeSlot,
     WebRequest,
-    Subject
+    Subject,
 )
 from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
 from .referrals import send_referral_reward_email
@@ -3693,99 +3693,94 @@ def classes_map(request):
     # Get only future sessions with location data
     now = timezone.now()
     sessions = Session.objects.filter(
-        Q(start_time__gte=now) & 
-        Q(is_virtual=False) & 
-        ~Q(location='') & 
-        ~Q(latitude=None) & 
-        ~Q(longitude=None)
-    ).select_related('course', 'course__teacher', 'course__subject')
-    
+        Q(start_time__gte=now) & Q(is_virtual=False) & ~Q(location="") & ~Q(latitude=None) & ~Q(longitude=None)
+    ).select_related("course", "course__teacher", "course__subject")
+
     # Get filter parameters
-    subject_id = request.GET.get('subject')
-    age_group = request.GET.get('age_group')
-    teaching_style = request.GET.get('teaching_style')
-    
+    subject_id = request.GET.get("subject")
+    age_group = request.GET.get("age_group")
+    teaching_style = request.GET.get("teaching_style")
+
     # Apply filters if provided
     if subject_id:
         sessions = sessions.filter(course__subject_id=subject_id)
-    
+
     if age_group:
         sessions = sessions.filter(course__level=age_group)
-    
+
     if teaching_style:
         # Assuming you'll add this field to the Course model later
         sessions = sessions.filter(course__teaching_style=teaching_style)
-    
+
     # Get all subjects for the filter dropdown
-    subjects = Subject.objects.all().order_by('name')
-    
+    subjects = Subject.objects.all().order_by("name")
+
     # Age group and teaching style options
     # Extract age group choices from Course model for filter dropdown
-    age_groups = [choice for choice in Course._meta.get_field('level').choices]
-    
+    age_groups = [choice for choice in Course._meta.get_field("level").choices]
+
     # Teaching style options (future: consider adding this as a field to Course model)
     # These are manually defined since there's no corresponding model field yet
     teaching_styles = [
-        ('interactive', 'Interactive'),
-        ('lecture', 'Lecture'),
-        ('hands_on', 'Hands-on'),
-        ('self_paced', 'Self-paced'),
+        ("interactive", "Interactive"),
+        ("lecture", "Lecture"),
+        ("hands_on", "Hands-on"),
+        ("self_paced", "Self-paced"),
     ]
-    
+
     context = {
-        'sessions': sessions,
-        'subjects': subjects,
-        'age_groups': age_groups,
-        'teaching_styles': teaching_styles,
+        "sessions": sessions,
+        "subjects": subjects,
+        "age_groups": age_groups,
+        "teaching_styles": teaching_styles,
     }
-    
-    return render(request, 'web/classes_map.html', context)
+
+    return render(request, "web/classes_map.html", context)
+
 
 def map_data_api(request):
     """API view that returns JSON data for the map."""
     # Similar filtering as the classes_map view
     now = timezone.now()
     sessions = Session.objects.filter(
-        Q(start_time__gte=now) & 
-        Q(is_virtual=False) & 
-        ~Q(location='') & 
-        ~Q(latitude=None) & 
-        ~Q(longitude=None)
-    ).select_related('course', 'course__teacher', 'course__subject')
-    
+        Q(start_time__gte=now) & Q(is_virtual=False) & ~Q(location="") & ~Q(latitude=None) & ~Q(longitude=None)
+    ).select_related("course", "course__teacher", "course__subject")
+
     # Apply filters
     # Get filter parameters
-    subject_id = request.GET.get('subject')
-    age_group = request.GET.get('age_group')
-    teaching_style = request.GET.get('teaching_style')
-   
-   # Apply filters if provided
+    subject_id = request.GET.get("subject")
+    age_group = request.GET.get("age_group")
+    teaching_style = request.GET.get("teaching_style")
+
+    # Apply filters if provided
     if subject_id:
-       sessions = sessions.filter(course__subject_id=subject_id)
-   
+        sessions = sessions.filter(course__subject_id=subject_id)
+
     if age_group:
-       sessions = sessions.filter(course__level=age_group)
-   
+        sessions = sessions.filter(course__level=age_group)
+
     if teaching_style:
-       # Assuming you'll add this field to the Course model later
-       sessions = sessions.filter(course__teaching_style=teaching_style)
-    
+        # Assuming you'll add this field to the Course model later
+        sessions = sessions.filter(course__teaching_style=teaching_style)
+
     # Prepare data for JSON response
     map_data = []
     for session in sessions:
-        map_data.append({
-            'id': session.id,
-            'title': session.title,
-            'course_title': session.course.title,
-            'teacher': session.course.teacher.get_full_name() or session.course.teacher.username,
-            'start_time': session.start_time.isoformat(),
-            'location': session.location,
-            'lat': float(session.latitude) if session.latitude is not None else None,
-            'lng': float(session.longitude) if session.longitude is not None else None,
-            'price': str(session.price or session.course.price),
-            'url': session.get_absolute_url(),
-            'subject': session.course.subject.name,
-            'level': session.course.get_level_display(),
-        })
-    
-    return JsonResponse({'sessions': map_data})
+        map_data.append(
+            {
+                "id": session.id,
+                "title": session.title,
+                "course_title": session.course.title,
+                "teacher": session.course.teacher.get_full_name() or session.course.teacher.username,
+                "start_time": session.start_time.isoformat(),
+                "location": session.location,
+                "lat": float(session.latitude) if session.latitude is not None else None,
+                "lng": float(session.longitude) if session.longitude is not None else None,
+                "price": str(session.price or session.course.price),
+                "url": session.get_absolute_url(),
+                "subject": session.course.subject.name,
+                "level": session.course.get_level_display(),
+            }
+        )
+
+    return JsonResponse({"sessions": map_data})
