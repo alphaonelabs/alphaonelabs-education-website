@@ -15,7 +15,7 @@ urlpatterns = [
     path("meetups/", views.meetup_list, name="meetup_list"),
     path("meetups/create/", views.create_meetup, name="create_meetup"),
     path("meetups/<slug:slug>/", views.meetup_detail, name="meetup_detail"),
-    path('meetup/<slug:slug>/edit/', views.edit_meetup, name='edit_meetup'),
+    path("meetup/<slug:slug>/edit/", views.edit_meetup, name="edit_meetup"),
     path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
     path("certificate/generate/<int:enrollment_id>/", views.generate_certificate, name="generate_certificate"),
 ]

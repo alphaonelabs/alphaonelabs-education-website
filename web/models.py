@@ -1316,9 +1316,7 @@ class Meetup(models.Model):
     link = models.URLField(blank=True)
     location = models.CharField(max_length=255, blank=True)
     event_type = models.CharField(
-        choices=[('online', 'Online'), ('in_person', 'In Person')],
-        default='online',
-        max_length=10
+        choices=[("online", "Online"), ("in_person", "In Person")], default="online", max_length=10
     )
     creator = models.ForeignKey(User, on_delete=models.CASCADE, default=1)  # Creator field
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1326,14 +1324,14 @@ class Meetup(models.Model):
 
     def clean(self):
         super().clean()
-        
+
         # Validate that link is provided for online meetups
-        if self.event_type == 'online' and not self.link:
-            raise ValidationError('Online meetups require a meeting link')
-        
+        if self.event_type == "online" and not self.link:
+            raise ValidationError("Online meetups require a meeting link")
+
         # Validate that location is provided for in-person meetups
-        if self.event_type == 'in_person' and not self.location:
-            raise ValidationError('In-person meetups require a location')
+        if self.event_type == "in_person" and not self.location:
+            raise ValidationError("In-person meetups require a location")
 
     def save(self, *args, **kwargs):
         self.full_clean()  # Call full_clean to enforce validation
@@ -1402,12 +1400,10 @@ class ProgressTracker(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return self.title
-
     def save(self, *args, **kwargs):
         if not self.embed_code:
             import uuid
+
             self.embed_code = str(uuid.uuid4())
         super().save(*args, **kwargs)
 

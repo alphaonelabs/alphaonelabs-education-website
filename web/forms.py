@@ -1186,70 +1186,60 @@ class MeetupForm(forms.ModelForm):
         widgets = {
             "title": forms.TextInput(
                 attrs={
-                    "class": "block w-full border border-gray-300"
-                      "dark:border-gray-600 rounded p-2 "
-                      "focus:outline-none focus:ring-2 "
-                      "focus:ring-teal-300 dark:focus:ring-teal-800 "
-                      "bg-white dark:bg-gray-800",
+                    "class": "block w-full border border-gray-300 dark:border-gray-600 rounded p-2 "
+                    "focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 "
+                    "bg-white dark:bg-gray-800",
                     "required": True,
                 }
             ),
             "description": forms.Textarea(
                 attrs={
-                    "class": "block w-full border border-gray-300 "
-                      "dark:border-gray-600 rounded p-2 "
-                      "focus:outline-none focus:ring-2 "
-                      "focus:ring-teal-300 dark:focus:ring-teal-800 "
-                      "bg-white dark:bg-gray-800",
+                    "class": "block w-full border border-gray-300 dark:border-gray-600 rounded p-2 "
+                    "focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 "
+                    "bg-white dark:bg-gray-800",
                     "required": True,
                 }
             ),
             "date": forms.DateTimeInput(
                 attrs={
                     "type": "datetime-local",
-                    "class": "block w-full border border-gray-300 "
-                      "dark:border-gray-600 rounded p-2 focus:outline-none "
-                      "focus:ring-2 focus:ring-teal-300 "
-                      "dark:focus:ring-teal-800 bg-white dark:bg-gray-800",
+                    "class": "block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none "
+                    "focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800",
                     "required": True,
                 }
             ),
             "link": forms.URLInput(
                 attrs={
-                    "class": "block w-full border border-gray-300 "
-                      "dark:border-gray-600 rounded p-2 "
-                      "focus:outline-none focus:ring-2 "
-                      "focus:ring-teal-300 dark:focus:ring-teal-800 "
-                      "bg-white dark:bg-gray-800",
+                    "class": "block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none "
+                    "focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800",
                 }
             ),
             "location": forms.TextInput(
                 attrs={
-                    "class": "block w-full border border-gray-300 "
-                      "dark:border-gray-600 rounded p-2 "
-                      "focus:outline-none focus:ring-2 "
-                      "focus:ring-teal-300 dark:focus:ring-teal-800 "
-                      "bg-white dark:bg-gray-800",
+                    "class": "block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none "
+                    "focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800",
                 }
             ),
-            "event_type": forms.Select(attrs={
-                "class": "block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none "
+            "event_type": forms.Select(
+                attrs={
+                    "class": "block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none "
                     "focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800",
-                "required": True
-            }, choices=[('online', 'Online'), ('in_person', 'In Person')])
+                    "required": True,
+                },
+                choices=[("online", "Online"), ("in_person", "In Person")],
+            ),
         }
-
 
     def clean(self):
         cleaned_data = super().clean()
-        event_type = cleaned_data.get('event_type')
-        location = cleaned_data.get('location')
-        link = cleaned_data.get('link')
+        event_type = cleaned_data.get("event_type")
+        location = cleaned_data.get("location")
+        link = cleaned_data.get("link")
 
-        if event_type == 'in_person' and not location:
-            self.add_error('location', 'Location is required for in-person events.')
+        if event_type == "in_person" and not location:
+            self.add_error("location", "Location is required for in-person events.")
 
-        if event_type == 'online' and not link:
-            self.add_error('link', 'Link is required for online events.')
+        if event_type == "online" and not link:
+            self.add_error("link", "Link is required for online events.")
 
         return cleaned_data

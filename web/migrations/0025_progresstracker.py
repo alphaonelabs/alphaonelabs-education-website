@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("web", "0024_create_success_story"),
+        ("web", "0025_meetup"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

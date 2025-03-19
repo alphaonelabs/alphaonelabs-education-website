@@ -10,32 +10,38 @@
       {% csrf_token %}
       {{ form.non_field_errors }}
       <div>
-        <label for="id_title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
+        <label for="id_title"
+               class="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
         {{ form.title }}
         {{ form.title.errors }}
       </div>
       <div>
-        <label for="id_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+        <label for="id_description"
+               class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
         {{ form.description }}
         {{ form.description.errors }}
       </div>
       <div>
-        <label for="id_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
+        <label for="id_date"
+               class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
         {{ form.date }}
         {{ form.date.errors }}
       </div>
       <div>
-        <label for="id_link" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Link</label>
+        <label for="id_link"
+               class="block text-sm font-medium text-gray-700 dark:text-gray-300">Link</label>
         {{ form.link }}
         {{ form.link.errors }}
       </div>
       <div>
-        <label for="id_location" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Location</label>
+        <label for="id_location"
+               class="block text-sm font-medium text-gray-700 dark:text-gray-300">Location</label>
         {{ form.location }}
         {{ form.location.errors }}
       </div>
       <div>
-        <label for="id_event_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Event Type</label>
+        <label for="id_event_type"
+               class="block text-sm font-medium text-gray-700 dark:text-gray-300">Event Type</label>
         {{ form.event_type }}
         {{ form.event_type.errors }}
       </div>

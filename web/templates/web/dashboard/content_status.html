@@ -413,25 +413,25 @@
       <!-- Add this section to display meetups and webinars -->
       <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow duration-200">
         <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center space-x-3">
-                <div class="text-2xl text-gray-600 dark:text-gray-400">
-                    <i class="fas fa-video"></i>
-                </div>
-                <div>
-                    <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Virtual Meetups and Webinars</h2>
-                    <div class="text-sm text-gray-500 dark:text-gray-400">Upcoming Events</div>
-                </div>
+          <div class="flex items-center space-x-3">
+            <div class="text-2xl text-gray-600 dark:text-gray-400">
+              <i class="fas fa-video"></i>
             </div>
+            <div>
+              <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Virtual Meetups and Webinars</h2>
+              <div class="text-sm text-gray-500 dark:text-gray-400">Upcoming Events</div>
+            </div>
+          </div>
         </div>
         <div class="grid grid-cols-1 gap-4">
-            {% for meetup in meetups %}
-                <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ meetup.title }}</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ meetup.description }}</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Date: {{ meetup.date }}</p>
-                    <a href="{{ meetup.link }}" class="text-blue-600 dark:text-blue-400">Join Meetup</a>
-                </div>
-            {% endfor %}
+          {% for meetup in meetups %}
+            <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ meetup.title }}</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ meetup.description }}</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Date: {{ meetup.date }}</p>
+              <a href="{{ meetup.link }}" class="text-blue-600 dark:text-blue-400">Join Meetup</a>
+            </div>
+          {% endfor %}
         </div>
       </div>
     </div>
