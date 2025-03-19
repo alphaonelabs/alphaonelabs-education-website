@@ -3720,9 +3720,11 @@ def classes_map(request):
     subjects = Subject.objects.all().order_by('name')
     
     # Age group and teaching style options
+    # Extract age group choices from Course model for filter dropdown
     age_groups = [choice for choice in Course._meta.get_field('level').choices]
     
-    # In the future, you might want to add a teaching_style field to Course model
+    # Teaching style options (future: consider adding this as a field to Course model)
+    # These are manually defined since there's no corresponding model field yet
     teaching_styles = [
         ('interactive', 'Interactive'),
         ('lecture', 'Lecture'),
@@ -3778,8 +3780,8 @@ def map_data_api(request):
             'teacher': session.course.teacher.get_full_name() or session.course.teacher.username,
             'start_time': session.start_time.isoformat(),
             'location': session.location,
-            'lat': float(session.latitude),
-            'lng': float(session.longitude),
+            'lat': float(session.latitude) if session.latitude is not None else None,
+            'lng': float(session.longitude) if session.longitude is not None else None,
             'price': str(session.price or session.course.price),
             'url': session.get_absolute_url(),
             'subject': session.course.subject.name,
