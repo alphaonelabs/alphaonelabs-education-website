@@ -34,6 +34,7 @@ from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.html import strip_tags
 from django.views import generic
+from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import (
@@ -50,6 +51,7 @@ from .forms import (
     ChallengeSubmissionForm,
     CourseForm,
     CourseMaterialForm,
+    EducationalVideoForm,
     FeedbackForm,
     ForumCategoryForm,
     ForumTopicForm,
@@ -57,8 +59,10 @@ from .forms import (
     InviteStudentForm,
     LearnForm,
     MeetupForm,
+    MemeForm,
     MessageTeacherForm,
     ProfileUpdateForm,
+    ProgressTrackerForm,
     ReviewForm,
     SessionForm,
     StorefrontForm,
@@ -80,12 +84,14 @@ from .models import (
     BlogPost,
     Cart,
     CartItem,
+    Certificate,
     Challenge,
     ChallengeSubmission,
     Course,
     CourseMaterial,
     CourseProgress,
     Donation,
+    EducationalVideo,
     Enrollment,
     EventCalendar,
     ForumCategory,
@@ -93,18 +99,21 @@ from .models import (
     ForumTopic,
     Goods,
     Meetup,
+    Meme,
     Order,
     OrderItem,
     PeerConnection,
     PeerMessage,
     ProductImage,
     Profile,
+    ProgressTracker,
     SearchLog,
     Session,
     SessionAttendance,
     SessionEnrollment,
     Storefront,
     StudyGroup,
+    Subject,
     SuccessStory,
     TimeSlot,
     WebRequest,
@@ -1619,7 +1628,7 @@ def student_dashboard(request):
         course__enrollments__student=request.user, start_time__gt=timezone.now()
     ).order_by("start_time")[:5]
 
-    # Get progress for each enrollment
+    # Get progress for each enrollment and set a flag for certificate existence
     progress_data = []
     total_progress = 0
     for enrollment in enrollments:
@@ -3264,6 +3273,36 @@ def gsoc_landing_page(request):
     return render(request, "gsoc_landing_page.html")
 
 
+def meme_list(request):
+    memes = Meme.objects.all().order_by("-created_at")
+    subjects = Subject.objects.filter(memes__isnull=False).distinct()
+    # Filter by subject if provided
+    subject_filter = request.GET.get("subject")
+    if subject_filter:
+        memes = memes.filter(subject__slug=subject_filter)
+    paginator = Paginator(memes, 12)  # Show 12 memes per page
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "memes.html", {"memes": page_obj, "subjects": subjects, "selected_subject": subject_filter})
+
+
+@login_required
+def add_meme(request):
+    if request.method == "POST":
+        form = MemeForm(request.POST, request.FILES)
+        if form.is_valid():
+            meme = form.save(commit=False)  # The form handles subject creation logic internally
+            meme.uploader = request.user
+            meme.save()
+            messages.success(request, "Your meme has been uploaded successfully!")
+            return redirect("meme_list")
+    else:
+        form = MemeForm()
+    subjects = Subject.objects.all().order_by("name")
+    return render(request, "add_meme.html", {"form": form, "subjects": subjects})
+
+
 @login_required
 @teacher_required
 def add_student_to_course(request, slug):
@@ -3730,3 +3769,160 @@ def donation_success(request):
 def donation_cancel(request):
     """Handle donation cancellation."""
     return redirect("donate")
+
+
+def educational_videos_list(request):
+    """View for listing educational videos with optional category filtering."""
+    # Get category filter from query params
+    selected_category = request.GET.get("category")
+
+    # Base queryset
+    videos = EducationalVideo.objects.select_related("uploader", "category").order_by("-uploaded_at")
+
+    # Apply category filter if provided
+    if selected_category:
+        videos = videos.filter(category__slug=selected_category)
+        selected_category_obj = get_object_or_404(Subject, slug=selected_category)
+        selected_category_display = selected_category_obj.name
+    else:
+        selected_category_display = None
+
+    # Get category counts for sidebar
+    category_counts = dict(
+        EducationalVideo.objects.values("category__name", "category__slug")
+        .annotate(count=Count("id"))
+        .values_list("category__slug", "count")
+    )
+
+    # Get all subjects for the dropdown
+    subjects = Subject.objects.all().order_by("order", "name")
+
+    # Paginate results
+    paginator = Paginator(videos, 12)  # 12 videos per page
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "videos": page_obj,
+        "is_paginated": paginator.num_pages > 1,
+        "page_obj": page_obj,
+        "subjects": subjects,
+        "selected_category": selected_category,
+        "selected_category_display": selected_category_display,
+        "category_counts": category_counts,
+    }
+
+    return render(request, "videos/list.html", context)
+
+
+@login_required
+def upload_educational_video(request):
+    """View for uploading a new educational video."""
+    if request.method == "POST":
+        form = EducationalVideoForm(request.POST)
+        if form.is_valid():
+            video = form.save(commit=False)
+            video.uploader = request.user
+            video.save()
+
+            return redirect("educational_videos_list")
+    else:
+        form = EducationalVideoForm()
+
+    return render(request, "videos/upload.html", {"form": form})
+
+
+def certificate_detail(request, certificate_id):
+    certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
+    if request.user != certificate.user and not request.user.is_staff:
+        return HttpResponseForbidden("You don't have permission to view this certificate")
+    context = {
+        "certificate": certificate,
+    }
+    return render(request, "courses/certificate_detail.html", context)
+
+
+@login_required
+def generate_certificate(request, enrollment_id):
+    # Retrieve the enrollment for the current user
+    enrollment = get_object_or_404(Enrollment, id=enrollment_id, student=request.user)
+    # Ensure the course is completed before generating a certificate
+    if enrollment.status != "completed":
+        messages.error(request, "You can only generate a certificate for a completed course.")
+        return redirect("student_dashboard")
+
+    # Check if a certificate already exists for this course and user
+    certificate = Certificate.objects.filter(user=request.user, course=enrollment.course).first()
+    if certificate:
+        messages.info(request, "Certificate already generated.")
+        return redirect("certificate_detail", certificate_id=certificate.certificate_id)
+
+    # Create a new certificate record manually
+    certificate = Certificate.objects.create(user=request.user, course=enrollment.course)
+    messages.success(request, "Certificate generated successfully!")
+    return redirect("certificate_detail", certificate_id=certificate.certificate_id)
+
+
+@login_required
+def tracker_list(request):
+    trackers = ProgressTracker.objects.filter(user=request.user).order_by("-updated_at")
+    return render(request, "trackers/list.html", {"trackers": trackers})
+
+
+@login_required
+def create_tracker(request):
+    if request.method == "POST":
+        form = ProgressTrackerForm(request.POST)
+        if form.is_valid():
+            tracker = form.save(commit=False)
+            tracker.user = request.user
+            tracker.save()
+            return redirect("tracker_detail", tracker_id=tracker.id)
+    else:
+        form = ProgressTrackerForm()
+    return render(request, "trackers/form.html", {"form": form, "title": "Create Progress Tracker"})
+
+
+@login_required
+def update_tracker(request, tracker_id):
+    tracker = get_object_or_404(ProgressTracker, id=tracker_id, user=request.user)
+
+    if request.method == "POST":
+        form = ProgressTrackerForm(request.POST, instance=tracker)
+        if form.is_valid():
+            form.save()
+            return redirect("tracker_detail", tracker_id=tracker.id)
+    else:
+        form = ProgressTrackerForm(instance=tracker)
+    return render(request, "trackers/form.html", {"form": form, "tracker": tracker, "title": "Update Progress Tracker"})
+
+
+@login_required
+def tracker_detail(request, tracker_id):
+    tracker = get_object_or_404(ProgressTracker, id=tracker_id, user=request.user)
+    embed_url = request.build_absolute_uri(f"/trackers/embed/{tracker.embed_code}/")
+    return render(request, "trackers/detail.html", {"tracker": tracker, "embed_url": embed_url})
+
+
+@login_required
+def update_progress(request, tracker_id):
+    if request.method == "POST" and request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        tracker = get_object_or_404(ProgressTracker, id=tracker_id, user=request.user)
+
+        try:
+            new_value = int(request.POST.get("current_value", tracker.current_value))
+            tracker.current_value = new_value
+            tracker.save()
+
+            return JsonResponse(
+                {"success": True, "percentage": tracker.percentage, "current_value": tracker.current_value}
+            )
+        except ValueError:
+            return JsonResponse({"success": False, "error": "Invalid value"}, status=400)
+    return JsonResponse({"success": False, "error": "Invalid request"}, status=400)
+
+
+@xframe_options_exempt
+def embed_tracker(request, embed_code):
+    tracker = get_object_or_404(ProgressTracker, embed_code=embed_code, public=True)
+    return render(request, "trackers/embed.html", {"tracker": tracker})

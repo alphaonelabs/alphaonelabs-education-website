@@ -32,6 +32,7 @@ from .models import (
     Payment,
     ProductImage,
     Profile,
+    ProgressTracker,
     Review,
     SearchLog,
     Session,
@@ -527,6 +528,20 @@ class OrderItemAdmin(admin.ModelAdmin):
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
 admin.site.register(Meetup)
+
+
+@admin.register(ProgressTracker)
+class ProgressTrackerAdmin(admin.ModelAdmin):
+    list_display = ("title", "user", "current_value", "target_value", "percentage", "public", "updated_at")
+    list_filter = ("public", "color", "created_at")
+    search_fields = ("title", "description", "user__username")
+    readonly_fields = ("embed_code", "created_at", "updated_at")
+    fieldsets = (
+        (None, {"fields": ("user", "title", "description")}),
+        ("Progress", {"fields": ("current_value", "target_value", "color")}),
+        ("Embedding", {"fields": ("public", "embed_code")}),
+        ("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
 
 
 @admin.register(Donation)
