@@ -5,33 +5,35 @@
 {% block extra_head %}
   {{ block.super }}
   <style>
-      .auth-container {
-          max-width: 800px;
-          margin: 1.5rem auto;
-          padding: 1.5rem;
-          background: white;
-          border-radius: 0.5rem;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
+    .auth-container {
+      max-width: 800px;
+      margin: 1.5rem auto;
+      padding: 1.5rem;
+      background: white;
+      border-radius: 0.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
 
-      @media (prefers-color-scheme: dark) {
-          .auth-container {
-              background-color: #1f2937;
-          }
+    @media (prefers-color-scheme: dark) {
+      .auth-container {
+        background-color: #1f2937;
       }
+    }
   </style>
   <!-- Add password toggle script -->
   <script src="{% static 'js/password-toggle.js' %}"></script>
 {% endblock extra_head %}
+
 {% block content %}
-  <div class="grid md:grid-cols-5 gap-4 items-center">
-    <!-- Left side illustration -->
+  <div class="grid grid-cols-1 md:grid-cols-5 gap-6 items-center">
+    <!-- Left side illustration (hidden on mobile) -->
     <div class="md:col-span-2 text-center hidden md:block">
       <div class="flex flex-col items-center space-y-3">
         <i class="fas fa-graduation-cap text-7xl text-orange-500"></i>
         <div class="text-lg font-medium text-gray-600 dark:text-gray-300">Join our community of learners and teachers</div>
       </div>
     </div>
+
     <!-- Form section -->
     <div class="md:col-span-3">
       <div class="text-center mb-4">
@@ -43,15 +45,18 @@
       <form id="signup_form"
             method="post"
             action="{% url 'account_signup' %}"
-            class="space-y-3">
+            class="space-y-6">
         {% csrf_token %}
         {% if form.non_field_errors %}
           <div class="bg-red-50 dark:bg-red-900 p-2 rounded text-sm">
-            {% for error in form.non_field_errors %}<p class="text-red-800 dark:text-red-200">{{ error }}</p>{% endfor %}
+            {% for error in form.non_field_errors %}
+              <p class="text-red-800 dark:text-red-200">{{ error }}</p>
+            {% endfor %}
           </div>
         {% endif %}
-        <!-- Name Fields -->
-        <div class="grid grid-cols-2 gap-3">
+
+        <!-- Name Fields (Ensure these stack on mobile) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label for="id_first_name"
                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">First Name</label>
@@ -81,8 +86,9 @@
             {% endif %}
           </div>
         </div>
-        <!-- Username and Email -->
-        <div class="grid grid-cols-2 gap-3">
+
+        <!-- Username and Email Fields (Stacked on smaller screens) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label for="id_username"
                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -112,7 +118,8 @@
             {% if form.email.errors %}<p class="mt-1 text-xs text-red-600">{{ form.email.errors|join:", " }}</p>{% endif %}
           </div>
         </div>
-        <!-- Referral Code -->
+
+        <!-- Referral Code (Full width on mobile) -->
         <div>
           <label for="id_referral_code"
                  class="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -129,8 +136,9 @@
           {% endif %}
           <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.referral_code.help_text }}</p>
         </div>
-        <!-- Password Fields -->
-        <div class="grid grid-cols-2 gap-3">
+
+        <!-- Password Fields (Stacked on smaller screens) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label for="id_password1"
                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -166,6 +174,7 @@
             {% endif %}
           </div>
         </div>
+
         <!-- Teacher Option -->
         <div class="flex items-center">
           <input type="checkbox"
@@ -179,6 +188,7 @@
             I want to teach courses
           </label>
         </div>
+
         <!-- Captcha -->
         <div>
           <label for="{{ form.captcha.auto_id }}"
@@ -188,17 +198,20 @@
           <div class="mt-1">{{ form.captcha }}</div>
           {% if form.captcha.errors %}<p class="mt-1 text-xs text-red-600">{{ form.captcha.errors|join:", " }}</p>{% endif %}
         </div>
+
         {% if redirect_field_value %}
           <input type="hidden"
                  name="{{ redirect_field_name }}"
                  value="{{ redirect_field_value }}" />
         {% endif %}
+
         <!-- Submit Button -->
         <button type="submit"
-                class="w-full flex justify-center py-1.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+                class="w-full py-1.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
           <i class="fas fa-user-plus mr-2"></i>
           Create Account
         </button>
+
         <!-- Sign In Link -->
         <p class="text-center text-sm text-gray-600 dark:text-gray-400">
           Already have an account?
