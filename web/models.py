@@ -1228,6 +1228,11 @@ class QuizOption(models.Model):
         has_correct = cls.objects.filter(question=question, is_correct=True).exists()
         if not has_correct:
             raise ValidationError(f"Question '{question}' must have at least one correct option.")
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        #After saving, validate that the question has at least one correct option
+        self.__class__.validate_question_has_correct_option(self.question)
 
 class QuizSubmission(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -1267,8 +1272,20 @@ class ProductImage(models.Model):
     image = models.ImageField(upload_to="goods_images/", help_text="Product display image")
     alt_text = models.CharField(max_length=125, blank=True, help_text="Accessibility description for screen readers")
 
+    def clean(self):
+      
+      """Ensure the selected option belongs to the question."""
+      super().clean()
+      if self.selected_option.question.id != self.question.id:
+        raise ValidationError("The selected option does not belong to this question.")
+            
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+    
     def __str__(self):
         return f"Image for {self.goods.name}"
+    
 
 
 class Order(models.Model):

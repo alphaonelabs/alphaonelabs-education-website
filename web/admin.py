@@ -411,15 +411,16 @@ class ChallengeSubmissionAdmin(admin.ModelAdmin):
 class QuizAdmin(admin.ModelAdmin):
     list_display = ("title", "description", "start_date", "end_date", "start_time", "end_time", "duration_minutes")
 
-    def save_model(self, request, obj, form, change):
-        """ Validate the quiz before saving it. """
-        is_valid, message = validate_quiz_has_questions(obj)
+    class QuizAdmin(admin.ModelAdmin):
+        def save_model(self, request, obj, form, change):
+            """ First, save the quiz instance, then validate it. """
+            super().save_model(request, obj, form, change)  # Save first
 
-        if not is_valid:
-            messages.error(request, message)
-            raise ValidationError(message)
+            # Now, the primary key exists, and we can access related objects
+            is_valid, message = validate_quiz_has_questions(obj)
 
-        super().save_model(request, obj, form, change)
+            if not is_valid:
+                messages.error(request, message) 
 
 
 @admin.register(QuizSubmission)

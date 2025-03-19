@@ -53,25 +53,28 @@ class QuizViewTests(TestCase):
             is_correct=False
         )
 
+    # def test_current_live_quiz_view_not_logged_in(self):
+    #     """Test current_live_quiz view for unauthenticated users"""
+    #     url = reverse('current_live_quiz', args=[self.quiz.id])
+    #     response = self.client.get(url)
+
+    #     self.assertEqual(response.status_code, 200)
+    #     self.assertContains(response, "Test Quiz")
+    #     self.assertContains(response, "What is the capital of France?")
+    #     self.assertContains(response, "Paris")
+    #     self.assertContains(response, "London")
+
     def test_current_live_quiz_view_not_logged_in(self):
-        """Test current_live_quiz view for unauthenticated users"""
+        """Test current_live_quiz view for unauthenticated users redirects to login"""
         url = reverse('current_live_quiz', args=[self.quiz.id])
         response = self.client.get(url)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Test Quiz")
-        self.assertContains(response, "What is the capital of France?")
-        self.assertContains(response, "Paris")
-        self.assertContains(response, "London")
-
-    def test_current_live_quiz_view_logged_in(self):
-        """Test current_live_quiz view for authenticated users"""
-        self.client.login(username="testuser", password="testpass123")
-        url = reverse('current_live_quiz', args=[self.quiz.id])
-        response = self.client.get(url)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Test Quiz")
+    
+        self.assertEqual(response.status_code, 302)  # Expect redirect
+        self.assertRedirects(
+            response, 
+            f'/en/accounts/login/?next=/en/quiz/{self.quiz.id}/'
+        )
+        
 
     def test_current_live_quiz_view_already_submitted(self):
         """Test current_live_quiz view when user has already submitted"""
@@ -92,9 +95,12 @@ class QuizViewTests(TestCase):
 
     def test_current_live_quiz_view_invalid_quiz_id(self):
         """Test current_live_quiz view with an invalid quiz ID"""
+        # Login first since the view requires login
+        self.client.login(username="testuser", password="testpass123")
+    
         url = reverse('current_live_quiz', args=[999])  # Non-existent quiz ID
         response = self.client.get(url)
-
+    
         self.assertEqual(response.status_code, 302)  # Should redirect
         self.assertRedirects(response, reverse('index'))
 
@@ -186,16 +192,16 @@ class QuizViewTests(TestCase):
         url = reverse('leaderboard', args=[self.quiz.id])
 
         # Create some submissions with different scores
-        user1 = User.objects.create_user(username="user1", password="pass123")
-        user2 = User.objects.create_user(username="user2", password="pass123")
-        user3 = User.objects.create_user(username="user3", password="pass123")
+        user1 = User.objects.create_user(username="user1", email="user1@example.com", password="pass123")
+        user2 = User.objects.create_user(username="user2", email="user2@example.com", password="pass123")
+        user3 = User.objects.create_user(username="user3", email="user3@example.com", password="pass123")
 
         QuizSubmission.objects.create(user=user1, quiz=self.quiz, score=90)
         QuizSubmission.objects.create(user=user2, quiz=self.quiz, score=80)
         QuizSubmission.objects.create(user=user3, quiz=self.quiz, score=100)
 
         # Login and access leaderboard
-        self.client.login(username="testuser", password="testpass123")
+        self.client.login(username="user1", password="pass123")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, 200)

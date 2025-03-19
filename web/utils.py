@@ -45,6 +45,9 @@ def validate_quiz_has_questions(quiz):
     Returns:
         tuple: (is_valid, message)
     """
+    if not quiz.pk:  # If primary key doesn’t exist, return early
+        return False, "Quiz must be saved before validating questions."
+
     question_count = quiz.questions.count()
     if question_count == 0:
         return False, "This quiz has no questions."

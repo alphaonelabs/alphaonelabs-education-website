@@ -2780,53 +2780,50 @@ def current_live_quiz(request, quiz_id):
 def submit_quiz(request, quiz_id):
     """Handle quiz submission and store total score."""
     quiz = get_object_or_404(Quiz.objects.prefetch_related("questions__options"), id=quiz_id)
-
     # Check if the user has already submitted this quiz
     if QuizSubmission.objects.filter(user=request.user, quiz=quiz).exists():
         messages.warning(request, "You have already submitted this quiz.")
         return redirect("leaderboard", quiz_id=quiz.id)
-
     if request.method == "POST":
-        score = 0  # Total score counter
-
-        for question in quiz.questions.all():
-            selected_option_id = request.POST.get(f"question_{question.id}")
-
-            if selected_option_id and selected_option_id.isdigit():
-                try:
-                    selected_option = QuizOption.objects.get(id=selected_option_id, question=question)
-
-                    if selected_option.is_correct:
-                        score += 10
-
-                except QuizOption.DoesNotExist:
-                    messages.error(request, f"Invalid selection for question {question.id}")
-            else:
-                # Track unanswered questions - could be used for analytics or showing feedback
-                logger.debug(f"User {request.user.username} did not answer question {question.id}")
-        # Store the final submission with total score
-        QuizSubmission.objects.create(user=request.user, quiz=quiz, score=score)
-
-        # Store detailed results for feedback if needed
-        results = []
-        for question in quiz.questions.all():
-            selected_id = request.POST.get(f"question_{question.id}")
-            if selected_id and selected_id.isdigit():
-                selected = QuizOption.objects.get(id=selected_id)
-                correct_answer = QuizOption.objects.filter(question=question, is_correct=True).first()
-                results.append({
-                    'question_id': question.id,
-                    'question_text': question.question_text,
-                    'selected_answer': selected.option_text,
-                    'correct_answer': correct_answer.option_text if correct_answer else "No correct answer defined",
-                    'is_correct': selected.is_correct
-                })
-        request.session['quiz_results'] = results
-        messages.success(request, f"Quiz submitted! Your score: {score}")
-        return redirect("leaderboard", quiz_id=quiz.id)
-
+        with transaction.atomic():
+            # Validate that the quiz is currently active
+            if not quiz.is_active():
+                messages.error(request, "This quiz is not currently active.")
+                return redirect("index")
+            
+            score = 0  # Total score counter
+            for question in quiz.questions.all():
+                selected_option_id = request.POST.get(f"question_{question.id}")
+                if selected_option_id and selected_option_id.isdigit():
+                    try:
+                        selected_option = QuizOption.objects.get(id=selected_option_id, question=question)
+                        if selected_option.is_correct:
+                            score += 10
+                    except QuizOption.DoesNotExist:
+                        messages.error(request, f"Invalid selection for question {question.id}")
+                else:
+                    # Track unanswered questions - could be used for analytics or showing feedback
+                    logger.debug(f"User {request.user.username} did not answer question {question.id}")
+            # Store the final submission with total score
+            QuizSubmission.objects.create(user=request.user, quiz=quiz, score=score)
+            # Store detailed results for feedback if needed
+            results = []
+            for question in quiz.questions.all():
+                selected_id = request.POST.get(f"question_{question.id}")
+                if selected_id and selected_id.isdigit():
+                    selected = QuizOption.objects.get(id=selected_id)
+                    correct_answer = QuizOption.objects.filter(question=question, is_correct=True).first()
+                    results.append({
+                        'question_id': question.id,
+                        'question_text': question.question_text,
+                        'selected_answer': selected.option_text,
+                        'correct_answer': correct_answer.option_text if correct_answer else "No correct answer defined",
+                        'is_correct': selected.is_correct
+                    })
+            request.session['quiz_results'] = results
+            messages.success(request, f"Quiz submitted! Your score: {score}")
+            return redirect("leaderboard", quiz_id=quiz.id)
     return redirect("current_live_quiz", quiz_id=quiz.id)
-
 
 @login_required
 def leaderboard(request, quiz_id):
