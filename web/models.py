@@ -165,42 +165,22 @@ class WebRequest(models.Model):
         return f"{self.path} - {self.count} views"
 
 
-# class LeaderboardEntry(models.Model):
-#     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="leaderboard_entry")
-#     points = models.IntegerField(default=0)
-#     weekly_points = models.IntegerField(default=0)  # For weekly rankings
-#     monthly_points = models.IntegerField(default=0)  # For monthly rankings
-#     challenge_count = models.IntegerField(default=0)  # Number of challenges completed
-#     current_streak = models.IntegerField(default=0)  # Consecutive weeks with submissions
-#     highest_streak = models.IntegerField(default=0)  # Highest streak achieved
-#     last_updated = models.DateTimeField(auto_now=True)
-    
-#     class Meta:
-#         ordering = ['-points']
-#         verbose_name_plural = "Leaderboard Entries"
 
-#     def __str__(self):
-#         return f"{self.user.username}'s leaderboard stats"
-    
-#     @property
-#     def rank(self):
-#         """Get the user's current global rank"""
-#         return LeaderboardEntry.objects.filter(points__gt=self.points).count() + 1
 
 class LeaderboardEntry(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="leaderboard_entries")
     score = models.IntegerField(default=0)
-    challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, null=True, blank=True, related_name="leaderboard_entries")
+    # Use string reference to avoid the NameError
+    challenge = models.ForeignKey('Challenge', on_delete=models.CASCADE, null=True, blank=True, related_name="leaderboard_entries")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
+    
     class Meta:
         verbose_name_plural = "Leaderboard Entries"
         ordering = ["-score"]
-
+        
     def __str__(self):
         return f"{self.user.username} - {self.score} points"
-
 
 class FriendLeaderboard(models.Model):
     """Model to track user's friends for leaderboard comparisons"""
