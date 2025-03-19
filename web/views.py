@@ -1,3 +1,4 @@
+from asyncio.log import logger
 import calendar
 import json
 import os
@@ -114,7 +115,6 @@ from .models import (
     SuccessStory,
     TimeSlot,
     WebRequest,
-    Subject,
 )
 from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
 from .referrals import send_referral_reward_email
@@ -3748,8 +3748,12 @@ def classes_map(request):
         sessions = sessions.filter(course__level=age_group)
 
     if teaching_style:
-        # Assuming you'll add this field to the Course model later
-        sessions = sessions.filter(course__teaching_style=teaching_style)
+        try:
+            # Attempt to filter, but don't fail if field doesn't exist
+            sessions = sessions.filter(course__teaching_style=teaching_style)
+        except Exception as e:
+            # Log the error but continue without this filter
+            logger.error(f"Error filtering by teaching_style: {e}")
 
     # Get all subjects for the filter dropdown
     subjects = Subject.objects.all().order_by("name")
@@ -3824,7 +3828,7 @@ def map_data_api(request):
 
     return JsonResponse({"sessions": map_data})
 
-  
+
 def educational_videos_list(request):
     """View for listing educational videos with optional category filtering."""
     # Get category filter from query params
@@ -3980,4 +3984,3 @@ def update_progress(request, tracker_id):
 def embed_tracker(request, embed_code):
     tracker = get_object_or_404(ProgressTracker, embed_code=embed_code, public=True)
     return render(request, "trackers/embed.html", {"tracker": tracker})
-
