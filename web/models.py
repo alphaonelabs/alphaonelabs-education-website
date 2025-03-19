@@ -176,7 +176,6 @@ class LeaderboardEntry(models.Model):
     challenge_count = models.IntegerField(default=0)
     current_streak = models.IntegerField(default=0)
     highest_streak = models.IntegerField(default=0)
-    # Keep your existing fields
     challenge = models.ForeignKey('Challenge', on_delete=models.CASCADE, null=True, blank=True, related_name="leaderboard_entries")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

@@ -38,10 +38,7 @@ urlpatterns += i18n_patterns(
     path("blog/tag/<str:tag>/", views.blog_tag, name="blog_tag"),
     path("blog/<slug:slug>/", views.blog_detail, name="blog_detail"),
     # Leaderboard URLs
-    # path("leaderboards/", views.all_leaderboards, name="leaderboards"),
-    path("leaderboards/", views.global_leaderboard, name="global_leaderboard"),
-    path("leaderboards/friends/", views.friend_leaderboard, name="friend_leaderboard"),
-    path("leaderboards/weekly/", views.weekly_leaderboard, name="weekly_leaderboard"),
+    path("leaderboards/", views.all_leaderboards, name="leaderboards"),
     # Success Stories URLs
     path("success-stories/", views.success_story_list, name="success_story_list"),
     path("success-stories/create/", views.create_success_story, name="create_success_story"),

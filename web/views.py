@@ -141,8 +141,6 @@ def index(request):
     # Get current user's profile if authenticated
     profile = request.user.profile if request.user.is_authenticated else None
 
-    top_referrers = [] 
-
     # Get featured courses
     featured_courses = Course.objects.filter(status="published", is_featured=True).order_by("-created_at")[:3]
 
@@ -158,7 +156,6 @@ def index(request):
     # Get top 3 leaderboard users
     top_leaderboard_users = LeaderboardEntry.objects.select_related('user').order_by('-points')[:3]
     test = LeaderboardEntry.objects.select_related('user').order_by('-points')
-    print("@@@@@@@@@@@@@@@@@@@@", test)
 
     # Get signup form if needed
     form = None
@@ -167,7 +164,6 @@ def index(request):
 
     context = {
         "profile": profile,
-        "top_referrers": top_referrers,
         "featured_courses": featured_courses,
         "current_challenge": current_challenge,
         "latest_post": latest_post,
@@ -207,6 +203,7 @@ def signup_view(request):
 
 @login_required
 def all_leaderboards(request):
+    print("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
     """Display all leaderboard types on a single page with separate sections."""
     # Global Leaderboard
     global_entries = LeaderboardEntry.objects.all().order_by('-points')[:10]
@@ -263,22 +260,18 @@ def all_leaderboards(request):
             ).order_by('-points')[:10]
         except:
             pass
-    
-    # Referral Leaderboard
-    top_referrers = Profile.objects.filter(referral_count__gt=0).select_related('user').order_by('-referral_count')[:10]
-    
+
     context = {
         'global_entries': global_entries,
         'weekly_entries': weekly_entries,
         'monthly_entries': monthly_entries,
         'challenge_entries': challenge_entries,
         'friend_entries': friend_entries,
-        'top_referrers': top_referrers,
         'user_rank': user_rank,
         'user_weekly_rank': user_weekly_rank,
         'user_monthly_rank': user_monthly_rank
     }
-    
+
     return render(request, 'leaderboards/leaderboards.html', context)
 
 @login_required
@@ -367,83 +360,83 @@ def profile(request):
     return render(request, "profile.html", context)
 
 
-@login_required
-def global_leaderboard(request):
-    """Display the global leaderboard of all users"""
-    leaderboard_entries = LeaderboardEntry.objects.all().order_by('-points')[:100]
+# @login_required
+# def global_leaderboard(request):
+#     """Display the global leaderboard of all users"""
+#     leaderboard_entries = LeaderboardEntry.objects.all().order_by('-points')[:100]
     
-    # Get the current user's rank
-    try:
-        user_entry = LeaderboardEntry.objects.get(user=request.user)
-        user_rank = user_entry.rank
-    except LeaderboardEntry.DoesNotExist:
-        user_entry = None
-        user_rank = None
+#     # Get the current user's rank
+#     try:
+#         user_entry = LeaderboardEntry.objects.get(user=request.user)
+#         user_rank = user_entry.rank
+#     except LeaderboardEntry.DoesNotExist:
+#         user_entry = None
+#         user_rank = None
     
-    return render(request, 'leaderboards/leaderboards.html', {
-        'leaderboard_entries': leaderboard_entries,
-        'user_entry': user_entry,
-        'user_rank': user_rank
-    })
+#     return render(request, 'leaderboards/leaderboards.html', {
+#         'leaderboard_entries': leaderboard_entries,
+#         'user_entry': user_entry,
+#         'user_rank': user_rank
+#     })
 
-@login_required
-def friend_leaderboard(request):
-    """Display leaderboard with user's friends"""
-    # Get or create friend leaderboard
-    friend_board, created = FriendLeaderboard.objects.get_or_create(user=request.user)
+# @login_required
+# def friend_leaderboard(request):
+#     """Display leaderboard with user's friends"""
+#     # Get or create friend leaderboard
+#     friend_board, created = FriendLeaderboard.objects.get_or_create(user=request.user)
     
-    # Get all friends (from PeerConnection model)
-    accepted_connections = PeerConnection.objects.filter(
-        (Q(sender=request.user) | Q(receiver=request.user)),
-        status='accepted'
-    )
+#     # Get all friends (from PeerConnection model)
+#     accepted_connections = PeerConnection.objects.filter(
+#         (Q(sender=request.user) | Q(receiver=request.user)),
+#         status='accepted'
+#     )
     
-    friends = []
-    for connection in accepted_connections:
-        if connection.sender == request.user:
-            friends.append(connection.receiver)
-        else:
-            friends.append(connection.sender)
+#     friends = []
+#     for connection in accepted_connections:
+#         if connection.sender == request.user:
+#             friends.append(connection.receiver)
+#         else:
+#             friends.append(connection.sender)
     
-    # Update friend list
-    friend_board.friends.set(friends)
+#     # Update friend list
+#     friend_board.friends.set(friends)
     
-    # Get leaderboard entries for friends
-    friend_entries = LeaderboardEntry.objects.filter(
-        user__in=friend_board.friends.all()
-    ).order_by('-points')
+#     # Get leaderboard entries for friends
+#     friend_entries = LeaderboardEntry.objects.filter(
+#         user__in=friend_board.friends.all()
+#     ).order_by('-points')
     
-    # Get current user's entry
-    try:
-        user_entry = LeaderboardEntry.objects.get(user=request.user)
-    except LeaderboardEntry.DoesNotExist:
-        user_entry = None
+#     # Get current user's entry
+#     try:
+#         user_entry = LeaderboardEntry.objects.get(user=request.user)
+#     except LeaderboardEntry.DoesNotExist:
+#         user_entry = None
     
-    return render(request, 'web/leaderboards/friends.html', {
-        'friend_entries': friend_entries,
-        'user_entry': user_entry,
-    })
+#     return render(request, 'web/leaderboards/friends.html', {
+#         'friend_entries': friend_entries,
+#         'user_entry': user_entry,
+#     })
 
-@login_required  
-def weekly_leaderboard(request):
-    """Display weekly leaderboard"""
-    # Reset weekly points every Monday using a scheduled task
-    leaderboard_entries = LeaderboardEntry.objects.all().order_by('-weekly_points')[:50]
+# @login_required  
+# def weekly_leaderboard(request):
+#     """Display weekly leaderboard"""
+#     # Reset weekly points every Monday using a scheduled task
+#     leaderboard_entries = LeaderboardEntry.objects.all().order_by('-weekly_points')[:50]
     
-    try:
-        user_entry = LeaderboardEntry.objects.get(user=request.user)
-        user_weekly_rank = LeaderboardEntry.objects.filter(
-            weekly_points__gt=user_entry.weekly_points
-        ).count() + 1
-    except LeaderboardEntry.DoesNotExist:
-        user_entry = None
-        user_weekly_rank = None
+#     try:
+#         user_entry = LeaderboardEntry.objects.get(user=request.user)
+#         user_weekly_rank = LeaderboardEntry.objects.filter(
+#             weekly_points__gt=user_entry.weekly_points
+#         ).count() + 1
+#     except LeaderboardEntry.DoesNotExist:
+#         user_entry = None
+#         user_weekly_rank = None
     
-    return render(request, 'web/leaderboards/weekly.html', {
-        'leaderboard_entries': leaderboard_entries,
-        'user_entry': user_entry,
-        'user_weekly_rank': user_weekly_rank
-    })
+#     return render(request, 'web/leaderboards/weekly.html', {
+#         'leaderboard_entries': leaderboard_entries,
+#         'user_entry': user_entry,
+#         'user_weekly_rank': user_weekly_rank
+#     })
 
 
 @login_required
