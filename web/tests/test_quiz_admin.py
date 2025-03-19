@@ -18,8 +18,7 @@ class QuizAdminTests(TestCase):
         )
         self.client = Client()
         self.client.login(username="admin", password="adminpass123")
-        from django.test.utils import CaptureQueriesContext
-        from django.db import connection
+        
         self.captured_queries = CaptureQueriesContext(connection)
         self.quiz = Quiz.objects.create(
             title="Test Admin Quiz",
@@ -52,7 +51,7 @@ class QuizAdminTests(TestCase):
             "end_date": (timezone.now() + timedelta(days=7)).date().strftime("%Y-%m-%d"),
             "end_time": "11:00:00",
             "duration_minutes": 30,
-            "_save": "Save",  # Important for admin form handling
+            "_save": "Save", 
         }
     
         response = self.client.post(admin_url, quiz_data)
@@ -73,40 +72,11 @@ class QuizAdminTests(TestCase):
         # Check for 302 redirect on success
         self.assertEqual(response.status_code, 302)
 
-    def test_quiz_question_admin_add(self):
-        """Test adding a quiz question through Django admin"""
-        url = reverse("admin:web_quizquestion_add")
-
-        response = self.client.post(url, {
-            "quiz": self.quiz.id,
-            "question_text": "What is 2 + 2?",
-            "order": 1,
-        }, follow=True)  # Follow redirects to capture errors
-        print("Status Code:", response.status_code)
-        print("Redirected to:", response.get("Location", "No Redirect"))
-
-
-        if response.status_code in [301, 302]:  # If redirected, print the URL
-            print("Redirected to:", response["Location"])
-            self.fail("Unexpected redirect occurred instead of showing the form errors")
-
-
-        if "adminform" in response.context:
-            print("Errors:", response.context["adminform"].form.errors)
-        else:
-            print("No adminform found in response context")
-        
-        
-
-        self.assertEqual(response.status_code, 200)  # Ensure form is processed
-        self.assertTrue(QuizQuestion.objects.filter(question_text="What is 2 + 2?").exists())
-
-    def test_quiz_question_admin_add(self):
+    def test_quiz_question_admin_add_with_form(self):
         """Test adding a quiz question through Django admin"""
         # Get the form to retrieve necessary fields (like CSRF token)
         response = self.client.get(reverse('admin:web_quizquestion_add'))
         self.assertEqual(response.status_code, 200)
-
         # Prepare form data
         form_data = {
             'quiz': self.quiz.id,  # Assuming self.quiz is defined in setUp()
@@ -115,21 +85,51 @@ class QuizAdminTests(TestCase):
             '_save': 'Save',  # Required to submit the form
             'csrfmiddlewaretoken': response.context['csrf_token'],
         }
-
         # Submit the form
         response = self.client.post(
             reverse('admin:web_quizquestion_add'), 
             data=form_data,
             follow=True  # Follow redirects
         )
-
-        # Debugging: If failure, print relevant details
-        if response.status_code != 200 or not QuizQuestion.objects.filter(question_text='Test question?').exists():
-            print(f"Status Code: {response.status_code}")
-            print(f"Response: {response.content[:500]}")  # Show first 500 chars of response
-
         # Assert that the quiz question was successfully created
         self.assertTrue(QuizQuestion.objects.filter(question_text='Test question?').exists())
 
+    def test_quiz_option_admin_add(self):
+        """Test adding a quiz option through Django admin"""
+        # First, get the form to see all required fields
+        response = self.client.get(reverse('admin:web_quizoption_add'))
+        self.assertEqual(response.status_code, 200)
+        
+        # Create a question first if needed
+        question = QuizQuestion.objects.create(
+            quiz=self.quiz,
+            question_text="Test question",
+            order=1
+        )
+        
+        # Now collect all form data from the actual form
+        form_data = {
+            'question': question.id,
+            'option_text': 'Test option',
+            'is_correct': True,
+            'order': 1,
+            '_save': 'Save',
+            'csrfmiddlewaretoken': response.context['csrf_token'],
+        }
+        
+        # Submit the form
+        response = self.client.post(
+            reverse('admin:web_quizoption_add'), 
+            data=form_data,
+            follow=True  # Follow redirects
+        )
+        
+        # Print debug info on failure
+        if response.status_code != 200 or not QuizOption.objects.filter(option_text='Test option').exists():
+            print(f"Status Code: {response.status_code}")
+            print(f"Response: {response.content[:500]}")
+        
+        # Check for object creation instead of status code
+        self.assertTrue(QuizOption.objects.filter(option_text='Test option').exists())
 
         

@@ -1223,6 +1223,7 @@ class QuizQuestion(models.Model):
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="questions")
     question_text = models.TextField()
     order = models.PositiveIntegerField(default=0)
+    points = models.PositiveIntegerField(default=10, help_text="Points awarded for a correct answer")
    
     class Meta:
        ordering = ['order']
@@ -1248,6 +1249,12 @@ class QuizOption(models.Model):
         has_correct = cls.objects.filter(question=question, is_correct=True).exists()
         if not has_correct:
             raise ValidationError(f"Question '{question}' must have at least one correct option.")
+        
+    def validate_only_one_correct_option(cls, question):
+        correct_count = cls.objects.filter(question=question, is_correct=True).count()
+        if correct_count > 1:
+            raise ValidationError("Only one correct option is allowed per question.")
+
     
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

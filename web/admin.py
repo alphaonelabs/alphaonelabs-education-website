@@ -435,7 +435,7 @@ class QuizOptionAdmin(admin.ModelAdmin):
 
 @admin.register(QuizQuestion)
 class QuizQuestionAdmin(admin.ModelAdmin):
-    list_display = ("quiz", "question_text")
+    list_display = ("quiz", "question_text","points") 
 
 
 # Unregister the default User admin and register our custom one

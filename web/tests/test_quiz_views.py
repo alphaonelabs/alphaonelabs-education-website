@@ -129,7 +129,7 @@ class QuizViewTests(TestCase):
 
         # Check that submission was created with correct score
         submission = QuizSubmission.objects.get(user=self.user, quiz=self.quiz)
-        self.assertEqual(submission.score, 10)  # 10 points for correct answer
+        self.assertEqual(submission.score, self.question.points)  # 10 points for correct answer
 
     def test_submit_quiz_with_incorrect_answer(self):
         """Test submit_quiz view with incorrect answer"""

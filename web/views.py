@@ -2800,7 +2800,7 @@ def submit_quiz(request, quiz_id):
                     try:
                         selected_option = QuizOption.objects.get(id=selected_option_id, question=question)
                         if selected_option.is_correct:
-                            score += 10
+                            score += question.points
                     except QuizOption.DoesNotExist:
                         messages.error(request, f"Invalid selection for question {question.id}")
                 else:
@@ -2850,6 +2850,11 @@ def leaderboard(request, quiz_id):
             del request.session['quiz_results']
             request.session.modified = True
         end_datetime = timezone.make_aware(datetime.combine(quiz.end_date, quiz.end_time))
+        return render(request, "web/leaderboard.html", {
+            "quiz": quiz,
+            "submissions": submissions,
+            "quiz_results": quiz_results
+        })
     except Exception as e:
         logger.error(f"Error in leaderboard view: {str(e)}")
         messages.error(request, "An error occurred while loading the leaderboard.")
