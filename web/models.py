@@ -395,6 +395,9 @@ class Session(models.Model):
         now = timezone.now()
         return self.start_time <= now <= self.end_time
 
+    def get_absolute_url(self):
+        return f"/sessions/{self.id}/"
+
 class CourseMaterial(models.Model):
     MATERIAL_TYPES = [
         ("video", "Video"),

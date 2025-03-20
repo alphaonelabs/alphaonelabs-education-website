@@ -1,372 +1,93 @@
-{% extends "base.html" %}
-{% load static %}
+{% extends 'base.html' %}
 
 {% block content %}
-<div class="container mx-auto p-6">
-    <h1 class="text-4xl font-bold text-gray-900 mb-3">📍 Classes Near Me</h1>
-    <p class="text-lg text-gray-600 mb-8">Find the best educational opportunities around you.</p>
+<div class="container mx-auto px-6 py-8">
+    <h2 class="text-3xl font-semibold text-gray-900 text-center mb-6">🎓 Find Educational Opportunities Nearby</h2>
 
-    <div class="flex flex-col md:flex-row gap-8">
-        <!-- Sidebar with filters -->
-        <div class="w-full md:w-1/4">
-            <!-- Filters section -->
-            <div class="bg-white rounded-2xl p-5 shadow-md mb-6 border border-gray-200">
-                <h4 class="text-xl font-semibold text-gray-800 mb-4">🎯 Filters</h4>
-                <form id="map-filters">
-                    <div class="mb-4">
-                        <label for="subject" class="block text-sm font-medium text-gray-700 mb-1">📚 Subject</label>
-                        <select id="subject" name="subject" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
-                            <option value="">All Subjects</option>
-                            {% for subject in subjects %}
-                            <option value="{{ subject.id }}" {% if request.GET.subject == subject.id|stringformat:"i" %}selected{% endif %}>
-                                {{ subject.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="mb-4">
-                        <label for="age_group" class="block text-sm font-medium text-gray-700 mb-1">🎓 Age Group / Level</label>
-                        <select id="age_group" name="age_group" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
-                            <option value="">All Levels</option>
-                            {% for value, display in age_groups %}
-                            <option value="{{ value }}" {% if request.GET.age_group == value %}selected{% endif %}>
-                                {{ display }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div class="mb-4">
-                        <label for="teaching_style" class="block text-sm font-medium text-gray-700 mb-1">👨‍🏫 Teaching Style</label>
-                        <select id="teaching_style" name="teaching_style" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2">
-                            <option value="">All Styles</option>
-                            {% for value, display in teaching_styles %}
-                            <option value="{{ value }}" {% if request.GET.teaching_style == value %}selected{% endif %}>
-                                {{ display }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-blue-700 hover:from-blue-600 hover:to-blue-800 text-white font-medium py-3 rounded-lg transition-all duration-200 shadow-md">
-                        🎯 Apply Filters
-                    </button>
-                </form>
-            </div>
-
-            <!-- Session list -->
-            <div class="mt-6">
-                <h4 class="text-xl font-semibold text-gray-800 mb-4">📅 Upcoming Classes ({{ sessions|length }})</h4>
-                <div class="h-96 overflow-y-auto pr-2 space-y-4">
-                    {% if sessions %}
-                        {% for session in sessions %}
-                        <div class="bg-white rounded-lg shadow-lg p-5 border border-gray-200 hover:shadow-xl transition-all duration-300 cursor-pointer session-card" 
-                             data-session-id="{{ session.id }}" 
-                             data-lat="{{ session.latitude }}" 
-                             data-lng="{{ session.longitude }}">
-                            <h5 class="font-semibold text-lg text-gray-900">{{ session.title }}</h5>
-                            <h6 class="text-gray-500 text-sm mb-3">{{ session.course.title }}</h6>
-                            <div class="text-sm space-y-2">
-                                <p><span class="font-medium text-gray-700">👨‍🏫 Teacher:</span> {{ session.course.teacher.get_full_name|default:session.course.teacher.username }}</p>
-                                <p><span class="font-medium text-gray-700">🕒 When:</span> {{ session.start_time|date:"M d, Y P" }}</p>
-                                <p><span class="font-medium text-gray-700">📍 Where:</span> {{ session.location }}</p>
-                                <p><span class="font-medium text-gray-700">💰 Price:</span> ${{ session.price|default:session.course.price }}</p>
-                            </div>
-                            <a href="{{ session.get_absolute_url }}" class="inline-block text-blue-600 hover:text-blue-800 mt-3 font-medium">🔍 View Details</a>
-                        </div>
-                        {% endfor %}
-                    {% else %}
-                        <p class="text-gray-500 italic">No classes found matching your criteria.</p>
-                    {% endif %}
-                </div>
-            </div>
+    <!-- Filter Form -->
+    <form method="GET" id="filter-form" class="bg-white p-6 shadow-lg rounded-lg flex flex-wrap items-center gap-4 mb-8">
+        <div class="flex flex-col">
+            <label for="subject" class="text-gray-700 font-medium">Subject</label>
+            <select name="subject" id="subject" class="p-2 border rounded-lg shadow-sm">
+                <option value="">All</option>
+                {% for subject in subjects %}
+                <option value="{{ subject.id }}">{{ subject.name }}</option>
+                {% endfor %}
+            </select>
         </div>
 
-        <!-- Map and details section -->
-        <div class="w-full md:w-3/4">
-            <!-- Map container -->
-            <div id="map-container" class="h-[500px] w-full rounded-2xl shadow-lg overflow-hidden bg-gray-200 relative">
-                <!-- Loading indicator -->
-                <div id="map-loading" class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 z-10">
-                    <div class="text-center">
-                        <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600 mx-auto mb-3"></div>
-                        <p class="text-gray-600 font-medium">Loading map...</p>
-                    </div>
-                </div>
-
-                <!-- Map error message -->
-                <div id="map-error" class="hidden absolute inset-0 flex items-center justify-center bg-white z-10">
-                    <div class="text-center p-6">
-                        <p class="text-red-600 font-medium text-lg">❌ Failed to load map</p>
-                        <p class="text-gray-600 mt-2">Please try refreshing the page</p>
-                        <button id="retry-map" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-md">🔄 Retry</button>
-                    </div>
-                </div>
-
-                <!-- Map will render here -->
-                <div id="google-map" class="h-full w-full"></div>
-            </div>
-
-            <!-- Dynamic session details -->
-            <div id="session-details" class="mt-6 p-5 bg-white rounded-2xl shadow-md hidden"></div>
+        <div class="flex flex-col">
+            <label for="age_group" class="text-gray-700 font-medium">Age Group</label>
+            <select name="age_group" id="age_group" class="p-2 border rounded-lg shadow-sm">
+                <option value="">All</option>
+                {% for value, display in age_groups %}
+                <option value="{{ value }}">{{ display }}</option>
+                {% endfor %}
+            </select>
         </div>
+
+        
+        <button type="submit"
+            class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg shadow-md hover:bg-blue-700 transition">
+            Apply Filters
+        </button>
+    </form>
+
+    <!-- Map Section -->
+    <div class="relative">
+        <div id="map" class="w-full h-[500px] rounded-lg shadow-lg border"></div>
     </div>
 </div>
-{% endblock %}
-{% block extra_js %}
+
+<!-- JavaScript for Google Maps & API Fetch -->
 <script>
-    // Global variables
-    let map;
-    let markers = {};
-    let infoWindow;
-    let userMarker;
-    
-    // Load Google Maps API and initialize map
-    function loadGoogleMapsAPI() {
-        // Get API key from Django context - you'll need to provide this
-        const apiKey = 'AIzaSyA5d9mo7c0Zjpr-2UNnADwoQU24z0o_R_8'; // Replace with your API key if not using context variable
-        
-        // Create script element
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap`;
-        script.defer = true;
-        script.async = true;
-        
-        // Handle loading errors
-        script.onerror = function() {
-            document.getElementById('map-loading').classList.add('hidden');
-            document.getElementById('map-error').classList.remove('hidden');
-        };
-        
-        // Add script to document
-        document.head.appendChild(script);
-    }
-    
-    // Initialize map after API loads
-    function initMap() {
-        // Get map container
-        const mapElement = document.getElementById('google-map');
-        if (!mapElement) {
-            console.error('Map container not found');
-            return;
-        }
-        
-        // Create map centered on NYC (default)
-        map = new google.maps.Map(mapElement, {
-            center: { lat: 40.7128, lng: -74.0060 },
-            zoom: 10,
-            mapTypeControl: true,
-            streetViewControl: false,
-            fullscreenControl: true,
-            zoomControl: true
-        });
-        
-        // Create info window for markers
-        infoWindow = new google.maps.InfoWindow();
-        
-        // Create location button
-        const locationButton = document.createElement('button');
-        locationButton.classList.add('bg-white', 'rounded-sm', 'shadow', 'p-2', 'hover:bg-gray-100');
-        locationButton.innerHTML = `
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M12.166 8.94c-.524 1.062-1.234 2.12-1.96 3.07A31.493 31.493 0 0 1 8 14.58a31.481 31.481 0 0 1-2.206-2.57c-.726-.95-1.436-2.008-1.96-3.07C3.304 7.867 3 6.862 3 6a5 5 0 0 1 10 0c0 .862-.305 1.867-.834 2.94zM8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10z"/>
-                <path d="M8 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 1a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
-            </svg>
-        `;
-        
-        locationButton.addEventListener('click', () => {
-            // Try to get the user's location
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const pos = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude
-                        };
-                        
-                        // Remove previous user marker if exists
-                        if (userMarker) {
-                            userMarker.setMap(null);
-                        }
-                        
-                        // Create new user marker
-                        userMarker = new google.maps.Marker({
-                            position: pos,
-                            map: map,
-                            title: 'Your Location',
-                            icon: {
-                                path: google.maps.SymbolPath.CIRCLE,
-                                scale: 10,
-                                fillColor: '#4285F4',
-                                fillOpacity: 1,
-                                strokeColor: 'white',
-                                strokeWeight: 2
-                            }
-                        });
-                        
-                        // Create accuracy circle
-                        const accuracyCircle = new google.maps.Circle({
-                            map: map,
-                            center: pos,
-                            radius: position.coords.accuracy,
-                            strokeColor: '#4285F4',
-                            strokeOpacity: 0.2,
-                            strokeWeight: 1,
-                            fillColor: '#4285F4',
-                            fillOpacity: 0.1
-                        });
-                        
-                        // Center map on user location
-                        map.setCenter(pos);
-                        map.setZoom(15);
-                        
-                        // Show info window
-                        infoWindow.setContent('You are here');
-                        infoWindow.open(map, userMarker);
-                    },
-                    (error) => {
-                        alert(`Error getting your location: ${error.message}`);
-                    }
-                );
-            } else {
-                alert('Geolocation is not supported by your browser');
-            }
-        });
-        
-        // Add location button to map
-        map.controls[google.maps.ControlPosition.RIGHT_BOTTOM].push(locationButton);
-        
-        // Load session data
-        loadSessionsData();
-    }
-    
-    // Load sessions data from API
-    function loadSessionsData() {
-        // Show loading indicator
-        const loadingIndicator = document.getElementById('map-loading');
-        
-        // Fetch data from API
-        fetch('{% url "map_data_api" %}' + window.location.search)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
+function initMap() {
+    var map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: 28.7041, lng: 77.1025 }, // Default: Delhi
+        zoom: 12,
+        styles: [
+            { featureType: "water", stylers: [{ color: "#aadaff" }] },
+            { featureType: "road", stylers: [{ visibility: "simplified" }] },
+            { featureType: "poi", stylers: [{ visibility: "off" }] },
+        ],
+    });
+
+    fetch("{% url 'map_data_api' %}")
+    .then(response => response.json())
+    .then(data => {
+        data.sessions.forEach(session => {
+            var marker = new google.maps.Marker({
+                position: { lat: session.lat, lng: session.lng },
+                map: map,
+                title: session.course_title,
+                animation: google.maps.Animation.DROP,
+                icon: {
+                    url: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png",
                 }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Received data:', data);
-                
-                if (!data.sessions || data.sessions.length === 0) {
-                    console.log('No sessions found');
-                    loadingIndicator.classList.add('hidden');
-                    return;
-                }
-                
-                // Create bounds object to fit all markers
-                const bounds = new google.maps.LatLngBounds();
-                
-                // Add markers for each session
-                data.sessions.forEach(session => {
-                    // Verify lat/lng data is valid
-                    if (!session.lat || !session.lng || isNaN(session.lat) || isNaN(session.lng)) {
-                        console.error('Invalid coordinates for session:', session);
-                        return;
-                    }
-                    
-                    const position = { lat: parseFloat(session.lat), lng: parseFloat(session.lng) };
-                    
-                    // Create marker
-                    const marker = new google.maps.Marker({
-                        position: position,
-                        map: map,
-                        title: session.title,
-                        animation: google.maps.Animation.DROP
-                    });
-                    
-                    // Create info window content
-                    const content = `
-                        <div class="p-2" style="max-width: 300px;">
-                            <div class="font-bold text-lg mb-1">${session.title}</div>
-                            <div class="mb-2">${session.course_title}</div>
-                            <div class="text-sm mb-1"><span class="font-semibold">Teacher:</span> ${session.teacher}</div>
-                            <div class="text-sm mb-1"><span class="font-semibold">When:</span> ${new Date(session.start_time).toLocaleString()}</div>
-                            <div class="text-sm mb-1"><span class="font-semibold">Where:</span> ${session.location}</div>
-                            <div class="text-sm mb-3"><span class="font-semibold">Price:</span> $${session.price}</div>
-                            <a href="${session.url}" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700" style="display: inline-block; text-decoration: none;">View Details</a>
-                        </div>
-                    `;
-                    
-                    // Add click listener to marker
-                    marker.addListener('click', () => {
-                        infoWindow.setContent(content);
-                        infoWindow.open(map, marker);
-                    });
-                    
-                    // Store marker reference
-                    markers[session.id] = marker;
-                    
-                    // Extend bounds to include this marker
-                    bounds.extend(position);
-                });
-                
-                // Fit map to bounds if we have markers
-                if (!bounds.isEmpty()) {
-                    map.fitBounds(bounds);
-                    
-                    // Don't zoom in too far for single marker
-                    const listener = google.maps.event.addListener(map, 'idle', function() {
-                        if (map.getZoom() > 16) {
-                            map.setZoom(16);
-                        }
-                        google.maps.event.removeListener(listener);
-                    });
-                }
-                
-                // Add click handlers to session cards
-                document.querySelectorAll('.session-card').forEach(card => {
-                    const sessionId = card.getAttribute('data-session-id');
-                    if (markers[sessionId]) {
-                        card.addEventListener('click', () => {
-                            const marker = markers[sessionId];
-                            map.setCenter(marker.getPosition());
-                            map.setZoom(15);
-                            infoWindow.close(); // Close any open info windows
-                            
-                            // Trigger marker click event
-                            google.maps.event.trigger(marker, 'click');
-                            
-                            // Add bounce animation to marker
-                            marker.setAnimation(google.maps.Animation.BOUNCE);
-                            setTimeout(() => {
-                                marker.setAnimation(null);
-                            }, 1500);
-                        });
-                    }
-                });
-                
-                // Hide loading indicator
-                loadingIndicator.classList.add('hidden');
-            })
-            .catch(error => {
-                console.error('Error loading map data:', error);
-                
-                // Hide loading indicator and show error
-                loadingIndicator.classList.add('hidden');
-                document.getElementById('map-error').classList.remove('hidden');
             });
-    }
-    
-    // Retry button handler
-    document.getElementById('retry-map')?.addEventListener('click', function() {
-        document.getElementById('map-error').classList.add('hidden');
-        document.getElementById('map-loading').classList.remove('hidden');
-        loadSessionsData();
+
+            var infoWindow = new google.maps.InfoWindow({
+                content: `
+                    <div class="p-3">
+                        <h4 class="text-lg font-semibold text-blue-600">${session.course_title}</h4>
+                        <p class="text-gray-700"><strong>Teacher:</strong> ${session.teacher}</p>
+                        <p class="text-gray-600"><strong>Location:</strong> ${session.location}</p>
+                        <p class="text-green-600 font-bold">₹${session.price}</p>
+                        <a href="${session.url}" class="mt-2 inline-block text-white bg-blue-500 px-3 py-1 rounded-lg shadow hover:bg-blue-600 transition">
+                            View Details
+                        </a>
+                    </div>
+                `,
+            });
+
+            marker.addListener('click', function() {
+                infoWindow.open(map, marker);
+            });
+        });
     });
-    
-    // Load Google Maps API when DOM is ready
-    document.addEventListener('DOMContentLoaded', function() {
-        loadGoogleMapsAPI();
-    });
+}
 </script>
+
+<!-- Google Maps API -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA5d9mo7c0Zjpr-2UNnADwoQU24z0o_R_8&callback=initMap" async defer></script>
 {% endblock %}

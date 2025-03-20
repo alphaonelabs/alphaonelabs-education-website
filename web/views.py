@@ -3906,44 +3906,35 @@ from django.utils import timezone
 from django.db.models import Q
 from .models import Session, Subject, Course
 
-from django.utils import timezone
-from django.shortcuts import render
-from django.db.models import Q
-
 def classes_map(request):
-    """View for the 'Classes Near Me' map feature."""
+    """View for displaying classes near the user."""
     now = timezone.now()
-
-    # Get sessions: Only future or currently live sessions with location
+    
+    # Query for future or ongoing live classes with valid locations
     sessions = Session.objects.filter(
-        Q(start_time__gte=now) |  # Future classes
-        Q(start_time__lte=now, end_time__gte=now)  # Live classes
+        Q(start_time__gte=now) | Q(start_time__lte=now, end_time__gte=now)  # Future or Live classes
     ).filter(
-        is_virtual=False,
-        ~Q(location=''),
-        ~Q(latitude=None),
+        Q(is_virtual=False) & 
+        ~Q(location='') & 
+        ~Q(latitude=None) & 
         ~Q(longitude=None)
     ).select_related('course', 'course__teacher', 'course__subject')
 
-    # Get filters
+    # Apply filters
     subject_id = request.GET.get('subject')
     age_group = request.GET.get('age_group')
     teaching_style = request.GET.get('teaching_style')
-    live_only = request.GET.get('live_only')  # New filter for live classes
 
-    # Apply filters
     if subject_id:
         sessions = sessions.filter(course__subject_id=subject_id)
     if age_group:
         sessions = sessions.filter(course__level=age_group)
     if teaching_style:
         sessions = sessions.filter(course__teaching_style=teaching_style)
-    if live_only:  # Apply live class filter
-        sessions = sessions.filter(start_time__lte=now, end_time__gte=now)
 
-    # Fetch dropdown options
+    # Filter data for dropdowns
     subjects = Subject.objects.all().order_by('name')
-    age_groups = [choice for choice in Course._meta.get_field('level').choices]
+    age_groups = Course._meta.get_field('level').choices
     teaching_styles = [
         ('interactive', 'Interactive'),
         ('lecture', 'Lecture'),
@@ -3957,33 +3948,24 @@ def classes_map(request):
         'age_groups': age_groups,
         'teaching_styles': teaching_styles,
     }
-
     return render(request, 'web/classes_map.html', context)
 
+
 from django.http import JsonResponse
-from django.utils import timezone
 
 def map_data_api(request):
-    """API view that returns JSON data for the map."""
+    """API to return nearby class data in JSON format."""
     now = timezone.now()
-
-    # Get sessions (include live ones)
+    
     sessions = Session.objects.filter(
-    Q(start_time__gte=now) | Q(start_time__lte=now, end_time__gte=now)  # Future & Live classes
+        Q(start_time__gte=now) | Q(start_time__lte=now, end_time__gte=now)
     ).filter(
-        Q(is_virtual=False) &  # Move is_virtual inside a Q object
+        Q(is_virtual=False) &
         ~Q(location='') &
         ~Q(latitude=None) &
         ~Q(longitude=None)
-    )
-    sessions_details = sessions.select_related('course', 'course__teacher', 'course__subject')
+    ).select_related('course', 'course__teacher', 'course__subject')
 
-
-    # Apply filters (similar to classes_map view)
-    if request.GET.get('live_only'):
-        sessions = sessions.filter(start_time__lte=now, end_time__gte=now)
-
-    # Prepare JSON response
     map_data = []
     for session in sessions:
         map_data.append({
@@ -3992,7 +3974,6 @@ def map_data_api(request):
             'course_title': session.course.title,
             'teacher': session.course.teacher.get_full_name() or session.course.teacher.username,
             'start_time': session.start_time.isoformat(),
-            'end_time': session.end_time.isoformat(),
             'location': session.location,
             'lat': float(session.latitude),
             'lng': float(session.longitude),
@@ -4000,7 +3981,6 @@ def map_data_api(request):
             'url': session.get_absolute_url(),
             'subject': session.course.subject.name,
             'level': session.course.get_level_display(),
-            'is_live': session.is_live(),  # Add is_live flag
         })
 
     return JsonResponse({'sessions': map_data})
