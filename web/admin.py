@@ -408,16 +408,16 @@ class ChallengeSubmissionAdmin(admin.ModelAdmin):
 @admin.register(Quiz)
 class QuizAdmin(admin.ModelAdmin):
     list_display = ("title", "description", "start_date", "end_date", "start_time", "end_time", "duration_minutes")
+
     def save_model(self, request, obj, form, change):
-            """ First, save the quiz instance, then validate it. """
-            super().save_model(request, obj, form, change)  # Save first
+        """First, save the quiz instance, then validate it."""
+        super().save_model(request, obj, form, change)  # Save first
 
-            # Now, the primary key exists, and we can access related objects
-            is_valid, message = validate_quiz_has_questions(obj)
+        # Now, the primary key exists, and we can access related objects
+        is_valid, message = validate_quiz_has_questions(obj)
 
-            if not is_valid:
-                messages.error(request, message)
-        
+        if not is_valid:
+            messages.error(request, message)
 
 
 @admin.register(QuizSubmission)
@@ -432,7 +432,7 @@ class QuizOptionAdmin(admin.ModelAdmin):
 
 @admin.register(QuizQuestion)
 class QuizQuestionAdmin(admin.ModelAdmin):
-    list_display = ("quiz", "question_text","points") 
+    list_display = ("quiz", "question_text", "points")
 
 
 # Unregister the default User admin and register our custom one

@@ -5,7 +5,7 @@ import re
 import shutil
 import subprocess
 import time
-from datetime import datetime,timedelta
+from datetime import timedelta
 from decimal import Decimal
 import requests
 import stripe
@@ -118,6 +118,7 @@ from .models import (
     WebRequest,
 )
 import logging
+
 logger = logging.getLogger(__name__)
 GOOGLE_CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "google_credentials.json")
 
@@ -2685,6 +2686,7 @@ def content_dashboard(request):
         },
     )
 
+
 # challenge views
 
 
@@ -2723,7 +2725,7 @@ def challenge_detail(request, week_number):
 @login_required
 def challenge_submit(request, week_number):
     """Allow users to submit solutions for weekly challenges."""
-    challenge = get_object_or_404(Challenge,week_number=week_number)
+    challenge = get_object_or_404(Challenge, week_number=week_number)
 
     # Check if the user has already submitted
     existing_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
@@ -2747,13 +2749,12 @@ def challenge_submit(request, week_number):
 
 # Quiz views
 
+
 @login_required
 def current_live_quiz(request, quiz_id):
     """Fetch the quiz by ID and check if the user has submitted."""
 
-    quiz = Quiz.objects.filter(
-        id=quiz_id
-    ).first()
+    quiz = Quiz.objects.filter(id=quiz_id).first()
 
     # improved no quiz handling
     if not quiz:
@@ -2772,13 +2773,17 @@ def current_live_quiz(request, quiz_id):
         user_submission = QuizSubmission.objects.filter(user=request.user, quiz=quiz).first()
         has_submitted = user_submission is not None
 
-    return render(request, "web/current_live_quiz.html", {
-        "quiz": quiz,
-        "has_submitted": has_submitted,
-        "user_submission": user_submission,
-        "questions":questions_page,
-        "paginator":paginator
-    })
+    return render(
+        request,
+        "web/current_live_quiz.html",
+        {
+            "quiz": quiz,
+            "has_submitted": has_submitted,
+            "user_submission": user_submission,
+            "questions": questions_page,
+            "paginator": paginator,
+        },
+    )
 
 
 @login_required
@@ -2796,7 +2801,7 @@ def submit_quiz(request, quiz_id):
             if not quiz.is_active():
                 messages.error(request, "This quiz is not currently active.")
                 return redirect("index")
-            
+
             score = 0  # Total score counter
             for question in quiz.questions.all():
                 selected_option_id = request.POST.get(f"question_{question.id}")
@@ -2819,14 +2824,18 @@ def submit_quiz(request, quiz_id):
                 if selected_id and selected_id.isdigit():
                     selected = QuizOption.objects.get(id=selected_id)
                     correct_answer = QuizOption.objects.filter(question=question, is_correct=True).first()
-                    results.append({
-                        'question_id': question.id,
-                        'question_text': question.question_text,
-                        'selected_answer': selected.option_text,
-                        'correct_answer': correct_answer.option_text if correct_answer else "No correct answer defined",
-                        'is_correct': selected.is_correct
-                    })
-            request.session['quiz_results'] = results
+                    results.append(
+                        {
+                            "question_id": question.id,
+                            "question_text": question.question_text,
+                            "selected_answer": selected.option_text,
+                            "correct_answer": (
+                                correct_answer.option_text if correct_answer else "No correct answer defined"
+                            ),
+                            "is_correct": selected.is_correct,
+                        }
+                    )
+            request.session["quiz_results"] = results
             messages.success(request, f"Quiz submitted! Your score: {score}")
             return redirect("leaderboard", quiz_id=quiz.id)
     return redirect("current_live_quiz", quiz_id=quiz.id)
@@ -2837,11 +2846,11 @@ def leaderboard(request, quiz_id):
     """
     Display the leaderboard with highest scores first.
     Also shows quiz results if the user just submitted the quiz.
-    
+
     Args:
         request (HttpRequest): The request object
         quiz_id (int): ID of the quiz to show leaderboard for
-        
+
     Returns:
         HttpResponse: Rendered leaderboard template or redirect to index on error
     """
@@ -2850,16 +2859,14 @@ def leaderboard(request, quiz_id):
         # Retrieve all submissions for this quiz, ordered by highest score
         submissions = QuizSubmission.objects.filter(quiz=quiz).order_by("-score", "submitted_at")
         # Get quiz_results from session if present
-        quiz_results = request.session.get('quiz_results', None)
+        quiz_results = request.session.get("quiz_results", None)
         if quiz_results:
             # Clear from session after retrieving
-            del request.session['quiz_results']
+            del request.session["quiz_results"]
             request.session.modified = True
-        return render(request, "web/leaderboard.html", {
-            "quiz": quiz,
-            "submissions": submissions,
-            "quiz_results": quiz_results
-        })
+        return render(
+            request, "web/leaderboard.html", {"quiz": quiz, "submissions": submissions, "quiz_results": quiz_results}
+        )
     except Exception as e:
         logger.error(f"Error in leaderboard view: {str(e)}")
         messages.error(request, "An error occurred while loading the leaderboard.")
