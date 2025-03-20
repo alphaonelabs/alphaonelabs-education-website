@@ -301,6 +301,14 @@ class Session(models.Model):
     teacher_confirmed = models.BooleanField(
         default=False, help_text="Whether the teacher has confirmed the rolled over dates"
     )
+    latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+        help_text="Latitude coordinate for mapping"
+    )
+    longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+        help_text="Longitude coordinate for mapping"
+    )
 
     class Meta:
         ordering = ["start_time"]
@@ -374,6 +382,18 @@ class Session(models.Model):
             delete_calendar_event(self)
         super().delete(*args, **kwargs)
 
+    def has_location_data(self):
+        """Check if this session has valid location data for mapping."""
+        return bool(self.location and self.latitude is not None and self.longitude is not None)
+    
+    def get_absolute_url(self):
+        """Return the URL for this session."""
+        return reverse('course_detail', kwargs={'slug': self.course.slug}) + f'#session-{self.id}'
+    
+    def is_live(self):
+        """Returns True if the session is live right now."""
+        now = timezone.now()
+        return self.start_time <= now <= self.end_time
 
 class CourseMaterial(models.Model):
     MATERIAL_TYPES = [
@@ -1456,10 +1476,8 @@ class Quiz(models.Model):
                     self.share_code = code
                     break
         super().save(*args, **kwargs)
-
+        
     def get_absolute_url(self):
-        from django.urls import reverse
-
         return reverse("quiz_detail", kwargs={"pk": self.pk})
 
     @property
@@ -1596,9 +1614,9 @@ class UserQuiz(models.Model):
 
             duration_seconds = (timezone.now() - self.start_time).total_seconds()
 
-            # Format the duration
+            # Format the duration for better readibility
             if duration_seconds < 60:
-                # Show with decimal precision for small durations
+                # Show with decimal precision for small durations(<10s)
                 if duration_seconds < 10:
                     return f"{duration_seconds:.1f}s"
                 return f"{int(duration_seconds)}s"
