@@ -17,12 +17,12 @@
       <div class="flex flex-wrap items-center gap-2">
         <span class="font-semibold">Filter by subject:</span>
         <a href="{% url 'meme_list' %}"
-           class="px-3 py-1 rounded-full {% if not selected_subject %}bg-teal-600 text-white{% else %}bg-gray-200 hover:bg-gray-300{% endif %}">
+           class="px-3 py-1 rounded-full {% if not selected_subject %}bg-teal-600 text-white{% else %}bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200{% endif %}">
           All
         </a>
         {% for subject in subjects %}
           <a href="{% url 'meme_list' %}?subject={{ subject.slug }}"
-             class="px-3 py-1 rounded-full {% if selected_subject == subject.slug %}bg-teal-600 text-white{% else %}bg-gray-200 hover:bg-gray-300{% endif %}">
+             class="px-3 py-1 rounded-full {% if selected_subject == subject.slug %}bg-teal-600 text-white{% else %}bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200{% endif %}">
             {{ subject.name }}
           </a>
         {% endfor %}
@@ -58,7 +58,7 @@
         <nav class="inline-flex rounded-md shadow-sm">
           {% if memes.has_previous %}
             <a href="?{% if selected_subject %}subject={{ selected_subject }}&{% endif %}page={{ memes.previous_page_number }}"
-               class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50">
+               class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-l-md hover:bg-gray-50 dark:hover:bg-gray-700">
               Previous
             </a>
           {% endif %}
@@ -67,14 +67,14 @@
               <span class="px-4 py-2 text-sm font-medium text-white bg-teal-600 border border-teal-600">{{ num }}</span>
             {% else %}
               <a href="?{% if selected_subject %}subject={{ selected_subject }}&{% endif %}page={{ num }}"
-                 class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50">
+                 class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700">
                 {{ num }}
               </a>
             {% endif %}
           {% endfor %}
           {% if memes.has_next %}
             <a href="?{% if selected_subject %}subject={{ selected_subject }}&{% endif %}page={{ memes.next_page_number }}"
-               class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50">
+               class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-r-md hover:bg-gray-50 dark:hover:bg-gray-700">
               Next
             </a>
           {% endif %}
