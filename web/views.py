@@ -2754,7 +2754,7 @@ def challenge_submit(request, week_number):
     else:
         form = ChallengeSubmissionForm()
 
-    return render(request, "web/live_challenge_submit.html", {"challenge": challenge, "form": form})
+    return render(request, "web/challenge_submit.html", {"challenge": challenge, "form": form})
 
 
 # Quiz views

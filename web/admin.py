@@ -7,6 +7,7 @@ from django.db import models
 from django.http import HttpResponseRedirect
 from django.urls import path, reverse
 from django.utils.html import format_html
+from django.core.exceptions import ValidationError
 from .utils import validate_quiz_has_questions
 from .models import (
     Achievement,
@@ -425,7 +426,8 @@ class AdminQuizAdmin(admin.ModelAdmin):
         is_valid, message = validate_quiz_has_questions(obj)
 
         if not is_valid:
-            messages.error(request, message)
+            # Raise a validation error to prevent the quiz from being saved
+            raise ValidationError(message)
 
 
 @admin.register(AdminQuizSubmission)

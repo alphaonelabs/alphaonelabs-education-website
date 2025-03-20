@@ -1247,14 +1247,14 @@ class AdminQuizOption(models.Model):
         correct_count = cls.objects.filter(question=question, is_correct=True).count()
         if correct_count > 1:
             raise ValidationError("Only one correct option is allowed per question.")
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)
+        
+    def clean(self):
+        super().clean()
         self.__class__.validate_question_has_correct_option(self.question)
-        # Additionally, enforce only one correct option if needed
         self.__class__.validate_only_one_correct_option(self.question)
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
 
 class AdminQuizSubmission(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
