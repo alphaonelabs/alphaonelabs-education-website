@@ -140,7 +140,7 @@ def product_list(request):
         rounded_max_price = 100  # Default if no products exist
 
     # Pass the value to the template
-    return render(request, "your_template.html", {
+    return render(request, "goods/goods_listing.html", {
         "products": products,
         "max_price": rounded_max_price
     })
@@ -2940,6 +2940,14 @@ class GoodsListingView(ListView):
         context = super().get_context_data(**kwargs)
         context["store_names"] = Storefront.objects.values_list("name", flat=True).distinct()
         context["categories"] = Goods.objects.values_list("category", flat=True).distinct()
+    
+    # Get maximum price and round up to the nearest tenth (multiple of 10)
+        max_price_value = Goods.objects.aggregate(Max("price"))["price__max"]
+        if max_price_value is not None:
+            context["max_price"] = math.ceil(max_price_value / 10) * 10
+        else:
+            context["max_price"] = 100  # Default if no products exist
+    
         return context
 
 
