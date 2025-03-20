@@ -6,7 +6,7 @@ from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
 from . import admin_views, views
-from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_data
+from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_data, streak_detail
 
 # Non-prefixed URLs
 urlpatterns = [
@@ -31,6 +31,8 @@ urlpatterns += i18n_patterns(
     path("learn/", views.learn, name="learn"),
     path("teach/", views.teach, name="teach"),
     path("about/", views.about, name="about"),
+    path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
+    path("certificate/generate/<int:enrollment_id>/", views.generate_certificate, name="generate_certificate"),
     path("donate/", views.donate, name="donate"),
     path("donate/payment-intent/", views.create_donation_payment_intent, name="create_donation_payment_intent"),
     path("donate/subscription/", views.create_donation_subscription, name="create_donation_subscription"),
@@ -135,6 +137,7 @@ urlpatterns += i18n_patterns(
         views.calendar_links,
         name="calendar_links",
     ),
+    path("streak/", streak_detail, name="streak_detail"),
     # Forum URLs
     path("forum/", views.forum_categories, name="forum_categories"),
     path("forum/category/create/", views.create_forum_category, name="create_forum_category"),

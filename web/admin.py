@@ -26,6 +26,7 @@ from .models import (
     ForumReply,
     ForumTopic,
     Goods,
+    LearningStreak,
     Notification,
     Order,
     OrderItem,
@@ -566,3 +567,9 @@ class DonationAdmin(admin.ModelAdmin):
         return obj.display_name
 
     display_name.short_description = "Name"
+
+
+@admin.register(LearningStreak)
+class LearningStreakAdmin(admin.ModelAdmin):
+    list_display = ("user", "current_streak", "longest_streak", "last_engagement")
+    search_fields = ("user__username",)
