@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Your Social Share Discounts{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6">Your Social Share Discounts</h1>
+
+    <!-- Active Discounts -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">Active Discounts</h2>
+        {% if active_discounts %}
+            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {% for discount in active_discounts %}
+                    <div class="bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-medium">{{ discount.course.title }}</h3>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-200">
+                                Verified
+                            </span>
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                            <span class="font-semibold">${{ discount.discount_amount }}</span> discount
+                        </p>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                            Shared on {{ discount.get_platform_display }}
+                        </p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            Expires on {{ discount.expires_at|date:"M d, Y" }}
+                        </p>
+                        <div class="mt-3">
+                            <a href="{% url 'course_detail' discount.course.slug %}" 
+                               class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                                Go to course <i class="fas fa-arrow-right ml-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-600 dark:text-gray-400">You don't have any active discounts.</p>
+        {% endif %}
+    </div>
+
+    <!-- Pending Discounts -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-xl font-semibold mb-4">Pending Verification</h2>
+        {% if pending_discounts %}
+            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {% for discount in pending_discounts %}
+                    <div class="bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-medium">{{ discount.course.title }}</h3>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-200">
+                                Pending
+                            </span>
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                            <span class="font-semibold">${{ discount.discount_amount }}</span> discount
+                        </p>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                            Shared on {{ discount.get_platform_display }}
+                        </p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            Shared on {{ discount.created_at|date:"M d, Y" }}
+                        </p>
+                        <div class="mt-3">
+                            <a href="{% url 'course_detail' discount.course.slug %}" 
+                               class="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                                Go to course <i class="fas fa-arrow-right ml-1"></i>
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            <div class="mt-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <h3 class="text-sm font-semibold mb-2">How verification works</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">
+                    We verify your social media posts to confirm they were actually shared. This process may take up to 24 hours.
+                    Our automated system scans the social platform to confirm your post exists and contains a link to the course.
+                    Once verified, your discount will be automatically applied when you enroll in the course.
+                </p>
+            </div>
+        {% else %}
+            <p class="text-gray-600 dark:text-gray-400">You don't have any pending discounts.</p>
+        {% endif %}
+    </div>
+
+    <!-- Expired Discounts -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h2 class="text-xl font-semibold mb-4">Expired or Used Discounts</h2>
+        {% if expired_discounts %}
+            <div class="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {% for discount in expired_discounts %}
+                    <div class="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+                        <div class="flex justify-between items-start mb-2">
+                            <h3 class="font-medium">{{ discount.course.title }}</h3>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200">
+                                {{ discount.get_status_display }}
+                            </span>
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                            <span class="font-semibold">${{ discount.discount_amount }}</span> discount
+                        </p>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                            Shared on {{ discount.get_platform_display }}
+                        </p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">
+                            {% if discount.used_at %}
+                                Used on {{ discount.used_at|date:"M d, Y" }}
+                            {% else %}
+                                Expired on {{ discount.expires_at|date:"M d, Y" }}
+                            {% endif %}
+                        </p>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-600 dark:text-gray-400">You don't have any expired or used discounts.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

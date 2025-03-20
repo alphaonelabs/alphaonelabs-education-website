@@ -353,24 +353,33 @@
                           @click="open = !open">
                     <i class="fas fa-share-alt text-gray-600 dark:text-gray-300"></i>
                   </button>
-                  <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10"
+                  <div class="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10"
                        x-show="open"
                        @click.away="open = false">
+                    {% if user.is_authenticated %}
+                    <div class="p-2">
+                      <p class="text-sm font-semibold mb-2 text-center">Share and get a $5 discount!</p>
+                      <p class="text-xs mb-3 text-gray-600 dark:text-gray-400 text-center">Share this course on social media and earn a $5 discount when you enroll.</p>
+                    </div>
+                    {% endif %}
                     <div class="p-2 space-y-1">
                       <a href="https://twitter.com/intent/tweet?text=Check%20out%20this%20course%3A%20{{ course.title|urlencode }}&url={{ request.build_absolute_uri|urlencode }}"
                          target="_blank"
+                         {% if user.is_authenticated %}onclick="trackSocialShare('twitter', this.href)"{% endif %}
                          class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
                         <i class="fab fa-twitter text-blue-400 mr-2"></i>
                         <span class="text-sm">Share on Twitter</span>
                       </a>
                       <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri|urlencode }}"
                          target="_blank"
+                         {% if user.is_authenticated %}onclick="trackSocialShare('facebook', this.href)"{% endif %}
                          class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
                         <i class="fab fa-facebook text-blue-600 mr-2"></i>
                         <span class="text-sm">Share on Facebook</span>
                       </a>
                       <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri|urlencode }}"
                          target="_blank"
+                         {% if user.is_authenticated %}onclick="trackSocialShare('linkedin', this.href)"{% endif %}
                          class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
                         <i class="fab fa-linkedin text-blue-700 mr-2"></i>
                         <span class="text-sm">Share on LinkedIn</span>
@@ -654,3 +663,91 @@
       });
   </script>
 {% endblock content %}
+
+{% block extra_js %}
+<script>
+  // Social share tracking
+  function trackSocialShare(platform, shareUrl) {
+    // Create new browser window for sharing
+    const shareWindow = window.open(shareUrl, 'social_share', 'width=600,height=400');
+    
+    // Track the share and get the discount ID
+    fetch("{% url 'track_social_share' course.slug %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({
+        platform: platform
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        const discountId = data.discount_id;
+        
+        // Check when the share window is closed to prompt for the share URL
+        const checkWindowClosed = setInterval(() => {
+          if (shareWindow.closed) {
+            clearInterval(checkWindowClosed);
+            
+            // Ask for the share URL (simplified in this implementation)
+            setTimeout(() => {
+              // For a real implementation, you'd need to look at different ways to capture
+              // the share URL depending on the platform, as direct user input might be cumbersome.
+              // Here's a simplified version that asks the user directly:
+              const shareUrlPrompt = confirm(
+                'Thanks for sharing! To verify your share and claim your $5 discount, ' +
+                'copy and paste the URL of your social media post. ' +
+                '\n\nDo you want to proceed with verification?'
+              );
+              
+              if (shareUrlPrompt) {
+                // In a real implementation, you might redirect to a page with a form
+                // instead of using prompt(), but this is just for demonstration
+                const userShareUrl = prompt('Please paste the URL of your social media post:');
+                if (userShareUrl) {
+                  verifyShareUrl(discountId, userShareUrl);
+                }
+              }
+            }, 1000);
+          }
+        }, 1000);
+      } else {
+        console.error('Error tracking share:', data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+  }
+  
+  function verifyShareUrl(discountId, shareUrl) {
+    fetch(`/share/verify/${discountId}/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token }}'
+      },
+      body: JSON.stringify({
+        share_url: shareUrl
+      })
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        alert('Success! ' + data.message + ' The page will now refresh to show your discount.');
+        window.location.reload();
+      } else if (data.status === 'pending') {
+        alert(data.message);
+      } else {
+        alert('Error: ' + data.message);
+      }
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
+  }
+</script>
+{% endblock %}

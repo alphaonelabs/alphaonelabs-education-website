@@ -115,11 +115,13 @@ from .models import (
     SuccessStory,
     TimeSlot,
     WebRequest,
+    SocialShareDiscount,
 )
 from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
 from .referrals import send_referral_reward_email
 from .social import get_social_stats
 from .utils import get_or_create_cart
+from .social_share import create_social_share_discount, notify_user_about_discount, apply_social_share_discount, verify_social_share
 
 GOOGLE_CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "google_credentials.json")
 
@@ -339,6 +341,17 @@ def course_detail(request, slug):
                 student=request.user, session__course=course, status="completed"
             ).values_list("session__id", flat=True)
             completed_sessions = course.sessions.filter(id__in=completed_sessions)
+        
+        # Check for active social share discount
+        original_price, discounted_price, discount_amount, discount_obj = apply_social_share_discount(request.user, course)
+    else:
+        original_price = course.price
+        discounted_price = course.price
+        discount_amount = 0
+        discount_obj = None
+    
+    # Generate social share content
+    social_content = generate_social_share_content(course)
 
     # Mark past sessions as completed for display
     past_sessions = sessions.filter(end_time__lt=now)
@@ -402,6 +415,11 @@ def course_detail(request, slug):
         "current_month": current_month,
         "prev_month": prev_month,
         "next_month": next_month,
+        "social_content": social_content,
+        "original_price": original_price,
+        "discounted_price": discounted_price,
+        "discount_amount": discount_amount,
+        "discount_obj": discount_obj,
     }
 
     return render(request, "courses/detail.html", context)
@@ -422,29 +440,56 @@ def enroll_course(request, course_slug):
         messages.error(request, "This course is full.")
         return redirect("course_detail", slug=course_slug)
 
-    # Check if this is the user's first enrollment and if they were referred
-    if not Enrollment.objects.filter(student=request.user).exists():
-        if hasattr(request.user.profile, "referred_by") and request.user.profile.referred_by:
-            referrer = request.user.profile.referred_by
-            if not referrer.is_teacher:  # Regular users get reward on first course enrollment
-                referrer.add_referral_earnings(5)
-                send_referral_reward_email(referrer.user, request.user, 5, "enrollment")
+    # Apply any verified social share discount the user might have
+    from .social_share import apply_social_share_discount
+    original_price, discounted_price, discount_amount, discount_obj = apply_social_share_discount(request.user, course)
 
     # Create enrollment
-    enrollment = Enrollment.objects.create(
-        student=request.user, course=course, status="pending" if course.price > 0 else "approved"
-    )
+    enrollment = Enrollment.objects.create(student=request.user, course=course, status="pending")
 
-    # For paid courses, create pending enrollment and redirect to payment
-    if course.price > 0:
-        messages.info(request, "Please complete the payment process to enroll in this course.")
-        return redirect("course_detail", slug=course_slug)
+    # Create progress record
+    CourseProgress.objects.create(enrollment=enrollment)
 
-    # For free courses, send notifications
-    send_enrollment_confirmation(enrollment)
-    notify_teacher_new_enrollment(enrollment)
-    messages.success(request, "You have successfully enrolled in this course.")
-    return redirect("course_detail", slug=course_slug)
+    # Process any applicable referrals
+    if "ref" in request.session:
+        referrer_code = request.session["ref"]
+        try:
+            referrer = Profile.objects.get(referral_code=referrer_code)
+            if referrer.user != request.user:  # Avoid self-referrals
+                send_referral_reward_email(referrer.user, request.user, 5, "enrollment")
+                referrer.add_referral_earnings(5)
+        except Profile.DoesNotExist:
+            pass
+
+    # Create payment intent for enrollment
+    if discount_obj:
+        # Apply the discount and mark it as used
+        payment_amount = discounted_price
+        discount_obj.mark_as_used()
+        messages.success(
+            request, 
+            f"A ${discount_amount} discount has been applied to your enrollment thanks to your social media share!"
+        )
+    else:
+        payment_amount = course.price
+
+    # Add to cart instead of direct enrollment
+    cart = get_or_create_cart(request)
+    
+    # Remove existing course items from cart
+    CartItem.objects.filter(cart=cart, course=course).delete()
+    
+    # Add course to cart with the possibly discounted price
+    cart_item = CartItem.objects.create(cart=cart, course=course)
+    
+    # Apply discount if needed - we'll use session to store discounted price info
+    if discount_obj:
+        request.session['discounted_items'] = request.session.get('discounted_items', {})
+        request.session['discounted_items'][f'course_{course.id}'] = float(discounted_price)
+        request.session.modified = True
+
+    messages.success(request, f"{course.title} has been added to your cart.")
+    return redirect("cart_view")
 
 
 @login_required
@@ -1721,7 +1766,49 @@ def custom_429(request, exception=None):
 def cart_view(request):
     """View the shopping cart."""
     cart = get_or_create_cart(request)
-    return render(request, "cart/cart.html", {"cart": cart, "stripe_public_key": settings.STRIPE_PUBLISHABLE_KEY})
+    
+    # Get all cart items
+    cart_items = cart.items.all().select_related("course", "session", "goods")
+    
+    # Get discounted items from session if they exist
+    discounted_items = request.session.get('discounted_items', {})
+    
+    # Calculate total with potential discounts
+    cart_total = 0
+    formatted_items = []
+    
+    for item in cart_items:
+        item_data = {
+            'id': item.id,
+            'item': item,
+            'original_price': float(item.price),
+            'display_price': float(item.price),
+            'has_discount': False,
+            'discount_amount': 0
+        }
+        
+        # Check if this item has a discount
+        if item.course and f'course_{item.course.id}' in discounted_items:
+            discounted_price = discounted_items[f'course_{item.course.id}']
+            item_data['display_price'] = discounted_price
+            item_data['has_discount'] = True
+            item_data['discount_amount'] = float(item.price) - discounted_price
+            cart_total += discounted_price
+        else:
+            cart_total += float(item.price)
+            
+        formatted_items.append(item_data)
+    
+    return render(
+        request, 
+        "cart/cart.html", 
+        {
+            "cart": cart,
+            "formatted_items": formatted_items,
+            "cart_total": cart_total,
+            "stripe_public_key": settings.STRIPE_PUBLISHABLE_KEY
+        }
+    )
 
 
 def add_course_to_cart(request, course_id):
@@ -3896,3 +3983,138 @@ def streak_detail(request):
     """
     streak, created = LearningStreak.objects.get_or_create(user=request.user)
     return render(request, "streak_detail.html", {"streak": streak})
+
+
+@login_required
+@require_POST
+def track_social_share(request, course_slug):
+    """
+    Track when a user shares a course on social media.
+    This is called via AJAX when a user clicks on a social share button.
+    
+    Args:
+        request: HTTP request
+        course_slug: The slug of the course being shared
+        
+    Returns:
+        JsonResponse with the status of the share tracking
+    """
+    from .social_share import create_social_share_discount, notify_user_about_discount
+    import json
+    
+    course = get_object_or_404(Course, slug=course_slug)
+    
+    # Get the platform and redirect URL from the request
+    data = json.loads(request.body)
+    platform = data.get('platform')
+    
+    if not platform or platform not in ["twitter", "facebook", "linkedin"]:
+        return JsonResponse({
+            "status": "error",
+            "message": "Invalid platform",
+        })
+    
+    # Create social share discount
+    result = create_social_share_discount(request.user, course, platform)
+    
+    # Notify user about pending verification
+    if result["is_new"]:
+        notify_user_about_discount(result["discount"])
+    
+    return JsonResponse({
+        "status": result["status"],
+        "message": result["message"],
+        "discount_id": result["discount"].id,
+    })
+
+
+@login_required
+@require_POST
+def verify_social_share_url(request, discount_id):
+    """
+    Update a social share with the actual URL of the shared post.
+    This is called after the user has shared the course and returned to the site.
+    
+    Args:
+        request: HTTP request
+        discount_id: The ID of the social share discount to update
+        
+    Returns:
+        JsonResponse with the status of the verification
+    """
+    from .models import SocialShareDiscount
+    from .social_share import verify_social_share, notify_user_about_discount
+    import json
+    
+    # Get the discount object
+    try:
+        discount = SocialShareDiscount.objects.get(id=discount_id, user=request.user)
+    except SocialShareDiscount.DoesNotExist:
+        return JsonResponse({
+            "status": "error",
+            "message": "Discount not found",
+        })
+    
+    # Get the share URL from the request
+    data = json.loads(request.body)
+    share_url = data.get('share_url')
+    
+    if not share_url:
+        return JsonResponse({
+            "status": "error",
+            "message": "No share URL provided",
+        })
+    
+    # Update the discount with the share URL
+    discount.share_url = share_url
+    discount.save()
+    
+    # Verify the share (would be done in a background job in production)
+    is_verified = verify_social_share(discount)
+    
+    if is_verified:
+        # Mark as verified and notify user
+        discount.mark_as_verified()
+        notify_user_about_discount(discount)
+        
+        return JsonResponse({
+            "status": "success",
+            "message": f"Your share has been verified! You've received a ${discount.discount_amount} discount on {discount.course.title}.",
+        })
+    else:
+        return JsonResponse({
+            "status": "pending",
+            "message": "Your share is pending verification. This may take some time.",
+        })
+
+
+@login_required
+def social_share_discounts(request):
+    """
+    View for users to see their social share discounts.
+    
+    Args:
+        request: HTTP request
+        
+    Returns:
+        Rendered template with the user's social share discounts
+    """
+    from .models import SocialShareDiscount
+    
+    # Get the user's discounts
+    discounts = SocialShareDiscount.objects.filter(user=request.user).order_by('-created_at')
+    
+    # Organize by status
+    pending_discounts = discounts.filter(status="pending")
+    active_discounts = discounts.filter(status="verified", expires_at__gt=timezone.now())
+    expired_discounts = discounts.filter(status__in=["expired", "used"]) | discounts.filter(
+        status="verified", expires_at__lte=timezone.now()
+    )
+    
+    context = {
+        "pending_discounts": pending_discounts,
+        "active_discounts": active_discounts,
+        "expired_discounts": expired_discounts,
+    }
+    
+    return render(request, "discounts/social_share_discounts.html", context)

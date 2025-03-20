@@ -237,6 +237,10 @@ urlpatterns += i18n_patterns(
     path("trackers/<int:tracker_id>/update/", views.update_tracker, name="update_tracker"),
     path("trackers/<int:tracker_id>/progress/", views.update_progress, name="update_progress"),
     path("trackers/embed/<str:embed_code>/", views.embed_tracker, name="embed_tracker"),
+    # Social share discount URLs
+    path('courses/<slug:course_slug>/share/', views.track_social_share, name='track_social_share'),
+    path('share/verify/<int:discount_id>/', views.verify_social_share_url, name='verify_social_share'),
+    path('discounts/social/', views.social_share_discounts, name='social_share_discounts'),
     prefix_default_language=True,
 )
 

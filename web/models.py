@@ -1409,3 +1409,76 @@ class LearningStreak(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - Current: {self.current_streak}, Longest: {self.longest_streak}"
+
+
+class SocialShareDiscount(models.Model):
+    """Model for tracking course share discounts on social media."""
+    
+    PLATFORM_CHOICES = [
+        ("twitter", "Twitter"),
+        ("facebook", "Facebook"),
+        ("linkedin", "LinkedIn"),
+    ]
+    
+    STATUS_CHOICES = [
+        ("pending", "Pending Verification"),
+        ("verified", "Verified"),
+        ("expired", "Expired"),
+        ("used", "Used"),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="social_share_discounts")
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="social_share_discounts")
+    platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES)
+    share_url = models.URLField(help_text="URL of the shared post")
+    verification_token = models.CharField(max_length=50, unique=True)
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=5.00)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    created_at = models.DateTimeField(auto_now_add=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    used_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        unique_together = [("user", "course", "platform")]
+        verbose_name = "Social Share Discount"
+        verbose_name_plural = "Social Share Discounts"
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.course.title} - {self.platform}"
+    
+    def save(self, *args, **kwargs):
+        if not self.verification_token:
+            import uuid
+            self.verification_token = uuid.uuid4().hex[:20]
+        
+        if not self.expires_at:
+            from django.utils import timezone
+            self.expires_at = timezone.now() + timezone.timedelta(days=7)
+            
+        super().save(*args, **kwargs)
+        
+    def mark_as_verified(self):
+        """Mark the social share as verified and save."""
+        from django.utils import timezone
+        self.status = "verified"
+        self.verified_at = timezone.now()
+        self.save()
+        
+    def mark_as_used(self):
+        """Mark the discount as used and save."""
+        from django.utils import timezone
+        self.status = "used"
+        self.used_at = timezone.now()
+        self.save()
+        
+    def is_valid(self):
+        """Check if the discount is still valid to use."""
+        from django.utils import timezone
+        if self.status != "verified":
+            return False
+        if self.expires_at and self.expires_at < timezone.now():
+            self.status = "expired"
+            self.save()
+            return False
+        return True

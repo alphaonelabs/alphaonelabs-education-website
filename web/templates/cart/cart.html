@@ -11,10 +11,11 @@
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
           <!-- Cart Items -->
           <div class="divide-y divide-gray-200 dark:divide-gray-700">
-            {% for item in cart.items.all %}
+            {% for item_data in formatted_items %}
               <div class="p-6">
                 <div class="flex items-start justify-between">
                   <div class="flex-1">
+                    {% with item=item_data.item %}
                     {% if item.course %}
                       <!-- Course Item -->
                       <h3 class="text-xl font-semibold mb-2">{{ item.course.title }}</h3>
@@ -22,7 +23,19 @@
                       <div class="text-sm text-gray-500 dark:text-gray-400">
                         <p>Teacher: {{ item.course.teacher.get_full_name|default:item.course.teacher.username }}</p>
                       </div>
-                      <p class="text-lg font-semibold mt-2">${{ item.course.price }}</p>
+                      {% if item_data.has_discount %}
+                      <div class="mt-2">
+                        <p class="text-lg font-semibold">
+                          <span class="line-through text-gray-500">${{ item_data.original_price }}</span>
+                          <span class="text-green-600">${{ item_data.display_price }}</span>
+                        </p>
+                        <p class="text-sm text-green-600">
+                          <i class="fas fa-check-circle mr-1"></i>Social share discount applied: ${{ item_data.discount_amount }}
+                        </p>
+                      </div>
+                      {% else %}
+                        <p class="text-lg font-semibold mt-2">${{ item.course.price }}</p>
+                      {% endif %}
                     {% elif item.session %}
                       <!-- Individual Session Item -->
                       <h3 class="text-xl font-semibold mb-2">{{ item.session.title }}</h3>
@@ -46,12 +59,15 @@
                         {% endif %}
                       </p>
                     {% endif %}
+                    {% endwith %}
                   </div>
                   <form method="post"
-                        action="{% url 'remove_from_cart' item.id %}"
-                        class="ml-4">
+                        action="{% url 'remove_from_cart' item_data.id %}"
+                        class="flex items-center">
                     {% csrf_token %}
-                    <button type="submit" class="text-red-500 hover:text-red-600">
+                    <button type="submit"
+                            class="text-red-500 hover:text-red-700 focus:outline-none"
+                            title="Remove from cart">
                       <i class="fas fa-trash"></i>
                     </button>
                   </form>
@@ -59,93 +75,57 @@
               </div>
             {% endfor %}
           </div>
+
           <!-- Cart Summary -->
-          <div class="p-6 bg-gray-50 dark:bg-gray-700 rounded-b-lg">
-            <div class="flex justify-between items-center mb-4">
-              <span class="text-lg font-semibold">Total:</span>
-              <span class="text-2xl font-bold">${{ cart.total }}</span>
+          <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-b-lg">
+            <div class="flex justify-between mb-2">
+              <span class="font-medium">Total:</span>
+              <span class="font-bold text-xl">${{ cart_total }}</span>
             </div>
-            <div class="flex justify-end">
-              <form id="checkout-form"
-                    class="w-full"
-                    method="post"
-                    action="{% url 'checkout_success' %}"
-                    data-is-authenticated="{% if request.user.is_authenticated %}true{% else %}false{% endif %}">
-                {% csrf_token %}
-                {% if not request.user.is_authenticated %}
-                  <div class="mb-4">
-                    <label for="email"
-                           class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Email Address
-                    </label>
-                    <input type="email"
-                           id="email"
-                           name="email"
-                           required
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 dark:bg-gray-800"
-                           placeholder="Enter your email address" />
-                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">We'll create an account for you to access your courses.</p>
-                  </div>
-                {% endif %}
-                {% if cart.has_goods %}
-                  <div class="mb-4">
-                    <label for="address"
-                           class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Shipping Address
-                    </label>
-                    <textarea id="address"
-                              name="address"
-                              required
-                              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 dark:bg-gray-800"
-                              placeholder="Enter your shipping address"></textarea>
-                    <input type="text"
-                           id="city"
-                           name="city"
-                           placeholder="City"
-                           required
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 dark:bg-gray-800 mt-2" />
-                    <input type="text"
-                           id="state"
-                           name="state"
-                           placeholder="State"
-                           required
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 dark:bg-gray-800 mt-2" />
-                    <input type="text"
-                           id="postal_code"
-                           name="postal_code"
-                           placeholder="Postal Code"
-                           required
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 dark:bg-gray-800 mt-2" />
-                    <input type="text"
-                           id="country"
-                           name="country"
-                           placeholder="Country"
-                           required
-                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 dark:bg-gray-800 mt-2" />
-                  </div>
-                {% endif %}
-                <div id="payment-element" class="mb-4">
-                  <!-- Stripe Elements will be inserted here -->
-                </div>
-                <button type="submit"
-                        id="submit-button"
-                        class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center">
-                  <i class="fas fa-credit-card mr-2"></i>
-                  <span id="button-text">Checkout</span>
-                  <span id="spinner" class="hidden ml-2">
-                    <i class="fas fa-spinner fa-spin"></i>
-                  </span>
+            
+            <!-- Continue Shopping & Checkout Buttons -->
+            <div class="flex flex-col sm:flex-row justify-between gap-4 mt-6">
+              <a href="{% url 'course_search' %}"
+                 class="bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-semibold py-3 px-6 rounded-lg text-center transition duration-200">
+                Continue Shopping
+              </a>
+
+              <div id="checkout-button-container" class="flex-1 sm:flex-auto">
+                <div id="payment-form"></div>
+                <button id="checkout-button"
+                        class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200">
+                  <span class="mr-2">Proceed to Checkout</span>
+                  <i class="fas fa-arrow-right"></i>
                 </button>
-                <div id="payment-message" class="mt-4 text-sm text-center"></div>
-              </form>
+                <div id="payment-message" class="hidden text-center mt-4 text-red-500"></div>
+              </div>
             </div>
           </div>
         </div>
+
+        <!-- Information Panel -->
+        <div class="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mt-8">
+          <h3 class="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-2">
+            <i class="fas fa-info-circle mr-2"></i>Information
+          </h3>
+          <p class="text-sm text-blue-800 dark:text-blue-200">
+            Payment is processed securely through Stripe. Your card details are never stored on our servers.
+          </p>
+          {% if user.is_authenticated %}
+            <div class="mt-2">
+              <p class="text-sm text-blue-800 dark:text-blue-200">
+                <i class="fas fa-share-alt mr-1"></i>Tip: Share courses on social media to earn discounts!
+              </p>
+            </div>
+          {% endif %}
+        </div>
       {% else %}
-        <div class="text-center py-12">
-          <div class="text-gray-500 dark:text-gray-400 mb-4">Your cart is empty</div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
+          <i class="fas fa-shopping-cart text-gray-400 dark:text-gray-500 text-6xl mb-4"></i>
+          <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-2">Your cart is empty</h2>
+          <p class="text-gray-600 dark:text-gray-400 mb-6">Start by browsing our available courses</p>
           <a href="{% url 'course_search' %}"
-             class="inline-block bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-6 rounded-lg transition duration-200">
+             class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200">
             Browse Courses
           </a>
         </div>

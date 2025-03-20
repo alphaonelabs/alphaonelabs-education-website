@@ -41,6 +41,7 @@ from .models import (
     Subject,
     SuccessStory,
     WebRequest,
+    SocialShareDiscount,
 )
 
 
@@ -571,3 +572,35 @@ class DonationAdmin(admin.ModelAdmin):
 class LearningStreakAdmin(admin.ModelAdmin):
     list_display = ("user", "current_streak", "longest_streak", "last_engagement")
     search_fields = ("user__username",)
+
+
+@admin.register(SocialShareDiscount)
+class SocialShareDiscountAdmin(admin.ModelAdmin):
+    list_display = ("user", "course", "platform", "status", "discount_amount", "created_at", "expires_at")
+    list_filter = ("status", "platform", "created_at")
+    search_fields = ("user__username", "user__email", "course__title", "share_url")
+    readonly_fields = ("verification_token", "created_at", "verified_at", "expires_at", "used_at")
+    actions = ["mark_as_verified", "mark_as_expired"]
+    
+    fieldsets = (
+        (None, {
+            "fields": ("user", "course", "platform", "share_url", "verification_token", "status")
+        }),
+        ("Discount Details", {
+            "fields": ("discount_amount",)
+        }),
+        ("Dates", {
+            "fields": ("created_at", "verified_at", "expires_at", "used_at")
+        }),
+    )
+    
+    def mark_as_verified(self, request, queryset):
+        for discount in queryset.filter(status="pending"):
+            discount.mark_as_verified()
+        self.message_user(request, f"{queryset.filter(status='pending').count()} discounts marked as verified.")
+    mark_as_verified.short_description = "Mark selected discounts as verified"
+    
+    def mark_as_expired(self, request, queryset):
+        count = queryset.filter(status="verified").update(status="expired")
+        self.message_user(request, f"{count} discounts marked as expired.")
+    mark_as_expired.short_description = "Mark selected discounts as expired"
