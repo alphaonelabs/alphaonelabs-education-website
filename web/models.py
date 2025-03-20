@@ -1146,10 +1146,9 @@ class ChallengeSubmission(models.Model):
         return f"{self.user.username}'s submission for Week {self.challenge.week_number}"
 
 
-# Live challenge models
+# Live challenge models/ admin created quiz models
 
-
-class Quiz(models.Model):
+class AdminQuiz(models.Model):
     """
     Quiz model representing a timed quiz with questions and options.
     Contains start and end times, duration, and description.
@@ -1211,8 +1210,8 @@ class Quiz(models.Model):
         )
 
 
-class QuizQuestion(models.Model):
-    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="questions")
+class AdminQuizQuestion(models.Model):
+    quiz = models.ForeignKey(AdminQuiz, on_delete=models.CASCADE, related_name="questions")
     question_text = models.TextField()
     order = models.PositiveIntegerField(default=0)
     points = models.PositiveIntegerField(default=10, help_text="Points awarded for a correct answer")
@@ -1224,8 +1223,8 @@ class QuizQuestion(models.Model):
         return self.question_text
 
 
-class QuizOption(models.Model):
-    question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE, related_name="options")
+class AdminQuizOption(models.Model):
+    question = models.ForeignKey(AdminQuizQuestion, on_delete=models.CASCADE, related_name="options")
     option_text = models.TextField()
     is_correct = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)
@@ -1257,9 +1256,9 @@ class QuizOption(models.Model):
         self.__class__.validate_only_one_correct_option(self.question)
 
 
-class QuizSubmission(models.Model):
+class AdminQuizSubmission(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
+    quiz = models.ForeignKey(AdminQuiz, on_delete=models.CASCADE)
     score = models.IntegerField(default=0)
     submitted_at = models.DateTimeField(auto_now_add=True)
 
@@ -1281,10 +1280,10 @@ class QuizSubmission(models.Model):
         unique_together = ("user", "quiz")
 
 
-class QuizAnswerSubmission(models.Model):
-    submission = models.ForeignKey(QuizSubmission, on_delete=models.CASCADE, related_name="answers")
-    question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE)
-    selected_option = models.ForeignKey(QuizOption, on_delete=models.CASCADE)
+class AdminQuizAnswerSubmission(models.Model):
+    submission = models.ForeignKey(AdminQuizSubmission, on_delete=models.CASCADE, related_name="answers")
+    question = models.ForeignKey(AdminQuizQuestion, on_delete=models.CASCADE)
+    selected_option = models.ForeignKey(AdminQuizOption, on_delete=models.CASCADE)
     class Meta:
         unique_together = ("submission", "question")
     def clean(self):

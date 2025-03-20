@@ -19,7 +19,11 @@ from .models import (
     Quiz,
     QuizOption,
     QuizQuestion,
-    QuizSubmission,
+    AdminQuiz,
+    AdminQuizAnswerSubmission,
+    AdminQuizOption,
+    AdminQuizQuestion,
+    AdminQuizSubmission,
     Course,
     CourseMaterial,
     CourseProgress,
@@ -408,9 +412,9 @@ class ChallengeAdmin(admin.ModelAdmin):
 class ChallengeSubmissionAdmin(admin.ModelAdmin):
     list_display = ("user", "challenge", "submitted_at")
 
-# first occurene
-@admin.register(Quiz)
-class QuizAdmin(admin.ModelAdmin):
+
+@admin.register(AdminQuiz)
+class AdminQuizAdmin(admin.ModelAdmin):
     list_display = ("title", "description", "start_date", "end_date", "start_time", "end_time", "duration_minutes")
 
     def save_model(self, request, obj, form, change):
@@ -424,18 +428,18 @@ class QuizAdmin(admin.ModelAdmin):
             messages.error(request, message)
 
 
-@admin.register(QuizSubmission)
-class QuizSubmissionAdmin(admin.ModelAdmin):
+@admin.register(AdminQuizSubmission)
+class AdminQuizSubmissionAdmin(admin.ModelAdmin):
     list_display = ("user", "score", "submitted_at", "quiz")
 
 
-@admin.register(QuizOption)
-class QuizOptionAdmin(admin.ModelAdmin):
+@admin.register(AdminQuizOption)
+class AdminQuizOptionAdmin(admin.ModelAdmin):
     list_display = ("question", "option_text", "is_correct")
 
-
-@admin.register(QuizQuestion)
-class QuizQuestionAdmin(admin.ModelAdmin):
+  
+@admin.register(AdminQuizQuestion)
+class AdminQuizQuestionAdmin(admin.ModelAdmin):
     list_display = ("quiz", "question_text", "points")
     list_filter = ("quiz", "points")
     search_fields = ("question_text",)

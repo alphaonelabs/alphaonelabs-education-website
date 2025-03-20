@@ -86,7 +86,11 @@ from .models import (
     ChallengeSubmission,
     Quiz,
     QuizOption,
-    QuizSubmission,
+    AdminQuiz, 
+    AdminQuizOption,
+    AdminQuizAnswerSubmission,
+    AdminQuizSubmission,
+    AdminQuizQuestion,
     Course,
     CourseMaterial,
     CourseProgress,
@@ -168,12 +172,13 @@ def index(request):
     current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
 
     # Get live challenges
-    live_quiz = Quiz.get_active_quizzes()
+    live_quiz = AdminQuiz.get_active_quizzes()
 
     # Get quizzes that the user has already submitted
     has_submitted = set()
+
     if request.user.is_authenticated:
-        has_submitted = set(QuizSubmission.objects.filter(user=request.user).values_list("quiz_id", flat=True))
+        has_submitted = set(AdminQuizSubmission.objects.filter(user=request.user).values_list("quiz_id", flat=True))
 
     # Get latest blog post
     latest_post = BlogPost.objects.filter(status="published").order_by("-published_at").first()
@@ -2695,7 +2700,6 @@ def content_dashboard(request):
 
 # challenge views
 
-
 def current_weekly_challenge(request):
     current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
     # Check if the user has submitted the current challenge
@@ -2760,7 +2764,7 @@ def challenge_submit(request, week_number):
 def current_live_quiz(request, quiz_id):
     """Fetch the quiz by ID and check if the user has submitted."""
 
-    quiz = Quiz.objects.filter(id=quiz_id).first()
+    quiz = AdminQuiz.objects.filter(id=quiz_id).first()
 
     # improved no quiz handling
     if not quiz:
@@ -2771,12 +2775,12 @@ def current_live_quiz(request, quiz_id):
     has_submitted = False
 
     # Fetch questions only if needed
-    questions = quiz.questions.prefetch_related("options").all()
+    questions = quiz.questions.all().prefetch_related("options")
     paginator = Paginator(questions, 10)  # 10 questions per page
     page_number = request.GET.get("page", 1)
     questions_page = paginator.get_page(page_number)
     if request.user.is_authenticated:
-        user_submission = QuizSubmission.objects.filter(user=request.user, quiz=quiz).first()
+        user_submission = AdminQuizSubmission.objects.filter(user=request.user, quiz=quiz).first()
         has_submitted = user_submission is not None
 
     return render(
@@ -2786,7 +2790,7 @@ def current_live_quiz(request, quiz_id):
             "quiz": quiz,
             "has_submitted": has_submitted,
             "user_submission": user_submission,
-            "questions": questions_page,
+            "questions": questions,
             "paginator": paginator,
         },
     )
@@ -2796,9 +2800,9 @@ def current_live_quiz(request, quiz_id):
 @csrf_protect
 def submit_quiz(request, quiz_id):
     """Handle quiz submission and store total score."""
-    quiz = get_object_or_404(Quiz.objects.prefetch_related("questions__options"), id=quiz_id)
+    quiz = get_object_or_404(AdminQuiz.objects.prefetch_related("questions__options"), id=quiz_id)
     # Check if the user has already submitted this quiz
-    if QuizSubmission.objects.filter(user=request.user, quiz=quiz).exists():
+    if AdminQuizSubmission.objects.filter(user=request.user, quiz=quiz).exists():
         messages.warning(request, "You have already submitted this quiz.")
         return redirect("leaderboard", quiz_id=quiz.id)
     if request.method == "POST":
@@ -2813,23 +2817,23 @@ def submit_quiz(request, quiz_id):
                 selected_option_id = request.POST.get(f"question_{question.id}")
                 if selected_option_id and selected_option_id.isdigit():
                     try:
-                        selected_option = QuizOption.objects.get(id=selected_option_id, question=question)
+                        selected_option = AdminQuizOption.objects.get(id=selected_option_id, question=question)
                         if selected_option.is_correct:
                             score += question.points
-                    except QuizOption.DoesNotExist:
+                    except AdminQuizOption.DoesNotExist:
                         messages.error(request, f"Invalid selection for question {question.id}")
                 else:
                     # Track unanswered questions - could be used for analytics or showing feedback
                     logger.debug(f"User {request.user.username} did not answer question {question.id}")
             # Store the final submission with total score
-            QuizSubmission.objects.create(user=request.user, quiz=quiz, score=score)
+            AdminQuizSubmission.objects.create(user=request.user, quiz=quiz, score=score)
             # Store detailed results for feedback if needed
             results = []
             for question in quiz.questions.all():
                 selected_id = request.POST.get(f"question_{question.id}")
                 if selected_id and selected_id.isdigit():
-                    selected = QuizOption.objects.get(id=selected_id)
-                    correct_answer = QuizOption.objects.filter(question=question, is_correct=True).first()
+                    selected = AdminQuizOption.objects.get(id=selected_id)
+                    correct_answer = AdminQuizOption.objects.filter(question=question, is_correct=True).first()
                     results.append(
                         {
                             "question_id": question.id,
@@ -2861,9 +2865,9 @@ def leaderboard(request, quiz_id):
         HttpResponse: Rendered leaderboard template or redirect to index on error
     """
     try:
-        quiz = get_object_or_404(Quiz, id=quiz_id)
+        quiz = get_object_or_404(AdminQuiz, id=quiz_id)
         # Retrieve all submissions for this quiz, ordered by highest score
-        submissions = QuizSubmission.objects.filter(quiz=quiz).order_by("-score", "submitted_at")
+        submissions = AdminQuizSubmission.objects.filter(quiz=quiz).order_by("-score", "submitted_at")
         # Get quiz_results from session if present
         quiz_results = request.session.get("quiz_results", None)
         if quiz_results:

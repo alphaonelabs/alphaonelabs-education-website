@@ -5,7 +5,7 @@ from datetime import timedelta
 from django.urls import reverse
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
-from web.models import Quiz, QuizQuestion, QuizOption
+from web.models import AdminQuiz, AdminQuizQuestion, AdminQuizOption
 
 User = get_user_model()
 
@@ -20,7 +20,7 @@ class QuizAdminTests(TestCase):
         self.client.login(username="admin", password="adminpass123")
 
         self.captured_queries = CaptureQueriesContext(connection)
-        self.quiz = Quiz.objects.create(
+        self.quiz = AdminQuiz.objects.create(
             title="Test Admin Quiz",
             description="Test quiz description for admin",
             start_date=timezone.now().date(),
@@ -32,7 +32,7 @@ class QuizAdminTests(TestCase):
 
     def test_quiz_admin_list(self):
         """Test that quizzes appear in admin list view"""
-        admin_url = reverse("admin:web_quiz_changelist")
+        admin_url = reverse("admin:web_adminquiz_changelist")
         response = self.client.get(admin_url)
 
         self.assertEqual(response.status_code, 200)
@@ -44,7 +44,7 @@ class QuizAdminTests(TestCase):
 
     def test_quiz_admin_add(self):
         """Test adding a quiz through admin"""
-        admin_url = reverse("admin:web_quiz_add")
+        admin_url = reverse("admin:web_adminquiz_add")
 
         # Use more complete form data
         quiz_data = {
@@ -70,31 +70,34 @@ class QuizAdminTests(TestCase):
     def test_quiz_question_admin_add_with_form(self):
         """Test adding a quiz question through Django admin"""
         # Get the form to retrieve necessary fields (like CSRF token)
-        response = self.client.get(reverse("admin:web_quizquestion_add"))
+        response = self.client.get(reverse("admin:web_adminquizquestion_add"))
         self.assertEqual(response.status_code, 200)
         # Prepare form data
         form_data = {
             "quiz": self.quiz.id,  # Assuming self.quiz is defined in setUp()
             "question_text": "Test question?",
             "order": 1,
-            "_save": "Save",  # Required to submit the form
+            "points":10,
+            "_save": "Save",
             "csrfmiddlewaretoken": response.context["csrf_token"],
         }
         # Submit the form
         response = self.client.post(
-            reverse("admin:web_quizquestion_add"), data=form_data, follow=True  # Follow redirects
+            reverse("admin:web_adminquizquestion_add"), data=form_data, follow=True  # Follow redirects
         )
+
+        
         # Assert that the quiz question was successfully created
-        self.assertTrue(QuizQuestion.objects.filter(question_text="Test question?").exists())
+        self.assertTrue(AdminQuizQuestion.objects.filter(question_text="Test question?").exists())
 
     def test_quiz_option_admin_add(self):
         """Test adding a quiz option through Django admin"""
         # First, get the form to see all required fields
-        response = self.client.get(reverse("admin:web_quizoption_add"))
+        response = self.client.get(reverse("admin:web_adminquizoption_add"))
         self.assertEqual(response.status_code, 200)
 
         # Create a question first if needed
-        question = QuizQuestion.objects.create(quiz=self.quiz, question_text="Test question", order=1)
+        question = AdminQuizQuestion.objects.create(quiz=self.quiz, question_text="Test question", order=1)
 
         # Now collect all form data from the actual form
         form_data = {
@@ -108,21 +111,21 @@ class QuizAdminTests(TestCase):
 
         # Submit the form
         response = self.client.post(
-            reverse("admin:web_quizoption_add"), data=form_data, follow=True  # Follow redirects
+            reverse("admin:web_adminquizoption_add"), data=form_data, follow=True  # Follow redirects
         )
 
-        if not QuizOption.objects.filter(option_text="Test option").exists():
+        if not AdminQuizOption.objects.filter(option_text="Test option").exists():
             self.fail(
                 f"Quiz option not created. Status: {response.status_code}, Response: {response.content.decode()[:500]}"
             )
 
         # Check for object creation instead of status code
-        self.assertTrue(QuizOption.objects.filter(option_text="Test option").exists())
+        self.assertTrue(AdminQuizOption.objects.filter(option_text="Test option").exists())
 
     def test_quiz_edit(self):
         """Test editing a quiz through admin interface"""
         # Get the edit URL for the quiz
-        edit_url = reverse("admin:web_quiz_change", args=[self.quiz.id])
+        edit_url = reverse("admin:web_adminquiz_change", args=[self.quiz.id])
 
         # Prepare updated data
         updated_data = {
@@ -143,6 +146,6 @@ class QuizAdminTests(TestCase):
         self.assertEqual(response.status_code, 302)
 
         # Verify the quiz was updated
-        updated_quiz = Quiz.objects.get(id=self.quiz.id)
+        updated_quiz = AdminQuiz.objects.get(id=self.quiz.id)
         self.assertEqual(updated_quiz.title, "Updated Quiz Title")
         self.assertEqual(updated_quiz.duration_minutes, 45)
