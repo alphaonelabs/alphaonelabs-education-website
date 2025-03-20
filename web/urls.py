@@ -132,6 +132,8 @@ urlpatterns += i18n_patterns(
         name="calendar_links",
     ),
     path("streak/", streak_detail, name="streak_detail"),
+    # Progress Visualization
+    path("dashboard/progress/", views.progress_visualization, name="progress_visualization"),
     # Forum URLs
     path("forum/", views.forum_categories, name="forum_categories"),
     path("forum/category/create/", views.create_forum_category, name="create_forum_category"),
