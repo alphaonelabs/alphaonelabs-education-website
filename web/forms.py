@@ -22,6 +22,9 @@ from .models import (
     ProductImage,
     Profile,
     ProgressTracker,
+    Quiz,
+    QuizOption,
+    QuizQuestion,
     Review,
     Session,
     Storefront,
@@ -68,6 +71,10 @@ __all__ = [
     "ProgressTrackerForm",
     "SuccessStoryForm",
     "MemeForm",
+    "QuizForm",
+    "QuizQuestionForm",
+    "QuizOptionFormSet",
+    "TakeQuizForm",
 ]
 
 
@@ -1208,3 +1215,101 @@ class MeetupForm(forms.ModelForm):
             self.add_error("link", "Link is required for online events.")
 
         return cleaned_data
+
+class QuizForm(forms.ModelForm):
+    """Form for creating and editing quizzes."""
+
+    class Meta:
+        model = Quiz
+        fields = [
+            "title",
+            "description",
+            "subject",
+            "status",
+            "time_limit",
+            "randomize_questions",
+            "show_correct_answers",
+            "allow_anonymous",
+            "max_attempts",
+        ]
+        widgets = {
+            "title": TailwindInput(attrs={"placeholder": "Quiz Title"}),
+            "description": TailwindTextarea(attrs={"rows": 3, "placeholder": "Quiz Description"}),
+            "subject": TailwindSelect(),
+            "status": TailwindSelect(),
+            "time_limit": TailwindNumberInput(
+                attrs={"min": "0", "placeholder": "Time limit in minutes (leave empty for no limit)"}
+            ),
+            "randomize_questions": TailwindCheckboxInput(),
+            "show_correct_answers": TailwindCheckboxInput(),
+            "allow_anonymous": TailwindCheckboxInput(),
+            "max_attempts": TailwindNumberInput(attrs={"min": "0", "placeholder": "0 for unlimited attempts"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        kwargs.pop("user", None)  # Use this if needed for filtering
+        super().__init__(*args, **kwargs)
+
+        # Subject queryset filtering based on user type could be added here
+
+
+class QuizQuestionForm(forms.ModelForm):
+    """Form for creating and editing quiz questions."""
+
+    class Meta:
+        model = QuizQuestion
+        fields = ["text", "question_type", "explanation", "points", "image"]
+        widgets = {
+            "text": TailwindTextarea(attrs={"rows": 3, "placeholder": "Question text"}),
+            "question_type": TailwindSelect(),
+            "explanation": TailwindTextarea(attrs={"rows": 2, "placeholder": "Explanation for the correct answer"}),
+            "points": TailwindNumberInput(attrs={"min": "1", "value": "1"}),
+            "order": TailwindNumberInput(attrs={"min": "0", "value": "0"}),
+            "image": TailwindFileInput(attrs={"accept": "image/*"}),
+        }
+
+
+# Form for quiz options using formset factory
+QuizOptionFormSet = forms.inlineformset_factory(
+    QuizQuestion,
+    QuizOption,
+    fields=("text", "is_correct"),
+    widgets={
+        "text": TailwindInput(attrs={"placeholder": "Option text"}),
+        "is_correct": TailwindCheckboxInput(),
+    },
+    extra=4,
+    can_delete=True,
+    validate_min=True,
+    min_num=1,
+)
+
+
+class TakeQuizForm(forms.Form):
+    """Form for taking quizzes. Dynamically generated based on questions."""
+
+    def __init__(self, *args, quiz=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if quiz:
+            for question in quiz.questions.all().order_by("order"):
+                if question.question_type == "multiple":
+                    # For multiple choice, add a multi-select field
+                    options = question.options.all().order_by("order")
+                    choices = [(str(option.id), option.text) for option in options]
+                    self.fields[f"question_{question.id}"] = forms.MultipleChoiceField(
+                        label=question.text, choices=choices, widget=forms.CheckboxSelectMultiple, required=False
+                    )
+                elif question.question_type == "true_false":
+                    # For true/false, add a radio select field
+                    options = question.options.all().order_by("order")
+                    choices = [(str(option.id), option.text) for option in options]
+                    self.fields[f"question_{question.id}"] = forms.ChoiceField(
+                        label=question.text, choices=choices, widget=forms.RadioSelect, required=False
+                    )
+                elif question.question_type == "short":
+                    # For short answer, add a text field
+                    self.fields[f"question_{question.id}"] = forms.CharField(
+                        label=question.text,
+                        widget=TailwindTextarea(attrs={"rows": 2, "placeholder": "Your answer..."}),
+                        required=False,
+                    )

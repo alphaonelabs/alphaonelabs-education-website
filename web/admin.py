@@ -34,6 +34,9 @@ from .models import (
     ProductImage,
     Profile,
     ProgressTracker,
+    Quiz,
+    QuizOption,
+    QuizQuestion,
     Review,
     SearchLog,
     Session,
@@ -573,3 +576,28 @@ class DonationAdmin(admin.ModelAdmin):
 class LearningStreakAdmin(admin.ModelAdmin):
     list_display = ("user", "current_streak", "longest_streak", "last_engagement")
     search_fields = ("user__username",)
+
+
+# Register Quiz-related models
+@admin.register(Quiz)
+class QuizAdmin(admin.ModelAdmin):
+    list_display = ("title", "creator", "subject", "status", "created_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("title", "description", "creator__username", "id__exact")
+    autocomplete_fields = ["creator", "subject"]
+
+
+@admin.register(QuizQuestion)
+class QuizQuestionAdmin(admin.ModelAdmin):
+    list_display = ("text", "quiz", "question_type", "points", "order")
+    list_filter = ("question_type",)
+    search_fields = ("text", "quiz__title")
+    autocomplete_fields = ["quiz"]
+
+
+@admin.register(QuizOption)
+class QuizOptionAdmin(admin.ModelAdmin):
+    list_display = ("text", "question", "is_correct", "order")
+    list_filter = ("is_correct",)
+    search_fields = ("text", "question__text")
+    autocomplete_fields = ["question"]

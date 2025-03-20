@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  {{ title }}
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+    <nav class="text-sm mb-6">
+      <a href="{% url 'index' %}" class="text-blue-600 hover:text-blue-800">Home</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'quiz_list' %}"
+         class="text-blue-600 hover:text-blue-800">Quizzes</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-600">{{ title }}</span>
+    </nav>
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-white">{{ title }}</h1>
+      <p class="text-gray-600 dark:text-gray-400 mt-2">
+        {% if form.instance.pk %}
+          Update your quiz details or change settings
+        {% else %}
+          Fill in the details to create a new quiz
+        {% endif %}
+      </p>
+    </div>
+    <!-- Quiz Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div class="p-6">
+        <form method="post">
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+            <div class="mb-6 p-4 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300 rounded-lg">
+              {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+          {% endif %}
+          <!-- Basic Information -->
+          <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Basic Information</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Title -->
+              <div class="col-span-2">
+                <label for="{{ form.title.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Quiz Title <span class="text-red-600">*</span>
+                </label>
+                <input type="text"
+                       name="{{ form.title.html_name }}"
+                       id="{{ form.title.id_for_label }}"
+                       value="{{ form.title.value|default:'' }}"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                       placeholder="Enter a descriptive title for your quiz"
+                       required />
+                {% if form.title.errors %}
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.title.errors.0 }}</p>
+                {% endif %}
+              </div>
+              <!-- Description -->
+              <div class="col-span-2">
+                <label for="{{ form.description.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                <textarea name="{{ form.description.html_name }}"
+                          id="{{ form.description.id_for_label }}"
+                          rows="4"
+                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                          placeholder="Provide a brief description of what this quiz covers">{{ form.description.value|default:'' }}</textarea>
+                {% if form.description.errors %}
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.description.errors.0 }}</p>
+                {% endif %}
+              </div>
+              <!-- Subject -->
+              <div>
+                <label for="{{ form.subject.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Subject <span class="text-red-600">*</span>
+                </label>
+                <select name="{{ form.subject.html_name }}"
+                        id="{{ form.subject.id_for_label }}"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                        required>
+                  <option value="">Select a subject</option>
+                  {% for choice in form.subject.field.choices %}
+                    {% if choice.0 %}
+                      <option value="{{ choice.0 }}"
+                              {% if form.subject.value|stringformat:"s" == choice.0|stringformat:"s" %}selected{% endif %}>
+                        {{ choice.1 }}
+                      </option>
+                    {% endif %}
+                  {% endfor %}
+                </select>
+                {% if form.subject.errors %}
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.subject.errors.0 }}</p>
+                {% endif %}
+              </div>
+              <!-- Status -->
+              <div>
+                <label for="{{ form.status.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Status <span class="text-red-600">*</span>
+                </label>
+                <select name="{{ form.status.html_name }}"
+                        id="{{ form.status.id_for_label }}"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                        required>
+                  {% for choice in form.status.field.choices %}
+                    <option value="{{ choice.0 }}"
+                            {% if form.status.value == choice.0 %}selected{% endif %}>{{ choice.1 }}</option>
+                  {% endfor %}
+                </select>
+                {% if form.status.errors %}
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.status.errors.0 }}</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <!-- Quiz Settings -->
+          <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Quiz Settings</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <!-- Time Limit -->
+              <div>
+                <label for="{{ form.time_limit.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Time Limit (minutes)
+                </label>
+                <input type="number"
+                       name="{{ form.time_limit.html_name }}"
+                       id="{{ form.time_limit.id_for_label }}"
+                       value="{{ form.time_limit.value|default:'' }}"
+                       min="0"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                       placeholder="Leave blank for no time limit" />
+                {% if form.time_limit.errors %}
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.time_limit.errors.0 }}</p>
+                {% endif %}
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Leave blank for no time limit</p>
+              </div>
+              <!-- Max Attempts -->
+              <div>
+                <label for="{{ form.max_attempts.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Maximum Attempts</label>
+                <input type="number"
+                       name="{{ form.max_attempts.html_name }}"
+                       id="{{ form.max_attempts.id_for_label }}"
+                       value="{{ form.max_attempts.value|default:'' }}"
+                       min="0"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                       placeholder="Leave blank for unlimited attempts" />
+                {% if form.max_attempts.errors %}
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.max_attempts.errors.0 }}</p>
+                {% endif %}
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Leave blank for unlimited attempts</p>
+              </div>
+            </div>
+            <!-- Checkboxes for quiz options -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+              <!-- Randomize Questions -->
+              <div class="flex items-start">
+                <div class="flex items-center h-5">
+                  <input type="checkbox"
+                         name="{{ form.randomize_questions.html_name }}"
+                         id="{{ form.randomize_questions.id_for_label }}"
+                         {% if form.randomize_questions.value %}checked{% endif %}
+                         class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
+                </div>
+                <div class="ml-3 text-sm">
+                  <label for="{{ form.randomize_questions.id_for_label }}"
+                         class="font-medium text-gray-700 dark:text-gray-300">Randomize Questions</label>
+                  <p class="text-gray-500 dark:text-gray-400">Show questions in random order for each attempt</p>
+                </div>
+              </div>
+              <!-- Allow Anonymous -->
+              <div class="flex items-start">
+                <div class="flex items-center h-5">
+                  <input type="checkbox"
+                         name="{{ form.allow_anonymous.html_name }}"
+                         id="{{ form.allow_anonymous.id_for_label }}"
+                         {% if form.allow_anonymous.value %}checked{% endif %}
+                         class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
+                </div>
+                <div class="ml-3 text-sm">
+                  <label for="{{ form.allow_anonymous.id_for_label }}"
+                         class="font-medium text-gray-700 dark:text-gray-300">Allow Anonymous Attempts</label>
+                  <p class="text-gray-500 dark:text-gray-400">Allow users to take quiz without signing in</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Form Buttons -->
+          <div class="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+            <a href="{% if form.instance.pk %}{% url 'quiz_detail' form.instance.pk %}{% else %}{% url 'quiz_list' %}{% endif %}"
+               class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-lg">
+              Cancel
+            </a>
+            <button type="submit"
+                    class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg">
+              {% if form.instance.pk %}
+                Update Quiz
+              {% else %}
+                Create Quiz
+              {% endif %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
