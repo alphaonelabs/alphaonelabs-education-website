@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Learning Streak Details
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-4">{{ request.user.username }}'s Learning Streak</h1>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
+      <p class="text-xl mb-2">
+        Current Streak: <span class="font-bold">{{ streak.current_streak }}</span> day{{ streak.current_streak|pluralize }}
+      </p>
+      <p class="text-xl mb-2">
+        Longest Streak: <span class="font-bold">{{ streak.longest_streak }}</span> day{{ streak.longest_streak|pluralize }}
+      </p>
+      <p class="text-xl mb-4">
+        Last Engagement: <span class="font-bold">{{ streak.last_engagement }}</span>
+      </p>
+      <!-- Share Buttons -->
+      <div class="flex space-x-4">
+        <!-- Facebook Share -->
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri|urlencode }}"
+           target="_blank"
+           class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Share on Facebook</a>
+        <!-- Twitter Share with custom message -->
+        <a href="https://twitter.com/intent/tweet?url={{ request.build_absolute_uri|urlencode }}&text=Check%20out%20my%20learning%20streak%20on%20AlphaOneLabs:%20{{ streak.current_streak }}%20day{{ streak.current_streak|pluralize }}"
+           target="_blank"
+           class="px-4 py-2 bg-blue-400 text-white rounded hover:bg-blue-500">Share on Twitter</a>
+        <!-- Copy Link Button -->
+        <button id="copyLinkBtn"
+                class="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">Copy Link</button>
+      </div>
+      <script>
+          document.getElementById('copyLinkBtn').addEventListener('click', function() {
+              if (!navigator.clipboard) {
+                  // Fallback for browsers that don't support clipboard API
+                  const tempInput = document.createElement('input');
+                  tempInput.value = window.location.href;
+                  document.body.appendChild(tempInput);
+                  tempInput.select();
+                  document.execCommand('copy');
+                  document.body.removeChild(tempInput);
+                  alert('Link copied to clipboard!');
+                  return;
+              }
+              navigator.clipboard.writeText(window.location.href)
+                  .then(() => {
+                      const notification = document.createElement('div');
+                      notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg';
+                      notification.textContent = 'Link copied to clipboard!';
+                      document.body.appendChild(notification);
+                      setTimeout(() => notification.remove(), 3000);
+                  })
+                  .catch(err => {
+                      const notification = document.createElement('div');
+                      notification.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg';
+                      notification.textContent = 'Failed to copy link: ' + err;
+                      document.body.appendChild(notification);
+                      setTimeout(() => notification.remove(), 3000);
+                  });
+          });
+      </script>
+    </div>
+    <a href="{% url 'student_dashboard' %}"
+       class="inline-block mt-4 px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded">Back to Dashboard</a>
+  </div>
+{% endblock %}
