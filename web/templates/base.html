@@ -156,14 +156,14 @@
     <header class="w-full bg-teal-600 dark:bg-teal-800 text-white">
       <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-[60px] relative">
         <!-- Logo and Title -->
-        <a href="{% url 'index' %}" class="flex items-center space-x-2">
+        <a href="{% url 'index' %}" class="flex items-center space-x-2 p-2 sm:p-3 md:p-4 w-full max-w-full overflow-hidden">
           <img src="{% static 'images/logo.png' %}"
                alt="Alpha One Labs Logo"
-               height="32"
-               width="32"
-               class="h-8 w-8" />
-          <span class="text-xl font-bold text-white">Alpha One Labs</span>
-        </a>
+               class="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 lg:h-12 lg:w-12 flex-shrink-0" />
+          <span class="text-xs sm:text-sm md:text-xl lg:text-2xl font-bold text-white truncate">Alpha One Labs</span>
+      </a>
+      
+      
         <!-- Mobile Menu Button -->
         <button class="md:hidden p-2 hover:bg-teal-700 rounded-lg"
                 onclick="toggleMobileMenu()">
@@ -205,7 +205,7 @@
             </a>
             <a href="{% url 'meme_list' %}"
                class="hover:underline flex items-center">
-              <i class="fa-solid fa-face-smile mr-1"></i> Edu Memes
+              <i class="fa-solid fa-face-smile mr-1"></i> Education Memes
             </a>
           </div>
           <!-- Language and Dark Mode -->
