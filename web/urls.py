@@ -5,15 +5,13 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
-from . import admin_views, views
-from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_data
+from . import admin_views, quiz_views, views
+from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_data, streak_detail
 
 # Non-prefixed URLs
 urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs
     path("captcha/", include("captcha.urls")),  # CAPTCHA URLs should not be language-prefixed
-    path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
-    path("certificate/generate/<int:enrollment_id>/", views.generate_certificate, name="generate_certificate"),
 ]
 
 if settings.DEBUG:
@@ -27,6 +25,8 @@ urlpatterns += i18n_patterns(
     path("learn/", views.learn, name="learn"),
     path("teach/", views.teach, name="teach"),
     path("about/", views.about, name="about"),
+    path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
+    path("certificate/generate/<int:enrollment_id>/", views.generate_certificate, name="generate_certificate"),
     path("donate/", views.donate, name="donate"),
     path("donate/payment-intent/", views.create_donation_payment_intent, name="create_donation_payment_intent"),
     path("donate/subscription/", views.create_donation_subscription, name="create_donation_subscription"),
@@ -131,6 +131,7 @@ urlpatterns += i18n_patterns(
         views.calendar_links,
         name="calendar_links",
     ),
+    path("streak/", streak_detail, name="streak_detail"),
     # Forum URLs
     path("forum/", views.forum_categories, name="forum_categories"),
     path("forum/category/create/", views.create_forum_category, name="create_forum_category"),
@@ -236,6 +237,24 @@ urlpatterns += i18n_patterns(
     path("trackers/<int:tracker_id>/update/", views.update_tracker, name="update_tracker"),
     path("trackers/<int:tracker_id>/progress/", views.update_progress, name="update_progress"),
     path("trackers/embed/<str:embed_code>/", views.embed_tracker, name="embed_tracker"),
+    # Quiz URLs
+    path("quizzes/", quiz_views.quiz_list, name="quiz_list"),
+    path("quizzes/create/", quiz_views.create_quiz, name="create_quiz"),
+    path("quizzes/<int:quiz_id>/", quiz_views.quiz_detail, name="quiz_detail"),
+    path("quizzes/<int:quiz_id>/update/", quiz_views.update_quiz, name="update_quiz"),
+    path("quizzes/<int:quiz_id>/delete/", quiz_views.delete_quiz, name="delete_quiz"),
+    path("quizzes/<int:quiz_id>/add-question/", quiz_views.add_question, name="add_question"),
+    path("quizzes/questions/<int:question_id>/edit/", quiz_views.edit_question, name="edit_question"),
+    path("quizzes/questions/<int:question_id>/delete/", quiz_views.delete_question, name="delete_question"),
+    path("quizzes/<int:quiz_id>/take/", quiz_views.take_quiz, name="take_quiz"),
+    path("quizzes/shared/<str:share_code>/", quiz_views.take_quiz_shared, name="quiz_take_shared"),
+    path("quizzes/results/<int:user_quiz_id>/", quiz_views.quiz_results, name="quiz_results"),
+    path(
+        "quizzes/results/<int:user_quiz_id>/grade/<int:question_id>/",
+        quiz_views.grade_short_answer,
+        name="grade_short_answer",
+    ),
+    path("quizzes/<int:quiz_id>/analytics/", quiz_views.quiz_analytics, name="quiz_analytics"),
     prefix_default_language=True,
 )
 

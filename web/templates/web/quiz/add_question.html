@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  {% if question %}
+    Edit Question
+  {% else %}
+    Add Question
+  {% endif %}
+{% endblock title %}
+{% block extra_head %}
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          const questionTypeSelect = document.getElementById('question-type');
+          const multipleChoiceOptions = document.getElementById('multiple-choice-options');
+          const trueFalseOptions = document.getElementById('true-false-options');
+          const shortAnswerOptions = document.getElementById('short-answer-options');
+
+          // Function to show relevant form sections based on question type
+          function updateFormVisibility() {
+              const selectedType = questionTypeSelect.value;
+
+              // Hide all option sections first
+              multipleChoiceOptions.classList.add('hidden');
+              trueFalseOptions.classList.add('hidden');
+              shortAnswerOptions.classList.add('hidden');
+
+              // Show relevant section based on selection
+              if (selectedType === 'multiple_choice') {
+                  multipleChoiceOptions.classList.remove('hidden');
+              } else if (selectedType === 'true_false') {
+                  trueFalseOptions.classList.remove('hidden');
+              } else if (selectedType === 'short_answer') {
+                  shortAnswerOptions.classList.remove('hidden');
+              }
+          }
+
+          // Update on page load
+          updateFormVisibility();
+
+          // Update when selection changes
+          questionTypeSelect.addEventListener('change', updateFormVisibility);
+
+          // Add option functionality for multiple choice
+          const addOptionBtn = document.getElementById('add-option-btn');
+          const optionsContainer = document.getElementById('options-container');
+          const optionTemplate = document.getElementById('option-template');
+
+          if (addOptionBtn) {
+              addOptionBtn.addEventListener('click', function() {
+                  const newOption = optionTemplate.content.cloneNode(true);
+                  const optionCount = optionsContainer.children.length;
+
+                  // Update the new option's ID and name attributes
+                  const inputs = newOption.querySelectorAll('input');
+                  inputs.forEach(function(input) {
+                      if (input.type === 'text') {
+                          input.name = `option_text_${optionCount}`;
+                          input.id = `option_text_${optionCount}`;
+                      } else if (input.type === 'radio') {
+                          input.name = 'correct_option';
+                          input.id = `correct_option_${optionCount}`;
+                          input.value = optionCount;
+                      }
+                  });
+
+                  const label = newOption.querySelector('label');
+                  if (label) {
+                      label.setAttribute('for', `correct_option_${optionCount}`);
+                  }
+
+                  // Add delete button functionality
+                  const deleteBtn = newOption.querySelector('.delete-option-btn');
+                  if (deleteBtn) {
+                      deleteBtn.addEventListener('click', function() {
+                          this.closest('.option-item').remove();
+
+                          // Renumber remaining options
+                          const optionItems = optionsContainer.querySelectorAll('.option-item');
+                          optionItems.forEach(function(item, index) {
+                              const textInput = item.querySelector('input[type="text"]');
+                              const radioInput = item.querySelector('input[type="radio"]');
+                              const itemLabel = item.querySelector('label');
+
+                              if (textInput) {
+                                  textInput.name = `option_text_${index}`;
+                                  textInput.id = `option_text_${index}`;
+                              }
+
+                              if (radioInput) {
+                                  radioInput.id = `correct_option_${index}`;
+                                  radioInput.value = index;
+                              }
+
+                              if (itemLabel) {
+                                  itemLabel.setAttribute('for', `correct_option_${index}`);
+                              }
+                          });
+                      });
+                  }
+
+                  optionsContainer.appendChild(newOption);
+              });
+          }
+
+          // Add delete functionality to existing options
+          const deleteOptionBtns = document.querySelectorAll('.delete-option-btn');
+          deleteOptionBtns.forEach(function(btn) {
+              btn.addEventListener('click', function() {
+                  this.closest('.option-item').remove();
+
+                  // Renumber remaining options
+                  const optionItems = optionsContainer.querySelectorAll('.option-item');
+                  optionItems.forEach(function(item, index) {
+                      const textInput = item.querySelector('input[type="text"]');
+                      const radioInput = item.querySelector('input[type="radio"]');
+                      const itemLabel = item.querySelector('label');
+
+                      if (textInput) {
+                          textInput.name = `option_text_${index}`;
+                          textInput.id = `option_text_${index}`;
+                      }
+
+                      if (radioInput) {
+                          radioInput.id = `correct_option_${index}`;
+                          radioInput.value = index;
+                      }
+
+                      if (itemLabel) {
+                          itemLabel.setAttribute('for', `correct_option_${index}`);
+                      }
+                  });
+              });
+          });
+      });
+  </script>
+{% endblock extra_head %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+    <nav class="text-sm mb-6">
+      <a href="{% url 'index' %}" class="text-blue-600 hover:text-blue-800">Home</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'quiz_list' %}"
+         class="text-blue-600 hover:text-blue-800">Quizzes</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'quiz_detail' quiz.id %}"
+         class="text-blue-600 hover:text-blue-800">{{ quiz.title }}</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-600">
+        {% if question %}
+          Edit Question
+        {% else %}
+          Add Question
+        {% endif %}
+      </span>
+    </nav>
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-white">
+        {% if question %}
+          Edit Question
+        {% else %}
+          Add Question to "{{ quiz.title }}"
+        {% endif %}
+      </h1>
+      <p class="text-gray-600 dark:text-gray-400 mt-2">
+        {% if question %}
+          Update question details and options
+        {% else %}
+          Create a new question for your quiz
+        {% endif %}
+      </p>
+    </div>
+    <!-- Question Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div class="p-6">
+        <form method="post"
+              action="{% if question %}{% url 'edit_question' question.id %}{% else %}{% url 'add_question' quiz.id %}{% endif %}">
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+            <div class="mb-6 p-4 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300 rounded-lg">
+              {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+          {% endif %}
+          <!-- Question Information -->
+          <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Question Information</h2>
+            <div class="space-y-6">
+              <!-- Question Type -->
+              <div>
+                <label for="question-type"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Question Type <span class="text-red-600">*</span>
+                </label>
+                <select name="type"
+                        id="question-type"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                        required>
+                  <option value="multiple_choice"
+                          {% if question.type == 'multiple_choice' or not question %}selected{% endif %}>
+                    Multiple Choice
+                  </option>
+                  <option value="true_false"
+                          {% if question.type == 'true_false' %}selected{% endif %}>True/False</option>
+                  <option value="short_answer"
+                          {% if question.type == 'short_answer' %}selected{% endif %}>Short Answer</option>
+                </select>
+              </div>
+              <!-- Question Text -->
+              <div>
+                <label for="question-text"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Question Text <span class="text-red-600">*</span>
+                </label>
+                <textarea name="text"
+                          id="question-text"
+                          rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                          placeholder="Enter your question here"
+                          required>{{ question.text|default:'' }}</textarea>
+              </div>
+              <!-- Points -->
+              <div>
+                <label for="question-points"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Points <span class="text-red-600">*</span>
+                </label>
+                <input type="number"
+                       name="points"
+                       id="question-points"
+                       value="{{ question.points|default:'1' }}"
+                       min="0"
+                       step="0.5"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                       required />
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Value of this question (default: 1)</p>
+              </div>
+            </div>
+          </div>
+          <!-- Multiple Choice Options -->
+          <div id="multiple-choice-options"
+               class="mb-8 {% if question.type and question.type != 'multiple_choice' %}hidden{% endif %}">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-bold text-gray-800 dark:text-white">Answer Options</h2>
+              <button type="button"
+                      id="add-option-btn"
+                      class="bg-teal-600 hover:bg-teal-700 text-white py-1 px-3 rounded-lg text-sm flex items-center">
+                <i class="fas fa-plus mr-1"></i> Add Option
+              </button>
+            </div>
+            <div id="options-container" class="space-y-3">
+              {% if question.type == 'multiple_choice' and question.options.all %}
+                {% for option in question.options.all %}
+                  <div class="option-item flex items-start space-x-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div class="flex items-center h-5 pt-2">
+                      <input type="radio"
+                             name="correct_option"
+                             id="correct_option_{{ forloop.counter0 }}"
+                             value="{{ forloop.counter0 }}"
+                             {% if option.is_correct %}checked{% endif %}
+                             class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
+                             required />
+                    </div>
+                    <div class="flex-grow">
+                      <label for="correct_option_{{ forloop.counter0 }}"
+                             class="text-sm font-medium text-gray-700 dark:text-gray-300">Correct Answer</label>
+                      <input type="text"
+                             name="option_text_{{ forloop.counter0 }}"
+                             id="option_text_{{ forloop.counter0 }}"
+                             value="{{ option.text }}"
+                             class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                             placeholder="Option text"
+                             required />
+                    </div>
+                    <button type="button"
+                            class="delete-option-btn text-gray-400 hover:text-red-600 pt-2"
+                            {% if forloop.counter <= 2 %}disabled{% endif %}>
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  </div>
+                {% endfor %}
+              {% else %}
+                <!-- Default options if creating new question -->
+                <div class="option-item flex items-start space-x-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div class="flex items-center h-5 pt-2">
+                    <input type="radio"
+                           name="correct_option"
+                           id="correct_option_0"
+                           value="0"
+                           checked
+                           class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
+                           required />
+                  </div>
+                  <div class="flex-grow">
+                    <label for="correct_option_0"
+                           class="text-sm font-medium text-gray-700 dark:text-gray-300">Correct Answer</label>
+                    <input type="text"
+                           name="option_text_0"
+                           id="option_text_0"
+                           class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                           placeholder="Correct option"
+                           required />
+                  </div>
+                  <button type="button"
+                          class="delete-option-btn text-gray-400 hover:text-red-600 pt-2"
+                          disabled>
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </div>
+                <div class="option-item flex items-start space-x-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div class="flex items-center h-5 pt-2">
+                    <input type="radio"
+                           name="correct_option"
+                           id="correct_option_1"
+                           value="1"
+                           class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
+                           required />
+                  </div>
+                  <div class="flex-grow">
+                    <label for="correct_option_1"
+                           class="text-sm font-medium text-gray-700 dark:text-gray-300">Correct Answer</label>
+                    <input type="text"
+                           name="option_text_1"
+                           id="option_text_1"
+                           class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                           placeholder="Incorrect option"
+                           required />
+                  </div>
+                  <button type="button"
+                          class="delete-option-btn text-gray-400 hover:text-red-600 pt-2"
+                          disabled>
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </div>
+              {% endif %}
+            </div>
+            <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+              You must have at least 2 options. Select the radio button next to the correct answer.
+            </p>
+          </div>
+          <!-- True/False Options -->
+          <div id="true-false-options"
+               class="mb-8 {% if not question.type or question.type != 'true_false' %}hidden{% endif %}">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Correct Answer</h2>
+            <div class="space-y-3">
+              <div class="flex items-center">
+                <input type="radio"
+                       name="true_false_answer"
+                       id="true_answer"
+                       value="true"
+                       {% if question.type == 'true_false' and question.options.first.is_correct %}checked{% endif %}
+                       class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
+                       required />
+                <label for="true_answer" class="ml-3 block text-gray-700 dark:text-gray-300">True</label>
+              </div>
+              <div class="flex items-center">
+                <input type="radio"
+                       name="true_false_answer"
+                       id="false_answer"
+                       value="false"
+                       {% if question.type == 'true_false' and question.options.last.is_correct %}checked{% endif %}
+                       class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
+                       required />
+                <label for="false_answer"
+                       class="ml-3 block text-gray-700 dark:text-gray-300">False</label>
+              </div>
+            </div>
+          </div>
+          <!-- Short Answer Options -->
+          <div id="short-answer-options"
+               class="mb-8 {% if not question.type or question.type != 'short_answer' %}hidden{% endif %}">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Correct Answer</h2>
+            <div>
+              <label for="short-answer"
+                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Answer Key (for reference)
+              </label>
+              <textarea name="short_answer"
+                        id="short-answer"
+                        rows="3"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                        placeholder="Enter the expected answer here for your reference">{{ question.correct_answer|default:'' }}</textarea>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Note: For short answers, you will need to manually grade student responses.
+              </p>
+            </div>
+          </div>
+          <!-- Form Buttons -->
+          <div class="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+            <a href="{% url 'quiz_detail' quiz.id %}"
+               class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-lg">
+              Cancel
+            </a>
+            <button type="submit"
+                    class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg">
+              {% if question %}
+                Update Question
+              {% else %}
+                Add Question
+              {% endif %}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <!-- Template for new option -->
+  <template id="option-template">
+    <div class="option-item flex items-start space-x-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+      <div class="flex items-center h-5 pt-2">
+        <input type="radio"
+               name="correct_option"
+               class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
+               required />
+      </div>
+      <div class="flex-grow">
+        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">Correct Answer</label>
+        <input type="text"
+               class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+               placeholder="Option text"
+               required />
+      </div>
+      <button type="button"
+              class="delete-option-btn text-gray-400 hover:text-red-600 pt-2">
+        <i class="fas fa-trash-alt"></i>
+      </button>
+    </div>
+  </template>
+{% endblock content %}

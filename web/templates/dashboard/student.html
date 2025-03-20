@@ -121,6 +121,24 @@
         </div>
       </div>
     </div>
+    <!-- Learning Streak Summary Section -->
+    <div class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Your Learning Streak</h2>
+      {% if streak %}
+        <p class="text-gray-700 dark:text-gray-300">
+          Current Streak: <span class="font-bold">{{ streak.current_streak }}</span> day{{ streak.current_streak|pluralize }}
+        </p>
+        <p class="text-gray-700 dark:text-gray-300">
+          Longest Streak: <span class="font-bold">{{ streak.longest_streak }}</span> day{{ streak.longest_streak|pluralize }}
+        </p>
+      {% else %}
+        <p class="text-gray-700 dark:text-gray-300">No streak information available.</p>
+      {% endif %}
+      <a href="{% url 'streak_detail' %}"
+         class="inline-block mt-4 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded">
+        View Detailed Streak Info
+      </a>
+    </div>
     <!-- Your Certificates Section -->
     <div class="mt-12">
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
