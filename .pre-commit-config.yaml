@@ -1,4 +1,14 @@
 repos:
+  - repo: local
+    hooks:
+      - id: poetry-check
+        name: Poetry Environment Check
+        entry: bash -c 'if [ -z "$GITHUB_ACTIONS" ]; then poetry install && poetry run pip list | grep -q django || (echo "Django not found in Poetry environment. Run poetry install." && exit 1); fi'
+        language: system
+        pass_filenames: false
+        always_run: true
+        verbose: true
+
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -39,5 +49,24 @@ repos:
       - id: djlint-django
         args: ["--reformat", "--max-line-length=120"]
         files: '\.(html|djhtml)$'
+
+  - repo: local
+    hooks:
+      - id: django-collectstatic
+        name: Django Collect Static
+        entry: bash -c 'if [ -z "$GITHUB_ACTIONS" ]; then cd "$(git rev-parse --show-toplevel)" && poetry run python manage.py collectstatic --noinput; fi'
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: true
+        verbose: true
+      - id: django-test
+        name: Django Tests
+        entry: bash -c 'if [ -z "$GITHUB_ACTIONS" ]; then cd "$(git rev-parse --show-toplevel)" && poetry run python manage.py test --failfast; fi'
+        language: system
+        types: [python]
+        pass_filenames: false
+        always_run: true
+        verbose: true
 
 fail_fast: true
