@@ -3386,7 +3386,7 @@ class OrderManagementView(LoginRequiredMixin, UserPassesTestMixin, generic.ListV
 
     def get_queryset(self):
         queryset = Order.objects.filter(items__goods__storefront__store_slug=self.kwargs["store_slug"]).distinct()
-
+        
         # Get status from request and filter
         selected_status = self.request.GET.get("status")
         if selected_status and selected_status != "all":
