@@ -2,35 +2,6 @@
 
 {% block content %}
   <!-- Hero Section -->
-  <!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Alpha One Labs x GSoC 2025</title>
-  <style>
-    /* Background Animation */
-    @keyframes gradientX {
-      0% {
-        background-position: 0% 50%;
-      }
-      50% {
-        background-position: 100% 50%;
-      }
-      100% {
-        background-position: 0% 50%;
-      }
-    }
-
-    .animate-gradient-x {
-      background-size: 200% 200%;
-      animation: gradientX 10s ease infinite;
-    }
-  </style>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body>
-  <!-- Hero Section -->
   <section class="relative w-full text-white py-16 text-center overflow-hidden">
     <!-- Animated Gradient Background -->
     <div class="absolute inset-0 bg-gradient-to-r from-teal-600 to-orange-500 animate-gradient-x z-0"></div>
@@ -51,10 +22,6 @@
       </a>
     </div>
   </section>
-
-  <!-- Rest of your content goes here -->
-</body>
-</html>
 
   <!-- Tips Section -->
   <main class="flex-1 w-full max-w-[90rem] mx-auto mt-10 px-4 md:px-6">
@@ -106,6 +73,38 @@
               Slack community.
             </a>
           </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Leaderboard Section -->
+    <div class="mt-16">
+      <div class="mt-4 p-4 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-900/50">
+        <p class="text-sm text-blue-800 dark:text-blue-200">
+          <i class="fas fa-code mr-2"></i>
+          Are you a coder? Get involved and help shape the future of education!
+          <a href="https://github.com/AlphaOneLabs/education-website/blob/main/CONTRIBUTING.md"
+             class="inline-flex items-center text-blue-600 dark:text-blue-400 hover:underline ml-1">
+            View contributor guidelines
+            <i class="fas fa-arrow-right ml-1 text-xs"></i>
+          </a>
+        </p>
+      </div>
+    </div>
+
+    <!-- Recent Contributors Section -->
+    <div class="mt-16">
+      <h2 class="text-4xl font-bold text-gray-900 dark:text-white text-center">
+        Recent Contributors
+      </h2>
+      <p class="text-lg text-gray-600 dark:text-gray-300 text-center mb-8">
+        Check out the latest contributions to our project!
+      </p>
+      <div id="recent-contributors" class="space-y-4">
+        <!-- Loading State -->
+        <div class="text-sm text-gray-600 dark:text-gray-400 text-center py-4">
+          <i class="fas fa-spinner fa-spin mr-2"></i>
+          Loading recent contributors...
         </div>
       </div>
     </div>
@@ -471,6 +470,9 @@
       </div>
     </div>
 
+    <!-- Space before footer -->
+    <div class="mt-24"></div>
+
     <!-- Floating Apply Now Button -->
     <a href="https://summerofcode.withgoogle.com/"
        target="_blank"
@@ -479,4 +481,43 @@
       Apply Now 🚀
     </a>
   </main>
+
+  <!-- Script for Recent Contributors -->
+  <script>
+    // Fetch recent contributors from GitHub API
+    fetch('https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=10')
+      .then(response => response.json())
+      .then(pulls => {
+        const container = document.getElementById('recent-contributors');
+        container.innerHTML = ''; // Clear loading state
+
+        pulls.forEach(pull => {
+          const date = new Date(pull.created_at).toLocaleDateString();
+          const div = document.createElement('div');
+          div.className = 'flex items-center space-x-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
+          div.innerHTML = `
+            <img src="${pull.user.avatar_url}" alt="${pull.user.login}" class="w-10 h-10 rounded-full" loading="lazy" />
+            <div class="flex-1 min-w-0">
+              <a href="${pull.html_url}" target="_blank" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 truncate block">
+                ${pull.title}
+              </a>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                by <span class="font-medium">${pull.user.login}</span> · PR #${pull.number} · ${date}
+              </p>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      })
+      .catch(error => {
+        const container = document.getElementById('recent-contributors');
+        container.innerHTML = `
+          <div class="text-sm text-gray-600 dark:text-gray-400 text-center py-4">
+            <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+            Failed to load recent contributors. Please try again later.
+          </div>
+        `;
+        console.error('Error fetching contributors:', error);
+      });
+  </script>
 {% endblock content %}
