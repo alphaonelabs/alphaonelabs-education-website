@@ -3,13 +3,13 @@
 {% block title %}
   Explore Our Products
 {% endblock title %}
+
 {% block content %}
   <div class="container mx-auto px-2 py-8">
     <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-6 text-center">Explore Our Products</h1>
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <!-- Filter Sidebar -->
-      <aside id="filter-box"
-             class="p-4 bg-white dark:bg-gray-800 shadow-md rounded-lg border border-gray-200 overflow-hidden transition-all duration-300">
+      <aside id="filter-box" class="p-4 bg-white dark:bg-gray-800 shadow-md rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 md:col-span-1">
         <h2 class="text-lg font-semibold mb-4">Filters</h2>
         <form method="get" class="space-y-4">
           <div>
@@ -17,20 +17,16 @@
             <select name="store_name" class="w-full border-gray-300 rounded-md shadow-sm">
               <option value="">All</option>
               {% for name in store_names %}
-                <option value="{{ name }}"
-                        {% if request.GET.store_name == name %}selected{% endif %}>{{ name }}</option>
+                <option value="{{ name }}" {% if request.GET.store_name == name %}selected{% endif %}>{{ name }}</option>
               {% endfor %}
             </select>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Product Type</label>
-            <select name="product_type"
-                    class="w-full border-gray-300 rounded-md shadow-sm">
+            <select name="product_type" class="w-full border-gray-300 rounded-md shadow-sm">
               <option value="">All</option>
-              <option value="physical"
-                      {% if request.GET.product_type == 'physical' %}selected{% endif %}>Physical</option>
-              <option value="digital"
-                      {% if request.GET.product_type == 'digital' %}selected{% endif %}>Digital</option>
+              <option value="physical" {% if request.GET.product_type == 'physical' %}selected{% endif %}>Physical</option>
+              <option value="digital" {% if request.GET.product_type == 'digital' %}selected{% endif %}>Digital</option>
             </select>
           </div>
           <div>
@@ -38,40 +34,31 @@
             <select name="category" class="w-full border-gray-300 rounded-md shadow-sm">
               <option value="">All</option>
               {% for category in categories %}
-                <option value="{{ category }}"
-                        {% if request.GET.category == category %}selected{% endif %}>{{ category }}</option>
+                <option value="{{ category }}" {% if request.GET.category == category %}selected{% endif %}>{{ category }}</option>
               {% endfor %}
             </select>
           </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Price Range</label>
+            <input type="range" id="price-slider" min="0" max="1000" step="10" value="{{ request.GET.min_price|default:0 }}" class="w-full">
+          </div>
           <div class="flex gap-2">
-            <input type="number"
-                   name="min_price"
-                   placeholder="Min Price"
-                   class="w-1/2 border-gray-300 rounded-md shadow-sm"
-                   value="{{ request.GET.min_price }}" />
-            <input type="number"
-                   name="max_price"
-                   placeholder="Max Price"
-                   class="w-1/2 border-gray-300 rounded-md shadow-sm"
-                   value="{{ request.GET.max_price }}" />
+            <input type="number" id="min_price" name="min_price" placeholder="Min Price" class="w-1/2 border-gray-300 rounded-md shadow-sm" value="{{ request.GET.min_price }}" />
+            <input type="number" id="max_price" name="max_price" placeholder="Max Price" class="w-1/2 border-gray-300 rounded-md shadow-sm" value="{{ request.GET.max_price }}" />
           </div>
           <div class="flex space-x-2">
-            <button type="submit"
-                    class="w-1/2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg">Apply</button>
-            <a href="?"
-               class="w-1/2 text-center bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg">Clear</a>
+            <button type="submit" class="w-1/2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg">Apply</button>
+            <a href="?" class="w-1/2 text-center bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg">Clear</a>
           </div>
         </form>
       </aside>
+      
       <!-- Products Grid -->
-      <section class="col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <section class="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-fr">
         {% for product in products %}
           <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 border border-gray-200">
-            <a href="{% url 'goods_detail' pk=product.id %}"
-               class="block overflow-hidden rounded-md">
-              <img src="{% if product.image %}{{ product.image.url }}{% else %}/static/images/placeholder.png{% endif %}"
-                   alt="{{ product.name }}"
-                   class="w-full h-56 object-cover rounded-md" />
+            <a href="{% url 'goods_detail' pk=product.id %}" class="block overflow-hidden rounded-md">
+              <img src="{% if product.image %}{{ product.image.url }}{% else %}/static/images/placeholder.png{% endif %}" alt="{{ product.name }}" class="w-full h-56 object-cover rounded-md" />
             </a>
             <h3 class="mt-3 text-lg font-semibold text-gray-900 dark:text-white">{{ product.name }}</h3>
             <p class="text-sm text-gray-600 dark:text-gray-400">{{ product.description|truncatewords:10 }}</p>
@@ -87,14 +74,12 @@
               {% if product.stock > 0 %}
                 <form method="post" action="{% url 'add_goods_to_cart' product.pk %}">
                   {% csrf_token %}
-                  <button type="submit"
-                          class="w-full bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg">
+                  <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg">
                     <i class="fas fa-cart-plus"></i> Add to Cart
                   </button>
                 </form>
               {% else %}
-                <button class="w-full bg-gray-400 text-white px-4 py-2 rounded-lg cursor-not-allowed"
-                        disabled>Sold Out</button>
+                <button class="w-full bg-gray-400 text-white px-4 py-2 rounded-lg cursor-not-allowed" disabled>Sold Out</button>
               {% endif %}
             </div>
           </div>
@@ -106,25 +91,34 @@
       </section>
     </div>
   </div>
+
+  <script>
+    const priceSlider = document.getElementById("price-slider");
+    const minPrice = document.getElementById("min_price");
+    const maxPrice = document.getElementById("max_price");
+    
+    priceSlider.addEventListener("input", function () {
+      minPrice.value = this.value;
+      maxPrice.value = parseInt(this.value) + 100; 
+    });
+  </script>
+  
   <!-- Pagination Controls -->
   {% if page_obj.has_other_pages %}
     <div class="mt-8 flex justify-center">
       <nav class="flex space-x-2 bg-white dark:bg-gray-900 p-2 rounded-lg shadow-md">
         {% if page_obj.has_previous %}
-          <a href="?page={{ page_obj.previous_page_number }}"
-             class="px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 rounded-md shadow-sm">« Previous</a>
+          <a href="?page={{ page_obj.previous_page_number }}" class="px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 rounded-md shadow-sm">« Previous</a>
         {% endif %}
         {% for num in page_obj.paginator.page_range %}
           {% if page_obj.number == num %}
             <span class="px-4 py-2 border border-gray-300 text-white bg-orange-500 font-bold rounded-md shadow-sm">{{ num }}</span>
           {% else %}
-            <a href="?page={{ num }}"
-               class="px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 rounded-md shadow-sm">{{ num }}</a>
+            <a href="?page={{ num }}" class="px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 rounded-md shadow-sm">{{ num }}</a>
           {% endif %}
         {% endfor %}
         {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}"
-             class="px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 rounded-md shadow-sm">Next »</a>
+          <a href="?page={{ page_obj.next_page_number }}" class="px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 rounded-md shadow-sm">Next »</a>
         {% endif %}
       </nav>
     </div>
