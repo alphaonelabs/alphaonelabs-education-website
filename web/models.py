@@ -1250,8 +1250,8 @@ class QuizOption(models.Model):
             raise ValidationError("Only one correct option is allowed per question.")
 
     def save(self, *args, **kwargs):
+        self.full_clean()
         super().save(*args, **kwargs)
-        # After saving, validate that the question has at least one correct option
         self.__class__.validate_question_has_correct_option(self.question)
         # Additionally, enforce only one correct option if needed
         self.__class__.validate_only_one_correct_option(self.question)
@@ -1285,16 +1285,15 @@ class QuizAnswerSubmission(models.Model):
     submission = models.ForeignKey(QuizSubmission, on_delete=models.CASCADE, related_name="answers")
     question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE)
     selected_option = models.ForeignKey(QuizOption, on_delete=models.CASCADE)
-
     class Meta:
         unique_together = ("submission", "question")
-
     def clean(self):
-        """Ensure the selected option belongs to the question."""
+        """Ensure the selected option belongs to the question and that the question belongs to the same quiz as the submission."""
         super().clean()
         if self.selected_option.question.id != self.question.id:
             raise ValidationError("The selected option does not belong to this question.")
-
+        if self.question.quiz_id != self.submission.quiz_id:
+            raise ValidationError("The question does not belong to the same quiz as this submission.")
     def save(self, *args, **kwargs):
         self.full_clean()
         super().save(*args, **kwargs)

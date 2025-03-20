@@ -40,16 +40,6 @@ class QuizViewTests(TestCase):
             question=self.question, option_text="London", is_correct=False
         )
 
-    # def test_current_live_quiz_view_not_logged_in(self):
-    #     """Test current_live_quiz view for unauthenticated users"""
-    #     url = reverse('current_live_quiz', args=[self.quiz.id])
-    #     response = self.client.get(url)
-
-    #     self.assertEqual(response.status_code, 200)
-    #     self.assertContains(response, "Test Quiz")
-    #     self.assertContains(response, "What is the capital of France?")
-    #     self.assertContains(response, "Paris")
-    #     self.assertContains(response, "London")
 
     def test_current_live_quiz_view_not_logged_in(self):
         """Test current_live_quiz view for unauthenticated users redirects to login"""
