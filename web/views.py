@@ -98,8 +98,8 @@ from .models import (
     ForumReply,
     ForumTopic,
     Goods,
-    Meetup,
     LearningStreak,
+    Meetup,
     Meme,
     Order,
     OrderItem,
@@ -3173,8 +3173,9 @@ def create_meetup(request):
 @login_required
 def edit_meetup(request, slug):
     meetup = get_object_or_404(Meetup, slug=slug)
-    if meetup.creator != request.user:
-        return redirect("meetup_list")  # Or raise a permission denied error
+    if not meetup.can_edit(request.user):
+        messages.error(request, "You don't have permission to edit this meetup.")
+        return redirect("meetup_detail", slug=slug)
     if request.method == "POST":
         form = MeetupForm(request.POST, instance=meetup)
         if form.is_valid():

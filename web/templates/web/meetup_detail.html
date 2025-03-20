@@ -15,7 +15,10 @@
         <p class="text-gray-600 dark:text-gray-400 mb-4">Location: {{ meetup.location }}</p>
       {% endif %}
       <a href="{{ meetup.link }}" class="text-blue-600 dark:text-blue-400">Join Meetup</a>
-      <a href="{% url 'edit_meetup' slug=meetup.slug %}">Edit Meetup</a>
+      {% if user.is_authenticated and meetup.creator == user %}
+        <a href="{% url 'edit_meetup' slug=meetup.slug %}"
+           class="text-blue-600 dark:text-blue-400 ml-4">Edit Meetup</a>
+      {% endif %}
     </div>
   </div>
 {% endblock %}

@@ -7,7 +7,6 @@ from django.db import models
 from django.http import HttpResponseRedirect
 from django.urls import path, reverse
 from django.utils.html import format_html
-from .models import Meetup
 
 from .models import (
     Achievement,
@@ -27,6 +26,7 @@ from .models import (
     ForumTopic,
     Goods,
     LearningStreak,
+    Meetup,
     Notification,
     Order,
     OrderItem,

@@ -1318,7 +1318,7 @@ class Meetup(models.Model):
     event_type = models.CharField(
         choices=[("online", "Online"), ("in_person", "In Person")], default="online", max_length=10
     )
-    creator = models.ForeignKey(User, on_delete=models.CASCADE, default=1)  # Creator field
+    creator = models.ForeignKey(User, on_delete=models.CASCADE)  # Creator field
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -1343,6 +1343,10 @@ class Meetup(models.Model):
 
     def __str__(self):
         return self.title
+
+    def can_edit(self, user):
+        """Check if the given user can edit this meetup."""
+        return user == self.creator or user.is_staff
 
 
 class Certificate(models.Model):

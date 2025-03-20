@@ -424,14 +424,26 @@
           </div>
         </div>
         <div class="grid grid-cols-1 gap-4">
-          {% for meetup in meetups %}
-            <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
-              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ meetup.title }}</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ meetup.description }}</p>
-              <p class="text-sm text-gray-600 dark:text-gray-400">Date: {{ meetup.date }}</p>
-              <a href="{{ meetup.link }}" class="text-blue-600 dark:text-blue-400">Join Meetup</a>
+          {% if meetups %}
+            {% for meetup in meetups %}
+              <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ meetup.title }}</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400">{{ meetup.description }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Date: {{ meetup.date|date:"F j, Y, g:i a" }}</p>
+                <p class="text-sm text-gray-600 dark:text-gray-400">Type: {{ meetup.get_event_type_display }}</p>
+                {% if meetup.event_type == "online" %}
+                  <a href="{{ meetup.link }}"
+                     class="text-blue-600 dark:text-blue-400 hover:underline">Join Online</a>
+                {% else %}
+                  <p class="text-sm text-gray-600 dark:text-gray-400">Location: {{ meetup.location }}</p>
+                {% endif %}
+              </div>
+            {% endfor %}
+          {% else %}
+            <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-center">
+              <p class="text-gray-600 dark:text-gray-400">No upcoming meetups scheduled.</p>
             </div>
-          {% endfor %}
+          {% endif %}
         </div>
       </div>
     </div>

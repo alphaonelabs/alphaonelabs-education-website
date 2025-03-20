@@ -1184,48 +1184,13 @@ class MeetupForm(forms.ModelForm):
         model = Meetup
         fields = ["title", "description", "date", "link", "location", "event_type"]
         widgets = {
-            "title": forms.TextInput(
-                attrs={
-                    "class": "block w-full border border-gray-300 dark:border-gray-600 rounded p-2 "
-                    "focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 "
-                    "bg-white dark:bg-gray-800",
-                    "required": True,
-                }
-            ),
-            "description": forms.Textarea(
-                attrs={
-                    "class": "block w-full border border-gray-300 dark:border-gray-600 rounded p-2 "
-                    "focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 "
-                    "bg-white dark:bg-gray-800",
-                    "required": True,
-                }
-            ),
-            "date": forms.DateTimeInput(
-                attrs={
-                    "type": "datetime-local",
-                    "class": "block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none "
-                    "focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800",
-                    "required": True,
-                }
-            ),
-            "link": forms.URLInput(
-                attrs={
-                    "class": "block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none "
-                    "focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800",
-                }
-            ),
-            "location": forms.TextInput(
-                attrs={
-                    "class": "block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none "
-                    "focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800",
-                }
-            ),
-            "event_type": forms.Select(
-                attrs={
-                    "class": "block w-full border border-gray-300 dark:border-gray-600 rounded p-2 focus:outline-none "
-                    "focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800",
-                    "required": True,
-                },
+            "title": TailwindInput(attrs={"required": True}),
+            "description": TailwindTextarea(attrs={"required": True}),
+            "date": TailwindDateTimeInput(attrs={"type": "datetime-local", "required": True}),
+            "link": TailwindInput(attrs={"type": "url"}),
+            "location": TailwindInput(),
+            "event_type": TailwindSelect(
+                attrs={"required": True},
                 choices=[("online", "Online"), ("in_person", "In Person")],
             ),
         }
