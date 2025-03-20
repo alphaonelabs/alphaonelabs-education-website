@@ -3,7 +3,9 @@
 {% block title %}
   Educational Memes
 {% endblock title %}
+
 {% block content %}
+  {% load static %}
   <div class="container mx-auto mt-8 px-4">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold">Educational Memes</h1>
@@ -12,35 +14,290 @@
         <i class="fas fa-plus mr-2"></i> Add Meme
       </a>
     </div>
-    <!-- Subject filter -->
+    
+    <!-- Subject Switcher Button -->
     <div class="mb-6">
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="font-semibold">Filter by subject:</span>
-        <a href="{% url 'meme_list' %}"
-           class="px-3 py-1 rounded-full {% if not selected_subject %}bg-teal-600 text-white{% else %}bg-gray-200 hover:bg-gray-300{% endif %}">
-          All
-        </a>
-        {% for subject in subjects %}
-          <a href="{% url 'meme_list' %}?subject={{ subject.slug }}"
-             class="px-3 py-1 rounded-full {% if selected_subject == subject.slug %}bg-teal-600 text-white{% else %}bg-gray-200 hover:bg-gray-300{% endif %}">
-            {{ subject.name }}
+      <div class="flex flex-col sm:flex-row items-center gap-4">
+        <button id="subjectSwitcherBtn" 
+                class="w-full sm:w-auto bg-teal-600 hover:bg-teal-700 text-white py-2 px-6 rounded-lg flex items-center justify-center"
+                onclick="toggleSubjectDropdown()">
+          <span id="currentSubject">All Subjects</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+          </svg>
+        </button>
+        
+        <div id="subjectDropdown" class="hidden absolute mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg z-10 py-2 mt-12">
+          <a href="{% url 'meme_list' %}" 
+             class="block px-4 py-2 text-gray-800 dark:text-white hover:bg-teal-100 dark:hover:bg-teal-900"
+             onclick="setCurrentSubject('All Subjects')">
+            All Subjects
           </a>
+          {% for subject in subjects %}
+            <a href="{% url 'meme_list' %}?subject={{ subject.slug }}" 
+               class="block px-4 py-2 text-gray-800 dark:text-white hover:bg-teal-100 dark:hover:bg-teal-900"
+               onclick="setCurrentSubject('{{ subject.name }}')">
+              {{ subject.name }}
+            </a>
+          {% endfor %}
+        </div>
+        
+        <!-- Original filter pills - still available for direct clicking -->
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="font-semibold">Quick filters:</span>
+          <a href="{% url 'meme_list' %}"
+             class="px-3 py-1 rounded-full {% if not selected_subject %}bg-teal-600 text-white{% else %}bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white{% endif %}">
+            All
+          </a>
+          {% for subject in subjects %}
+            <a href="{% url 'meme_list' %}?subject={{ subject.slug }}"
+               class="px-3 py-1 rounded-full {% if selected_subject == subject.slug %}bg-teal-600 text-white{% else %}bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-white{% endif %}">
+              {{ subject.name }}
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Featured/Predefined Memes Section -->
+    <div class="mb-8">
+      <h2 class="text-xl font-semibold mb-4">Featured Memes</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <!-- Math meme -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border-2 border-yellow-400 transition-all duration-300 hover:shadow-xl">
+          <div class="w-full h-48 overflow-hidden flex items-center justify-center bg-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" class="w-full h-full">
+              <rect x="0" y="0" width="200" height="150" fill="#f8f9fa"/>
+              <text x="100" y="40" font-family="Arial" font-size="14" text-anchor="middle" fill="#333">Simple Equation</text>
+              <text x="100" y="70" font-family="Arial" font-size="12" text-anchor="middle" fill="#666">y = mx + b</text>
+              <text x="100" y="100" font-family="Arial" font-size="8" text-anchor="middle" fill="#999">What students see:</text>
+              <text x="100" y="120" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">∫(x²+2x+1)dx = ∫(x+1)²dx = (x+1)³/3 + C</text>
+            </svg>
+          </div>
+          <div class="p-4">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Math Problems</h3>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">When the teacher says "this is a simple equation" but your paper looks like ancient hieroglyphics</p>
+            <div class="mt-3 flex justify-between items-center text-sm text-gray-500">
+              <span>Mathematics</span>
+              <span class="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">Featured</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Science meme -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border-2 border-yellow-400 transition-all duration-300 hover:shadow-xl">
+          <div class="w-full h-48 overflow-hidden flex items-center justify-center bg-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" class="w-full h-full">
+              <rect x="0" y="0" width="200" height="150" fill="#f8f9fa"/>
+              <circle cx="100" cy="75" r="30" fill="#9c27b0" opacity="0.7"/>
+              <path d="M80 50 L60 30 M120 50 L140 30" stroke="#333" stroke-width="2"/>
+              <rect x="90" y="105" width="20" height="30" fill="#4caf50"/>
+              <rect x="70" y="115" width="60" height="20" fill="#2196f3"/>
+              <text x="100" y="130" font-family="Arial" font-size="10" text-anchor="middle" fill="white">DO NOT DRINK</text>
+            </svg>
+          </div>
+          <div class="p-4">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Lab Safety</h3>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">Chemistry students when they realize that "don't drink the chemicals" is more of a guideline</p>
+            <div class="mt-3 flex justify-between items-center text-sm text-gray-500">
+              <span>Chemistry</span>
+              <span class="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">Featured</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- History meme -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border-2 border-yellow-400 transition-all duration-300 hover:shadow-xl">
+          <div class="w-full h-48 overflow-hidden flex items-center justify-center bg-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" class="w-full h-full">
+              <rect x="0" y="0" width="200" height="150" fill="#f8f9fa"/>
+              <rect x="50" y="25" width="100" height="100" fill="#d2b48c" stroke="#8b4513" stroke-width="5"/>
+              <circle cx="100" cy="65" r="30" fill="#f5deb3" stroke="#000" stroke-width="1"/>
+              <path d="M80 80 Q100 100 120 80" stroke="#000" stroke-width="2" fill="none"/>
+              <ellipse cx="90" cy="60" rx="5" ry="7" fill="#000"/>
+              <ellipse cx="110" cy="60" rx="5" ry="7" fill="#000"/>
+              <text x="100" y="130" font-family="Arial" font-size="8" text-anchor="middle" fill="#8b4513">Historical Figure, 1752</text>
+            </svg>
+          </div>
+          <div class="p-4">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Historical Figures</h3>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">When you're just trying to take a nap but your portrait will be in history books for centuries</p>
+            <div class="mt-3 flex justify-between items-center text-sm text-gray-500">
+              <span>History</span>
+              <span class="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">Featured</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Literature meme -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border-2 border-yellow-400 transition-all duration-300 hover:shadow-xl">
+          <div class="w-full h-48 overflow-hidden flex items-center justify-center bg-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" class="w-full h-full">
+              <rect x="0" y="0" width="200" height="150" fill="#f8f9fa"/>
+              <rect x="50" y="30" width="100" height="90" fill="#f0e68c" stroke="#8b4513" stroke-width="2"/>
+              <path d="M50 30 L60 20 L160 20 L150 30" fill="#f0e68c" stroke="#8b4513" stroke-width="2"/>
+              <path d="M150 120 L160 110 L160 20" fill="#f0e68c" stroke="#8b4513" stroke-width="2"/>
+              <text x="100" y="70" font-family="Arial" font-size="10" text-anchor="middle" fill="#8b4513">ROMEO & JULIET</text>
+              <text x="100" y="90" font-family="Arial" font-size="8" text-anchor="middle" fill="#8b4513">by William Shakespeare</text>
+              <text x="100" y="110" font-family="Arial" font-size="16" text-anchor="middle" fill="#ff0000">Everyone Dies</text>
+            </svg>
+          </div>
+          <div class="p-4">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Shakespeare's Plots</h3>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">Shakespeare: "Everyone dies" English teachers: "This represents the duality of human existence"</p>
+            <div class="mt-3 flex justify-between items-center text-sm text-gray-500">
+              <span>Literature</span>
+              <span class="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">Featured</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Computer Science meme -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border-2 border-yellow-400 transition-all duration-300 hover:shadow-xl">
+          <div class="w-full h-48 overflow-hidden flex items-center justify-center bg-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" class="w-full h-full">
+              <rect x="0" y="0" width="200" height="150" fill="#f8f9fa"/>
+              <rect x="40" y="30" width="120" height="80" fill="#333" rx="5" ry="5"/>
+              <rect x="50" y="40" width="100" height="60" fill="#222" rx="2" ry="2"/>
+              <text x="100" y="65" font-family="monospace" font-size="8" text-anchor="middle" fill="#0f0">if (code == works) {</text>
+              <text x="100" y="80" font-family="monospace" font-size="8" text-anchor="middle" fill="#0f0">  dontTouchIt();</text>
+              <text x="100" y="95" font-family="monospace" font-size="8" text-anchor="middle" fill="#0f0">}</text>
+              <circle cx="50" cy="120" r="10" fill="#ff5722"/>
+              <circle cx="80" cy="120" r="10" fill="#ffc107"/>
+              <circle cx="110" cy="120" r="10" fill="#4caf50"/>
+            </svg>
+          </div>
+          <div class="p-4">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Debugging</h3>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">When your code finally works but you don't know why</p>
+            <div class="mt-3 flex justify-between items-center text-sm text-gray-500">
+              <span>Computer Science</span>
+              <span class="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">Featured</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Foreign Language meme -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border-2 border-yellow-400 transition-all duration-300 hover:shadow-xl">
+          <div class="w-full h-48 overflow-hidden flex items-center justify-center bg-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" class="w-full h-full">
+              <rect x="0" y="0" width="200" height="150" fill="#f8f9fa"/>
+              <rect x="40" y="40" width="120" height="70" fill="#fff" stroke="#333" stroke-width="2" rx="5" ry="5"/>
+              <text x="100" y="65" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">Native Speaker: "Bonjour!"</text>
+              <circle cx="100" cy="100" r="20" fill="#ffeb3b"/>
+              <circle cx="90" cy="95" r="3" fill="#333"/>
+              <circle cx="110" cy="95" r="3" fill="#333"/>
+              <path d="M90 110 Q100 120 110 110" stroke="#333" stroke-width="2" fill="none"/>
+              <path d="M60 30 L70 25 L80 30" stroke="#333" stroke-width="2" fill="none"/>
+              <path d="M120 30 L130 25 L140 30" stroke="#333" stroke-width="2" fill="none"/>
+            </svg>
+          </div>
+          <div class="p-4">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Language Learning</h3>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">When you've been studying a language for 3 years but a native speaker says "hello" and you panic</p>
+            <div class="mt-3 flex justify-between items-center text-sm text-gray-500">
+              <span>Languages</span>
+              <span class="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">Featured</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Physics meme -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border-2 border-yellow-400 transition-all duration-300 hover:shadow-xl">
+          <div class="w-full h-48 overflow-hidden flex items-center justify-center bg-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" class="w-full h-full">
+              <rect x="0" y="0" width="200" height="150" fill="#f8f9fa"/>
+              <text x="100" y="30" font-family="Arial" font-size="12" text-anchor="middle" fill="#333">Physics Problem:</text>
+              <path d="M50 50 L150 50" stroke="#333" stroke-width="2"/>
+              <circle cx="100" cy="40" r="10" fill="#f44336"/>
+              <path d="M100 50 L100 100" stroke="#333" stroke-width="1" stroke-dasharray="5,5"/>
+              <text x="60" y="70" font-family="Arial" font-size="8" text-anchor="middle" fill="#333">In theory</text>
+              <text x="140" y="70" font-family="Arial" font-size="8" text-anchor="middle" fill="#333">In reality</text>
+              <path d="M50 100 L150 100" stroke="#333" stroke-width="2"/>
+              <circle cx="100" cy="100" r="10" fill="#4caf50"/>
+              <path d="M100 40 Q130 70 100 100" stroke="#2196f3" stroke-width="2" fill="none"/>
+            </svg>
+          </div>
+          <div class="p-4">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Gravity Problems</h3>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">Physics professors: "Ignore air resistance" Real world: "I'm about to end this man's whole career"</p>
+            <div class="mt-3 flex justify-between items-center text-sm text-gray-500">
+              <span>Physics</span>
+              <span class="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">Featured</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Biology meme -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border-2 border-yellow-400 transition-all duration-300 hover:shadow-xl">
+          <div class="w-full h-48 overflow-hidden flex items-center justify-center bg-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" class="w-full h-full">
+              <rect x="0" y="0" width="200" height="150" fill="#f8f9fa"/>
+              <ellipse cx="100" cy="75" rx="60" ry="40" fill="#fff" stroke="#333" stroke-width="2"/>
+              <ellipse cx="100" cy="75" rx="40" ry="25" fill="#ff9800" stroke="#e65100" stroke-width="2"/>
+              <text x="100" y="80" font-family="Arial" font-size="10" text-anchor="middle" fill="#333">POWERHOUSE</text>
+              <path d="M70 45 Q100 35 130 45" stroke="#333" stroke-width="1" fill="none"/>
+              <path d="M70 105 Q100 115 130 105" stroke="#333" stroke-width="1" fill="none"/>
+              <circle cx="80" cy="55" r="5" fill="#4caf50"/>
+              <circle cx="120" cy="55" r="5" fill="#4caf50"/>
+              <circle cx="100" cy="95" r="5" fill="#4caf50"/>
+            </svg>
+          </div>
+          <div class="p-4">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Mitochondria</h3>
+            <p class="text-gray-600 dark:text-gray-300 mt-2">When you forget everything from biology class but still remember the mitochondria is the powerhouse of the cell</p>
+            <div class="mt-3 flex justify-between items-center text-sm text-gray-500">
+              <span>Biology</span>
+              <span class="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">Featured</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Dynamic featured memes from database -->
+        {% for meme in predefined_memes %}
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border-2 border-yellow-400 transition-all duration-300 hover:shadow-xl">
+            <div class="w-full h-48 overflow-hidden flex items-center justify-center bg-gray-100">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" class="w-full h-full">
+                <rect x="0" y="0" width="200" height="150" fill="#f8f9fa"/>
+                <text x="100" y="75" font-family="Arial" font-size="14" text-anchor="middle" fill="#333">{{ meme.title }}</text>
+                <rect x="40" y="90" width="120" height="2" fill="#333"/>
+                <text x="100" y="110" font-family="Arial" font-size="10" text-anchor="middle" fill="#666">{{ meme.subject.name }}</text>
+              </svg>
+            </div>
+            <div class="p-4">
+              <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ meme.title }}</h3>
+              <p class="text-gray-600 dark:text-gray-300 mt-2">{{ meme.caption }}</p>
+              <div class="mt-3 flex justify-between items-center text-sm text-gray-500">
+                <span>{{ meme.subject.name }}</span>
+                <span class="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded text-xs">Featured</span>
+              </div>
+            </div>
+          </div>
         {% endfor %}
       </div>
     </div>
+    
+    <!-- Community Memes Heading -->
+    <h2 class="text-xl font-semibold mb-4">Community Memes</h2>
+    
     <!-- Meme grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {% for meme in memes %}
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl">
-          <div class="w-full h-48 overflow-hidden flex items-center justify-center">
-            <img src="{{ meme.image.url }}"
-                 alt="{{ meme.title }}"
-                 class="max-w-full max-h-full object-contain" />
+          <div class="w-full h-48 overflow-hidden flex items-center justify-center bg-gray-100 dark:bg-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 150" class="w-full h-full">
+              <rect x="0" y="0" width="200" height="150" fill="#f8f9fa"/>
+              <text x="100" y="50" font-family="Arial" font-size="14" text-anchor="middle" fill="#333">{{ meme.title }}</text>
+              <rect x="50" y="60" width="100" height="2" fill="#333"/>
+              <text x="100" y="80" font-family="Arial" font-size="10" text-anchor="middle" fill="#666">"{{ meme.caption|truncatechars:30 }}"</text>
+              <text x="100" y="100" font-family="Arial" font-size="8" text-anchor="middle" fill="#999">{{ meme.subject.name }}</text>
+              <text x="100" y="120" font-family="Arial" font-size="8" text-anchor="middle" fill="#999">By: {{ meme.uploader.username }}</text>
+            </svg>
           </div>
           <div class="p-4">
             <h3 class="text-lg font-bold text-gray-900 dark:text-white">{{ meme.title }}</h3>
             <p class="text-gray-600 dark:text-gray-300 mt-2">{{ meme.caption }}</p>
-            <div class="mt-3 flex justify-between items-center text-sm text-gray-500">
+            <div class="mt-3 flex justify-between items-center text-sm text-gray-500 dark:text-gray-400">
               <span>{{ meme.subject.name }}</span>
               <span>By: {{ meme.uploader.username }}</span>
             </div>
@@ -52,34 +309,73 @@
         </div>
       {% endfor %}
     </div>
+    
     <!-- Pagination controls -->
     {% if memes.paginator.num_pages > 1 %}
       <div class="mt-8 flex justify-center">
         <nav class="inline-flex rounded-md shadow-sm">
           {% if memes.has_previous %}
             <a href="?{% if selected_subject %}subject={{ selected_subject }}&{% endif %}page={{ memes.previous_page_number }}"
-               class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50">
+               class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-l-md hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700">
               Previous
             </a>
+          {% else %}
+            <span class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-l-md cursor-not-allowed dark:bg-gray-800 dark:text-gray-500 dark:border-gray-700">
+              Previous
+            </span>
           {% endif %}
+          
           {% for num in memes.paginator.page_range %}
             {% if memes.number == num %}
-              <span class="px-4 py-2 text-sm font-medium text-white bg-teal-600 border border-teal-600">{{ num }}</span>
+              <span class="px-4 py-2 text-sm font-medium text-white bg-teal-600 border border-teal-600">
+                {{ num }}
+              </span>
             {% else %}
               <a href="?{% if selected_subject %}subject={{ selected_subject }}&{% endif %}page={{ num }}"
-                 class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50">
+                 class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700">
                 {{ num }}
               </a>
             {% endif %}
           {% endfor %}
+          
           {% if memes.has_next %}
             <a href="?{% if selected_subject %}subject={{ selected_subject }}&{% endif %}page={{ memes.next_page_number }}"
-               class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50">
+               class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-r-md hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700 dark:hover:bg-gray-700">
               Next
             </a>
+          {% else %}
+            <span class="px-4 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-r-md cursor-not-allowed dark:bg-gray-800 dark:text-gray-500 dark:border-gray-700">
+              Next
+            </span>
           {% endif %}
         </nav>
       </div>
     {% endif %}
   </div>
+  
+  <!-- JavaScript for Subject Switcher Dropdown -->
+  <script>
+    function toggleSubjectDropdown() {
+      const dropdown = document.getElementById('subjectDropdown');
+      dropdown.classList.toggle('hidden');
+    }
+    
+    function setCurrentSubject(subjectName) {
+      document.getElementById('currentSubject').textContent = subjectName;
+      toggleSubjectDropdown();
+    }
+    
+    // Close the dropdown when clicking outside
+    window.addEventListener('click', function(event) {
+      const dropdown = document.getElementById('subjectDropdown');
+      const button = document.getElementById('subjectSwitcherBtn');
+      if (!dropdown.contains(event.target) && !button.contains(event.target)) {
+        dropdown.classList.add('hidden');
+      }
+    });
+    
+    // Set the current subject on page load
+    
+   
+  </script>
 {% endblock content %}
