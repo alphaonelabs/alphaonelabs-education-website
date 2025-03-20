@@ -3,6 +3,7 @@ import json
 import os
 import re
 import shutil
+import math
 import subprocess
 import time
 from datetime import timedelta
@@ -19,7 +20,7 @@ from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.db import IntegrityError, models, transaction
-from django.db.models import Avg, Count, Q, Sum
+from django.db.models import Avg, Count, Q, Sum, Max
 from django.http import (
     FileResponse,
     HttpResponse,
@@ -126,6 +127,12 @@ GOOGLE_CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "google_credentials.js
 # Initialize Stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
+max_price_value = Goods.objects.aggregate(Max("price"))["price__max"]
+
+goods_data = {
+    "max_price": round(max_price_value, 2) if max_price_value else 0
+}
+print(goods_data)
 
 def sitemap(request):
     return render(request, "sitemap.html")

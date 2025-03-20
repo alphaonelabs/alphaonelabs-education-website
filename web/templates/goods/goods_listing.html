@@ -13,8 +13,8 @@
         <h2 class="text-lg font-semibold mb-4">Filters</h2>
         <form method="get" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Store Name</label>
-            <select name="store_name" class="w-full border-gray-300 rounded-md shadow-sm">
+            <label for="store_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Store Name</label>
+            <select id="store_name" name="store_name" class="w-full border-gray-300 rounded-md shadow-sm">
               <option value="">All</option>
               {% for name in store_names %}
                 <option value="{{ name }}" {% if request.GET.store_name == name %}selected{% endif %}>{{ name }}</option>
@@ -22,16 +22,16 @@
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Product Type</label>
-            <select name="product_type" class="w-full border-gray-300 rounded-md shadow-sm">
+            <label for="product_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Product Type</label>
+            <select id="product_type" name="product_type" class="w-full border-gray-300 rounded-md shadow-sm">
               <option value="">All</option>
               <option value="physical" {% if request.GET.product_type == 'physical' %}selected{% endif %}>Physical</option>
               <option value="digital" {% if request.GET.product_type == 'digital' %}selected{% endif %}>Digital</option>
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
-            <select name="category" class="w-full border-gray-300 rounded-md shadow-sm">
+            <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+            <select id="category" name="category" class="w-full border-gray-300 rounded-md shadow-sm">
               <option value="">All</option>
               {% for category in categories %}
                 <option value="{{ category }}" {% if request.GET.category == category %}selected{% endif %}>{{ category }}</option>
@@ -39,7 +39,7 @@
             </select>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Price Range</label>
+            <label for="price-slider" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Price Range</label>
             <input type="range" id="price-slider" min="0" max="1000" step="10" value="{{ request.GET.min_price|default:0 }}" class="w-full">
           </div>
           <div class="flex gap-2">
@@ -102,25 +102,4 @@
       maxPrice.value = parseInt(this.value) + 100; 
     });
   </script>
-  
-  <!-- Pagination Controls -->
-  {% if page_obj.has_other_pages %}
-    <div class="mt-8 flex justify-center">
-      <nav class="flex space-x-2 bg-white dark:bg-gray-900 p-2 rounded-lg shadow-md">
-        {% if page_obj.has_previous %}
-          <a href="?page={{ page_obj.previous_page_number }}" class="px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 rounded-md shadow-sm">« Previous</a>
-        {% endif %}
-        {% for num in page_obj.paginator.page_range %}
-          {% if page_obj.number == num %}
-            <span class="px-4 py-2 border border-gray-300 text-white bg-orange-500 font-bold rounded-md shadow-sm">{{ num }}</span>
-          {% else %}
-            <a href="?page={{ num }}" class="px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 rounded-md shadow-sm">{{ num }}</a>
-          {% endif %}
-        {% endfor %}
-        {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}" class="px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 rounded-md shadow-sm">Next »</a>
-        {% endif %}
-      </nav>
-    </div>
-  {% endif %}
 {% endblock content %}
