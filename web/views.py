@@ -193,7 +193,9 @@ def index(request):
 def signup_view(request):
     """Custom signup view that properly handles referral codes."""
     if request.method == "POST":
+        # Initialize the registration form with POST data and request context
         form = UserRegistrationForm(request.POST, request=request)
+        # Validate the form data before saving the new user
         if form.is_valid():
             form.save(request)
             return redirect("account_email_verification_sent")
