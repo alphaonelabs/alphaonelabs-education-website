@@ -96,6 +96,7 @@ from .models import (
     ForumReply,
     ForumTopic,
     Goods,
+    LearningStreak,
     Meme,
     Order,
     OrderItem,
@@ -1615,10 +1616,14 @@ def blog_detail(request, slug):
 
 @login_required
 def student_dashboard(request):
-    """Dashboard view for students showing their enrollments, progress, and upcoming sessions."""
+    """Dashboard view for students showing their enrollments, progress, upcoming sessions, and learning streak."""
     if request.user.profile.is_teacher:
         messages.error(request, "This dashboard is for students only.")
         return redirect("profile")
+
+    # Updated learning streak for the current student
+    streak, created = LearningStreak.objects.get_or_create(user=request.user)
+    streak.update_streak()
 
     enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
     upcoming_sessions = Session.objects.filter(
@@ -1646,6 +1651,7 @@ def student_dashboard(request):
         "upcoming_sessions": upcoming_sessions,
         "progress_data": progress_data,
         "avg_progress": avg_progress,
+        "streak": streak,  # Passing the streak object to the template (optional)
     }
     return render(request, "dashboard/student.html", context)
 
@@ -3890,3 +3896,12 @@ def update_progress(request, tracker_id):
 def embed_tracker(request, embed_code):
     tracker = get_object_or_404(ProgressTracker, embed_code=embed_code, public=True)
     return render(request, "trackers/embed.html", {"tracker": tracker})
+
+
+@login_required
+def streak_detail(request):
+    """
+    Full-page view to display the user's learning streak details.
+    """
+    streak, created = LearningStreak.objects.get_or_create(user=request.user)
+    return render(request, "streak_detail.html", {"streak": streak})
