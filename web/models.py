@@ -407,7 +407,7 @@ class Session(models.Model):
 
     def get_absolute_url(self):
         """Return the URL for this session."""
-        return reverse("course_detail", kwargs={"slug": self.course.slug}) + f"#session-{self.id}"
+        return reverse("course_detail", kwargs={"slug": self.course.slug}) + f"#{self.id}"
 
 
 class CourseMaterial(models.Model):

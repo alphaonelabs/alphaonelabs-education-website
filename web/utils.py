@@ -47,6 +47,8 @@ def geocode_address(address):
     Convert a text address to latitude and longitude coordinates.
     Returns a tuple of (latitude, longitude) or None if geocoding fails.
 
+    Results are cached for 24 hours to reduce API usage.
+
     Need to add a GEOCODING_API_KEY to your settings.py
     and sign up for a service like Google Maps, Mapbox, or OpenCage.
     """
