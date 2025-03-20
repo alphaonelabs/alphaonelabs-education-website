@@ -17,11 +17,7 @@ from .models import (
     CartItem,
     Challenge,
     ChallengeSubmission,
-    Quiz,
-    QuizOption,
-    QuizQuestion,
     AdminQuiz,
-    AdminQuizAnswerSubmission,
     AdminQuizOption,
     AdminQuizQuestion,
     AdminQuizSubmission,
@@ -421,13 +417,6 @@ class AdminQuizAdmin(admin.ModelAdmin):
     def save_model(self, request, obj, form, change):
         """First, save the quiz instance, then validate it."""
         super().save_model(request, obj, form, change)  # Save first
-
-        # Now, the primary key exists, and we can access related objects
-        is_valid, message = validate_quiz_has_questions(obj)
-
-        if not is_valid:
-            # Raise a validation error to prevent the quiz from being saved
-            raise ValidationError(message)
 
 
 @admin.register(AdminQuizSubmission)

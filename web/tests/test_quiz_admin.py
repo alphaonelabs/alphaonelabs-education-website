@@ -77,16 +77,14 @@ class QuizAdminTests(TestCase):
             "quiz": self.quiz.id,  # Assuming self.quiz is defined in setUp()
             "question_text": "Test question?",
             "order": 1,
+            "_save": "Save",  # Required to submit the form
             "points":10,
-            "_save": "Save",
             "csrfmiddlewaretoken": response.context["csrf_token"],
         }
         # Submit the form
         response = self.client.post(
             reverse("admin:web_adminquizquestion_add"), data=form_data, follow=True  # Follow redirects
         )
-
-        
         # Assert that the quiz question was successfully created
         self.assertTrue(AdminQuizQuestion.objects.filter(question_text="Test question?").exists())
 

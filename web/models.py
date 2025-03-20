@@ -1222,7 +1222,6 @@ class AdminQuizQuestion(models.Model):
     def __str__(self):
         return self.question_text
 
-
 class AdminQuizOption(models.Model):
     question = models.ForeignKey(AdminQuizQuestion, on_delete=models.CASCADE, related_name="options")
     option_text = models.TextField()
@@ -1236,13 +1235,6 @@ class AdminQuizOption(models.Model):
         return f"Option: {self.option_text} (Correct: {self.is_correct})"
 
     @classmethod
-    def validate_question_has_correct_option(cls, question):
-        """Ensure that a question has at least one correct option."""
-        has_correct = cls.objects.filter(question=question, is_correct=True).exists()
-        if not has_correct:
-            raise ValidationError(f"Question '{question}' must have at least one correct option.")
-
-    @classmethod
     def validate_only_one_correct_option(cls, question):
         correct_count = cls.objects.filter(question=question, is_correct=True).count()
         if correct_count > 1:
@@ -1250,7 +1242,6 @@ class AdminQuizOption(models.Model):
         
     def clean(self):
         super().clean()
-        self.__class__.validate_question_has_correct_option(self.question)
         self.__class__.validate_only_one_correct_option(self.question)
 
     def save(self, *args, **kwargs):

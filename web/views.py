@@ -5,7 +5,7 @@ import re
 import shutil
 import subprocess
 import time
-from datetime import timedelta
+from datetime import datetime,timedelta
 from decimal import Decimal
 import requests
 import stripe
@@ -2874,8 +2874,10 @@ def leaderboard(request, quiz_id):
             # Clear from session after retrieving
             del request.session["quiz_results"]
             request.session.modified = True
+        end_datetime = timezone.make_aware(datetime.combine(quiz.end_date, quiz.end_time))
+        quiz_ended = timezone.now() > end_datetime 
         return render(
-            request, "web/leaderboard.html", {"quiz": quiz, "submissions": submissions, "quiz_results": quiz_results}
+            request, "web/leaderboard.html", {"quiz": quiz, "submissions": submissions, "quiz_results": quiz_results,"quiz_ended": quiz_ended}
         )
     except Exception as e:
         logger.error(f"Error in leaderboard view: {str(e)}")
