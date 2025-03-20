@@ -1150,6 +1150,11 @@ class Challenge(models.Model):
         if self.challenge_type == "weekly":
             return f"Week {self.week_number}: {self.title}"
         return f"One-time: {self.title}"
+    
+    def clean(self):
+        super().clean()
+        if self.challenge_type == "weekly" and not self.week_number:
+            raise ValidationError({"week_number": "Week number is required for weekly challenges."})
 
 
 class ChallengeSubmission(models.Model):
