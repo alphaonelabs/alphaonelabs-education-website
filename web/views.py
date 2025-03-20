@@ -127,14 +127,23 @@ GOOGLE_CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "google_credentials.js
 # Initialize Stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
-# Get maximum price and round up to nearest 10
-max_price_value = Goods.objects.aggregate(Max("price"))["price__max"] or 0
-rounded_max_price = math.ceil(max_price_value / 10) * 10
+def product_list(request):
+    products = Goods.objects.all()
+    
+    # Get the highest price from the database
+    max_price_value = Goods.objects.aggregate(Max("price"))["price__max"]
 
-# Initialize context and add to it
-context = {}
-context["max_price_value"] = rounded_max_price
+    # Ensure it's not None, then round up to the nearest hundred
+    if max_price_value is not None:
+        rounded_max_price = math.ceil(max_price_value / 100) * 100
+    else:
+        rounded_max_price = 100  # Default if no products exist
 
+    # Pass the value to the template
+    return render(request, "your_template.html", {
+        "products": products,
+        "max_price": rounded_max_price
+    })
 def sitemap(request):
     return render(request, "sitemap.html")
 

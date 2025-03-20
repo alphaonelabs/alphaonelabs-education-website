@@ -40,7 +40,7 @@
           </div>
           <div>
             <label for="price-slider" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Price Range</label>
-            <input type="range" id="price-slider" min="0" max="1000" step="10" value="{{ request.GET.min_price|default:0 }}" class="w-full">
+            <input type="range" id="price-slider" min="0" max="{{ max_price }}" step="10" value="{{ request.GET.min_price|default:0 }}" class="w-full">
           </div>
           <div class="flex gap-2">
             <input type="number" id="min_price" name="min_price" placeholder="Min Price" class="w-1/2 border-gray-300 rounded-md shadow-sm" value="{{ request.GET.min_price }}" />
@@ -93,13 +93,16 @@
   </div>
 
   <script>
-    const priceSlider = document.getElementById("price-slider");
-    const minPrice = document.getElementById("min_price");
-    const maxPrice = document.getElementById("max_price");
-    
-    priceSlider.addEventListener("input", function () {
-      minPrice.value = this.value;
-      maxPrice.value = parseInt(this.value) + 100; 
-    });
-  </script>
+  const priceSlider = document.getElementById("price-slider");
+  const minPrice = document.getElementById("min_price");
+  const maxPrice = document.getElementById("max_price");
+
+  priceSlider.max = "{{ max_price }}";
+
+  priceSlider.addEventListener("input", function () {
+    minPrice.value = this.value;
+    maxPrice.value = parseInt(this.value) + 100; 
+  });
+</script>
+
 {% endblock content %}
