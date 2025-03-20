@@ -188,12 +188,47 @@ class LeaderboardEntry(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+
+    # Property methods for backward compatibility
+    @property
+    def points(self):
+        return self.score
+
+    @points.setter
+    def points(self, value):
+        self.score = value
+
+    @property
+    def weekly_points(self):
+        return self.score
+
+    @weekly_points.setter
+    def weekly_points(self, value):
+        self.score = value
+
+    @property
+    def monthly_points(self):
+        return self.score
+
+    @monthly_points.setter
+    def monthly_points(self, value):
+        self.score = value
+
+    @property
+    def challenge_count(self):
+        return self.score
+
+    @challenge_count.setter
+    def challenge_count(self, value):
+        self.score = value
+
+    @property
+    def last_updated(self):
+        return self.updated_at
+
     class Meta:
         verbose_name_plural = "Leaderboard Entries"
-        ordering = ["-points"]  # Update ordering to use points
-
-    def __str__(self):
-        return f"{self.user.username} - {self.points} points"
+        ordering = ["-score"]  # Changed from -points to -score
 
 
 class FriendLeaderboard(models.Model):
@@ -1197,15 +1232,15 @@ class ChallengeSubmission(models.Model):
 
         if is_new:
             # Update leaderboard when a new submission is created
-            entry, created = LeaderboardEntry.objects.get_or_create(user=self.user)
+            entry, created = LeaderboardEntry.objects.get_or_create(
+                user=self.user,
+                challenge=self.challenge  # Associate with the specific challenge
+            )
 
-            # Add points
-            entry.points += self.points_awarded
-            entry.weekly_points += self.points_awarded
-            entry.monthly_points += self.points_awarded
-            entry.challenge_count += 1
+            # Add points - use the score field instead
+            entry.score += self.points_awarded  # This will also update points/weekly_points via property
 
-            # Update streak
+            # Update streak logic remains the same
             last_week_challenge = Challenge.objects.filter(week_number=self.challenge.week_number - 1).first()
 
             if last_week_challenge:

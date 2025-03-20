@@ -14,14 +14,15 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterModelOptions(
-            name="leaderboardentry",
-            options={"ordering": ["-score"], "verbose_name_plural": "Leaderboard Entries"},
-        ),
+        # Instead of removing these fields, keep them for backward compatibility
         migrations.RenameField(
             model_name="leaderboardentry",
             old_name="challenge_count",
             new_name="score",
+        ),
+        migrations.AlterModelOptions(
+            name="leaderboardentry",
+            options={"ordering": ["-score"], "verbose_name_plural": "Leaderboard Entries"},
         ),
         migrations.RenameField(
             model_name="leaderboardentry",

@@ -177,7 +177,7 @@ class Command(BaseCommand):
                 challenge_count=random.randint(0, 10),
                 current_streak=random.randint(0, 5),
                 highest_streak=random.randint(0, 8),
-                challenge=challenge,
+                challenge=challenges[0] if challenges else None,
             )
 
         print(f"Created {len(users)} leaderboard entries!")

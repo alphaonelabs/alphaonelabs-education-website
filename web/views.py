@@ -155,7 +155,7 @@ def index(request):
     latest_success_story = SuccessStory.objects.filter(status="published").order_by("-published_at").first()
 
     # Get top latest 3 leaderboard users
-    top_leaderboard_users = LeaderboardEntry.objects.select_related("user").order_by("-points")[:3]
+    top_leaderboard_users = LeaderboardEntry.objects.select_related("user").order_by("-score")[:3]
 
     # Get top referrers (needed for the test to pass)
     top_referrers = Profile.objects.annotate(
