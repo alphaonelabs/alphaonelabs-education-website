@@ -1,231 +1,236 @@
 {% extends "base.html" %}
+
 {% load static %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="{% static 'css/classes_map.css' %}" />
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="{% static 'css/classes_map.css' %}" />
 {% endblock %}
-
 {% block content %}
-<div class="container mt-4">
+  <div class="container mt-4">
     <h1>Classes Near Me</h1>
     <p>Find educational opportunities in your area</p>
-
     <div class="row">
-        <div class="col-md-3">
-            <div class="filters-container">
-                <h4>Filters</h4>
-                <form id="map-filters">
-                    <div class="mb-3">
-                        <label for="subject" class="form-label">Subject</label>
-                        <select class="form-select" id="subject" name="subject">
-                            <option value="">All Subjects</option>
-                            {% for subject in subjects %}
-                            <option value="{{ subject.id }}" {% if request.GET.subject == subject.id|stringformat:"i" %}selected{% endif %}>
-                                {{ subject.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="age_group" class="form-label">Age Group / Level</label>
-                        <select class="form-select" id="age_group" name="age_group">
-                            <option value="">All Levels</option>
-                            {% for value, display in age_groups %}
-                            <option value="{{ value }}" {% if request.GET.age_group == value %}selected{% endif %}>
-                                {{ display }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="teaching_style" class="form-label">Teaching Style</label>
-                        <select class="form-select" id="teaching_style" name="teaching_style">
-                            <option value="">All Styles</option>
-                            {% for value, display in teaching_styles %}
-                            <option value="{{ value }}" {% if request.GET.teaching_style == value %}selected{% endif %}>
-                                {{ display }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary">Apply Filters</button>
-                </form>
+      <div class="col-md-3">
+        <div class="filters-container">
+          <h4>Filters</h4>
+          <form id="map-filters">
+            <div class="mb-3">
+              <label for="subject" class="form-label">Subject</label>
+              <select class="form-select" id="subject" name="subject">
+                <option value="">All Subjects</option>
+                {% for subject in subjects %}
+                  <option value="{{ subject.id }}"
+                          {% if request.GET.subject == subject.id|stringformat:"i" %}selected{% endif %}>
+                    {{ subject.name }}
+                  </option>
+                {% endfor %}
+              </select>
             </div>
-            
-            <div class="session-list mt-4">
-                <h4>Upcoming Classes ({{ sessions|length }})</h4>
-                {% if sessions %}
-                    {% for session in sessions %}
-                    <div class="card session-card" data-session-id="{{ session.id }}">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ session.title }}</h5>
-                            <h6 class="card-subtitle mb-2 text-muted">{{ session.course.title }}</h6>
-                            <p class="card-text">
-                                <strong>Teacher:</strong> {{ session.course.teacher.get_full_name|default:session.course.teacher.username }}<br>
-                                <strong>When:</strong> {{ session.start_time|date:"M d, Y P" }}<br>
-                                <strong>Where:</strong> {{ session.location }}<br>
-                                <strong>Price:</strong> ${{ session.price|default:session.course.price }}
-                            </p>
-                            <a href="{{ session.get_absolute_url }}" class="card-link">Details</a>
-                        </div>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <p>No classes found matching your criteria.</p>
-                {% endif %}
+            <div class="mb-3">
+              <label for="age_group" class="form-label">Age Group / Level</label>
+              <select class="form-select" id="age_group" name="age_group">
+                <option value="">All Levels</option>
+                {% for value, display in age_groups %}
+                  <option value="{{ value }}"
+                          {% if request.GET.age_group == value %}selected{% endif %}>{{ display }}</option>
+                {% endfor %}
+              </select>
             </div>
+            <div class="mb-3">
+              <label for="teaching_style" class="form-label">Teaching Style</label>
+              <select class="form-select" id="teaching_style" name="teaching_style">
+                <option value="">All Styles</option>
+                {% for value, display in teaching_styles %}
+                  <option value="{{ value }}"
+                          {% if request.GET.teaching_style == value %}selected{% endif %}>{{ display }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <button type="submit" class="btn btn-primary">Apply Filters</button>
+          </form>
         </div>
-        
-        <div class="col-md-9">
-            <div id="map-container"></div>
-            <div id="session-details" class="mt-3"></div>
+        <div class="session-list mt-4">
+          <h4>Upcoming Classes ({{ sessions|length }})</h4>
+          {% if sessions %}
+            {% for session in sessions %}
+              <div class="card session-card" data-session-id="{{ session.id }}">
+                <div class="card-body">
+                  <h5 class="card-title">{{ session.title }}</h5>
+                  <h6 class="card-subtitle mb-2 text-muted">{{ session.course.title }}</h6>
+                  <p class="card-text">
+                    <strong>Teacher:</strong> {{ session.course.teacher.get_full_name|default:session.course.teacher.username }}
+                    <br />
+                    <strong>When:</strong> {{ session.start_time|date:"M d, Y P" }}
+                    <br />
+                    <strong>Where:</strong> {{ session.location }}
+                    <br />
+                    <strong>Price:</strong> ${{ session.price|default:session.course.price }}
+                  </p>
+                  <a href="{{ session.get_absolute_url }}" class="card-link">Details</a>
+                </div>
+              </div>
+            {% endfor %}
+          {% else %}
+            <p>No classes found matching your criteria.</p>
+          {% endif %}
         </div>
+      </div>
+      <div class="col-md-9">
+        <div id="map-container"></div>
+        <div id="session-details" class="mt-3"></div>
+      </div>
     </div>
-</div>
+  </div>
 {% endblock %}
-
 {% block extra_js %}
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize map
-        const map = L.map('map-container').setView([40.7128, -74.0060], 10); // Default to NYC
-        
-        // Add OpenStreetMap tiles
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
-        }).addTo(map);
-        
-        // Store markers by session ID for easy reference
-        const markers = {};
-        let userMarker = null;
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          // Initialize map
+          const map = L.map('map-container').setView([40.7128, -74.0060], 10); // Default to NYC
 
-    // Try to get user location on page load
-    if (navigator.geolocation) {
-        // Add a notification to inform users
-        const locationNotice = L.control({position: 'bottomleft'});
-        locationNotice.onAdd = function() {
-            const div = L.DomUtil.create('div', 'location-notice');
-            div.innerHTML = '<div class="alert alert-info">Detecting your location...</div>';
-            return div;
-        };
-        locationNotice.addTo(map);
-           
-        // Request user location
-        navigator.geolocation.getCurrentPosition(
-            function(position) {
-                map.setView([position.coords.latitude, position.coords.longitude], 13);
-                map.removeControl(locationNotice);
-            },
-            function(error) {
-                console.log("Couldn't get initial location:", error.message);
-                map.removeControl(locationNotice);
-            }
-        );
-    }
-        
-        // Load session data from API
-        const mapContainer = document.getElementById('map-container');
-        mapContainer.innerHTML = '<div class="d-flex justify-content-center align-items-center h-100"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
-        
-        fetch('{% url "map_data_api" %}' + window.location.search)
-            .then(response => response.json())
-            .then(data => {
-                mapContainer.innerHTML = ''; // Clear the loading indicator
-                if (data.sessions.length === 0) {
-                    console.log('No sessions found');
-                    mapContainer.innerHTML = '<div class="alert alert-info">No classes found matching your criteria.</div>';
-                    return;
-                }
-                
-                // Create a bounds object to fit all markers
-                const bounds = L.latLngBounds();
-                
-                // Add markers for each session
-                data.sessions.forEach(session => {
-                    const marker = L.marker([session.lat, session.lng])
-                        .addTo(map)
-                        .bindPopup(`
-                            <strong>${session.title}</strong><br>
-                            ${session.course_title}<br>
-                            Teacher: ${session.teacher}<br>
-                            When: ${new Date(session.start_time).toLocaleString()}<br>
-                            Where: ${session.location}<br>
-                            Price: $${session.price}<br>
+          // Add OpenStreetMap tiles
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              maxZoom: 19,
+              attribution: '&copy; <a href="https://openstreetmap.org/copyright">OpenStreetMap contributors</a>'
+          }).addTo(map);
+
+          // Store markers by session ID for easy reference
+          const markers = {};
+          let userMarker = null;
+
+          // Try to get user location on page load
+          if (navigator.geolocation) {
+              // Add a notification to inform users
+              const locationNotice = L.control({
+                  position: 'bottomleft'
+              });
+              locationNotice.onAdd = function() {
+                  const div = L.DomUtil.create('div', 'location-notice');
+                  div.innerHTML = '<div class="alert alert-info">Detecting your location...</div>';
+                  return div;
+              };
+              locationNotice.addTo(map);
+
+              // Request user location
+              navigator.geolocation.getCurrentPosition(
+                  function(position) {
+                      map.setView([position.coords.latitude, position.coords.longitude], 13);
+                      map.removeControl(locationNotice);
+                  },
+                  function(error) {
+                      console.log("Couldn't get initial location:", error.message);
+                      map.removeControl(locationNotice);
+                  }
+              );
+          }
+
+          // Load session data from API
+          const mapContainer = document.getElementById('map-container');
+          mapContainer.innerHTML = '<div class="d-flex justify-content-center align-items-center h-100"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+
+          fetch('{% url "map_data_api" %}' + window.location.search)
+              .then(response => response.json())
+              .then(data => {
+                  mapContainer.innerHTML = ''; // Clear the loading indicator
+                  if (data.sessions.length === 0) {
+                      console.log('No sessions found');
+                      mapContainer.innerHTML = '<div class="alert alert-info">No classes found matching your criteria.</div>';
+                      return;
+                  }
+
+                  // Create a bounds object to fit all markers
+                  const bounds = L.latLngBounds();
+
+                  // Add markers for each session
+                  data.sessions.forEach(session => {
+                      const marker = L.marker([session.lat, session.lng])
+                          .addTo(map)
+                          .bindPopup(`
+                            <strong>${session.title}</strong><br />
+                            ${session.course_title}<br />
+                            Teacher: ${session.teacher}<br />
+                            When: ${new Date(session.start_time).toLocaleString()}<br />
+                            Where: ${session.location}<br />
+                            Price: $${session.price}<br />
                             <a href="${session.url}" class="btn btn-sm btn-primary mt-2">View Details</a>
                         `);
-                    
-                    // Store marker reference
-                    markers[session.id] = marker;
-                    
-                    // Extend bounds to include this marker
-                    bounds.extend([session.lat, session.lng]);
-                    
-                    // Add click handler to session cards
-                    const card = document.querySelector(`.session-card[data-session-id="${session.id}"]`);
-                    if (card) {
-                        card.addEventListener('click', () => {
-                            marker.openPopup();
-                            map.setView([session.lat, session.lng], 15);
-                        });
-                    }
-                });
-                
-                // Fit map to bounds if we have markers
-                if (!bounds.isEmpty()) {
-                    map.fitBounds(bounds, { padding: [50, 50] });
-                }
-            })
-            .catch(error=>{
-                console.log('Error loading map data:', error);
-                mapContainer.innerHTML = '<div class="alert alert-danger">Error loading map data. Please try again later.</div>';
-            })
-            
-        // Add geolocation control
-        const locateControl = L.control({ position: 'topleft' });
-        locateControl.onAdd = function(map) {
-            const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
-            div.innerHTML = `<a href="#" title="Show me where I am" role="button" aria-label="Show me where I am" style="display: flex; align-items: center; justify-content: center; width: 30px; height: 30px;">
+
+                      // Store marker reference
+                      markers[session.id] = marker;
+
+                      // Extend bounds to include this marker
+                      bounds.extend([session.lat, session.lng]);
+
+                      // Add click handler to session cards
+                      const card = document.querySelector(`.session-card[data-session-id="${session.id}"]`);
+                      if (card) {
+                          card.addEventListener('click', () => {
+                              marker.openPopup();
+                              map.setView([session.lat, session.lng], 15);
+                          });
+                      }
+                  });
+
+                  // Fit map to bounds if we have markers
+                  if (!bounds.isEmpty()) {
+                      map.fitBounds(bounds, {
+                          padding: [50, 50]
+                      });
+                  }
+              })
+              .catch(error => {
+                  console.log('Error loading map data:', error);
+                  mapContainer.innerHTML = '<div class="alert alert-danger">Error loading map data. Please try again later.</div>';
+              })
+
+          // Add geolocation control
+          const locateControl = L.control({
+              position: 'topleft'
+          });
+          locateControl.onAdd = function(map) {
+              const div = L.DomUtil.create('div', 'leaflet-bar leaflet-control');
+              div.innerHTML = `<a href="#" title="Show me where I am" role="button" aria-label="Show me where I am" style="display: flex; align-items: center; justify-content: center; width: 30px; height: 30px;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-geo-alt" viewBox="0 0 16 16">
-                    <path d="M12.166 8.94c-.524 1.062-1.234 2.12-1.96 3.07A31.493 31.493 0 0 1 8 14.58a31.481 31.481 0 0 1-2.206-2.57c-.726-.95-1.436-2.008-1.96-3.07C3.304 7.867 3 6.862 3 6a5 5 0 0 1 10 0c0 .862-.305 1.867-.834 2.94zM8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10z"/>
-                    <path d="M8 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 1a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                    <path d="M12.166 8.94c-.524 1.062-1.234 2.12-1.96 3.07A31.493 31.493 0 0 1 8 14.58a31.481 31.481 0 0 1-2.206-2.57c-.726-.95-1.436-2.008-1.96-3.07C3.304 7.867 3 6.862 3 6a5 5 0 0 1 10 0c0 .862-.305 1.867-.834 2.94zM8 16s6-5.686 6-10A6 6 0 0 0 2 6c0 4.314 6 10 6 10z" />
+                    <path d="M8 8a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm0 1a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
                 </svg>
             </a>`;
-            
-            div.onclick = function() {
-                map.locate({ setView: true, maxZoom: 16 });
-                return false;
-            };
-            
-            return div;
-        };
-        locateControl.addTo(map);
-        
-        // Handle location found event
-        map.on('locationfound', function(e) {
-            // Remove previous marker if exists
-            if (userMarker) {
-                map.removeLayer(userMarker);
-            }
-            
-            // Add marker at user's location
-            userMarker = L.marker(e.latlng).addTo(map)
-                .bindPopup('You are here').openPopup();
-                
-            // Add a circle to show accuracy
-            const radius = e.accuracy / 2;
-            L.circle(e.latlng, radius).addTo(map);
-        });
-        
-        // Handle location error
-        map.on('locationerror', function(e) {
-            alert("Couldn't find your location: " + e.message);
-        });
-    });
-</script>
+
+              div.onclick = function() {
+                  map.locate({
+                      setView: true,
+                      maxZoom: 16
+                  });
+                  return false;
+              };
+
+              return div;
+          };
+          locateControl.addTo(map);
+
+          // Handle location found event
+          map.on('locationfound', function(e) {
+              // Remove previous marker if exists
+              if (userMarker) {
+                  map.removeLayer(userMarker);
+              }
+
+              // Add marker at user's location
+              userMarker = L.marker(e.latlng).addTo(map)
+                  .bindPopup('You are here').openPopup();
+
+              // Add a circle to show accuracy
+              const radius = e.accuracy / 2;
+              L.circle(e.latlng, radius).addTo(map);
+          });
+
+          // Handle location error
+          map.on('locationerror', function(e) {
+              alert("Couldn't find your location: " + e.message);
+          });
+      });
+  </script>
 {% endblock %}

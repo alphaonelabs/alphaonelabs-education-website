@@ -1,10 +1,10 @@
+import logging
+from urllib.parse import quote
+
 import requests
 from django.conf import settings
-import logging
-from django.db.models.fields import FieldDoesNotExist
-from django.core.exceptions import FieldError
-from urllib.parse import quote
 from django.core.cache import cache
+from django.core.exceptions import FieldDoesNotExist, FieldError
 
 from web.models import Cart
 
@@ -73,7 +73,7 @@ def geocode_address(address):
     try:
         response = requests.get(url, timeout=5)
         if response.status_code == 429:  # Too Many Requests
-            logger.warning(f"Rate limit exceeded for OpenCage API")
+            logger.warning("Rate limit exceeded for OpenCage API")
             return None
         data = response.json()
 

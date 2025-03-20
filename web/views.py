@@ -1,6 +1,6 @@
-import logging
 import calendar
 import json
+import logging
 import os
 import re
 import shutil
@@ -3788,25 +3788,24 @@ def map_data_api(request):
     # Apply filters if provided
     sessions = apply_map_filters(sessions, subject_id, age_group, teaching_style)
 
-    # Prepare data for JSON response
-    map_data = []
-    for session in sessions:
-        map_data.append(
-            {
-                "id": session.id,
-                "title": session.title,
-                "course_title": session.course.title,
-                "teacher": session.course.teacher.get_full_name() or session.course.teacher.username,
-                "start_time": session.start_time.isoformat(),
-                "location": session.location,
-                "lat": float(session.latitude) if session.latitude is not None else None,
-                "lng": float(session.longitude) if session.longitude is not None else None,
-                "price": str(session.price or session.course.price),
-                "url": session.get_absolute_url(),
-                "subject": session.course.subject.name,
-                "level": session.course.get_level_display(),
-            }
-        )
+    # Prepare data for JSON response using list comprehension
+    map_data = [
+        {
+            "id": session.id,
+            "title": session.title,
+            "course_title": session.course.title,
+            "teacher": session.course.teacher.get_full_name() or session.course.teacher.username,
+            "start_time": session.start_time.isoformat(),
+            "location": session.location,
+            "lat": float(session.latitude) if session.latitude is not None else None,
+            "lng": float(session.longitude) if session.longitude is not None else None,
+            "price": str(session.price or session.course.price),
+            "url": session.get_absolute_url(),
+            "subject": session.course.subject.name,
+            "level": session.course.get_level_display(),
+        }
+        for session in sessions
+    ]
 
     return JsonResponse({"sessions": map_data})
 

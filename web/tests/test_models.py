@@ -1,8 +1,8 @@
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from django.utils.text import slugify
 from django.utils import timezone
+from django.utils.text import slugify
 
 from web.models import Course, Enrollment, Goods, Order, OrderItem, Profile, Storefront, Subject, SuccessStory
 
