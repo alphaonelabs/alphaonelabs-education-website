@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  Quizzes | Alpha One Labs
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+    <nav class="text-sm mb-6">
+      <a href="{% url 'index' %}" class="text-blue-600 hover:text-blue-800">Home</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-600">Quizzes</span>
+    </nav>
+    <!-- Header with create button -->
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Quizzes</h1>
+      <a href="{% url 'create_quiz' %}"
+         class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg flex items-center">
+        <i class="fas fa-plus mr-2"></i> Create Quiz
+      </a>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Left column - My Quizzes -->
+      <div class="lg:col-span-1">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+          <div class="bg-teal-600 p-4">
+            <h2 class="text-xl font-bold text-white flex items-center">
+              <i class="fas fa-book mr-2"></i> My Quizzes
+            </h2>
+          </div>
+          <div class="p-4">
+            {% if user_created_quizzes %}
+              <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for quiz in user_created_quizzes %}
+                  <div class="py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-lg">
+                    <a href="{% url 'quiz_detail' quiz.id %}" class="block">
+                      <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-1">{{ quiz.title }}</h3>
+                      <div class="flex items-center text-sm text-gray-600 dark:text-gray-300 mb-2">
+                        <span class="flex items-center mr-4">
+                          <i class="fas fa-question-circle mr-1"></i> {{ quiz.questions.count }} questions
+                        </span>
+                        <span class="flex items-center">
+                          <i class="fas fa-clock mr-1"></i> {{ quiz.time_limit|default:"No" }} time limit
+                        </span>
+                      </div>
+                      <div class="flex items-center justify-between mt-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if quiz.status == 'draft' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 {% elif quiz.status == 'published' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 {% elif quiz.status == 'archived' %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                          {{ quiz.get_status_display }}
+                        </span>
+                        <span class="text-xs text-gray-500 dark:text-gray-400">Created {{ quiz.created_at|date:"M d, Y" }}</span>
+                      </div>
+                    </a>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="text-center py-8">
+                <div class="text-gray-400 dark:text-gray-500 mb-4">
+                  <i class="fas fa-file-alt text-5xl"></i>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">You haven't created any quizzes yet</p>
+                <a href="{% url 'create_quiz' %}"
+                   class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
+                  <i class="fas fa-plus mr-2"></i> Create First Quiz
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <!-- Middle column - Shared Quizzes -->
+      <div class="lg:col-span-1">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden h-full">
+          <div class="bg-blue-600 p-4">
+            <h2 class="text-xl font-bold text-white flex items-center">
+              <i class="fas fa-share-alt mr-2"></i> Shared With Me
+            </h2>
+          </div>
+          <div class="p-4">
+            {% if shared_quizzes %}
+              <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for quiz in shared_quizzes %}
+                  <div class="py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-lg">
+                    <a href="{% url 'quiz_detail' quiz.id %}" class="block">
+                      <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-1">{{ quiz.title }}</h3>
+                      <p class="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">
+                        {{ quiz.description|default:"No description" }}
+                      </p>
+                      <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                        <span class="flex items-center mr-3">
+                          <i class="fas fa-user mr-1"></i> By {{ quiz.creator.username }}
+                        </span>
+                        <span class="flex items-center">
+                          <i class="fas fa-question-circle mr-1"></i> {{ quiz.questions.count }} questions
+                        </span>
+                      </div>
+                    </a>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="text-center py-12">
+                <div class="text-gray-400 dark:text-gray-500 mb-4">
+                  <i class="fas fa-share-alt text-5xl"></i>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400">No quizzes have been shared with you yet</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <!-- Right column - Public Quizzes -->
+      <div class="lg:col-span-1">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden h-full">
+          <div class="bg-purple-600 p-4">
+            <h2 class="text-xl font-bold text-white flex items-center">
+              <i class="fas fa-globe mr-2"></i> Public Quizzes
+            </h2>
+          </div>
+          <div class="p-4">
+            {% if public_quizzes %}
+              <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for quiz in public_quizzes %}
+                  <div class="py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-lg">
+                    <a href="{% url 'take_quiz' quiz.id %}" class="block">
+                      <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-1">{{ quiz.title }}</h3>
+                      <p class="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">
+                        {{ quiz.description|default:"No description" }}
+                      </p>
+                      <div class="flex flex-wrap items-center text-xs text-gray-500 dark:text-gray-400">
+                        <span class="flex items-center mr-3">
+                          <i class="fas fa-user mr-1"></i> By {{ quiz.creator.username }}
+                        </span>
+                        <span class="flex items-center mr-3">
+                          <i class="fas fa-question-circle mr-1"></i> {{ quiz.questions.count }} questions
+                        </span>
+                        <span class="flex items-center">
+                          <i class="fas fa-users mr-1"></i> {{ quiz.user_quizzes.count }} attempts
+                        </span>
+                      </div>
+                    </a>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="text-center py-12">
+                <div class="text-gray-400 dark:text-gray-500 mb-4">
+                  <i class="fas fa-globe text-5xl"></i>
+                </div>
+                <p class="text-gray-600 dark:text-gray-400">No public quizzes available</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
