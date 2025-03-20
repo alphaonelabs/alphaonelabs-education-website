@@ -985,66 +985,67 @@ def progress_visualization(request):
     courses_completed = enrollments.filter(status="completed").count()
     courses_completed_percentage = 0 if total_courses == 0 else round((courses_completed / total_courses) * 100)
     topics_mastered = sum(e.progress.completed_sessions.count() for e in enrollments if hasattr(e, "progress"))
-    
+
     # Attendance stats
     all_attendances = SessionAttendance.objects.filter(
-        student=request.user, 
-        session__course__in=[e.course for e in enrollments]
+        student=request.user, session__course__in=[e.course for e in enrollments]
     )
     total_attendance_count = all_attendances.count()
     present_attendance_count = all_attendances.filter(status__in=["present", "late"]).count()
-    average_attendance = 0 if total_attendance_count == 0 else round((present_attendance_count / total_attendance_count) * 100)
-    
+    average_attendance = (
+        0 if total_attendance_count == 0 else round((present_attendance_count / total_attendance_count) * 100)
+    )
+
     # Calculate learning activity metrics
     now = timezone.now()
-    last_month = now - timedelta(days=30)
-    
+
     all_completed_sessions = []
     for enrollment in enrollments:
         if hasattr(enrollment, "progress"):
             all_completed_sessions.extend(enrollment.progress.completed_sessions.all())
-    
+
     session_dates = [session.start_time.strftime("%A") for session in all_completed_sessions]
     most_active_day = "N/A"
     if session_dates:
         from collections import Counter
+
         day_counts = Counter(session_dates)
         most_active_day = day_counts.most_common(1)[0][0]
-    
+
     last_session_date = "N/A"
     if all_completed_sessions:
         last_session = max(all_completed_sessions, key=lambda s: s.start_time)
         last_session_date = last_session.start_time.strftime("%b %d, %Y")
-    
+
     current_streak = 0
     if all_completed_sessions:
         sorted_sessions = sorted(all_completed_sessions, key=lambda s: s.start_time.date(), reverse=True)
         unique_dates = set()
         for session in sorted_sessions:
             unique_dates.add(session.start_time.date())
-        
+
         unique_dates = sorted(unique_dates, reverse=True)
         current_streak = 1
         for i in range(1, len(unique_dates)):
-            if (unique_dates[i-1] - unique_dates[i]).days == 1:
+            if (unique_dates[i - 1] - unique_dates[i]).days == 1:
                 current_streak += 1
             else:
                 break
-    
+
     total_learning_hours = 0
     for session in all_completed_sessions:
         duration = session.end_time - session.start_time
         total_learning_hours += duration.total_seconds() / 3600
-    
+
     total_learning_hours = round(total_learning_hours, 1)
-    
-    weeks_since_first_session = 1 
+
+    weeks_since_first_session = 1
     if all_completed_sessions:
         first_session = min(all_completed_sessions, key=lambda s: s.start_time)
         weeks_since_first_session = max(1, (now - first_session.start_time).days / 7)
-    
+
     avg_sessions_per_week = round(len(all_completed_sessions) / weeks_since_first_session, 1)
-    
+
     # Completion pace
     completion_pace = "N/A"
     if total_courses > 0:
@@ -1054,53 +1055,61 @@ def progress_visualization(request):
             for e in completed_enrollments:
                 if e.completion_date and e.enrollment_date:
                     avg_days_to_complete += (e.completion_date - e.enrollment_date).days
-            
+
             if completed_enrollments.count() > 0:
                 avg_days_to_complete /= completed_enrollments.count()
                 completion_pace = f"{avg_days_to_complete:.0f} days/course"
-    
-    colors = ["255, 99, 132", "54, 162, 235", "255, 206, 86", "75, 192, 192", 
-              "153, 102, 255", "255, 159, 64", "231, 233, 237", "109, 158, 235"]
-    
+
+    colors = [
+        "255, 99, 132",
+        "54, 162, 235",
+        "255, 206, 86",
+        "75, 192, 192",
+        "153, 102, 255",
+        "255, 159, 64",
+        "231, 233, 237",
+        "109, 158, 235",
+    ]
+
     courses = []
     progress_dates = []
     sessions_completed = []
-    
+
     for i, enrollment in enumerate(enrollments):
         course = enrollment.course
         color = colors[i % len(colors)]
-        
+
         course_data = {
             "title": course.title,
             "color": color,
         }
-        
+
         if hasattr(enrollment, "progress"):
             course_data["progress"] = enrollment.progress.completion_percentage
             total_sessions = course.sessions.count()
             completed_sessions_count = enrollment.progress.completed_sessions.count()
             course_data["sessions_completed"] = completed_sessions_count
             course_data["total_sessions"] = total_sessions
-            
+
             last_active = "Not started"
             if completed_sessions_count > 0:
                 last_session = max(enrollment.progress.completed_sessions.all(), key=lambda s: s.start_time)
                 last_active = last_session.start_time.strftime("%b %d, %Y")
             course_data["last_active"] = last_active
-            
+
             if total_sessions > 0:
-                completed_sessions = list(enrollment.progress.completed_sessions.all().order_by('start_time'))
+                completed_sessions = list(enrollment.progress.completed_sessions.all().order_by("start_time"))
                 progress_points = []
                 sessions_points = []
                 dates = []
-                
+
                 for idx, session in enumerate(completed_sessions):
                     session_date = session.start_time.strftime("%Y-%m-%d")
                     progress_percentage = round(((idx + 1) / total_sessions) * 100, 1)
                     progress_points.append(progress_percentage)
                     sessions_points.append(idx + 1)
                     dates.append(session_date)
-                
+
                 course_data["progress_over_time"] = progress_points
                 progress_dates.append(dates)
                 sessions_completed.append(sessions_points)
@@ -1112,13 +1121,13 @@ def progress_visualization(request):
             course_data["progress_over_time"] = []
             progress_dates.append([])
             sessions_completed.append([])
-        
+
         courses.append(course_data)
-    
+
     all_dates = set()
     for dates in progress_dates:
         all_dates.update(dates)
-    
+
     common_dates = sorted(list(all_dates))
     context = {
         "total_courses": total_courses,
@@ -1137,7 +1146,7 @@ def progress_visualization(request):
         "sessions_completed": json.dumps(sessions_completed),
         "courses_json": json.dumps(courses),
     }
-    
+
     return render(request, "courses/progress_visualization.html", context)
 
 
