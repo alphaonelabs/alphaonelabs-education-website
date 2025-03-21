@@ -1,0 +1,104 @@
+name: Delete Unauthorized Issues
+
+on:
+  issues:
+    types: [opened, reopened]
+
+jobs:
+  delete-unauthorized:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check issue creator
+        id: check_creator
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issueCreator = context.payload.issue.user.login;
+
+            // Define authorized users and organizations
+            const authorizedUsers = ['A1L13N'];
+            const authorizedOrgs = ['alphaonelabs'];
+
+            // Check if user is directly authorized
+            if (authorizedUsers.includes(issueCreator)) {
+              console.log(`Authorized user: ${issueCreator}`);
+              return 'authorized';
+            }
+
+            // Check if user belongs to an authorized organization
+            let isOrgMember = false;
+            for (const org of authorizedOrgs) {
+              try {
+                // Check organization membership
+                const { data: membership } = await github.rest.orgs.checkMembershipForUser({
+                  org: org,
+                  username: issueCreator
+                });
+
+                if (membership.state === 'active') {
+                  isOrgMember = true;
+                  console.log(`${issueCreator} is a member of authorized organization ${org}`);
+                  break;
+                }
+              } catch (error) {
+                // User is not a member of this org, continue to next one
+                console.log(`${issueCreator} is not a member of ${org} or an error occurred`);
+              }
+            }
+
+            if (isOrgMember) {
+              return 'authorized';
+            }
+
+            // If we get here, the user is not authorized
+            console.log(`Unauthorized issue from ${issueCreator}`);
+
+            // Store issue info for logging
+            const issueNumber = context.payload.issue.number;
+            const issueTitle = context.payload.issue.title;
+
+            try {
+              // Delete the issue
+              await github.rest.issues.delete({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber
+              });
+
+              console.log(`Successfully deleted unauthorized issue #${issueNumber}: "${issueTitle}" created by ${issueCreator}`);
+            } catch (error) {
+              console.error(`Failed to delete issue #${issueNumber}: ${error.message}`);
+
+              // Fallback to closing the issue if deletion fails (may happen due to permission issues)
+              console.log("Attempting to close the issue instead...");
+
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                state: 'closed'
+              });
+
+              // Add comment explaining why it was closed
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `This issue has been automatically closed because it was not created by an authorized user. Currently, only members of the AlphaOneLabs organization or specific authorized contributors can create issues. Please contact the repository maintainers if you believe this is in error.`
+              });
+
+              // Add a label
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issueNumber,
+                  labels: ['unauthorized']
+                });
+              } catch (labelError) {
+                console.log('Could not add label, it may not exist');
+              }
+            }
+
+            return 'unauthorized';
