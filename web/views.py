@@ -1791,12 +1791,15 @@ def blog_detail(request, slug):
 
 @login_required
 def student_dashboard(request):
-    """Dashboard view for students showing their enrollments, progress, upcoming sessions, and learning streak."""
+    """
+    Dashboard view for students showing enrollments, progress, upcoming sessions, learning streak,
+    and an Achievements section.
+    """
     if request.user.profile.is_teacher:
         messages.error(request, "This dashboard is for students only.")
         return redirect("profile")
 
-    # Updated learning streak for the current student
+    # Update the learning streak.
     streak, created = LearningStreak.objects.get_or_create(user=request.user)
     streak.update_streak()
 
@@ -1805,7 +1808,6 @@ def student_dashboard(request):
         course__enrollments__student=request.user, start_time__gt=timezone.now()
     ).order_by("start_time")[:5]
 
-    # Get progress for each enrollment and set a flag for certificate existence
     progress_data = []
     total_progress = 0
     for enrollment in enrollments:
@@ -1818,15 +1820,18 @@ def student_dashboard(request):
         )
         total_progress += progress.completion_percentage
 
-    # Calculate average progress
     avg_progress = round(total_progress / len(progress_data)) if progress_data else 0
+
+    # Query achievements for the user.
+    achievements = Achievement.objects.filter(student=request.user).order_by("-awarded_at")
 
     context = {
         "enrollments": enrollments,
         "upcoming_sessions": upcoming_sessions,
         "progress_data": progress_data,
         "avg_progress": avg_progress,
-        "streak": streak,  # Passing the streak object to the template (optional)
+        "streak": streak,
+        "achievements": achievements,
     }
     return render(request, "dashboard/student.html", context)
 
