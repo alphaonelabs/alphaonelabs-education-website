@@ -8,7 +8,6 @@ import shutil
 import socket
 import subprocess
 import time
-from collections import defaultdict
 from datetime import timedelta
 from decimal import Decimal
 from urllib.parse import urlparse
@@ -182,7 +181,7 @@ def index(request):
     featured_courses = Course.objects.filter(status="published", is_featured=True).order_by("-created_at")[:3]
 
     # Get current challenge
-    current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now())
+    current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
 
     # Get latest blog post
     latest_post = BlogPost.objects.filter(status="published").order_by("-published_at").first()
@@ -227,9 +226,7 @@ def index(request):
 def signup_view(request):
     """Custom signup view that properly handles referral codes."""
     if request.method == "POST":
-        # Initialize the registration form with POST data and request context
         form = UserRegistrationForm(request.POST, request=request)
-        # Validate the form data before saving the new user
         if form.is_valid():
             form.save(request)
             return redirect("account_email_verification_sent")
@@ -2751,34 +2748,25 @@ def content_dashboard(request):
     )
 
 
-# challenge views
-def active_challenges(request):
-    current_time = timezone.now()
-    weekly_challenge = Challenge.objects.filter(
-        challenge_type="weekly", start_date__lte=current_time, end_date__gte=current_time
-    ).first()
-
-    one_time_challenges = Challenge.objects.filter(
-        challenge_type="one_time", start_date__lte=current_time, end_date__gte=current_time
-    )
-
+def current_weekly_challenge(request):
+    current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
+    # Check if the user has submitted the current challenge
     user_submission = None
-    if request.user.is_authenticated and weekly_challenge:
-        user_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=weekly_challenge).first()
+    if request.user.is_authenticated and current_challenge:
+        user_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=current_challenge).first()
 
     return render(
         request,
         "web/current_weekly_challenge.html",
         {
-            "current_challenge": weekly_challenge,
-            "one_time_challenges": one_time_challenges,
-            "user_submission": user_submission,
+            "current_challenge": current_challenge,
+            "user_submission": user_submission,  # Pass the user's submission to the template
         },
     )
 
 
-def challenge_detail(request, challenge_id):
-    challenge = get_object_or_404(Challenge, id=challenge_id)
+def challenge_detail(request, week_number):
+    challenge = get_object_or_404(Challenge, week_number=week_number)
     submissions = ChallengeSubmission.objects.filter(challenge=challenge)
     # Check if the current user has submitted this challenge
     user_submission = None
@@ -2793,13 +2781,13 @@ def challenge_detail(request, challenge_id):
 
 
 @login_required
-def challenge_submit(request, challenge_id):
-    challenge = get_object_or_404(Challenge, id=challenge_id)
+def challenge_submit(request, week_number):
+    challenge = get_object_or_404(Challenge, week_number=week_number)
     # Check if the user has already submitted this challenge
     existing_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
 
     if existing_submission:
-        return redirect("challenge_detail", challenge_id=challenge_id)
+        return redirect("challenge_detail", week_number=week_number)
 
     if request.method == "POST":
         form = ChallengeSubmissionForm(request.POST)
@@ -2809,7 +2797,7 @@ def challenge_submit(request, challenge_id):
             submission.challenge = challenge
             submission.save()
             messages.success(request, "Your submission has been recorded!")
-            return redirect("challenge_detail", challenge_id=challenge_id)
+            return redirect("challenge_detail", week_number=week_number)
     else:
         form = ChallengeSubmissionForm()
 
@@ -3370,94 +3358,9 @@ def delete_success_story(request, slug):
 
 
 def gsoc_landing_page(request):
-    """
-    Renders the GSOC landing page with top GitHub contributors
-    based on merged pull requests
-    """
-    import logging
-
-    import requests
-    from django.conf import settings
-
-    # Initialize an empty list for contributors in case the GitHub API call fails
-    top_contributors = []
-
-    # GitHub API URL for the education-website repository
-    github_repo_url = "https://api.github.com/repos/alphaonelabs/education-website"
-
-    # Users to exclude from the contributor list (bots and automated users)
-    excluded_users = ["A1L13N", "dependabot[bot]"]
-
-    try:
-        # Fetch contributors from GitHub API
-        headers = {}
-        # Check if GitHub token is configured
-        if hasattr(settings, "GITHUB_TOKEN") and settings.GITHUB_TOKEN:
-            headers["Authorization"] = f"token {settings.GITHUB_TOKEN}"
-
-        # Get all closed pull requests - we'll filter for merged ones in code
-        # The GitHub API doesn't have a direct 'merged' filter in the query params
-        # so we get all closed PRs and then check the 'merged_at' field
-        pull_requests_response = requests.get(
-            f"{github_repo_url}/pulls",
-            params={
-                "state": "closed",  # closed PRs could be either merged or just closed
-                "sort": "updated",
-                "direction": "desc",
-                "per_page": 100,
-            },
-            headers=headers,
-            timeout=5,
-        )
-
-        # Check for rate limiting
-        if pull_requests_response.status_code == 403 and "X-RateLimit-Remaining" in pull_requests_response.headers:
-            remaining = pull_requests_response.headers.get("X-RateLimit-Remaining")
-            if remaining == "0":
-                reset_time = int(pull_requests_response.headers.get("X-RateLimit-Reset", 0))
-                reset_datetime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(reset_time))
-                logging.warning(f"GitHub API rate limit exceeded. Resets at {reset_datetime}")
-
-        if pull_requests_response.status_code == 200:
-            pull_requests = pull_requests_response.json()
-
-            # Create a map of contributors with their PR count
-            contributor_stats = defaultdict(
-                lambda: {"merged_pr_count": 0, "avatar_url": "", "profile_url": "", "prs_url": ""}
-            )
-
-            # Process each pull request
-            for pr in pull_requests:
-                # Check if the PR was merged
-                if pr.get("merged_at"):
-                    username = pr["user"]["login"]
-
-                    # Skip excluded users
-                    if username in excluded_users:
-                        continue
-
-                    contributor_stats[username]["merged_pr_count"] += 1
-                    contributor_stats[username]["avatar_url"] = pr["user"]["avatar_url"]
-                    contributor_stats[username]["profile_url"] = pr["user"]["html_url"]
-                    # Add a direct link to the user's PRs for this repository
-                    base_url = "https://github.com/alphaonelabs/education-website/pulls"
-                    query = f"?q=is:pr+author:{username}+is:merged"
-                    contributor_stats[username]["prs_url"] = base_url + query
-                    contributor_stats[username]["username"] = username
-
-            # Convert to list and sort by PR count
-            top_contributors = [v for k, v in contributor_stats.items()]
-            top_contributors.sort(key=lambda x: x["merged_pr_count"], reverse=True)
-
-            # Get top 10 contributors
-            top_contributors = top_contributors[:10]
-
-    except Exception as e:
-        logging.error(f"Error fetching GitHub contributors: {str(e)}")
-
-    context = {"top_contributors": top_contributors}
-
-    return render(request, "gsoc_landing_page.html", context)
+    # Function implementation goes here
+    pass
+    return render(request, "gsoc_landing_page.html")
 
 
 def whiteboard(request):
