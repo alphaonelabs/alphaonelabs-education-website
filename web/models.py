@@ -975,7 +975,7 @@ class Goods(models.Model):
         if first_image and first_image.image:
             return first_image.image.url
         # Return a default placeholder image
-        return '/static/images/default_teacher.png'
+        return '/static/images/placeholder.png'
 
     def clean(self):
         # Validate discount logic
