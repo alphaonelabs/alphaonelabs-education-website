@@ -73,8 +73,6 @@ from .forms import (
     SuccessStoryForm,
     TeacherSignupForm,
     TeachForm,
-    TeamGoalForm,
-    TeamInviteForm,
     UserRegistrationForm,
 )
 from .marketing import (
@@ -120,20 +118,10 @@ from .models import (
     StudyGroup,
     Subject,
     SuccessStory,
-    TeamGoal,
-    TeamGoalMember,
-    TeamInvite,
     TimeSlot,
     WebRequest,
 )
-from .notifications import (
-    notify_session_reminder,
-    notify_teacher_new_enrollment,
-    notify_team_goal_completion,
-    notify_team_invite,
-    notify_team_invite_response,
-    send_enrollment_confirmation,
-)
+from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
 from .referrals import send_referral_reward_email
 from .social import get_social_stats
 from .utils import get_or_create_cart
@@ -204,23 +192,6 @@ def index(request):
         "latest_success_story": latest_success_story,
         "form": form,
     }
-    if request.user.is_authenticated:
-        user_team_goals = (
-            TeamGoal.objects.filter(Q(creator=request.user) | Q(members__user=request.user))
-            .distinct()
-            .order_by("-created_at")[:3]
-        )
-
-        team_invites = TeamInvite.objects.filter(recipient=request.user, status="pending").select_related(
-            "goal", "sender"
-        )
-
-        context.update(
-            {
-                "user_team_goals": user_team_goals,
-                "team_invites": team_invites,
-            }
-        )
     return render(request, "index.html", context)
 
 
@@ -3658,237 +3629,6 @@ def add_meme(request):
 
 
 @login_required
-def team_goals(request):
-    """List all team goals the user is part of or has created."""
-    user_goals = (
-        TeamGoal.objects.filter(Q(creator=request.user) | Q(members__user=request.user))
-        .distinct()
-        .order_by("-created_at")
-    )
-
-    paginator = Paginator(user_goals, 10)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
-
-    pending_invites = TeamInvite.objects.filter(recipient=request.user, status="pending").select_related(
-        "goal", "sender"
-    )
-
-    context = {
-        "goals": page_obj,
-        "pending_invites": pending_invites,
-        "is_paginated": paginator.num_pages > 1,
-    }
-    return render(request, "teams/list.html", context)
-
-
-@login_required
-def create_team_goal(request):
-    """Create a new team goal."""
-    if request.method == "POST":
-        form = TeamGoalForm(request.POST)
-        if form.is_valid():
-            with transaction.atomic():
-                goal = form.save(commit=False)
-                goal.creator = request.user
-                goal.save()
-
-                # Add creator as a member
-                TeamGoalMember.objects.create(team_goal=goal, user=request.user, role="leader")
-
-                messages.success(request, "Team goal created successfully!")
-                return redirect("team_goal_detail", goal_id=goal.id)
-    else:
-        form = TeamGoalForm()
-
-    return render(request, "teams/create.html", {"form": form})
-
-
-@login_required
-def team_goal_detail(request, goal_id):
-    """View and manage a specific team goal."""
-    goal = get_object_or_404(TeamGoal.objects.prefetch_related("members__user"), id=goal_id)
-
-    # Check if user has access to this goal
-    if not (goal.creator == request.user or goal.members.filter(user=request.user).exists()):
-        messages.error(request, "You do not have access to this team goal.")
-        return redirect("team_goals")
-
-    # Get existing team members to exclude from invitation
-    existing_members = goal.members.values_list("user_id", flat=True)
-
-    # Handle inviting new members
-    if request.method == "POST":
-        form = TeamInviteForm(request.POST)
-        if form.is_valid():
-            if TeamInvite.objects.filter(
-                goal__id=goal.id, recipient__email=str(form.cleaned_data["recipient_search"])
-            ).exists():
-                messages.warning(request, "An invite for this user is already pending.")
-                return redirect("team_goal_detail", goal_id=goal.id)
-            invite = form.save(commit=False)
-            invite.sender = request.user
-            invite.goal = goal
-            invite.save()
-            messages.success(request, f"Invitation sent to {invite.recipient.email}!")
-            notify_team_invite(invite)
-            return redirect("team_goal_detail", goal_id=goal.id)
-
-    else:
-        form = TeamInviteForm()
-
-    # Get users that can be invited (exclude existing members and the creator)
-    available_users = User.objects.exclude(id__in=list(existing_members) + [goal.creator.id]).values(
-        "id", "username", "email"
-    )
-
-    context = {
-        "goal": goal,
-        "invite_form": form,
-        "user_is_leader": goal.members.filter(user=request.user, role="leader").exists(),
-        "available_users": available_users,
-    }
-    return render(request, "teams/detail.html", context)
-
-
-@login_required
-def accept_team_invite(request, invite_id):
-    """Accept a team invitation."""
-    invite = get_object_or_404(
-        TeamInvite.objects.select_related("goal"), id=invite_id, recipient=request.user, status="pending"
-    )
-
-    # Create team member using get_or_create to avoid race conditions
-    member, created = TeamGoalMember.objects.get_or_create(
-        team_goal=invite.goal, user=request.user, defaults={"role": "member"}
-    )
-
-    if not created:
-        messages.info(request, f"You are already a member of {invite.goal.title}.")
-    else:
-        messages.success(request, f"You have joined {invite.goal.title}!")
-
-    # Update invite status
-    invite.status = "accepted"
-    invite.responded_at = timezone.now()
-    invite.save()
-
-    notify_team_invite_response(invite)
-    return redirect("team_goal_detail", goal_id=invite.goal.id)
-
-
-@login_required
-def decline_team_invite(request, invite_id):
-    """Decline a team invitation."""
-    invite = get_object_or_404(TeamInvite, id=invite_id, recipient=request.user, status="pending")
-
-    invite.status = "declined"
-    invite.responded_at = timezone.now()
-    invite.save()
-
-    messages.info(request, f"You have declined to join {invite.goal.title}.")
-    return redirect("team_goals")
-
-
-@login_required
-def edit_team_goal(request, goal_id):
-    """Edit an existing team goal."""
-    goal = get_object_or_404(TeamGoal, id=goal_id)
-
-    # Check if user is the creator or a leader
-    if not (goal.creator == request.user or goal.members.filter(user=request.user, role="leader").exists()):
-        messages.error(request, "You don't have permission to edit this team goal.")
-        return redirect("team_goal_detail", goal_id=goal_id)
-
-    if request.method == "POST":
-        form = TeamGoalForm(request.POST, instance=goal)
-        if form.is_valid():
-            # Validate that deadline is not in the past
-            if form.cleaned_data["deadline"] < timezone.now().date():
-                form.add_error("deadline", "Deadline cannot be in the past.")
-                context = {
-                    "form": form,
-                    "goal": goal,
-                    "is_edit": True,
-                }
-                return render(request, "teams/create.html", context)
-            form.save()
-            messages.success(request, "Team goal updated successfully!")
-            return redirect("team_goal_detail", goal_id=goal.id)
-    else:
-        form = TeamGoalForm(instance=goal)
-
-    context = {
-        "form": form,
-        "goal": goal,
-        "is_edit": True,
-    }
-    return render(request, "teams/create.html", context)
-
-
-@login_required
-def mark_team_contribution(request, goal_id):
-    """Allow a team member to mark their contribution as complete."""
-    goal = get_object_or_404(TeamGoal, id=goal_id)
-
-    # Find the current user's membership in this goal
-    member = goal.members.filter(user=request.user).first()
-
-    if not member:
-        messages.error(request, "You are not a member of this team goal.")
-        return redirect("team_goal_detail", goal_id=goal_id)
-
-    if member.completed:
-        messages.info(request, "Your contribution is already marked as complete.")
-        return redirect("team_goal_detail", goal_id=goal_id)
-
-    # Mark the user's contribution as complete
-    member.mark_completed()
-    messages.success(request, "Your contribution has been marked as complete.")
-    notify_team_goal_completion(goal, request.user)
-    return redirect("team_goal_detail", goal_id=goal_id)
-
-
-@login_required
-def remove_team_member(request, goal_id, member_id):
-    """Remove a member from a team goal."""
-    goal = get_object_or_404(TeamGoal, id=goal_id)
-
-    # Check if user is the creator or a leader
-    if not (goal.creator == request.user or goal.members.filter(user=request.user, role="leader").exists()):
-        messages.error(request, "You don't have permission to remove members.")
-        return redirect("team_goal_detail", goal_id=goal_id)
-
-    member = get_object_or_404(TeamGoalMember, id=member_id, team_goal=goal)
-
-    # Prevent removing the creator
-    if member.user == goal.creator:
-        messages.error(request, "The team creator cannot be removed.")
-        return redirect("team_goal_detail", goal_id=goal_id)
-
-    member.delete()
-    messages.success(request, f"{member.user.username} has been removed from the team.")
-    return redirect("team_goal_detail", goal_id=goal_id)
-
-
-@login_required
-def delete_team_goal(request, goal_id):
-    """Delete a team goal."""
-    goal = get_object_or_404(TeamGoal, id=goal_id)
-
-    # Only creator can delete the goal
-    if request.user != goal.creator:
-        messages.error(request, "Only the creator can delete this team goal.")
-        return redirect("team_goal_detail", goal_id=goal_id)
-
-    if request.method == "POST":
-        goal.delete()
-        messages.success(request, "Team goal has been deleted.")
-        return redirect("team_goals")
-
-    return render(request, "teams/delete_confirm.html", {"goal": goal})
-
-
 @teacher_required
 def add_student_to_course(request, slug):
     course = get_object_or_404(Course, slug=slug)
