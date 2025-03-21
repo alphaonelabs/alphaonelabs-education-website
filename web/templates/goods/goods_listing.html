@@ -3,100 +3,148 @@
 {% block title %}
   Explore Our Products
 {% endblock title %}
+
 {% block content %}
   <div class="container mx-auto px-2 py-8">
-    <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-6 text-center">Explore Our Products</h1>
+    <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-6 text-center">
+      Explore Our Products
+    </h1>
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <!-- Filter Sidebar -->
-      <aside id="filter-box"
-             class="p-4 bg-white dark:bg-gray-800 shadow-md rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-300">
+      <aside
+        id="filter-box"
+        class="p-4 bg-white dark:bg-gray-800 shadow-md rounded-lg border border-gray-200 overflow-hidden transition-all duration-300 md:col-span-1"
+      >
         <h2 class="text-lg font-semibold mb-4">Filters</h2>
         <form method="get" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Store Name</label>
-            <select name="store_name"
-                    class="w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white">
+            <label for="store_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Store Name
+            </label>
+            <select
+              id="store_name"
+              name="store_name"
+              class="w-full border-gray-300 rounded-md shadow-sm"
+            >
               <option value="">All</option>
               {% for name in store_names %}
-                <option value="{{ name }}"
-                        {% if request.GET.store_name == name %}selected{% endif %}>{{ name }}</option>
+                <option
+                  value="{{ name }}"
+                  {% if request.GET.store_name == name %}selected{% endif %}
+                >
+                  {{ name }}
+                </option>
               {% endfor %}
             </select>
           </div>
+
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Product Type</label>
-            <select name="product_type"
-                    class="w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white">
+            <label for="product_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Product Type
+            </label>
+            <select
+              id="product_type"
+              name="product_type"
+              class="w-full border-gray-300 rounded-md shadow-sm"
+            >
               <option value="">All</option>
-              <option value="physical"
-                      {% if request.GET.product_type == 'physical' %}selected{% endif %}>Physical</option>
-              <option value="digital"
-                      {% if request.GET.product_type == 'digital' %}selected{% endif %}>Digital</option>
+              <option
+                value="physical"
+                {% if request.GET.product_type == 'physical' %}selected{% endif %}
+              >
+                Physical
+              </option>
+              <option
+                value="digital"
+                {% if request.GET.product_type == 'digital' %}selected{% endif %}
+              >
+                Digital
+              </option>
             </select>
           </div>
+
           <div>
-            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
-            <select name="category"
-                    class="w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white">
+            <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Category
+            </label>
+            <select
+              id="category"
+              name="category"
+              class="w-full border-gray-300 rounded-md shadow-sm"
+            >
               <option value="">All</option>
               {% for category in categories %}
-                <option value="{{ category }}"
-                        {% if request.GET.category == category %}selected{% endif %}>{{ category }}</option>
+                <option
+                  value="{{ category }}"
+                  {% if request.GET.category == category %}selected{% endif %}
+                >
+                  {{ category }}
+                </option>
               {% endfor %}
             </select>
           </div>
-          <div class="flex gap-2">
-            <input type="number"
-                   name="min_price"
-                   placeholder="Min Price"
-                   class="w-1/2 border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
-                   value="{{ request.GET.min_price }}" />
-            <input type="number"
-                   name="max_price"
-                   placeholder="Max Price"
-                   class="w-1/2 border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
-                   value="{{ request.GET.max_price }}" />
+
+          <!-- Price Range Slider -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Price Range
+            </label>
+            <div class="relative pt-6 pb-6">
+              <div id="price-range-slider" class="relative w-full h-6">
+                <div class="absolute w-full h-2 bg-gray-200 rounded-full top-1/2 -translate-y-1/2"></div>
+                <div id="active-track" class="absolute h-2 bg-blue-500 rounded-full top-1/2 -translate-y-1/2"></div>
+                <div
+                  id="min-knob"
+                  class="absolute w-6 h-6 bg-white border-2 border-blue-500 rounded-full shadow cursor-pointer top-1/2 -translate-y-1/2 -ml-3"
+                ></div>
+                <div
+                  id="max-knob"
+                  class="absolute w-6 h-6 bg-white border-2 border-blue-500 rounded-full shadow cursor-pointer top-1/2 -translate-y-1/2 -ml-3"
+                ></div>
+              </div>
+              <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mt-4">
+                <span id="min-price-display">$0</span>
+                <span id="max-price-display">${{ max_price }}</span>
+              </div>
+            </div>
+            <input type="hidden" id="min_price" name="min_price" value="{{ request.GET.min_price|default:0 }}" />
+            <input type="hidden" id="max_price" name="max_price" value="{{ request.GET.max_price|default:max_price }}" />
           </div>
+
           <div class="flex space-x-2">
-            <button type="submit"
-                    class="w-1/2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg">Apply</button>
-            <a href="?"
-               class="w-1/2 text-center bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg">Clear</a>
+            <button type="submit" class="w-1/2 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg">
+              Apply
+            </button>
+            <a href="?" class="w-1/2 text-center bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg">
+              Clear
+            </a>
           </div>
         </form>
       </aside>
+
       <!-- Products Grid -->
-      <section class="col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <section class="md:col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 auto-rows-fr">
         {% for product in products %}
-          <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-            <a href="{% url 'goods_detail' pk=product.id %}"
-               class="block overflow-hidden rounded-md">
-              <img src="{% if product.image %}{{ product.image.url }}{% else %}/static/images/placeholder.png{% endif %}"
-                   alt="{{ product.name }}"
-                   class="w-full h-56 object-cover rounded-md" />
+          <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 border border-gray-200">
+            <a href="{% url 'goods_detail' pk=product.id %}" class="block overflow-hidden rounded-md">
+              <img
+                src="{{ product.image.url }}"
+                alt="{{ product.name }}"
+                class="w-full h-56 object-cover rounded-md"
+              />
             </a>
-            <h3 class="mt-3 text-lg font-semibold text-gray-900 dark:text-white">{{ product.name }}</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400">{{ product.description|truncatewords:10 }}</p>
+            <h3 class="mt-3 text-lg font-semibold text-gray-900 dark:text-white">
+              {{ product.name }}
+            </h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              {{ product.description|truncatewords:10 }}
+            </p>
             <div class="mt-2">
               {% if product.discount_price %}
                 <p class="text-sm text-gray-500 line-through">${{ product.price }}</p>
                 <p class="text-xl font-bold text-red-500">${{ product.discount_price }}</p>
               {% else %}
                 <p class="text-xl font-bold text-gray-900 dark:text-white">${{ product.price }}</p>
-              {% endif %}
-            </div>
-            <div class="mt-3">
-              {% if product.stock > 0 %}
-                <form method="post" action="{% url 'add_goods_to_cart' product.pk %}">
-                  {% csrf_token %}
-                  <button type="submit"
-                          class="w-full bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg">
-                    <i class="fas fa-cart-plus"></i> Add to Cart
-                  </button>
-                </form>
-              {% else %}
-                <button class="w-full bg-gray-400 text-white px-4 py-2 rounded-lg cursor-not-allowed"
-                        disabled>Sold Out</button>
               {% endif %}
             </div>
           </div>
@@ -108,27 +156,72 @@
       </section>
     </div>
   </div>
-  <!-- Pagination Controls -->
-  {% if page_obj.has_other_pages %}
-    <div class="mt-8 flex justify-center">
-      <nav class="flex space-x-2 bg-white dark:bg-gray-900 p-2 rounded-lg shadow-md">
-        {% if page_obj.has_previous %}
-          <a href="?page={{ page_obj.previous_page_number }}"
-             class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md shadow-sm">« Previous</a>
-        {% endif %}
-        {% for num in page_obj.paginator.page_range %}
-          {% if page_obj.number == num %}
-            <span class="px-4 py-2 border border-gray-300 text-white bg-orange-500 font-bold rounded-md shadow-sm">{{ num }}</span>
-          {% else %}
-            <a href="?page={{ num }}"
-               class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md shadow-sm">{{ num }}</a>
-          {% endif %}
-        {% endfor %}
-        {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}"
-             class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md shadow-sm">Next »</a>
-        {% endif %}
-      </nav>
-    </div>
-  {% endif %}
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const minKnob = document.getElementById("min-knob");
+      const maxKnob = document.getElementById("max-knob");
+      const minPriceInput = document.getElementById("min_price");
+      const maxPriceInput = document.getElementById("max_price");
+      const minPriceDisplay = document.getElementById("min-price-display");
+      const maxPriceDisplay = document.getElementById("max-price-display");
+      const activeTrack = document.getElementById("active-track");
+      const slider = document.getElementById("price-range-slider");
+
+      const maxPrice = parseFloat("{{ max_price|safe }}");
+      let minValue = parseFloat(minPriceInput.value) || 0;
+      let maxValue = parseFloat(maxPriceInput.value) || maxPrice;
+
+      function updateUI() {
+        const sliderWidth = slider.offsetWidth;
+        const minPercent = (minValue / maxPrice) * 100;
+        const maxPercent = (maxValue / maxPrice) * 100;
+
+        minKnob.style.left = `${minPercent}%`;
+        maxKnob.style.left = `${maxPercent}%`;
+        activeTrack.style.left = `${minPercent}%`;
+        activeTrack.style.width = `${maxPercent - minPercent}%`;
+
+        minPriceDisplay.textContent = `$${minValue.toFixed(2)}`;
+        maxPriceDisplay.textContent = `$${maxValue.toFixed(2)}`;
+      }
+
+      function handleDrag(knob, isMinKnob) {
+        function onMouseMove(event) {
+          const rect = slider.getBoundingClientRect();
+          let newPosition = ((event.clientX - rect.left) / rect.width) * maxPrice;
+
+          newPosition = Math.max(0, Math.min(newPosition, maxPrice));
+
+          if (isMinKnob) {
+            minValue = Math.min(newPosition, maxValue - 0.01);
+            minPriceInput.value = minValue.toFixed(2);
+          } else {
+            maxValue = Math.max(newPosition, minValue + 0.01);
+            maxPriceInput.value = maxValue.toFixed(2);
+          }
+
+          updateUI();
+        }
+
+        function onMouseUp() {
+          document.removeEventListener("mousemove", onMouseMove);
+          document.removeEventListener("mouseup", onMouseUp);
+        }
+
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
+      }
+
+      minKnob.addEventListener("mousedown", function () {
+        handleDrag(minKnob, true);
+      });
+
+      maxKnob.addEventListener("mousedown", function () {
+        handleDrag(maxKnob, false);
+      });
+
+      updateUI();
+    });
+  </script>
 {% endblock content %}

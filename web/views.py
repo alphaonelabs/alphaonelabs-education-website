@@ -5,6 +5,7 @@ import json
 import os
 import re
 import shutil
+import math
 import socket
 import subprocess
 import time
@@ -24,7 +25,7 @@ from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.db import IntegrityError, models, transaction
-from django.db.models import Avg, Count, Q, Sum
+from django.db.models import Avg, Count, Q, Sum, Max
 from django.http import (
     FileResponse,
     HttpResponse,
@@ -130,6 +131,24 @@ GOOGLE_CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "google_credentials.js
 
 # Initialize Stripe
 stripe.api_key = settings.STRIPE_SECRET_KEY
+
+def product_list(request):
+    products = Goods.objects.all()
+
+    # Get the highest price from the database
+    max_price_value = Goods.objects.aggregate(Max("price"))["price__max"]
+
+    # Ensure it's not None, then round up to the nearest hundred
+    if max_price_value is not None:
+        rounded_max_price = math.ceil(max_price_value / 100) * 100
+    else:
+        rounded_max_price = 100  # Default if no products exist
+
+    # Pass the value to the template
+    return render(request, "goods/goods_listing.html", {
+        "products": products,
+        "max_price": rounded_max_price
+    })
 
 
 def sitemap(request):
@@ -3026,6 +3045,14 @@ class GoodsListingView(ListView):
         context = super().get_context_data(**kwargs)
         context["store_names"] = Storefront.objects.values_list("name", flat=True).distinct()
         context["categories"] = Goods.objects.values_list("category", flat=True).distinct()
+
+    # Get maximum price and round up to the nearest tenth (multiple of 10)
+        max_price_value = Goods.objects.aggregate(Max("price"))["price__max"]
+        if max_price_value is not None:
+            context["max_price"] = math.ceil(max_price_value / 10) * 10
+        else:
+            context["max_price"] = 100  # Default if no products exist
+
         return context
 
 
