@@ -15,7 +15,7 @@ import stripe
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
@@ -4013,8 +4013,104 @@ def embed_tracker(request, embed_code):
 
 @login_required
 def streak_detail(request):
-    """
-    Full-page view to display the user's learning streak details.
-    """
+    """Display the user's learning streak."""
+    if not request.user.is_authenticated:
+        return redirect("account_login")
     streak, created = LearningStreak.objects.get_or_create(user=request.user)
     return render(request, "streak_detail.html", {"streak": streak})
+
+
+def is_superuser(user):
+    return user.is_superuser
+
+
+@user_passes_test(is_superuser)
+def sync_github_milestones(request):
+    """Sync GitHub milestones with forum topics."""
+    github_repo = "alphaonelabs/alphaonelabs-education-website"
+    milestones_url = f"https://api.github.com/repos/{github_repo}/milestones"
+
+    try:
+        # Get GitHub milestones
+        response = requests.get(milestones_url)
+        response.raise_for_status()
+        milestones = response.json()
+
+        # Get or create a forum category for milestones
+        category, created = ForumCategory.objects.get_or_create(
+            name="GitHub Milestones",
+            defaults={
+                "slug": "github-milestones",
+                "description": "Discussions about GitHub milestones and project roadmap",
+                "icon": "fa-github",
+            },
+        )
+
+        # Count for tracking
+        created_count = 0
+        updated_count = 0
+
+        for milestone in milestones:
+            milestone_title = milestone["title"]
+            milestone_description = milestone["description"] or "No description provided."
+            milestone_url = milestone["html_url"]
+            milestone_state = milestone["state"]
+            open_issues = milestone["open_issues"]
+            closed_issues = milestone["closed_issues"]
+            due_date = milestone.get("due_on", "No due date")
+
+            # Format content with progress information
+            progress = 0
+            if open_issues + closed_issues > 0:
+                progress = (closed_issues / (open_issues + closed_issues)) * 100
+
+            content = f"""
+## Milestone: {milestone_title}
+
+{milestone_description}
+
+**State:** {milestone_state}
+**Progress:** {progress:.1f}% ({closed_issues} closed / {open_issues} open issues)
+**Due Date:** {due_date}
+
+[View on GitHub]({milestone_url})
+            """
+
+            # Try to find an existing topic for this milestone
+            topic = ForumTopic.objects.filter(
+                category=category, title__startswith=f"Milestone: {milestone_title}"
+            ).first()
+
+            if topic:
+                # Update existing topic
+                topic.content = content
+                topic.is_pinned = milestone_state == "open"  # Pin open milestones
+                topic.save()
+                updated_count += 1
+            else:
+                # Create new topic
+                # Use the first superuser as the author
+                author = User.objects.filter(is_superuser=True).first()
+                if author:
+                    ForumTopic.objects.create(
+                        category=category,
+                        title=f"Milestone: {milestone_title}",
+                        content=content,
+                        author=author,
+                        is_pinned=(milestone_state == "open"),
+                    )
+                    created_count += 1
+
+        if created_count or updated_count:
+            messages.success(
+                request, f"Successfully synced GitHub milestones: {created_count} created, {updated_count} updated."
+            )
+        else:
+            messages.info(request, "No GitHub milestones to sync.")
+
+    except requests.exceptions.RequestException as e:
+        messages.error(request, f"Error fetching GitHub milestones: {str(e)}")
+    except Exception as e:
+        messages.error(request, f"Error syncing milestones: {str(e)}")
+
+    return redirect("forum_categories")
