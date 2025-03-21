@@ -49,6 +49,7 @@ repos:
       - id: djlint-django
         args: ["--reformat", "--max-line-length=120"]
         files: '\.(html|djhtml)$'
+        exclude: ^web/templates/courses/progress_visualization\.html$
 
   - repo: local
     hooks:
