@@ -12,9 +12,12 @@ from django.utils import timezone
 from .models import Goods, OrderItem, Storefront
 
 
+
+# linting test 
+
 @staff_member_required
 def admin_dashboard(request):
-    """Admin dashboard showing model statistics."""
+    """Admin dashboard showing model statistics llllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll."""
     # Add admin site context
     context = dict(
         admin.site.each_context(request),
