@@ -437,8 +437,17 @@
                   </div>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-medium truncate">{{ entry.user.username }}</p>
-                  <div class="flex text-xs text-gray-500 dark:text-gray-400 space-x-2">
+                  {% if entry.user.id == user.id %}
+                    <p class="text-sm font-medium truncate">
+                      You
+                      {% if entry.user.id == user.id %}
+                        <span class="bg-blue-200 px-3 py-1 rounded-full text-sm">Excellent Work</span>
+                      {% endif %}
+                    </p>
+                  {% else %}
+                    <p class="text-sm font-medium truncate">{{ entry.user.username }}</p>
+                  {% endif %}
+                  <div class="flex mt-2 text-xs text-gray-500 dark:text-gray-400 space-x-2">
                     <span title="Points"><i class="fas fa-star text-yellow-500 mr-1"></i>{{ entry.points }}</span>
                     <span title="Challenges Completed"><i class="fas fa-check-circle text-green-500 mr-1"></i>{{ entry.challenge_count }}</span>
                     <span title="Streak"><i class="fas fa-fire text-orange-500 mr-1"></i>{{ entry.current_streak }}</span>

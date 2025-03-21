@@ -36,9 +36,13 @@
                 </thead>
                 <tbody>
                   {% for entry in global_entries %}
-                    <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 {% if entry.user == request.user %}bg-blue-50 dark:bg-blue-900{% endif %}">
+                    <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 {% if entry.user == request.user %}bg-blue-200 dark:bg-blue-900{% endif %}">
                       <td class="px-4 py-3">{{ forloop.counter }}</td>
-                      <td class="px-4 py-3 font-medium">{{ entry.user.username }}</td>
+                      {% if entry.user.username == user.username %}
+                        <td class="px-4 py-3 font-medium">You</td>
+                      {% else %}
+                        <td class="px-4 py-3 font-medium">{{ entry.user.username }}</td>
+                      {% endif %}
                       <td class="px-4 py-3 text-right">{{ entry.points }}</td>
                       <td class="px-4 py-3 text-right">{{ entry.challenge_count }}</td>
                     </tr>
@@ -77,9 +81,13 @@
                 </thead>
                 <tbody>
                   {% for entry in weekly_entries %}
-                    <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 {% if entry.user == request.user %}bg-green-50 dark:bg-green-900{% endif %}">
+                    <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 {% if entry.user == request.user %}bg-green-200 dark:bg-green-900{% endif %}">
                       <td class="px-4 py-3">{{ forloop.counter }}</td>
-                      <td class="px-4 py-3 font-medium">{{ entry.user.username }}</td>
+                      {% if entry.user.username == user.username %}
+                        <td class="px-4 py-3 font-medium">You</td>
+                      {% else %}
+                        <td class="px-4 py-3 font-medium">{{ entry.user.username }}</td>
+                      {% endif %}
                       <td class="px-4 py-3 text-right">{{ entry.weekly_points }}</td>
                     </tr>
                   {% endfor %}
@@ -117,9 +125,13 @@
                 </thead>
                 <tbody>
                   {% for entry in monthly_entries %}
-                    <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 {% if entry.user == request.user %}bg-purple-50 dark:bg-purple-900{% endif %}">
+                    <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 {% if entry.user == request.user %}bg-purple-200 dark:bg-purple-900{% endif %}">
                       <td class="px-4 py-3">{{ forloop.counter }}</td>
-                      <td class="px-4 py-3 font-medium">{{ entry.user.username }}</td>
+                      {% if entry.user.username == user.username %}
+                        <td class="px-4 py-3 font-medium">You</td>
+                      {% else %}
+                        <td class="px-4 py-3 font-medium">{{ entry.user.username }}</td>
+                      {% endif %}
                       <td class="px-4 py-3 text-right">{{ entry.monthly_points }}</td>
                     </tr>
                   {% endfor %}

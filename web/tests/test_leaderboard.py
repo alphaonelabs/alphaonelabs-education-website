@@ -8,7 +8,7 @@ from web.models import Challenge, ChallengeSubmission, Points
 """
 To run this test run this command:  python manage.py test web.tests.test_leaderboard.
 Then login with this credentials:
-    Email: student2@example.com
+    Email: student1@example.com
     Password: testpass123
 OR
     Email: student2@example.com
