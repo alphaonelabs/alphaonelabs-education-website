@@ -4,6 +4,12 @@ on:
   push:
   pull_request:
 
+# Add permissions needed for commenting on PRs
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   linting:
     runs-on: ubuntu-latest
@@ -17,13 +23,13 @@ jobs:
         cache: 'pip'
 
     - name: Run pre-commit hooks
+      id: pre-commit
       run: |
         pip install pre-commit black isort flake8 djlint
         #pre-commit autoupdate
         pre-commit install
-        pre-commit run --all-files || echo "pre-commit failed, but continuing to provide guidance"
+        pre-commit run --all-files
       continue-on-error: true
-      id: pre-commit
 
     - name: Post linting failure comment on PR
       if: steps.pre-commit.outcome == 'failure' && github.event_name == 'pull_request'
@@ -31,57 +37,66 @@ jobs:
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
-          const commentBody = `## ⚠️ Linting Checks Failed
+          try {
+            console.log("Creating comment on PR #" + context.issue.number);
 
-          Your pull request has linting issues that need to be fixed before it can be merged.
+            const commentBody = `## ⚠️ Linting Checks Failed
 
-          ### ⏰ Save Time By Running Checks Locally!
+            Your pull request has linting issues that need to be fixed before it can be merged.
 
-          **Important:** We run 8 different linting checks in CI, and they fail independently. Not running these checks locally before pushing can waste significant time as you may need multiple CI cycles to fix all issues.
+            ### ⏰ Save Time By Running Checks Locally!
 
-          ### How to fix locally:
+            **Important:** We run 8 different linting checks in CI, and they fail independently. Not running these checks locally before pushing can waste significant time as you may need multiple CI cycles to fix all issues.
 
-          1. **Install pre-commit tools:**
-             \`\`\`bash
-             pip install pre-commit
-             \`\`\`
+            ### How to fix locally:
 
-          2. **Set up the hooks:**
-             \`\`\`bash
-             pre-commit install
-             \`\`\`
+            1. **Install pre-commit tools:**
+               \`\`\`bash
+               pip install pre-commit
+               \`\`\`
 
-          3. **Run checks across all files:**
-             \`\`\`bash
-             pre-commit run --all-files
-             \`\`\`
+            2. **Set up the hooks:**
+               \`\`\`bash
+               pre-commit install
+               \`\`\`
 
-          4. **Fix the identified issues** in your code
+            3. **Run checks across all files:**
+               \`\`\`bash
+               pre-commit run --all-files
+               \`\`\`
 
-          5. **Commit your changes** and push to update this PR
+            4. **Fix the identified issues** in your code
 
-          ### Check Types That May Be Failing:
-          - ✅ Python style issues (flake8)
-          - ✅ HTML template formatting (djlint)
-          - ✅ Code formatting inconsistencies (black)
-          - ✅ Import ordering problems (isort)
-          - ✅ Trailing whitespace and file endings
-          - ✅ YAML/JSON/TOML syntax
-          - ✅ Merge conflicts
-          - ✅ Django configuration
+            5. **Commit your changes** and push to update this PR
 
-          **Pro Tip:** After setting up pre-commit with \`pre-commit install\`, it will automatically run on every commit you make, catching issues before they reach CI!
+            ### Check Types That May Be Failing:
+            - ✅ Python style issues (flake8)
+            - ✅ HTML template formatting (djlint)
+            - ✅ Code formatting inconsistencies (black)
+            - ✅ Import ordering problems (isort)
+            - ✅ Trailing whitespace and file endings
+            - ✅ YAML/JSON/TOML syntax
+            - ✅ Merge conflicts
+            - ✅ Django configuration
 
-          For more detailed guidance, please see our [contributing guidelines](https://github.com/AlphaOneLabs/education-website/blob/main/CONTRIBUTING.md).`;
+            **Pro Tip:** After setting up pre-commit with \`pre-commit install\`, it will automatically run on every commit you make, catching issues before they reach CI!
 
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: commentBody
-          });
+            For more detailed guidance, please see our [contributing guidelines](https://github.com/AlphaOneLabs/education-website/blob/main/CONTRIBUTING.md).`;
 
-    - name: Show lint failure guidance
+            const result = await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: commentBody
+            });
+
+            console.log("Comment created successfully: " + result.data.html_url);
+          } catch (error) {
+            console.log("Error creating comment: " + error);
+            core.setFailed("Failed to create PR comment: " + error.message);
+          }
+
+    - name: Show lint failure guidance and fail the linting job
       if: steps.pre-commit.outcome == 'failure'
       run: |
         echo "::error::Linting checks failed! To fix this locally:"
