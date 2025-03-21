@@ -43,10 +43,45 @@ jobs:
 
       - name: Configure MySQL
         run: |
-          cp .env.sample .env
-          sed -i 's|DATABASE_URL=.*|DATABASE_URL=mysql://root:rootpassword@127.0.0.1:3306/test_db|g' .env
-          
           mysql -h127.0.0.1 -P3306 -uroot -prootpassword -e "SET GLOBAL sql_mode='NO_ENGINE_SUBSTITUTION';"
+
+      # Create a temporary Dockerfile that doesn't set up the database during build
+      - name: Create test Dockerfile
+        run: |
+          cat > Dockerfile.test << EOF
+          # Python base image
+          FROM python:3.10-slim
+
+          # Set working directory
+          WORKDIR /app
+
+          # Install dependencies including MySQL client
+          RUN apt-get update && apt-get install -y \
+              curl \
+              default-libmysqlclient-dev \
+              && rm -rf /var/lib/apt/lists/*
+
+          # Copy requirements and install Python dependencies
+          COPY requirements.txt .
+          RUN python -m pip install --upgrade pip && \
+              python -m pip install -r requirements.txt && \
+              python -m pip install mysqlclient
+
+          # Copy project files
+          COPY . .
+
+          # Create necessary directories for static files
+          RUN mkdir -p /app/static /app/staticfiles
+
+          # Collect static files
+          RUN python manage.py collectstatic --noinput
+
+          # Expose port
+          EXPOSE 8000
+
+          # Don't run migrations or create data during build
+          CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+          EOF
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -55,17 +90,23 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
+          file: ./Dockerfile.test
           push: false
           load: true
           tags: education-website:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Start Docker container
+      - name: Start Docker container and setup database
         run: |
+          # Create .env file with MySQL configuration
+          cp .env.sample .env.mysql
+          sed -i 's|DATABASE_URL=.*|DATABASE_URL=mysql://root:rootpassword@127.0.0.1:3306/test_db|g' .env.mysql
+
+          # Start container with MySQL configuration
           docker run -d -p 8000:8000 --name education-app \
             --network host \
-            -e DATABASE_URL=mysql://root:rootpassword@127.0.0.1:3306/test_db \
+            -v $(pwd)/.env.mysql:/app/.env \
             -e DJANGO_DB_ENGINE=django.db.backends.mysql \
             -e DJANGO_DB_NAME=test_db \
             -e DJANGO_DB_USER=root \
@@ -75,8 +116,21 @@ jobs:
             -e DJANGO_SETTINGS_MODULE=web.settings \
             education-website:test
           
-          # Wait for the container to start up
-          sleep 15
+          # Wait for container to start
+          sleep 10
+          
+          # Now run migrations and setup database inside the container
+          docker exec education-app python manage.py migrate
+          docker exec education-app python manage.py create_test_data
+          
+          # Create superuser
+          docker exec -e DJANGO_SUPERUSER_USERNAME=admin -e DJANGO_SUPERUSER_EMAIL=admin@example.com -e DJANGO_SUPERUSER_PASSWORD=adminpassword education-app python manage.py createsuperuser --noinput
+          
+          # Verify database connection
+          docker exec education-app python -c "from django.db import connection; print('Database backend:', connection.vendor)"
+          
+          # Wait for app to be fully up
+          sleep 5
           docker ps
 
       - name: Check container logs
