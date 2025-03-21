@@ -20,9 +20,33 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: test_db
+          MYSQL_USER: django
+          MYSQL_PASSWORD: django_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -prootpassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+
+      - name: Configure MySQL
+        run: |
+          cp .env.sample .env
+          sed -i 's|DATABASE_URL=.*|DATABASE_URL=mysql://root:rootpassword@127.0.0.1:3306/test_db|g' .env
+          
+          mysql -h127.0.0.1 -P3306 -uroot -prootpassword -e "SET GLOBAL sql_mode='NO_ENGINE_SUBSTITUTION';"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -39,9 +63,20 @@ jobs:
 
       - name: Start Docker container
         run: |
-          docker run -d -p 8000:8000 --name education-app education-website:test
+          docker run -d -p 8000:8000 --name education-app \
+            --network host \
+            -e DATABASE_URL=mysql://root:rootpassword@127.0.0.1:3306/test_db \
+            -e DJANGO_DB_ENGINE=django.db.backends.mysql \
+            -e DJANGO_DB_NAME=test_db \
+            -e DJANGO_DB_USER=root \
+            -e DJANGO_DB_PASSWORD=rootpassword \
+            -e DJANGO_DB_HOST=127.0.0.1 \
+            -e DJANGO_DB_PORT=3306 \
+            -e DJANGO_SETTINGS_MODULE=web.settings \
+            education-website:test
+          
           # Wait for the container to start up
-          sleep 10
+          sleep 15
           docker ps
 
       - name: Check container logs
@@ -51,6 +86,10 @@ jobs:
         run: |
           # Check if the website is responding
           curl -s --retry 5 --retry-delay 5 --retry-connrefused http://localhost:8000/en/ -o /dev/null -w "%{http_code}\n" | grep -q "200" && echo "Website is up!" || (echo "Website is down!" && exit 1)
+
+      - name: Run Django tests in container
+        run: |
+          docker exec education-app python manage.py test
 
       - name: Stop Docker container
         if: always()
