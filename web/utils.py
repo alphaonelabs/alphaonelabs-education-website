@@ -7,7 +7,6 @@ from django.utils import timezone
 
 from web.models import (
     Cart,
-    ChallengeSubmission,
     Points,
     User,
 )
@@ -85,35 +84,40 @@ def get_leaderboard(period=None, limit=10):
     Get leaderboard data based on period (None for all-time, 'weekly', or 'monthly')
     Returns a list of users with their points sorted by total points
     """
-    users = User.objects.all()
+    from django.db.models import Count, Q, Sum
+
+    # Get time periods for filtering
+    one_week_ago = timezone.now() - timedelta(days=7)
+    one_month_ago = timezone.now() - timedelta(days=30)
+
+    # Annotate users with their total points - using different annotation names
+    users = User.objects.annotate(
+        total_points=Sum("points__amount"),
+        weekly_points_sum=Sum("points__amount", filter=Q(points__awarded_at__gte=one_week_ago)),
+        monthly_points_sum=Sum("points__amount", filter=Q(points__awarded_at__gte=one_month_ago)),
+        challenge_count=Count("challengesubmission", distinct=True),
+    )
+
+    # Filter users based on the period
+    if period == "weekly":
+        users = users.filter(weekly_points_sum__gt=0)
+    elif period == "monthly":
+        users = users.filter(monthly_points_sum__gt=0)
+    else:
+        users = users.filter(total_points__gt=0)
+
+    # Streaks still need to be calculated individually as they're stored in the reason field
     leaderboard_data = []
-
     for user in users:
-        # Calculate points for all time periods
-        total_points = calculate_user_total_points(user)
-        weekly_points = calculate_user_weekly_points(user)
-        monthly_points = calculate_user_monthly_points(user)
         current_streak = calculate_user_streak(user)
-        challenge_count = ChallengeSubmission.objects.filter(user=user).count()
-
-        # Skip users with no points in the relevant period
-        if period == "weekly" and weekly_points <= 0:
-            continue
-        elif period == "monthly" and monthly_points <= 0:
-            continue
-        elif period is None and total_points <= 0:
-            continue
-
-        # Add all data for every entry
         entry_data = {
             "user": user,
-            "points": total_points,
-            "weekly_points": weekly_points,
-            "monthly_points": monthly_points,
+            "points": user.total_points or 0,
+            "weekly_points": user.weekly_points_sum or 0,
+            "monthly_points": user.monthly_points_sum or 0,
             "current_streak": current_streak,
-            "challenge_count": challenge_count,
+            "challenge_count": user.challenge_count,
         }
-
         leaderboard_data.append(entry_data)
 
     # Sort by the appropriate field based on period
