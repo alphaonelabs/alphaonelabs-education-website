@@ -61,9 +61,18 @@
                             throw new Error('Failed to create payment intent');
                         }
 
+                        const data = await response.json();
+
+                        // Handle free courses
+                        if (data.free_course) {
+                            showMessage("Enrollment approved for free course. Reloading page...");
+                            setTimeout(() => window.location.reload(), 1500);
+                            return;
+                        }
+
                         const {
                             clientSecret
-                        } = await response.json();
+                        } = data;
 
                         const appearance = {
                             theme: document.documentElement.classList.contains('dark') ? 'night' : 'stripe',
@@ -149,8 +158,11 @@
                     messageContainer.style.display = "block";
                 }
 
-                function showError(messageText) {
-                    showMessage(messageText);
+                function showError(errorText) {
+                    const messageContainer = document.querySelector("#payment-message");
+                    messageContainer.textContent = errorText;
+                    messageContainer.style.display = "block";
+                    messageContainer.classList.add("text-red-500");
                 }
 
                 function setLoading(isLoading) {

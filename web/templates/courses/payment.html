@@ -48,10 +48,19 @@
 
       async function initialize() {
           const response = await fetch("{% url 'create_payment_intent' course.slug %}");
+          const data = await response.json();
+
+          // Handle free courses
+          if (data.free_course) {
+              // Redirect to course detail page for free courses
+              window.location.href = "{% url 'course_detail' course.slug %}";
+              return;
+          }
+
           const {
               clientSecret,
               error
-          } = await response.json();
+          } = data;
 
           if (error) {
               const messageContainer = document.querySelector("#payment-message");

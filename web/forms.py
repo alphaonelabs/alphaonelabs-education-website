@@ -245,8 +245,8 @@ class CourseCreationForm(forms.ModelForm):
 
     def clean_price(self):
         price = self.cleaned_data.get("price")
-        if price <= 0:
-            raise forms.ValidationError("Price must be greater than zero")
+        if price < 0:
+            raise forms.ValidationError("Price must be greater than or equal to zero")
         return price
 
     def clean_max_students(self):

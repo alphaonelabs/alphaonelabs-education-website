@@ -757,7 +757,18 @@ def create_payment_intent(request, slug):
     course = get_object_or_404(Course, slug=slug)
 
     # Ensure user has a pending enrollment
-    get_object_or_404(Enrollment, student=request.user, course=course, status="pending")
+    enrollment = get_object_or_404(Enrollment, student=request.user, course=course, status="pending")
+
+    # For free courses (price = 0), automatically approve the enrollment and return a special response
+    if course.price == 0:
+        enrollment.status = "approved"
+        enrollment.save()
+
+        # Send notifications
+        send_enrollment_confirmation(enrollment)
+        notify_teacher_new_enrollment(enrollment)
+
+        return JsonResponse({"free_course": True, "message": "Enrollment approved for free course"})
 
     try:
         # Create a PaymentIntent with the order amount and currency
