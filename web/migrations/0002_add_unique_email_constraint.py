@@ -30,15 +30,28 @@ def add_unique_constraint(apps, schema_editor):
     """
     Add a unique constraint to the email field
     """
-    # Check database type to handle SQLite differently
+    # Check database type to handle database-specific syntax
     db_engine = connection.vendor
 
     with connection.cursor() as cursor:
         if db_engine == "sqlite":
-            # For SQLite, use the SQLite-specific syntax (without rowid references)
+            # For SQLite, use the SQLite-specific syntax
             cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS auth_user_email_unique ON auth_user(email);")
+        elif db_engine == "mysql":
+            # For MySQL, we need to check if the index exists first
+            cursor.execute(
+                "SELECT COUNT(1) IndexIsThere "
+                "FROM INFORMATION_SCHEMA.STATISTICS "
+                "WHERE table_schema=DATABASE() "
+                "AND table_name='auth_user' "
+                "AND index_name='auth_user_email_unique';"
+            )
+            index_exists = cursor.fetchone()[0]
+
+            if index_exists == 0:
+                cursor.execute("CREATE UNIQUE INDEX auth_user_email_unique ON auth_user(email);")
         else:
-            # For other databases like MySQL or PostgreSQL
+            # For PostgreSQL and others that support IF NOT EXISTS
             cursor.execute("CREATE UNIQUE INDEX IF NOT EXISTS auth_user_email_unique ON auth_user(email);")
 
 
@@ -47,8 +60,25 @@ def remove_unique_constraint(apps, schema_editor):
     Remove the unique constraint from the email field
     """
     # Drop the unique index directly using the database connection
+    db_engine = connection.vendor
+
     with connection.cursor() as cursor:
-        cursor.execute("DROP INDEX IF EXISTS auth_user_email_unique;")
+        if db_engine == "mysql":
+            # For MySQL, check if index exists before dropping
+            cursor.execute(
+                "SELECT COUNT(1) IndexIsThere "
+                "FROM INFORMATION_SCHEMA.STATISTICS "
+                "WHERE table_schema=DATABASE() "
+                "AND table_name='auth_user' "
+                "AND index_name='auth_user_email_unique';"
+            )
+            index_exists = cursor.fetchone()[0]
+
+            if index_exists > 0:
+                cursor.execute("DROP INDEX auth_user_email_unique ON auth_user;")
+        else:
+            # For other databases
+            cursor.execute("DROP INDEX IF EXISTS auth_user_email_unique;")
 
 
 class Migration(migrations.Migration):
