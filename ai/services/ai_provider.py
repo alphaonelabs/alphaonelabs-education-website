@@ -1,16 +1,36 @@
 import logging
 import random
+import time
 
 # Make tenacity optional
 try:
-    from tenacity import retry, stop_after_attempt, wait_exponential
+    from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
     TENACITY_AVAILABLE = True
 except ImportError:
     TENACITY_AVAILABLE = False
     # Create dummy decorator when tenacity is not available
     def retry(*args, **kwargs):
         def decorator(func):
-            return func
+            # Simple retry mechanism when tenacity is not available
+            def wrapper(*args, **kwargs):
+                max_attempts = 2
+                attempt = 0
+                last_exception = None
+                
+                while attempt < max_attempts:
+                    try:
+                        return func(*args, **kwargs)
+                    except Exception as e:
+                        attempt += 1
+                        last_exception = e
+                        logger.warning(f"Attempt {attempt}/{max_attempts} failed: {str(e)}")
+                        if attempt < max_attempts:
+                            time.sleep(1 * (2 ** (attempt - 1)))  # Simple exponential backoff
+                
+                # If we get here, all attempts failed
+                logger.error(f"All {max_attempts} attempts failed. Last error: {str(last_exception)}")
+                raise last_exception
+            return wrapper
         return decorator
 
 from .config import (
@@ -79,7 +99,33 @@ class GeminiProvider(AIProvider):
             except Exception as e:
                 logger.error(f"Failed to initialize Gemini: {str(e)}")
     
-    @retry(stop=stop_after_attempt(2), wait=wait_exponential(min=1, max=4))
+    # Define which exceptions should trigger a retry
+    def _should_retry_exception(exception):
+        # Retry on connection errors, timeouts, and specific API errors
+        import google.api_core.exceptions as google_exceptions
+        
+        if TENACITY_AVAILABLE:
+            retry_exceptions = (
+                ConnectionError, 
+                TimeoutError,
+                google_exceptions.ResourceExhausted,
+                google_exceptions.ServiceUnavailable,
+                google_exceptions.DeadlineExceeded
+            )
+            return isinstance(exception, retry_exceptions)
+        return False
+    
+    # Enhance retry decorator with exception filtering if tenacity is available
+    retry_decorator = (
+        retry(
+            stop=stop_after_attempt(3),
+            wait=wait_exponential(min=1, max=10),
+            retry=retry_if_exception_type((ConnectionError, TimeoutError))
+        ) if TENACITY_AVAILABLE else 
+        retry(stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=10))
+    )
+    
+    @retry_decorator
     def generate_response(self, prompt, context):
         """Generate a response using Gemini API."""
         if not self.is_available():
@@ -102,12 +148,36 @@ class GeminiProvider(AIProvider):
                 generation_config=generation_config
             )
             
+            # Check if we received a valid response
+            if not hasattr(response, 'text') or not response.text:
+                logger.warning("Empty or invalid response from Gemini")
+                return "I'm sorry, I couldn't generate a proper response. Please try rephrasing your question."
+            
             logger.info("Gemini response generated successfully")
             return response.text
             
+        except ImportError as e:
+            logger.error(f"Missing dependency for Gemini: {str(e)}")
+            return "I couldn't access the AI service due to a configuration issue. Please contact support."
+            
         except Exception as e:
             logger.error(f"Error generating Gemini response: {str(e)}")
-            return f"I encountered an error processing your request: {str(e)}. Please try again or ask a different question."
+            
+            # Check if this is the last retry attempt
+            retry_state = getattr(self.generate_response, 'retry_state', None)
+            is_last_attempt = retry_state and retry_state.attempt_number >= retry_state.retry_object.stop.max_attempt_number if TENACITY_AVAILABLE else True
+            
+            if is_last_attempt:
+                # After all retries fail, fall back to the demo provider
+                try:
+                    logger.info("All retries failed, falling back to DemoProvider")
+                    demo_provider = DemoProvider()
+                    return demo_provider.generate_response(prompt, context)
+                except Exception as fallback_error:
+                    logger.error(f"Even fallback to DemoProvider failed: {str(fallback_error)}")
+            
+            # For retries that aren't the last attempt, raise the exception to trigger retry
+            raise
     
     def is_available(self):
         """Check if Gemini API is available."""

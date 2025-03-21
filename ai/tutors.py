@@ -143,35 +143,48 @@ class PersonalizedTutor:
         """Ask the tutor a question."""
         # Prepare enhanced prompt with learning profile
         enhanced_prompt = self._enhance_prompt(question, context)
-        
-        # Get user object
-        user = User.objects.get(id=self.user_id)
-        
-        # Get or create student profile for context
-        profile, created = StudentProfile.objects.get_or_create(user=user)
-        
-        # Set up context for AI provider
-        ai_context = {
-            'subject': context.get("subject", "general") if context else "general",
-            'profile': {
-                'learning_style': profile.learning_style,
-                'difficulty_preference': context.get('difficulty', profile.difficulty_preference),
-                'response_length': profile.response_length,
-                'include_examples': profile.include_examples,
-                'include_visuals': profile.include_visuals,
-            },
-            'user': {
-                'username': user.username,
+
+        try:
+            # Get user object
+            user = User.objects.get(id=self.user_id)
+
+            # Get or create student profile for context
+            profile, created = StudentProfile.objects.get_or_create(user=user)
+
+            # Set up context for AI provider
+            ai_context = {
+                'subject': context.get("subject", "general") if context else "general",
+                'profile': {
+                    'learning_style': profile.learning_style,
+                    'difficulty_preference': context.get('difficulty', profile.difficulty_preference),
+                    'response_length': profile.response_length,
+                    'include_examples': profile.include_examples,
+                    'include_visuals': profile.include_visuals,
+                },
+                'user': {
+                    'username': user.username,
+                }
             }
-        }
-        
-        # Generate response directly using AI provider
-        response_text = self.ai_provider.generate_response(enhanced_prompt, ai_context)
-        
-        return {
-            'text': response_text,
-            'personalized': True,
-        }
+
+            # Generate response directly using AI provider
+            response_text = self.ai_provider.generate_response(enhanced_prompt, ai_context)
+
+            return {
+                'text': response_text,
+                'personalized': True,
+            }
+        except Exception as e:
+            # Log the error
+            logger.error(f"Error in personalized tutor: {str(e)}")
+            
+            # Fallback to a simpler response if the AI provider fails
+            fallback_response = f"I apologize, but I encountered an issue while processing your question about {context.get('subject', 'this topic') if context else 'this topic'}. Please try again with a simpler question or check your connection."
+            
+            return {
+                'text': fallback_response,
+                'personalized': False,
+                'error': str(e)
+            }
     
     def _enhance_prompt(self, question: str, context: Optional[Dict[str, Any]] = None) -> str:
         """Enhance the question with user's learning profile and context."""

@@ -61,7 +61,7 @@ def chat_completion(request):
             user=request.user,
             question=message,
             subject=subject,
-            ai_provider='demo'
+            ai_provider='demo' if not AI_PROVIDER_AVAILABLE else 'ai'
         )
         
         # Get AI response
@@ -98,7 +98,7 @@ def get_ai_response(message, subject, user):
     """Generate AI response using the configured provider or fallback to demo."""
     try:
         # If AI provider module is available, use it
-        if AI_PROVIDER_AVAILABLE:
+        if (AI_PROVIDER_AVAILABLE):
             # Get user preferences
             profile, created = StudentProfile.objects.get_or_create(user=user)
             
@@ -172,22 +172,60 @@ def get_demo_response(message, subject):
 @login_required
 def dashboard(request):
     """Display AI learning dashboard with progress stats."""
+    # Get recent conversations
+    recent_conversations = Interaction.objects.filter(user=request.user).order_by('-created_at')[:5]
+    recent_conversations_data = [
+        {
+            'subject': interaction.subject,
+            'last_message': interaction.question,
+            'updated_at': interaction.created_at,
+            'url': f"/ai/chat/{interaction.id}/"
+        }
+        for interaction in recent_conversations
+    ]
+    
+    # Get progress data
+    from .progress import ProgressTracker
+    tracker = ProgressTracker(request.user.id)
+    progress_data = tracker.get_overall_progress()
+    progress_percentage = int(progress_data.get('completion_percentage', 0))
+    
+    # Get suggested topics
+    suggested_topics = tracker.get_suggested_topics(limit=5)
+    
     return render(request, 'ai/dashboard.html', {
         'page_title': 'Learning Dashboard',
+        'recent_conversations': recent_conversations_data,
+        'progress_percentage': progress_percentage,
+        'progress_details': progress_data,
+        'suggested_topics': suggested_topics,
     })
 
 @login_required
 def progress_view(request):
     """Show detailed learning progress."""
+    # Get user's interactions grouped by subject
+    from django.db.models import Count
+    subject_counts = Interaction.objects.filter(user=request.user).values('subject').annotate(count=Count('id'))
+    
+    # Get user's profile for preferences
+    profile, created = StudentProfile.objects.get_or_create(user=request.user)
+    
     return render(request, 'ai/progress.html', {
         'page_title': 'Learning Progress',
+        'subject_counts': subject_counts,
+        'profile': profile,
     })
 
 @login_required
 def settings_view(request):
     """AI assistant settings."""
+    # Get user's profile for current settings
+    profile, created = StudentProfile.objects.get_or_create(user=request.user)
+    
     return render(request, 'ai/settings.html', {
         'page_title': 'AI Assistant Settings',
+        'profile': profile,
     })
 
 @login_required
@@ -243,7 +281,7 @@ def tutor_completion(request):
             user=request.user,
             question=message,
             subject=subject,
-            ai_provider='personalized'
+            ai_provider='personalized_tutor'  # Use a more specific identifier
         )
         
         # Get personalized response
