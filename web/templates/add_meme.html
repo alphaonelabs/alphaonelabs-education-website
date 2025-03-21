@@ -11,32 +11,55 @@
         {% csrf_token %}
         <div>
           <label for="{{ form.title.id_for_label }}" class="block mb-2 font-medium">Title</label>
-          {{ form.title }}
+          <input type="text"
+                 name="{{ form.title.name }}"
+                 id="{{ form.title.id_for_label }}"
+                 value="{{ form.title.value|default:'' }}"
+                 class="w-full p-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                 {% if form.title.required %}required{% endif %} />
           {% if form.title.errors %}<p class="text-red-500 text-sm mt-1">{{ form.title.errors.0 }}</p>{% endif %}
         </div>
         <div>
           <label for="{{ form.subject.id_for_label }}" class="block mb-2 font-medium">Subject</label>
-          {{ form.subject }}
+          <select name="{{ form.subject.name }}"
+                  id="{{ form.subject.id_for_label }}"
+                  class="w-full p-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                  {% if form.subject.required %}required{% endif %}>
+            {% for value, text in form.subject.field.choices %}
+              <option value="{{ value }}"
+                      {% if form.subject.value == value %}selected{% endif %}>{{ text }}</option>
+            {% endfor %}
+          </select>
           {% if form.subject.errors %}<p class="text-red-500 text-sm mt-1">{{ form.subject.errors.0 }}</p>{% endif %}
-          <p class="text-sm text-gray-500 mt-1">{{ form.subject.help_text }}</p>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ form.subject.help_text }}</p>
         </div>
         <div>
           <label for="{{ form.new_subject.id_for_label }}"
                  class="block mb-2 font-medium">Or create new subject</label>
-          {{ form.new_subject }}
-          <p class="text-sm text-gray-500 mt-1">If your subject isn't listed above, enter a new one here</p>
+          <input type="text"
+                 name="{{ form.new_subject.name }}"
+                 id="{{ form.new_subject.id_for_label }}"
+                 value="{{ form.new_subject.value|default:'' }}"
+                 class="w-full p-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600" />
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">If your subject isn't listed above, enter a new one here</p>
         </div>
         <div>
           <label for="{{ form.caption.id_for_label }}" class="block mb-2 font-medium">Caption</label>
-          {{ form.caption }}
-          {% if form.caption.errors %}<p class="text-red-500 text-sm mt-1">{{ form.caption.errors.0 }}</p>{% endif %}
+          <textarea name="{{ form.caption.name }}"
+                    id="{{ form.caption.id_for_label }}"
+                    class="w-full p-2 border rounded dark:bg-gray-700 dark:text-white dark:border-gray-600"
+                    {% if form.caption.required %}required{% endif %}>{{ form.caption.value|default:'' }}</textarea>
+          {% if form.caption.errors %}
+            <p class="text-red-500 text-sm mt-1">{{ form.caption.errors.0 }}</p>
+          {% endif %}
         </div>
         <div>
           <label for="{{ form.image.id_for_label }}" class="block mb-2 font-medium">Meme Image</label>
           {{ form.image }}
           {% if form.image.errors %}<p class="text-red-500 text-sm mt-1">{{ form.image.errors.0 }}</p>{% endif %}
-          <p class="text-sm text-gray-500 mt-1">Recommended: PNG or JPEG, max 2MB</p>
-          <div id="imagePreview" class="hidden mt-4 border rounded p-4">
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Recommended: PNG or JPEG, max 2MB</p>
+          <div id="imagePreview"
+               class="hidden mt-4 border rounded p-4 dark:border-gray-600">
             <p class="text-sm font-medium mb-2">Image Preview:</p>
             <div class="flex justify-center">
               <img id="preview"
@@ -44,7 +67,7 @@
                    alt="Preview"
                    class="max-h-64 max-w-full object-contain" />
             </div>
-            <p class="text-xs text-gray-500 mt-2 text-center">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
               Preview is for reference only and may appear differently on the site.
             </p>
           </div>

@@ -548,14 +548,25 @@ class Achievement(models.Model):
         ("completion", "Course Completion"),
         ("participation", "Active Participation"),
         ("excellence", "Academic Excellence"),
+        ("quiz", "High Quiz Score"),
+        ("streak", "Daily Learning Streak"),
     ]
 
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="achievements")
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="achievements")
+    # Making Course optional for streak badges and quiz
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="achievements", null=True, blank=True)
     achievement_type = models.CharField(max_length=20, choices=TYPES)
     title = models.CharField(max_length=200)
     description = models.TextField()
     awarded_at = models.DateTimeField(auto_now_add=True)
+    # Fields for icon-Based badges:
+    badge_icon = models.CharField(
+        max_length=100, blank=True, help_text="Icon class for the badge (e.g., 'fas fa-trophy')"
+    )
+    # Fields for criteria-based badges:(100% for course completion, 90 for quiz, 7 or 30 for streak)
+    criteria_threshold = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Optional threshold required to earn this badge"
+    )
 
     def __str__(self):
         return f"{self.student.username} - {self.title}"
