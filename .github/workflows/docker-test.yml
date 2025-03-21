@@ -1,15 +1,16 @@
+---
 name: Docker Build & Test
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
       - 'Dockerfile'
       - '.dockerignore'
       - 'requirements.txt'
       - '**.py'
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths:
       - 'Dockerfile'
       - '.dockerignore'
@@ -48,7 +49,7 @@ jobs:
       # Create a temporary Dockerfile that doesn't set up the database during build
       - name: Create test Dockerfile
         run: |
-          cat > Dockerfile.test << EOF
+          cat > Dockerfile.test < < EOF
           # Python base image
           FROM python:3.10-slim
 
@@ -128,7 +129,8 @@ jobs:
           docker exec education-app python manage.py create_test_data
           
           # Create superuser if needed
-          docker exec -e DJANGO_SUPERUSER_USERNAME=admin -e DJANGO_SUPERUSER_EMAIL=admin@example.com -e DJANGO_SUPERUSER_PASSWORD=adminpassword education-app python manage.py createsuperuser --noinput || true
+          docker exec -e DJANGO_SUPERUSER_USERNAME=admin -e DJANGO_SUPERUSER_EMAIL=admin@example.com \
+            -e DJANGO_SUPERUSER_PASSWORD=adminpassword education-app python manage.py createsuperuser --noinput || true
           
           # Verify database connection
           docker exec education-app python -c "from django.db import connection; print('Database backend:', connection.vendor)"
@@ -143,7 +145,8 @@ jobs:
       - name: Test HTTP endpoint
         run: |
           # Check if the website is responding
-          curl -s --retry 5 --retry-delay 5 --retry-connrefused http://localhost:8000/en/ -o /dev/null -w "%{http_code}\n" | grep -q "200" && echo "Website is up!" || (echo "Website is down!" && exit 1)
+          curl -s --retry 5 --retry-delay 5 --retry-connrefused http://localhost:8000/en/ -o /dev/null -w "%{http_code}\n" | \
+            grep -q "200" && echo "Website is up!" || (echo "Website is down!" && exit 1)
 
       - name: Run Django tests in container
         run: |
