@@ -465,19 +465,15 @@
       </div>
       <div class="md:w-1/3 space-y-6">
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 shadow-lg">
-          <h2 class="text-xl font-semibold mb-6 text-center text-gray-800 dark:text-gray-200">
-            What Would You Like To Do?
-          </h2>
+          <h2 class="text-xl font-semibold mb-6 text-center text-gray-800 dark:text-gray-200">What Would You Like To Do?</h2>
           <div class="space-y-4">
-            <a href="{% url 'teach' %}" 
-            class="block w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-4 rounded-xl transition duration-200 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center">
-           <i class="fa-solid fa-chalkboard-user text-2xl mb-2"></i>
-           <span class="text-lg">I Want to Teach</span>
-           <div class="text-sm font-normal">Share your knowledge with others</div>
-         </a>
-         
-      
-            <a href="{% url 'learn' %}" 
+            <a href="{% url 'teach' %}"
+               class="block w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-4 rounded-xl transition duration-200 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center">
+              <i class="fa-solid fa-chalkboard-user text-2xl mb-2"></i>
+              <span class="text-lg">I Want to Teach</span>
+              <div class="text-sm font-normal">Share your knowledge with others</div>
+            </a>
+            <a href="{% url 'learn' %}"
                class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-4 rounded-xl transition duration-200 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center">
               <i class="fa-solid fa-graduation-cap mr-3 text-2xl mb-2"></i>
               <span class="text-lg">I Want to Learn</span>
@@ -501,7 +497,10 @@
                       <span class="text-gray-600 dark:text-gray-400">{{ tracker.percentage }}%</span>
                     </div>
                     <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                      <div class="bg-{{ tracker.color }} h-3 rounded-full" {% verbatim %}style="width: {% endverbatim %}{{ tracker.percentage }}{% verbatim %}%"{% endverbatim %}></div>
+                      <div class="bg-{{ tracker.color }} h-3 rounded-full"
+                           {% verbatim %}
+                           style="width: {% endverbatim %}{{ tracker.percentage }}{% verbatim %}%"
+                           {% endverbatim %}></div>
                     </div>
                   </div>
                 {% endfor %}
@@ -794,4 +793,4 @@
       </div>
     </div>
   </main>
-{% endblock content %} 
+{% endblock content %}

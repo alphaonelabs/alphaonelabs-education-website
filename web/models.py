@@ -966,7 +966,7 @@ class Goods(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     @property
     def image_url(self):
         """Return the URL of the first product image, or a default image if none exists."""
@@ -975,7 +975,7 @@ class Goods(models.Model):
         if first_image and first_image.image:
             return first_image.image.url
         # Return a default placeholder image
-        return '/static/images/placeholder.png'
+        return "/static/images/placeholder.png"
 
     def clean(self):
         # Validate discount logic
