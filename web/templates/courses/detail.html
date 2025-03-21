@@ -524,7 +524,7 @@
                                       <span class="font-medium">{{ session.title }}</span>
                                     </div>
                                     <div class="text-sm text-gray-600 dark:text-gray-400">
-                                      {{ session.start_time|date:"M d, Y" }}
+                                      {{ session.start_time|date:"M d, Y g:i A e" }}
                                       {% if session in enrollment.progress.completed_sessions.all %}
                                         <span class="ml-2 text-green-600 dark:text-green-400">Completed</span>
                                       {% elif session.end_time < now %}

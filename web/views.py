@@ -1,13 +1,17 @@
 import calendar
+import html
+import ipaddress
 import json
 import os
 import re
 import shutil
+import socket
 import subprocess
 import time
 from collections import defaultdict
 from datetime import timedelta
 from decimal import Decimal
+from urllib.parse import urlparse
 
 import requests
 import stripe
@@ -2948,13 +2952,72 @@ def challenge_submit(request, week_number):
 
 @require_GET
 def fetch_video_title(request):
+    """
+    Fetch video title from a URL with proper security measures to prevent SSRF attacks.
+    """
     url = request.GET.get("url")
     if not url:
         return JsonResponse({"error": "URL parameter is required"}, status=400)
 
+    # Validate URL
     try:
-        response = requests.get(url)
+        parsed_url = urlparse(url)
+
+        # Check for scheme - only allow http and https
+        if parsed_url.scheme not in ["http", "https"]:
+            return JsonResponse({"error": "Invalid URL scheme. Only HTTP and HTTPS are supported."}, status=400)
+
+        # Check for private/internal IP addresses
+        if parsed_url.netloc:
+            hostname = parsed_url.netloc.split(":")[0]
+
+            # Block localhost variations and common internal domains
+            blocked_hosts = [
+                "localhost",
+                "127.0.0.1",
+                "0.0.0.0",
+                "internal",
+                "intranet",
+                "local",
+                "lan",
+                "corp",
+                "private",
+                "::1",
+            ]
+
+            if any(blocked in hostname.lower() for blocked in blocked_hosts):
+                return JsonResponse({"error": "Access to internal networks is not allowed"}, status=403)
+
+            # Resolve hostname to IP and check if it's private
+            try:
+                ip_address = socket.gethostbyname(hostname)
+                ip_obj = ipaddress.ip_address(ip_address)
+
+                # Check if the IP is private/internal
+                if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_multicast:
+                    return JsonResponse({"error": "Access to internal/private networks is not allowed"}, status=403)
+            except (socket.gaierror, ValueError):
+                # If hostname resolution fails or IP parsing fails, continue
+                pass
+
+    except Exception as e:
+        return JsonResponse({"error": f"Invalid URL format: {str(e)}"}, status=400)
+
+    # Set a timeout to prevent hanging requests
+    timeout = 5  # seconds
+
+    try:
+        # Only allow HEAD and GET methods with limited redirects
+        response = requests.get(
+            url,
+            timeout=timeout,
+            allow_redirects=True,
+            headers={
+                "User-Agent": "Educational-Website-Validator/1.0",
+            },
+        )
         response.raise_for_status()
+
         # Extract title from response headers or content
         title = response.headers.get("title", "")
         if not title:
@@ -2962,9 +3025,14 @@ def fetch_video_title(request):
             content = response.text
             title_match = re.search(r"<title>(.*?)</title>", content)
             title = title_match.group(1) if title_match else "Untitled Video"
+
+            # Sanitize the title
+            title = html.escape(title)
+
         return JsonResponse({"title": title})
+
     except requests.RequestException:
-        return JsonResponse({"error": "Failed to fetch video title"}, status=500)
+        return JsonResponse({"error": "Failed to fetch video title:"}, status=500)
 
 
 def get_referral_stats():
