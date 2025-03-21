@@ -4,65 +4,113 @@ on:
   push:
   pull_request:
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   linting:
+    name: Linting
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Python3.10.x
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.10.x
-        cache: 'pip'
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
 
-    - name: Run pre-commit hooks
-      run: |
-        pip install pre-commit black isort flake8 djlint
-        #pre-commit autoupdate
-        pre-commit install
-        pre-commit run --all-files
+      - name: Run pre-commit hooks
+        run: |
+          pip install pre-commit black isort flake8 djlint
+          pre-commit install
+          pre-commit run --all-files
 
   tests:
+    name: Run Tests
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: test_db
+          MYSQL_USER: django
+          MYSQL_PASSWORD: django_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -u root -prootpassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Python3.10.x
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.10.x
-        cache: 'pip'
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
 
-    - name: Run tests
-      run: |
-        cp .env.sample .env
-        python -m pip install --upgrade pip wheel setuptools
-        pip install -v -r requirements.txt
-        python manage.py test
+      - name: Configure MySQL and run tests
+        env:
+          DATABASE_URL: mysql://root:rootpassword@127.0.0.1:3306/test_db
+        run: |
+          cp .env.sample .env
+          sed -i 's|DATABASE_URL=sqlite:///db.sqlite3|DATABASE_URL=mysql://root:rootpassword@127.0.0.1:3306/test_db|g' .env
 
-    # - name: Run tests with coverage
-    #   run: |
-    #     pytest -v --cov=web --cov-report=xml
+          sudo apt-get update
+          sudo apt-get install -y default-libmysqlclient-dev
 
-    # - name: Upload coverage to Codecov
-    #   uses: codecov/codecov-action@v3
-    #   with:
-    #     file: ./coverage.xml
-    #     fail_ci_if_error: true
+          python -m pip install --upgrade pip wheel setuptools
+          pip install -r requirements.txt
+          pip install mysqlclient
+
+          mysql -h127.0.0.1 -P3306 -uroot -prootpassword -e "SET GLOBAL sql_mode='NO_ENGINE_SUBSTITUTION';"
+
+          cat > mysql_settings.py << EOF
+from web.settings import *
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'test_db',
+        'USER': 'root',
+        'PASSWORD': 'rootpassword',
+        'HOST': '127.0.0.1',
+        'PORT': '3306',
+        'OPTIONS': {
+            'sql_mode': 'NO_ENGINE_SUBSTITUTION',
+            'charset': 'utf8mb4',
+        },
+        'TEST': {
+            'CHARSET': 'utf8mb4',
+            'COLLATION': 'utf8mb4_unicode_ci',
+        }
+    }
+}
+EOF
+
+          DJANGO_SETTINGS_MODULE=mysql_settings python manage.py test
 
   security:
+    name: Security Scan
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Set up Python3.10.x
-      uses: actions/setup-python@v4
-      with:
-        python-version: 3.10.x
-        cache: 'pip'
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+          cache: 'pip'
 
-    - name: Check for security vulnerabilities
-      run: |
-        pip install safety
-        safety check
+      - name: Check for security vulnerabilities
+        run: |
+          pip install safety
+          safety check

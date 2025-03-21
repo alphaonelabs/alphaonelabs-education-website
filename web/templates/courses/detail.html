@@ -30,18 +30,28 @@
               {% if course.image %}
                 <img src="{{ course.image.url }}"
                      alt="{{ course.title }}"
-                     class="w-full h-full object-cover" />
+                     class="w-full h-full object-cover"
+                     height=""
+                     width="" />
               {% else %}
                 <img src="{% static 'images/default-course.jpg' %}"
                      alt="{{ course.title }}"
-                     class="w-full h-full object-cover" />
+                     class="w-full h-full object-cover"
+                     height=""
+                     width="" />
               {% endif %}
             </div>
             <!-- Quick Stats -->
             <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
               <div class="flex items-center justify-between">
                 <span class="text-gray-600 dark:text-gray-300">Price</span>
-                <span class="text-3xl font-bold text-teal-600 dark:text-teal-400">${{ course.price }}</span>
+                <span class="text-3xl font-bold text-teal-600 dark:text-teal-400">
+                  {% if course.price == 0 %}
+                    Free
+                  {% else %}
+                    ${{ course.price }}
+                  {% endif %}
+                </span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-gray-600 dark:text-gray-300">Level</span>
@@ -67,16 +77,30 @@
                     </span>
                   </div>
                 {% else %}
-                  <form method="post"
-                        action="{% url 'add_course_to_cart' course.id %}"
-                        class="mt-2">
-                    {% csrf_token %}
-                    <button type="submit"
-                            class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center">
-                      <i class="fas fa-cart-plus mr-2"></i>
-                      Add to Cart
-                    </button>
-                  </form>
+                  {% if course.price == 0 %}
+                    <!-- Free Course Enrollment Button -->
+                    <form method="get"
+                          action="{% url 'enroll_course' course.slug %}"
+                          class="mt-2">
+                      <button type="submit"
+                              class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Enroll for Free
+                      </button>
+                    </form>
+                  {% else %}
+                    <!-- Paid Course Cart Button -->
+                    <form method="post"
+                          action="{% url 'add_course_to_cart' course.id %}"
+                          class="mt-2">
+                      {% csrf_token %}
+                      <button type="submit"
+                              class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-cart-plus mr-2"></i>
+                        Add to Cart
+                      </button>
+                    </form>
+                  {% endif %}
                 {% endif %}
               {% endif %}
             </div>
@@ -317,6 +341,16 @@
                         <i class="fas fa-edit mr-2"></i>
                         Edit Course
                       </a>
+                      <a href="{% url 'toggle_course_status' course.slug %}"
+                         class="inline-flex items-center px-4 py-2 {% if course.status == 'draft' %}bg-green-600 hover:bg-green-700{% else %}bg-yellow-600 hover:bg-yellow-700{% endif %} text-white rounded-lg transition duration-200">
+                        {% if course.status == 'draft' %}
+                          <i class="fas fa-globe mr-2"></i>
+                          Publish Course
+                        {% else %}
+                          <i class="fas fa-pencil-alt mr-2"></i>
+                          Unpublish to Draft
+                        {% endif %}
+                      </a>
                       <a href="{% url 'course_progress_overview' course.slug %}"
                          class="inline-flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition duration-200">
                         <i class="fas fa-chart-line mr-2"></i>
@@ -327,20 +361,35 @@
                         <i class="fas fa-envelope mr-2"></i>
                         Message Students
                       </a>
+                      <a href="{% url 'add_student_to_course' course.slug %}"
+                         class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition duration-200">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        Enroll Student
+                      </a>
                     </div>
                   {% endif %}
                 </div>
+                {% if user == course.teacher %}
+                  <div class="mt-3 {% if course.status == 'draft' %}bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 dark:bg-yellow-900 dark:border-yellow-600 dark:text-yellow-200{% else %}bg-blue-50 border-l-4 border-blue-400 text-blue-700 dark:bg-blue-900 dark:border-blue-600 dark:text-blue-200{% endif %} p-4 rounded-md">
+                    {% if course.status == 'draft' %}
+                      <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span><strong>Draft Status:</strong> This course is currently in draft mode and is only visible to you. Students cannot enroll until you publish it.</span>
+                      </div>
+                    {% else %}
+                      <div class="flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <span><strong>Published Status:</strong> This course is live and visible to all users. Students can now enroll in this course.</span>
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endif %}
                 {% if user.is_authenticated and enrollment %}
                   <div class="flex items-center gap-4">
                     <div class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-4 py-2 rounded-lg flex items-center">
                       <i class="fas fa-check-circle mr-2"></i>
                       <span>You're enrolled!</span>
                     </div>
-                    <a href="{% url 'student_dashboard' %}?course={{ course.id }}"
-                       class="bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white px-4 py-2 rounded-lg flex items-center">
-                      <i class="fas fa-chart-line mr-2"></i>
-                      <span>View Progress</span>
-                    </a>
                   </div>
                 {% endif %}
                 <!-- Share Button -->
@@ -381,84 +430,184 @@
                 </div>
               </div>
               <div class="flex items-center space-x-4 mb-4">
-                <span class="badge bg-{{ course.status }}">{{ course.get_status_display }}</span>
+                <span class="px-3 py-1 rounded-full text-sm font-medium inline-flex items-center gap-1 {% if course.status == 'draft' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% elif course.status == 'published' %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% else %} bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 {% endif %}">
+                  {% if course.status == 'draft' %}
+                    <i class="fas fa-pencil-alt"></i>
+                  {% elif course.status == 'published' %}
+                    <i class="fas fa-globe"></i>
+                  {% else %}
+                    <i class="fas fa-archive"></i>
+                  {% endif %}
+                  {{ course.get_status_display }}
+                </span>
                 <span class="text-sm text-gray-600 dark:text-gray-400">{{ course.subject.name }}</span>
                 {% if course.tags %}<span class="text-sm text-gray-600 dark:text-gray-400">{{ course.tags }}</span>{% endif %}
               </div>
               <!-- Course Description -->
               <div class="markdown-content space-y-6 text-gray-800 dark:text-gray-200">
-                <div class="space-y-4">
-                  <!-- Course Materials -->
-                  <div class="mt-8">
-                    <div class="flex justify-between items-center mb-4">
-                      <h2 class="text-xl font-bold">Course Materials</h2>
-                      {% if user == course.teacher %}
-                        <a href="{% url 'upload_material' course.slug %}"
-                           class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg transition duration-200 text-sm">
-                          <i class="fas fa-plus mr-1"></i>Add Material
-                        </a>
-                      {% endif %}
-                    </div>
-                    {% if course.materials.exists %}
-                      <div class="grid gap-4">
-                        {% for material in course.materials.all %}
-                          <div class="bg-white dark:bg-gray-700 rounded-lg p-4 shadow">
-                            <div class="flex justify-between items-start">
-                              <div>
-                                <h3 class="font-semibold">
-                                  {% if is_enrolled or not material.requires_enrollment or is_teacher %}
-                                    {% if material.external_url %}
-                                      <a href="{{ material.external_url }}"
-                                         target="_blank"
-                                         class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                        {{ material.title }}
-                                        <i class="fas fa-external-link-alt ml-1 text-sm"></i>
-                                      </a>
-                                    {% else %}
-                                      <a href="{% url 'download_material' course.slug material.id %}"
-                                         class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                        {{ material.title }}
-                                        <i class="fas fa-download ml-1 text-sm"></i>
-                                      </a>
-                                    {% endif %}
-                                  {% else %}
-                                    {{ material.preview_content }}
-                                    <span class="ml-2 text-sm text-gray-500">(Enroll to access)</span>
-                                  {% endif %}
-                                </h3>
-                                {% if material.description %}
-                                  <p class="text-sm text-gray-600 dark:text-gray-300 mt-1">{{ material.description }}</p>
-                                {% endif %}
-                              </div>
-                              {% if user == course.teacher %}
-                                <div class="flex space-x-2">
-                                  <a href="{% url 'delete_material' course.slug material.id %}"
-                                     class="text-red-600 hover:text-red-800 dark:text-red-400">
-                                    <i class="fas fa-trash"></i>
-                                  </a>
+                <div class="space-y-2">
+                  <!-- Course Progress -->
+                  {% if is_enrolled and enrollment %}
+                    <div x-data="{ showAllSessions: false, activeSession: null }">
+                      <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <i class="fas fa-chart-line text-teal-500 dark:text-teal-400 mr-2"></i>
+                        Your Progress
+                      </h2>
+                      <div class="md:min-h-screen dark:from-gray-800 dark:to-gray-900 rounded-lg shadow-md p-3 border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+                        <!-- Top section with Progress and Materials side by side -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <!-- Left Column with Progress + Session stacked -->
+                          <div>
+                            <!-- Progress Tracker (Compact) -->
+                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 mb-4">
+                              <!-- Progress Header (Simplified) -->
+                              <div class="relative mb-2">
+                                <div class="flex justify-between items-center">
+                                  <h3 class="font-semibold text-lg bg-clip-text text-transparent from-teal-600 to-blue-600 dark:from-teal-400 dark:to-blue-400">
+                                    {{ course.title }}
+                                  </h3>
+                                  <div class="text-xl font-bold bg-clip-text text-transparent from-green-600 to-green-400 dark:from-green-500 dark:to-green-300">
+                                    {{ enrollment.progress.completion_percentage }}%
+                                  </div>
                                 </div>
-                              {% endif %}
+                                <!-- Green Gradient Progress Bar -->
+                                <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full my-1 overflow-hidden shadow-inner">
+                                  <div class="h-full rounded-full bg-gradient-to-r from-green-400 to-teal-500 dark:from-green-500 dark:to-teal-400 relative overflow-hidden transition-all duration-500 ease-out"
+                                       style="width: {{ enrollment.progress.completion_percentage }}%"></div>
+                                </div>
+                              </div>
+                              <!-- Compact Stats -->
+                              <div class="flex flex-wrap items-center justify-between bg-gray-50 dark:bg-slate-700 rounded-lg px-2 py-1 text-xs">
+                                <div class="flex items-center space-x-1">
+                                  <i class="fas fa-check-circle text-indigo-500 dark:text-indigo-400"></i>
+                                  <span class="text-gray-500 dark:text-gray-400">Completed:</span>
+                                  <span class="font-bold text-indigo-600 dark:text-indigo-400">{{ enrollment.progress.completed_sessions.count }}</span>
+                                </div>
+                                <div class="flex items-center space-x-1">
+                                  <i class="fas fa-hourglass-half text-orange-500 dark:text-orange-400"></i>
+                                  <span class="text-gray-500 dark:text-gray-400">Remaining:</span>
+                                  <span class="font-bold text-orange-600 dark:text-orange-400"
+                                        id="remaining-count"
+                                        data-total-sessions="{{ course.sessions.count|default:0 }}"
+                                        data-completed-sessions="{% if enrollment and enrollment.progress %}{{ enrollment.progress.completed_sessions.count }}{% else %}0{% endif %}">
+                                    <!-- Will be filled by JavaScript -->
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                            <div class="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-400">
-                              <span class="flex items-center">
-                                <i class="fas {% if material.material_type == 'video' %}fa-video{% elif material.material_type == 'image' %}fa-image{% elif material.material_type == 'document' %}fa-file-alt{% elif material.material_type == 'presentation' %}fa-file-powerpoint{% elif material.material_type == 'exercise' %}fa-tasks{% elif material.material_type == 'quiz' %}fa-question-circle{% else %}fa-file{% endif %} mr-1"></i>
-                                {{ material.get_material_type_display }}
-                              </span>
-                              {% if material.session %}
-                                <span class="mx-2">•</span>
-                                <span class="flex items-center">
-                                  <i class="far fa-calendar-alt mr-1"></i>
-                                  Session: {{ material.session.title }}
+                            <!-- Session Completion (Directly below Progress Tracker) -->
+                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3">
+                              <div class="flex justify-between items-center mb-2">
+                                <h4 class="font-medium">Session Completion</h4>
+                                <span class="text-xs text-gray-600 dark:text-gray-400">
+                                  <i class="fas fa-check-circle text-green-500 dark:text-green-400"></i>
+                                  <span class="ml-1">
+                                    <span class="font-semibold">{{ enrollment.progress.completed_sessions.count }}</span> of
+                                    <span class="font-semibold">{{ course.sessions.count }}</span> completed
+                                  </span>
                                 </span>
-                              {% endif %}
+                              </div>
+                              <div class="h-64 relative overflow-y-auto pr-2 space-y-1">
+                                <!-- Fade effect at bottom -->
+                                <div class="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white dark:from-gray-800 to-transparent pointer-events-none">
+                                </div>
+                                {% for session in course.sessions.all %}
+                                  <div class="flex items-center justify-between p-2 {% if session in enrollment.progress.completed_sessions.all %}bg-green-50 dark:bg-green-900/20{% else %}bg-gray-50 dark:bg-gray-700/50{% endif %} rounded-lg border border-gray-100 dark:border-gray-700">
+                                    <div class="flex items-center space-x-2">
+                                      {% if session in enrollment.progress.completed_sessions.all %}
+                                        <i class="fas fa-check-circle text-green-500 dark:text-green-400"></i>
+                                      {% elif session.end_time < now %}
+                                        <i class="fas fa-circle text-red-500 dark:text-red-400"></i>
+                                      {% else %}
+                                        <i class="far fa-circle text-gray-400 dark:text-gray-500"></i>
+                                      {% endif %}
+                                      <span class="font-medium">{{ session.title }}</span>
+                                    </div>
+                                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                                      {{ session.start_time|date:"M d, Y g:i A e" }}
+                                      {% if session in enrollment.progress.completed_sessions.all %}
+                                        <span class="ml-2 text-green-600 dark:text-green-400">Completed</span>
+                                      {% elif session.end_time < now %}
+                                        <span class="ml-2 text-red-600 dark:text-red-400">Missed</span>
+                                      {% else %}
+                                        <span class="ml-2 text-blue-600 dark:text-blue-400">Upcoming</span>
+                                      {% endif %}
+                                    </div>
+                                  </div>
+                                {% endfor %}
+                              </div>
+                              <div class="mt-3">
+                                <a href="{% url 'student_progress' enrollment.id %}"
+                                   class="inline-flex items-center px-3 py-1 text-sm bg-teal-300 hover:bg-teal-400 font-medium rounded-lg transition duration-200">
+                                  <i class="fas fa-chart-bar mr-1"></i>
+                                  Detailed Report
+                                </a>
+                              </div>
                             </div>
                           </div>
-                        {% endfor %}
+                          <!-- Right Column: Course Materials -->
+                          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                            <div class="flex justify-between items-center mb-2">
+                              <h2 class="text-xl font-bold">Course Materials</h2>
+                              {% if user == course.teacher %}
+                                <a href="{% url 'upload_material' course.slug %}"
+                                   class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg transition duration-200 text-sm">
+                                  <i class="fas fa-plus mr-1"></i>Add Material
+                                </a>
+                              {% endif %}
+                            </div>
+                            {% if course.materials.exists %}
+                              <div class="max-h-96 overflow-y-auto pr-2">
+                                <div class="space-y-3">
+                                  {% for material in course.materials.all %}
+                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 shadow-sm">
+                                      <div class="flex justify-between items-start">
+                                        <div>
+                                          <h3 class="font-semibold text-sm">
+                                            {% if is_enrolled or not material.requires_enrollment or is_teacher %}
+                                              {% if material.external_url %}
+                                                <a href="{{ material.external_url }}"
+                                                   target="_blank"
+                                                   class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                                  {{ material.title }}
+                                                  <i class="fas fa-external-link-alt ml-1 text-xs"></i>
+                                                </a>
+                                              {% else %}
+                                                <a href="{% url 'download_material' course.slug material.id %}"
+                                                   class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                                  {{ material.title }}
+                                                  <i class="fas fa-download ml-1 text-xs"></i>
+                                                </a>
+                                              {% endif %}
+                                            {% else %}
+                                              {{ material.preview_content }}
+                                              <span class="ml-2 text-xs text-gray-500">(Enroll to access)</span>
+                                            {% endif %}
+                                          </h3>
+                                          {% if material.description %}
+                                            <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">{{ material.description|truncatechars:50 }}</p>
+                                          {% endif %}
+                                        </div>
+                                        {% if user == course.teacher %}
+                                          <a href="{% url 'delete_material' course.slug material.id %}"
+                                             class="text-red-600 hover:text-red-800 dark:text-red-400 text-sm">
+                                            <i class="fas fa-trash"></i>
+                                          </a>
+                                        {% endif %}
+                                      </div>
+                                    </div>
+                                  {% endfor %}
+                                </div>
+                              </div>
+                            {% else %}
+                              <p class="text-gray-500 dark:text-gray-400 text-sm italic">No materials available for this course yet.</p>
+                            {% endif %}
+                          </div>
+                        </div>
                       </div>
-                    {% else %}
-                      <p class="text-gray-600 dark:text-gray-400">No materials available yet.</p>
-                    {% endif %}
-                  </div>
+                    </div>
+                  {% endif %}
+                  <!-- Course Materials -->
                   <!-- Schedule -->
                   <div>
                     <h2 class="text-xl font-bold mb-2">Schedule</h2>
@@ -534,5 +683,18 @@
               })
               .catch(error => console.error('Error loading calendar:', error));
       }
+  </script>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          // Get session counts from data attributes rather than template variables
+          const remainingCountElement = document.getElementById('remaining-count');
+          // Check if the element exists before trying to access its properties
+          if (remainingCountElement) {
+              const total = parseInt(remainingCountElement.dataset.totalSessions) || 0;
+              const completed = parseInt(remainingCountElement.dataset.completedSessions) || 0;
+              const remaining = Math.max(0, total - completed);
+              remainingCountElement.textContent = remaining;
+          }
+      });
   </script>
 {% endblock content %}

@@ -130,19 +130,31 @@
             color-scheme: light;
         }
 
+        html,
+        body {
+            overflow-x: hidden;
+            box-sizing: border-box;
+        }
+
         /* Hide elements with x-cloak until Alpine.js is ready */
         [x-cloak] {
             display: none !important;
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: inherit;
         }
     </style>
     {% block extra_head %}
     {% endblock extra_head %}
     <link rel="stylesheet" href="{% static 'css/markdown.css' %}" />
   </head>
-  <body class="min-h-screen flex flex-col bg-white text-gray-900 dark:bg-black dark:text-gray-100 transition-colors duration-300">
+  <body class="min-h-screen flex flex-col bg-white text-gray-900 dark:bg-black dark:text-gray-100 transition-colors duration-300 overflow-x-hidden">
     <!-- HEADER -->
     <header class="w-full bg-teal-600 dark:bg-teal-800 text-white">
-      <div class="max-w-[90rem] mx-auto px-4 flex items-center justify-between h-[60px] relative">
+      <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-[60px] relative">
         <!-- Logo and Title -->
         <a href="{% url 'index' %}" class="flex items-center space-x-2">
           <img src="{% static 'images/logo.png' %}"
@@ -191,10 +203,12 @@
                class="hover:underline flex items-center">
               <i class="fa-solid fa-store mr-1"></i> Products
             </a>
-            <!-- Replace AI Dashboard link with AI Chat -->
-            <a class="hover:underline flex items-center" href="/ai/chat/">
-              <i class="fas fa-comments mr-1"></i>
-              AI Chat
+            <a href="{% url 'meme_list' %}"
+               class="hover:underline flex items-center">
+              <i class="fa-solid fa-face-smile mr-1"></i> Edu Memes
+            </a>
+            <a href="{% url 'whiteboard' %}">
+              <i class="fas fa-palette"></i> whiteboard
             </a>
           </div>
           <!-- Language and Dark Mode -->
@@ -261,8 +275,11 @@
               <div id="user-dropdown"
                    class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50">
                 <div class="px-4 py-2 text-sm text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700">
-                  <div class="font-semibold">{{ user.get_full_name|default:user.username }}</div>
-                  <div class="text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</div>
+                  <div class="font-semibold truncate" title="{{ user.get_full_name }}">
+                    {{ user.get_full_name|default:user.username }}
+                  </div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400 truncate"
+                       title="{{ user.email }}">{{ user.email }}</div>
                 </div>
                 <a href="{% url 'create_course' %}"
                    class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
@@ -319,7 +336,7 @@
         </nav>
         <!-- Mobile Menu (hidden by default) -->
         <div id="mobile-menu"
-             class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+             class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden">
           <div class="absolute right-0 top-0 h-full w-64 bg-white dark:bg-gray-800 shadow-lg overflow-y-auto">
             <!-- Close button -->
             <button class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -392,10 +409,10 @@
                 <i class="fa-solid fa-blog"></i>
                 <span>Blog</span>
               </a>
-              <!-- Replace AI Dashboard link with AI Chat -->
-              <a class="hover:underline flex items-center" href="/ai/chat/">
-                <i class="fas fa-comments mr-1"></i>
-                AI Chat
+              <a href="{% url 'meme_list' %}"
+                 class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                <i class="fa-solid fa-face-smile"></i>
+                <span>Edu Memes</span>
               </a>
               {% if user.is_authenticated %}
                 <a href="{% url 'profile' %}"
@@ -448,7 +465,6 @@
         </div>
       </div>
     </header>
-    <!-- Update the messages div positioning -->
     {% if messages %}
       <div class="fixed left-1/2 transform -translate-x-1/2 top-20 z-50 w-full max-w-lg space-y-2">
         {% for message in messages %}
@@ -479,9 +495,9 @@
     <!-- FOOTER -->
     <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto">
       <div class="container mx-auto px-4 py-8">
-        <div class="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0">
           <!-- Quick Links -->
-          <div class="flex space-x-6">
+          <div class="flex flex-wrap justify-center md:justify-start items-center gap-4">
             <a href="{% url 'blog_list' %}"
                class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
               <i class="fas fa-blog mr-2"></i>Blog
@@ -506,7 +522,7 @@
                target="_blank"
                rel="noopener"
                class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
-              <i class="fas fa-code mr-2"></i> GSOC'25
+              <i class="fas fa-code mr-2"></i>GSOC'25
             </a>
             <a href="{% url 'terms' %}"
                class="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 flex items-center">
@@ -514,7 +530,7 @@
             </a>
           </div>
           <!-- Social Links -->
-          <div class="flex space-x-4">
+          <div class="flex flex-wrap justify-center md:justify-end items-center gap-4">
             <a href="https://twitter.com/alphaonelabs"
                target="_blank"
                rel="noopener"
@@ -553,8 +569,8 @@
         </div>
         <!-- Copyright -->
         <div class="text-center mt-8 text-sm text-gray-500 dark:text-gray-400">
-          <p>&copy; {% now "Y" %} Alpha One Labs. All rights reserved.</p>
-          <p class="mt-1">Last updated:  {{ last_modified|date:"m/d/Y h:ia" }}</p>
+          <p>© {% now "Y" %} Alpha One Labs. All rights reserved.</p>
+          <p class="mt-1">Last updated: {{ last_modified|date:"m/d/Y h:ia" }}</p>
         </div>
       </div>
     </footer>

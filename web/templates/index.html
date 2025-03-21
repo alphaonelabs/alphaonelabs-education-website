@@ -5,7 +5,7 @@
 {% block content %}
   <main class="flex-1 w-full max-w-[90rem] mx-auto mt-6 px-4 md:px-6">
     <div class="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-6">
-      <div class="md:w-3/4 space-y-6">
+      <div class="md:w-3/4 space-y-7">
         <div class="space-y-4">
           <blockquote class="text-xl italic">
             "Somewhere, something incredible is waiting to be known."
@@ -33,13 +33,17 @@
                   <a href="{% url 'course_detail' course.slug %}">
                     <img src="{{ course.image.url }}"
                          alt="{{ course.title }}"
-                         class="w-full h-full object-cover" />
+                         class="w-full h-full object-cover"
+                         height=""
+                         width="" />
                   </a>
                 {% else %}
                   <a href="{% url 'course_detail' course.slug %}">
                     <img src="{% static 'images/default-course.jpg' %}"
                          alt="{{ course.title }}"
-                         class="w-full h-full object-cover" />
+                         class="w-full h-full object-cover"
+                         height=""
+                         width="" />
                   </a>
                 {% endif %}
               </div>
@@ -85,11 +89,11 @@
                   {% if first_session and last_session %}
                     <div class="flex items-center mb-1">
                       <i class="fas fa-calendar-day mr-2"></i>
-                      <span>Starts: {{ first_session.start_time|date:"M j, Y" }}</span>
+                      <span>Starts: {{ first_session.start_time|date:"M j, Y g:i A e" }}</span>
                     </div>
                     <div class="flex items-center">
                       <i class="fas fa-calendar-check mr-2"></i>
-                      <span>Ends: {{ last_session.end_time|date:"M j, Y" }}</span>
+                      <span>Ends: {{ last_session.end_time|date:"M j, Y g:i A e" }}</span>
                     </div>
                   {% else %}
                     <div class="flex items-center mb-1">
@@ -150,6 +154,49 @@
             <i class="fas fa-arrow-right ml-2"></i>
           </a>
         </div>
+        <!-- Quiz Banner Section -->
+        <div class="mt-4 mb-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden shadow-md">
+          <div class="flex flex-col md:flex-row">
+            <div class="p-4 md:p-5 md:w-2/3 text-white">
+              <h2 class="text-sm md:text-base font-semibold mb-1">Test Your Knowledge with Our Quizzes!</h2>
+              <p class="mb-3 text-blue-100 text-xs md:text-sm">
+                Challenge yourself with our interactive quizzes. Perfect for testing your understanding.
+              </p>
+              <div class="flex flex-wrap gap-2">
+                <a href="{% url 'quiz_list' %}"
+                   class="bg-white text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition duration-200 inline-flex items-center">
+                  <i class="fas fa-puzzle-piece mr-1.5"></i> Browse Quizzes
+                </a>
+                {% if user.is_authenticated %}
+                  <a href="{% url 'create_quiz' %}"
+                     class="bg-transparent hover:bg-white/20 border border-white px-3 py-1.5 rounded-md text-xs font-medium transition duration-200 inline-flex items-center">
+                    <i class="fas fa-plus mr-1.5"></i> Create Quiz
+                  </a>
+                {% endif %}
+              </div>
+            </div>
+            <div class="hidden md:block md:w-1/3 relative">
+              <div class="absolute inset-0 bg-contain bg-no-repeat bg-center opacity-80"
+                   style="background-image: url('{% static "images/quiz-illustration.svg" %}')"></div>
+            </div>
+          </div>
+          <div class="bg-blue-700/30 py-1.5 px-4">
+            <div class="flex flex-wrap items-center justify-between text-xs text-white">
+              <div class="flex items-center mb-1 md:mb-0">
+                <i class="fas fa-chart-line mr-1"></i>
+                <span>Track progress</span>
+              </div>
+              <div class="flex items-center mb-1 md:mb-0">
+                <i class="fas fa-medal mr-1"></i>
+                <span>Earn badges</span>
+              </div>
+              <div class="flex items-center">
+                <i class="fas fa-share-alt mr-1"></i>
+                <span>Share results</span>
+              </div>
+            </div>
+          </div>
+        </div>
         <!-- Featured Products (3 across) -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           {% for product in featured_products %}
@@ -160,13 +207,17 @@
                   <a href="{% url 'goods_detail' pk=product.id %}">
                     <img src="{{ product.image.url }}"
                          alt="{{ product.name }}"
-                         class="w-full h-full object-cover" />
+                         class="w-full h-full object-cover"
+                         height=""
+                         width="" />
                   </a>
                 {% else %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
                     <img src="{% static 'images/placeholder.png' %}"
                          alt="{{ product.name }}"
-                         class="w-full h-full object-cover" />
+                         class="w-full h-full object-cover"
+                         height=""
+                         width="" />
                   </a>
                 {% endif %}
               </div>
@@ -228,7 +279,9 @@
                 <img src="{% static 'images/gsoc-logo.png' %}"
                      alt="Google Summer of Code"
                      class="h-16 w-16 object-contain"
-                     onerror="this.src='https://summerofcode.withgoogle.com/assets/media/gsoc-2024-badge.svg'" />
+                     onerror="this.src='https://summerofcode.withgoogle.com/assets/media/gsoc-2024-badge.svg'"
+                     height=""
+                     width="" />
               </div>
               <div>
                 <h3 class="text-xl font-bold mb-2">Join us for Google Summer of Code 2025! 🚀</h3>
@@ -238,7 +291,7 @@
               </div>
             </div>
             <a href="{% url 'gsoc_landing_page' %}"
-               class="hidden sm:inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap">
+               class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
               <span>Get Started with GSoC</span>
               <i class="fas fa-arrow-right ml-2"></i>
             </a>
@@ -361,6 +414,47 @@
             </button>
           </form>
         </div>
+        <!-- Progress Trackers Dashboard -->
+        {% if user.is_authenticated %}
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center">
+              <i class="fa-solid fa-chart-line text-blue-600 dark:text-blue-400 mr-2"></i>
+              Progress Trackers
+            </h2>
+            {% if user.progress_trackers.exists %}
+              <div class="space-y-4">
+                {% for tracker in user.progress_trackers.all|slice:":3" %}
+                  <div>
+                    <div class="flex justify-between mb-1">
+                      <span class="text-gray-700 dark:text-gray-300">{{ tracker.title }}</span>
+                      <span class="text-gray-600 dark:text-gray-400">{{ tracker.percentage }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
+                      <div class="bg-{{ tracker.color }} h-3 rounded-full"
+                           style="width: {{ tracker.percentage }}%"></div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+              <div class="mt-4 text-center">
+                <a href="{% url 'tracker_list' %}"
+                   class="text-blue-600 hover:text-blue-800 dark:text-blue-400 inline-flex items-center">
+                  <span>View All Trackers</span>
+                  <i class="fas fa-arrow-right ml-2 text-xs"></i>
+                </a>
+              </div>
+            {% else %}
+              <p class="text-gray-600 dark:text-gray-400 mb-4">You haven't created any progress trackers yet.</p>
+              <div class="text-center">
+                <a href="{% url 'create_tracker' %}"
+                   class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center justify-center">
+                  <i class="fas fa-plus mr-2"></i>
+                  Create Your First Tracker
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
         <!-- Weekly Challenge -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800">
           <h2 class="text-xl font-semibold mb-4 flex items-center">
@@ -389,6 +483,32 @@
             <p class="text-left text-gray-500 dark:text-gray-400">No challenge available for this week.</p>
           {% endif %}
         </div>
+        <!-- Educational Videos -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800 mb-6">
+          <h2 class="text-xl font-semibold flex items-center">
+            <span class="mr-2">🎬</span> Educational Videos
+          </h2>
+          <div class="col-span-full text-center">
+            <div class="pt-6 text-center">
+              <p class="text-gray-600 dark:text-gray-300 mb-4 max-w-lg mx-auto">
+                Discover a wide range of educational videos shared by our community of teachers and learners.
+                From science and technology to arts and languages, find videos that help you learn new skills and concepts.
+              </p>
+              <div class="mt-4 flex gap-4">
+                {% if user.is_authenticated %}
+                  <a href="{% url 'upload_educational_video' %}"
+                     class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full flex items-center">
+                    <i class="fas fa-upload mr-2"></i> Share
+                  </a>
+                {% endif %}
+                <a href="{% url 'educational_videos_list' %}"
+                   class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full flex items-center">
+                  <i class="fas fa-play-circle mr-2"></i> Browse
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
         <!-- Recent Forum Post -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
           <h2 class="text-lg font-semibold mb-2 flex items-center">
@@ -413,6 +533,19 @@
             {{ latest_post.excerpt|default:"Learn how new technologies are shaping the way we teach and learn, including AI-driven insights and personalized curriculum..." }}
           </p>
           <a href="{% if latest_post %}{% url 'blog_detail' latest_post.slug %}{% else %}{% url 'blog_list' %}{% endif %}"
+             class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block mt-2">Read More →</a>
+        </div>
+        <!-- Success Stories -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <h2 class="text-lg font-semibold mb-2 flex items-center">
+            <i class="fa-solid fa-trophy text-yellow-600 dark:text-yellow-400 mr-2"></i>
+            Success Story
+          </h2>
+          <p class="text-sm">
+            <strong class="block text-gray-900 dark:text-gray-200 mb-1">{{ latest_success_story.title|default:"From Beginner to Expert in 3 Months" }}</strong>
+            {{ latest_success_story.excerpt|default:"Discover how our platform helped a complete beginner transform into a confident expert through personalized learning paths and dedicated mentorship..." }}
+          </p>
+          <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}"
              class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block mt-2">Read More →</a>
         </div>
         <!-- Recent Contributors -->

@@ -1,35 +1,52 @@
 import calendar
+import html
+import ipaddress
 import json
 import os
 import re
 import shutil
+import socket
 import subprocess
 import time
+from collections import defaultdict
 from datetime import timedelta
 from decimal import Decimal
+from urllib.parse import urlparse
 
 import requests
 import stripe
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.core.paginator import Paginator
 from django.db import IntegrityError, models, transaction
 from django.db.models import Avg, Count, Q, Sum
-from django.http import FileResponse, HttpResponse, HttpResponseForbidden, JsonResponse
+from django.http import (
+    FileResponse,
+    HttpResponse,
+    HttpResponseForbidden,
+    JsonResponse,
+)
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django.utils.html import strip_tags
 from django.views import generic
+from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
-from django.views.generic import CreateView, DeleteView, ListView, UpdateView
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    ListView,
+    UpdateView,
+)
 
 from .calendar_sync import generate_google_calendar_link, generate_ical_feed, generate_outlook_calendar_link
 from .decorators import teacher_required
@@ -38,17 +55,22 @@ from .forms import (
     ChallengeSubmissionForm,
     CourseForm,
     CourseMaterialForm,
+    EducationalVideoForm,
     FeedbackForm,
     ForumCategoryForm,
     ForumTopicForm,
     GoodsForm,
     InviteStudentForm,
     LearnForm,
+    MemeForm,
     MessageTeacherForm,
     ProfileUpdateForm,
+    ProgressTrackerForm,
     ReviewForm,
     SessionForm,
     StorefrontForm,
+    StudentEnrollmentForm,
+    SuccessStoryForm,
     TeacherSignupForm,
     TeachForm,
     UserRegistrationForm,
@@ -65,29 +87,37 @@ from .models import (
     BlogPost,
     Cart,
     CartItem,
+    Certificate,
     Challenge,
     ChallengeSubmission,
     Course,
     CourseMaterial,
     CourseProgress,
+    Donation,
+    EducationalVideo,
     Enrollment,
     EventCalendar,
     ForumCategory,
     ForumReply,
     ForumTopic,
     Goods,
+    LearningStreak,
+    Meme,
     Order,
     OrderItem,
     PeerConnection,
     PeerMessage,
     ProductImage,
     Profile,
+    ProgressTracker,
     SearchLog,
     Session,
     SessionAttendance,
     SessionEnrollment,
     Storefront,
     StudyGroup,
+    Subject,
+    SuccessStory,
     TimeSlot,
     WebRequest,
 )
@@ -142,6 +172,12 @@ def index(request):
     # Get current challenge
     current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
 
+    # Get latest blog post
+    latest_post = BlogPost.objects.filter(status="published").order_by("-published_at").first()
+
+    # Get latest success story
+    latest_success_story = SuccessStory.objects.filter(status="published").order_by("-published_at").first()
+
     # Get signup form if needed
     form = None
     if not request.user.is_authenticated or not request.user.profile.is_teacher:
@@ -152,6 +188,8 @@ def index(request):
         "top_referrers": top_referrers,
         "featured_courses": featured_courses,
         "current_challenge": current_challenge,
+        "latest_post": latest_post,
+        "latest_success_story": latest_success_story,
         "form": form,
     }
     return render(request, "index.html", context)
@@ -160,7 +198,9 @@ def index(request):
 def signup_view(request):
     """Custom signup view that properly handles referral codes."""
     if request.method == "POST":
+        # Initialize the registration form with POST data and request context
         form = UserRegistrationForm(request.POST, request=request)
+        # Validate the form data before saving the new user
         if form.is_valid():
             form.save(request)
             return redirect("account_email_verification_sent")
@@ -397,21 +437,19 @@ def enroll_course(request, course_slug):
                 referrer.add_referral_earnings(5)
                 send_referral_reward_email(referrer.user, request.user, 5, "enrollment")
 
-    # Create enrollment
-    enrollment = Enrollment.objects.create(
-        student=request.user, course=course, status="pending" if course.price > 0 else "approved"
-    )
-
-    # For paid courses, create pending enrollment and redirect to payment
-    if course.price > 0:
+    # For free courses, create approved enrollment immediately
+    if course.price == 0:
+        enrollment = Enrollment.objects.create(student=request.user, course=course, status="approved")
+        # Send notifications for free courses
+        send_enrollment_confirmation(enrollment)
+        notify_teacher_new_enrollment(enrollment)
+        messages.success(request, "You have successfully enrolled in this free course.")
+        return redirect("course_detail", slug=course_slug)
+    else:
+        # For paid courses, create pending enrollment
+        enrollment = Enrollment.objects.create(student=request.user, course=course, status="pending")
         messages.info(request, "Please complete the payment process to enroll in this course.")
         return redirect("course_detail", slug=course_slug)
-
-    # For free courses, send notifications
-    send_enrollment_confirmation(enrollment)
-    notify_teacher_new_enrollment(enrollment)
-    messages.success(request, "You have successfully enrolled in this course.")
-    return redirect("course_detail", slug=course_slug)
 
 
 @login_required
@@ -434,7 +472,7 @@ def add_session(request, slug):
     else:
         form = SessionForm()
 
-    return render(request, "courses/add_session.html", {"form": form, "course": course})
+    return render(request, "courses/session_form.html", {"form": form, "course": course, "is_edit": False})
 
 
 @login_required
@@ -720,8 +758,33 @@ def create_payment_intent(request, slug):
     """Create a payment intent for Stripe."""
     course = get_object_or_404(Course, slug=slug)
 
+    # Prevent creating payment intents for free courses
+    if course.price == 0:
+        # Find the enrollment and update its status to approved if it's pending
+        enrollment = get_object_or_404(Enrollment, student=request.user, course=course)
+        if enrollment.status == "pending":
+            enrollment.status = "approved"
+            enrollment.save()
+
+            # Send notifications
+            send_enrollment_confirmation(enrollment)
+            notify_teacher_new_enrollment(enrollment)
+
+        return JsonResponse({"free_course": True, "message": "Enrollment approved for free course"})
+
     # Ensure user has a pending enrollment
-    get_object_or_404(Enrollment, student=request.user, course=course, status="pending")
+    enrollment = get_object_or_404(Enrollment, student=request.user, course=course, status="pending")
+
+    # Validate price is greater than zero for Stripe
+    if course.price <= 0:
+        enrollment.status = "approved"
+        enrollment.save()
+
+        # Send notifications
+        send_enrollment_confirmation(enrollment)
+        notify_teacher_new_enrollment(enrollment)
+
+        return JsonResponse({"free_course": True, "message": "Enrollment approved for free course"})
 
     try:
         # Create a PaymentIntent with the order amount and currency
@@ -1583,17 +1646,23 @@ def blog_detail(request, slug):
 
 @login_required
 def student_dashboard(request):
-    """Dashboard view for students showing their enrollments, progress, and upcoming sessions."""
+    """
+    Dashboard view for students showing enrollments, progress, upcoming sessions, learning streak,
+    and an Achievements section.
+    """
     if request.user.profile.is_teacher:
         messages.error(request, "This dashboard is for students only.")
         return redirect("profile")
+
+    # Update the learning streak.
+    streak, created = LearningStreak.objects.get_or_create(user=request.user)
+    streak.update_streak()
 
     enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
     upcoming_sessions = Session.objects.filter(
         course__enrollments__student=request.user, start_time__gt=timezone.now()
     ).order_by("start_time")[:5]
 
-    # Get progress for each enrollment
     progress_data = []
     total_progress = 0
     for enrollment in enrollments:
@@ -1606,14 +1675,18 @@ def student_dashboard(request):
         )
         total_progress += progress.completion_percentage
 
-    # Calculate average progress
     avg_progress = round(total_progress / len(progress_data)) if progress_data else 0
+
+    # Query achievements for the user.
+    achievements = Achievement.objects.filter(student=request.user).order_by("-awarded_at")
 
     context = {
         "enrollments": enrollments,
         "upcoming_sessions": upcoming_sessions,
         "progress_data": progress_data,
         "avg_progress": avg_progress,
+        "streak": streak,
+        "achievements": achievements,
     }
     return render(request, "dashboard/student.html", context)
 
@@ -1955,12 +2028,14 @@ def send_welcome_email(user):
 @login_required
 def edit_session(request, session_id):
     """Edit an existing session."""
+    # Get the session and verify that the current user is the course teacher
     session = get_object_or_404(Session, id=session_id)
+    course = session.course
 
     # Check if user is the course teacher
-    if request.user != session.course.teacher:
+    if request.user != course.teacher:
         messages.error(request, "Only the course teacher can edit sessions!")
-        return redirect("course_detail", slug=session.course.slug)
+        return redirect("course_detail", slug=course.slug)
 
     if request.method == "POST":
         form = SessionForm(request.POST, instance=session)
@@ -1971,7 +2046,9 @@ def edit_session(request, session_id):
     else:
         form = SessionForm(instance=session)
 
-    return render(request, "courses/edit_session.html", {"form": form, "session": session, "course": session.course})
+    return render(
+        request, "courses/session_form.html", {"form": form, "session": session, "course": course, "is_edit": True}
+    )
 
 
 @login_required
@@ -2703,13 +2780,72 @@ def challenge_submit(request, week_number):
 
 @require_GET
 def fetch_video_title(request):
+    """
+    Fetch video title from a URL with proper security measures to prevent SSRF attacks.
+    """
     url = request.GET.get("url")
     if not url:
         return JsonResponse({"error": "URL parameter is required"}, status=400)
 
+    # Validate URL
     try:
-        response = requests.get(url)
+        parsed_url = urlparse(url)
+
+        # Check for scheme - only allow http and https
+        if parsed_url.scheme not in ["http", "https"]:
+            return JsonResponse({"error": "Invalid URL scheme. Only HTTP and HTTPS are supported."}, status=400)
+
+        # Check for private/internal IP addresses
+        if parsed_url.netloc:
+            hostname = parsed_url.netloc.split(":")[0]
+
+            # Block localhost variations and common internal domains
+            blocked_hosts = [
+                "localhost",
+                "127.0.0.1",
+                "0.0.0.0",
+                "internal",
+                "intranet",
+                "local",
+                "lan",
+                "corp",
+                "private",
+                "::1",
+            ]
+
+            if any(blocked in hostname.lower() for blocked in blocked_hosts):
+                return JsonResponse({"error": "Access to internal networks is not allowed"}, status=403)
+
+            # Resolve hostname to IP and check if it's private
+            try:
+                ip_address = socket.gethostbyname(hostname)
+                ip_obj = ipaddress.ip_address(ip_address)
+
+                # Check if the IP is private/internal
+                if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_multicast:
+                    return JsonResponse({"error": "Access to internal/private networks is not allowed"}, status=403)
+            except (socket.gaierror, ValueError):
+                # If hostname resolution fails or IP parsing fails, continue
+                pass
+
+    except Exception as e:
+        return JsonResponse({"error": f"Invalid URL format: {str(e)}"}, status=400)
+
+    # Set a timeout to prevent hanging requests
+    timeout = 5  # seconds
+
+    try:
+        # Only allow HEAD and GET methods with limited redirects
+        response = requests.get(
+            url,
+            timeout=timeout,
+            allow_redirects=True,
+            headers={
+                "User-Agent": "Educational-Website-Validator/1.0",
+            },
+        )
         response.raise_for_status()
+
         # Extract title from response headers or content
         title = response.headers.get("title", "")
         if not title:
@@ -2717,9 +2853,14 @@ def fetch_video_title(request):
             content = response.text
             title_match = re.search(r"<title>(.*?)</title>", content)
             title = title_match.group(1) if title_match else "Untitled Video"
+
+            # Sanitize the title
+            title = html.escape(title)
+
         return JsonResponse({"title": title})
+
     except requests.RequestException:
-        return JsonResponse({"error": "Failed to fetch video title"}, status=500)
+        return JsonResponse({"error": "Failed to fetch video title:"}, status=500)
 
 
 def get_referral_stats():
@@ -3099,5 +3240,970 @@ class StorefrontDetailView(LoginRequiredMixin, generic.DetailView):
         return get_object_or_404(Storefront, store_slug=self.kwargs["store_slug"])
 
 
+def success_story_list(request):
+    """View for listing published success stories."""
+    success_stories = SuccessStory.objects.filter(status="published").order_by("-published_at")
+
+    # Paginate results
+    paginator = Paginator(success_stories, 9)  # 9 stories per page
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "success_stories": page_obj,
+        "is_paginated": paginator.num_pages > 1,
+        "page_obj": page_obj,
+    }
+    return render(request, "success_stories/list.html", context)
+
+
+def success_story_detail(request, slug):
+    """View for displaying a single success story."""
+    success_story = get_object_or_404(SuccessStory, slug=slug, status="published")
+
+    # Get related success stories (same author or similar content)
+    related_stories = (
+        SuccessStory.objects.filter(status="published").exclude(id=success_story.id).order_by("-published_at")[:3]
+    )
+
+    context = {
+        "success_story": success_story,
+        "related_stories": related_stories,
+    }
+    return render(request, "success_stories/detail.html", context)
+
+
+@login_required
+def create_success_story(request):
+    """View for creating a new success story."""
+    if request.method == "POST":
+        form = SuccessStoryForm(request.POST, request.FILES)
+        if form.is_valid():
+            success_story = form.save(commit=False)
+            success_story.author = request.user
+            success_story.save()
+            messages.success(request, "Success story created successfully!")
+            return redirect("success_story_detail", slug=success_story.slug)
+    else:
+        form = SuccessStoryForm()
+
+    context = {
+        "form": form,
+    }
+    return render(request, "success_stories/create.html", context)
+
+
+@login_required
+def edit_success_story(request, slug):
+    """View for editing an existing success story."""
+    success_story = get_object_or_404(SuccessStory, slug=slug, author=request.user)
+
+    if request.method == "POST":
+        form = SuccessStoryForm(request.POST, request.FILES, instance=success_story)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Success story updated successfully!")
+            return redirect("success_story_detail", slug=success_story.slug)
+    else:
+        form = SuccessStoryForm(instance=success_story)
+
+    context = {
+        "form": form,
+        "success_story": success_story,
+        "is_edit": True,
+    }
+    return render(request, "success_stories/create.html", context)
+
+
+@login_required
+def delete_success_story(request, slug):
+    """View for deleting a success story."""
+    success_story = get_object_or_404(SuccessStory, slug=slug, author=request.user)
+
+    if request.method == "POST":
+        success_story.delete()
+        messages.success(request, "Success story deleted successfully!")
+        return redirect("success_story_list")
+
+    context = {
+        "success_story": success_story,
+    }
+    return render(request, "success_stories/delete_confirm.html", context)
+
+
 def gsoc_landing_page(request):
-    return render(request, "gsoc_landing_page.html")
+    """
+    Renders the GSOC landing page with top GitHub contributors
+    based on merged pull requests
+    """
+    import logging
+
+    import requests
+    from django.conf import settings
+
+    # Initialize an empty list for contributors in case the GitHub API call fails
+    top_contributors = []
+
+    # GitHub API URL for the education-website repository
+    github_repo_url = "https://api.github.com/repos/alphaonelabs/education-website"
+
+    # Users to exclude from the contributor list (bots and automated users)
+    excluded_users = ["A1L13N", "dependabot[bot]"]
+
+    try:
+        # Fetch contributors from GitHub API
+        headers = {}
+        # Check if GitHub token is configured
+        if hasattr(settings, "GITHUB_TOKEN") and settings.GITHUB_TOKEN:
+            headers["Authorization"] = f"token {settings.GITHUB_TOKEN}"
+
+        # Get all closed pull requests - we'll filter for merged ones in code
+        # The GitHub API doesn't have a direct 'merged' filter in the query params
+        # so we get all closed PRs and then check the 'merged_at' field
+        pull_requests_response = requests.get(
+            f"{github_repo_url}/pulls",
+            params={
+                "state": "closed",  # closed PRs could be either merged or just closed
+                "sort": "updated",
+                "direction": "desc",
+                "per_page": 100,
+            },
+            headers=headers,
+            timeout=5,
+        )
+
+        # Check for rate limiting
+        if pull_requests_response.status_code == 403 and "X-RateLimit-Remaining" in pull_requests_response.headers:
+            remaining = pull_requests_response.headers.get("X-RateLimit-Remaining")
+            if remaining == "0":
+                reset_time = int(pull_requests_response.headers.get("X-RateLimit-Reset", 0))
+                reset_datetime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(reset_time))
+                logging.warning(f"GitHub API rate limit exceeded. Resets at {reset_datetime}")
+
+        if pull_requests_response.status_code == 200:
+            pull_requests = pull_requests_response.json()
+
+            # Create a map of contributors with their PR count
+            contributor_stats = defaultdict(
+                lambda: {"merged_pr_count": 0, "avatar_url": "", "profile_url": "", "prs_url": ""}
+            )
+
+            # Process each pull request
+            for pr in pull_requests:
+                # Check if the PR was merged
+                if pr.get("merged_at"):
+                    username = pr["user"]["login"]
+
+                    # Skip excluded users
+                    if username in excluded_users:
+                        continue
+
+                    contributor_stats[username]["merged_pr_count"] += 1
+                    contributor_stats[username]["avatar_url"] = pr["user"]["avatar_url"]
+                    contributor_stats[username]["profile_url"] = pr["user"]["html_url"]
+                    # Add a direct link to the user's PRs for this repository
+                    base_url = "https://github.com/alphaonelabs/education-website/pulls"
+                    query = f"?q=is:pr+author:{username}+is:merged"
+                    contributor_stats[username]["prs_url"] = base_url + query
+                    contributor_stats[username]["username"] = username
+
+            # Convert to list and sort by PR count
+            top_contributors = [v for k, v in contributor_stats.items()]
+            top_contributors.sort(key=lambda x: x["merged_pr_count"], reverse=True)
+
+            # Get top 10 contributors
+            top_contributors = top_contributors[:10]
+
+    except Exception as e:
+        logging.error(f"Error fetching GitHub contributors: {str(e)}")
+
+    context = {"top_contributors": top_contributors}
+
+    return render(request, "gsoc_landing_page.html", context)
+
+
+def whiteboard(request):
+    return render(request, "whiteboard.html")
+
+
+def meme_list(request):
+    memes = Meme.objects.all().order_by("-created_at")
+    subjects = Subject.objects.filter(memes__isnull=False).distinct()
+    # Filter by subject if provided
+    subject_filter = request.GET.get("subject")
+    if subject_filter:
+        memes = memes.filter(subject__slug=subject_filter)
+    paginator = Paginator(memes, 12)  # Show 12 memes per page
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, "memes.html", {"memes": page_obj, "subjects": subjects, "selected_subject": subject_filter})
+
+
+@login_required
+def add_meme(request):
+    if request.method == "POST":
+        form = MemeForm(request.POST, request.FILES)
+        if form.is_valid():
+            meme = form.save(commit=False)  # The form handles subject creation logic internally
+            meme.uploader = request.user
+            meme.save()
+            messages.success(request, "Your meme has been uploaded successfully!")
+            return redirect("meme_list")
+    else:
+        form = MemeForm()
+    subjects = Subject.objects.all().order_by("name")
+    return render(request, "add_meme.html", {"form": form, "subjects": subjects})
+
+
+@login_required
+@teacher_required
+def add_student_to_course(request, slug):
+    course = get_object_or_404(Course, slug=slug)
+    if course.teacher != request.user:
+        return HttpResponseForbidden("You are not authorized to enroll students in this course.")
+    if request.method == "POST":
+        form = StudentEnrollmentForm(request.POST)
+        if form.is_valid():
+            first_name = form.cleaned_data["first_name"]
+            last_name = form.cleaned_data["last_name"]
+            email = form.cleaned_data["email"]
+
+            # Check if a user with this email already exists.
+            if User.objects.filter(email=email).exists():
+                form.add_error("email", "A user with this email already exists.")
+            else:
+                # Generate a username by combining the first name and the email prefix.
+                email_prefix = email.split("@")[0]
+                generated_username = f"{first_name}_{email_prefix}".lower()
+
+                # Ensure the username is unique; if not, append a random string.
+                while User.objects.filter(username=generated_username).exists():
+                    generated_username = f"{generated_username}{get_random_string(4)}"
+                # Create a new student account with an auto-generated password.
+                random_password = get_random_string(10)
+                try:
+                    student = User.objects.create_user(
+                        username=generated_username,
+                        email=email,
+                        password=random_password,
+                        first_name=first_name,
+                        last_name=last_name,
+                    )
+                    # Mark the new user as a student (not a teacher).
+                    student.profile.is_teacher = False
+                    student.profile.save()
+
+                    # Enroll the new student in the course if not already enrolled.
+                    if Enrollment.objects.filter(course=course, student=student).exists():
+                        form.add_error(None, "Student is already enrolled.")
+                    else:
+                        Enrollment.objects.create(course=course, student=student, status="approved")
+                        messages.success(request, f"{first_name} {last_name} has been enrolled in the course.")
+
+                        # Send enrollment notification and password reset link to student
+                        reset_link = request.build_absolute_uri(reverse("account_reset_password"))
+                        context = {
+                            "student": student,
+                            "course": course,
+                            "teacher": request.user,
+                            "reset_link": reset_link,
+                        }
+                        html_message = render_to_string("emails/student_enrollment.html", context)
+                        send_mail(
+                            f"You have been enrolled in {course.title}",
+                            f"You have been enrolled in {course.title} by\
+                                {request.user.get_full_name() or request.user.username}. "
+                            f"Please visit {reset_link} to set your password.",
+                            settings.DEFAULT_FROM_EMAIL,
+                            [email],
+                            html_message=html_message,
+                            fail_silently=False,
+                        )
+                        return redirect("course_detail", slug=course.slug)
+                except IntegrityError:
+                    form.add_error(None, "Failed to create user account. Please try again.")
+    else:
+        form = StudentEnrollmentForm()
+
+    return render(request, "courses/add_student.html", {"form": form, "course": course})
+
+
+def donate(request):
+    """Display the donation page with options for one-time donations and subscriptions."""
+    # Get recent public donations to display
+    recent_donations = Donation.objects.filter(status="completed", anonymous=False).order_by("-created_at")[:5]
+
+    # Calculate total donations
+    total_donations = Donation.objects.filter(status="completed").aggregate(total=Sum("amount"))["total"] or 0
+
+    # Get donation amounts for the preset buttons
+    donation_amounts = [5, 10, 25, 50, 100]
+
+    context = {
+        "stripe_public_key": settings.STRIPE_PUBLISHABLE_KEY,
+        "recent_donations": recent_donations,
+        "total_donations": total_donations,
+        "donation_amounts": donation_amounts,
+    }
+
+    return render(request, "donate.html", context)
+
+
+@login_required
+def create_donation_payment_intent(request):
+    """Create a payment intent for a one-time donation."""
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        amount = data.get("amount")
+        message = data.get("message", "")
+        anonymous = data.get("anonymous", False)
+
+        if not amount or float(amount) <= 0:
+            return JsonResponse({"error": "Invalid donation amount"}, status=400)
+
+        # Convert amount to cents for Stripe
+        amount_cents = int(float(amount) * 100)
+
+        # Create a payment intent
+        intent = stripe.PaymentIntent.create(
+            amount=amount_cents,
+            currency="usd",
+            metadata={
+                "donation_type": "one_time",
+                "user_id": request.user.id,
+                "message": message[:100] if message else "",  # Limit message length
+                "anonymous": "true" if anonymous else "false",
+            },
+        )
+
+        # Create a donation record
+        donation = Donation.objects.create(
+            user=request.user,
+            email=request.user.email,
+            amount=amount,
+            donation_type="one_time",
+            status="pending",
+            stripe_payment_intent_id=intent.id,
+            message=message,
+            anonymous=anonymous,
+        )
+
+        return JsonResponse(
+            {
+                "clientSecret": intent.client_secret,
+                "donation_id": donation.id,
+            }
+        )
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+
+@login_required
+def create_donation_subscription(request):
+    """Create a subscription for recurring donations."""
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        amount = data.get("amount")
+        message = data.get("message", "")
+        anonymous = data.get("anonymous", False)
+        payment_method_id = data.get("payment_method_id")
+
+        if not amount or float(amount) <= 0:
+            return JsonResponse({"error": "Invalid donation amount"}, status=400)
+
+        if not payment_method_id:
+            return JsonResponse({"error": "Payment method is required"}, status=400)
+
+        # Convert amount to cents for Stripe
+        amount_cents = int(float(amount) * 100)
+
+        # Check if user already has a Stripe customer ID
+        customer_id = None
+        if hasattr(request.user, "profile") and request.user.profile.stripe_customer_id:
+            customer_id = request.user.profile.stripe_customer_id
+
+        # Create or get customer
+        if customer_id:
+            customer = stripe.Customer.retrieve(customer_id)
+        else:
+            customer = stripe.Customer.create(
+                email=request.user.email,
+                name=request.user.get_full_name() or request.user.username,
+                payment_method=payment_method_id,
+                invoice_settings={"default_payment_method": payment_method_id},
+            )
+
+            # Save customer ID to user profile
+            if hasattr(request.user, "profile"):
+                request.user.profile.stripe_customer_id = customer.id
+                request.user.profile.save()
+
+        # Create a subscription product and price if they don't exist
+        # Note: In a production environment, you might want to create these
+        # products and prices in the Stripe dashboard and reference them here
+        product = stripe.Product.create(
+            name=f"Monthly Donation - ${amount}",
+            type="service",
+        )
+
+        price = stripe.Price.create(
+            product=product.id,
+            unit_amount=amount_cents,
+            currency="usd",
+            recurring={"interval": "month"},
+        )
+
+        # Create the subscription
+        subscription = stripe.Subscription.create(
+            customer=customer.id,
+            items=[{"price": price.id}],
+            payment_behavior="default_incomplete",
+            expand=["latest_invoice.payment_intent"],
+            metadata={
+                "donation_type": "subscription",
+                "user_id": request.user.id,
+                "message": message[:100] if message else "",
+                "anonymous": "true" if anonymous else "false",
+                "amount": amount,
+            },
+        )
+
+        # Create a donation record
+        donation = Donation.objects.create(
+            user=request.user,
+            email=request.user.email,
+            amount=amount,
+            donation_type="subscription",
+            status="pending",
+            stripe_subscription_id=subscription.id,
+            stripe_customer_id=customer.id,
+            message=message,
+            anonymous=anonymous,
+        )
+
+        return JsonResponse(
+            {
+                "subscription_id": subscription.id,
+                "client_secret": subscription.latest_invoice.payment_intent.client_secret,
+                "donation_id": donation.id,
+            }
+        )
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+
+@csrf_exempt
+def donation_webhook(request):
+    """Handle Stripe webhooks for donations."""
+    payload = request.body
+    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
+    except ValueError:
+        # Invalid payload
+        return HttpResponse(status=400)
+    except stripe.error.SignatureVerificationError:
+        # Invalid signature
+        return HttpResponse(status=400)
+
+    # Handle payment intent events
+    if event.type == "payment_intent.succeeded":
+        payment_intent = event.data.object
+        handle_successful_donation_payment(payment_intent)
+    elif event.type == "payment_intent.payment_failed":
+        payment_intent = event.data.object
+        handle_failed_donation_payment(payment_intent)
+
+    # Handle subscription events
+    elif event.type == "customer.subscription.created":
+        subscription = event.data.object
+        handle_subscription_created(subscription)
+    elif event.type == "customer.subscription.updated":
+        subscription = event.data.object
+        handle_subscription_updated(subscription)
+    elif event.type == "customer.subscription.deleted":
+        subscription = event.data.object
+        handle_subscription_cancelled(subscription)
+    elif event.type == "invoice.payment_succeeded":
+        invoice = event.data.object
+        handle_invoice_paid(invoice)
+    elif event.type == "invoice.payment_failed":
+        invoice = event.data.object
+        handle_invoice_failed(invoice)
+
+    return HttpResponse(status=200)
+
+
+def handle_successful_donation_payment(payment_intent):
+    """Handle successful one-time donation payments."""
+    try:
+        # Find the donation by payment intent ID
+        donation = Donation.objects.get(stripe_payment_intent_id=payment_intent.id)
+        donation.status = "completed"
+        donation.save()
+
+        # Send thank you email
+        send_donation_thank_you_email(donation)
+
+    except Donation.DoesNotExist:
+        # This might be a payment for something else
+        pass
+
+
+def handle_failed_donation_payment(payment_intent):
+    """Handle failed one-time donation payments."""
+    try:
+        # Find the donation by payment intent ID
+        donation = Donation.objects.get(stripe_payment_intent_id=payment_intent.id)
+        donation.status = "failed"
+        donation.save()
+
+    except Donation.DoesNotExist:
+        # This might be a payment for something else
+        pass
+
+
+def handle_subscription_created(subscription):
+    """Handle newly created subscriptions."""
+    try:
+        # Find the donation by subscription ID
+        donation = Donation.objects.get(stripe_subscription_id=subscription.id)
+
+        # Update status based on subscription status
+        if subscription.status == "active":
+            donation.status = "completed"
+        elif subscription.status == "incomplete":
+            donation.status = "pending"
+        elif subscription.status == "canceled":
+            donation.status = "cancelled"
+
+        donation.save()
+
+    except Donation.DoesNotExist:
+        # This might be a subscription for something else
+        pass
+
+
+def handle_subscription_updated(subscription):
+    """Handle subscription updates."""
+    try:
+        # Find the donation by subscription ID
+        donation = Donation.objects.get(stripe_subscription_id=subscription.id)
+
+        # Update status based on subscription status
+        if subscription.status == "active":
+            donation.status = "completed"
+        elif subscription.status == "past_due":
+            donation.status = "pending"
+        elif subscription.status == "canceled":
+            donation.status = "cancelled"
+
+        donation.save()
+
+    except Donation.DoesNotExist:
+        # This might be a subscription for something else
+        pass
+
+
+def handle_subscription_cancelled(subscription):
+    """Handle cancelled subscriptions."""
+    try:
+        # Find the donation by subscription ID
+        donation = Donation.objects.get(stripe_subscription_id=subscription.id)
+        donation.status = "cancelled"
+        donation.save()
+
+    except Donation.DoesNotExist:
+        # This might be a subscription for something else
+        pass
+
+
+def handle_invoice_paid(invoice):
+    """Handle successful subscription invoice payments."""
+    if invoice.subscription:
+        try:
+            # Find the donation by subscription ID
+            donation = Donation.objects.get(stripe_subscription_id=invoice.subscription)
+
+            # Create a new donation record for this payment
+            Donation.objects.create(
+                user=donation.user,
+                email=donation.email,
+                amount=donation.amount,
+                donation_type="subscription",
+                status="completed",
+                stripe_subscription_id=donation.stripe_subscription_id,
+                stripe_customer_id=donation.stripe_customer_id,
+                message=donation.message,
+                anonymous=donation.anonymous,
+            )
+
+            # Send thank you email
+            send_donation_thank_you_email(donation)
+
+        except Donation.DoesNotExist:
+            # This might be a subscription for something else
+            pass
+
+
+def handle_invoice_failed(invoice):
+    """Handle failed subscription invoice payments."""
+    if invoice.subscription:
+        try:
+            # Find the donation by subscription ID
+            donation = Donation.objects.get(stripe_subscription_id=invoice.subscription)
+
+            # Create a new donation record for this failed payment
+            Donation.objects.create(
+                user=donation.user,
+                email=donation.email,
+                amount=donation.amount,
+                donation_type="subscription",
+                status="failed",
+                stripe_subscription_id=donation.stripe_subscription_id,
+                stripe_customer_id=donation.stripe_customer_id,
+                message=donation.message,
+                anonymous=donation.anonymous,
+            )
+
+        except Donation.DoesNotExist:
+            # This might be a subscription for something else
+            pass
+
+
+def send_donation_thank_you_email(donation):
+    """Send a thank you email for donations."""
+    subject = "Thank You for Your Donation!"
+    from_email = settings.DEFAULT_FROM_EMAIL
+    to_email = donation.email
+
+    # Prepare context for email template
+    context = {
+        "donation": donation,
+        "site_name": settings.SITE_NAME,
+    }
+
+    # Render email template
+    html_message = render_to_string("emails/donation_thank_you.html", context)
+    plain_message = strip_tags(html_message)
+
+    # Send email
+    send_mail(subject, plain_message, from_email, [to_email], html_message=html_message)
+
+
+def donation_success(request):
+    """Display a success page after a successful donation."""
+    donation_id = request.GET.get("donation_id")
+
+    if donation_id:
+        try:
+            donation = Donation.objects.get(id=donation_id)
+            context = {
+                "donation": donation,
+            }
+            return render(request, "donation_success.html", context)
+        except Donation.DoesNotExist:
+            pass
+
+    # If no valid donation ID, redirect to the donate page
+    return redirect("donate")
+
+
+def donation_cancel(request):
+    """Handle donation cancellation."""
+    return redirect("donate")
+
+
+def educational_videos_list(request):
+    """View for listing educational videos with optional category filtering."""
+    # Get category filter from query params
+    selected_category = request.GET.get("category")
+
+    # Base queryset
+    videos = EducationalVideo.objects.select_related("uploader", "category").order_by("-uploaded_at")
+
+    # Apply category filter if provided
+    if selected_category:
+        videos = videos.filter(category__slug=selected_category)
+        selected_category_obj = get_object_or_404(Subject, slug=selected_category)
+        selected_category_display = selected_category_obj.name
+    else:
+        selected_category_display = None
+
+    # Get category counts for sidebar
+    category_counts = dict(
+        EducationalVideo.objects.values("category__name", "category__slug")
+        .annotate(count=Count("id"))
+        .values_list("category__slug", "count")
+    )
+
+    # Get all subjects for the dropdown
+    subjects = Subject.objects.all().order_by("order", "name")
+
+    # Paginate results
+    paginator = Paginator(videos, 12)  # 12 videos per page
+    page_number = request.GET.get("page", 1)
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "videos": page_obj,
+        "is_paginated": paginator.num_pages > 1,
+        "page_obj": page_obj,
+        "subjects": subjects,
+        "selected_category": selected_category,
+        "selected_category_display": selected_category_display,
+        "category_counts": category_counts,
+    }
+
+    return render(request, "videos/list.html", context)
+
+
+@login_required
+def upload_educational_video(request):
+    """View for uploading a new educational video."""
+    if request.method == "POST":
+        form = EducationalVideoForm(request.POST)
+        if form.is_valid():
+            video = form.save(commit=False)
+            video.uploader = request.user
+            video.save()
+
+            return redirect("educational_videos_list")
+    else:
+        form = EducationalVideoForm()
+
+    return render(request, "videos/upload.html", {"form": form})
+
+
+def certificate_detail(request, certificate_id):
+    certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
+    if request.user != certificate.user and not request.user.is_staff:
+        return HttpResponseForbidden("You don't have permission to view this certificate")
+    context = {
+        "certificate": certificate,
+    }
+    return render(request, "courses/certificate_detail.html", context)
+
+
+@login_required
+def generate_certificate(request, enrollment_id):
+    # Retrieve the enrollment for the current user
+    enrollment = get_object_or_404(Enrollment, id=enrollment_id, student=request.user)
+    # Ensure the course is completed before generating a certificate
+    if enrollment.status != "completed":
+        messages.error(request, "You can only generate a certificate for a completed course.")
+        return redirect("student_dashboard")
+
+    # Check if a certificate already exists for this course and user
+    certificate = Certificate.objects.filter(user=request.user, course=enrollment.course).first()
+    if certificate:
+        messages.info(request, "Certificate already generated.")
+        return redirect("certificate_detail", certificate_id=certificate.certificate_id)
+
+    # Create a new certificate record manually
+    certificate = Certificate.objects.create(user=request.user, course=enrollment.course)
+    messages.success(request, "Certificate generated successfully!")
+    return redirect("certificate_detail", certificate_id=certificate.certificate_id)
+
+
+@login_required
+def tracker_list(request):
+    trackers = ProgressTracker.objects.filter(user=request.user).order_by("-updated_at")
+    return render(request, "trackers/list.html", {"trackers": trackers})
+
+
+@login_required
+def create_tracker(request):
+    if request.method == "POST":
+        form = ProgressTrackerForm(request.POST)
+        if form.is_valid():
+            tracker = form.save(commit=False)
+            tracker.user = request.user
+            tracker.save()
+            return redirect("tracker_detail", tracker_id=tracker.id)
+    else:
+        form = ProgressTrackerForm()
+    return render(request, "trackers/form.html", {"form": form, "title": "Create Progress Tracker"})
+
+
+@login_required
+def update_tracker(request, tracker_id):
+    tracker = get_object_or_404(ProgressTracker, id=tracker_id, user=request.user)
+
+    if request.method == "POST":
+        form = ProgressTrackerForm(request.POST, instance=tracker)
+        if form.is_valid():
+            form.save()
+            return redirect("tracker_detail", tracker_id=tracker.id)
+    else:
+        form = ProgressTrackerForm(instance=tracker)
+    return render(request, "trackers/form.html", {"form": form, "tracker": tracker, "title": "Update Progress Tracker"})
+
+
+@login_required
+def tracker_detail(request, tracker_id):
+    tracker = get_object_or_404(ProgressTracker, id=tracker_id, user=request.user)
+    embed_url = request.build_absolute_uri(f"/trackers/embed/{tracker.embed_code}/")
+    return render(request, "trackers/detail.html", {"tracker": tracker, "embed_url": embed_url})
+
+
+@login_required
+def update_progress(request, tracker_id):
+    if request.method == "POST" and request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        tracker = get_object_or_404(ProgressTracker, id=tracker_id, user=request.user)
+
+        try:
+            new_value = int(request.POST.get("current_value", tracker.current_value))
+            tracker.current_value = new_value
+            tracker.save()
+
+            return JsonResponse(
+                {"success": True, "percentage": tracker.percentage, "current_value": tracker.current_value}
+            )
+        except ValueError:
+            return JsonResponse({"success": False, "error": "Invalid value"}, status=400)
+    return JsonResponse({"success": False, "error": "Invalid request"}, status=400)
+
+
+@xframe_options_exempt
+def embed_tracker(request, embed_code):
+    tracker = get_object_or_404(ProgressTracker, embed_code=embed_code, public=True)
+    return render(request, "trackers/embed.html", {"tracker": tracker})
+
+
+@login_required
+def streak_detail(request):
+    """Display the user's learning streak."""
+    if not request.user.is_authenticated:
+        return redirect("account_login")
+    streak, created = LearningStreak.objects.get_or_create(user=request.user)
+    return render(request, "streak_detail.html", {"streak": streak})
+
+
+def is_superuser(user):
+    return user.is_superuser
+
+
+@user_passes_test(is_superuser)
+def sync_github_milestones(request):
+    """Sync GitHub milestones with forum topics."""
+    github_repo = "alphaonelabs/alphaonelabs-education-website"
+    milestones_url = f"https://api.github.com/repos/{github_repo}/milestones"
+
+    try:
+        # Get GitHub milestones
+        response = requests.get(milestones_url)
+        response.raise_for_status()
+        milestones = response.json()
+
+        # Get or create a forum category for milestones
+        category, created = ForumCategory.objects.get_or_create(
+            name="GitHub Milestones",
+            defaults={
+                "slug": "github-milestones",
+                "description": "Discussions about GitHub milestones and project roadmap",
+                "icon": "fa-github",
+            },
+        )
+
+        # Count for tracking
+        created_count = 0
+        updated_count = 0
+
+        for milestone in milestones:
+            milestone_title = milestone["title"]
+            milestone_description = milestone["description"] or "No description provided."
+            milestone_url = milestone["html_url"]
+            milestone_state = milestone["state"]
+            open_issues = milestone["open_issues"]
+            closed_issues = milestone["closed_issues"]
+            due_date = milestone.get("due_on", "No due date")
+
+            # Format content with progress information
+            progress = 0
+            if open_issues + closed_issues > 0:
+                progress = (closed_issues / (open_issues + closed_issues)) * 100
+
+            content = f"""
+## Milestone: {milestone_title}
+
+{milestone_description}
+
+**State:** {milestone_state}
+**Progress:** {progress:.1f}% ({closed_issues} closed / {open_issues} open issues)
+**Due Date:** {due_date}
+
+[View on GitHub]({milestone_url})
+            """
+
+            # Try to find an existing topic for this milestone
+            topic = ForumTopic.objects.filter(
+                category=category, title__startswith=f"Milestone: {milestone_title}"
+            ).first()
+
+            if topic:
+                # Update existing topic
+                topic.content = content
+                topic.is_pinned = milestone_state == "open"  # Pin open milestones
+                topic.save()
+                updated_count += 1
+            else:
+                # Create new topic
+                # Use the first superuser as the author
+                author = User.objects.filter(is_superuser=True).first()
+                if author:
+                    ForumTopic.objects.create(
+                        category=category,
+                        title=f"Milestone: {milestone_title}",
+                        content=content,
+                        author=author,
+                        is_pinned=(milestone_state == "open"),
+                    )
+                    created_count += 1
+
+        if created_count or updated_count:
+            messages.success(
+                request, f"Successfully synced GitHub milestones: {created_count} created, {updated_count} updated."
+            )
+        else:
+            messages.info(request, "No GitHub milestones to sync.")
+
+    except requests.exceptions.RequestException as e:
+        messages.error(request, f"Error fetching GitHub milestones: {str(e)}")
+    except Exception as e:
+        messages.error(request, f"Error syncing milestones: {str(e)}")
+
+    return redirect("forum_categories")
+
+
+@login_required
+def toggle_course_status(request, slug):
+    """Toggle a course between draft and published status"""
+    course = get_object_or_404(Course, slug=slug)
+
+    # Check if user is the course teacher
+    if request.user != course.teacher:
+        messages.error(request, "Only the course teacher can modify course status!")
+        return redirect("course_detail", slug=slug)
+
+    # Toggle the status between draft and published
+    if course.status == "draft":
+        course.status = "published"
+        messages.success(request, "Course has been published successfully!")
+    elif course.status == "published":
+        course.status = "draft"
+        messages.success(request, "Course has been unpublished and is now in draft mode.")
+    # Note: We don't toggle from/to 'archived' status as that's a separate action
+
+    course.save()
+    return redirect("course_detail", slug=slug)

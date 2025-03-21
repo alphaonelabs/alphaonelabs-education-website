@@ -1,3 +1,5 @@
+import re
+
 from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
 from django import forms
@@ -12,14 +14,21 @@ from .models import (
     ChallengeSubmission,
     Course,
     CourseMaterial,
+    EducationalVideo,
     ForumCategory,
     Goods,
+    Meme,
     ProductImage,
     Profile,
+    ProgressTracker,
+    Quiz,
+    QuizOption,
+    QuizQuestion,
     Review,
     Session,
     Storefront,
     Subject,
+    SuccessStory,
 )
 from .referrals import handle_referral
 from .widgets import (
@@ -56,6 +65,14 @@ __all__ = [
     "FeedbackForm",
     "GoodsForm",
     "StorefrontForm",
+    "EducationalVideoForm",
+    "ProgressTrackerForm",
+    "SuccessStoryForm",
+    "MemeForm",
+    "QuizForm",
+    "QuizQuestionForm",
+    "QuizOptionFormSet",
+    "TakeQuizForm",
 ]
 
 
@@ -133,6 +150,18 @@ class UserRegistrationForm(SignupForm):
                 return username
         return username
 
+    def clean_email(self):
+        email = self.cleaned_data.get("email", "").lower()
+        if email:
+            from allauth.account.utils import filter_users_by_email
+
+            users = filter_users_by_email(email)
+            if users:  # If any users found with this email
+                raise forms.ValidationError(
+                    "There was a problem with your signup. " "Please try again with a different email address or login."
+                )
+        return email
+
     def clean_referral_code(self):
         referral_code = self.cleaned_data.get("referral_code")
         if referral_code:
@@ -146,6 +175,12 @@ class UserRegistrationForm(SignupForm):
             user = super().save(request)
         except IntegrityError:
             raise forms.ValidationError("This username is already taken. Please choose a different one.")
+        except ValueError:
+            # This happens when an email address is already in use but not caught in clean_email
+            # This should be rare given the clean_email validation above
+            raise forms.ValidationError(
+                "There was a problem with your signup. " "Please try again with a different email address or login."
+            )
 
         # Then update the additional fields
         user.first_name = self.cleaned_data["first_name"]
@@ -210,8 +245,8 @@ class CourseCreationForm(forms.ModelForm):
 
     def clean_price(self):
         price = self.cleaned_data.get("price")
-        if price <= 0:
-            raise forms.ValidationError("Price must be greater than zero")
+        if price < 0:
+            raise forms.ValidationError("Price must be greater than or equal to zero")
         return price
 
     def clean_max_students(self):
@@ -563,6 +598,70 @@ class CustomLoginForm(LoginForm):
                 )
 
         return cleaned_data
+
+
+class EducationalVideoForm(forms.ModelForm):
+    """
+    Form for creating and editing educational videos.
+    Validates that video URLs are from YouTube or Vimeo with proper video ID formats.
+    """
+
+    class Meta:
+        model = EducationalVideo
+        fields = ["title", "description", "video_url", "category"]
+        widgets = {
+            "title": TailwindInput(attrs={"placeholder": "Video title"}),
+            "description": TailwindTextarea(
+                attrs={
+                    "rows": 4,
+                    "placeholder": "Describe what viewers will learn from this video",
+                }
+            ),
+            "video_url": TailwindInput(attrs={"placeholder": "YouTube or Vimeo URL", "type": "url"}),
+            "category": TailwindSelect(
+                attrs={
+                    "class": (
+                        "w-full px-4 py-2 border border-gray-300 dark:border-gray-600"
+                        " rounded-lg focus:ring-2 focus:ring-blue-500"
+                    )
+                }
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Order subjects by name
+        self.fields["category"].queryset = Subject.objects.all().order_by("order", "name")
+
+    def clean_video_url(self):
+        url = self.cleaned_data.get("video_url")
+        if url:
+            # More robust validation with regex
+            youtube_pattern = r"^(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)[a-zA-Z0-9_-]{11}.*$"
+            vimeo_pattern = r"^(https?://)?(www\.)?vimeo\.com/[0-9]{8,}.*$"
+            if not (re.match(youtube_pattern, url) or re.match(vimeo_pattern, url)):
+                raise forms.ValidationError("Please enter a valid YouTube or Vimeo URL")
+        return url
+
+
+class SuccessStoryForm(forms.ModelForm):
+    content = MarkdownxFormField(
+        label="Content", help_text="Use markdown for formatting. You can use **bold**, *italic*, lists, etc."
+    )
+
+    class Meta:
+        model = SuccessStory
+        fields = ["title", "content", "excerpt", "featured_image", "status"]
+        widgets = {
+            "title": TailwindInput(attrs={"placeholder": "Your success story title"}),
+            "excerpt": TailwindTextarea(
+                attrs={"rows": 3, "placeholder": "A brief summary of your success story (optional)"}
+            ),
+            "featured_image": TailwindFileInput(
+                attrs={"accept": "image/*", "help_text": "Featured image for your success story (optional)"}
+            ),
+            "status": TailwindSelect(),
+        }
 
 
 class LearnForm(forms.Form):
@@ -998,3 +1097,205 @@ class StorefrontForm(forms.ModelForm):
             "logo",
             "is_active",
         ]
+
+
+class ProgressTrackerForm(forms.ModelForm):
+    class Meta:
+        model = ProgressTracker
+        fields = ["title", "description", "current_value", "target_value", "color", "public"]
+        widgets = {
+            "description": forms.Textarea(attrs={"rows": 3}),
+        }
+
+
+class MemeForm(forms.ModelForm):
+    new_subject = forms.CharField(
+        max_length=100,
+        required=False,
+        widget=TailwindInput(
+            attrs={
+                "placeholder": "Enter a new subject name",
+                "class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500",
+            }
+        ),
+        help_text="If your subject isn't listed, enter a new one here",
+    )
+
+    class Meta:
+        model = Meme
+        fields = ["title", "subject", "new_subject", "caption", "image"]
+        widgets = {
+            "title": TailwindInput(
+                attrs={
+                    "placeholder": "Enter a descriptive title",
+                    "required": True,
+                }
+            ),
+            "subject": TailwindSelect(
+                attrs={
+                    "class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                }
+            ),
+            "caption": TailwindTextarea(
+                attrs={
+                    "placeholder": "Add a caption for your meme",
+                    "rows": 3,
+                }
+            ),
+            "image": TailwindFileInput(
+                attrs={
+                    "accept": "image/png,image/jpeg,image/gif",
+                    "required": True,
+                    "help_text": "Upload a meme image (JPG, PNG, or GIF, max 2MB)",
+                }
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["subject"].required = False
+        self.fields["subject"].help_text = "Select an existing subject"
+
+        # Improve error messages
+        self.fields["image"].error_messages = {
+            "required": "Please select an image file.",
+            "invalid": "Please upload a valid image file.",
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        subject = cleaned_data.get("subject")
+        new_subject = cleaned_data.get("new_subject")
+
+        if not subject and not new_subject:
+            raise forms.ValidationError("You must either select an existing subject or create a new one.")
+
+        return cleaned_data
+
+    def save(self, commit=True):
+        meme = super().save(commit=False)
+
+        # Create new subject if provided
+        new_subject_name = self.cleaned_data.get("new_subject")
+        if new_subject_name and not self.cleaned_data.get("subject"):
+            from django.utils.text import slugify
+
+            subject, created = Subject.objects.get_or_create(
+                name=new_subject_name, defaults={"slug": slugify(new_subject_name)}
+            )
+            meme.subject = subject
+
+        if commit:
+            meme.save()
+        return meme
+
+
+class StudentEnrollmentForm(forms.Form):
+    first_name = forms.CharField(
+        max_length=30, required=True, widget=TailwindInput(attrs={"placeholder": "First Name"}), label="First Name"
+    )
+    last_name = forms.CharField(
+        max_length=30, required=True, widget=TailwindInput(attrs={"placeholder": "Last Name"}), label="Last Name"
+    )
+    email = forms.EmailField(
+        required=True, widget=TailwindEmailInput(attrs={"placeholder": "Student Email"}), label="Student Email"
+    )
+
+
+class QuizForm(forms.ModelForm):
+    """Form for creating and editing quizzes."""
+
+    class Meta:
+        model = Quiz
+        fields = [
+            "title",
+            "description",
+            "subject",
+            "status",
+            "time_limit",
+            "randomize_questions",
+            "show_correct_answers",
+            "allow_anonymous",
+            "max_attempts",
+        ]
+        widgets = {
+            "title": TailwindInput(attrs={"placeholder": "Quiz Title"}),
+            "description": TailwindTextarea(attrs={"rows": 3, "placeholder": "Quiz Description"}),
+            "subject": TailwindSelect(),
+            "status": TailwindSelect(),
+            "time_limit": TailwindNumberInput(
+                attrs={"min": "0", "placeholder": "Time limit in minutes (leave empty for no limit)"}
+            ),
+            "randomize_questions": TailwindCheckboxInput(),
+            "show_correct_answers": TailwindCheckboxInput(),
+            "allow_anonymous": TailwindCheckboxInput(),
+            "max_attempts": TailwindNumberInput(attrs={"min": "0", "placeholder": "0 for unlimited attempts"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        kwargs.pop("user", None)  # Use this if needed for filtering
+        super().__init__(*args, **kwargs)
+
+        # Subject queryset filtering based on user type could be added here
+
+
+class QuizQuestionForm(forms.ModelForm):
+    """Form for creating and editing quiz questions."""
+
+    class Meta:
+        model = QuizQuestion
+        fields = ["text", "question_type", "explanation", "points", "image"]
+        widgets = {
+            "text": TailwindTextarea(attrs={"rows": 3, "placeholder": "Question text"}),
+            "question_type": TailwindSelect(),
+            "explanation": TailwindTextarea(attrs={"rows": 2, "placeholder": "Explanation for the correct answer"}),
+            "points": TailwindNumberInput(attrs={"min": "1", "value": "1"}),
+            "order": TailwindNumberInput(attrs={"min": "0", "value": "0"}),
+            "image": TailwindFileInput(attrs={"accept": "image/*"}),
+        }
+
+
+# Form for quiz options using formset factory
+QuizOptionFormSet = forms.inlineformset_factory(
+    QuizQuestion,
+    QuizOption,
+    fields=("text", "is_correct"),
+    widgets={
+        "text": TailwindInput(attrs={"placeholder": "Option text"}),
+        "is_correct": TailwindCheckboxInput(),
+    },
+    extra=4,
+    can_delete=True,
+    validate_min=True,
+    min_num=1,
+)
+
+
+class TakeQuizForm(forms.Form):
+    """Form for taking quizzes. Dynamically generated based on questions."""
+
+    def __init__(self, *args, quiz=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if quiz:
+            for question in quiz.questions.all().order_by("order"):
+                if question.question_type == "multiple":
+                    # For multiple choice, add a multi-select field
+                    options = question.options.all().order_by("order")
+                    choices = [(str(option.id), option.text) for option in options]
+                    self.fields[f"question_{question.id}"] = forms.MultipleChoiceField(
+                        label=question.text, choices=choices, widget=forms.CheckboxSelectMultiple, required=False
+                    )
+                elif question.question_type == "true_false":
+                    # For true/false, add a radio select field
+                    options = question.options.all().order_by("order")
+                    choices = [(str(option.id), option.text) for option in options]
+                    self.fields[f"question_{question.id}"] = forms.ChoiceField(
+                        label=question.text, choices=choices, widget=forms.RadioSelect, required=False
+                    )
+                elif question.question_type == "short":
+                    # For short answer, add a text field
+                    self.fields[f"question_{question.id}"] = forms.CharField(
+                        label=question.text,
+                        widget=TailwindTextarea(attrs={"rows": 2, "placeholder": "Your answer..."}),
+                        required=False,
+                    )

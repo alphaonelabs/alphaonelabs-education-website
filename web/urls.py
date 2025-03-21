@@ -1,12 +1,13 @@
 from django.conf import settings
 from django.conf.urls.i18n import i18n_patterns
+from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 from django.urls import path, include
 
-from . import admin_views, views
-from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_data
+from . import admin_views, quiz_views, views
+from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_data, streak_detail
 
 # Non-prefixed URLs
 urlpatterns = [
@@ -18,6 +19,8 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns.append(path("__reload__/", include("django_browser_reload.urls")))  # Browser reload URLs
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)  # Add this line
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 # Language-prefixed URLs
 urlpatterns += i18n_patterns(
@@ -25,10 +28,24 @@ urlpatterns += i18n_patterns(
     path("learn/", views.learn, name="learn"),
     path("teach/", views.teach, name="teach"),
     path("about/", views.about, name="about"),
+    path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
+    path("certificate/generate/<int:enrollment_id>/", views.generate_certificate, name="generate_certificate"),
+    path("donate/", views.donate, name="donate"),
+    path("donate/payment-intent/", views.create_donation_payment_intent, name="create_donation_payment_intent"),
+    path("donate/subscription/", views.create_donation_subscription, name="create_donation_subscription"),
+    path("donate/success/", views.donation_success, name="donation_success"),
+    path("donate/cancel/", views.donation_cancel, name="donation_cancel"),
+    path("donate/webhook/", views.donation_webhook, name="donation_webhook"),
     path("blog/", views.blog_list, name="blog_list"),
     path("blog/create/", views.create_blog_post, name="create_blog_post"),
     path("blog/tag/<str:tag>/", views.blog_tag, name="blog_tag"),
     path("blog/<slug:slug>/", views.blog_detail, name="blog_detail"),
+    # Success Stories URLs
+    path("success-stories/", views.success_story_list, name="success_story_list"),
+    path("success-stories/create/", views.create_success_story, name="create_success_story"),
+    path("success-stories/<slug:slug>/", views.success_story_detail, name="success_story_detail"),
+    path("success-stories/<slug:slug>/edit/", views.edit_success_story, name="edit_success_story"),
+    path("success-stories/<slug:slug>/delete/", views.delete_success_story, name="delete_success_story"),
     # Authentication URLs
     path("accounts/signup/", views.signup_view, name="account_signup"),  # Our custom signup view
     path("accounts/", include("allauth.urls")),
@@ -45,12 +62,14 @@ urlpatterns += i18n_patterns(
     path("courses/<slug:course_slug>/enroll/", views.enroll_course, name="enroll_course"),
     path("courses/<slug:slug>/add-session/", views.add_session, name="add_session"),
     path("courses/<slug:slug>/edit/", views.update_course, name="update_course"),
+    path("courses/<slug:slug>/toggle-status/", views.toggle_course_status, name="toggle_course_status"),
     path("sessions/<int:session_id>/edit/", views.edit_session, name="edit_session"),
     path("courses/<slug:slug>/add-review/", views.add_review, name="add_review"),
     path("courses/<slug:slug>/delete/", views.delete_course, name="delete_course"),
     path("courses/<slug:slug>/add-session/", views.add_session, name="add_session"),
     path("courses/<slug:slug>/confirm-rolled-sessions/", views.confirm_rolled_sessions, name="confirm_rolled_sessions"),
     path("courses/<slug:slug>/message-students/", views.message_enrolled_students, name="message_students"),
+    path("courses/<slug:slug>/add-student/", views.add_student_to_course, name="add_student_to_course"),
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
     # Payment URLs
     path(
@@ -116,6 +135,7 @@ urlpatterns += i18n_patterns(
         views.calendar_links,
         name="calendar_links",
     ),
+    path("streak/", streak_detail, name="streak_detail"),
     # Forum URLs
     path("forum/", views.forum_categories, name="forum_categories"),
     path("forum/category/create/", views.create_forum_category, name="create_forum_category"),
@@ -127,6 +147,7 @@ urlpatterns += i18n_patterns(
         name="forum_topic",
     ),
     path("forum/topic/<int:topic_id>/edit/", views.edit_topic, name="edit_topic"),
+    path("forum/sync-milestones/", views.sync_github_milestones, name="sync_github_milestones"),
     # Peer Networking URLs
     path("peers/", views.peer_connections, name="peer_connections"),
     path(
@@ -171,7 +192,10 @@ urlpatterns += i18n_patterns(
     path("challenges/<int:week_number>/", views.challenge_detail, name="challenge_detail"),
     path("challenges/<int:week_number>/submit/", views.challenge_submit, name="challenge_submit"),
     path("current-weekly-challenge/", views.current_weekly_challenge, name="current_weekly_challenge"),
+    # Educational Videos URLs
     path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),
+    path("videos/", views.educational_videos_list, name="educational_videos_list"),
+    path("videos/upload/", login_required(views.upload_educational_video), name="upload_educational_video"),
     # Storefront Management
     path("store/create/", login_required(views.StorefrontCreateView.as_view()), name="storefront_create"),
     path(
@@ -209,7 +233,34 @@ urlpatterns += i18n_patterns(
     ),
     path("analytics/", sales_analytics, name="sales_analytics"),
     path("analytics/data/", sales_data, name="sales_data"),
+    path("memes/", views.meme_list, name="meme_list"),
+    path("memes/add/", views.add_meme, name="add_meme"),
+    path("whiteboard/", views.whiteboard, name="whiteboard"),
     path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
+    path("trackers/", views.tracker_list, name="tracker_list"),
+    path("trackers/create/", views.create_tracker, name="create_tracker"),
+    path("trackers/<int:tracker_id>/", views.tracker_detail, name="tracker_detail"),
+    path("trackers/<int:tracker_id>/update/", views.update_tracker, name="update_tracker"),
+    path("trackers/<int:tracker_id>/progress/", views.update_progress, name="update_progress"),
+    path("trackers/embed/<str:embed_code>/", views.embed_tracker, name="embed_tracker"),
+    # Quiz URLs
+    path("quizzes/", quiz_views.quiz_list, name="quiz_list"),
+    path("quizzes/create/", quiz_views.create_quiz, name="create_quiz"),
+    path("quizzes/<int:quiz_id>/", quiz_views.quiz_detail, name="quiz_detail"),
+    path("quizzes/<int:quiz_id>/update/", quiz_views.update_quiz, name="update_quiz"),
+    path("quizzes/<int:quiz_id>/delete/", quiz_views.delete_quiz, name="delete_quiz"),
+    path("quizzes/<int:quiz_id>/add-question/", quiz_views.add_question, name="add_question"),
+    path("quizzes/questions/<int:question_id>/edit/", quiz_views.edit_question, name="edit_question"),
+    path("quizzes/questions/<int:question_id>/delete/", quiz_views.delete_question, name="delete_question"),
+    path("quizzes/<int:quiz_id>/take/", quiz_views.take_quiz, name="take_quiz"),
+    path("quizzes/shared/<str:share_code>/", quiz_views.take_quiz_shared, name="quiz_take_shared"),
+    path("quizzes/results/<int:user_quiz_id>/", quiz_views.quiz_results, name="quiz_results"),
+    path(
+        "quizzes/results/<int:user_quiz_id>/grade/<int:question_id>/",
+        quiz_views.grade_short_answer,
+        name="grade_short_answer",
+    ),
+    path("quizzes/<int:quiz_id>/analytics/", quiz_views.quiz_analytics, name="quiz_analytics"),
     prefix_default_language=True,
 )
 
