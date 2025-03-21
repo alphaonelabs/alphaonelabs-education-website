@@ -2,11 +2,17 @@
 
 {% block content %}
   <!-- Hero Section -->
-  <section class="relative w-full bg-gradient-to-r from-teal-600 to-orange-500 text-white py-16 text-center">
-    <div class="max-w-4xl mx-auto px-6">
-      <h1 class="text-5xl font-extrabold mb-4 animate-fade-in">🚀 Google Summer of Code 2025</h1>
-      <p class="text-lg text-white/90 mb-6 animate-slide-up">
-        Kickstart your open-source journey with Google Summer of Code. Learn, contribute, and grow with us! 🌍✨
+  <section class="relative w-full text-white py-16 text-center overflow-hidden">
+    <!-- Animated Gradient Background -->
+    <div class="absolute inset-0 bg-gradient-to-r from-teal-600 to-orange-500 animate-gradient-x z-0"></div>
+    
+    <!-- Content -->
+    <div class="relative max-w-4xl mx-auto px-6 z-10">
+      <h1 class="text-5xl font-extrabold mb-4">
+        🚀 Alpha One Labs x GSoC 2025
+      </h1>
+      <p class="text-lg text-white/90 mb-6">
+        Kickstart your open-source journey with Google Summer of Code. Learn, contribute, and grow with Alpha One Labs! 🌍✨
       </p>
       <a href="https://summerofcode.withgoogle.com/"
          target="_blank"
@@ -16,93 +22,13 @@
       </a>
     </div>
   </section>
-  <!-- Contributor Leaderboard Section -->
-  <section class="w-full py-12 bg-gray-50 dark:bg-gray-900">
-    <div class="max-w-6xl mx-auto px-4 md:px-6">
-      <div class="text-center mb-10">
-        <h2 class="text-4xl font-bold text-gray-900 dark:text-white">🏆 Top GSoC Contributors</h2>
-        <p class="mt-3 text-lg text-gray-600 dark:text-gray-300">
-          Recognizing our most active contributors based on merged pull requests
-        </p>
-      </div>
-      {% if top_contributors %}
-        <div class="mx-auto max-w-4xl overflow-hidden bg-white dark:bg-gray-800 shadow-lg rounded-lg">
-          <div class="overflow-x-auto">
-            <table class="w-full">
-              <thead>
-                <tr class="bg-teal-600 dark:bg-teal-800 text-white">
-                  <th class="px-6 py-3 text-left text-sm font-medium tracking-wider">Rank</th>
-                  <th class="px-6 py-3 text-left text-sm font-medium tracking-wider">Contributor</th>
-                  <th class="px-6 py-3 text-left text-sm font-medium tracking-wider">Merged PRs</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-                {% for contributor in top_contributors %}
-                  <tr class="{% cycle 'bg-white dark:bg-gray-800' 'bg-gray-50 dark:bg-gray-700' %}">
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="flex items-center">
-                        {% if forloop.counter == 1 %}
-                          <span class="text-2xl">🥇</span>
-                        {% elif forloop.counter == 2 %}
-                          <span class="text-2xl">🥈</span>
-                        {% elif forloop.counter == 3 %}
-                          <span class="text-2xl">🥉</span>
-                        {% else %}
-                          <span class="font-semibold">{{ forloop.counter }}</span>
-                        {% endif %}
-                      </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                      <div class="flex items-center">
-                        <div class="flex-shrink-0 h-10 w-10">
-                          <img class="h-10 w-10 rounded-full"
-                               src="{{ contributor.avatar_url }}"
-                               alt="{{ contributor.username }}"
-                               height="40"
-                               width="40" />
-                        </div>
-                        <div class="ml-4">
-                          <a href="{{ contributor.prs_url }}"
-                             target="_blank"
-                             rel="noopener noreferrer"
-                             title="View {{ contributor.username }}'s pull requests"
-                             class="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                            {{ contributor.username }}
-                          </a>
-                        </div>
-                      </div>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ contributor.merged_pr_count }}</td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          <div class="p-3 text-xs text-gray-500 dark:text-gray-400 text-center italic">
-            Note: Automated accounts and bots (e.g., dependabot) have been excluded from this ranking.
-          </div>
-        </div>
-      {% else %}
-        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6 text-center">
-          <p class="text-gray-600 dark:text-gray-300">Contributor data is currently unavailable. Please check back later.</p>
-        </div>
-      {% endif %}
-      <div class="mt-6 text-center">
-        <a href="https://github.com/alphaonelabs/education-website/pulls?q=is%3Apr+is%3Amerged"
-           target="_blank"
-           rel="noopener noreferrer"
-           class="inline-flex items-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors">
-          <i class="fas fa-code-branch mr-2"></i> View All Pull Requests
-        </a>
-      </div>
-    </div>
-  </section>
+
   <!-- Tips Section -->
   <main class="flex-1 w-full max-w-[90rem] mx-auto mt-10 px-4 md:px-6">
     <div class="space-y-8 text-center">
       <h2 class="text-4xl font-bold text-gray-900 dark:text-white">💡 Essential Tips for GSoC</h2>
       <p class="text-lg text-gray-600 dark:text-gray-300">
-        Follow these key strategies to improve your chances of selection! 🚀
+        Follow these key strategies to improve your chances of selection with Alpha One Labs! 🚀
       </p>
       <!-- Grid Layout -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -111,7 +37,7 @@
           <div class="absolute inset-0 bg-gradient-to-r from-teal-500 to-orange-500 opacity-10 pointer-events-none"></div>
           <h3 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">📖 Understand the Program</h3>
           <p class="text-gray-600 dark:text-gray-300">
-            Learn about GSoC's structure, timeline, and goals. Visit the
+            Learn about GSoC’s structure, timeline, and goals. Visit the
             <a href="https://summerofcode.withgoogle.com/"
                target="_blank"
                rel="noopener noreferrer"
@@ -150,7 +76,106 @@
         </div>
       </div>
     </div>
-    <div class="mt-16 space-y-8">
+
+    <!-- Leaderboard Section -->
+    <div class="mt-16">
+      <div class="mt-4 p-4 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-900/50">
+        <p class="text-sm text-blue-800 dark:text-blue-200">
+          <i class="fas fa-code mr-2"></i>
+          Are you a coder? Get involved and help shape the future of education!
+          <a href="https://github.com/AlphaOneLabs/education-website/blob/main/CONTRIBUTING.md"
+             class="inline-flex items-center text-blue-600 dark:text-blue-400 hover:underline ml-1">
+            View contributor guidelines
+            <i class="fas fa-arrow-right ml-1 text-xs"></i>
+          </a>
+        </p>
+      </div>
+    </div>
+
+    <!-- Contributor Leaderboard Section -->
+    <section class="w-full py-12 bg-gray-50 dark:bg-gray-900">
+      <div class="max-w-6xl mx-auto px-4 md:px-6">
+        <div class="text-center mb-10">
+          <h2 class="text-4xl font-bold text-gray-900 dark:text-white">🏆 Top GSoC Contributors</h2>
+          <p class="mt-3 text-lg text-gray-600 dark:text-gray-300">
+            Recognizing our most active contributors based on merged pull requests
+          </p>
+        </div>
+        {% if top_contributors %}
+          <div class="mx-auto max-w-4xl overflow-hidden bg-white dark:bg-gray-800 shadow-lg rounded-lg">
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead>
+                  <tr class="bg-teal-600 dark:bg-teal-800 text-white">
+                    <th class="px-6 py-3 text-left text-sm font-medium tracking-wider">Rank</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium tracking-wider">Contributor</th>
+                    <th class="px-6 py-3 text-left text-sm font-medium tracking-wider">Merged PRs</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                  {% for contributor in top_contributors %}
+                    <tr class="{% cycle 'bg-white dark:bg-gray-800' 'bg-gray-50 dark:bg-gray-700' %}">
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                          {% if forloop.counter == 1 %}
+                            <span class="text-2xl">🥇</span>
+                          {% elif forloop.counter == 2 %}
+                            <span class="text-2xl">🥈</span>
+                          {% elif forloop.counter == 3 %}
+                            <span class="text-2xl">🥉</span>
+                          {% else %}
+                            <span class="font-semibold">{{ forloop.counter }}</span>
+                          {% endif %}
+                        </div>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                          <div class="flex-shrink-0 h-10 w-10">
+                            <img class="h-10 w-10 rounded-full"
+                                 src="{{ contributor.avatar_url }}"
+                                 alt="{{ contributor.username }}"
+                                 height="40"
+                                 width="40" />
+                          </div>
+                          <div class="ml-4">
+                            <a href="{{ contributor.prs_url }}"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               title="View {{ contributor.username }}'s pull requests"
+                               class="text-sm font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                              {{ contributor.username }}
+                            </a>
+                          </div>
+                        </div>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">{{ contributor.merged_pr_count }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <div class="p-3 text-xs text-gray-500 dark:text-gray-400 text-center italic">
+              Note: Automated accounts and bots (e.g., dependabot) have been excluded from this ranking.
+            </div>
+          </div>
+        {% else %}
+          <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6 text-center">
+            <p class="text-gray-600 dark:text-gray-300">Contributor data is currently unavailable. Please check back later.</p>
+          </div>
+        {% endif %}
+        <div class="mt-6 text-center">
+          <a href="https://github.com/alphaonelabs/education-website/pulls?q=is%3Apr+is%3Amerged"
+             target="_blank"
+             rel="noopener noreferrer"
+             class="inline-flex items-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg transition-colors">
+            <i class="fas fa-code-branch mr-2"></i> View All Pull Requests
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Getting Started Section -->
+    <div class="mt-24 space-y-8">
       <h2 class="text-4xl font-bold text-gray-900 dark:text-white text-center">
         Getting Started with Google Summer of Code (GSoC) - Alpha One Labs!
       </h2>
@@ -296,14 +321,287 @@
         </div>
       </div>
     </div>
-    <!-- Add space after the last point -->
-    <div class="mb-16"></div>
+
+    <!-- NEW: Alpha One Labs x GSoC: First-Time Participation -->
+    <div class="mt-24 space-y-8">
+      <h2 class="text-4xl font-bold text-gray-900 dark:text-white text-center animate-fade-in-up">
+        <span class="bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-orange-500 animate-gradient-x">
+          Alpha One Labs x GSoC: First-Time Participation
+        </span>
+      </h2>
+      <p class="text-lg text-gray-600 dark:text-gray-300 text-center max-w-3xl mx-auto animate-fade-in-up">
+        As a first-time participant in Google Summer of Code, Alpha One Labs is excited to welcome students to contribute to our open-source projects. Here’s what you can expect:
+      </p>
+      <!-- Highlights Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-fade-in-up">
+        <!-- Highlight 1 -->
+        <div class="relative p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transition-transform transform hover:scale-105 hover:shadow-2xl overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-r from-teal-500 to-orange-500 opacity-10 pointer-events-none"></div>
+          <h3 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">What to Expect</h3>
+          <p class="text-gray-600 dark:text-gray-300">
+            "As a first-time GSoC organization, Alpha One Labs is committed to providing a supportive and enriching environment for students to learn, grow, and make meaningful contributions to open-source."
+          </p>
+        </div>
+        <!-- Highlight 2 -->
+        <div class="relative p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transition-transform transform hover:scale-105 hover:shadow-2xl overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-r from-teal-500 to-orange-500 opacity-10 pointer-events-none"></div>
+          <h3 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">Mentorship</h3>
+          <p class="text-gray-600 dark:text-gray-300">
+            "Our mentors are experienced developers who will guide you through the project, ensuring you gain valuable skills and experience in open-source development."
+          </p>
+        </div>
+        <!-- Highlight 3 -->
+        <div class="relative p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transition-transform transform hover:scale-105 hover:shadow-2xl overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-r from-teal-500 to-orange-500 opacity-10 pointer-events-none"></div>
+          <h3 class="text-2xl font-semibold mb-4 text-gray-900 dark:text-white">Community</h3>
+          <p class="text-gray-600 dark:text-gray-300">
+            "Join a vibrant community of developers and contributors who are passionate about education, open-source, and innovation."
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline Section -->
+    <div class="mt-24 space-y-8">
+      <h2 class="text-4xl font-bold text-gray-900 dark:text-white text-center">
+        <span class="bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-orange-500">GSoC 2025 Timeline</span>
+      </h2>
+      <p class="text-lg text-gray-600 dark:text-gray-300 text-center max-w-3xl mx-auto">
+        Mark your calendars! Here's what to expect during the Google Summer of Code 2025 journey with Alpha One Labs.
+      </p>
+      <!-- Timeline Component -->
+      <div class="relative py-8">
+        <!-- Timeline Line -->
+        <div class="absolute h-full w-1 bg-gradient-to-b from-teal-500 to-orange-500 left-1/2 transform -translate-x-1/2"></div>
+
+        <!-- Timeline Items -->
+        <div class="flex flex-col items-center">
+          <!-- Item 1 -->
+          <div class="flex flex-col md:flex-row w-full items-center mb-16">
+            <div class="flex-1 md:text-right md:pr-8 order-2 md:order-1">
+              <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                <h3 class="text-xl font-semibold text-teal-600 dark:text-teal-400">January - February</h3>
+                <h4 class="text-lg font-medium text-gray-900 dark:text-white mt-2">Organization Applications</h4>
+                <p class="text-gray-600 dark:text-gray-300 mt-2">
+                  Organizations like Alpha One Labs apply to be a part of GSoC 2025.
+                </p>
+              </div>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-teal-500 flex items-center justify-center text-white border-4 border-white dark:border-gray-900 z-10 order-1 md:order-2 shadow-lg mb-4 md:mb-0">
+              1
+            </div>
+            <div class="flex-1 md:pl-8 md:order-3 order-3"></div>
+          </div>
+
+          <!-- Item 2 -->
+          <div class="flex flex-col md:flex-row w-full items-center mb-16">
+            <div class="flex-1 md:pr-8 md:text-right order-2 md:order-1"></div>
+            <div class="w-12 h-12 rounded-full bg-teal-500 flex items-center justify-center text-white border-4 border-white dark:border-gray-900 z-10 order-1 md:order-2 shadow-lg mb-4 md:mb-0">
+              2
+            </div>
+            <div class="flex-1 md:pl-8 order-3 md:order-3">
+              <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                <h3 class="text-xl font-semibold text-teal-600 dark:text-teal-400">March</h3>
+                <h4 class="text-lg font-medium text-gray-900 dark:text-white mt-2">Organization Announcement</h4>
+                <p class="text-gray-600 dark:text-gray-300 mt-2">
+                  Google announces the list of accepted mentoring organizations.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Item 3 -->
+          <div class="flex flex-col md:flex-row w-full items-center mb-16">
+            <div class="flex-1 md:text-right md:pr-8 order-2 md:order-1">
+              <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                <h3 class="text-xl font-semibold text-orange-600 dark:text-orange-400">March - April</h3>
+                <h4 class="text-lg font-medium text-gray-900 dark:text-white mt-2">Student Application Period</h4>
+                <p class="text-gray-600 dark:text-gray-300 mt-2">
+                  Students explore projects and submit proposals to organizations.
+                </p>
+              </div>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white border-4 border-white dark:border-gray-900 z-10 order-1 md:order-2 shadow-lg mb-4 md:mb-0">
+              3
+            </div>
+            <div class="flex-1 md:pl-8 order-3 md:order-3"></div>
+          </div>
+
+          <!-- Item 4 -->
+          <div class="flex flex-col md:flex-row w-full items-center mb-16">
+            <div class="flex-1 md:pr-8 md:text-right order-2 md:order-1"></div>
+            <div class="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white border-4 border-white dark:border-gray-900 z-10 order-1 md:order-2 shadow-lg mb-4 md:mb-0">
+              4
+            </div>
+            <div class="flex-1 md:pl-8 order-3 md:order-3">
+              <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                <h3 class="text-xl font-semibold text-orange-600 dark:text-orange-400">May</h3>
+                <h4 class="text-lg font-medium text-gray-900 dark:text-white mt-2">Student Selection Announced</h4>
+                <p class="text-gray-600 dark:text-gray-300 mt-2">
+                  Selected students are announced and paired with mentors.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Item 5 -->
+          <div class="flex flex-col md:flex-row w-full items-center mb-16">
+            <div class="flex-1 md:text-right md:pr-8 order-2 md:order-1">
+              <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                <h3 class="text-xl font-semibold text-teal-600 dark:text-teal-400">May - June</h3>
+                <h4 class="text-lg font-medium text-gray-900 dark:text-white mt-2">Community Bonding</h4>
+                <p class="text-gray-600 dark:text-gray-300 mt-2">
+                  Students get to know mentors, read documentation, and get up to speed.
+                </p>
+              </div>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-teal-500 flex items-center justify-center text-white border-4 border-white dark:border-gray-900 z-10 order-1 md:order-2 shadow-lg mb-4 md:mb-0">
+              5
+            </div>
+            <div class="flex-1 md:pl-8 order-3 md:order-3"></div>
+          </div>
+
+          <!-- Item 6 -->
+          <div class="flex flex-col md:flex-row w-full items-center mb-16">
+            <div class="flex-1 md:pr-8 md:text-right order-2 md:order-1"></div>
+            <div class="w-12 h-12 rounded-full bg-orange-500 flex items-center justify-center text-white border-4 border-white dark:border-gray-900 z-10 order-1 md:order-2 shadow-lg mb-4 md:mb-0">
+              6
+            </div>
+            <div class="flex-1 md:pl-8 order-3 md:order-3">
+              <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                <h3 class="text-xl font-semibold text-orange-600 dark:text-orange-400">June - August</h3>
+                <h4 class="text-lg font-medium text-gray-900 dark:text-white mt-2">Coding Period</h4>
+                <p class="text-gray-600 dark:text-gray-300 mt-2">
+                  Students work on their projects with guidance from mentors.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Item 7 -->
+          <div class="flex flex-col md:flex-row w-full items-center">
+            <div class="flex-1 md:text-right md:pr-8 order-2 md:order-1">
+              <div class="p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+                <h3 class="text-xl font-semibold text-teal-600 dark:text-teal-400">September</h3>
+                <h4 class="text-lg font-medium text-gray-900 dark:text-white mt-2">Project Completion</h4>
+                <p class="text-gray-600 dark:text-gray-300 mt-2">
+                  Final evaluations and project submissions. Successful students pass GSoC!
+                </p>
+              </div>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-teal-500 flex items-center justify-center text-white border-4 border-white dark:border-gray-900 z-10 order-1 md:order-2 shadow-lg mb-4 md:mb-0">
+              7
+            </div>
+            <div class="flex-1 md:pl-8 order-3 md:order-3"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NEW: FAQs Section -->
+    <div class="mt-24 space-y-8">
+      <h2 class="text-4xl font-bold text-gray-900 dark:text-white text-center">
+        <span class="bg-clip-text text-transparent bg-gradient-to-r from-teal-600 to-orange-500">FAQs</span>
+      </h2>
+      <p class="text-lg text-gray-600 dark:text-gray-300 text-center max-w-3xl mx-auto">
+        Have questions about GSoC or Alpha One Labs? Here are some common questions and answers to help you out.
+      </p>
+      <!-- FAQs Accordion -->
+      <div class="space-y-4">
+        <!-- FAQ 1 -->
+        <div class="relative p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-r from-teal-500 to-orange-500 opacity-10 pointer-events-none"></div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">What is Google Summer of Code (GSoC)?</h3>
+          <p class="text-gray-600 dark:text-gray-300 mt-2">
+            Google Summer of Code is a global program that offers students the opportunity to work on open-source projects during the summer. Participants receive a stipend and mentorship while contributing to real-world projects.
+          </p>
+        </div>
+        <!-- FAQ 2 -->
+        <div class="relative p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-r from-teal-500 to-orange-500 opacity-10 pointer-events-none"></div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">How do I apply for GSoC with Alpha One Labs?</h3>
+          <p class="text-gray-600 dark:text-gray-300 mt-2">
+            To apply, visit the <a href="https://summerofcode.withgoogle.com/" target="_blank" rel="noopener noreferrer" class="text-orange-600 hover:text-orange-500 dark:text-orange-400 dark:hover:text-orange-300 transition-colors">GSoC website</a>, explore our project ideas, and submit a proposal. Make sure to engage with the community and seek feedback on your proposal.
+          </p>
+        </div>
+        <!-- FAQ 3 -->
+        <div class="relative p-6 bg-white dark:bg-gray-900 rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-r from-teal-500 to-orange-500 opacity-10 pointer-events-none"></div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white">What kind of projects does Alpha One Labs offer?</h3>
+          <p class="text-gray-600 dark:text-gray-300 mt-2">
+            Alpha One Labs offers projects in web development, educational tools, and open-source software. Check out our <a href="https://github.com/alphaonelabs/education-website/wiki/GSOC-2025-Ideas-Refined" target="_blank" rel="noopener noreferrer" class="text-orange-600 hover:text-orange-500 dark:text-orange-400 dark:hover:text-orange-300 transition-colors">project ideas</a> for more details.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Space before footer -->
+    <div class="mt-24"></div>
+
+    <!-- Floating Apply Now Button -->
+    <a href="https://summerofcode.withgoogle.com/"
+       target="_blank"
+       rel="noopener noreferrer"
+       class="fixed bottom-6 right-6 px-6 py-3 bg-orange-600 text-white text-lg font-semibold rounded-full shadow-lg hover:bg-orange-700 transition-all duration-200 animate-bounce">
+      Apply Now 🚀
+    </a>
   </main>
-  <!-- Floating Apply Now Button -->
-  <a href="https://summerofcode.withgoogle.com/"
-     target="_blank"
-     rel="noopener noreferrer"
-     class="fixed bottom-6 right-6 px-6 py-3 bg-orange-600 text-white text-lg font-semibold rounded-full shadow-lg hover:bg-orange-700 transition-all duration-200 animate-bounce">
-    Apply Now 🚀
-  </a>
+
+  <!-- Script for Contributor Leaderboard -->
+  <script>
+    // Fetch all pull requests from GitHub API
+    fetch('https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100')
+      .then(response => response.json())
+      .then(pulls => {
+        const container = document.getElementById('recent-contributors');
+        container.innerHTML = ''; // Clear loading state
+
+        // Count pull requests per user
+        const contributorCounts = {};
+        pulls.forEach(pull => {
+          const username = pull.user.login;
+          if (contributorCounts[username]) {
+            contributorCounts[username]++;
+          } else {
+            contributorCounts[username] = 1;
+          }
+        });
+
+        // Convert to an array and sort by PR count
+        const leaderboard = Object.keys(contributorCounts).map(username => ({
+          username,
+          prCount: contributorCounts[username],
+          avatarUrl: pulls.find(pull => pull.user.login === username).user.avatar_url,
+        })).sort((a, b) => b.prCount - a.prCount);
+
+        // Display the leaderboard
+        leaderboard.forEach((contributor, index) => {
+          const div = document.createElement('div');
+          div.className = 'flex items-center space-x-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
+          div.innerHTML = `
+            <span class="text-lg font-bold text-gray-700 dark:text-gray-300 w-8 text-center">${index + 1}</span>
+            <img src="${contributor.avatarUrl}" alt="${contributor.username}" class="w-10 h-10 rounded-full" loading="lazy" />
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                ${contributor.username}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">
+                ${contributor.prCount} pull request${contributor.prCount === 1 ? '' : 's'}
+              </p>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+      })
+      .catch(error => {
+        const container = document.getElementById('recent-contributors');
+        container.innerHTML = `
+          <div class="text-sm text-gray-600 dark:text-gray-400 text-center py-4">
+            <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+            Failed to load leaderboard. Please try again later.
+          </div>
+        `;
+        console.error('Error fetching leaderboard:', error);
+      });
+  </script>
 {% endblock content %}
