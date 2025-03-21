@@ -467,7 +467,9 @@
                                   <i class="fas fa-hourglass-half text-orange-500 dark:text-orange-400"></i>
                                   <span class="text-gray-500 dark:text-gray-400">Remaining:</span>
                                   <span class="font-bold text-orange-600 dark:text-orange-400"
-                                        id="remaining-count">
+                                        id="remaining-count"
+                                        data-total-sessions="{{ course.sessions.count|default:0 }}"
+                                        data-completed-sessions="{% if enrollment and enrollment.progress %}{{ enrollment.progress.completed_sessions.count }}{% else %}0{% endif %}">
                                     <!-- Will be filled by JavaScript -->
                                   </span>
                                 </div>
@@ -661,30 +663,15 @@
               })
               .catch(error => console.error('Error loading calendar:', error));
       }
+  </script>
+  <script>
       document.addEventListener('DOMContentLoaded', function() {
-          const total = {
-              {
-                  course.sessions.count |
-                      default: 0
-              }
-          };
-          const completed = {
-              %
-              if enrollment and enrollment.progress %
-          } {
-              {
-                  enrollment.progress.completed_sessions.count
-              }
-          } {
-              %
-              else %
-          }
-          0 {
-              %
-              endif %
-          };
+          // Get session counts from data attributes rather than template variables
+          const remainingCountElement = document.getElementById('remaining-count');
+          const total = parseInt(remainingCountElement.dataset.totalSessions) || 0;
+          const completed = parseInt(remainingCountElement.dataset.completedSessions) || 0;
           const remaining = Math.max(0, total - completed);
-          document.getElementById('remaining-count').textContent = remaining;
+          remainingCountElement.textContent = remaining;
       });
   </script>
 {% endblock content %}

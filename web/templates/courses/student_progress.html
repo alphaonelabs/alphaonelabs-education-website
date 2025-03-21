@@ -104,6 +104,7 @@
                         }
                     } catch (e) {
                         showError("An unexpected error occurred.");
+                        Sentry.captureException(e);
                     }
 
                     setLoading(false);

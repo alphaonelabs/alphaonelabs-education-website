@@ -98,7 +98,8 @@
               }
           } catch (e) {
               const messageContainer = document.querySelector("#payment-message");
-              messageContainer.textContent = "An unexpected error occurred. Please try again.";
+              Sentry.captureException(e);
+              messageContainer.textContent = "An unexpected error occurred on the payment page. Please try again.";
               messageContainer.classList.remove("d-none");
           }
 
