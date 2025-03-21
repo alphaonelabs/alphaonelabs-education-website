@@ -45,7 +45,13 @@
             <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
               <div class="flex items-center justify-between">
                 <span class="text-gray-600 dark:text-gray-300">Price</span>
-                <span class="text-3xl font-bold text-teal-600 dark:text-teal-400">${{ course.price }}</span>
+                <span class="text-3xl font-bold text-teal-600 dark:text-teal-400">
+                  {% if course.price == 0 %}
+                    Free
+                  {% else %}
+                    ${{ course.price }}
+                  {% endif %}
+                </span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-gray-600 dark:text-gray-300">Level</span>
@@ -71,16 +77,30 @@
                     </span>
                   </div>
                 {% else %}
-                  <form method="post"
-                        action="{% url 'add_course_to_cart' course.id %}"
-                        class="mt-2">
-                    {% csrf_token %}
-                    <button type="submit"
-                            class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center">
-                      <i class="fas fa-cart-plus mr-2"></i>
-                      Add to Cart
-                    </button>
-                  </form>
+                  {% if course.price == 0 %}
+                    <!-- Free Course Enrollment Button -->
+                    <form method="get"
+                          action="{% url 'enroll_course' course.slug %}"
+                          class="mt-2">
+                      <button type="submit"
+                              class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Enroll for Free
+                      </button>
+                    </form>
+                  {% else %}
+                    <!-- Paid Course Cart Button -->
+                    <form method="post"
+                          action="{% url 'add_course_to_cart' course.id %}"
+                          class="mt-2">
+                      {% csrf_token %}
+                      <button type="submit"
+                              class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-cart-plus mr-2"></i>
+                        Add to Cart
+                      </button>
+                    </form>
+                  {% endif %}
                 {% endif %}
               {% endif %}
             </div>
@@ -321,6 +341,16 @@
                         <i class="fas fa-edit mr-2"></i>
                         Edit Course
                       </a>
+                      <a href="{% url 'toggle_course_status' course.slug %}"
+                         class="inline-flex items-center px-4 py-2 {% if course.status == 'draft' %}bg-green-600 hover:bg-green-700{% else %}bg-yellow-600 hover:bg-yellow-700{% endif %} text-white rounded-lg transition duration-200">
+                        {% if course.status == 'draft' %}
+                          <i class="fas fa-globe mr-2"></i>
+                          Publish Course
+                        {% else %}
+                          <i class="fas fa-pencil-alt mr-2"></i>
+                          Unpublish to Draft
+                        {% endif %}
+                      </a>
                       <a href="{% url 'course_progress_overview' course.slug %}"
                          class="inline-flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition duration-200">
                         <i class="fas fa-chart-line mr-2"></i>
@@ -339,6 +369,21 @@
                     </div>
                   {% endif %}
                 </div>
+                {% if user == course.teacher %}
+                  <div class="mt-3 {% if course.status == 'draft' %}bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 dark:bg-yellow-900 dark:border-yellow-600 dark:text-yellow-200{% else %}bg-blue-50 border-l-4 border-blue-400 text-blue-700 dark:bg-blue-900 dark:border-blue-600 dark:text-blue-200{% endif %} p-4 rounded-md">
+                    {% if course.status == 'draft' %}
+                      <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span><strong>Draft Status:</strong> This course is currently in draft mode and is only visible to you. Students cannot enroll until you publish it.</span>
+                      </div>
+                    {% else %}
+                      <div class="flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <span><strong>Published Status:</strong> This course is live and visible to all users. Students can now enroll in this course.</span>
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endif %}
                 {% if user.is_authenticated and enrollment %}
                   <div class="flex items-center gap-4">
                     <div class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-4 py-2 rounded-lg flex items-center">
@@ -385,7 +430,16 @@
                 </div>
               </div>
               <div class="flex items-center space-x-4 mb-4">
-                <span class="badge bg-{{ course.status }}">{{ course.get_status_display }}</span>
+                <span class="px-3 py-1 rounded-full text-sm font-medium inline-flex items-center gap-1 {% if course.status == 'draft' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% elif course.status == 'published' %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% else %} bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 {% endif %}">
+                  {% if course.status == 'draft' %}
+                    <i class="fas fa-pencil-alt"></i>
+                  {% elif course.status == 'published' %}
+                    <i class="fas fa-globe"></i>
+                  {% else %}
+                    <i class="fas fa-archive"></i>
+                  {% endif %}
+                  {{ course.get_status_display }}
+                </span>
                 <span class="text-sm text-gray-600 dark:text-gray-400">{{ course.subject.name }}</span>
                 {% if course.tags %}<span class="text-sm text-gray-600 dark:text-gray-400">{{ course.tags }}</span>{% endif %}
               </div>
@@ -433,7 +487,9 @@
                                   <i class="fas fa-hourglass-half text-orange-500 dark:text-orange-400"></i>
                                   <span class="text-gray-500 dark:text-gray-400">Remaining:</span>
                                   <span class="font-bold text-orange-600 dark:text-orange-400"
-                                        id="remaining-count">
+                                        id="remaining-count"
+                                        data-total-sessions="{{ course.sessions.count|default:0 }}"
+                                        data-completed-sessions="{% if enrollment and enrollment.progress %}{{ enrollment.progress.completed_sessions.count }}{% else %}0{% endif %}">
                                     <!-- Will be filled by JavaScript -->
                                   </span>
                                 </div>
@@ -468,7 +524,7 @@
                                       <span class="font-medium">{{ session.title }}</span>
                                     </div>
                                     <div class="text-sm text-gray-600 dark:text-gray-400">
-                                      {{ session.start_time|date:"M d, Y" }}
+                                      {{ session.start_time|date:"M d, Y g:i A e" }}
                                       {% if session in enrollment.progress.completed_sessions.all %}
                                         <span class="ml-2 text-green-600 dark:text-green-400">Completed</span>
                                       {% elif session.end_time < now %}
@@ -627,30 +683,18 @@
               })
               .catch(error => console.error('Error loading calendar:', error));
       }
+  </script>
+  <script>
       document.addEventListener('DOMContentLoaded', function() {
-          const total = {
-              {
-                  course.sessions.count |
-                      default: 0
-              }
-          };
-          const completed = {
-              %
-              if enrollment and enrollment.progress %
-          } {
-              {
-                  enrollment.progress.completed_sessions.count
-              }
-          } {
-              %
-              else %
+          // Get session counts from data attributes rather than template variables
+          const remainingCountElement = document.getElementById('remaining-count');
+          // Check if the element exists before trying to access its properties
+          if (remainingCountElement) {
+              const total = parseInt(remainingCountElement.dataset.totalSessions) || 0;
+              const completed = parseInt(remainingCountElement.dataset.completedSessions) || 0;
+              const remaining = Math.max(0, total - completed);
+              remainingCountElement.textContent = remaining;
           }
-          0 {
-              %
-              endif %
-          };
-          const remaining = Math.max(0, total - completed);
-          document.getElementById('remaining-count').textContent = remaining;
       });
   </script>
 {% endblock content %}

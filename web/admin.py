@@ -46,6 +46,8 @@ from .models import (
     WebRequest,
 )
 
+admin.site.unregister(EmailAddress)
+
 
 class ProfileInline(admin.StackedInline):
     model = Profile
@@ -97,9 +99,40 @@ class ProfileAdmin(admin.ModelAdmin):
     )
 
 
+class EmailVerifiedFilter(admin.SimpleListFilter):
+    title = "Email Verification"
+    parameter_name = "email_verified"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("verified", "Verified"),
+            ("unverified", "Not Verified"),
+            ("no_record", "No Verification Record"),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == "verified":
+            return queryset.filter(emailaddress__verified=True)
+        elif self.value() == "unverified":
+            return queryset.filter(emailaddress__verified=False)
+        elif self.value() == "no_record":
+            # Users with no EmailAddress record
+            return queryset.exclude(id__in=EmailAddress.objects.values_list("user_id", flat=True))
+        return queryset
+
+
 class CustomUserAdmin(BaseUserAdmin):
     inlines = (ProfileInline, EmailAddressInline)
-    list_display = ("username", "email", "first_name", "last_name", "is_staff", "get_enrollment_count")
+    list_display = (
+        "username",
+        "email",
+        "first_name",
+        "last_name",
+        "is_staff",
+        "email_verified",
+        "get_enrollment_count",
+    )
+    list_filter = BaseUserAdmin.list_filter + (EmailVerifiedFilter,)
 
     # Add email to the add_fieldsets
     add_fieldsets = (
@@ -111,6 +144,20 @@ class CustomUserAdmin(BaseUserAdmin):
             },
         ),
     )
+
+    def email_verified(self, obj):
+        from django.utils.html import format_html
+
+        email_obj = EmailAddress.objects.filter(user=obj, email=obj.email).first()
+        if email_obj:
+            if email_obj.verified:
+                return format_html('<span style="color: green;">✓ Verified</span>')
+            else:
+                return format_html('<span style="color: red;">✗ Not verified</span>')
+        return format_html('<span style="color: orange;">? No record</span>')
+
+    email_verified.short_description = "Email Verified"
+    email_verified.admin_order_field = "emailaddress__verified"
 
     def get_enrollment_count(self, obj):
         count = obj.enrollments.count()
@@ -313,9 +360,9 @@ class CourseProgressAdmin(admin.ModelAdmin):
 
 @admin.register(Achievement)
 class AchievementAdmin(admin.ModelAdmin):
-    list_display = ("student", "course", "achievement_type", "title", "awarded_at")
+    list_display = ("student", "course", "achievement_type", "title", "badge_icon", "criteria_threshold", "awarded_at")
     list_filter = ("achievement_type", "awarded_at")
-    search_fields = ("student__username", "course__title", "title", "description")
+    search_fields = ("student__username", "course__title", "title", "description", "badge_icon")
     raw_id_fields = ("student", "course")
 
 

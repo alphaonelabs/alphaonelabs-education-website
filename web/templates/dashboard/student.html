@@ -139,6 +139,34 @@
         View Detailed Streak Info
       </a>
     </div>
+    <!-- Achievements Section -->
+    <section class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold mb-4">Your Achievements</h2>
+      {% if achievements %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {% for achievement in achievements %}
+            <div class="border border-gray-200 dark:border-gray-700 rounded p-4">
+              {% if achievement.badge_icon %}
+                <i class="{{ achievement.badge_icon }} text-4xl text-orange-500"></i>
+              {% else %}
+                <i class="fas fa-trophy text-4xl text-orange-500"></i>
+              {% endif %}
+              <h3 class="mt-2 text-lg font-semibold">{{ achievement.title }}</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-300">{{ achievement.description }}</p>
+              <p class="text-xs text-gray-500">Awarded on {{ achievement.awarded_at|date:"M d, Y" }}</p>
+              <!-- Share button for Twitter -->
+              <a href="https://twitter.com/intent/tweet?text=I%20earned%20the%20badge%20'{{ achievement.title|urlencode }}'%20on%20AlphaOneLabs!&url={{ request.build_absolute_uri|urlencode }}"
+                 target="_blank"
+                 class="mt-2 inline-block px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-xs">
+                Share on Twitter
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-gray-600 dark:text-gray-300">You haven't earned any achievements yet. Keep learning!</p>
+      {% endif %}
+    </section>
     <!-- Your Certificates Section -->
     <div class="mt-12">
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">

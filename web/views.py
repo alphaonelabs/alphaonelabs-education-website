@@ -1,20 +1,24 @@
 import calendar
+import html
+import ipaddress
 import json
 import os
 import re
 import shutil
+import socket
 import subprocess
 import time
 from collections import defaultdict
 from datetime import timedelta
 from decimal import Decimal
+from urllib.parse import urlparse
 
 import requests
 import stripe
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
@@ -433,21 +437,19 @@ def enroll_course(request, course_slug):
                 referrer.add_referral_earnings(5)
                 send_referral_reward_email(referrer.user, request.user, 5, "enrollment")
 
-    # Create enrollment
-    enrollment = Enrollment.objects.create(
-        student=request.user, course=course, status="pending" if course.price > 0 else "approved"
-    )
-
-    # For paid courses, create pending enrollment and redirect to payment
-    if course.price > 0:
+    # For free courses, create approved enrollment immediately
+    if course.price == 0:
+        enrollment = Enrollment.objects.create(student=request.user, course=course, status="approved")
+        # Send notifications for free courses
+        send_enrollment_confirmation(enrollment)
+        notify_teacher_new_enrollment(enrollment)
+        messages.success(request, "You have successfully enrolled in this free course.")
+        return redirect("course_detail", slug=course_slug)
+    else:
+        # For paid courses, create pending enrollment
+        enrollment = Enrollment.objects.create(student=request.user, course=course, status="pending")
         messages.info(request, "Please complete the payment process to enroll in this course.")
         return redirect("course_detail", slug=course_slug)
-
-    # For free courses, send notifications
-    send_enrollment_confirmation(enrollment)
-    notify_teacher_new_enrollment(enrollment)
-    messages.success(request, "You have successfully enrolled in this course.")
-    return redirect("course_detail", slug=course_slug)
 
 
 @login_required
@@ -470,7 +472,7 @@ def add_session(request, slug):
     else:
         form = SessionForm()
 
-    return render(request, "courses/add_session.html", {"form": form, "course": course})
+    return render(request, "courses/session_form.html", {"form": form, "course": course, "is_edit": False})
 
 
 @login_required
@@ -756,8 +758,33 @@ def create_payment_intent(request, slug):
     """Create a payment intent for Stripe."""
     course = get_object_or_404(Course, slug=slug)
 
+    # Prevent creating payment intents for free courses
+    if course.price == 0:
+        # Find the enrollment and update its status to approved if it's pending
+        enrollment = get_object_or_404(Enrollment, student=request.user, course=course)
+        if enrollment.status == "pending":
+            enrollment.status = "approved"
+            enrollment.save()
+
+            # Send notifications
+            send_enrollment_confirmation(enrollment)
+            notify_teacher_new_enrollment(enrollment)
+
+        return JsonResponse({"free_course": True, "message": "Enrollment approved for free course"})
+
     # Ensure user has a pending enrollment
-    get_object_or_404(Enrollment, student=request.user, course=course, status="pending")
+    enrollment = get_object_or_404(Enrollment, student=request.user, course=course, status="pending")
+
+    # Validate price is greater than zero for Stripe
+    if course.price <= 0:
+        enrollment.status = "approved"
+        enrollment.save()
+
+        # Send notifications
+        send_enrollment_confirmation(enrollment)
+        notify_teacher_new_enrollment(enrollment)
+
+        return JsonResponse({"free_course": True, "message": "Enrollment approved for free course"})
 
     try:
         # Create a PaymentIntent with the order amount and currency
@@ -1619,12 +1646,15 @@ def blog_detail(request, slug):
 
 @login_required
 def student_dashboard(request):
-    """Dashboard view for students showing their enrollments, progress, upcoming sessions, and learning streak."""
+    """
+    Dashboard view for students showing enrollments, progress, upcoming sessions, learning streak,
+    and an Achievements section.
+    """
     if request.user.profile.is_teacher:
         messages.error(request, "This dashboard is for students only.")
         return redirect("profile")
 
-    # Updated learning streak for the current student
+    # Update the learning streak.
     streak, created = LearningStreak.objects.get_or_create(user=request.user)
     streak.update_streak()
 
@@ -1633,7 +1663,6 @@ def student_dashboard(request):
         course__enrollments__student=request.user, start_time__gt=timezone.now()
     ).order_by("start_time")[:5]
 
-    # Get progress for each enrollment and set a flag for certificate existence
     progress_data = []
     total_progress = 0
     for enrollment in enrollments:
@@ -1646,15 +1675,18 @@ def student_dashboard(request):
         )
         total_progress += progress.completion_percentage
 
-    # Calculate average progress
     avg_progress = round(total_progress / len(progress_data)) if progress_data else 0
+
+    # Query achievements for the user.
+    achievements = Achievement.objects.filter(student=request.user).order_by("-awarded_at")
 
     context = {
         "enrollments": enrollments,
         "upcoming_sessions": upcoming_sessions,
         "progress_data": progress_data,
         "avg_progress": avg_progress,
-        "streak": streak,  # Passing the streak object to the template (optional)
+        "streak": streak,
+        "achievements": achievements,
     }
     return render(request, "dashboard/student.html", context)
 
@@ -1996,12 +2028,14 @@ def send_welcome_email(user):
 @login_required
 def edit_session(request, session_id):
     """Edit an existing session."""
+    # Get the session and verify that the current user is the course teacher
     session = get_object_or_404(Session, id=session_id)
+    course = session.course
 
     # Check if user is the course teacher
-    if request.user != session.course.teacher:
+    if request.user != course.teacher:
         messages.error(request, "Only the course teacher can edit sessions!")
-        return redirect("course_detail", slug=session.course.slug)
+        return redirect("course_detail", slug=course.slug)
 
     if request.method == "POST":
         form = SessionForm(request.POST, instance=session)
@@ -2012,7 +2046,9 @@ def edit_session(request, session_id):
     else:
         form = SessionForm(instance=session)
 
-    return render(request, "courses/edit_session.html", {"form": form, "session": session, "course": session.course})
+    return render(
+        request, "courses/session_form.html", {"form": form, "session": session, "course": course, "is_edit": True}
+    )
 
 
 @login_required
@@ -2753,13 +2789,72 @@ def challenge_submit(request, challenge_id):
 
 @require_GET
 def fetch_video_title(request):
+    """
+    Fetch video title from a URL with proper security measures to prevent SSRF attacks.
+    """
     url = request.GET.get("url")
     if not url:
         return JsonResponse({"error": "URL parameter is required"}, status=400)
 
+    # Validate URL
     try:
-        response = requests.get(url)
+        parsed_url = urlparse(url)
+
+        # Check for scheme - only allow http and https
+        if parsed_url.scheme not in ["http", "https"]:
+            return JsonResponse({"error": "Invalid URL scheme. Only HTTP and HTTPS are supported."}, status=400)
+
+        # Check for private/internal IP addresses
+        if parsed_url.netloc:
+            hostname = parsed_url.netloc.split(":")[0]
+
+            # Block localhost variations and common internal domains
+            blocked_hosts = [
+                "localhost",
+                "127.0.0.1",
+                "0.0.0.0",
+                "internal",
+                "intranet",
+                "local",
+                "lan",
+                "corp",
+                "private",
+                "::1",
+            ]
+
+            if any(blocked in hostname.lower() for blocked in blocked_hosts):
+                return JsonResponse({"error": "Access to internal networks is not allowed"}, status=403)
+
+            # Resolve hostname to IP and check if it's private
+            try:
+                ip_address = socket.gethostbyname(hostname)
+                ip_obj = ipaddress.ip_address(ip_address)
+
+                # Check if the IP is private/internal
+                if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_multicast:
+                    return JsonResponse({"error": "Access to internal/private networks is not allowed"}, status=403)
+            except (socket.gaierror, ValueError):
+                # If hostname resolution fails or IP parsing fails, continue
+                pass
+
+    except Exception as e:
+        return JsonResponse({"error": f"Invalid URL format: {str(e)}"}, status=400)
+
+    # Set a timeout to prevent hanging requests
+    timeout = 5  # seconds
+
+    try:
+        # Only allow HEAD and GET methods with limited redirects
+        response = requests.get(
+            url,
+            timeout=timeout,
+            allow_redirects=True,
+            headers={
+                "User-Agent": "Educational-Website-Validator/1.0",
+            },
+        )
         response.raise_for_status()
+
         # Extract title from response headers or content
         title = response.headers.get("title", "")
         if not title:
@@ -2767,9 +2862,14 @@ def fetch_video_title(request):
             content = response.text
             title_match = re.search(r"<title>(.*?)</title>", content)
             title = title_match.group(1) if title_match else "Untitled Video"
+
+            # Sanitize the title
+            title = html.escape(title)
+
         return JsonResponse({"title": title})
+
     except requests.RequestException:
-        return JsonResponse({"error": "Failed to fetch video title"}, status=500)
+        return JsonResponse({"error": "Failed to fetch video title:"}, status=500)
 
 
 def get_referral_stats():
@@ -3992,8 +4092,127 @@ def embed_tracker(request, embed_code):
 
 @login_required
 def streak_detail(request):
-    """
-    Full-page view to display the user's learning streak details.
-    """
+    """Display the user's learning streak."""
+    if not request.user.is_authenticated:
+        return redirect("account_login")
     streak, created = LearningStreak.objects.get_or_create(user=request.user)
     return render(request, "streak_detail.html", {"streak": streak})
+
+
+def is_superuser(user):
+    return user.is_superuser
+
+
+@user_passes_test(is_superuser)
+def sync_github_milestones(request):
+    """Sync GitHub milestones with forum topics."""
+    github_repo = "alphaonelabs/alphaonelabs-education-website"
+    milestones_url = f"https://api.github.com/repos/{github_repo}/milestones"
+
+    try:
+        # Get GitHub milestones
+        response = requests.get(milestones_url)
+        response.raise_for_status()
+        milestones = response.json()
+
+        # Get or create a forum category for milestones
+        category, created = ForumCategory.objects.get_or_create(
+            name="GitHub Milestones",
+            defaults={
+                "slug": "github-milestones",
+                "description": "Discussions about GitHub milestones and project roadmap",
+                "icon": "fa-github",
+            },
+        )
+
+        # Count for tracking
+        created_count = 0
+        updated_count = 0
+
+        for milestone in milestones:
+            milestone_title = milestone["title"]
+            milestone_description = milestone["description"] or "No description provided."
+            milestone_url = milestone["html_url"]
+            milestone_state = milestone["state"]
+            open_issues = milestone["open_issues"]
+            closed_issues = milestone["closed_issues"]
+            due_date = milestone.get("due_on", "No due date")
+
+            # Format content with progress information
+            progress = 0
+            if open_issues + closed_issues > 0:
+                progress = (closed_issues / (open_issues + closed_issues)) * 100
+
+            content = f"""
+## Milestone: {milestone_title}
+
+{milestone_description}
+
+**State:** {milestone_state}
+**Progress:** {progress:.1f}% ({closed_issues} closed / {open_issues} open issues)
+**Due Date:** {due_date}
+
+[View on GitHub]({milestone_url})
+            """
+
+            # Try to find an existing topic for this milestone
+            topic = ForumTopic.objects.filter(
+                category=category, title__startswith=f"Milestone: {milestone_title}"
+            ).first()
+
+            if topic:
+                # Update existing topic
+                topic.content = content
+                topic.is_pinned = milestone_state == "open"  # Pin open milestones
+                topic.save()
+                updated_count += 1
+            else:
+                # Create new topic
+                # Use the first superuser as the author
+                author = User.objects.filter(is_superuser=True).first()
+                if author:
+                    ForumTopic.objects.create(
+                        category=category,
+                        title=f"Milestone: {milestone_title}",
+                        content=content,
+                        author=author,
+                        is_pinned=(milestone_state == "open"),
+                    )
+                    created_count += 1
+
+        if created_count or updated_count:
+            messages.success(
+                request, f"Successfully synced GitHub milestones: {created_count} created, {updated_count} updated."
+            )
+        else:
+            messages.info(request, "No GitHub milestones to sync.")
+
+    except requests.exceptions.RequestException as e:
+        messages.error(request, f"Error fetching GitHub milestones: {str(e)}")
+    except Exception as e:
+        messages.error(request, f"Error syncing milestones: {str(e)}")
+
+    return redirect("forum_categories")
+
+
+@login_required
+def toggle_course_status(request, slug):
+    """Toggle a course between draft and published status"""
+    course = get_object_or_404(Course, slug=slug)
+
+    # Check if user is the course teacher
+    if request.user != course.teacher:
+        messages.error(request, "Only the course teacher can modify course status!")
+        return redirect("course_detail", slug=slug)
+
+    # Toggle the status between draft and published
+    if course.status == "draft":
+        course.status = "published"
+        messages.success(request, "Course has been published successfully!")
+    elif course.status == "published":
+        course.status = "draft"
+        messages.success(request, "Course has been unpublished and is now in draft mode.")
+    # Note: We don't toggle from/to 'archived' status as that's a separate action
+
+    course.save()
+    return redirect("course_detail", slug=slug)
