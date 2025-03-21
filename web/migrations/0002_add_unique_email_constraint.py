@@ -12,23 +12,33 @@ class Migration(migrations.Migration):
         migrations.RunSQL(
             # Forward SQL - Add unique constraint after handling duplicates
             """
-            UPDATE auth_user
-            SET email = email || '_' || (
-                SELECT COUNT(*)
-                FROM auth_user AS t2
-                WHERE t2.email = auth_user.email
-                AND t2.id <= auth_user.id
-            )
-            WHERE email IN (
-                SELECT email
-                FROM auth_user
-                GROUP BY email
-                HAVING COUNT(*) > 1
-            );
+            -- Create a temporary table to store duplicates
+            CREATE TEMPORARY TABLE tmp_duplicates AS
+            SELECT email FROM auth_user GROUP BY email HAVING COUNT(*) > 1;
 
+            -- Create another temporary table to store the update information
+            CREATE TEMPORARY TABLE tmp_updates AS
+            SELECT 
+                a.id,
+                a.email,
+                (SELECT COUNT(*) FROM auth_user b WHERE b.email = a.email AND b.id <= a.id) AS row_num
+            FROM auth_user a
+            JOIN tmp_duplicates d ON a.email = d.email;
+
+            -- Update all but the first occurrence of each duplicate email
+            UPDATE auth_user u
+            JOIN tmp_updates t ON u.id = t.id
+            SET u.email = CONCAT(u.email, '_', t.row_num - 1)
+            WHERE t.row_num > 1;
+
+            -- Drop temporary tables
+            DROP TEMPORARY TABLE tmp_duplicates;
+            DROP TEMPORARY TABLE tmp_updates;
+
+            -- Create unique index
             CREATE UNIQUE INDEX IF NOT EXISTS auth_user_email_unique ON auth_user(email);
             """,
             # Reverse SQL - Remove unique constraint
-            "DROP INDEX IF EXISTS auth_user_email_unique;",
+            "DROP INDEX IF EXISTS auth_user_email_unique ON auth_user;",
         )
     ]
