@@ -358,6 +358,110 @@
             </ul>
           </div>
         </div>
+        {% if user.is_authenticated %}
+          <!-- Team Collaboration Section -->
+          <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg p-6 mt-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold text-white">Team Collaboration</h2>
+              <a href="{% url 'team_goals' %}"
+                 class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
+                <span>View All</span>
+                <i class="fas fa-arrow-right ml-2"></i>
+              </a>
+            </div>
+            {% if user.is_authenticated %}
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- My Team Goals -->
+                <div class="space-y-4">
+                  <h3 class="text-lg font-semibold text-white">My Team Goals</h3>
+                  {% if user_team_goals %}
+                    <div class="space-y-3">
+                      {% for goal in user_team_goals|slice:":3" %}
+                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition duration-200">
+                          <h4 class="font-medium text-white">{{ goal.title }}</h4>
+                          <p class="text-sm text-gray-200 mt-1">{{ goal.description|truncatechars:100 }}</p>
+                          {% if goal.deadline %}
+                            <div class="text-sm text-gray-200 mt-2">
+                              <i class="fas fa-calendar-alt mr-1"></i>
+                              {% load i18n %}
+
+                              <span>{% trans "Due" %}: {{ goal.deadline|date:"M j, Y" }}</span>
+                              {% if goal.deadline < now %}
+                                <span class="text-red-300 ml-1">({% trans "Overdue" %})</span>
+                              {% else %}
+                                <span class="text-gray-300 ml-1">({{ goal.deadline|timeuntil }} {% trans "left" %})</span>
+                              {% endif %}
+                            </div>
+                          {% endif %}
+                          <div class="flex items-center justify-between mt-3">
+                            <span class="text-sm text-gray-200">
+                              <i class="fas fa-users mr-1"></i>
+                              {{ goal.members.count }} members
+                            </span>
+                            <a href="{% url 'team_goal_detail' goal.id %}"
+                               class="text-white hover:text-gray-200 text-sm">View Details</a>
+                          </div>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% else %}
+                    <p class="text-gray-200">You haven't created or joined any team goals yet.</p>
+                  {% endif %}
+                  <a href="{% url 'create_team_goal' %}"
+                     class="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-gray-100 rounded-lg transition duration-200">
+                    <i class="fas fa-plus mr-2"></i>
+                    Create New Team Goal
+                  </a>
+                </div>
+                <!-- Team Invitations -->
+                <div class="space-y-4">
+                  <h3 class="text-lg font-semibold text-white">Team Invitations</h3>
+                  {% if team_invites %}
+                    <div class="space-y-3">
+                      {% for invite in team_invites|slice:":3" %}
+                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition duration-200">
+                          <h4 class="font-medium text-white">{{ invite.goal.title }}</h4>
+                          <p class="text-sm text-gray-200 mt-1">Invited by {{ invite.sender.get_full_name|default:invite.sender.username }}</p>
+                          <div class="flex items-center space-x-2 mt-3">
+                            <form method="post"
+                                  action="{% url 'accept_team_invite' invite.id %}"
+                                  class="inline">
+                              {% csrf_token %}
+                              <button type="submit"
+                                      class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition duration-200">
+                                Accept
+                              </button>
+                            </form>
+                            <form method="post"
+                                  action="{% url 'decline_team_invite' invite.id %}"
+                                  class="inline">
+                              {% csrf_token %}
+                              <button type="submit"
+                                      class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition duration-200">
+                                Decline
+                              </button>
+                            </form>
+                          </div>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% else %}
+                    <p class="text-gray-200">You have no pending team invitations.</p>
+                  {% endif %}
+                </div>
+              </div>
+            {% else %}
+              <div class="text-center py-8">
+                <p class="text-gray-200 mb-4">Sign in to create or join team goals and collaborate with others!</p>
+                <a href="{% url 'login' %}"
+                   class="inline-flex items-center px-6 py-3 bg-white text-blue-600 hover:bg-gray-100 rounded-lg transition duration-200">
+                  <i class="fas fa-sign-in-alt mr-2"></i>
+                  Sign In to Get Started
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
       </div>
       <div class="md:w-1/3 space-y-6">
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
