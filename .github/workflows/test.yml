@@ -29,9 +29,26 @@ jobs:
         #pre-commit autoupdate
         pre-commit install
         pre-commit run --all-files
-  
+
   tests:
     runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: test_db
+          MYSQL_USER: django
+          MYSQL_PASSWORD: django_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+    
     steps:
     - uses: actions/checkout@v3
 
@@ -41,22 +58,25 @@ jobs:
         python-version: 3.10.x
         cache: 'pip'
 
-    - name: Run tests
+    - name: Run tests with MySQL
+      env:
+        DATABASE_URL: mysql://django:django_password@127.0.0.1:3306/test_db
       run: |
         cp .env.sample .env
+        # Override the DATABASE_URL in .env file with MySQL connection
+        sed -i 's|DATABASE_URL=sqlite:///db.sqlite3|DATABASE_URL=mysql://django:django_password@127.0.0.1:3306/test_db|g' .env
+        
+        # Install MySQL client
+        sudo apt-get update
+        sudo apt-get install -y default-libmysqlclient-dev
+        
         python -m pip install --upgrade pip wheel setuptools
         pip install -v -r requirements.txt
+        # Add MySQL client to ensure Django can connect to MySQL
+        pip install mysqlclient
+        
+        # Run tests with MySQL
         python manage.py test
-
-    # - name: Run tests with coverage
-    #   run: |
-    #     pytest -v --cov=web --cov-report=xml
-
-    # - name: Upload coverage to Codecov
-    #   uses: codecov/codecov-action@v3
-    #   with:
-    #     file: ./coverage.xml
-    #     fail_ci_if_error: true
 
   security:
     runs-on: ubuntu-latest
