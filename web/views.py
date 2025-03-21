@@ -2,6 +2,7 @@ import calendar
 import html
 import ipaddress
 import json
+import logging
 import os
 import re
 import shutil
@@ -12,9 +13,10 @@ from collections import defaultdict
 from datetime import timedelta
 from decimal import Decimal
 from urllib.parse import urlparse
-from django.conf import settings
+
 import requests
 import stripe
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -123,8 +125,7 @@ from .models import (
 from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
 from .referrals import send_referral_reward_email
 from .social import get_social_stats
-from .utils import get_or_create_cart, geocode_address
-import logging
+from .utils import geocode_address, get_or_create_cart
 
 logger = logging.getLogger(__name__)
 
@@ -4209,7 +4210,6 @@ def toggle_course_status(request, slug):
     return redirect("course_detail", slug=slug)
 
 
-# Live Classes views
 def classes_map(request):
     """View for displaying classes near the user."""
     now = timezone.now()
@@ -4232,7 +4232,11 @@ def classes_map(request):
     courses = Course.objects.only("id", "title").order_by("title")
     age_groups = Course._meta.get_field("level").choices
 
-    context = {"sessions": sessions, "courses": courses, "age_groups": age_groups, "gm_api_key": settings.GM_API_KEY}
+    context = {
+        "sessions": sessions,
+        "courses": courses,
+        "age_groups": age_groups,
+    }
     return render(request, "web/classes_map.html", context)
 
 
@@ -4306,7 +4310,8 @@ def map_data_api(request):
     if sessions_to_update:
         logger.info(f"Batch updating coordinates for {len(sessions_to_update)} sessions")
         Session.objects.bulk_update(sessions_to_update, ["latitude", "longitude"])  # Batch update
-     # Log summary of issues
+
+    # Log summary of issues
     if geocoding_errors > 0 or coordinate_errors > 0:
         logger.warning(f"Map data issues: {geocoding_errors} geocoding errors, {coordinate_errors} coordinate errors")
 

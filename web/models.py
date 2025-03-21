@@ -4,6 +4,7 @@ import string
 import time
 import uuid
 from io import BytesIO
+
 from allauth.account.signals import user_signed_up
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -383,17 +384,20 @@ class Session(models.Model):
         super().delete(*args, **kwargs)
 
     def fetch_coordinates(self):
+        """Fetch latitude and longitude using OpenStreetMap's Nominatim API."""
         from .utils import geocode_address
 
-        """Fetch latitude and longitude using Google Maps API."""
         if not self.location:
             return
-        # Call the geocode_address function
-        coords = geocode_address(self.location)
-        if coords:
-            self.latitude, self.longitude = coords
+
+        coordinates = geocode_address(self.location)
+        if coordinates:
+            self.latitude, self.longitude = coordinates
         else:
-            print(f"Failed to fetch coordinates for {self.location}")
+            print(
+                f"Skipping session {self.id} due to invalid coordinates:",
+                f"lat={self.latitude}, \n lng={self.longitude}",
+            )
 
     def is_live(self):
         """Returns True if the session is live right now."""

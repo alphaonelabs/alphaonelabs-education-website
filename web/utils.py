@@ -1,6 +1,7 @@
-from django.conf import settings
-from web.models import Cart
 import requests
+from django.conf import settings
+
+from web.models import Cart
 
 
 def send_slack_message(message):
@@ -34,34 +35,23 @@ def get_or_create_cart(request):
     return cart
 
 
-# To geocode address
 def geocode_address(address):
     """
-    Convert a text address to latitude and longitude coordinates using Google Maps API.
-    Returns a tuple of (latitude, longitude) or None if geocoding fails.
-
-    You'll need to add a `GOOGLE_MAPS_API_KEY` to your settings.py.
+    Convert a text address to latitude and longitude using OpenStreetMap's Nominatim API.
     """
     if not address:
         return None
-    api_key = getattr(settings, "GM_API_KEY", "")
-    if not api_key:
-        print("Google Maps API key is missing in settings.")
-        return None
 
-    url = f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={api_key}"
+    url = f"https://nominatim.openstreetmap.org/search?q={address}&format=json"
 
     try:
-        response = requests.get(url)
-        response.raise_for_status()  # Raise an error for bad responses (4xx, 5xx)
+        response = requests.get(url, headers={"User-Agent": "YourAppName"})
         data = response.json()
 
-        if data.get("status") == "OK":
-            location = data["results"][0]["geometry"]["location"]
-            return (location["lat"], location["lng"])
-        else:
-            print(f"Geocoding failed: {data.get('status')}")
-            return None
+        if data and len(data) > 0:
+            location = data[0]  # Take the first result
+            return (float(location["lat"]), float(location["lon"]))
+        return None
     except Exception as e:
         print(f"Geocoding error: {e}")
         return None

@@ -1,234 +1,247 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mx-auto px-6 py-8">
-    <h2 class="text-3xl font-semibold text-gray-900 dark:text-white text-center mb-6">
-        🎓 Live Classes Nearby
-    </h2>
-
+  <div class="container mx-auto px-6 py-8">
+    <h2 class="text-3xl font-semibold text-gray-900 dark:text-white text-center mb-6">🎓 Live Classes Nearby</h2>
     <!-- Filter Form -->
-    <form id="filter-form" class="bg-white dark:bg-gray-800 p-6 shadow-lg rounded-lg flex flex-wrap items-center gap-4 mb-8">
-        {% csrf_token %}
-        <div class="flex flex-col">
-            <label for="course" class="text-gray-700 dark:text-gray-300 font-medium">Course</label>
-            <select name="course" id="course" class="p-2 border rounded-lg shadow-sm dark:bg-gray-700 dark:text-white">
-                <option value="">All</option>
-                {% for course in courses %}
-                <option value="{{ course.id }}">{{ course.title }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="flex flex-col">
-            <label for="age_group" class="text-gray-700 dark:text-gray-300 font-medium">Age Group</label>
-            <select name="age_group" id="age_group" class="p-2 border rounded-lg shadow-sm dark:bg-gray-700 dark:text-white">
-                <option value="">All</option>
-                {% for value, display in age_groups %}
-                <option value="{{ value }}">{{ display }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <button type="submit" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg shadow-md hover:bg-blue-700 transition">
-            Apply Filters
-        </button>
-
-        <button id="recenter-btn" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg shadow-md hover:bg-blue-700 transition">
-            🔄 Recenter
-        </button>
+    <form id="filter-form"
+          method="GET"
+          class="bg-white dark:bg-gray-800 p-6 shadow-lg rounded-lg flex flex-wrap items-center gap-4 mb-8">
+      {% csrf_token %}
+      <div class="flex flex-col">
+        <label for="course" class="text-gray-700 dark:text-gray-300 font-medium">Course</label>
+        <select name="course"
+                id="course"
+                class="p-2 border rounded-lg shadow-sm dark:bg-gray-700 dark:text-white">
+          <option value="">All</option>
+          {% for course in courses %}<option value="{{ course.id }}">{{ course.title }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="flex flex-col">
+        <label for="age_group" class="text-gray-700 dark:text-gray-300 font-medium">Age Group</label>
+        <select name="age_group"
+                id="age_group"
+                class="p-2 border rounded-lg shadow-sm dark:bg-gray-700 dark:text-white">
+          <option value="">All</option>
+          {% for value, display in age_groups %}<option value="{{ value }}">{{ display }}</option>{% endfor %}
+        </select>
+      </div>
+      <button type="submit"
+              class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg shadow-md hover:bg-blue-700 transition">
+        Apply Filters
+      </button>
+      <button type="button"
+              id="recenter-btn"
+              class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg shadow-md hover:bg-blue-700 transition">
+        🔄 Recenter
+      </button>
     </form>
-
     <!-- Loading Indicator -->
-    <div id="loading" class="text-center text-gray-600 dark:text-gray-300 hidden">Loading classes...</div>
-
+    <div id="loading"
+         class="text-center text-gray-600 dark:text-gray-300 hidden">Loading classes...</div>
     <!-- Map & List Section -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Session List -->
-        <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg lg:col-span-1 overflow-auto max-h-[500px]">
-            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Upcoming Sessions</h3>
-            <ul id="session-list" class="space-y-3"></ul>
+      <!-- Session List -->
+      <div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg lg:col-span-1 overflow-auto max-h-[500px]">
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Upcoming Sessions</h3>
+        <ul id="session-list" class="space-y-3">
+          {% for session in sessions %}
+            <li class="p-3 bg-gray-100 dark:bg-gray-700 rounded-lg flex justify-between items-center">
+              <div>
+                <strong class="text-gray-900 dark:text-white">{{ session.title }}</strong>
+                <p class="text-gray-600 dark:text-gray-300">{{ session.date }} | {{ session.location }}</p>
+              </div>
+              <button class="px-3 py-1 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition locate-btn"
+                      data-lat="{{ session.latitude }}"
+                      data-lng="{{ session.longitude }}">📍 Locate</button>
+            </li>
+          {% empty %}
+            <p class="text-gray-500 dark:text-gray-400">No sessions available.</p>
+          {% endfor %}
+        </ul>
+      </div>
+      <!-- Map -->
+      <div class="relative lg:col-span-2">
+        <div id="map"
+             class="w-full h-[500px] rounded-lg shadow-lg border dark:border-gray-700"></div>
+        <div id="no-results"
+             class="hidden absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-900 bg-opacity-80 rounded-lg">
+          <p class="text-lg text-gray-700 dark:text-gray-300 font-medium">No classes found. Try adjusting your filters.</p>
         </div>
-
-        <!-- Map -->
-        <div class="relative lg:col-span-2">
-            <div id="map" class="w-full h-[500px] rounded-lg shadow-lg border dark:border-gray-700"></div>
-            <div id="no-results" class="hidden absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-900 bg-opacity-80 rounded-lg">
-                <p class="text-lg text-gray-700 dark:text-gray-300 font-medium">No classes found. Try adjusting your filters.</p>
-            </div>
-        </div>
-        
+      </div>
     </div>
-</div>
+  </div>
+  <!-- OpenStreetMap -->
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <script>
+      document.addEventListener("DOMContentLoaded", function() {
+          // Initialize Map with a default location
+          var map = L.map('map').setView([20.5937, 78.9629], 5); // Default: India
 
-<script>
-let map, markers = [];
-let userLocation = null;
-function initMap() {
-    map = new google.maps.Map(document.getElementById('map'), {
-        center: { lat: 28.7041, lng: 77.1025 },
-        zoom: 10,
-        styles: [{ featureType: "water", stylers: [{ color: "#aadaff" }] }, { featureType: "road", stylers: [{ visibility: "simplified" }] }, { featureType: "poi", stylers: [{ visibility: "off" }] }],
-    });
+          // Load OpenStreetMap tiles
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+              attribution: '&copy; OpenStreetMap contributors'
+          }).addTo(map);
 
-    if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition((position) => {
-            userLocation = { lat: position.coords.latitude, lng: position.coords.longitude };
-            map.setCenter(userLocation);
-            map.setZoom(12);
-            new google.maps.Marker({ position: userLocation, map: map, title: "Your Location", icon: "https://maps.google.com/mapfiles/ms/icons/red-dot.png" });
-        });
-    }
+          // User location marker
+          var userMarker = null;
 
-    loadMapData();
-}
+          // Custom icon CSS
+          var userIcon = L.icon({
+              iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
+              iconSize: [32, 32],
+              iconAnchor: [16, 32],
+              popupAnchor: [0, -32]
+          });
 
-function loadMapData() {
-    document.getElementById('loading').classList.remove('hidden');
-    document.getElementById('no-results').classList.add('hidden');
-    
-    fetch(`/api/map-data/?` + new URLSearchParams(new FormData(document.getElementById('filter-form'))))
-        .then(response => response.json())
-        .then(data => {
-            document.getElementById('loading').classList.add('hidden');
-            clearMarkers();
-            document.getElementById('session-list').innerHTML = '';
-            
-            if (data.sessions.length > 0) {
-                data.sessions.forEach(session => addMarker(session));
-                fitMapToBounds();
-            } else {
-                document.getElementById('no-results').classList.remove('hidden');
-            }
-        })
-        .catch(error => console.error("Error fetching data:", error));
-}
+          var defaultIcon = L.icon({
+              iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
+              iconSize: [32, 32],
+              iconAnchor: [16, 32],
+              popupAnchor: [0, -32]
+          });
 
-function addMarker(session) {
-    let marker = new google.maps.Marker({
-        position: { lat: session.lat, lng: session.lng },
-        map: map,
-        title: session.course_title,
-        animation: google.maps.Animation.DROP,
-        icon: "https://maps.google.com/mapfiles/ms/icons/blue-dot.png"
-    });
+          var highlightedIcon = L.icon({
+              iconUrl: 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png', // Use a different color
+              iconSize: [38, 38], // Slightly bigger for emphasis
+              iconAnchor: [19, 38],
+              popupAnchor: [0, -38]
+          });
 
-    let infoWindow = new google.maps.InfoWindow({
-        content: `
-            <div class="p-3 z-10">
-                <h4 class="text-lg font-semibold text-blue-600">${session.course_title}</h4>
-                <p class="text-gray-700"><strong>Topic:</strong> ${session.title}</p>
-                <p class="text-gray-700"><strong>Teacher:</strong> ${session.teacher}</p>
-                <p class="text-gray-600"><strong>Location:</strong> ${session.location}</p>
-                <p class="text-green-600 font-bold">$${session.price}</p>
+          // Ask for User's Location
+          if (navigator.geolocation) {
+              navigator.geolocation.getCurrentPosition(
+                  function(position) {
+                      var userLat = position.coords.latitude;
+                      var userLng = position.coords.longitude;
 
-                <p class="text-gray-600">
-                    <strong>Duration:</strong> ${formatDateTime(session.start_time)} to ${formatDateTime(session.end_time)}
-                </p>
-                <br/>
-                <a href="https://www.google.com/maps/dir/?api=1&destination=${session.lat},${session.lng}" 
-                target="_blank" 
-                class="mt-2 inline-block text-white bg-green-500 px-3 py-1 rounded-lg shadow hover:bg-green-600 transition">
-                    🚗 Get Directions
-                </a>
-            </div>
+                      // Recenter map to user's live location
+                      map.setView([userLat, userLng], 12);
 
-        `,
-    });
+                      // Add marker for user's live location
+                      userMarker = L.marker([userLat, userLng], {
+                              icon: userIcon
+                          })
+                          .addTo(map)
+                          .bindPopup("Your Location")
+                          .openPopup();
+                  },
+                  function(error) {
+                      console.error("Error getting location:", error);
+                      alert("Location access denied. Please enable it in your browser settings.");
+                  }
+              );
+          } else {
+              alert("Geolocation is not supported by this browser.");
+          }
 
-    function formatDateTime(dateTime) {
-    const date = new Date(dateTime);
-    return date.toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-    });
-}
+          // Load session locations from template data
+          var markers = [];
+          {
+              %
+              for session in sessions %
+          }
+          var marker = L.marker([{
+                  {
+                      session.latitude
+                  }
+              }, {
+                  {
+                      session.longitude
+                  }
+              }], {
+                  icon: defaultIcon
+              })
+              .addTo(map)
+              .bindPopup(`<strong>{{ session.title }}</strong><br />
+    {{ session.date }}<br />
+    {{ session.location }}<br />
 
+    <!-- Add Teacher and Course Title -->
+    Teacher: {{ session.teacher }}<br />
+    Course Title: {{ session.course_title }}<br />
 
-    let hoverWindow = new google.maps.InfoWindow({
-        content: `
-            <a class="text-blue-600 font-semibold hover:underline">
-                    📌 ${session.title} - Click to know more
-            </a>
+    <!-- Format Session Duration -->
+    {% with start_time=session.start_time end_time=session.end_time %}
+        Start: {{ start_time|date:"H:i" }}, {{ start_time|date:"Y-m-d" }}<br />
+        End: {{ end_time|date:"H:i" }}, {{ end_time|date:"Y-m-d" }}<br />
+    {% endwith %}
 
-            <!-- Tooltip (Initially Hidden) -->
-            
-        </div>
+    <!-- Get Directions Button -->
+    <a href="https://www.openstreetmap.org/directions?from={{ session.location }}" target="_blank">
+        <button>Get Directions</button>
+    </a>`);
 
-        `
-    })
+          markers.push({
+              lat: {
+                  {
+                      session.latitude
+                  }
+              },
+              lng: {
+                  {
+                      session.longitude
+                  }
+              },
+              marker: marker
+          });
+          {
+              %
+              endfor %
+          }
 
-    // Show info window on hover
-    marker.addListener("mouseover", () => {
-        hoverWindow.open(map, marker);
-        marker.setIcon("https://maps.google.com/mapfiles/ms/icons/yellow-dot.png"); // Highlight marker
-    });
+          // Show 'No results' message if no sessions
+          if (markers.length === 0) {
+              document.getElementById("no-results").classList.remove("hidden");
+          }
 
-    // Close info window when mouse leaves
-    marker.addListener("mouseout", () => {
-        hoverWindow.close();
-        marker.setIcon("https://maps.google.com/mapfiles/ms/icons/blue-dot.png"); // Reset color
-    });
+          // Locate Button Click Event
+          let activeMarker = null; // Store the currently highlighted marker
 
-    marker.addListener('click', () => infoWindow.open(map, marker));
-    markers.push(marker);
+          document.querySelectorAll('.locate-btn').forEach(button => {
+              button.addEventListener('click', function() {
+                  var lat = parseFloat(this.getAttribute('data-lat'));
+                  var lng = parseFloat(this.getAttribute('data-lng'));
 
-    document.getElementById('session-list').innerHTML += `<li class='p-3 bg-gray-100 dark:bg-gray-700 rounded-lg shadow flex justify-between items-center cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600 transition' onclick='focusOnMarker(${session.lat}, ${session.lng})'>
-        <span class='text-gray-900 dark:text-white'>${session.title}</span>
-        <button class='text-blue-500 dark:text-blue-400 font-medium'>Locate</button>
-    </li>`;
-}
+                  // Set map view to the new location
+                  map.setView([lat, lng], 14);
 
-function focusOnMarker(lat, lng) {
-    map.setCenter({ lat, lng });
-    map.setZoom(15);
-}
+                  // Reset the previous marker if any
+                  if (activeMarker) {
+                      activeMarker.setIcon(defaultIcon); // Reset to default icon
+                  }
 
-function clearMarkers() {
-    markers.forEach(marker => marker.setMap(null));
-    markers = [];
-}
+                  // Find the marker that matches this location
+                  let selectedMarker = markers.find(marker =>
+                      marker.marker.getLatLng().lat === lat && marker.marker.getLatLng().lng === lng
+                  );
 
-document.getElementById("recenter-btn").addEventListener("click", function () {
-    if (userLocation) {
-        // Recenter the map to the user's location
-        map.setCenter(userLocation);
-        map.setZoom(12);
+                  if (selectedMarker) {
+                      selectedMarker.marker.setIcon(highlightedIcon); // Change marker icon
+                      selectedMarker.marker.openPopup(); // Open popup for visibility
+                      activeMarker = selectedMarker.marker; // Store this as the active marker
+                  }
+              });
+          });
 
-        // Clear all filters
-        document.getElementById("filter-form").reset(); // Reset any filter form (if exists)
-
-        // Reload all map markers without filters
-        loadMapData(); // Call the function that loads the full dataset
-    } else {
-        alert("Location not available. Please allow location access.");
-    }
-});
-
-
-// Auto-fetch on filter change
-document.getElementById('filter-form').addEventListener('submit', function (e) {
-    e.preventDefault();
-    loadMapData();
-});
-</script>
-
-<script>
-      // Check if API key is available
-      const gmApiKey = "{{ gm_api_key|escapejs }}";
-      if (!gmApiKey) {
-        document.getElementById('map').innerHTML = '<div class="flex items-center justify-center h-full bg-gray-100 text-gray-700 p-4 rounded-lg">Google Maps API key is missing. Please contact the administrator.</div>';
-      } else {
-        // Load Google Maps with the API key
-        const script = document.createElement('script');
-        script.src = `https://maps.googleapis.com/maps/api/js?key=${gmApiKey}&callback=initMap`;
-        script.async = true;
-        script.defer = true;
-        document.head.appendChild(script);
-      }
-</script>
+          // Recenter Button
+          document.getElementById("recenter-btn").addEventListener("click", function() {
+              if (navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition(
+                      function(position) {
+                          var userLat = position.coords.latitude;
+                          var userLng = position.coords.longitude;
+                          map.setView([userLat, userLng], 12);
+                      },
+                      function(error) {
+                          console.error("Error getting location:", error);
+                          alert("Unable to recenter. Please allow location access.");
+                      }
+                  );
+              }
+          });
+      });
+  </script>
 {% endblock %}
-
