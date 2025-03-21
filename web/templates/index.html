@@ -89,11 +89,11 @@
                   {% if first_session and last_session %}
                     <div class="flex items-center mb-1">
                       <i class="fas fa-calendar-day mr-2"></i>
-                      <span>Starts: {{ first_session.start_time|date:"M j, Y" }}</span>
+                      <span>Starts: {{ first_session.start_time|date:"M j, Y" }} at {{ first_session.start_time|date:"g:i A" }}</span>
                     </div>
                     <div class="flex items-center">
                       <i class="fas fa-calendar-check mr-2"></i>
-                      <span>Ends: {{ last_session.end_time|date:"M j, Y" }}</span>
+                      <span>Ends: {{ last_session.end_time|date:"M j, Y" }} at {{ last_session.end_time|date:"g:i A" }}</span>
                     </div>
                   {% else %}
                     <div class="flex items-center mb-1">
@@ -155,22 +155,22 @@
           </a>
         </div>
         <!-- Quiz Banner Section -->
-        <div class="mt-8 mb-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl overflow-hidden shadow-lg">
+        <div class="mt-4 mb-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden shadow-md">
           <div class="flex flex-col md:flex-row">
-            <div class="p-6 md:p-8 md:w-2/3 text-white">
-              <h2 class="text-2xl md:text-3xl font-bold mb-3">Test Your Knowledge with Our Quizzes!</h2>
-              <p class="mb-6 text-blue-100">
-                Challenge yourself, earn badges, and track your progress with our interactive quizzes. Perfect for students looking to test their understanding or anyone wanting to learn something new!
+            <div class="p-4 md:p-5 md:w-2/3 text-white">
+              <h2 class="text-sm md:text-base font-semibold mb-1">Test Your Knowledge with Our Quizzes!</h2>
+              <p class="mb-3 text-blue-100 text-xs md:text-sm">
+                Challenge yourself with our interactive quizzes. Perfect for testing your understanding.
               </p>
-              <div class="flex flex-wrap gap-4">
+              <div class="flex flex-wrap gap-2">
                 <a href="{% url 'quiz_list' %}"
-                   class="bg-white text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-lg font-semibold shadow-md transition duration-200 inline-flex items-center">
-                  <i class="fas fa-puzzle-piece mr-2"></i> Browse Quizzes
+                   class="bg-white text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition duration-200 inline-flex items-center">
+                  <i class="fas fa-puzzle-piece mr-1.5"></i> Browse Quizzes
                 </a>
                 {% if user.is_authenticated %}
                   <a href="{% url 'create_quiz' %}"
-                     class="bg-transparent hover:bg-white/20 border-2 border-white px-6 py-3 rounded-lg font-semibold transition duration-200 inline-flex items-center">
-                    <i class="fas fa-plus mr-2"></i> Create Quiz
+                     class="bg-transparent hover:bg-white/20 border border-white px-3 py-1.5 rounded-md text-xs font-medium transition duration-200 inline-flex items-center">
+                    <i class="fas fa-plus mr-1.5"></i> Create Quiz
                   </a>
                 {% endif %}
               </div>
@@ -180,19 +180,19 @@
                    style="background-image: url('{% static "images/quiz-illustration.svg" %}')"></div>
             </div>
           </div>
-          <div class="bg-blue-700/30 py-3 px-8">
-            <div class="flex flex-wrap items-center justify-between text-sm text-white">
-              <div class="flex items-center mb-2 md:mb-0">
-                <i class="fas fa-chart-line mr-2"></i>
-                <span>Track your progress over time</span>
+          <div class="bg-blue-700/30 py-1.5 px-4">
+            <div class="flex flex-wrap items-center justify-between text-xs text-white">
+              <div class="flex items-center mb-1 md:mb-0">
+                <i class="fas fa-chart-line mr-1"></i>
+                <span>Track progress</span>
               </div>
-              <div class="flex items-center mb-2 md:mb-0">
-                <i class="fas fa-medal mr-2"></i>
-                <span>Earn badges for high scores</span>
+              <div class="flex items-center mb-1 md:mb-0">
+                <i class="fas fa-medal mr-1"></i>
+                <span>Earn badges</span>
               </div>
               <div class="flex items-center">
-                <i class="fas fa-share-alt mr-2"></i>
-                <span>Share results with friends</span>
+                <i class="fas fa-share-alt mr-1"></i>
+                <span>Share results</span>
               </div>
             </div>
           </div>

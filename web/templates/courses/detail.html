@@ -321,6 +321,16 @@
                         <i class="fas fa-edit mr-2"></i>
                         Edit Course
                       </a>
+                      <a href="{% url 'toggle_course_status' course.slug %}"
+                         class="inline-flex items-center px-4 py-2 {% if course.status == 'draft' %}bg-green-600 hover:bg-green-700{% else %}bg-yellow-600 hover:bg-yellow-700{% endif %} text-white rounded-lg transition duration-200">
+                        {% if course.status == 'draft' %}
+                          <i class="fas fa-globe mr-2"></i>
+                          Publish Course
+                        {% else %}
+                          <i class="fas fa-pencil-alt mr-2"></i>
+                          Unpublish to Draft
+                        {% endif %}
+                      </a>
                       <a href="{% url 'course_progress_overview' course.slug %}"
                          class="inline-flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition duration-200">
                         <i class="fas fa-chart-line mr-2"></i>
@@ -339,6 +349,21 @@
                     </div>
                   {% endif %}
                 </div>
+                {% if user == course.teacher %}
+                  <div class="mt-3 {% if course.status == 'draft' %}bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 dark:bg-yellow-900 dark:border-yellow-600 dark:text-yellow-200{% else %}bg-blue-50 border-l-4 border-blue-400 text-blue-700 dark:bg-blue-900 dark:border-blue-600 dark:text-blue-200{% endif %} p-4 rounded-md">
+                    {% if course.status == 'draft' %}
+                      <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span><strong>Draft Status:</strong> This course is currently in draft mode and is only visible to you. Students cannot enroll until you publish it.</span>
+                      </div>
+                    {% else %}
+                      <div class="flex items-center">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        <span><strong>Published Status:</strong> This course is live and visible to all users. Students can now enroll in this course.</span>
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endif %}
                 {% if user.is_authenticated and enrollment %}
                   <div class="flex items-center gap-4">
                     <div class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-4 py-2 rounded-lg flex items-center">
@@ -385,7 +410,16 @@
                 </div>
               </div>
               <div class="flex items-center space-x-4 mb-4">
-                <span class="badge bg-{{ course.status }}">{{ course.get_status_display }}</span>
+                <span class="px-3 py-1 rounded-full text-sm font-medium inline-flex items-center gap-1 {% if course.status == 'draft' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% elif course.status == 'published' %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% else %} bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 {% endif %}">
+                  {% if course.status == 'draft' %}
+                    <i class="fas fa-pencil-alt"></i>
+                  {% elif course.status == 'published' %}
+                    <i class="fas fa-globe"></i>
+                  {% else %}
+                    <i class="fas fa-archive"></i>
+                  {% endif %}
+                  {{ course.get_status_display }}
+                </span>
                 <span class="text-sm text-gray-600 dark:text-gray-400">{{ course.subject.name }}</span>
                 {% if course.tags %}<span class="text-sm text-gray-600 dark:text-gray-400">{{ course.tags }}</span>{% endif %}
               </div>

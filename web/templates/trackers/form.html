@@ -16,7 +16,7 @@
                    name="{{ form.title.name }}"
                    id="{{ form.title.id_for_label }}"
                    value="{{ form.title.value|default:'' }}"
-                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500"
+                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
                    required />
             {% if form.title.errors %}<p class="text-red-600 text-sm mt-1">{{ form.title.errors.0 }}</p>{% endif %}
           </div>
@@ -27,7 +27,7 @@
             </label>
             <textarea name="{{ form.description.name }}"
                       id="{{ form.description.id_for_label }}"
-                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500"
+                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
                       rows="3">{{ form.description.value|default:'' }}</textarea>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -40,7 +40,7 @@
                      name="{{ form.current_value.name }}"
                      id="{{ form.current_value.id_for_label }}"
                      value="{{ form.current_value.value|default:'0' }}"
-                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500"
+                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
                      min="0"
                      required />
             </div>
@@ -53,7 +53,7 @@
                      name="{{ form.target_value.name }}"
                      id="{{ form.target_value.id_for_label }}"
                      value="{{ form.target_value.value|default:'100' }}"
-                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500"
+                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white"
                      min="1"
                      required />
             </div>
@@ -65,7 +65,7 @@
             </label>
             <select name="{{ form.color.name }}"
                     id="{{ form.color.id_for_label }}"
-                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500">
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-orange-500 dark:bg-gray-700 dark:text-white">
               {% for value, text in form.fields.color.choices %}
                 <option value="{{ value }}"
                         {% if form.color.value == value %}selected{% endif %}>{{ text }}</option>
@@ -78,7 +78,7 @@
                      name="{{ form.public.name }}"
                      id="{{ form.public.id_for_label }}"
                      {% if form.public.value %}checked{% endif %}
-                     class="rounded border-gray-300 text-orange-500 focus:ring-orange-500" />
+                     class="rounded border-gray-300 text-orange-500 focus:ring-orange-500 dark:border-gray-600 dark:bg-gray-700" />
               <span class="ml-2 text-gray-700 dark:text-gray-300">
                 <i class="fas fa-globe text-gray-500 dark:text-gray-400 mr-1"></i>
                 Make this tracker public (embeddable)

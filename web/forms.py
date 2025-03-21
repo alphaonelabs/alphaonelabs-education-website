@@ -152,6 +152,18 @@ class UserRegistrationForm(SignupForm):
                 return username
         return username
 
+    def clean_email(self):
+        email = self.cleaned_data.get("email", "").lower()
+        if email:
+            from allauth.account.utils import filter_users_by_email
+
+            users = filter_users_by_email(email)
+            if users:  # If any users found with this email
+                raise forms.ValidationError(
+                    "There was a problem with your signup. " "Please try again with a different email address or login."
+                )
+        return email
+
     def clean_referral_code(self):
         referral_code = self.cleaned_data.get("referral_code")
         if referral_code:
@@ -165,6 +177,12 @@ class UserRegistrationForm(SignupForm):
             user = super().save(request)
         except IntegrityError:
             raise forms.ValidationError("This username is already taken. Please choose a different one.")
+        except ValueError:
+            # This happens when an email address is already in use but not caught in clean_email
+            # This should be rare given the clean_email validation above
+            raise forms.ValidationError(
+                "There was a problem with your signup. " "Please try again with a different email address or login."
+            )
 
         # Then update the additional fields
         user.first_name = self.cleaned_data["first_name"]

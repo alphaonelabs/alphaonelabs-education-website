@@ -314,9 +314,9 @@ class CourseProgressAdmin(admin.ModelAdmin):
 
 @admin.register(Achievement)
 class AchievementAdmin(admin.ModelAdmin):
-    list_display = ("student", "course", "achievement_type", "title", "awarded_at")
+    list_display = ("student", "course", "achievement_type", "title", "badge_icon", "criteria_threshold", "awarded_at")
     list_filter = ("achievement_type", "awarded_at")
-    search_fields = ("student__username", "course__title", "title", "description")
+    search_fields = ("student__username", "course__title", "title", "description", "badge_icon")
     raw_id_fields = ("student", "course")
 
 
