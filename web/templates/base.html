@@ -235,16 +235,20 @@
               <!-- Language dropdown content -->
               <div id="language-dropdown"
                    class="hidden absolute right-0 mt-2 w-40 bg-white dark:bg-gray-800 shadow-lg rounded-md py-2 z-50">
-                <a href="#"
-                   class="block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">English</a>
-                <a href="#"
-                   class="block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Spanish</a>
-                <a href="#"
-                   class="block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">French</a>
-                <a href="#"
-                   class="block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">German</a>
-                <a href="#"
-                   class="block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">Chinese</a>
+                {% for lang_code, lang_name in LANGUAGES %}
+                  {% language lang_code %}
+                    <a href="{% url 'set_language' %}?next={{ request.path }}"
+                       class="block px-4 py-2 text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 {% if LANGUAGE_CODE == lang_code %}font-bold bg-gray-100 dark:bg-gray-700{% endif %}"
+                       hx-post="{% url 'set_language' %}"
+                       hx-vals='{"language": "{{ lang_code }}", "next": "{{ request.path }}"}'
+                       hx-swap="none">
+                      {{ lang_name }}
+                      {% if LANGUAGE_CODE == lang_code %}
+                        <i class="fas fa-check ml-2"></i>
+                      {% endif %}
+                    </a>
+                  {% endlanguage %}
+                {% endfor %}
               </div>
             </div>
             <button class="focus:outline-none flex items-center hover:underline p-2 rounded-lg hover:bg-teal-700 transition-colors"
