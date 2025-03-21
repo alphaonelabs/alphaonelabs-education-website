@@ -55,10 +55,14 @@ jobs:
           # Set working directory
           WORKDIR /app
 
-          # Install dependencies including MySQL client
+          # Install MySQL client and build dependencies
           RUN apt-get update && apt-get install -y \
               curl \
+              pkg-config \
+              build-essential \
               default-libmysqlclient-dev \
+              gcc \
+              python3-dev \
               && rm -rf /var/lib/apt/lists/*
 
           # Copy requirements and install Python dependencies
@@ -123,8 +127,8 @@ jobs:
           docker exec education-app python manage.py migrate
           docker exec education-app python manage.py create_test_data
           
-          # Create superuser
-          docker exec -e DJANGO_SUPERUSER_USERNAME=admin -e DJANGO_SUPERUSER_EMAIL=admin@example.com -e DJANGO_SUPERUSER_PASSWORD=adminpassword education-app python manage.py createsuperuser --noinput
+          # Create superuser if needed
+          docker exec -e DJANGO_SUPERUSER_USERNAME=admin -e DJANGO_SUPERUSER_EMAIL=admin@example.com -e DJANGO_SUPERUSER_PASSWORD=adminpassword education-app python manage.py createsuperuser --noinput || true
           
           # Verify database connection
           docker exec education-app python -c "from django.db import connection; print('Database backend:', connection.vendor)"
