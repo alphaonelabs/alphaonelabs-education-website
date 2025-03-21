@@ -30,6 +30,8 @@ from .models import (
     Order,
     OrderItem,
     Payment,
+    PeerChallenge,
+    PeerChallengeInvitation,
     ProductImage,
     Profile,
     ProgressTracker,
@@ -574,6 +576,35 @@ class DonationAdmin(admin.ModelAdmin):
 class LearningStreakAdmin(admin.ModelAdmin):
     list_display = ("user", "current_streak", "longest_streak", "last_engagement")
     search_fields = ("user__username",)
+
+
+# Register Peer Challenge models
+@admin.register(PeerChallenge)
+class PeerChallengeAdmin(admin.ModelAdmin):
+    list_display = ("title", "creator", "quiz", "status", "created_at", "expires_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("title", "description", "creator__username")
+    raw_id_fields = ("creator", "quiz")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (None, {"fields": ("creator", "quiz", "title", "description")}),
+        ("Status", {"fields": ("status", "expires_at")}),
+        ("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
+
+
+@admin.register(PeerChallengeInvitation)
+class PeerChallengeInvitationAdmin(admin.ModelAdmin):
+    list_display = ("challenge", "participant", "status", "created_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("challenge__title", "participant__username", "participant__email")
+    raw_id_fields = ("challenge", "participant", "user_quiz")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (None, {"fields": ("challenge", "participant")}),
+        ("Status", {"fields": ("status", "user_quiz")}),
+        ("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
 
 
 # Register Quiz-related models

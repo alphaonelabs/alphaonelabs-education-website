@@ -18,6 +18,8 @@ from .models import (
     ForumCategory,
     Goods,
     Meme,
+    PeerChallenge,
+    PeerChallengeInvitation,
     ProductImage,
     Profile,
     ProgressTracker,
@@ -49,6 +51,8 @@ __all__ = [
     "ChallengeSubmissionForm",
     "CourseCreationForm",
     "CourseForm",
+    "PeerChallengeForm",
+    "PeerChallengeInvitationForm",
     "SessionForm",
     "ReviewForm",
     "CourseMaterialForm",
@@ -787,6 +791,67 @@ class ForumCategoryForm(forms.ModelForm):
         help_texts = {
             "icon": "Enter a Font Awesome icon class (e.g., fa-folder, fa-book, fa-code)",
         }
+
+
+class PeerChallengeForm(forms.ModelForm):
+    """Form for creating and editing peer challenges."""
+
+    class Meta:
+        model = PeerChallenge
+        fields = ["quiz", "title", "description", "expires_at"]
+        widgets = {
+            "quiz": TailwindSelect(),
+            "title": TailwindInput(attrs={"placeholder": "Challenge title"}),
+            "description": TailwindTextarea(attrs={"rows": 3, "placeholder": "Describe your challenge"}),
+            "expires_at": TailwindDateTimeInput(attrs={"placeholder": "Expiration date (optional)"}),
+        }
+        help_texts = {
+            "expires_at": "Optional deadline for the challenge",
+        }
+
+    def __init__(self, *args, user=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Only show quizzes created by the current user
+        if user:
+            self.fields["quiz"].queryset = Quiz.objects.filter(creator=user, status="published")
+
+
+class PeerChallengeInvitationForm(forms.ModelForm):
+    """Form for inviting users to a peer challenge."""
+
+    participants = forms.CharField(
+        widget=TailwindTextarea(attrs={"rows": 2, "placeholder": "Enter usernames, separated by commas"}),
+        help_text="Enter usernames separated by commas",
+    )
+
+    class Meta:
+        model = PeerChallengeInvitation
+        fields = ["message"]
+        widgets = {
+            "message": TailwindTextarea(attrs={"rows": 3, "placeholder": "Add a personal message to your invitation"}),
+        }
+
+    def clean_participants(self):
+        participants = self.cleaned_data.get("participants", "")
+        if not participants:
+            raise forms.ValidationError("You must invite at least one participant")
+
+        usernames = [username.strip() for username in participants.split(",") if username.strip()]
+        if not usernames:
+            raise forms.ValidationError("You must invite at least one participant")
+
+        from django.contrib.auth.models import User
+
+        # Check if users exist
+        found_users = User.objects.filter(username__in=usernames)
+        found_usernames = found_users.values_list("username", flat=True)
+
+        # Get missing usernames
+        missing = set(usernames) - set(found_usernames)
+        if missing:
+            raise forms.ValidationError(f"The following users do not exist: {', '.join(missing)}")
+
+        return found_users
 
     def clean(self):
         cleaned_data = super().clean()
