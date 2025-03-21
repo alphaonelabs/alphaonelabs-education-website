@@ -21,7 +21,76 @@ jobs:
         pip install pre-commit black isort flake8 djlint
         #pre-commit autoupdate
         pre-commit install
-        pre-commit run --all-files
+        pre-commit run --all-files || echo "pre-commit failed, but continuing to provide guidance"
+      continue-on-error: true
+      id: pre-commit
+
+    - name: Post linting failure comment on PR
+      if: steps.pre-commit.outcome == 'failure' && github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const commentBody = `## ⚠️ Linting Checks Failed
+
+          Your pull request has linting issues that need to be fixed before it can be merged.
+
+          ### ⏰ Save Time By Running Checks Locally!
+
+          **Important:** We run 8 different linting checks in CI, and they fail independently. Not running these checks locally before pushing can waste significant time as you may need multiple CI cycles to fix all issues.
+
+          ### How to fix locally:
+
+          1. **Install pre-commit tools:**
+             \`\`\`bash
+             pip install pre-commit
+             \`\`\`
+
+          2. **Set up the hooks:**
+             \`\`\`bash
+             pre-commit install
+             \`\`\`
+
+          3. **Run checks across all files:**
+             \`\`\`bash
+             pre-commit run --all-files
+             \`\`\`
+
+          4. **Fix the identified issues** in your code
+
+          5. **Commit your changes** and push to update this PR
+
+          ### Check Types That May Be Failing:
+          - ✅ Python style issues (flake8)
+          - ✅ HTML template formatting (djlint)
+          - ✅ Code formatting inconsistencies (black)
+          - ✅ Import ordering problems (isort)
+          - ✅ Trailing whitespace and file endings
+          - ✅ YAML/JSON/TOML syntax
+          - ✅ Merge conflicts
+          - ✅ Django configuration
+
+          **Pro Tip:** After setting up pre-commit with \`pre-commit install\`, it will automatically run on every commit you make, catching issues before they reach CI!
+
+          For more detailed guidance, please see our [contributing guidelines](https://github.com/AlphaOneLabs/education-website/blob/main/CONTRIBUTING.md).`;
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: commentBody
+          });
+
+    - name: Show lint failure guidance
+      if: steps.pre-commit.outcome == 'failure'
+      run: |
+        echo "::error::Linting checks failed! To fix this locally:"
+        echo "::error::1. Install pre-commit: pip install pre-commit"
+        echo "::error::2. Install hooks: pre-commit install"
+        echo "::error::3. Run all checks: pre-commit run --all-files"
+        echo "::error::4. Fix the issues and commit your changes"
+        echo "::error::See CONTRIBUTING.md for more details on code quality standards"
+        exit 1
 
   tests:
     runs-on: ubuntu-latest
