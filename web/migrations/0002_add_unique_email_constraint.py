@@ -7,7 +7,7 @@ def deduplicate_emails(apps, schema_editor):
     """
     Handle duplicate emails by appending _id to duplicate entries
     """
-    # Get the User model from the migrations
+    # Get the User model from the migration
     User = apps.get_model("auth", "User")
 
     # Find emails that are duplicated
