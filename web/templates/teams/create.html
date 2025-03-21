@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% load i18n %}
+
+{% block title %}
+  {% if is_edit %}
+    {% trans "Edit Team Goal" %}
+  {% else %}
+    {% trans "Create Team Goal" %}
+  {% endif %}
+{% endblock %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-8">
+        {% if is_edit %}
+          {% trans "Edit Team Goal" %}
+        {% else %}
+          {% trans "Create Team Goal" %}
+        {% endif %}
+      </h1>
+      <form method="post"
+            class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        {% csrf_token %}
+        {% for field in form %}
+          <div class="mb-6 [&_textarea]:border [&_textarea]:border-neutral-300 [&_input]:border [&_input]:border-neutral-300">
+            <label for="{{ field.id_for_label }}"
+                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>{% endif %}
+            {% if field.errors %}<div class="mt-1 text-red-600 dark:text-red-400 text-sm">{{ field.errors }}</div>{% endif %}
+          </div>
+        {% endfor %}
+        <div class="flex justify-end mt-6">
+          <a href="{% url 'team_goals' %}"
+             class="mr-4 px-6 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition duration-200">
+            {% trans "Cancel" %}
+          </a>
+          <button type="submit"
+                  class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-200">
+            {% if is_edit %}
+              {% trans "Update Goal" %}
+            {% else %}
+              {% trans "Create Goal" %}
+            {% endif %}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}
