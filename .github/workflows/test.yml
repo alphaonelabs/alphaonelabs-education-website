@@ -60,11 +60,12 @@ jobs:
 
     - name: Run tests with MySQL
       env:
-        DATABASE_URL: mysql://django:django_password@127.0.0.1:3306/test_db
+        # Use root user for test database creation privileges
+        DATABASE_URL: mysql://root:rootpassword@127.0.0.1:3306/test_db
       run: |
         cp .env.sample .env
-        # Override the DATABASE_URL in .env file with MySQL connection
-        sed -i 's|DATABASE_URL=sqlite:///db.sqlite3|DATABASE_URL=mysql://django:django_password@127.0.0.1:3306/test_db|g' .env
+        # Override the DATABASE_URL in .env file with MySQL root connection
+        sed -i 's|DATABASE_URL=sqlite:///db.sqlite3|DATABASE_URL=mysql://root:rootpassword@127.0.0.1:3306/test_db|g' .env
         
         # Install MySQL client
         sudo apt-get update
