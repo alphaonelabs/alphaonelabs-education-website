@@ -113,21 +113,9 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script>
       document.addEventListener("DOMContentLoaded", function() {
-                  const progressLabels = {
-                      {
-                          progress_dates | safe
-                      }
-                  };
-                  const sessionsData = {
-                      {
-                          sessions_completed | safe
-                      }
-                  };
-                  const courseData = {
-                      {
-                          courses_json | safe
-                      }
-                  };
+                  const progressLabels = JSON.parse('{{ progress_dates|escapejs }}');
+                  const sessionsData = JSON.parse('{{ sessions_completed|escapejs }}');
+                  const courseData = JSON.parse('{{ courses_json|escapejs }}');
 
                   const progressCtx = document.getElementById('progressChart').getContext('2d');
                   const progressChart = new Chart(progressCtx, {
@@ -223,40 +211,27 @@
                           doc.text("Course Progress", 20, 210);
 
                           let y = 220;
-                          {
-                              %
-                              for course in courses %
-                          }
-                          doc.setFontSize(12);
-                          doc.text("{{ course.title }}", 20, y);
-                          y += 10;
+                          {% for course in courses %}
+                              doc.setFontSize(12);
+                              doc.text("{{ course.title }}", 20, y);
+                              y += 10;
 
-                          doc.setDrawColor(200, 200, 200);
-                          doc.setFillColor(200, 200, 200);
-                          doc.rect(20, y, 150, 5, 'F');
+                              doc.setDrawColor(200, 200, 200);
+                              doc.setFillColor(200, 200, 200);
+                              doc.rect(20, y, 150, 5, 'F');
 
-                          doc.setFillColor({
-                              {
-                                  course.color
-                              }
-                          });
-                          doc.rect(20, y, 150 * ({
-                                  {
-                                      course.progress
-                                  }
-                              }
-                              / 100), 5, 'F');
+                              doc.setFillColor({{ course.color }});
+                              doc.rect(20, y, 150 * ({{ course.progress }} / 100), 5, 'F');
 
-                              doc.text("{{ course.progress }}%", 175, y + 4); y += 15;
-                              {
-                                  %
-                                  endfor %
-                              }
+                              doc.text("{{ course.progress }}%", 175, y + 4);
+                              y += 15;
+                          {% endfor %}
 
                               doc.save("Learning_Progress_Report.pdf");
                           });
                       });
 
+                      // Share as Image
                       document.getElementById("shareImage").addEventListener("click", function() {
                           html2canvas(document.querySelector(".container")).then(canvas => {
                               const link = document.createElement('a');
