@@ -45,7 +45,13 @@
             <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
               <div class="flex items-center justify-between">
                 <span class="text-gray-600 dark:text-gray-300">Price</span>
-                <span class="text-3xl font-bold text-teal-600 dark:text-teal-400">${{ course.price }}</span>
+                <span class="text-3xl font-bold text-teal-600 dark:text-teal-400">
+                  {% if course.price == 0 %}
+                    Free
+                  {% else %}
+                    ${{ course.price }}
+                  {% endif %}
+                </span>
               </div>
               <div class="flex items-center justify-between">
                 <span class="text-gray-600 dark:text-gray-300">Level</span>
@@ -71,16 +77,30 @@
                     </span>
                   </div>
                 {% else %}
-                  <form method="post"
-                        action="{% url 'add_course_to_cart' course.id %}"
-                        class="mt-2">
-                    {% csrf_token %}
-                    <button type="submit"
-                            class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center">
-                      <i class="fas fa-cart-plus mr-2"></i>
-                      Add to Cart
-                    </button>
-                  </form>
+                  {% if course.price == 0 %}
+                    <!-- Free Course Enrollment Button -->
+                    <form method="get"
+                          action="{% url 'enroll_course' course.slug %}"
+                          class="mt-2">
+                      <button type="submit"
+                              class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        Enroll for Free
+                      </button>
+                    </form>
+                  {% else %}
+                    <!-- Paid Course Cart Button -->
+                    <form method="post"
+                          action="{% url 'add_course_to_cart' course.id %}"
+                          class="mt-2">
+                      {% csrf_token %}
+                      <button type="submit"
+                              class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-cart-plus mr-2"></i>
+                        Add to Cart
+                      </button>
+                    </form>
+                  {% endif %}
                 {% endif %}
               {% endif %}
             </div>
@@ -668,10 +688,13 @@
       document.addEventListener('DOMContentLoaded', function() {
           // Get session counts from data attributes rather than template variables
           const remainingCountElement = document.getElementById('remaining-count');
-          const total = parseInt(remainingCountElement.dataset.totalSessions) || 0;
-          const completed = parseInt(remainingCountElement.dataset.completedSessions) || 0;
-          const remaining = Math.max(0, total - completed);
-          remainingCountElement.textContent = remaining;
+          // Check if the element exists before trying to access its properties
+          if (remainingCountElement) {
+              const total = parseInt(remainingCountElement.dataset.totalSessions) || 0;
+              const completed = parseInt(remainingCountElement.dataset.completedSessions) || 0;
+              const remaining = Math.max(0, total - completed);
+              remainingCountElement.textContent = remaining;
+          }
       });
   </script>
 {% endblock content %}

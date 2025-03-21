@@ -433,21 +433,19 @@ def enroll_course(request, course_slug):
                 referrer.add_referral_earnings(5)
                 send_referral_reward_email(referrer.user, request.user, 5, "enrollment")
 
-    # Create enrollment
-    enrollment = Enrollment.objects.create(
-        student=request.user, course=course, status="pending" if course.price > 0 else "approved"
-    )
-
-    # For paid courses, create pending enrollment and redirect to payment
-    if course.price > 0:
+    # For free courses, create approved enrollment immediately
+    if course.price == 0:
+        enrollment = Enrollment.objects.create(student=request.user, course=course, status="approved")
+        # Send notifications for free courses
+        send_enrollment_confirmation(enrollment)
+        notify_teacher_new_enrollment(enrollment)
+        messages.success(request, "You have successfully enrolled in this free course.")
+        return redirect("course_detail", slug=course_slug)
+    else:
+        # For paid courses, create pending enrollment
+        enrollment = Enrollment.objects.create(student=request.user, course=course, status="pending")
         messages.info(request, "Please complete the payment process to enroll in this course.")
         return redirect("course_detail", slug=course_slug)
-
-    # For free courses, send notifications
-    send_enrollment_confirmation(enrollment)
-    notify_teacher_new_enrollment(enrollment)
-    messages.success(request, "You have successfully enrolled in this course.")
-    return redirect("course_detail", slug=course_slug)
 
 
 @login_required
@@ -756,11 +754,25 @@ def create_payment_intent(request, slug):
     """Create a payment intent for Stripe."""
     course = get_object_or_404(Course, slug=slug)
 
+    # Prevent creating payment intents for free courses
+    if course.price == 0:
+        # Find the enrollment and update its status to approved if it's pending
+        enrollment = get_object_or_404(Enrollment, student=request.user, course=course)
+        if enrollment.status == "pending":
+            enrollment.status = "approved"
+            enrollment.save()
+
+            # Send notifications
+            send_enrollment_confirmation(enrollment)
+            notify_teacher_new_enrollment(enrollment)
+
+        return JsonResponse({"free_course": True, "message": "Enrollment approved for free course"})
+
     # Ensure user has a pending enrollment
     enrollment = get_object_or_404(Enrollment, student=request.user, course=course, status="pending")
 
-    # For free courses (price = 0), automatically approve the enrollment and return a special response
-    if course.price == 0:
+    # Validate price is greater than zero for Stripe
+    if course.price <= 0:
         enrollment.status = "approved"
         enrollment.save()
 
