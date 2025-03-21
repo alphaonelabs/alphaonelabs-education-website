@@ -20,7 +20,7 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    
+
     services:
       mysql:
         image: mysql:8.0
@@ -36,7 +36,7 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=3
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -119,20 +119,20 @@ jobs:
             -e DJANGO_DB_PORT=3306 \
             -e DJANGO_SETTINGS_MODULE=web.settings \
             education-website:test
-          
+
           # Wait for container to start
           sleep 10
-          
+
           # Now run migrations and setup database inside the container
           docker exec education-app python manage.py migrate
           docker exec education-app python manage.py create_test_data
-          
+
           # Create superuser if needed
           docker exec -e DJANGO_SUPERUSER_USERNAME=admin -e DJANGO_SUPERUSER_EMAIL=admin@example.com -e DJANGO_SUPERUSER_PASSWORD=adminpassword education-app python manage.py createsuperuser --noinput || true
-          
+
           # Verify database connection
           docker exec education-app python -c "from django.db import connection; print('Database backend:', connection.vendor)"
-          
+
           # Wait for app to be fully up
           sleep 5
           docker ps
