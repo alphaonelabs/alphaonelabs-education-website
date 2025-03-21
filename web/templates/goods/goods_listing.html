@@ -100,72 +100,85 @@
     </div>
   </div>
 
- <script>
+
+<script>
     document.addEventListener("DOMContentLoaded", function () {
-    const minKnob = document.getElementById("min-knob");
-    const maxKnob = document.getElementById("max-knob");
-    const minPriceInput = document.getElementById("min_price");
-    const maxPriceInput = document.getElementById("max_price");
-    const minPriceDisplay = document.getElementById("min-price-display");
-    const maxPriceDisplay = document.getElementById("max-price-display");
-    const activeTrack = document.getElementById("active-track");
-    const slider = document.getElementById("price-range-slider");
+        const minKnob = document.getElementById("min-knob");
+        const maxKnob = document.getElementById("max-knob");
+        const minPriceInput = document.getElementById("min_price");
+        const maxPriceInput = document.getElementById("max_price");
+        const minPriceDisplay = document.getElementById("min-price-display");
+        const maxPriceDisplay = document.getElementById("max-price-display");
+        const activeTrack = document.getElementById("active-track");
+        const slider = document.getElementById("price-range-slider");
 
-    const maxPrice = parseFloat("{{ max_price|safe }}");
-    let minValue = parseFloat(minPriceInput.value) || 0;
-    let maxValue = parseFloat(maxPriceInput.value) || maxPrice;
 
-    function updateUI() {
-        const sliderWidth = slider.offsetWidth;
-        const minPercent = (minValue / maxPrice) * 100;
-        const maxPercent = (maxValue / maxPrice) * 100;
+        const maxPrice = parseFloat("{{ max_price|safe }}");
+        let minValue = parseFloat(minPriceInput.value) || 0;
+        let maxValue = parseFloat(maxPriceInput.value) || maxPrice;
 
-        minKnob.style.left = `${minPercent}%`;
-        maxKnob.style.left = `${maxPercent}%`;
-        activeTrack.style.left = `${minPercent}%`;
-        activeTrack.style.width = `${maxPercent - minPercent}%`;
 
-        minPriceDisplay.textContent = `$${minValue.toFixed(2)}`;
-        maxPriceDisplay.textContent = `$${maxValue.toFixed(2)}`;
-    }
+        function updateUI() {
+            const sliderWidth = slider.offsetWidth;
+            const minPercent = (minValue / maxPrice) * 100;
+            const maxPercent = (maxValue / maxPrice) * 100;
 
-    function handleDrag(knob, isMinKnob) {
-        function onMouseMove(event) {
-            const rect = slider.getBoundingClientRect();
-            let newPosition = ((event.clientX - rect.left) / rect.width) * maxPrice;
 
-            newPosition = Math.max(0, Math.min(newPosition, maxPrice));
-            
-            if (isMinKnob) {
-                minValue = Math.min(newPosition, maxValue - 0.01);
-                minPriceInput.value = minValue.toFixed(2);
-            } else {
-                maxValue = Math.max(newPosition, minValue + 0.01);
-                maxPriceInput.value = maxValue.toFixed(2);
+            minKnob.style.left = `${minPercent}%`;
+            maxKnob.style.left = `${maxPercent}%`;
+            activeTrack.style.left = `${minPercent}%`;
+            activeTrack.style.width = `${maxPercent - minPercent}%`;
+
+
+            minPriceDisplay.textContent = `$${minValue.toFixed(2)}`;
+            maxPriceDisplay.textContent = `$${maxValue.toFixed(2)}`;
+        }
+
+
+        function handleDrag(knob, isMinKnob) {
+            function onMouseMove(event) {
+                const rect = slider.getBoundingClientRect();
+                let newPosition = ((event.clientX - rect.left) / rect.width) * maxPrice;
+
+
+                newPosition = Math.max(0, Math.min(newPosition, maxPrice));
+                
+                if (isMinKnob) {
+                    minValue = Math.min(newPosition, maxValue - 0.01);
+                    minPriceInput.value = minValue.toFixed(2);
+                } else {
+                    maxValue = Math.max(newPosition, minValue + 0.01);
+                    maxPriceInput.value = maxValue.toFixed(2);
+                }
+
+
+                updateUI();
             }
 
-            updateUI();
+
+            function onMouseUp() {
+                document.removeEventListener("mousemove", onMouseMove);
+                document.removeEventListener("mouseup", onMouseUp);
+            }
+
+
+            document.addEventListener("mousemove", onMouseMove);
+            document.addEventListener("mouseup", onMouseUp);
         }
 
-        function onMouseUp() {
-            document.removeEventListener("mousemove", onMouseMove);
-            document.removeEventListener("mouseup", onMouseUp);
-        }
 
-        document.addEventListener("mousemove", onMouseMove);
-        document.addEventListener("mouseup", onMouseUp);
-    }
+        minKnob.addEventListener("mousedown", function () {
+            handleDrag(minKnob, true);
+        });
 
-    minKnob.addEventListener("mousedown", function () {
-        handleDrag(minKnob, true);
+
+        maxKnob.addEventListener("mousedown", function () {
+            handleDrag(maxKnob, false);
+        });
+
+
+        updateUI();
     });
-
-    maxKnob.addEventListener("mousedown", function () {
-        handleDrag(maxKnob, false);
-    });
-
-    updateUI();
-});
 </script>
 
 
