@@ -122,7 +122,7 @@
               <i class="fas fa-users text-green-500 mr-2"></i>Participants
             </h2>
             {% if challenge.creator == user and challenge.status == 'active' %}
-              <a href=""
+              <a href="{% url 'invite_participants' challenge.id %}"
                  class="text-sm text-teal-600 hover:text-teal-700 flex items-center bg-teal-100 dark:bg-teal-900 px-3 py-1 rounded-full transition duration-300 hover:shadow-md">
                 <i class="fas fa-user-plus mr-1"></i> Invite More
               </a>

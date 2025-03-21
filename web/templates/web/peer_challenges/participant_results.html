@@ -179,8 +179,8 @@
                         {% endif %}
                       </div>
                     </div>
-                  </div>
-                {% endfor %}
+                  {% endfor %}
+                </div>
               </div>
             {% else %}
               <div class="p-6 text-center text-gray-500 dark:text-gray-400">
@@ -199,7 +199,7 @@
           </div>
           <div class="flex gap-3">
             {% if invitation.challenge.quiz.show_correct_answers %}
-              <a href="#"
+              <a href="{% url 'download_results' user_invitation.user_quiz.id %}"
                  class="bg-white border border-blue-500 hover:bg-blue-50 text-blue-600 dark:bg-gray-700 dark:border-blue-500 dark:hover:bg-blue-900 dark:text-blue-400 font-medium py-2 px-4 rounded-lg inline-flex items-center">
                 <i class="fas fa-download mr-2"></i> Download Results
               </a>
