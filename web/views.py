@@ -4259,14 +4259,18 @@ def map_data_api(request):
 
     map_data = []
     sessions_to_update = []
+    geocoding_errors = 0
+    coordinate_errors = 0
     for session in sessions:
         if not session.latitude or not session.longitude:
+            logger.info(f"Geocoding session {session.id} with location: {session.location}")
             lat, lng = geocode_address(session.location)
             if lat is not None and lng is not None:
                 session.latitude = lat
                 session.longitude = lng
                 sessions_to_update.append(session)
             else:
+                geocoding_errors += 1
                 logger.warning(f"Skipping session {session.id} due to failed geocoding")
                 continue
 
@@ -4292,6 +4296,7 @@ def map_data_api(request):
                 }
             )
         except (ValueError, TypeError):
+            coordinate_errors += 1
             logger.warning(
                 f"Skipping session {session.id} due to invalid coordinates: "
                 f"lat={session.latitude}, lng={session.longitude}"
@@ -4299,7 +4304,11 @@ def map_data_api(request):
             continue
 
     if sessions_to_update:
+        logger.info(f"Batch updating coordinates for {len(sessions_to_update)} sessions")
         Session.objects.bulk_update(sessions_to_update, ["latitude", "longitude"])  # Batch update
+     # Log summary of issues
+    if geocoding_errors > 0 or coordinate_errors > 0:
+        logger.warning(f"Map data issues: {geocoding_errors} geocoding errors, {coordinate_errors} coordinate errors")
 
     logger.info(f"Found {len(map_data)} sessions with valid coordinates")
     return JsonResponse({"sessions": map_data})

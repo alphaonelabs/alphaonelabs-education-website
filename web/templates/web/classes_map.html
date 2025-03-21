@@ -33,7 +33,7 @@
             Apply Filters
         </button>
 
-        <button id="recenter-btn" class="x-4 py-2 bg-blue-600 text-white font-medium rounded-lg shadow-md hover:bg-blue-700 transition">
+        <button id="recenter-btn" class="px-4 py-2 bg-blue-600 text-white font-medium rounded-lg shadow-md hover:bg-blue-700 transition">
             🔄 Recenter
         </button>
     </form>
@@ -119,7 +119,7 @@ function addMarker(session) {
                 <p class="text-gray-700"><strong>Topic:</strong> ${session.title}</p>
                 <p class="text-gray-700"><strong>Teacher:</strong> ${session.teacher}</p>
                 <p class="text-gray-600"><strong>Location:</strong> ${session.location}</p>
-                <p class="text-green-600 font-bold">₹${session.price}</p>
+                <p class="text-green-600 font-bold">$${session.price}</p>
 
                 <p class="text-gray-600">
                     <strong>Duration:</strong> ${formatDateTime(session.start_time)} to ${formatDateTime(session.end_time)}
@@ -216,6 +216,19 @@ document.getElementById('filter-form').addEventListener('submit', function (e) {
 });
 </script>
 
-<script src="https://maps.googleapis.com/maps/api/js?key={{ gm_api_key }}&callback=initMap" async defer></script>
+<script>
+      // Check if API key is available
+      const gmApiKey = "{{ gm_api_key|escapejs }}";
+      if (!gmApiKey) {
+        document.getElementById('map').innerHTML = '<div class="flex items-center justify-center h-full bg-gray-100 text-gray-700 p-4 rounded-lg">Google Maps API key is missing. Please contact the administrator.</div>';
+      } else {
+        // Load Google Maps with the API key
+        const script = document.createElement('script');
+        script.src = `https://maps.googleapis.com/maps/api/js?key=${gmApiKey}&callback=initMap`;
+        script.async = true;
+        script.defer = true;
+        document.head.appendChild(script);
+      }
+</script>
 {% endblock %}
 
