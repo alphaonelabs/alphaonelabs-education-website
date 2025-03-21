@@ -237,6 +237,17 @@ urlpatterns += i18n_patterns(
     # Map URLs
     path("classes-map/", views.classes_map, name="classes_map"),
     path("api/map-data/", views.map_data_api, name="map_data_api"),
+    # Team Collaboration URLs
+    path("teams/", views.team_goals, name="team_goals"),
+    path("teams/create/", views.create_team_goal, name="create_team_goal"),
+    path("teams/<int:goal_id>/", views.team_goal_detail, name="team_goal_detail"),
+    path("teams/invite/<int:invite_id>/accept/", views.accept_team_invite, name="accept_team_invite"),
+    path("teams/invite/<int:invite_id>/decline/", views.decline_team_invite, name="decline_team_invite"),
+    path("teams/<int:goal_id>/mark-contribution/", views.mark_team_contribution, name="mark_team_contribution"),
+    path("teams/<int:goal_id>/delete/", views.delete_team_goal, name="delete_team_goal"),
+    path("teams/<int:goal_id>/remove-member/<int:member_id>/", views.remove_team_member, name="remove_team_member"),
+    path("teams/<int:goal_id>/edit/", views.edit_team_goal, name="edit_team_goal"),
+
     path("trackers/", views.tracker_list, name="tracker_list"),
     path("trackers/create/", views.create_tracker, name="create_tracker"),
     path("trackers/<int:tracker_id>/", views.tracker_detail, name="tracker_detail"),

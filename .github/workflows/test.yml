@@ -12,6 +12,7 @@ jobs:
     name: Linting
     runs-on: ubuntu-latest
     steps:
+
       - uses: actions/checkout@v3
 
       - name: Set up Python 3.10
@@ -25,6 +26,7 @@ jobs:
           pip install pre-commit black isort flake8 djlint
           pre-commit install
           pre-commit run --all-files
+
 
   tests:
     name: Run Tests
