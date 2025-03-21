@@ -104,7 +104,7 @@
                 <input type="hidden" name="action" value="join" />
                 <button type="submit"
                         class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg flex items-center {% if group.members.count >= group.max_members %}opacity-50 cursor-not-allowed{% endif %}"
-                        {% if group.members.count >= group.max_members %}disabled{% endif %}>
+                        {% if group.members.count >= group.max_members %}disabled="disabled"{% endif %}>
                   <i class="fa-solid fa-right-to-bracket mr-2"></i>
                   Join Group
                 </button>

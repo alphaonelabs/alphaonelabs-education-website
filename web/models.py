@@ -1233,6 +1233,104 @@ class OrderItem(models.Model):
         return f"{self.quantity}x {self.goods.name}"
 
 
+class TeamGoal(models.Model):
+    """A goal that team members work together to achieve."""
+
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_goals")
+    deadline = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    STATUS_CHOICES = [("active", "Active"), ("completed", "Completed"), ("cancelled", "Cancelled")]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def completion_percentage(self):
+        """Calculate the percentage of members who have completed the goal."""
+        total_members = self.members.count()
+        if total_members == 0:
+            return 0
+        completed_members = self.members.filter(completed=True).count()
+        return int((completed_members / total_members) * 100)
+
+
+class TeamGoalMember(models.Model):
+    """Represents a member of a team goal."""
+
+    team_goal = models.ForeignKey(TeamGoal, on_delete=models.CASCADE, related_name="members")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    ROLE_CHOICES = [("leader", "Team Leader"), ("member", "Team Member")]
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="member")
+
+    class Meta:
+        unique_together = ["team_goal", "user"]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.team_goal.title}"
+
+    def mark_completed(self):
+        """Mark this member's participation as completed."""
+        self.completed = True
+        self.completed_at = timezone.now()
+        self.save()
+
+        Notification.objects.create(
+            user=self.team_goal.creator,
+            title="Goal Progress Update",
+            message=f"{self.user.get_full_name() or self.user.username} completed'{self.team_goal.title}'",
+            notification_type="success",
+        )
+
+
+class TeamInvite(models.Model):
+    """Invitation to join a team goal."""
+
+    goal = models.ForeignKey(TeamGoal, on_delete=models.CASCADE, related_name="invites")
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_invites")
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_invites")
+    created_at = models.DateTimeField(auto_now_add=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
+
+    STATUS_CHOICES = [("pending", "Pending"), ("accepted", "Accepted"), ("declined", "Declined")]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+
+    class Meta:
+        unique_together = ["goal", "recipient"]
+
+    def __str__(self):
+        return f"Invite to {self.goal.title} for {self.recipient.username}"
+
+    def save(self, *args, **kwargs):
+        created = not self.pk
+        super().save(*args, **kwargs)
+
+        if created and self.status == "pending":
+            Notification.objects.create(
+                user=self.recipient,
+                title="New Team Invitation",
+                message=f"Invited to '{self.goal.title}' by {self.sender.get_full_name() or self.sender.username}",
+                notification_type="info",
+            )
+
+        # Create notification when invite is accepted
+        if not created and self.status == "accepted":
+            Notification.objects.create(
+                user=self.sender,
+                title="Team Invitation Accepted",
+                message=f"{self.recipient.get_full_name() or self.recipient.username} has accepted your invitation",
+                notification_type="success",
+            )
+
+
 def validate_image_size(image):
     """Validate that the image file is not too large."""
     file_size = image.size
@@ -1528,7 +1626,7 @@ class QuizOption(models.Model):
 
 
 class UserQuiz(models.Model):
-    """Model for tracking user quiz attempts and responses."""
+    """Model for tracking user quiz attempts and responses"""
 
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="user_quizzes")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="quiz_attempts", null=True, blank=True)
