@@ -134,7 +134,7 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 
 def product_list(request):
     products = Goods.objects.all()
-    
+
     # Get the highest price from the database
     max_price_value = Goods.objects.aggregate(Max("price"))["price__max"]
 
@@ -149,6 +149,8 @@ def product_list(request):
         "products": products,
         "max_price": rounded_max_price
     })
+
+
 def sitemap(request):
     return render(request, "sitemap.html")
 
@@ -3043,14 +3045,14 @@ class GoodsListingView(ListView):
         context = super().get_context_data(**kwargs)
         context["store_names"] = Storefront.objects.values_list("name", flat=True).distinct()
         context["categories"] = Goods.objects.values_list("category", flat=True).distinct()
-    
+
     # Get maximum price and round up to the nearest tenth (multiple of 10)
         max_price_value = Goods.objects.aggregate(Max("price"))["price__max"]
         if max_price_value is not None:
             context["max_price"] = math.ceil(max_price_value / 10) * 10
         else:
             context["max_price"] = 100  # Default if no products exist
-    
+
         return context
 
 
