@@ -410,7 +410,7 @@ document.addEventListener('DOMContentLoaded', function() {
     messageInput.focus();
     
     const typingId = addTypingIndicator();
-    fetch('/ai/chat/completion/', {
+    fetch('{% url "ai:ask_question" %}', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -421,7 +421,12 @@ document.addEventListener('DOMContentLoaded', function() {
         subject: selectedSubject
       })
     })
-    .then(response => response.json())
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Network response was not ok');
+      }
+      return response.json();
+    })
     .then(data => {
       removeTypingIndicator(typingId);
       if (data.success) {

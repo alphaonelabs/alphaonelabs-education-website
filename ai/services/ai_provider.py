@@ -1,6 +1,17 @@
 import logging
 import random
-from tenacity import retry, stop_after_attempt, wait_exponential
+
+# Make tenacity optional
+try:
+    from tenacity import retry, stop_after_attempt, wait_exponential
+    TENACITY_AVAILABLE = True
+except ImportError:
+    TENACITY_AVAILABLE = False
+    # Create dummy decorator when tenacity is not available
+    def retry(*args, **kwargs):
+        def decorator(func):
+            return func
+        return decorator
 
 from .config import (
     GEMINI_API_KEY, 
@@ -62,17 +73,21 @@ class GeminiProvider(AIProvider):
                 import google.generativeai as genai
                 genai.configure(api_key=GEMINI_API_KEY)
                 self.model = genai.GenerativeModel(GEMINI_MODEL)
-                logger.info(f"Gemini model {GEMINI_MODEL} initialized")
+                logger.info(f"Gemini model {GEMINI_MODEL} initialized successfully")
+            except ImportError:
+                logger.error("Failed to import google.generativeai module. Make sure the package is installed.")
             except Exception as e:
-                logger.error(f"Failed to initialize Gemini: {e}")
+                logger.error(f"Failed to initialize Gemini: {str(e)}")
     
     @retry(stop=stop_after_attempt(2), wait=wait_exponential(min=1, max=4))
     def generate_response(self, prompt, context):
         """Generate a response using Gemini API."""
         if not self.is_available():
+            logger.warning("Gemini API is not available, using demo mode instead.")
             return "Gemini API is not configured properly. Using demo mode instead."
         
         try:
+            logger.info(f"Generating Gemini response for prompt: {prompt[:50]}...")
             formatted_prompt = self._format_prompt(prompt, context)
             
             generation_config = {
@@ -87,11 +102,12 @@ class GeminiProvider(AIProvider):
                 generation_config=generation_config
             )
             
+            logger.info("Gemini response generated successfully")
             return response.text
             
         except Exception as e:
             logger.error(f"Error generating Gemini response: {str(e)}")
-            return f"I encountered an error processing your request. Please try again or ask a different question."
+            return f"I encountered an error processing your request: {str(e)}. Please try again or ask a different question."
     
     def is_available(self):
         """Check if Gemini API is available."""
@@ -141,9 +157,6 @@ class DemoProvider(AIProvider):
         
         response = random.choice(subject_responses)
         
-        # Add demo ending
-        response += "\n\n(Note: I'm currently in demonstration mode. The full AI functionality will be available soon!)"
-        
         return response
     
     def is_available(self):
@@ -152,10 +165,18 @@ class DemoProvider(AIProvider):
 
 def get_ai_provider():
     """Get the appropriate AI provider based on configuration."""
-    if API_KEYS_CONFIGURED:
+    # Check if Gemini API key is configured
+    if GEMINI_API_KEY:
         provider = GeminiProvider()
+        logger.info(f"Checking Gemini provider availability: {provider.is_available()}")
         if provider.is_available():
+            logger.info("Using Gemini provider")
             return provider
+        else:
+            logger.warning("Gemini provider not available despite API key being set")
+    else:
+        logger.warning("Gemini API key not configured")
     
     # Fall back to demo provider
+    logger.info("Using Demo provider as fallback")
     return DemoProvider()

@@ -54,6 +54,8 @@ def chat_completion(request):
         message = data.get('message', '')
         subject = data.get('subject', 'general')
         
+        logger.info(f"Received chat request: subject={subject}, message={message[:50]}...")
+        
         # Save the user's question to the database
         interaction = Interaction.objects.create(
             user=request.user,
@@ -64,35 +66,11 @@ def chat_completion(request):
         
         # Get AI response
         response_text = get_ai_response(message, subject, request.user)
+        logger.info(f"Generated response: {response_text[:50]}...")
         
         # Update the interaction with the response
         interaction.answer = response_text
         interaction.save()
-        
-        # Simple progress tracking
-        try:
-            from .models import ProgressRecord
-            # Extract a simple topic from the message
-            words = message.split()[:3]
-            topic = ' '.join(words) if words else 'General'
-            
-            # Create or update progress record
-            record, created = ProgressRecord.objects.get_or_create(
-                user=request.user,
-                subject=subject,
-                topic=topic,
-                defaults={
-                    'mastery_level': 1,
-                    'confidence_score': 0.2
-                }
-            )
-            
-            if not created:
-                record.mastery_level = min(5, record.mastery_level + 0.2)
-                record.confidence_score = min(1.0, record.confidence_score + 0.1)
-                record.save()
-        except Exception as e:
-            logger.warning(f"Progress tracking error: {str(e)}")
         
         return JsonResponse({
             'success': True,
@@ -103,6 +81,12 @@ def chat_completion(request):
             }
         })
         
+    except json.JSONDecodeError:
+        logger.error("Invalid JSON in request body")
+        return JsonResponse({
+            'success': False,
+            'error': "Invalid JSON in request body"
+        }, status=400)
     except Exception as e:
         logger.error(f"Error in chat_completion: {str(e)}")
         return JsonResponse({
@@ -183,9 +167,6 @@ def get_demo_response(message, subject):
     
     response = random.choice(subject_responses)
     
-    # Add demo ending
-    response += "\n\n(Note: I'm currently in demonstration mode. The full AI functionality will be available soon!)"
-    
     return response
 
 @login_required
@@ -208,3 +189,84 @@ def settings_view(request):
     return render(request, 'ai/settings.html', {
         'page_title': 'AI Assistant Settings',
     })
+
+@login_required
+def tutor_view(request):
+    """Render the personalized tutor interface."""
+    # Get recent interactions for this user
+    recent_interactions = Interaction.objects.filter(user=request.user).order_by('-created_at')[:5]
+    
+    # Get or create student profile
+    profile, created = StudentProfile.objects.get_or_create(user=request.user)
+    
+    subjects = [
+        {'value': 'general', 'label': 'General'},
+        {'value': 'mathematics', 'label': 'Mathematics'}, 
+        {'value': 'science', 'label': 'Science'},
+        {'value': 'programming', 'label': 'Programming'}, 
+        {'value': 'history', 'label': 'History'},
+        {'value': 'languages', 'label': 'Languages'}
+    ]
+    
+    context = {
+        'recent_interactions': recent_interactions,
+        'profile': profile,
+        'subjects': subjects,
+        'page_title': 'Personalized Tutor'
+    }
+    
+    return render(request, 'ai/tutor.html', context)
+
+@login_required
+@require_POST
+def tutor_completion(request):
+    """API endpoint for personalized tutor interactions."""
+    try:
+        from .tutors import PersonalizedTutor
+        
+        data = json.loads(request.body)
+        message = data.get('message', '')
+        subject = data.get('subject', 'general')
+        difficulty = data.get('difficulty', 'moderate')
+        
+        # Create context for the tutor
+        context = {
+            'subject': subject,
+            'difficulty': difficulty
+        }
+        
+        # Initialize personalized tutor
+        tutor = PersonalizedTutor(request.user.id)
+        
+        # Save the interaction
+        interaction = Interaction.objects.create(
+            user=request.user,
+            question=message,
+            subject=subject,
+            ai_provider='personalized'
+        )
+        
+        # Get personalized response
+        tutor_response = tutor.ask(message, context)
+        response_text = tutor_response['text']
+        
+        # Update the interaction with the response
+        interaction.answer = response_text
+        interaction.save()
+        
+        return JsonResponse({
+            'success': True,
+            'response': {
+                'text': response_text,
+                'provider': 'personalized',
+                'personalized': True,
+                'interaction_id': interaction.id
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in tutor_completion: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)

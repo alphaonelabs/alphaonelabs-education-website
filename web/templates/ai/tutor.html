@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Personalized Tutor{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        height: 70vh;
+        border-radius: 10px;
+        background-color: #f8f9fa;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .chat-header {
+        background: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+        color: white;
+        padding: 15px;
+        border-radius: 10px 10px 0 0;
+        font-weight: bold;
+    }
+    
+    .chat-messages {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding: 15px;
+    }
+    
+    .chat-input {
+        padding: 15px;
+        background-color: white;
+        border-top: 1px solid #e9ecef;
+        border-radius: 0 0 10px 10px;
+    }
+    
+    .user-message, .ai-message {
+        margin-bottom: 15px;
+        padding: 10px 15px;
+        border-radius: 18px;
+        max-width: 70%;
+        word-wrap: break-word;
+    }
+    
+    .user-message {
+        background-color: #4b6cb7;
+        color: white;
+        margin-left: auto;
+        border-bottom-right-radius: 5px;
+    }
+    
+    .ai-message {
+        background-color: #e9ecef;
+        color: #343a40;
+        margin-right: auto;
+        border-bottom-left-radius: 5px;
+    }
+    
+    .message-time {
+        font-size: 0.75rem;
+        margin-top: 5px;
+        opacity: 0.7;
+    }
+    
+    .thinking {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        font-style: italic;
+        color: #6c757d;
+    }
+    
+    .dot-typing {
+        display: inline-block;
+        margin-right: 8px;
+    }
+    
+    .dot-typing::after {
+        content: '...';
+        animation: dotTyping 1.5s infinite;
+    }
+    
+    @keyframes dotTyping {
+        0% { content: '.'; }
+        25% { content: '..'; }
+        50% { content: '...'; }
+        75% { content: '....'; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span>Personalized Tutor</span>
+                        <div class="d-flex">
+                            <select id="subject-selector" class="form-control form-control-sm d-inline-block mr-2" style="width: auto;">
+                                <option value="general">General</option>
+                                {% for subject in subjects %}
+                                <option value="{{ subject.value }}">{{ subject.label }}</option>
+                                {% endfor %}
+                            </select>
+                            <select id="difficulty-selector" class="form-control form-control-sm d-inline-block" style="width: auto;">
+                                <option value="easy">Easy</option>
+                                <option value="moderate" selected>Moderate</option>
+                                <option value="challenging">Challenging</option>
+                                <option value="adaptive">Adaptive</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-messages" id="chat-messages">
+                    <div class="ai-message">
+                        Welcome to your personalized tutor! I'll adapt my explanations based on your learning profile, current understanding, and previous interactions. How can I help you learn today?
+                        <div class="message-time">Just now</div>
+                    </div>
+                </div>
+                <div class="chat-input">
+                    <form id="question-form" class="input-group">
+                        <input type="text" id="question-input" class="form-control" placeholder="Ask your learning question..." required>
+                        <div class="input-group-append">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i> Send
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-user-graduate"></i> Your Learning Profile
+                </div>
+                <div class="card-body">
+                    <p><strong>Learning Style:</strong> {{ profile.get_learning_style_display }}</p>
+                    <p><strong>Current Level:</strong> {{ profile.get_difficulty_preference_display }}</p>
+                    <p><strong>Preferred Detail:</strong> {{ profile.get_response_length_display }}</p>
+                    <a href="{% url 'ai_settings' %}" class="btn btn-sm btn-outline-primary">Update Profile</a>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-lightbulb"></i> About Personalized Tutoring
+                </div>
+                <div class="card-body">
+                    <p class="small">Your personalized tutor adapts to:</p>
+                    <ul class="small mb-0">
+                        <li>Your learning history and preferences</li>
+                        <li>Topics you've struggled with previously</li>
+                        <li>Your recent learning activities</li>
+                        <li>Your selected difficulty level</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatMessages = document.getElementById('chat-messages');
+        const questionForm = document.getElementById('question-form');
+        const questionInput = document.getElementById('question-input');
+        const subjectSelector = document.getElementById('subject-selector');
+        const difficultySelector = document.getElementById('difficulty-selector');
+        
+        // Scroll to bottom of chat
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Handle form submission
+        questionForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const question = questionInput.value.trim();
+            const subject = subjectSelector.value;
+            const difficulty = difficultySelector.value;
+            
+            if (!question) return;
+            
+            // Add user message
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.className = 'user-message';
+            userMessageDiv.innerHTML = `
+                ${question}
+                <div class="message-time">Just now</div>
+            `;
+            chatMessages.appendChild(userMessageDiv);
+            
+            // Add thinking indicator
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.className = 'thinking ai-message';
+            thinkingDiv.innerHTML = `
+                <span class="dot-typing"></span> Tutor is thinking...
+            `;
+            chatMessages.appendChild(thinkingDiv);
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Clear input
+            questionInput.value = '';
+            
+            // Send request to API
+            fetch('{% url "ask_tutor" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    message: question,
+                    subject: subject,
+                    difficulty: difficulty
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Remove thinking indicator
+                chatMessages.removeChild(thinkingDiv);
+                
+                // Add AI message
+                const aiMessageDiv = document.createElement('div');
+                aiMessageDiv.className = 'ai-message';
+                aiMessageDiv.innerHTML = `
+                    ${data.response.text.replace(/\n/g, '<br>')}
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="message-time">
+                            Just now
+                            <span class="badge badge-primary">Personalized</span>
+                        </div>
+                    </div>
+                `;
+                chatMessages.appendChild(aiMessageDiv);
+                
+                // Scroll to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                
+                // Remove thinking indicator
+                chatMessages.removeChild(thinkingDiv);
+                
+                // Add error message
+                const errorMessageDiv = document.createElement('div');
+                errorMessageDiv.className = 'ai-message';
+                errorMessageDiv.innerHTML = `
+                    Sorry, there was an error processing your request. Please try again.
+                    <div class="message-time">Just now</div>
+                `;
+                chatMessages.appendChild(errorMessageDiv);
+                
+                // Scroll to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            });
+        });
+    });
+</script>
+{% endblock %}
