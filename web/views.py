@@ -468,7 +468,7 @@ def add_session(request, slug):
     else:
         form = SessionForm()
 
-    return render(request, "courses/add_session.html", {"form": form, "course": course})
+    return render(request, "courses/session_form.html", {"form": form, "course": course, "is_edit": False})
 
 
 @login_required
@@ -2196,12 +2196,14 @@ def send_welcome_email(user):
 @login_required
 def edit_session(request, session_id):
     """Edit an existing session."""
+    # Get the session and verify that the current user is the course teacher
     session = get_object_or_404(Session, id=session_id)
+    course = session.course
 
     # Check if user is the course teacher
-    if request.user != session.course.teacher:
+    if request.user != course.teacher:
         messages.error(request, "Only the course teacher can edit sessions!")
-        return redirect("course_detail", slug=session.course.slug)
+        return redirect("course_detail", slug=course.slug)
 
     if request.method == "POST":
         form = SessionForm(request.POST, instance=session)
@@ -2212,7 +2214,9 @@ def edit_session(request, session_id):
     else:
         form = SessionForm(instance=session)
 
-    return render(request, "courses/edit_session.html", {"form": form, "session": session, "course": session.course})
+    return render(
+        request, "courses/session_form.html", {"form": form, "session": session, "course": course, "is_edit": True}
+    )
 
 
 @login_required
