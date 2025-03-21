@@ -172,9 +172,10 @@ SITE_DOMAIN = "alphaonelabs.com"
 # Allauth settings
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False  # Since we're using email authentication
-ACCOUNT_EMAIL_VERIFICATION = "optional"  # Disable email verification for now
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"  # Require email verification
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_PREVENT_ENUMERATION = True  # Prevent user enumeration
 ACCOUNT_USERNAME_MIN_LENGTH = 3
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 ACCOUNT_SESSION_REMEMBER = None  # Let user decide via checkbox
@@ -355,3 +356,7 @@ MARKDOWNX_MEDIA_PATH = "markdownx/"  # Path within MEDIA_ROOT
 GM_API_KEY = env.str("GM_API_KEY", default="")
 
 USE_X_FORWARDED_HOST = True
+
+# GitHub API Token for fetching contributor data
+# Use empty string as default to avoid errors when the token is not set
+GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
