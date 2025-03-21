@@ -4,25 +4,33 @@ import logging
 import requests
 from django.conf import settings
 from django.core.mail.backends.console import EmailBackend as ConsoleBackend
+from typing import List, Optional
+
+# Only import SendgridBackend if we have a key configured
+if settings.SENDGRID_API_KEY:
+    from sendgrid_backend.mail import SendgridBackend
+else:
+    # Create a dummy class to avoid import errors
+    class SendgridBackend:
+        pass
 
 logger = logging.getLogger(__name__)
 
 
 class SlackNotificationEmailBackend:
     """
-    Email backend that sends a notification to Slack whenever an email is sent.
-    This is a wrapper around another email backend.
+    Email backend that logs emails to the console and sends a notification to Slack.
+    Falls back to console backend if SendGrid API key is not configured.
     """
-
     def __init__(self, **kwargs):
-        # Determine which backend to use based on settings
-        if settings.DEBUG:
-            self.backend = ConsoleBackend(**kwargs)
+        self.fail_silently = kwargs.get('fail_silently', False)
+        
+        # Use the appropriate backend based on configuration
+        if settings.SENDGRID_API_KEY:
+            self.backend = SendgridBackend(api_key=settings.SENDGRID_API_KEY, **kwargs)
         else:
-            # Use SendGrid backend in production
-            from sendgrid_backend.mail import SendgridBackend
-
-            self.backend = SendgridBackend(**kwargs)
+            self.backend = ConsoleBackend(**kwargs)
+            print("Using console email backend (SendGrid API key not configured)")
 
         self.webhook_url = getattr(settings, "EMAIL_SLACK_WEBHOOK", None)
 
@@ -33,15 +41,39 @@ class SlackNotificationEmailBackend:
         return self.backend.close()
 
     def send_messages(self, email_messages):
-        # First, send the emails using the wrapped backend
-        sent_count = self.backend.send_messages(email_messages)
+        """Send messages to the backend and log to console."""
+        # Send email using the selected backend
+        sent = self.backend.send_messages(email_messages)
+        
+        # Log to Slack if webhook URL is configured and valid
+        try:
+            self._log_to_slack(email_messages)
+        except Exception as e:
+            print(f"Failed to send to Slack: {e}")
+        
+        return sent
 
-        # Then, send notifications to Slack for each email
-        if self.webhook_url and sent_count:
-            for message in email_messages:
-                self._notify_slack(message)
-
-        return sent_count
+    def _log_to_slack(self, email_messages: List) -> None:
+        """Send a notification to Slack about sent emails."""
+        import requests
+        webhook_url = getattr(settings, "SLACK_WEBHOOK_URL", "")
+        
+        # Skip if webhook URL is not configured properly
+        if not webhook_url or "://" not in webhook_url:
+            return
+        
+        # Prepare message
+        for message in email_messages:
+            text = f"Email sent\nTo: {message.to}\nSubject: {message.subject}"
+            try:
+                requests.post(
+                    webhook_url, 
+                    json={"text": text},
+                    timeout=5
+                )
+            except Exception:
+                # Don't fail if Slack notification fails
+                pass
 
     def _notify_slack(self, email_message):
         """Send a notification to Slack about the email."""

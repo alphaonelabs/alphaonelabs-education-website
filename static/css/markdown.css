@@ -1,0 +1,127 @@
+/* Basic Markdown Styling */
+.markdown {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    line-height: 1.6;
+    color: #333;
+}
+
+.markdown h1, .markdown h2, .markdown h3, .markdown h4, .markdown h5, .markdown h6 {
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.markdown h1 {
+    font-size: 2rem;
+    border-bottom: 1px solid #eaecef;
+    padding-bottom: 0.3em;
+}
+
+.markdown h2 {
+    font-size: 1.5rem;
+    border-bottom: 1px solid #eaecef;
+    padding-bottom: 0.3em;
+}
+
+.markdown h3 {
+    font-size: 1.25rem;
+}
+
+.markdown h4 {
+    font-size: 1rem;
+}
+
+.markdown p, .markdown ul, .markdown ol {
+    margin-bottom: 1rem;
+}
+
+.markdown ul, .markdown ol {
+    padding-left: 2rem;
+}
+
+.markdown blockquote {
+    border-left: 4px solid #dfe2e5;
+    padding: 0 1rem;
+    color: #6a737d;
+    margin: 0 0 1rem;
+}
+
+.markdown pre {
+    background-color: #f6f8fa;
+    border-radius: 4px;
+    padding: 1rem;
+    overflow: auto;
+    margin-bottom: 1rem;
+}
+
+.markdown code {
+    background-color: #f6f8fa;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-family: SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 85%;
+}
+
+.markdown pre code {
+    padding: 0;
+    background-color: transparent;
+}
+
+.markdown a {
+    color: #0366d6;
+    text-decoration: none;
+}
+
+.markdown a:hover {
+    text-decoration: underline;
+}
+
+.markdown img {
+    max-width: 100%;
+    height: auto;
+}
+
+.markdown table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 1rem;
+}
+
+.markdown table th, .markdown table td {
+    padding: 0.5rem 1rem;
+    border: 1px solid #dfe2e5;
+}
+
+.markdown table th {
+    background-color: #f6f8fa;
+}
+
+/* Dark mode styles */
+.dark .markdown {
+    color: #e0e0e0;
+}
+
+.dark .markdown h1, .dark .markdown h2 {
+    border-bottom: 1px solid #4a4a4a;
+}
+
+.dark .markdown blockquote {
+    border-left: 4px solid #4a4a4a;
+    color: #a0a0a0;
+}
+
+.dark .markdown pre, .dark .markdown code {
+    background-color: #2d2d2d;
+}
+
+.dark .markdown table th, .dark .markdown table td {
+    border: 1px solid #4a4a4a;
+}
+
+.dark .markdown table th {
+    background-color: #2d2d2d;
+}
+
+.dark .markdown a {
+    color: #58a6ff;
+}

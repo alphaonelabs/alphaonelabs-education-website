@@ -258,6 +258,21 @@ STATICFILES_DIRS = [BASE_DIR / "static"]
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Email settings
+SENDGRID_API_KEY = env.str("SENDGRID_API_KEY", default="")
+EMAIL_HOST = env.str("EMAIL_HOST", default="smtp.sendgrid.net")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env.str("EMAIL_HOST_USER", default="apikey")
+EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+DEFAULT_FROM_EMAIL = env.str("EMAIL_FROM", default="noreply@alphaonelabs.xyz")
+
+# Use console email backend if no SendGrid API key is provided
+if not SENDGRID_API_KEY:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    print("WARNING: No SendGrid API key found, using console email backend")
+else:
+    EMAIL_BACKEND = 'web.email_backend.SendgridBackend'
+
 if DEBUG:
     EMAIL_BACKEND = "web.email_backend.SlackNotificationEmailBackend"
     print("Using console email backend with Slack notifications for development")
@@ -297,6 +312,10 @@ TWITTER_USERNAME = env.str("TWITTER_USERNAME", default="alphaonelabs")
 
 # Slack Integration
 SLACK_WEBHOOK_URL = env.str("SLACK_WEBHOOK_URL", default="")
+# Make sure it's a valid URL - if it's a placeholder, set it to empty
+if SLACK_WEBHOOK_URL and (SLACK_WEBHOOK_URL == "your-slack-webhook-url" or "://") not in SLACK_WEBHOOK_URL:
+    SLACK_WEBHOOK_URL = ""
+    print("WARNING: Invalid Slack webhook URL, disabling Slack integration")
 
 # Slack webhook for email notifications
 EMAIL_SLACK_WEBHOOK = env.str("EMAIL_SLACK_WEBHOOK", default=SLACK_WEBHOOK_URL)

@@ -5,6 +5,7 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 from django.urls import path, include
+from django.views.generic import RedirectView
 
 from . import admin_views, quiz_views, views
 from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_data, streak_detail
@@ -13,7 +14,8 @@ from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_d
 urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs 
     path('admin/', admin.site.urls),
-    path('ai/', include('ai.urls')),
+    path('ai/', include('ai.urls')),  # This line already exists - AI app is included
+    path('ai_chat/', RedirectView.as_view(pattern_name='ai:chat'), name='ai_chat'),  # Add redirect for ai_chat
     path("captcha/", include("captcha.urls")),  # CAPTCHA URLs should not be language-prefixed
 ]
 
