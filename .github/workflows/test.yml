@@ -35,7 +35,7 @@ jobs:
       if: steps.pre-commit.outcome == 'failure' && github.event_name == 'pull_request'
       uses: actions/github-script@v6
       with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+        github-token: ${{ secrets.GH_PAT }}
         script: |
           try {
             console.log("Creating comment on PR #" + context.issue.number);
