@@ -18,13 +18,17 @@
                   <a href="{% url 'course_detail' course.slug %}">
                     <img src="{{ course.image.url }}"
                          alt="{{ course.title }}"
-                         class="w-full h-full object-cover" />
+                         class="w-full h-full object-cover"
+                         width="300"
+                         height="300" />
                   </a>
                 {% else %}
                   <a href="{% url 'course_detail' course.slug %}">
                     <img src="{% static 'images/default-course.jpg' %}"
                          alt="{{ course.title }}"
-                         class="w-full h-full object-cover" />
+                         class="w-full h-full object-cover"
+                         width="300"
+                         height="300" />
                   </a>
                 {% endif %}
               </div>
@@ -70,11 +74,11 @@
                   {% if first_session and last_session %}
                     <div class="flex items-center mb-1">
                       <i class="fas fa-calendar-day mr-2"></i>
-                      <span>Starts: {{ first_session.start_time|date:"M j, Y" }}</span>
+                      <span>Starts: {{ first_session.start_time|date:"M j, Y g:i A e" }}</span>
                     </div>
                     <div class="flex items-center">
                       <i class="fas fa-calendar-check mr-2"></i>
-                      <span>Ends: {{ last_session.end_time|date:"M j, Y" }}</span>
+                      <span>Ends: {{ last_session.end_time|date:"M j, Y g:i A e" }}</span>
                     </div>
                   {% else %}
                     <div class="flex items-center mb-1">

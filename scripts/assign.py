@@ -140,6 +140,9 @@ def main():
             print(f"Assign request detected. Assigning issue #{issue_number} to {user_login}")
 
             try:
+                # Define issue_url at the beginning of this block
+                issue_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}"
+
                 # Get user's open issues
                 issues_url = f"https://api.github.com/repos/{owner}/{repo}/issues"
                 params = {"state": "open", "assignee": user_login}
@@ -183,14 +186,21 @@ def main():
                 # Assign the issue
                 assignees_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}/assignees"
                 print(f"Assigning issue via {assignees_url}")
-                requests.post(assignees_url, headers=headers, json={"assignees": [user_login]})
-                print(f"Issue #{issue_number} assigned to {user_login}")
+                assign_response = requests.post(assignees_url, headers=headers, json={"assignees": [user_login]})
+                if assign_response.status_code >= 400:
+                    print(f"Error assigning issue: {assign_response.status_code} - {assign_response.text}")
+                    return
+                else:
+                    print(f"Issue #{issue_number} assigned to {user_login}")
 
                 # Add "assigned" label
                 labels_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}/labels"
                 print(f"Adding 'assigned' label via {labels_url}")
-                requests.post(labels_url, headers=headers, json={"labels": ["assigned"]})
-                print(f"'assigned' label added to issue #{issue_number}")
+                label_response = requests.post(labels_url, headers=headers, json={"labels": ["assigned"]})
+                if label_response.status_code >= 400:
+                    print(f"Error adding label: {label_response.status_code} - {label_response.text}")
+                else:
+                    print(f"'assigned' label added to issue #{issue_number}")
 
                 # Add assignment comment
                 assignment_msg = (
@@ -199,12 +209,15 @@ def main():
                     f"Please finish your PR within 1 day."
                 )
                 print("Posting assignment comment.")
-                requests.post(
+                comment_response = requests.post(
                     f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}/comments",
                     headers=headers,
                     json={"body": assignment_msg},
                 )
-                print("Assignment comment posted.")
+                if comment_response.status_code >= 400:
+                    print(f"Error posting comment: {comment_response.status_code} - {comment_response.text}")
+                else:
+                    print("Assignment comment posted successfully.")
             except Exception as e:
                 print(f"Failed to assign issue #{issue_number}: {str(e)}")
 
