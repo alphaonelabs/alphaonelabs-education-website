@@ -4114,3 +4114,26 @@ def sync_github_milestones(request):
         messages.error(request, f"Error syncing milestones: {str(e)}")
 
     return redirect("forum_categories")
+
+
+@login_required
+def toggle_course_status(request, slug):
+    """Toggle a course between draft and published status"""
+    course = get_object_or_404(Course, slug=slug)
+
+    # Check if user is the course teacher
+    if request.user != course.teacher:
+        messages.error(request, "Only the course teacher can modify course status!")
+        return redirect("course_detail", slug=slug)
+
+    # Toggle the status between draft and published
+    if course.status == "draft":
+        course.status = "published"
+        messages.success(request, "Course has been published successfully!")
+    elif course.status == "published":
+        course.status = "draft"
+        messages.success(request, "Course has been unpublished and is now in draft mode.")
+    # Note: We don't toggle from/to 'archived' status as that's a separate action
+
+    course.save()
+    return redirect("course_detail", slug=slug)
