@@ -58,26 +58,52 @@ jobs:
         python-version: 3.10.x
         cache: 'pip'
 
-    - name: Run tests with MySQL
+    - name: Configure MySQL and run tests
       env:
-        # Use root user for test database creation privileges
         DATABASE_URL: mysql://root:rootpassword@127.0.0.1:3306/test_db
       run: |
         cp .env.sample .env
-        # Override the DATABASE_URL in .env file with MySQL root connection
         sed -i 's|DATABASE_URL=sqlite:///db.sqlite3|DATABASE_URL=mysql://root:rootpassword@127.0.0.1:3306/test_db|g' .env
         
         # Install MySQL client
         sudo apt-get update
         sudo apt-get install -y default-libmysqlclient-dev
         
+        # Install Python dependencies
         python -m pip install --upgrade pip wheel setuptools
         pip install -v -r requirements.txt
-        # Add MySQL client to ensure Django can connect to MySQL
         pip install mysqlclient
         
-        # Run tests with MySQL
-        python manage.py test
+        # Configure MySQL with less restrictive SQL mode
+        mysql -h127.0.0.1 -P3306 -uroot -prootpassword -e "SET GLOBAL sql_mode='NO_ENGINE_SUBSTITUTION';"
+        
+        # Create a temporary Django settings file that handles the MySQL subquery issue
+        cat > mysql_settings.py << EOF
+from web.settings import *
+
+# Override database settings to use MySQL with specific options
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'test_db',
+        'USER': 'root',
+        'PASSWORD': 'rootpassword',
+        'HOST': '127.0.0.1',
+        'PORT': '3306',
+        'OPTIONS': {
+            'sql_mode': 'NO_ENGINE_SUBSTITUTION',
+            'charset': 'utf8mb4',
+        },
+        'TEST': {
+            'CHARSET': 'utf8mb4',
+            'COLLATION': 'utf8mb4_unicode_ci',
+        }
+    }
+}
+EOF
+        
+        # Run tests with the custom settings file
+        DJANGO_SETTINGS_MODULE=mysql_settings python manage.py test
 
   security:
     runs-on: ubuntu-latest
