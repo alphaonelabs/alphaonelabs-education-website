@@ -528,37 +528,31 @@
         <!-- Weekly Challenge -->
         <div class="container mx-auto px-4 py-8">
           <h1 class="text-3xl font-bold mb-6 text-center">🏆 Weekly Challenges</h1>
-        
           {% if current_challenge %}
-          <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800">
-            <!-- Only display the first challenge (current week) -->
-            <div class="challenge-item">
-              <!-- Challenge Title -->
-              <h2 class="text-xl font-semibold mb-4">{{ current_challenge.0.title }}</h2>
-              
-              <!-- Challenge Description -->
-              <p class="text-gray-700 dark:text-gray-300 mb-4">{{ current_challenge.0.description }}</p>
-        
-              <!-- Challenge Duration -->
-              <p class="text-gray-600 dark:text-gray-400 mb-4">
-                <strong>Duration:</strong> {{ current_challenge.0.start_date }} to {{ current_challenge.0.end_date }}
-              </p>
-        
-              <!-- Submission Button -->
-              {% if user.is_authenticated %}
-                <a href="{% url 'challenge_submit' current_challenge.0.id %}" 
-                   class="inline-block bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 transition-shadow shadow-md">
-                  Complete My Challenge
-                </a>
-              {% else %}
-                <p class="text-red-600 dark:text-red-400 mt-4">Please log in to submit your result.</p>
-              {% endif %}
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800">
+              <!-- Only display the first challenge (current week) -->
+              <div class="challenge-item">
+                <!-- Challenge Title -->
+                <h2 class="text-xl font-semibold mb-4">{{ current_challenge.0.title }}</h2>
+                <!-- Challenge Description -->
+                <p class="text-gray-700 dark:text-gray-300 mb-4">{{ current_challenge.0.description }}</p>
+                <!-- Challenge Duration -->
+                <p class="text-gray-600 dark:text-gray-400 mb-4">
+                  <strong>Duration:</strong> {{ current_challenge.0.start_date }} to {{ current_challenge.0.end_date }}
+                </p>
+                <!-- Submission Button -->
+                {% if user.is_authenticated %}
+                  <a href="{% url 'challenge_submit' current_challenge.0.id %}"
+                     class="inline-block bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 transition-shadow shadow-md">
+                    Complete My Challenge
+                  </a>
+                {% else %}
+                  <p class="text-red-600 dark:text-red-400 mt-4">Please log in to submit your result.</p>
+                {% endif %}
+              </div>
             </div>
-          </div>
           {% else %}
-          <p class="text-center text-gray-500 dark:text-gray-400">
-            No challenges available at this time.
-          </p>
+            <p class="text-center text-gray-500 dark:text-gray-400">No challenges available at this time.</p>
           {% endif %}
         </div>
         <!-- Educational Videos -->

@@ -1,79 +1,58 @@
-{% extends "base.html" %} {% block content %}
-<div class="container mx-auto max-w-2xl px-6 py-10">
-  <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-8">
-    <!-- Title -->
-    <h1
-      class="text-3xl font-bold text-gray-900 dark:text-white text-center mb-4"
-    >
-      {% if challenge.challenge_type == 'weekly' %} 
-      Week {{challenge.week_number }}: {{ challenge.title }} 
-      {% else %} 
-      {{ challenge.title }} 
-      {% endif %}
-    </h1>
+{% extends "base.html" %}
 
-    <!-- Challenge Description -->
-    <p class="text-lg text-gray-700 dark:text-gray-300 text-center mb-4">
-      {{ challenge.description }}
-    </p>
-
-    <!-- Challenge Period -->
-    <p class="text-sm text-gray-600 dark:text-gray-400 text-center mb-6">
-      <strong>Challenge Period:</strong> {{ challenge.start_date }} to {{challenge.end_date }}
-    </p>
-
-    <!-- Submission Section -->
-    {% if user.is_authenticated %} {% if user_submission %}
-    <div
-      class="bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100 p-4 rounded-lg text-center mb-6"
-    >
-      🎉 You have already submitted this challenge!
-    </div>
-    {% else %}
-    <div class="text-center mb-6">
-      <a
-        href="{% url 'challenge_submit' challenge.id %}"
-        class="inline-block bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 transition"
-      >
-        Submit Your Result
-      </a>
-    </div>
-    {% endif %} {% else %}
-    <div
-      class="bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-100 p-4 rounded-lg text-center mb-6"
-    >
-      🔒 Please log in to submit your result.
-    </div>
-    {% endif %}
-
-    <!-- Submissions Section -->
-    <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">
-      Submissions:
-    </h2>
-
-    {% if submissions %}
-    <ul class="space-y-4">
-      {% for sub in submissions %}
-      <li class="bg-gray-100 dark:bg-gray-900 shadow-sm rounded-lg p-4">
-        <div class="flex items-center justify-between">
-          <span class="font-semibold text-gray-800 dark:text-gray-200"
-            >{{ sub.user.username }}</span
-          >
-          <span class="text-sm text-gray-500 dark:text-gray-400"
-            >{{ sub.submitted_at|date:"M d, Y - H:i" }}</span
-          >
+{% block content %}
+  <div class="container mx-auto max-w-2xl px-6 py-10">
+    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-8">
+      <!-- Title -->
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white text-center mb-4">
+        {% if challenge.challenge_type == 'weekly' %}
+          Week {{ challenge.week_number }}: {{ challenge.title }}
+        {% else %}
+          {{ challenge.title }}
+        {% endif %}
+      </h1>
+      <!-- Challenge Description -->
+      <p class="text-lg text-gray-700 dark:text-gray-300 text-center mb-4">{{ challenge.description }}</p>
+      <!-- Challenge Period -->
+      <p class="text-sm text-gray-600 dark:text-gray-400 text-center mb-6">
+        <strong>Challenge Period:</strong> {{ challenge.start_date }} to {{ challenge.end_date }}
+      </p>
+      <!-- Submission Section -->
+      {% if user.is_authenticated %}
+        {% if user_submission %}
+          <div class="bg-green-100 dark:bg-green-800 text-green-800 dark:text-green-100 p-4 rounded-lg text-center mb-6">
+            🎉 You have already submitted this challenge!
+          </div>
+        {% else %}
+          <div class="text-center mb-6">
+            <a href="{% url 'challenge_submit' challenge.id %}"
+               class="inline-block bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 transition">
+              Submit Your Result
+            </a>
+          </div>
+        {% endif %}
+      {% else %}
+        <div class="bg-red-100 dark:bg-red-800 text-red-800 dark:text-red-100 p-4 rounded-lg text-center mb-6">
+          🔒 Please log in to submit your result.
         </div>
-        <p class="mt-2 text-gray-700 dark:text-gray-300">
-          {{ sub.submission_text }}
-        </p>
-      </li>
-      {% endfor %}
-    </ul>
-    {% else %}
-    <p class="text-center text-gray-500 dark:text-gray-400">
-      No submissions yet.
-    </p>
-    {% endif %}
+      {% endif %}
+      <!-- Submissions Section -->
+      <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">Submissions:</h2>
+      {% if submissions %}
+        <ul class="space-y-4">
+          {% for sub in submissions %}
+            <li class="bg-gray-100 dark:bg-gray-900 shadow-sm rounded-lg p-4">
+              <div class="flex items-center justify-between">
+                <span class="font-semibold text-gray-800 dark:text-gray-200">{{ sub.user.username }}</span>
+                <span class="text-sm text-gray-500 dark:text-gray-400">{{ sub.submitted_at|date:"M d, Y - H:i" }}</span>
+              </div>
+              <p class="mt-2 text-gray-700 dark:text-gray-300">{{ sub.submission_text }}</p>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-center text-gray-500 dark:text-gray-400">No submissions yet.</p>
+      {% endif %}
+    </div>
   </div>
-</div>
 {% endblock content %}
