@@ -5,6 +5,7 @@ from captcha.fields import CaptchaField
 from django import forms
 from django.contrib.auth.models import User
 from django.db import IntegrityError
+from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.text import slugify
 from markdownx.fields import MarkdownxFormField
@@ -21,11 +22,16 @@ from .models import (
     ProductImage,
     Profile,
     ProgressTracker,
+    Quiz,
+    QuizOption,
+    QuizQuestion,
     Review,
     Session,
     Storefront,
     Subject,
     SuccessStory,
+    TeamGoal,
+    TeamInvite,
 )
 from .referrals import handle_referral
 from .widgets import (
@@ -65,7 +71,13 @@ __all__ = [
     "EducationalVideoForm",
     "ProgressTrackerForm",
     "SuccessStoryForm",
+    "TeamGoalForm",
+    "TeamInviteForm",
     "MemeForm",
+    "QuizForm",
+    "QuizQuestionForm",
+    "QuizOptionFormSet",
+    "TakeQuizForm",
 ]
 
 
@@ -143,6 +155,18 @@ class UserRegistrationForm(SignupForm):
                 return username
         return username
 
+    def clean_email(self):
+        email = self.cleaned_data.get("email", "").lower()
+        if email:
+            from allauth.account.utils import filter_users_by_email
+
+            users = filter_users_by_email(email)
+            if users:  # If any users found with this email
+                raise forms.ValidationError(
+                    "There was a problem with your signup. " "Please try again with a different email address or login."
+                )
+        return email
+
     def clean_referral_code(self):
         referral_code = self.cleaned_data.get("referral_code")
         if referral_code:
@@ -156,6 +180,12 @@ class UserRegistrationForm(SignupForm):
             user = super().save(request)
         except IntegrityError:
             raise forms.ValidationError("This username is already taken. Please choose a different one.")
+        except ValueError:
+            # This happens when an email address is already in use but not caught in clean_email
+            # This should be rare given the clean_email validation above
+            raise forms.ValidationError(
+                "There was a problem with your signup. " "Please try again with a different email address or login."
+            )
 
         # Then update the additional fields
         user.first_name = self.cleaned_data["first_name"]
@@ -220,8 +250,8 @@ class CourseCreationForm(forms.ModelForm):
 
     def clean_price(self):
         price = self.cleaned_data.get("price")
-        if price <= 0:
-            raise forms.ValidationError("Price must be greater than zero")
+        if price < 0:
+            raise forms.ValidationError("Price must be greater than or equal to zero")
         return price
 
     def clean_max_students(self):
@@ -1074,6 +1104,70 @@ class StorefrontForm(forms.ModelForm):
         ]
 
 
+class TeamGoalForm(forms.ModelForm):
+    """Form for creating and editing team goals."""
+
+    class Meta:
+        model = TeamGoal
+        fields = ["title", "description", "deadline"]
+        widgets = {
+            "deadline": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "description": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def clean_deadline(self):
+        """Validate that the deadline is in the future."""
+        deadline = self.cleaned_data.get("deadline")
+        if deadline and deadline < timezone.now():
+            raise forms.ValidationError("Deadline cannot be in the past.")
+        return deadline
+
+
+class TeamInviteForm(forms.ModelForm):
+    """Form for inviting users to a team goal."""
+
+    recipient_search = forms.CharField(
+        label="Invite User",
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Search by username or email",
+                "list": "user-list",
+                "autocomplete": "off",
+            }
+        ),
+        required=False,
+    )
+
+    class Meta:
+        model = TeamInvite
+        fields = ["recipient"]
+        widgets = {
+            "recipient": forms.HiddenInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        current_user = kwargs.pop("current_user", None)
+        self.team_goal = kwargs.pop("team_goal", None)
+        super().__init__(*args, **kwargs)
+        # Get all users except the current user (will be filtered in the view)
+        if current_user:
+            self.fields["recipient"].queryset = User.objects.exclude(id=current_user.id)
+        else:
+            self.fields["recipient"].queryset = User.objects.all()
+
+    def clean_recipient(self):
+        recipient = self.cleaned_data.get("recipient")
+        if self.team_goal and recipient:
+            # Check if the user is already a member of the team
+            if self.team_goal.members.filter(user=recipient).exists():
+                raise forms.ValidationError("This user is already a member of the team.")
+            # Check if there's already a pending invitation
+            if TeamInvite.objects.filter(goal=self.team_goal, recipient=recipient, status="pending").exists():
+                raise forms.ValidationError("This user already has a pending invitation.")
+        return recipient
+
+
 class ProgressTrackerForm(forms.ModelForm):
     class Meta:
         model = ProgressTracker
@@ -1175,3 +1269,102 @@ class StudentEnrollmentForm(forms.Form):
     email = forms.EmailField(
         required=True, widget=TailwindEmailInput(attrs={"placeholder": "Student Email"}), label="Student Email"
     )
+
+
+class QuizForm(forms.ModelForm):
+    """Form for creating and editing quizzes."""
+
+    class Meta:
+        model = Quiz
+        fields = [
+            "title",
+            "description",
+            "subject",
+            "status",
+            "time_limit",
+            "randomize_questions",
+            "show_correct_answers",
+            "allow_anonymous",
+            "max_attempts",
+        ]
+        widgets = {
+            "title": TailwindInput(attrs={"placeholder": "Quiz Title"}),
+            "description": TailwindTextarea(attrs={"rows": 3, "placeholder": "Quiz Description"}),
+            "subject": TailwindSelect(),
+            "status": TailwindSelect(),
+            "time_limit": TailwindNumberInput(
+                attrs={"min": "0", "placeholder": "Time limit in minutes (leave empty for no limit)"}
+            ),
+            "randomize_questions": TailwindCheckboxInput(),
+            "show_correct_answers": TailwindCheckboxInput(),
+            "allow_anonymous": TailwindCheckboxInput(),
+            "max_attempts": TailwindNumberInput(attrs={"min": "0", "placeholder": "0 for unlimited attempts"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        kwargs.pop("user", None)  # Use this if needed for filtering
+        super().__init__(*args, **kwargs)
+
+        # Subject queryset filtering based on user type could be added here
+
+
+class QuizQuestionForm(forms.ModelForm):
+    """Form for creating and editing quiz questions."""
+
+    class Meta:
+        model = QuizQuestion
+        fields = ["text", "question_type", "explanation", "points", "image"]
+        widgets = {
+            "text": TailwindTextarea(attrs={"rows": 3, "placeholder": "Question text"}),
+            "question_type": TailwindSelect(),
+            "explanation": TailwindTextarea(attrs={"rows": 2, "placeholder": "Explanation for the correct answer"}),
+            "points": TailwindNumberInput(attrs={"min": "1", "value": "1"}),
+            "order": TailwindNumberInput(attrs={"min": "0", "value": "0"}),
+            "image": TailwindFileInput(attrs={"accept": "image/*"}),
+        }
+
+
+# Form for quiz options using formset factory
+QuizOptionFormSet = forms.inlineformset_factory(
+    QuizQuestion,
+    QuizOption,
+    fields=("text", "is_correct"),
+    widgets={
+        "text": TailwindInput(attrs={"placeholder": "Option text"}),
+        "is_correct": TailwindCheckboxInput(),
+    },
+    extra=4,
+    can_delete=True,
+    validate_min=True,
+    min_num=1,
+)
+
+
+class TakeQuizForm(forms.Form):
+    """Form for taking quizzes. Dynamically generated based on questions."""
+
+    def __init__(self, *args, quiz=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if quiz:
+            for question in quiz.questions.all().order_by("order"):
+                if question.question_type == "multiple":
+                    # For multiple choice, add a multi-select field
+                    options = question.options.all().order_by("order")
+                    choices = [(str(option.id), option.text) for option in options]
+                    self.fields[f"question_{question.id}"] = forms.MultipleChoiceField(
+                        label=question.text, choices=choices, widget=forms.CheckboxSelectMultiple, required=False
+                    )
+                elif question.question_type == "true_false":
+                    # For true/false, add a radio select field
+                    options = question.options.all().order_by("order")
+                    choices = [(str(option.id), option.text) for option in options]
+                    self.fields[f"question_{question.id}"] = forms.ChoiceField(
+                        label=question.text, choices=choices, widget=forms.RadioSelect, required=False
+                    )
+                elif question.question_type == "short":
+                    # For short answer, add a text field
+                    self.fields[f"question_{question.id}"] = forms.CharField(
+                        label=question.text,
+                        widget=TailwindTextarea(attrs={"rows": 2, "placeholder": "Your answer..."}),
+                        required=False,
+                    )

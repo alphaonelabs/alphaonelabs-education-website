@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
-from . import admin_views, views
+from . import admin_views, quiz_views, views
 from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_data, streak_detail
 
 # Non-prefixed URLs
@@ -59,6 +59,7 @@ urlpatterns += i18n_patterns(
     path("courses/<slug:course_slug>/enroll/", views.enroll_course, name="enroll_course"),
     path("courses/<slug:slug>/add-session/", views.add_session, name="add_session"),
     path("courses/<slug:slug>/edit/", views.update_course, name="update_course"),
+    path("courses/<slug:slug>/toggle-status/", views.toggle_course_status, name="toggle_course_status"),
     path("sessions/<int:session_id>/edit/", views.edit_session, name="edit_session"),
     path("courses/<slug:slug>/add-review/", views.add_review, name="add_review"),
     path("courses/<slug:slug>/delete/", views.delete_course, name="delete_course"),
@@ -143,6 +144,7 @@ urlpatterns += i18n_patterns(
         name="forum_topic",
     ),
     path("forum/topic/<int:topic_id>/edit/", views.edit_topic, name="edit_topic"),
+    path("forum/sync-milestones/", views.sync_github_milestones, name="sync_github_milestones"),
     # Peer Networking URLs
     path("peers/", views.peer_connections, name="peer_connections"),
     path(
@@ -230,7 +232,18 @@ urlpatterns += i18n_patterns(
     path("analytics/data/", sales_data, name="sales_data"),
     path("memes/", views.meme_list, name="meme_list"),
     path("memes/add/", views.add_meme, name="add_meme"),
+    path("whiteboard/", views.whiteboard, name="whiteboard"),
     path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
+    # Team Collaboration URLs
+    path("teams/", views.team_goals, name="team_goals"),
+    path("teams/create/", views.create_team_goal, name="create_team_goal"),
+    path("teams/<int:goal_id>/", views.team_goal_detail, name="team_goal_detail"),
+    path("teams/invite/<int:invite_id>/accept/", views.accept_team_invite, name="accept_team_invite"),
+    path("teams/invite/<int:invite_id>/decline/", views.decline_team_invite, name="decline_team_invite"),
+    path("teams/<int:goal_id>/mark-contribution/", views.mark_team_contribution, name="mark_team_contribution"),
+    path("teams/<int:goal_id>/delete/", views.delete_team_goal, name="delete_team_goal"),
+    path("teams/<int:goal_id>/remove-member/<int:member_id>/", views.remove_team_member, name="remove_team_member"),
+    path("teams/<int:goal_id>/edit/", views.edit_team_goal, name="edit_team_goal"),
     path("trackers/", views.tracker_list, name="tracker_list"),
     path("trackers/create/", views.create_tracker, name="create_tracker"),
     path("trackers/<int:tracker_id>/", views.tracker_detail, name="tracker_detail"),
@@ -241,6 +254,24 @@ urlpatterns += i18n_patterns(
     path('courses/<slug:course_slug>/share/', views.track_social_share, name='track_social_share'),
     path('share/verify/<int:discount_id>/', views.verify_social_share_url, name='verify_social_share'),
     path('discounts/social/', views.social_share_discounts, name='social_share_discounts'),
+    # Quiz URLs
+    path("quizzes/", quiz_views.quiz_list, name="quiz_list"),
+    path("quizzes/create/", quiz_views.create_quiz, name="create_quiz"),
+    path("quizzes/<int:quiz_id>/", quiz_views.quiz_detail, name="quiz_detail"),
+    path("quizzes/<int:quiz_id>/update/", quiz_views.update_quiz, name="update_quiz"),
+    path("quizzes/<int:quiz_id>/delete/", quiz_views.delete_quiz, name="delete_quiz"),
+    path("quizzes/<int:quiz_id>/add-question/", quiz_views.add_question, name="add_question"),
+    path("quizzes/questions/<int:question_id>/edit/", quiz_views.edit_question, name="edit_question"),
+    path("quizzes/questions/<int:question_id>/delete/", quiz_views.delete_question, name="delete_question"),
+    path("quizzes/<int:quiz_id>/take/", quiz_views.take_quiz, name="take_quiz"),
+    path("quizzes/shared/<str:share_code>/", quiz_views.take_quiz_shared, name="quiz_take_shared"),
+    path("quizzes/results/<int:user_quiz_id>/", quiz_views.quiz_results, name="quiz_results"),
+    path(
+        "quizzes/results/<int:user_quiz_id>/grade/<int:question_id>/",
+        quiz_views.grade_short_answer,
+        name="grade_short_answer",
+    ),
+    path("quizzes/<int:quiz_id>/analytics/", quiz_views.quiz_analytics, name="quiz_analytics"),
     prefix_default_language=True,
 )
 

@@ -108,9 +108,9 @@ class TailwindDateTimeInput(forms.DateTimeInput):
         self.attrs.update(
             {
                 "class": (
-                    "block w-full border rounded p-2 focus:outline-none focus:ring-2 "
-                    "focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800 "
-                    "border-gray-300 dark:border-gray-600 cursor-pointer"
+                    "block w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 "
+                    "focus:ring-blue-500 dark:bg-gray-700 "
+                    "border-gray-300 dark:border-gray-600 dark:text-white cursor-pointer"
                 ),
                 "type": "datetime-local",
                 "placeholder": "Select date and time",

@@ -9,12 +9,13 @@
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <!-- Filter Sidebar -->
       <aside id="filter-box"
-             class="p-4 bg-white dark:bg-gray-800 shadow-md rounded-lg border border-gray-200 overflow-hidden transition-all duration-300">
+             class="p-4 bg-white dark:bg-gray-800 shadow-md rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden transition-all duration-300">
         <h2 class="text-lg font-semibold mb-4">Filters</h2>
         <form method="get" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Store Name</label>
-            <select name="store_name" class="w-full border-gray-300 rounded-md shadow-sm">
+            <select name="store_name"
+                    class="w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white">
               <option value="">All</option>
               {% for name in store_names %}
                 <option value="{{ name }}"
@@ -25,7 +26,7 @@
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Product Type</label>
             <select name="product_type"
-                    class="w-full border-gray-300 rounded-md shadow-sm">
+                    class="w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white">
               <option value="">All</option>
               <option value="physical"
                       {% if request.GET.product_type == 'physical' %}selected{% endif %}>Physical</option>
@@ -35,7 +36,8 @@
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
-            <select name="category" class="w-full border-gray-300 rounded-md shadow-sm">
+            <select name="category"
+                    class="w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white">
               <option value="">All</option>
               {% for category in categories %}
                 <option value="{{ category }}"
@@ -47,12 +49,12 @@
             <input type="number"
                    name="min_price"
                    placeholder="Min Price"
-                   class="w-1/2 border-gray-300 rounded-md shadow-sm"
+                   class="w-1/2 border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                    value="{{ request.GET.min_price }}" />
             <input type="number"
                    name="max_price"
                    placeholder="Max Price"
-                   class="w-1/2 border-gray-300 rounded-md shadow-sm"
+                   class="w-1/2 border-gray-300 dark:border-gray-600 rounded-md shadow-sm dark:bg-gray-700 dark:text-white dark:placeholder-gray-400"
                    value="{{ request.GET.max_price }}" />
           </div>
           <div class="flex space-x-2">
@@ -66,7 +68,7 @@
       <!-- Products Grid -->
       <section class="col-span-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {% for product in products %}
-          <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 border border-gray-200">
+          <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 border border-gray-200 dark:border-gray-700">
             <a href="{% url 'goods_detail' pk=product.id %}"
                class="block overflow-hidden rounded-md">
               <img src="{% if product.image %}{{ product.image.url }}{% else %}/static/images/placeholder.png{% endif %}"
@@ -112,19 +114,19 @@
       <nav class="flex space-x-2 bg-white dark:bg-gray-900 p-2 rounded-lg shadow-md">
         {% if page_obj.has_previous %}
           <a href="?page={{ page_obj.previous_page_number }}"
-             class="px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 rounded-md shadow-sm">« Previous</a>
+             class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md shadow-sm">« Previous</a>
         {% endif %}
         {% for num in page_obj.paginator.page_range %}
           {% if page_obj.number == num %}
             <span class="px-4 py-2 border border-gray-300 text-white bg-orange-500 font-bold rounded-md shadow-sm">{{ num }}</span>
           {% else %}
             <a href="?page={{ num }}"
-               class="px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 rounded-md shadow-sm">{{ num }}</a>
+               class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md shadow-sm">{{ num }}</a>
           {% endif %}
         {% endfor %}
         {% if page_obj.has_next %}
           <a href="?page={{ page_obj.next_page_number }}"
-             class="px-4 py-2 border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 rounded-md shadow-sm">Next »</a>
+             class="px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md shadow-sm">Next »</a>
         {% endif %}
       </nav>
     </div>

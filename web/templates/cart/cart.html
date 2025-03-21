@@ -292,7 +292,8 @@
             } catch (e) {
                 console.error('[Submit] Unexpected error:', e);
                 const messageDiv = document.querySelector("#payment-message");
-                messageDiv.textContent = "An unexpected error occurred. Please try again.";
+                Sentry.captureException(e);
+                messageDiv.textContent = "An unexpected error occurred on the cart page. Please try again.";
                 messageDiv.classList.add("text-red-500");
             }
 
