@@ -351,4 +351,7 @@ MARKDOWNX_URLS_PATH = "/markdownx/markdownify/"
 MARKDOWNX_UPLOAD_URLS_PATH = "/markdownx/upload/"
 MARKDOWNX_MEDIA_PATH = "markdownx/"  # Path within MEDIA_ROOT
 
+# Google maps api cconfiguration
+GM_API_KEY = env.str("GM_API_KEY", default="")
+
 USE_X_FORWARDED_HOST = True

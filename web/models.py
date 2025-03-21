@@ -4,7 +4,6 @@ import string
 import time
 import uuid
 from io import BytesIO
-
 from allauth.account.signals import user_signed_up
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -22,6 +21,7 @@ from django.utils.translation import gettext_lazy as _
 from markdownx.models import MarkdownxField
 from PIL import Image
 
+gm_api_key = settings.GM_API_KEY
 
 class Notification(models.Model):
     NOTIFICATION_TYPES = [
@@ -317,6 +317,9 @@ class Session(models.Model):
         return f"{self.course.title} - {self.title}"
 
     def save(self, *args, **kwargs):
+        # calculate the lat and longitiude dynamically
+        if self.location and (self.latitude is None or self.longitude is None):
+            self.fetch_coordinates()
         # Store original times when first created
         if not self.pk and not self.original_start_time and not self.original_end_time:
             self.original_start_time = self.start_time
@@ -381,6 +384,23 @@ class Session(models.Model):
 
             delete_calendar_event(self)
         super().delete(*args, **kwargs)
+
+    def fetch_coordinates(self):
+        """Fetch latitude and longitude using Google Maps API."""
+        if not self.location:
+            return
+        
+        api_key = settings.GOOGLE_MAPS_API_KEY  # Store this in Django settings
+        url = f"https://maps.googleapis.com/maps/api/geocode/json?address={self.location}&key={api_key}"
+        
+        try:
+            response = requests.get(url)
+            data = response.json()
+            if data["status"] == "OK":
+                self.latitude = data["results"][0]["geometry"]["location"]["lat"]
+                self.longitude = data["results"][0]["geometry"]["location"]["lng"]
+        except Exception as e:
+            print(f"Error fetching coordinates: {e}")
 
     def has_location_data(self):
         """Check if this session has valid location data for mapping."""
