@@ -29,86 +29,26 @@ jobs:
         #pre-commit autoupdate
         pre-commit install
         pre-commit run --all-files
-      continue-on-error: true
-
-    - name: Post linting failure comment on PR
-      if: steps.pre-commit.outcome == 'failure' && github.event_name == 'pull_request'
-      uses: actions/github-script@v6
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        script: |
-          try {
-            console.log("Creating comment on PR #" + context.issue.number);
-
-            const commentBody = `## ⚠️ Linting Checks Failed
-
-            Your pull request has linting issues that need to be fixed before it can be merged.
-
-            ### ⏰ Save Time By Running Checks Locally!
-
-            **Important:** We run 8 different linting checks in CI, and they fail independently. Not running these checks locally before pushing can waste significant time as you may need multiple CI cycles to fix all issues.
-
-            ### How to fix locally:
-
-            1. **Install pre-commit tools:**
-               \`\`\`bash
-               pip install pre-commit
-               \`\`\`
-
-            2. **Set up the hooks:**
-               \`\`\`bash
-               pre-commit install
-               \`\`\`
-
-            3. **Run checks across all files:**
-               \`\`\`bash
-               pre-commit run --all-files
-               \`\`\`
-
-            4. **Fix the identified issues** in your code
-
-            5. **Commit your changes** and push to update this PR
-
-            ### Check Types That May Be Failing:
-            - ✅ Python style issues (flake8)
-            - ✅ HTML template formatting (djlint)
-            - ✅ Code formatting inconsistencies (black)
-            - ✅ Import ordering problems (isort)
-            - ✅ Trailing whitespace and file endings
-            - ✅ YAML/JSON/TOML syntax
-            - ✅ Merge conflicts
-            - ✅ Django configuration
-
-            **Pro Tip:** After setting up pre-commit with \`pre-commit install\`, it will automatically run on every commit you make, catching issues before they reach CI!
-
-            For more detailed guidance, please see our [contributing guidelines](https://github.com/AlphaOneLabs/education-website/blob/main/CONTRIBUTING.md).`;
-
-            const result = await github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: commentBody
-            });
-
-            console.log("Comment created successfully: " + result.data.html_url);
-          } catch (error) {
-            console.log("Error creating comment: " + error);
-            core.setFailed("Failed to create PR comment: " + error.message);
-          }
-
-    - name: Show lint failure guidance and fail the linting job
-      if: steps.pre-commit.outcome == 'failure'
-      run: |
-        echo "::error::Linting checks failed! To fix this locally:"
-        echo "::error::1. Install pre-commit: pip install pre-commit"
-        echo "::error::2. Install hooks: pre-commit install"
-        echo "::error::3. Run all checks: pre-commit run --all-files"
-        echo "::error::4. Fix the issues and commit your changes"
-        echo "::error::See CONTRIBUTING.md for more details on code quality standards"
-        exit 1
 
   tests:
     runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: test_db
+          MYSQL_USER: django
+          MYSQL_PASSWORD: django_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+    
     steps:
     - uses: actions/checkout@v3
 
@@ -118,22 +58,52 @@ jobs:
         python-version: 3.10.x
         cache: 'pip'
 
-    - name: Run tests
+    - name: Configure MySQL and run tests
+      env:
+        DATABASE_URL: mysql://root:rootpassword@127.0.0.1:3306/test_db
       run: |
         cp .env.sample .env
+        sed -i 's|DATABASE_URL=sqlite:///db.sqlite3|DATABASE_URL=mysql://root:rootpassword@127.0.0.1:3306/test_db|g' .env
+        
+        # Install MySQL client
+        sudo apt-get update
+        sudo apt-get install -y default-libmysqlclient-dev
+        
+        # Install Python dependencies
         python -m pip install --upgrade pip wheel setuptools
         pip install -v -r requirements.txt
-        python manage.py test
+        pip install mysqlclient
+        
+        # Configure MySQL with less restrictive SQL mode
+        mysql -h127.0.0.1 -P3306 -uroot -prootpassword -e "SET GLOBAL sql_mode='NO_ENGINE_SUBSTITUTION';"
+        
+        # Create a temporary Django settings file that handles the MySQL subquery issue
+        cat > mysql_settings.py << EOF
+from web.settings import *
 
-    # - name: Run tests with coverage
-    #   run: |
-    #     pytest -v --cov=web --cov-report=xml
-
-    # - name: Upload coverage to Codecov
-    #   uses: codecov/codecov-action@v3
-    #   with:
-    #     file: ./coverage.xml
-    #     fail_ci_if_error: true
+# Override database settings to use MySQL with specific options
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'test_db',
+        'USER': 'root',
+        'PASSWORD': 'rootpassword',
+        'HOST': '127.0.0.1',
+        'PORT': '3306',
+        'OPTIONS': {
+            'sql_mode': 'NO_ENGINE_SUBSTITUTION',
+            'charset': 'utf8mb4',
+        },
+        'TEST': {
+            'CHARSET': 'utf8mb4',
+            'COLLATION': 'utf8mb4_unicode_ci',
+        }
+    }
+}
+EOF
+        
+        # Run tests with the custom settings file
+        DJANGO_SETTINGS_MODULE=mysql_settings python manage.py test
 
   security:
     runs-on: ubuntu-latest
