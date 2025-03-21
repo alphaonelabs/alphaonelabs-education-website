@@ -198,97 +198,61 @@
           </div>
         </div>
         <!-- Peer Challenges Section -->
-        <div class="mb-10 bg-gradient-to-r from-purple-600 to-pink-500 rounded-xl overflow-hidden shadow-lg transform transition-all duration-300 hover:scale-[1.02] hover:shadow-xl">
+        <div class="mb-6 bg-gradient-to-r from-purple-600 to-pink-500 rounded-lg overflow-hidden shadow-md">
           <div class="flex flex-col md:flex-row">
-            <div class="p-6 md:p-8 md:w-3/5 text-white relative overflow-hidden">
-              <!-- Decorative elements -->
-              <div class="absolute -top-12 -left-12 w-32 h-32 bg-white/10 rounded-full"></div>
-              <div class="absolute -bottom-8 -right-8 w-24 h-24 bg-white/10 rounded-full"></div>
+            <div class="p-4 md:w-3/4 text-white relative overflow-hidden">
               <div class="relative z-10">
-                <div class="flex items-center mb-3">
-                  <span class="bg-white/20 text-white text-xs px-3 py-1 rounded-full uppercase tracking-wider font-bold">New Feature</span>
+                <div class="flex items-center mb-1">
+                  <span class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">New Feature</span>
                 </div>
-                <h2 class="text-2xl md:text-3xl font-bold mb-3">Challenge Your Friends with Peer Quizzes!</h2>
-                <p class="mb-6 text-pink-100">
-                  Create personalized quiz challenges, invite friends or classmates, and compete on the leaderboard! The perfect way to make learning fun and competitive.
+                <h2 class="text-lg md:text-xl font-bold mb-2">Challenge Your Friends with Peer Quizzes!</h2>
+                <p class="mb-3 text-pink-100 text-sm">
+                  Create personalized quiz challenges, invite friends, and compete on the leaderboard!
                 </p>
-                <div class="flex flex-wrap gap-4">
+                <div class="flex flex-wrap gap-2">
                   <a href="{% url 'challenge_list' %}"
-                     class="bg-white text-purple-600 hover:bg-purple-50 px-6 py-3 rounded-lg font-semibold shadow-md transition duration-200 inline-flex items-center group">
-                    <i class="fas fa-trophy mr-2 group-hover:animate-bounce"></i> View Challenges
+                     class="bg-white text-purple-600 hover:bg-purple-50 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition duration-200 inline-flex items-center">
+                    <i class="fas fa-trophy mr-1.5"></i> View Challenges
                   </a>
                   {% if user.is_authenticated %}
                     <a href="{% url 'create_challenge' %}"
-                       class="bg-transparent hover:bg-white/20 border-2 border-white px-6 py-3 rounded-lg font-semibold transition duration-200 inline-flex items-center">
-                      <i class="fas fa-plus mr-2"></i> Create Challenge
+                       class="bg-transparent hover:bg-white/20 border border-white px-3 py-1.5 rounded-lg text-sm font-medium transition duration-200 inline-flex items-center">
+                      <i class="fas fa-plus mr-1.5"></i> Create Challenge
                     </a>
                   {% endif %}
                 </div>
               </div>
             </div>
-            <div class="md:w-2/5 bg-gradient-to-br from-purple-500/30 to-pink-500/30 p-6 relative">
-              <!-- Challenge Cards visual -->
-              <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full">
-                <div class="relative">
-                  <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-[60%] -rotate-6 bg-white/90 dark:bg-gray-800/90 rounded-lg shadow-lg p-4 w-56 border-t-4 border-yellow-500 z-20">
-                    <div class="flex justify-between items-center mb-2">
-                      <span class="font-bold text-purple-600 dark:text-purple-400">Math Challenge</span>
-                      <span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">1st Place</span>
-                    </div>
-                    <div class="text-sm text-gray-600 dark:text-gray-300">
-                      <div class="flex items-center">
-                        <i class="fas fa-user-friends mr-2"></i> 8 Participants
-                      </div>
-                      <div class="flex items-center">
-                        <i class="fas fa-star mr-2"></i> 95% Score
-                      </div>
-                    </div>
+            <div class="hidden md:block md:w-1/4 bg-gradient-to-br from-purple-500/30 to-pink-500/30 p-2 relative">
+              <!-- Single Challenge Card visual -->
+              <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <div class="bg-white/90 dark:bg-gray-800/90 rounded-lg shadow-md p-2 w-36 border-t-4 border-yellow-500">
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-bold text-purple-600 dark:text-purple-400">Math Challenge</span>
+                    <span class="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded-full">1st</span>
                   </div>
-                  <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-[30%] rotate-3 bg-white/90 dark:bg-gray-800/90 rounded-lg shadow-lg p-4 w-56 border-t-4 border-silver-400 z-10">
-                    <div class="flex justify-between items-center mb-2">
-                      <span class="font-bold text-purple-600 dark:text-purple-400">Science Quiz</span>
-                      <span class="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded-full">2nd Place</span>
-                    </div>
-                    <div class="text-sm text-gray-600 dark:text-gray-300">
-                      <div class="flex items-center">
-                        <i class="fas fa-user-friends mr-2"></i> 12 Participants
-                      </div>
-                      <div class="flex items-center">
-                        <i class="fas fa-star mr-2"></i> 87% Score
-                      </div>
-                    </div>
-                  </div>
-                  <div class="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-[0%] -rotate-6 bg-white/90 dark:bg-gray-800/90 rounded-lg shadow-lg p-4 w-56 border-t-4 border-amber-600 z-0">
-                    <div class="flex justify-between items-center mb-2">
-                      <span class="font-bold text-purple-600 dark:text-purple-400">History Quiz</span>
-                      <span class="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded-full">3rd Place</span>
-                    </div>
-                    <div class="text-sm text-gray-600 dark:text-gray-300">
-                      <div class="flex items-center">
-                        <i class="fas fa-user-friends mr-2"></i> 5 Participants
-                      </div>
-                      <div class="flex items-center">
-                        <i class="fas fa-star mr-2"></i> 82% Score
-                      </div>
+                  <div class="text-xs text-gray-600 dark:text-gray-300">
+                    <div class="flex items-center">
+                      <i class="fas fa-user-friends mr-1 text-xs"></i> 8 Participants
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <div class="bg-purple-700/30 py-3 px-8">
-            <div class="flex flex-wrap items-center justify-between text-sm text-white">
-              <div class="flex items-center mb-2 md:mb-0">
-                <i class="fas fa-users mr-2"></i>
-                <span>Challenge friends and classmates</span>
-              </div>
-              <div class="flex items-center mb-2 md:mb-0">
-                <i class="fas fa-crown mr-2"></i>
-                <span>Compete for the top spot</span>
+          <div class="bg-purple-700/30 py-1.5 px-4">
+            <div class="flex flex-wrap items-center justify-between text-xs text-white">
+              <div class="flex items-center">
+                <i class="fas fa-users mr-1"></i>
+                <span>Challenge friends</span>
               </div>
               <div class="flex items-center">
-                <i class="fas fa-chart-bar mr-2"></i>
-                <span>Track results on the leaderboard</span>
+                <i class="fas fa-crown mr-1"></i>
+                <span>Compete</span>
+              </div>
+              <div class="flex items-center">
+                <i class="fas fa-chart-bar mr-1"></i>
+                <span>Track results</span>
               </div>
             </div>
           </div>
