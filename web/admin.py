@@ -213,26 +213,39 @@ class CourseAdmin(admin.ModelAdmin):
 @admin.register(Session)
 class SessionAdmin(admin.ModelAdmin):
     fieldsets = (
-        (None, {
-            'fields': ('course', 'title', 'description', 'start_time', 'end_time')
-        }),
-        ('Location Information', {
-            'fields': ('is_virtual', 'meeting_link', 'meeting_id', 'location', 'latitude', 'longitude'),
-            'classes': ('collapse',),
-        }),
-        ('Pricing', {
-            'fields': ('price',),
-            'classes': ('collapse',),
-        }),
-        ('Rollover Settings', {
-            'fields': ('enable_rollover', 'rollover_pattern', 'original_start_time', 'original_end_time', 
-                      'is_rolled_over', 'teacher_confirmed'),
-            'classes': ('collapse',),
-        }),
+        (None, {"fields": ("course", "title", "description", "start_time", "end_time")}),
+        (
+            "Location Information",
+            {
+                "fields": ("is_virtual", "meeting_link", "meeting_id", "location", "latitude", "longitude"),
+                "classes": ("collapse",),
+            },
+        ),
+        (
+            "Pricing",
+            {
+                "fields": ("price",),
+                "classes": ("collapse",),
+            },
+        ),
+        (
+            "Rollover Settings",
+            {
+                "fields": (
+                    "enable_rollover",
+                    "rollover_pattern",
+                    "original_start_time",
+                    "original_end_time",
+                    "is_rolled_over",
+                    "teacher_confirmed",
+                ),
+                "classes": ("collapse",),
+            },
+        ),
     )
-    list_display = ('title', 'course', 'start_time', 'end_time', 'is_virtual', 'has_location_data')
-    list_filter = ('is_virtual', 'course__subject', 'start_time')
-    search_fields = ('title', 'description', 'location', 'course__title')
+    list_display = ("title", "course", "start_time", "end_time", "is_virtual")
+    list_filter = ("is_virtual", "course__subject", "start_time")
+    search_fields = ("title", "description", "location", "course__title")
 
 
 @admin.register(Enrollment)

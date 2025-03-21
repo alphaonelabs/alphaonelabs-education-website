@@ -7,10 +7,9 @@ import subprocess
 import time
 from datetime import timedelta
 from decimal import Decimal
-
+from django.conf import settings
 import requests
 import stripe
-from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required
@@ -119,7 +118,10 @@ from .models import (
 from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
 from .referrals import send_referral_reward_email
 from .social import get_social_stats
-from .utils import get_or_create_cart
+from .utils import get_or_create_cart, geocode_address
+import logging
+
+logger = logging.getLogger(__name__)
 
 GOOGLE_CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "google_credentials.json")
 
@@ -3901,86 +3903,98 @@ def streak_detail(request):
     streak, created = LearningStreak.objects.get_or_create(user=request.user)
     return render(request, "streak_detail.html", {"streak": streak})
 
-from django.shortcuts import render
-from django.utils import timezone
-from django.db.models import Q
-from .models import Session, Subject, Course
 
+# Live Classes views
 def classes_map(request):
     """View for displaying classes near the user."""
     now = timezone.now()
-    
-    # Query for future or ongoing live classes with valid locations
-    sessions = Session.objects.filter(
-        Q(start_time__gte=now) | Q(start_time__lte=now, end_time__gte=now)  # Future or Live classes
-    ).filter(
-        Q(is_virtual=False) & 
-        ~Q(location='') & 
-        ~Q(latitude=None) & 
-        ~Q(longitude=None)
-    ).select_related('course', 'course__teacher', 'course__subject')
+    sessions = (
+        Session.objects.filter(
+            Q(start_time__gte=now) | Q(start_time__lte=now, end_time__gte=now)  # Future or Live classes
+        )
+        .filter(Q(is_virtual=False) & ~Q(location="") & ~Q(latitude=None) & ~Q(longitude=None))
+        .select_related("course", "course__teacher")
+    )
 
-    # Apply filters
-    subject_id = request.GET.get('subject')
-    age_group = request.GET.get('age_group')
-    teaching_style = request.GET.get('teaching_style')
+    course_id = request.GET.get("course")
+    age_group = request.GET.get("age_group")
 
-    if subject_id:
-        sessions = sessions.filter(course__subject_id=subject_id)
+    if course_id:
+        sessions = sessions.filter(course_id=course_id)
     if age_group:
         sessions = sessions.filter(course__level=age_group)
-    if teaching_style:
-        sessions = sessions.filter(course__teaching_style=teaching_style)
 
-    # Filter data for dropdowns
-    subjects = Subject.objects.all().order_by('name')
-    age_groups = Course._meta.get_field('level').choices
-    teaching_styles = [
-        ('interactive', 'Interactive'),
-        ('lecture', 'Lecture'),
-        ('hands_on', 'Hands-on'),
-        ('self_paced', 'Self-paced'),
-    ]
+    courses = Course.objects.only("id", "title").order_by("title")
+    age_groups = Course._meta.get_field("level").choices
 
-    context = {
-        'sessions': sessions,
-        'subjects': subjects,
-        'age_groups': age_groups,
-        'teaching_styles': teaching_styles,
-    }
-    return render(request, 'web/classes_map.html', context)
+    context = {"sessions": sessions, "courses": courses, "age_groups": age_groups, "gm_api_key": settings.GM_API_KEY}
+    return render(request, "web/classes_map.html", context)
 
-
-from django.http import JsonResponse
 
 def map_data_api(request):
-    """API to return nearby class data in JSON format."""
+    """API to return all live and ongoing class data in JSON format."""
     now = timezone.now()
-    
-    sessions = Session.objects.filter(
-        Q(start_time__gte=now) | Q(start_time__lte=now, end_time__gte=now)
-    ).filter(
-        Q(is_virtual=False) &
-        ~Q(location='') &
-        ~Q(latitude=None) &
-        ~Q(longitude=None)
-    ).select_related('course', 'course__teacher', 'course__subject')
+    sessions = (
+        Session.objects.filter(
+            Q(start_time__gte=now) | Q(start_time__lte=now, end_time__gte=now)  # Future or Live classes
+        )
+        .filter(Q(is_virtual=False) & ~Q(location=""))
+        .select_related("course", "course__teacher")
+    )
+
+    course_id = request.GET.get("course")
+    age_group = request.GET.get("age_group")
+
+    if course_id:
+        sessions = sessions.filter(course__id=course_id)
+    if age_group:
+        sessions = sessions.filter(course__level=age_group)
+
+    logger.debug(f"API call with filters: course={course_id}, age={age_group}")
 
     map_data = []
+    sessions_to_update = []
     for session in sessions:
-        map_data.append({
-            'id': session.id,
-            'title': session.title,
-            'course_title': session.course.title,
-            'teacher': session.course.teacher.get_full_name() or session.course.teacher.username,
-            'start_time': session.start_time.isoformat(),
-            'location': session.location,
-            'lat': float(session.latitude),
-            'lng': float(session.longitude),
-            'price': str(session.price or session.course.price),
-            'url': session.get_absolute_url(),
-            'subject': session.course.subject.name,
-            'level': session.course.get_level_display(),
-        })
+        if not session.latitude or not session.longitude:
+            lat, lng = geocode_address(session.location)
+            if lat is not None and lng is not None:
+                session.latitude = lat
+                session.longitude = lng
+                sessions_to_update.append(session)
+            else:
+                logger.warning(f"Skipping session {session.id} due to failed geocoding")
+                continue
 
-    return JsonResponse({'sessions': map_data})
+        try:
+            lat = float(session.latitude)
+            lng = float(session.longitude)
+            map_data.append(
+                {
+                    "id": session.id,
+                    "title": session.title,
+                    "course_title": session.course.title,
+                    "teacher": session.course.teacher.get_full_name() or session.course.teacher.username,
+                    "start_time": session.start_time.isoformat(),
+                    "end_time": session.end_time.isoformat(),
+                    "location": session.location,
+                    "lat": lat,
+                    "lng": lng,
+                    "price": str(session.price or session.course.price),
+                    "url": session.get_absolute_url(),
+                    "course": session.course.title,
+                    "level": session.course.get_level_display(),
+                    "is_virtual": session.is_virtual,
+                }
+            )
+        except (ValueError, TypeError):
+            logger.warning(
+                f"Skipping session {session.id} due to invalid coordinates: "
+                f"lat={session.latitude}, lng={session.longitude}"
+            )
+            continue
+
+    if sessions_to_update:
+        Session.objects.bulk_update(sessions_to_update, ["latitude", "longitude"])  # Batch update
+
+    logger.info(f"Found {len(map_data)} sessions with valid coordinates")
+    return JsonResponse({"sessions": map_data})

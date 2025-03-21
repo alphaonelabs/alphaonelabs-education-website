@@ -21,7 +21,6 @@ from django.utils.translation import gettext_lazy as _
 from markdownx.models import MarkdownxField
 from PIL import Image
 
-gm_api_key = settings.GM_API_KEY
 
 class Notification(models.Model):
     NOTIFICATION_TYPES = [
@@ -302,12 +301,10 @@ class Session(models.Model):
         default=False, help_text="Whether the teacher has confirmed the rolled over dates"
     )
     latitude = models.DecimalField(
-        max_digits=9, decimal_places=6, null=True, blank=True,
-        help_text="Latitude coordinate for mapping"
+        max_digits=9, decimal_places=6, null=True, blank=True, help_text="Latitude coordinate for mapping"
     )
     longitude = models.DecimalField(
-        max_digits=9, decimal_places=6, null=True, blank=True,
-        help_text="Longitude coordinate for mapping"
+        max_digits=9, decimal_places=6, null=True, blank=True, help_text="Longitude coordinate for mapping"
     )
 
     class Meta:
@@ -386,37 +383,26 @@ class Session(models.Model):
         super().delete(*args, **kwargs)
 
     def fetch_coordinates(self):
+        from .utils import geocode_address
+
         """Fetch latitude and longitude using Google Maps API."""
         if not self.location:
             return
-        
-        api_key = settings.GOOGLE_MAPS_API_KEY  # Store this in Django settings
-        url = f"https://maps.googleapis.com/maps/api/geocode/json?address={self.location}&key={api_key}"
-        
-        try:
-            response = requests.get(url)
-            data = response.json()
-            if data["status"] == "OK":
-                self.latitude = data["results"][0]["geometry"]["location"]["lat"]
-                self.longitude = data["results"][0]["geometry"]["location"]["lng"]
-        except Exception as e:
-            print(f"Error fetching coordinates: {e}")
+        # Call the geocode_address function
+        coords = geocode_address(self.location)
+        if coords:
+            self.latitude, self.longitude = coords
+        else:
+            print(f"Failed to fetch coordinates for {self.location}")
 
-    def has_location_data(self):
-        """Check if this session has valid location data for mapping."""
-        return bool(self.location and self.latitude is not None and self.longitude is not None)
-    
-    def get_absolute_url(self):
-        """Return the URL for this session."""
-        return reverse('course_detail', kwargs={'slug': self.course.slug}) + f'#session-{self.id}'
-    
     def is_live(self):
         """Returns True if the session is live right now."""
         now = timezone.now()
         return self.start_time <= now <= self.end_time
 
     def get_absolute_url(self):
-        return f"/sessions/{self.id}/"
+        return f"/sessions/{self.id}/enroll"
+
 
 class CourseMaterial(models.Model):
     MATERIAL_TYPES = [
@@ -1499,7 +1485,7 @@ class Quiz(models.Model):
                     self.share_code = code
                     break
         super().save(*args, **kwargs)
-        
+
     def get_absolute_url(self):
         return reverse("quiz_detail", kwargs={"pk": self.pk})
 

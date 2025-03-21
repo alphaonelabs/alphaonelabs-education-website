@@ -1,7 +1,6 @@
-import requests
 from django.conf import settings
-
 from web.models import Cart
+import requests
 
 
 def send_slack_message(message):
@@ -34,36 +33,35 @@ def get_or_create_cart(request):
         cart, created = Cart.objects.get_or_create(session_key=session_key)
     return cart
 
-# Create a utils.py file to help with geocoding addresses
-import requests
-from django.conf import settings
 
+# To geocode address
 def geocode_address(address):
     """
-    Convert a text address to latitude and longitude coordinates.
+    Convert a text address to latitude and longitude coordinates using Google Maps API.
     Returns a tuple of (latitude, longitude) or None if geocoding fails.
-    
-    You'll need to add a GEOCODING_API_KEY to your settings.py
-    and sign up for a service like Google Maps, Mapbox, or OpenCage.
+
+    You'll need to add a `GOOGLE_MAPS_API_KEY` to your settings.py.
     """
     if not address:
         return None
-        
-    # Example using OpenCage Geocoder
-    api_key = getattr(settings, 'OPENCAGE_API_KEY', '')
+    api_key = getattr(settings, "GM_API_KEY", "")
     if not api_key:
+        print("Google Maps API key is missing in settings.")
         return None
-        
-    url = f"https://api.opencagedata.com/geocode/v1/json?q={address}&key={api_key}"
-    
+
+    url = f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={api_key}"
+
     try:
         response = requests.get(url)
+        response.raise_for_status()  # Raise an error for bad responses (4xx, 5xx)
         data = response.json()
-        
-        if data['total_results'] > 0:
-            location = data['results'][0]['geometry']
-            return (location['lat'], location['lng'])
-        return None
+
+        if data.get("status") == "OK":
+            location = data["results"][0]["geometry"]["location"]
+            return (location["lat"], location["lng"])
+        else:
+            print(f"Geocoding failed: {data.get('status')}")
+            return None
     except Exception as e:
         print(f"Geocoding error: {e}")
         return None
