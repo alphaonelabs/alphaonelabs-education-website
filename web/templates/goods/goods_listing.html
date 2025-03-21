@@ -99,9 +99,19 @@
 
   priceSlider.max = "{{ max_price }}";
 
+  const initialMin = minPrice.value || 0;
+  const initialMax = maxPrice.value || priceSlider.max;
+  priceSlider.value = initialMin;
+  
   priceSlider.addEventListener("input", function () {
     minPrice.value = this.value;
-    maxPrice.value = parseInt(this.value) + 100; 
+    if (parseInt(maxPrice.value) < parseInt(this.value)) {
+      maxPrice.value = this.value;
+    }
+  });
+  
+  minPrice.addEventListener("change", function() {
+    priceSlider.value = this.value;
   });
 </script>
 
