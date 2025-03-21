@@ -240,22 +240,17 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'web/static'),
 ]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 # Media files
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
+# Media root is conditionally set below
 if not DEBUG:
     MEDIA_ROOT = "/home/alphaonelabs99282llkb/web/media"
 else:
     MEDIA_ROOT = BASE_DIR / "media"
-MEDIA_URL = "/media/"
 
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-STATICFILES_DIRS = [BASE_DIR / "static"]
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Email settings
 SENDGRID_API_KEY = env.str("SENDGRID_API_KEY", default="")
@@ -313,7 +308,7 @@ TWITTER_USERNAME = env.str("TWITTER_USERNAME", default="alphaonelabs")
 # Slack Integration
 SLACK_WEBHOOK_URL = env.str("SLACK_WEBHOOK_URL", default="")
 # Make sure it's a valid URL - if it's a placeholder, set it to empty
-if SLACK_WEBHOOK_URL and (SLACK_WEBHOOK_URL == "your-slack-webhook-url" or "://") not in SLACK_WEBHOOK_URL:
+if SLACK_WEBHOOK_URL and (SLACK_WEBHOOK_URL == "your-slack-webhook-url" or ("://" not in SLACK_WEBHOOK_URL)):
     SLACK_WEBHOOK_URL = ""
     print("WARNING: Invalid Slack webhook URL, disabling Slack integration")
 

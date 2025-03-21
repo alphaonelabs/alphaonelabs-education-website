@@ -266,13 +266,6 @@ urlpatterns += i18n_patterns(
     prefix_default_language=True,
 )
 
-from django.conf.urls.static import static
-
-# Serve static files in development
-if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
 handler404 = "web.views.custom_404"
 handler500 = "web.views.custom_500"
 handler429 = "web.views.custom_429"

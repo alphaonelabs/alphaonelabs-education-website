@@ -261,20 +261,19 @@
             <!-- User Avatar and Dropdown -->
             <div class="relative">
               <button onclick="toggleUserDropdown()"
-                      class="flex items-center space-x-2 focus:outline-none">
+                      class="flex items-center space-x-2 focus:outline-none p-2 hover:bg-teal-700 rounded-lg">
                 {% if user.profile.avatar %}
-                  <img src="{{ user.profile.avatar.url }}"
-                       alt="User Avatar"
-                       class="h-8 w-8 rounded-full object-cover"
-                       height="32"
-                       width="32" />
+                  <img src="{{ user.profile.avatar.url }}" 
+                       alt="{{ user.username }}" 
+                       class="w-8 h-8 rounded-full object-cover" />
                 {% else %}
-                  <div class="h-8 w-8 rounded-full bg-orange-500 flex items-center justify-center text-white">
-                    {{ user.first_name|first|default:user.username|first|upper }}
+                  <div class="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white font-semibold">
+                    {{ user.username|first|upper }}
                   </div>
                 {% endif %}
+                <span class="hidden sm:inline text-white">{{ user.username }}</span>
               </button>
-              <!-- User Dropdown Menu -->
+              <!-- User Dropdown Menu (keeping as is) -->
               <div id="user-dropdown"
                    class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50">
                 <div class="px-4 py-2 text-sm text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700">
@@ -325,14 +324,14 @@
           {% else %}
             <div class="flex items-center space-x-2">
               <a href="{% url 'account_login' %}"
-                 class="hover:underline flex items-center p-2 hover:bg-teal-700 rounded-lg">
+                 class="hover:underline flex items-center p-2 hover:bg-teal-700 rounded-lg text-white">
                 <i class="fa-solid fa-right-to-bracket mr-1"></i>
-                <span class="hidden sm:inline">Login</span>
+                <span class="sm:inline">Login</span>
               </a>
               <a href="{% url 'account_signup' %}"
                  class="px-3 py-1 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-semibold flex items-center">
-                <i class="fa-solid fa-user-plus mr-2"></i>
-                <span class="hidden sm:inline">Signup</span>
+                <i class="fa-solid fa-user-plus mr-1"></i>
+                <span class="sm:inline">Signup</span>
               </a>
             </div>
           {% endif %}
@@ -456,7 +455,7 @@
                     <span>Login</span>
                   </a>
                   <a href="{% url 'account_signup' %}"
-                     class="flex items-center space-x-2 px-4 py-3 bg-orange-500 hover:bg-orange-600 text-white rounded-lg">
+                     class="flex items-center space-x-2 px-4 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg mx-4">
                     <i class="fa-solid fa-user-plus"></i>
                     <span>Signup</span>
                   </a>
