@@ -16,11 +16,12 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
+from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from markdownx.models import MarkdownxField
 from PIL import Image
-from django.utils import timezone
+
 from web.utils import calculate_and_update_user_streak
 
 
