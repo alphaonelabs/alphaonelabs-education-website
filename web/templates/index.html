@@ -89,11 +89,11 @@
                   {% if first_session and last_session %}
                     <div class="flex items-center mb-1">
                       <i class="fas fa-calendar-day mr-2"></i>
-                      <span>Starts: {{ first_session.start_time|date:"M j, Y" }} at {{ first_session.start_time|date:"g:i A" }}</span>
+                      <span>Starts: {{ first_session.start_time|date:"M j, Y g:i A e" }}</span>
                     </div>
                     <div class="flex items-center">
                       <i class="fas fa-calendar-check mr-2"></i>
-                      <span>Ends: {{ last_session.end_time|date:"M j, Y" }} at {{ last_session.end_time|date:"g:i A" }}</span>
+                      <span>Ends: {{ last_session.end_time|date:"M j, Y g:i A e" }}</span>
                     </div>
                   {% else %}
                     <div class="flex items-center mb-1">
@@ -358,61 +358,132 @@
             </ul>
           </div>
         </div>
-      </div>
-      <div class="md:w-1/3 space-y-6">
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h2 class="text-xl font-semibold mb-4">
-            <i class="fa-solid fa-chalkboard-user mr-2"></i>
-            Teach a Course
-          </h2>
-          <form method="post" class="space-y-4">
-            {% csrf_token %}
-            {% if not user.is_authenticated or not user.profile.is_teacher %}
-              {% if request.user.is_authenticated %}
-                <input type="hidden" name="email" value="{{ user.email }}" />
-              {% else %}
-                <div>
-                  <label for="email" class="block text-sm font-medium mb-1">Email</label>
-                  <input type="email"
-                         id="email"
-                         name="email"
-                         class="block w-full border {% if form.email.errors %}border-red-500 dark:border-red-500{% else %}border-gray-300 dark:border-gray-600{% endif %} rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800"
-                         placeholder="your.email@example.com"
-                         value="{{ form.email.value|default:'' }}"
-                         required />
-                  {% if form.email.errors %}
-                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.email.errors|join:", " }}</p>
+        {% if user.is_authenticated %}
+          <!-- Team Collaboration Section -->
+          <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg p-6 mt-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold text-white">Team Collaboration</h2>
+              <a href="{% url 'team_goals' %}"
+                 class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
+                <span>View All</span>
+                <i class="fas fa-arrow-right ml-2"></i>
+              </a>
+            </div>
+            {% if user.is_authenticated %}
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- My Team Goals -->
+                <div class="space-y-4">
+                  <h3 class="text-lg font-semibold text-white">My Team Goals</h3>
+                  {% if user_team_goals %}
+                    <div class="space-y-3">
+                      {% for goal in user_team_goals|slice:":3" %}
+                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition duration-200">
+                          <h4 class="font-medium text-white">{{ goal.title }}</h4>
+                          <p class="text-sm text-gray-200 mt-1">{{ goal.description|truncatechars:100 }}</p>
+                          {% if goal.deadline %}
+                            <div class="text-sm text-gray-200 mt-2">
+                              <i class="fas fa-calendar-alt mr-1"></i>
+                              {% load i18n %}
+
+                              <span>{% trans "Due" %}: {{ goal.deadline|date:"M j, Y" }}</span>
+                              {% if goal.deadline < now %}
+                                <span class="text-red-300 ml-1">({% trans "Overdue" %})</span>
+                              {% else %}
+                                <span class="text-gray-300 ml-1">({{ goal.deadline|timeuntil }} {% trans "left" %})</span>
+                              {% endif %}
+                            </div>
+                          {% endif %}
+                          <div class="flex items-center justify-between mt-3">
+                            <span class="text-sm text-gray-200">
+                              <i class="fas fa-users mr-1"></i>
+                              {{ goal.members.count }} members
+                            </span>
+                            <a href="{% url 'team_goal_detail' goal.id %}"
+                               class="text-white hover:text-gray-200 text-sm">View Details</a>
+                          </div>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% else %}
+                    <p class="text-gray-200">You haven't created or joined any team goals yet.</p>
+                  {% endif %}
+                  <a href="{% url 'create_team_goal' %}"
+                     class="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-gray-100 rounded-lg transition duration-200">
+                    <i class="fas fa-plus mr-2"></i>
+                    Create New Team Goal
+                  </a>
+                </div>
+                <!-- Team Invitations -->
+                <div class="space-y-4">
+                  <h3 class="text-lg font-semibold text-white">Team Invitations</h3>
+                  {% if team_invites %}
+                    <div class="space-y-3">
+                      {% for invite in team_invites|slice:":3" %}
+                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition duration-200">
+                          <h4 class="font-medium text-white">{{ invite.goal.title }}</h4>
+                          <p class="text-sm text-gray-200 mt-1">Invited by {{ invite.sender.get_full_name|default:invite.sender.username }}</p>
+                          <div class="flex items-center space-x-2 mt-3">
+                            <form method="post"
+                                  action="{% url 'accept_team_invite' invite.id %}"
+                                  class="inline">
+                              {% csrf_token %}
+                              <button type="submit"
+                                      class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition duration-200">
+                                Accept
+                              </button>
+                            </form>
+                            <form method="post"
+                                  action="{% url 'decline_team_invite' invite.id %}"
+                                  class="inline">
+                              {% csrf_token %}
+                              <button type="submit"
+                                      class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition duration-200">
+                                Decline
+                              </button>
+                            </form>
+                          </div>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% else %}
+                    <p class="text-gray-200">You have no pending team invitations.</p>
                   {% endif %}
                 </div>
-              {% endif %}
-            {% endif %}
-            <div>
-              <label for="subject" class="block text-sm font-medium mb-1">Subject</label>
-              <input type="text"
-                     id="subject"
-                     name="subject"
-                     class="block w-full border {% if form.subject.errors %}border-red-500 dark:border-red-500{% else %}border-gray-300 dark:border-gray-600{% endif %} rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800"
-                     placeholder="Your subject to teach"
-                     value="{{ form.subject.value|default:'' }}"
-                     required />
-              {% if form.subject.errors %}
-                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.subject.errors|join:", " }}</p>
-              {% endif %}
-            </div>
-            <div>
-              <label for="captcha" class="block text-sm font-medium mb-1">Verification</label>
-              <div class="{% if form.captcha.errors %}border border-red-500 dark:border-red-500 rounded p-2{% endif %}">
-                {{ form.captcha }}
               </div>
-              {% if form.captcha.errors %}
-                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.captcha.errors|join:", " }}</p>
-              {% endif %}
-            </div>
-            <button type="submit"
-                    class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full flex items-center">
-              <i class="fa-solid fa-arrow-right-to-bracket mr-2"></i> Continue
-            </button>
-          </form>
+            {% else %}
+              <div class="text-center py-8">
+                <p class="text-gray-200 mb-4">Sign in to create or join team goals and collaborate with others!</p>
+                <a href="{% url 'login' %}"
+                   class="inline-flex items-center px-6 py-3 bg-white text-blue-600 hover:bg-gray-100 rounded-lg transition duration-200">
+                  <i class="fas fa-sign-in-alt mr-2"></i>
+                  Sign In to Get Started
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+      <div class="md:w-1/3 space-y-6">
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 shadow-lg">
+          <h2 class="text-xl font-semibold mb-6 text-center text-gray-800 dark:text-gray-200">
+            What Would You Like To Do?
+          </h2>
+          <div class="space-y-4">
+            <a href="{% url 'teach' %}" 
+            class="block w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-4 rounded-xl transition duration-200 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center">
+           <i class="fa-solid fa-chalkboard-user text-2xl mb-2"></i>
+           <span class="text-lg">I Want to Teach</span>
+           <div class="text-sm font-normal">Share your knowledge with others</div>
+         </a>
+         
+      
+            <a href="{% url 'learn' %}" 
+               class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-4 rounded-xl transition duration-200 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center">
+              <i class="fa-solid fa-graduation-cap mr-3 text-2xl mb-2"></i>
+              <span class="text-lg">I Want to Learn</span>
+              <div class="text-sm font-normal">Discover new skills and expand your knowledge</div>
+            </a>
+          </div>
         </div>
         <!-- Progress Trackers Dashboard -->
         {% if user.is_authenticated %}
@@ -430,8 +501,7 @@
                       <span class="text-gray-600 dark:text-gray-400">{{ tracker.percentage }}%</span>
                     </div>
                     <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                      <div class="bg-{{ tracker.color }} h-3 rounded-full"
-                           style="width: {{ tracker.percentage }}%"></div>
+                      <div class="bg-{{ tracker.color }} h-3 rounded-full" {% verbatim %}style="width: {% endverbatim %}{{ tracker.percentage }}{% verbatim %}%"{% endverbatim %}></div>
                     </div>
                   </div>
                 {% endfor %}
@@ -545,8 +615,14 @@
             <strong class="block text-gray-900 dark:text-gray-200 mb-1">{{ latest_success_story.title|default:"From Beginner to Expert in 3 Months" }}</strong>
             {{ latest_success_story.excerpt|default:"Discover how our platform helped a complete beginner transform into a confident expert through personalized learning paths and dedicated mentorship..." }}
           </p>
-          <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}"
-             class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block mt-2">Read More →</a>
+          <div class="flex justify-between items-center mt-2">
+            <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}"
+               class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block">Read More →</a>
+            <a href="{% url 'create_success_story' %}" 
+               class="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded-md inline-flex items-center">
+              <i class="fas fa-plus mr-1"></i> Share Your Story
+            </a>
+          </div>
         </div>
         <!-- Recent Contributors -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
@@ -722,4 +798,4 @@
       </div>
     </div>
   </main>
-{% endblock content %}
+{% endblock content %} 

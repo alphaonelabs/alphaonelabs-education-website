@@ -5,6 +5,7 @@ from captcha.fields import CaptchaField
 from django import forms
 from django.contrib.auth.models import User
 from django.db import IntegrityError
+from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.text import slugify
 from markdownx.fields import MarkdownxFormField
@@ -29,6 +30,8 @@ from .models import (
     Storefront,
     Subject,
     SuccessStory,
+    TeamGoal,
+    TeamInvite,
 )
 from .referrals import handle_referral
 from .widgets import (
@@ -68,6 +71,8 @@ __all__ = [
     "EducationalVideoForm",
     "ProgressTrackerForm",
     "SuccessStoryForm",
+    "TeamGoalForm",
+    "TeamInviteForm",
     "MemeForm",
     "QuizForm",
     "QuizQuestionForm",
@@ -245,8 +250,8 @@ class CourseCreationForm(forms.ModelForm):
 
     def clean_price(self):
         price = self.cleaned_data.get("price")
-        if price <= 0:
-            raise forms.ValidationError("Price must be greater than zero")
+        if price < 0:
+            raise forms.ValidationError("Price must be greater than or equal to zero")
         return price
 
     def clean_max_students(self):
@@ -1097,6 +1102,70 @@ class StorefrontForm(forms.ModelForm):
             "logo",
             "is_active",
         ]
+
+
+class TeamGoalForm(forms.ModelForm):
+    """Form for creating and editing team goals."""
+
+    class Meta:
+        model = TeamGoal
+        fields = ["title", "description", "deadline"]
+        widgets = {
+            "deadline": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "description": forms.Textarea(attrs={"rows": 4}),
+        }
+
+    def clean_deadline(self):
+        """Validate that the deadline is in the future."""
+        deadline = self.cleaned_data.get("deadline")
+        if deadline and deadline < timezone.now():
+            raise forms.ValidationError("Deadline cannot be in the past.")
+        return deadline
+
+
+class TeamInviteForm(forms.ModelForm):
+    """Form for inviting users to a team goal."""
+
+    recipient_search = forms.CharField(
+        label="Invite User",
+        widget=forms.TextInput(
+            attrs={
+                "class": "form-control",
+                "placeholder": "Search by username or email",
+                "list": "user-list",
+                "autocomplete": "off",
+            }
+        ),
+        required=False,
+    )
+
+    class Meta:
+        model = TeamInvite
+        fields = ["recipient"]
+        widgets = {
+            "recipient": forms.HiddenInput(),
+        }
+
+    def __init__(self, *args, **kwargs):
+        current_user = kwargs.pop("current_user", None)
+        self.team_goal = kwargs.pop("team_goal", None)
+        super().__init__(*args, **kwargs)
+        # Get all users except the current user (will be filtered in the view)
+        if current_user:
+            self.fields["recipient"].queryset = User.objects.exclude(id=current_user.id)
+        else:
+            self.fields["recipient"].queryset = User.objects.all()
+
+    def clean_recipient(self):
+        recipient = self.cleaned_data.get("recipient")
+        if self.team_goal and recipient:
+            # Check if the user is already a member of the team
+            if self.team_goal.members.filter(user=recipient).exists():
+                raise forms.ValidationError("This user is already a member of the team.")
+            # Check if there's already a pending invitation
+            if TeamInvite.objects.filter(goal=self.team_goal, recipient=recipient, status="pending").exists():
+                raise forms.ValidationError("This user already has a pending invitation.")
+        return recipient
 
 
 class ProgressTrackerForm(forms.ModelForm):
