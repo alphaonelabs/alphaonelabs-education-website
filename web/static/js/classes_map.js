@@ -74,8 +74,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
     sessionElements.forEach(function (element) {
       sessionData.push({
-        lat: parseFloat(element.getAttribute("data-lat")),
-        lng: parseFloat(element.getAttribute("data-lng")),
+        lat: parseFloat(element.getAttribute("data-lat")) || 0,
+        lng: parseFloat(element.getAttribute("data-lng")) || 0,
         title: element.getAttribute("data-title"),
         date: element.getAttribute("data-date"),
         location: element.getAttribute("data-location"),
@@ -100,11 +100,6 @@ document.addEventListener("DOMContentLoaded", function () {
                   <strong>${session.title}</strong><br />
                   ${session.date}<br />
                   ${session.location}<br />
-
-                  <!-- Add Teacher and Course Title -->
-                  Teacher: ${session.teacher}<br />
-                  Course Title: ${session.course_title}<br />
-
                   <!-- Format Session Duration -->
                   Start: ${session.start_time}<br />
                   End: ${session.end_time}<br />

@@ -4525,10 +4525,17 @@ def map_data_api(request):
 
     map_data = []
     sessions_to_update = []
+    # Limit geocoding to a reasonable number per request
+    MAX_GEOCODING_PER_REQUEST = 5
+    geocoding_count = 0
     geocoding_errors = 0
     coordinate_errors = 0
     for session in sessions:
         if not session.latitude or not session.longitude:
+            if geocoding_count >= MAX_GEOCODING_PER_REQUEST:
+                logger.warning(f"Geocoding limit reached ({MAX_GEOCODING_PER_REQUEST}). Skipping session {session.id}")
+                continue
+            geocoding_count += 1
             logger.info(f"Geocoding session {session.id} with location: {session.location}")
             lat, lng = geocode_address(session.location)
             if lat is not None and lng is not None:

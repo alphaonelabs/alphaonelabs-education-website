@@ -1,7 +1,12 @@
+import logging
+
 import requests
 from django.conf import settings
+from django.core.cache import cache
 
 from web.models import Cart
+
+logger = logging.getLogger(__name__)
 
 
 def send_slack_message(message):
@@ -38,20 +43,45 @@ def get_or_create_cart(request):
 def geocode_address(address):
     """
     Convert a text address to latitude and longitude using OpenStreetMap's Nominatim API.
+    Follows Nominatim Usage Policy: https://operations.osmfoundation.org/policies/nominatim/
     """
     if not address:
         return None
 
+    # Use caching if available to avoid repeated requests
+    cache_key = f"geocode_{address}"
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        return cached_result
+
     url = f"https://nominatim.openstreetmap.org/search?q={address}&format=json"
 
     try:
-        response = requests.get(url, headers={"User-Agent": "YourAppName"})
+        # Use application name in User-Agent as required by Nominatim ToS
+        response = requests.get(url, headers={"User-Agent": "AlphaOneLabs_Education_Website"}, timeout=5)
+
+        if response.status_code != 200:
+            logger.error(f"Geocoding error: API returned status {response.status_code}")
+            return None
+
         data = response.json()
 
         if data and len(data) > 0:
+
             location = data[0]  # Take the first result
-            return (float(location["lat"]), float(location["lon"]))
+            result = (float(location["lat"]), float(location["lon"]))
+
+            # Cache result for 24 hours to reduce API calls
+            cache.set(cache_key, result, 60 * 60 * 24)
+
+            return result
+        return None
+    except requests.exceptions.Timeout:
+        logger.error("Geocoding error: Request timed out")
+        return None
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Geocoding error: {e}")
         return None
     except Exception as e:
-        print(f"Geocoding error: {e}")
+        logger.error(f"Geocoding unexpected error: {e}")
         return None
