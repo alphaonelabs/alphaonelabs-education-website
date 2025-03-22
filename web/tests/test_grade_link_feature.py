@@ -11,6 +11,8 @@ from web.models import GradeableLink, LinkGrade
 
 User = get_user_model()
 
+# Note: This file should NOT import pytest to ensure compatibility with Docker environment
+
 
 class GradeableLinkModelTest(TestCase):
     """Test cases for the GradeableLink model."""
