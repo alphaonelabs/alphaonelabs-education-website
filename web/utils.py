@@ -54,6 +54,7 @@ def calculate_user_total_points(user):
     from web.models import Points
     return Points.objects.filter(user=user).aggregate(total=models.Sum("amount"))["total"] or 0
 
+
 def calculate_user_weekly_points(user):
     """Calculate weekly points for a user"""
     from web.models import Points
@@ -94,17 +95,22 @@ def get_leaderboard(period=None, limit=10):
     """
     Get leaderboard data based on period (None/global, weekly, or monthly)
     Returns a list of users with their points sorted by total points
+    Excludes teachers from the leaderboard
     """
     from django.db.models import Count
-    from web.models import User, ChallengeSubmission
+    from web.models import User, ChallengeSubmission, Profile
 
-    # Get all users who have at least one submission
+    # Get all users who have at least one submission and are not teachers
     users = User.objects.annotate(
         challenge_count=Count('challengesubmission', distinct=True)
-    ).filter(challenge_count__gt=0)
+    ).filter(
+        challenge_count__gt=0,
+        profile__is_teacher=False  # Exclude teachers
+    )
     
     leaderboard_data = []
     for user in users:
+        print("user:", user)
         # Calculate points based on period
         if period == "weekly":
             points = calculate_user_weekly_points(user)
@@ -135,6 +141,132 @@ def get_leaderboard(period=None, limit=10):
     
     # Return limited number of results
     return leaderboard_data[:limit]
+
+# Fix the rank calculation in views.py by adding these helper functions:
+def get_user_weekly_rank(user):
+    """Calculate a user's rank based on weekly points."""
+    from django.db import models
+    from django.utils import timezone
+    from datetime import timedelta
+    from web.models import Points, Profile
+    
+    one_week_ago = timezone.now() - timedelta(days=7)
+    
+    # Get all non-teacher users with weekly points, sorted by total
+    all_users = list(Points.objects.filter(
+        awarded_at__gte=one_week_ago,
+        user__profile__is_teacher=False  # Exclude teachers
+    ).values("user").annotate(
+        total=models.Sum("amount")
+    ).order_by("-total"))
+    
+    # If no users have points this week, return None
+    if not all_users:
+        return None
+    
+    # Find the user's position and handle ties
+    current_rank = 1
+    prev_points = None
+    
+    for i, entry in enumerate(all_users):
+        current_points = entry["total"]
+        
+        # Handle ties - same points should have same rank
+        if prev_points is not None and current_points < prev_points:
+            # Points decreased, so rank should jump to account for previous ties
+            current_rank = i + 1
+        
+        # Check if this is our user
+        if entry["user"] == user.id:
+            return current_rank
+        
+        prev_points = current_points
+    
+    # User not found in the list (no weekly points)
+    return None
+
+
+def get_user_monthly_rank(user):
+    """Calculate a user's rank based on monthly points."""
+    from django.db import models
+    from django.utils import timezone
+    from datetime import timedelta
+    from web.models import Points, Profile
+    
+    one_month_ago = timezone.now() - timedelta(days=30)
+    
+    # Get all non-teacher users with monthly points, sorted by total
+    all_users = list(Points.objects.filter(
+        awarded_at__gte=one_month_ago,
+        user__profile__is_teacher=False  # Exclude teachers
+    ).values("user").annotate(
+        total=models.Sum("amount")
+    ).order_by("-total"))
+    
+    # If no users have points this month, return None
+    if not all_users:
+        return None
+    
+    # Find the user's position and handle ties
+    current_rank = 1
+    prev_points = None
+    
+    for i, entry in enumerate(all_users):
+        current_points = entry["total"]
+        
+        # Handle ties - same points should have same rank
+        if prev_points is not None and current_points < prev_points:
+            # Points decreased, so rank should jump to account for previous ties
+            current_rank = i + 1
+        
+        # Check if this is our user
+        if entry["user"] == user.id:
+            return current_rank
+        
+        prev_points = current_points
+    
+    # User not found in the list (no monthly points)
+    return None
+
+
+def get_user_global_rank(user):
+    """
+    Calculate a user's global rank based on total points.
+    Properly handles ties (same points = same rank).
+    """
+    from django.db import models
+    from web.models import Points
+    
+    # Get all users with points, sorted by total points (descending)
+    all_users = list(Points.objects.values("user").annotate(
+        total=models.Sum("amount")
+    ).order_by("-total"))
+    
+    # If the user has no points, they're not ranked
+    if not all_users:
+        return None
+    
+    # Find the user's position and handle ties
+    current_rank = 0
+    prev_points = None
+    
+    for i, entry in enumerate(all_users):
+        current_points = entry["total"]
+        
+        print("users", i," ; " , entry["user"], " my:", user.id, current_points)
+        # Handle ties - same points should have same rank
+        if prev_points is not None and current_points < prev_points:
+            # Points decreased, so rank should jump to account for previous ties
+            current_rank = i + 1
+        
+        # Check if this is our user
+        if entry["user"] == user.id:
+            return current_rank
+
+        prev_points = current_points
+    
+    # User not found in the list (no points)
+    return None
 
 
 def calculate_and_update_user_streak(user, challenge):

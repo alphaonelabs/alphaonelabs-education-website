@@ -55,9 +55,9 @@ Alpha One Labs {% endblock %} {% block content %}
 							>
 								<td class="px-4 py-3">{{ forloop.counter }}</td>
 								{% if entry.user.username == user.username %}
-								<td class="px-4 py-3 font-medium">{{ user.id }}</td>
+								<td class="px-4 py-3 font-medium">You</td>
 								{% else %}
-								<td class="px-4 py-3 font-medium">{{ entry.user.id }}</td>
+								<td class="px-4 py-3 font-medium">{{ entry.user.username }}</td>
 								{% endif %}
 								<td class="px-4 py-3 text-right">{{ entry.points }}</td>
 								<td class="px-4 py-3 text-right"
