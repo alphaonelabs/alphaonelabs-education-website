@@ -1,6 +1,8 @@
 {% extends 'base.html' %}
 
 {% block content %}
+  {% load static %}
+
   <div class="container mx-auto px-6 py-8">
     <h2 class="text-3xl font-semibold text-gray-900 dark:text-white text-center mb-6">🎓 Live Classes Nearby</h2>
     <!-- Filter Form -->
@@ -75,173 +77,23 @@
   <link rel="stylesheet"
         href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-  <script>
-      document.addEventListener("DOMContentLoaded", function() {
-          // Initialize Map with a default location
-          var map = L.map('map').setView([20.5937, 78.9629], 5); // Default: India
-
-          // Load OpenStreetMap tiles
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-              attribution: '&copy; OpenStreetMap contributors'
-          }).addTo(map);
-
-          // User location marker
-          var userMarker = null;
-
-          // Custom icon CSS
-          var userIcon = L.icon({
-              iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-              iconSize: [32, 32],
-              iconAnchor: [16, 32],
-              popupAnchor: [0, -32]
-          });
-
-          var defaultIcon = L.icon({
-              iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-              iconSize: [32, 32],
-              iconAnchor: [16, 32],
-              popupAnchor: [0, -32]
-          });
-
-          var highlightedIcon = L.icon({
-              iconUrl: 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png', // Use a different color
-              iconSize: [38, 38], // Slightly bigger for emphasis
-              iconAnchor: [19, 38],
-              popupAnchor: [0, -38]
-          });
-
-          // Ask for User's Location
-          if (navigator.geolocation) {
-              navigator.geolocation.getCurrentPosition(
-                  function(position) {
-                      var userLat = position.coords.latitude;
-                      var userLng = position.coords.longitude;
-
-                      // Recenter map to user's live location
-                      map.setView([userLat, userLng], 12);
-
-                      // Add marker for user's live location
-                      userMarker = L.marker([userLat, userLng], {
-                              icon: userIcon
-                          })
-                          .addTo(map)
-                          .bindPopup("Your Location")
-                          .openPopup();
-                  },
-                  function(error) {
-                      console.error("Error getting location:", error);
-                      alert("Location access denied. Please enable it in your browser settings.");
-                  }
-              );
-          } else {
-              alert("Geolocation is not supported by this browser.");
-          }
-
-          // Load session locations from template data
-          var markers = [];
-          {
-              %
-              for session in sessions %
-          }
-          var marker = L.marker([{
-                  {
-                      session.latitude
-                  }
-              }, {
-                  {
-                      session.longitude
-                  }
-              }], {
-                  icon: defaultIcon
-              })
-              .addTo(map)
-              .bindPopup(`<strong>{{ session.title }}</strong><br />
-    {{ session.date }}<br />
-    {{ session.location }}<br />
-
-    <!-- Add Teacher and Course Title -->
-    Teacher: {{ session.teacher }}<br />
-    Course Title: {{ session.course_title }}<br />
-
-    <!-- Format Session Duration -->
-    {% with start_time=session.start_time end_time=session.end_time %}
-        Start: {{ start_time|date:"H:i" }}, {{ start_time|date:"Y-m-d" }}<br />
-        End: {{ end_time|date:"H:i" }}, {{ end_time|date:"Y-m-d" }}<br />
-    {% endwith %}
-
-    <!-- Get Directions Button -->
-    <a href="https://www.openstreetmap.org/directions?from={{ session.location }}" target="_blank">
-        <button>Get Directions</button>
-    </a>`);
-
-          markers.push({
-              lat: {
-                  {
-                      session.latitude
-                  }
-              },
-              lng: {
-                  {
-                      session.longitude
-                  }
-              },
-              marker: marker
-          });
-          {
-              %
-              endfor %
-          }
-
-          // Show 'No results' message if no sessions
-          if (markers.length === 0) {
-              document.getElementById("no-results").classList.remove("hidden");
-          }
-
-          // Locate Button Click Event
-          let activeMarker = null; // Store the currently highlighted marker
-
-          document.querySelectorAll('.locate-btn').forEach(button => {
-              button.addEventListener('click', function() {
-                  var lat = parseFloat(this.getAttribute('data-lat'));
-                  var lng = parseFloat(this.getAttribute('data-lng'));
-
-                  // Set map view to the new location
-                  map.setView([lat, lng], 14);
-
-                  // Reset the previous marker if any
-                  if (activeMarker) {
-                      activeMarker.setIcon(defaultIcon); // Reset to default icon
-                  }
-
-                  // Find the marker that matches this location
-                  let selectedMarker = markers.find(marker =>
-                      marker.marker.getLatLng().lat === lat && marker.marker.getLatLng().lng === lng
-                  );
-
-                  if (selectedMarker) {
-                      selectedMarker.marker.setIcon(highlightedIcon); // Change marker icon
-                      selectedMarker.marker.openPopup(); // Open popup for visibility
-                      activeMarker = selectedMarker.marker; // Store this as the active marker
-                  }
-              });
-          });
-
-          // Recenter Button
-          document.getElementById("recenter-btn").addEventListener("click", function() {
-              if (navigator.geolocation) {
-                  navigator.geolocation.getCurrentPosition(
-                      function(position) {
-                          var userLat = position.coords.latitude;
-                          var userLng = position.coords.longitude;
-                          map.setView([userLat, userLng], 12);
-                      },
-                      function(error) {
-                          console.error("Error getting location:", error);
-                          alert("Unable to recenter. Please allow location access.");
-                      }
-                  );
-              }
-          });
-      });
-  </script>
+  <!-- Add data attributes to store session info -->
+  <div id="session-data"
+       data-has-sessions="{% if sessions %}true{% else %}false{% endif %}"
+       style="display: none">
+    {% for session in sessions %}
+      <div class="session-item"
+           data-lat="{{ session.latitude }}"
+           data-lng="{{ session.longitude }}"
+           data-title="{{ session.title }}"
+           data-date="{{ session.date }}"
+           data-location="{{ session.location }}"
+           data-teacher="{{ session.teacher }}"
+           data-course-title="{{ session.course_title }}"
+           data-start-time="{{ session.start_time|date:'H:i' }}, {{ session.start_time|date:'Y-m-d' }}"
+           data-end-time="{{ session.end_time|date:'H:i' }}, {{ session.end_time|date:'Y-m-d' }}"></div>
+    {% endfor %}
+  </div>
+  <!-- Include the static JS file -->
+  <script src="{% static 'js/class_map.js' %}"></script>
 {% endblock %}
