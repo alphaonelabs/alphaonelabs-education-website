@@ -78,6 +78,7 @@ from .forms import (
     TeamInviteForm,
     UserRegistrationForm,
     GradeableLinkForm,
+    LinkGradeForm,
 )
 from .marketing import (
     generate_social_share_content,
