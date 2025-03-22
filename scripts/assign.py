@@ -10,7 +10,7 @@ import requests
 def main():
     print("Initiating process...")
 
-    # Get GitHub token from environment variable
+    # Get GitHub
     github_token = os.environ.get("GITHUB_TOKEN")
     if not github_token:
         print("Error: GITHUB_TOKEN environment variable is required")
@@ -142,6 +142,31 @@ def main():
             try:
                 # Define issue_url at the beginning of this block
                 issue_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}"
+
+                # Get issue details to check if already assigned
+                print(f"Fetching issue details from {issue_url}")
+                issue_response = requests.get(issue_url, headers=headers)
+                print(f"Issue details response status: {issue_response.status_code}")
+                issue_data = issue_response.json()
+
+                # Check if issue already has an assignee (implementing single assignee rule)
+                current_assignee = issue_data.get("assignee")
+                if current_assignee:
+                    current_assignee_login = current_assignee.get("login")
+                    print(f"Issue #{issue_number} already assigned to {current_assignee_login}")
+
+                    # Don't allow a second person to be assigned
+                    if current_assignee_login != user_login:
+                        comment_body = (
+                            f"@{user_login} This issue is already assigned to @{current_assignee_login}. "
+                            f"Please wait until it becomes available or choose a different issue."
+                        )
+                        print(f"Rejecting assignment request from {user_login}")
+                        requests.post(f"{issue_url}/comments", headers=headers, json={"body": comment_body})
+                        return
+                    else:
+                        print(f"User {user_login} is already assigned to this issue. No action needed.")
+                        return
 
                 # Get user's open issues
                 issues_url = f"https://api.github.com/repos/{owner}/{repo}/issues"
