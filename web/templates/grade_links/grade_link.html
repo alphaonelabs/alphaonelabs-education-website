@@ -1,567 +1,635 @@
 {% extends "base.html" %}
 
 {% block title %}Grade: {{ link.title }}{% endblock %}
-
 {% block content %}
-<div class="container py-5 max-w-6xl mx-auto px-4 sm:px-6">
+  <div class="container py-5 max-w-6xl mx-auto px-4 sm:px-6">
     <nav class="flex mb-5" aria-label="Breadcrumb">
-        <ol class="inline-flex items-center space-x-1 md:space-x-3">
-            <li class="inline-flex items-center">
-                <a href="{% url 'index' %}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-orange-600 dark:text-gray-400 dark:hover:text-white">
-                    <i class="fas fa-home mr-2"></i>
-                    Home
-                </a>
-            </li>
-            <li>
-                <div class="flex items-center">
-                    <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
-                    <a href="{% url 'gradeable_link_list' %}" class="text-sm font-medium text-gray-700 hover:text-orange-600 dark:text-gray-400 dark:hover:text-white">Get a Grade</a>
-                </div>
-            </li>
-            <li>
-                <div class="flex items-center">
-                    <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
-                    <a href="{% url 'gradeable_link_detail' link.pk %}" class="text-sm font-medium text-gray-700 hover:text-orange-600 dark:text-gray-400 dark:hover:text-white">{{ link.title|truncatechars:25 }}</a>
-                </div>
-            </li>
-            <li aria-current="page">
-                <div class="flex items-center">
-                    <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
-                    <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Grade</span>
-                </div>
-            </li>
-        </ol>
+      <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+          <a href="{% url 'index' %}"
+             class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-orange-600 dark:text-gray-400 dark:hover:text-white">
+            <i class="fas fa-home mr-2"></i>
+            Home
+          </a>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+            <a href="{% url 'gradeable_link_list' %}"
+               class="text-sm font-medium text-gray-700 hover:text-orange-600 dark:text-gray-400 dark:hover:text-white">Get a Grade</a>
+          </div>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+            <a href="{% url 'gradeable_link_detail' link.pk %}"
+               class="text-sm font-medium text-gray-700 hover:text-orange-600 dark:text-gray-400 dark:hover:text-white">{{ link.title|truncatechars:25 }}</a>
+          </div>
+        </li>
+        <li aria-current="page">
+          <div class="flex items-center">
+            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Grade</span>
+          </div>
+        </li>
+      </ol>
     </nav>
-    
     <div class="max-w-3xl mx-auto">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
-                <i class="fas fa-star text-orange-500 mr-3"></i> Grading: {{ link.title }}
-            </h1>
-            
-            <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
-                <div class="flex items-center justify-between mb-3">
-                    <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                        <span class="flex items-center mr-4">
-                            <i class="fas fa-user mr-1.5"></i> {{ link.user.username }}
-                        </span>
-                        <span class="flex items-center">
-                            <i class="fas fa-calendar-alt mr-1.5"></i> {{ link.created_at|date }}
-                        </span>
-                    </div>
-                    <span class="px-3 py-1.5 text-xs rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
-                        {{ link.get_link_type_display }}
-                    </span>
-                </div>
-                
-                <div class="mb-4">
-                    <div class="flex items-center bg-blue-50 dark:bg-blue-900 rounded p-3">
-                        <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-blue-600 dark:text-blue-300 hover:underline">
-                            <i class="fas fa-external-link-alt mr-2"></i> {{ link.url|truncatechars:60 }}
-                        </a>
-                    </div>
-                </div>
-                
-                {% if link.description %}
-                <div class="mb-2">
-                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description:</h3>
-                    <div class="text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-sm">
-                        {{ link.description|linebreaks }}
-                    </div>
-                </div>
-                {% endif %}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+          <i class="fas fa-star text-orange-500 mr-3"></i> Grading: {{ link.title }}
+        </h1>
+        <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+              <span class="flex items-center mr-4">
+                <i class="fas fa-user mr-1.5"></i> {{ link.user.username }}
+              </span>
+              <span class="flex items-center">
+                <i class="fas fa-calendar-alt mr-1.5"></i> {{ link.created_at|date }}
+              </span>
             </div>
-            
-            <form method="post" class="space-y-6">
-                {% csrf_token %}
-                
-                {% if form.non_field_errors %}
-                    <div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800" role="alert">
-                        {{ form.non_field_errors }}
-                    </div>
-                {% endif %}
-                
-                <div>
-                    <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3 flex items-center">
-                        Select Grade: 
-                        <button type="button" id="show-criteria-btn" class="ml-2 text-sm font-normal text-orange-500 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-300 dark:focus:ring-orange-700 rounded-full" aria-label="Show grading criteria">
-                            <i class="fas fa-question-circle"></i> Grading Criteria
-                        </button>
-                    </h3>
-                    
-                    <!-- Grading Criteria Guide (hidden by default) -->
-                    <div id="grading-criteria" class="mb-6 bg-orange-50 dark:bg-gray-800 border border-orange-200 dark:border-gray-700 rounded-lg p-4 hidden" aria-hidden="true">
-                        <div class="flex justify-between items-center mb-3">
-                            <h4 class="font-semibold text-gray-900 dark:text-gray-100">Grading Criteria Guide</h4>
-                            <button id="close-criteria-btn" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600" aria-label="Close criteria guide">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="space-y-3 text-sm">
-                            <div class="flex">
-                                <span class="w-8 inline-flex justify-center items-center py-1 mr-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 font-semibold rounded-md">A+</span>
-                                <div>
-                                    <span class="font-medium">Exceptional (4.3)</span> - Outstanding work that exceeds all expectations. Demonstrates mastery and innovation.
-                                </div>
-                            </div>
-                            <div class="flex">
-                                <span class="w-8 inline-flex justify-center items-center py-1 mr-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 font-semibold rounded-md">A</span>
-                                <div>
-                                    <span class="font-medium">Excellent (4.0)</span> - Superior quality work that meets all requirements with high proficiency.
-                                </div>
-                            </div>
-                            <div class="flex">
-                                <span class="w-8 inline-flex justify-center items-center py-1 mr-2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 font-semibold rounded-md">B</span>
-                                <div>
-                                    <span class="font-medium">Good (3.0)</span> - Solid work that meets all requirements with some minor issues.
-                                </div>
-                            </div>
-                            <div class="flex">
-                                <span class="w-8 inline-flex justify-center items-center py-1 mr-2 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 font-semibold rounded-md">C</span>
-                                <div>
-                                    <span class="font-medium">Satisfactory (2.0)</span> - Acceptable work that meets basic requirements but has noticeable issues.
-                                </div>
-                            </div>
-                            <div class="flex">
-                                <span class="w-8 inline-flex justify-center items-center py-1 mr-2 bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 font-semibold rounded-md">D</span>
-                                <div>
-                                    <span class="font-medium">Poor (1.0)</span> - Work that only partially meets requirements and has significant issues.
-                                </div>
-                            </div>
-                            <div class="flex">
-                                <span class="w-8 inline-flex justify-center items-center py-1 mr-2 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 font-semibold rounded-md">F</span>
-                                <div>
-                                    <span class="font-medium">Failing (0.0)</span> - Work that does not meet requirements and has critical issues.
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-                            <i class="fas fa-info-circle mr-1"></i> Note: Grades below A require a comment explaining the reason for the grade and providing constructive feedback.
-                        </div>
-                    </div>
-                    
-                    <!-- Grade meter -->
-                    <div class="mb-6 bg-white dark:bg-gray-900 p-4 sm:p-5 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
-                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
-                            <span id="grade-value-display" class="text-3xl font-bold text-gray-800 dark:text-gray-200">No Grade</span>
-                            <span id="numeric-grade-display" class="text-lg font-medium text-gray-600 dark:text-gray-400">0.0/4.0</span>
-                        </div>
-                        <div class="relative h-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                            <div id="grade-meter" class="absolute h-full bg-gray-400 dark:bg-gray-600 rounded-full transition-all duration-300" style="width: 0%"></div>
-                        </div>
-                        <div class="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
-                            <span>F (0.0)</span>
-                            <span>D (1.0)</span>
-                            <span>C (2.0)</span>
-                            <span>B (3.0)</span>
-                            <span>A (4.0)</span>
-                        </div>
-                    </div>
-                    
-                    <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-4 mb-6">
-                        {% for radio in form.grade %}
-                            <div class="grade-option">
-                                <label class="flex flex-col items-center cursor-pointer">
-                                    <div class="relative w-full">
-                                        {{ radio.tag }}
-                                        <div class="
-                                            grade-button 
-                                            w-full h-16 sm:h-20 flex items-center justify-center
-                                            rounded-xl shadow-md transition-all
-                                            text-xl sm:text-2xl font-bold border-2
-                                            hover:shadow-lg hover:scale-105
-                                            {% if 'A+' in radio.choice_label %}bg-green-100 text-green-800 border-green-500 dark:bg-green-900 dark:text-green-200 dark:border-green-700
-                                            {% elif 'A' in radio.choice_label %}bg-green-100 text-green-800 border-green-400 dark:bg-green-900 dark:text-green-200 dark:border-green-600
-                                            {% elif 'A-' in radio.choice_label %}bg-blue-100 text-blue-800 border-blue-400 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-600
-                                            {% elif 'B+' in radio.choice_label %}bg-blue-100 text-blue-800 border-blue-400 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-600
-                                            {% elif 'B' in radio.choice_label %}bg-indigo-100 text-indigo-800 border-indigo-400 dark:bg-indigo-900 dark:text-indigo-200 dark:border-indigo-600
-                                            {% elif 'B-' in radio.choice_label %}bg-indigo-100 text-indigo-800 border-indigo-400 dark:bg-indigo-900 dark:text-indigo-200 dark:border-indigo-600
-                                            {% elif 'C+' in radio.choice_label %}bg-yellow-100 text-yellow-800 border-yellow-400 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-600
-                                            {% elif 'C' in radio.choice_label %}bg-yellow-100 text-yellow-800 border-yellow-400 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-600
-                                            {% elif 'C-' in radio.choice_label %}bg-yellow-100 text-yellow-800 border-yellow-400 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-600
-                                            {% elif 'D' in radio.choice_label %}bg-orange-100 text-orange-800 border-orange-400 dark:bg-orange-900 dark:text-orange-200 dark:border-orange-600
-                                            {% else %}bg-red-100 text-red-800 border-red-400 dark:bg-red-900 dark:text-red-200 dark:border-red-600
-                                            {% endif %}
-                                        "
-                                        data-grade="{{ radio.choice_label }}"
-                                        data-numeric="{% if radio.choice_label == 'A+' %}4.3{% elif radio.choice_label == 'A' %}4.0{% elif radio.choice_label == 'A-' %}3.7{% elif radio.choice_label == 'B+' %}3.3{% elif radio.choice_label == 'B' %}3.0{% elif radio.choice_label == 'B-' %}2.7{% elif radio.choice_label == 'C+' %}2.3{% elif radio.choice_label == 'C' %}2.0{% elif radio.choice_label == 'C-' %}1.7{% elif radio.choice_label == 'D' %}1.0{% elif radio.choice_label == 'F' %}0.0{% endif %}">
-                                            {{ radio.choice_label }}
-                                        </div>
-                                    </div>
-                                    <div class="mt-1 sm:mt-2 text-xs sm:text-sm text-center text-gray-600 dark:text-gray-400">
-                                        {% if radio.choice_label == 'A+' %}Exceptional{% elif radio.choice_label == 'A' %}Excellent{% elif radio.choice_label == 'A-' %}Very Good{% elif radio.choice_label == 'B+' %}Good+{% elif radio.choice_label == 'B' %}Good{% elif radio.choice_label == 'B-' %}Above Avg{% elif radio.choice_label == 'C+' %}Avg+{% elif radio.choice_label == 'C' %}Average{% elif radio.choice_label == 'C-' %}Below Avg{% elif radio.choice_label == 'D' %}Poor{% elif radio.choice_label == 'F' %}Failing{% endif %}
-                                    </div>
-                                </label>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    {% if form.grade.errors %}
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.grade.errors.0 }}</p>
-                    {% endif %}
-                </div>
-                
-                <div>
-                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2">
-                        <label for="{{ form.comment.id_for_label }}" class="block text-lg font-medium text-gray-800 dark:text-gray-200">
-                            Comment
-                        </label>
-                        <span id="comment-required" class="text-red-500 text-sm font-medium px-3 py-1 bg-red-50 dark:bg-red-900 rounded-full" style="display: none;">
-                            <i class="fas fa-exclamation-circle mr-1"></i> Required for grades below A
-                        </span>
-                    </div>
-                    
-                    <!-- Comment suggestions -->
-                    <div class="mb-3">
-                        <button type="button" id="show-suggestions-btn" class="text-sm text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 focus:outline-none">
-                            <i class="fas fa-lightbulb mr-1"></i> Show comment suggestions
-                        </button>
-                        
-                        <div id="comment-suggestions" class="mt-2 hidden">
-                            <div class="text-xs text-gray-500 dark:text-gray-400 mb-2">Click a suggestion to add it to your comment:</div>
-                            <div class="flex flex-wrap gap-2">
-                                <button type="button" class="suggestion-pill px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-300 text-xs rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 transition">
-                                    Great work on...
-                                </button>
-                                <button type="button" class="suggestion-pill px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-300 text-xs rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 transition">
-                                    I particularly liked...
-                                </button>
-                                <button type="button" class="suggestion-pill px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-300 text-xs rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 transition">
-                                    Consider improving...
-                                </button>
-                                <button type="button" class="suggestion-pill px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-300 text-xs rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 transition">
-                                    The code could be more...
-                                </button>
-                                <button type="button" class="suggestion-pill px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-300 text-xs rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 transition">
-                                    To make this better, try...
-                                </button>
-                                <button type="button" class="suggestion-pill px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-300 text-xs rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 transition">
-                                    One issue I noticed was...
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="comment-wrapper relative mb-2 focus-within:ring-2 focus-within:ring-orange-300 dark:focus-within:ring-orange-700 rounded-lg">
-                        {{ form.comment }}
-                        <div id="comment-indicator" class="absolute -left-4 top-0 h-full flex items-center" style="display: none;">
-                            <div class="h-full w-1 bg-red-500 rounded"></div>
-                        </div>
-                        <div class="absolute bottom-2 right-2 text-xs text-gray-400 dark:text-gray-500" id="character-counter">0 characters</div>
-                    </div>
-                    
-                    {% if form.comment.errors %}
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400" id="comment-error">{{ form.comment.errors.0 }}</p>
-                    {% endif %}
-                    <p class="text-sm text-gray-500 dark:text-gray-400">
-                        <i class="fas fa-info-circle mr-1"></i> Provide constructive feedback to help the submitter improve. Be specific about what works well and what could be enhanced.
-                    </p>
-                </div>
-                
-                <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
-                    <a href="{% url 'gradeable_link_detail' link.pk %}" class="inline-flex items-center px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition" aria-label="Cancel and return to link detail page">
-                        <i class="fas fa-arrow-left mr-1"></i> Cancel
-                    </a>
-                    <button type="submit" id="submit-grade-btn" class="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2" aria-label="Submit your grade for this link">
-                        <i class="fas fa-paper-plane mr-2"></i> Submit Grade
-                    </button>
-                </div>
-            </form>
+            <span class="px-3 py-1.5 text-xs rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+              {{ link.get_link_type_display }}
+            </span>
+          </div>
+          <div class="mb-4">
+            <div class="flex items-center bg-blue-50 dark:bg-blue-900 rounded p-3">
+              <a href="{{ link.url }}"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 class="inline-flex items-center text-blue-600 dark:text-blue-300 hover:underline">
+                <i class="fas fa-external-link-alt mr-2"></i> {{ link.url|truncatechars:60 }}
+              </a>
+            </div>
+          </div>
+          {% if link.description %}
+            <div class="mb-2">
+              <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description:</h3>
+              <div class="text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-sm">
+                {{ link.description|linebreaks }}
+              </div>
+            </div>
+          {% endif %}
         </div>
-    </div>
-</div>
-
-<!-- Confirmation Modal -->
-<div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6 transform transition-all scale-95 opacity-0" id="modal-content">
-        <div class="text-center mb-5">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 text-orange-500 mb-4">
-                <i class="fas fa-check-circle text-3xl"></i>
+        <form method="post" class="space-y-6">
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+            <div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800"
+                 role="alert">{{ form.non_field_errors }}</div>
+          {% endif %}
+          <div>
+            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3 flex items-center">
+              Select Grade:
+              <button type="button"
+                      id="show-criteria-btn"
+                      class="ml-2 text-sm font-normal text-orange-500 hover:text-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-300 dark:focus:ring-orange-700 rounded-full"
+                      aria-label="Show grading criteria">
+                <i class="fas fa-question-circle"></i> Grading Criteria
+              </button>
+            </h3>
+            <!-- Grading Criteria Guide (hidden by default) -->
+            <div id="grading-criteria"
+                 class="mb-6 bg-orange-50 dark:bg-gray-800 border border-orange-200 dark:border-gray-700 rounded-lg p-4 hidden"
+                 aria-hidden="true">
+              <div class="flex justify-between items-center mb-3">
+                <h4 class="font-semibold text-gray-900 dark:text-gray-100">Grading Criteria Guide</h4>
+                <button id="close-criteria-btn"
+                        class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-600"
+                        aria-label="Close criteria guide">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              <div class="space-y-3 text-sm">
+                <div class="flex">
+                  <span class="w-8 inline-flex justify-center items-center py-1 mr-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 font-semibold rounded-md">A+</span>
+                  <div>
+                    <span class="font-medium">Exceptional (4.3)</span> - Outstanding work that exceeds all expectations. Demonstrates mastery and innovation.
+                  </div>
+                </div>
+                <div class="flex">
+                  <span class="w-8 inline-flex justify-center items-center py-1 mr-2 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 font-semibold rounded-md">A</span>
+                  <div>
+                    <span class="font-medium">Excellent (4.0)</span> - Superior quality work that meets all requirements with high proficiency.
+                  </div>
+                </div>
+                <div class="flex">
+                  <span class="w-8 inline-flex justify-center items-center py-1 mr-2 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 font-semibold rounded-md">B</span>
+                  <div>
+                    <span class="font-medium">Good (3.0)</span> - Solid work that meets all requirements with some minor issues.
+                  </div>
+                </div>
+                <div class="flex">
+                  <span class="w-8 inline-flex justify-center items-center py-1 mr-2 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 font-semibold rounded-md">C</span>
+                  <div>
+                    <span class="font-medium">Satisfactory (2.0)</span> - Acceptable work that meets basic requirements but has noticeable issues.
+                  </div>
+                </div>
+                <div class="flex">
+                  <span class="w-8 inline-flex justify-center items-center py-1 mr-2 bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 font-semibold rounded-md">D</span>
+                  <div>
+                    <span class="font-medium">Poor (1.0)</span> - Work that only partially meets requirements and has significant issues.
+                  </div>
+                </div>
+                <div class="flex">
+                  <span class="w-8 inline-flex justify-center items-center py-1 mr-2 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 font-semibold rounded-md">F</span>
+                  <div>
+                    <span class="font-medium">Failing (0.0)</span> - Work that does not meet requirements and has critical issues.
+                  </div>
+                </div>
+              </div>
+              <div class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                <i class="fas fa-info-circle mr-1"></i> Note: Grades below A require a comment explaining the reason for the grade and providing constructive feedback.
+              </div>
             </div>
-            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2" id="modal-title">Submit Grade?</h3>
-            <p class="text-gray-600 dark:text-gray-400" id="modal-message">
-                Are you sure you want to submit this grade? This action can be edited later if needed.
+            <!-- Grade meter -->
+            <div class="mb-6 bg-white dark:bg-gray-900 p-4 sm:p-5 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+              <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+                <span id="grade-value-display"
+                      class="text-3xl font-bold text-gray-800 dark:text-gray-200">No Grade</span>
+                <span id="numeric-grade-display"
+                      class="text-lg font-medium text-gray-600 dark:text-gray-400">0.0/4.0</span>
+              </div>
+              <div class="relative h-3 w-full bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div id="grade-meter"
+                     class="absolute h-full bg-gray-400 dark:bg-gray-600 rounded-full transition-all duration-300"
+                     style="width: 0%"></div>
+              </div>
+              <div class="flex justify-between mt-2 text-xs text-gray-500 dark:text-gray-400">
+                <span>F (0.0)</span>
+                <span>D (1.0)</span>
+                <span>C (2.0)</span>
+                <span>B (3.0)</span>
+                <span>A (4.0)</span>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-4 mb-6">
+              {% for radio in form.grade %}
+                <div class="grade-option">
+                  <label class="flex flex-col items-center cursor-pointer">
+                    <div class="relative w-full">
+                      {{ radio.tag }}
+                      <div class=" grade-button w-full h-16 sm:h-20 flex items-center justify-center rounded-xl shadow-md transition-all text-xl sm:text-2xl font-bold border-2 hover:shadow-lg hover:scale-105 {% if 'A+' in radio.choice_label %}bg-green-100 text-green-800 border-green-500 dark:bg-green-900 dark:text-green-200 dark:border-green-700 {% elif 'A' in radio.choice_label %}bg-green-100 text-green-800 border-green-400 dark:bg-green-900 dark:text-green-200 dark:border-green-600 {% elif 'A-' in radio.choice_label %}bg-blue-100 text-blue-800 border-blue-400 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-600 {% elif 'B+' in radio.choice_label %}bg-blue-100 text-blue-800 border-blue-400 dark:bg-blue-900 dark:text-blue-200 dark:border-blue-600 {% elif 'B' in radio.choice_label %}bg-indigo-100 text-indigo-800 border-indigo-400 dark:bg-indigo-900 dark:text-indigo-200 dark:border-indigo-600 {% elif 'B-' in radio.choice_label %}bg-indigo-100 text-indigo-800 border-indigo-400 dark:bg-indigo-900 dark:text-indigo-200 dark:border-indigo-600 {% elif 'C+' in radio.choice_label %}bg-yellow-100 text-yellow-800 border-yellow-400 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-600 {% elif 'C' in radio.choice_label %}bg-yellow-100 text-yellow-800 border-yellow-400 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-600 {% elif 'C-' in radio.choice_label %}bg-yellow-100 text-yellow-800 border-yellow-400 dark:bg-yellow-900 dark:text-yellow-200 dark:border-yellow-600 {% elif 'D' in radio.choice_label %}bg-orange-100 text-orange-800 border-orange-400 dark:bg-orange-900 dark:text-orange-200 dark:border-orange-600 {% else %}bg-red-100 text-red-800 border-red-400 dark:bg-red-900 dark:text-red-200 dark:border-red-600 {% endif %} "
+                           data-grade="{{ radio.choice_label }}"
+                           data-numeric="{% if radio.choice_label == 'A+' %}4.3{% elif radio.choice_label == 'A' %}4.0{% elif radio.choice_label == 'A-' %}3.7{% elif radio.choice_label == 'B+' %}3.3{% elif radio.choice_label == 'B' %}3.0{% elif radio.choice_label == 'B-' %}2.7{% elif radio.choice_label == 'C+' %}2.3{% elif radio.choice_label == 'C' %}2.0{% elif radio.choice_label == 'C-' %}1.7{% elif radio.choice_label == 'D' %}1.0{% elif radio.choice_label == 'F' %}0.0{% endif %}">
+                        {{ radio.choice_label }}
+                      </div>
+                    </div>
+                    <div class="mt-1 sm:mt-2 text-xs sm:text-sm text-center text-gray-600 dark:text-gray-400">
+                      {% if radio.choice_label == 'A+' %}
+                        Exceptional
+                      {% elif radio.choice_label == 'A' %}
+                        Excellent
+                      {% elif radio.choice_label == 'A-' %}
+                        Very Good
+                      {% elif radio.choice_label == 'B+' %}
+                        Good+
+                      {% elif radio.choice_label == 'B' %}
+                        Good
+                      {% elif radio.choice_label == 'B-' %}
+                        Above Avg
+                      {% elif radio.choice_label == 'C+' %}
+                        Avg+
+                      {% elif radio.choice_label == 'C' %}
+                        Average
+                      {% elif radio.choice_label == 'C-' %}
+                        Below Avg
+                      {% elif radio.choice_label == 'D' %}
+                        Poor
+                      {% elif radio.choice_label == 'F' %}
+                        Failing
+                      {% endif %}
+                    </div>
+                  </label>
+                </div>
+              {% endfor %}
+            </div>
+            {% if form.grade.errors %}
+              <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.grade.errors.0 }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-2 gap-2">
+              <label for="{{ form.comment.id_for_label }}"
+                     class="block text-lg font-medium text-gray-800 dark:text-gray-200">Comment</label>
+              <span id="comment-required"
+                    class="text-red-500 text-sm font-medium px-3 py-1 bg-red-50 dark:bg-red-900 rounded-full"
+                    style="display: none">
+                <i class="fas fa-exclamation-circle mr-1"></i> Required for grades below A
+              </span>
+            </div>
+            <!-- Comment suggestions -->
+            <div class="mb-3">
+              <button type="button"
+                      id="show-suggestions-btn"
+                      class="text-sm text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 focus:outline-none">
+                <i class="fas fa-lightbulb mr-1"></i> Show comment suggestions
+              </button>
+              <div id="comment-suggestions" class="mt-2 hidden">
+                <div class="text-xs text-gray-500 dark:text-gray-400 mb-2">Click a suggestion to add it to your comment:</div>
+                <div class="flex flex-wrap gap-2">
+                  <button type="button"
+                          class="suggestion-pill px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-300 text-xs rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 transition">
+                    Great work on...
+                  </button>
+                  <button type="button"
+                          class="suggestion-pill px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-300 text-xs rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 transition">
+                    I particularly liked...
+                  </button>
+                  <button type="button"
+                          class="suggestion-pill px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-300 text-xs rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 transition">
+                    Consider improving...
+                  </button>
+                  <button type="button"
+                          class="suggestion-pill px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-300 text-xs rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 transition">
+                    The code could be more...
+                  </button>
+                  <button type="button"
+                          class="suggestion-pill px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-300 text-xs rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 transition">
+                    To make this better, try...
+                  </button>
+                  <button type="button"
+                          class="suggestion-pill px-3 py-1.5 bg-blue-50 text-blue-600 dark:bg-blue-900 dark:text-blue-300 text-xs rounded-full hover:bg-blue-100 dark:hover:bg-blue-800 transition">
+                    One issue I noticed was...
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="comment-wrapper relative mb-2 focus-within:ring-2 focus-within:ring-orange-300 dark:focus-within:ring-orange-700 rounded-lg">
+              {{ form.comment }}
+              <div id="comment-indicator"
+                   class="absolute -left-4 top-0 h-full flex items-center"
+                   style="display: none">
+                <div class="h-full w-1 bg-red-500 rounded"></div>
+              </div>
+              <div class="absolute bottom-2 right-2 text-xs text-gray-400 dark:text-gray-500"
+                   id="character-counter">0 characters</div>
+            </div>
+            {% if form.comment.errors %}
+              <p class="mt-1 text-sm text-red-600 dark:text-red-400"
+                 id="comment-error">{{ form.comment.errors.0 }}</p>
+            {% endif %}
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              <i class="fas fa-info-circle mr-1"></i> Provide constructive feedback to help the submitter improve. Be specific about what works well and what could be enhanced.
             </p>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <button id="cancel-btn" class="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg transition">
-                Cancel
+          </div>
+          <div class="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+            <a href="{% url 'gradeable_link_detail' link.pk %}"
+               class="inline-flex items-center px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+               aria-label="Cancel and return to link detail page">
+              <i class="fas fa-arrow-left mr-1"></i> Cancel
+            </a>
+            <button type="submit"
+                    id="submit-grade-btn"
+                    class="px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg shadow-md hover:shadow-lg transition transform hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+                    aria-label="Submit your grade for this link">
+              <i class="fas fa-paper-plane mr-2"></i> Submit Grade
             </button>
-            <button id="confirm-submit-btn" class="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition">
-                Confirm
-            </button>
-        </div>
+          </div>
+        </form>
+      </div>
     </div>
-</div>
+  </div>
+  <!-- Confirmation Modal -->
+  <div id="confirmation-modal"
+       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 p-6 transform transition-all scale-95 opacity-0"
+         id="modal-content">
+      <div class="text-center mb-5">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 text-orange-500 mb-4">
+          <i class="fas fa-check-circle text-3xl"></i>
+        </div>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2"
+            id="modal-title">Submit Grade?</h3>
+        <p class="text-gray-600 dark:text-gray-400" id="modal-message">
+          Are you sure you want to submit this grade? This action can be edited later if needed.
+        </p>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <button id="cancel-btn"
+                class="w-full px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg transition">
+          Cancel
+        </button>
+        <button id="confirm-submit-btn"
+                class="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition">
+          Confirm
+        </button>
+      </div>
+    </div>
+  </div>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          const gradeInputs = document.querySelectorAll('input[name="grade"]');
+          const commentRequired = document.getElementById('comment-required');
+          const commentField = document.querySelector('textarea[name="comment"]');
+          const commentIndicator = document.getElementById('comment-indicator');
+          const gradeButtons = document.querySelectorAll('.grade-button');
+          const gradeMeter = document.getElementById('grade-meter');
+          const gradeValueDisplay = document.getElementById('grade-value-display');
+          const numericGradeDisplay = document.getElementById('numeric-grade-display');
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const gradeInputs = document.querySelectorAll('input[name="grade"]');
-        const commentRequired = document.getElementById('comment-required');
-        const commentField = document.querySelector('textarea[name="comment"]');
-        const commentIndicator = document.getElementById('comment-indicator');
-        const gradeButtons = document.querySelectorAll('.grade-button');
-        const gradeMeter = document.getElementById('grade-meter');
-        const gradeValueDisplay = document.getElementById('grade-value-display');
-        const numericGradeDisplay = document.getElementById('numeric-grade-display');
-        
-        // Form and confirmation elements
-        const gradeForm = document.querySelector('form');
-        const submitBtn = document.getElementById('submit-grade-btn');
-        const confirmationModal = document.getElementById('confirmation-modal');
-        const modalContent = document.getElementById('modal-content');
-        const cancelBtn = document.getElementById('cancel-btn');
-        const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
-        
-        // Prevent default form submission and show confirmation modal
-        submitBtn.addEventListener('click', function(e) {
-            e.preventDefault();
-            
-            // Check if form is valid
-            if (!isFormValid()) {
-                // Form has validation errors, highlight them
-                highlightErrors();
-                return;
-            }
-            
-            // Show confirmation modal with animation
-            confirmationModal.classList.remove('hidden');
-            document.body.classList.add('overflow-hidden'); // Prevent scrolling
-            
-            // Animate modal appearance
-            setTimeout(() => {
-                modalContent.classList.remove('scale-95', 'opacity-0');
-                modalContent.classList.add('scale-100', 'opacity-100');
-            }, 10);
-        });
-        
-        // Cancel confirmation
-        cancelBtn.addEventListener('click', function() {
-            // Animate modal disappearance
-            modalContent.classList.remove('scale-100', 'opacity-100');
-            modalContent.classList.add('scale-95', 'opacity-0');
-            
-            setTimeout(() => {
-                confirmationModal.classList.add('hidden');
-                document.body.classList.remove('overflow-hidden');
-            }, 200);
-        });
-        
-        // Close modal if clicked outside
-        confirmationModal.addEventListener('click', function(e) {
-            if (e.target === confirmationModal) {
-                cancelBtn.click();
-            }
-        });
-        
-        // Confirm submission
-        confirmSubmitBtn.addEventListener('click', function() {
-            // Submit the form
-            gradeForm.submit();
-            
-            // Show loading state
-            confirmSubmitBtn.disabled = true;
-            confirmSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
-        });
-        
-        // Form validation
-        function isFormValid() {
-            const selectedGrade = document.querySelector('input[name="grade"]:checked');
-            
-            // Check if grade is selected
-            if (!selectedGrade) {
-                return false;
-            }
-            
-            // Check if comment is required but empty
-            if ((selectedGrade.value !== 'A+' && selectedGrade.value !== 'A') && !commentField.value.trim()) {
-                return false;
-            }
-            
-            return true;
-        }
-        
-        // Highlight errors
-        function highlightErrors() {
-            const selectedGrade = document.querySelector('input[name="grade"]:checked');
-            
-            if (!selectedGrade) {
-                // No grade selected, highlight the grade section
-                const gradeSection = document.querySelector('.grid.grid-cols-3');
-                gradeSection.classList.add('ring-2', 'ring-red-500', 'rounded-lg');
-                
-                setTimeout(() => {
-                    gradeSection.classList.remove('ring-2', 'ring-red-500', 'rounded-lg');
-                }, 2000);
-            }
-            
-            if ((selectedGrade && selectedGrade.value !== 'A+' && selectedGrade.value !== 'A') && !commentField.value.trim()) {
-                // Comment required but empty, highlight the comment field
-                commentField.classList.add('ring-2', 'ring-red-500');
-                
-                setTimeout(() => {
-                    commentField.classList.remove('ring-2', 'ring-red-500');
-                }, 2000);
-            }
-        }
-        
-        // Grading criteria elements
-        const showCriteriaBtn = document.getElementById('show-criteria-btn');
-        const closeCriteriaBtn = document.getElementById('close-criteria-btn');
-        const gradingCriteria = document.getElementById('grading-criteria');
-        
-        // Comment elements
-        const characterCounter = document.getElementById('character-counter');
-        const showSuggestionsBtn = document.getElementById('show-suggestions-btn');
-        const commentSuggestions = document.getElementById('comment-suggestions');
-        const suggestionPills = document.querySelectorAll('.suggestion-pill');
-        
-        // Show/hide comment suggestions
-        showSuggestionsBtn.addEventListener('click', function() {
-            if (commentSuggestions.classList.contains('hidden')) {
-                commentSuggestions.classList.remove('hidden');
-                commentSuggestions.classList.add('block');
-                showSuggestionsBtn.innerHTML = '<i class="fas fa-times-circle mr-1"></i> Hide suggestions';
-            } else {
-                commentSuggestions.classList.add('hidden');
-                commentSuggestions.classList.remove('block');
-                showSuggestionsBtn.innerHTML = '<i class="fas fa-lightbulb mr-1"></i> Show comment suggestions';
-            }
-        });
-        
-        // Add suggestions to comment when clicked
-        suggestionPills.forEach(pill => {
-            pill.addEventListener('click', function() {
-                const suggestion = this.textContent.trim();
-                if (commentField.value) {
-                    commentField.value += ' ' + suggestion;
-                } else {
-                    commentField.value = suggestion;
-                }
-                updateCharacterCount();
-                commentField.focus();
-                // Set cursor at the end
-                commentField.setSelectionRange(commentField.value.length, commentField.value.length);
-            });
-        });
-        
-        // Character counter
-        function updateCharacterCount() {
-            const count = commentField.value.length;
-            characterCounter.textContent = `${count} character${count !== 1 ? 's' : ''}`;
-            
-            if (count > 0) {
-                characterCounter.classList.remove('text-gray-400', 'dark:text-gray-500');
-                characterCounter.classList.add('text-blue-500', 'dark:text-blue-400');
-            } else {
-                characterCounter.classList.add('text-gray-400', 'dark:text-gray-500');
-                characterCounter.classList.remove('text-blue-500', 'dark:text-blue-400');
-            }
-        }
-        
-        commentField.addEventListener('input', updateCharacterCount);
-        
-        // Initialize character count
-        updateCharacterCount();
-        
-        // Show/hide grading criteria
-        showCriteriaBtn.addEventListener('click', function() {
-            gradingCriteria.classList.remove('hidden');
-            gradingCriteria.classList.add('block');
-        });
-        
-        closeCriteriaBtn.addEventListener('click', function() {
-            gradingCriteria.classList.add('hidden');
-            gradingCriteria.classList.remove('block');
-        });
-        
-        // Grade values and colors mapping
-        const gradeValues = {
-            'A+': { value: 4.3, color: '#22c55e', width: '100%' },
-            'A': { value: 4.0, color: '#22c55e', width: '93%' },
-            'A-': { value: 3.7, color: '#3b82f6', width: '86%' },
-            'B+': { value: 3.3, color: '#3b82f6', width: '79%' },
-            'B': { value: 3.0, color: '#6366f1', width: '71%' },
-            'B-': { value: 2.7, color: '#6366f1', width: '64%' },
-            'C+': { value: 2.3, color: '#eab308', width: '57%' },
-            'C': { value: 2.0, color: '#eab308', width: '50%' },
-            'C-': { value: 1.7, color: '#eab308', width: '43%' },
-            'D': { value: 1.0, color: '#f97316', width: '25%' },
-            'F': { value: 0.0, color: '#ef4444', width: '0%' }
-        };
-        
-        function checkGradeSelection() {
-            const selectedGrade = document.querySelector('input[name="grade"]:checked');
-            
-            // Reset all buttons
-            gradeButtons.forEach(button => {
-                button.classList.remove('ring-4', 'ring-offset-2');
-            });
-            
-            if (selectedGrade) {
-                // Highlight selected button
-                const parentButton = selectedGrade.closest('.grade-option').querySelector('.grade-button');
-                parentButton.classList.add('ring-4', 'ring-offset-2');
-                
-                // Update the grade meter
-                const grade = parentButton.dataset.grade;
-                const numeric = parentButton.dataset.numeric;
-                
-                gradeMeter.style.width = gradeValues[grade].width;
-                gradeMeter.style.backgroundColor = gradeValues[grade].color;
-                gradeValueDisplay.textContent = grade;
-                gradeValueDisplay.style.color = gradeValues[grade].color;
-                numericGradeDisplay.textContent = `${numeric}/4.0`;
-                
-                // Handle comment requirement
-                if (selectedGrade.value !== 'A+' && selectedGrade.value !== 'A') {
-                    commentRequired.style.display = 'inline-flex';
-                    commentIndicator.style.display = 'flex';
-                    commentField.setAttribute('required', 'required');
-                    commentField.setAttribute('placeholder', `Explain why you've given a ${selectedGrade.value} grade...`);
-                } else {
-                    commentRequired.style.display = 'none';
-                    commentIndicator.style.display = 'none';
-                    commentField.removeAttribute('required');
-                    commentField.setAttribute('placeholder', 'Optional: Add any positive feedback...');
-                }
-            } else {
-                // No grade selected
-                gradeMeter.style.width = '0%';
-                gradeMeter.style.backgroundColor = '#9ca3af';
-                gradeValueDisplay.textContent = 'No Grade';
-                gradeValueDisplay.style.color = '';
-                numericGradeDisplay.textContent = '0.0/4.0';
-            }
-        }
-        
-        // Initialize on page load
-        checkGradeSelection();
-        
-        // Add event listeners to all grade options
-        gradeInputs.forEach(input => {
-            input.addEventListener('change', checkGradeSelection);
-        });
-        
-        // Make entire grade button clickable
-        gradeButtons.forEach(button => {
-            button.addEventListener('click', function() {
-                const radio = this.closest('.grade-option').querySelector('input[type="radio"]');
-                radio.checked = true;
-                
-                // Trigger the change event
-                const event = new Event('change');
-                radio.dispatchEvent(event);
-            });
-        });
-        
-        // Add helpful animations
-        commentField.addEventListener('focus', function() {
-            this.closest('.comment-wrapper').classList.add('ring-2', 'ring-orange-300');
-        });
-        
-        commentField.addEventListener('blur', function() {
-            this.closest('.comment-wrapper').classList.remove('ring-2', 'ring-orange-300');
-        });
-    });
-</script>
-{% endblock %} 
+          // Form and confirmation elements
+          const gradeForm = document.querySelector('form');
+          const submitBtn = document.getElementById('submit-grade-btn');
+          const confirmationModal = document.getElementById('confirmation-modal');
+          const modalContent = document.getElementById('modal-content');
+          const cancelBtn = document.getElementById('cancel-btn');
+          const confirmSubmitBtn = document.getElementById('confirm-submit-btn');
+
+          // Prevent default form submission and show confirmation modal
+          submitBtn.addEventListener('click', function(e) {
+              e.preventDefault();
+
+              // Check if form is valid
+              if (!isFormValid()) {
+                  // Form has validation errors, highlight them
+                  highlightErrors();
+                  return;
+              }
+
+              // Show confirmation modal with animation
+              confirmationModal.classList.remove('hidden');
+              document.body.classList.add('overflow-hidden'); // Prevent scrolling
+
+              // Animate modal appearance
+              setTimeout(() => {
+                  modalContent.classList.remove('scale-95', 'opacity-0');
+                  modalContent.classList.add('scale-100', 'opacity-100');
+              }, 10);
+          });
+
+          // Cancel confirmation
+          cancelBtn.addEventListener('click', function() {
+              // Animate modal disappearance
+              modalContent.classList.remove('scale-100', 'opacity-100');
+              modalContent.classList.add('scale-95', 'opacity-0');
+
+              setTimeout(() => {
+                  confirmationModal.classList.add('hidden');
+                  document.body.classList.remove('overflow-hidden');
+              }, 200);
+          });
+
+          // Close modal if clicked outside
+          confirmationModal.addEventListener('click', function(e) {
+              if (e.target === confirmationModal) {
+                  cancelBtn.click();
+              }
+          });
+
+          // Confirm submission
+          confirmSubmitBtn.addEventListener('click', function() {
+              // Submit the form
+              gradeForm.submit();
+
+              // Show loading state
+              confirmSubmitBtn.disabled = true;
+              confirmSubmitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...';
+          });
+
+          // Form validation
+          function isFormValid() {
+              const selectedGrade = document.querySelector('input[name="grade"]:checked');
+
+              // Check if grade is selected
+              if (!selectedGrade) {
+                  return false;
+              }
+
+              // Check if comment is required but empty
+              if ((selectedGrade.value !== 'A+' && selectedGrade.value !== 'A') && !commentField.value.trim()) {
+                  return false;
+              }
+
+              return true;
+          }
+
+          // Highlight errors
+          function highlightErrors() {
+              const selectedGrade = document.querySelector('input[name="grade"]:checked');
+
+              if (!selectedGrade) {
+                  // No grade selected, highlight the grade section
+                  const gradeSection = document.querySelector('.grid.grid-cols-3');
+                  gradeSection.classList.add('ring-2', 'ring-red-500', 'rounded-lg');
+
+                  setTimeout(() => {
+                      gradeSection.classList.remove('ring-2', 'ring-red-500', 'rounded-lg');
+                  }, 2000);
+              }
+
+              if ((selectedGrade && selectedGrade.value !== 'A+' && selectedGrade.value !== 'A') && !commentField.value.trim()) {
+                  // Comment required but empty, highlight the comment field
+                  commentField.classList.add('ring-2', 'ring-red-500');
+
+                  setTimeout(() => {
+                      commentField.classList.remove('ring-2', 'ring-red-500');
+                  }, 2000);
+              }
+          }
+
+          // Grading criteria elements
+          const showCriteriaBtn = document.getElementById('show-criteria-btn');
+          const closeCriteriaBtn = document.getElementById('close-criteria-btn');
+          const gradingCriteria = document.getElementById('grading-criteria');
+
+          // Comment elements
+          const characterCounter = document.getElementById('character-counter');
+          const showSuggestionsBtn = document.getElementById('show-suggestions-btn');
+          const commentSuggestions = document.getElementById('comment-suggestions');
+          const suggestionPills = document.querySelectorAll('.suggestion-pill');
+
+          // Show/hide comment suggestions
+          showSuggestionsBtn.addEventListener('click', function() {
+              if (commentSuggestions.classList.contains('hidden')) {
+                  commentSuggestions.classList.remove('hidden');
+                  commentSuggestions.classList.add('block');
+                  showSuggestionsBtn.innerHTML = '<i class="fas fa-times-circle mr-1"></i> Hide suggestions';
+              } else {
+                  commentSuggestions.classList.add('hidden');
+                  commentSuggestions.classList.remove('block');
+                  showSuggestionsBtn.innerHTML = '<i class="fas fa-lightbulb mr-1"></i> Show comment suggestions';
+              }
+          });
+
+          // Add suggestions to comment when clicked
+          suggestionPills.forEach(pill => {
+              pill.addEventListener('click', function() {
+                  const suggestion = this.textContent.trim();
+                  if (commentField.value) {
+                      commentField.value += ' ' + suggestion;
+                  } else {
+                      commentField.value = suggestion;
+                  }
+                  updateCharacterCount();
+                  commentField.focus();
+                  // Set cursor at the end
+                  commentField.setSelectionRange(commentField.value.length, commentField.value.length);
+              });
+          });
+
+          // Character counter
+          function updateCharacterCount() {
+              const count = commentField.value.length;
+              characterCounter.textContent = `${count} character${count !== 1 ? 's' : ''}`;
+
+              if (count > 0) {
+                  characterCounter.classList.remove('text-gray-400', 'dark:text-gray-500');
+                  characterCounter.classList.add('text-blue-500', 'dark:text-blue-400');
+              } else {
+                  characterCounter.classList.add('text-gray-400', 'dark:text-gray-500');
+                  characterCounter.classList.remove('text-blue-500', 'dark:text-blue-400');
+              }
+          }
+
+          commentField.addEventListener('input', updateCharacterCount);
+
+          // Initialize character count
+          updateCharacterCount();
+
+          // Show/hide grading criteria
+          showCriteriaBtn.addEventListener('click', function() {
+              gradingCriteria.classList.remove('hidden');
+              gradingCriteria.classList.add('block');
+          });
+
+          closeCriteriaBtn.addEventListener('click', function() {
+              gradingCriteria.classList.add('hidden');
+              gradingCriteria.classList.remove('block');
+          });
+
+          // Grade values and colors mapping
+          const gradeValues = {
+              'A+': {
+                  value: 4.3,
+                  color: '#22c55e',
+                  width: '100%'
+              },
+              'A': {
+                  value: 4.0,
+                  color: '#22c55e',
+                  width: '93%'
+              },
+              'A-': {
+                  value: 3.7,
+                  color: '#3b82f6',
+                  width: '86%'
+              },
+              'B+': {
+                  value: 3.3,
+                  color: '#3b82f6',
+                  width: '79%'
+              },
+              'B': {
+                  value: 3.0,
+                  color: '#6366f1',
+                  width: '71%'
+              },
+              'B-': {
+                  value: 2.7,
+                  color: '#6366f1',
+                  width: '64%'
+              },
+              'C+': {
+                  value: 2.3,
+                  color: '#eab308',
+                  width: '57%'
+              },
+              'C': {
+                  value: 2.0,
+                  color: '#eab308',
+                  width: '50%'
+              },
+              'C-': {
+                  value: 1.7,
+                  color: '#eab308',
+                  width: '43%'
+              },
+              'D': {
+                  value: 1.0,
+                  color: '#f97316',
+                  width: '25%'
+              },
+              'F': {
+                  value: 0.0,
+                  color: '#ef4444',
+                  width: '0%'
+              }
+          };
+
+          function checkGradeSelection() {
+              const selectedGrade = document.querySelector('input[name="grade"]:checked');
+
+              // Reset all buttons
+              gradeButtons.forEach(button => {
+                  button.classList.remove('ring-4', 'ring-offset-2');
+              });
+
+              if (selectedGrade) {
+                  // Highlight selected button
+                  const parentButton = selectedGrade.closest('.grade-option').querySelector('.grade-button');
+                  parentButton.classList.add('ring-4', 'ring-offset-2');
+
+                  // Update the grade meter
+                  const grade = parentButton.dataset.grade;
+                  const numeric = parentButton.dataset.numeric;
+
+                  gradeMeter.style.width = gradeValues[grade].width;
+                  gradeMeter.style.backgroundColor = gradeValues[grade].color;
+                  gradeValueDisplay.textContent = grade;
+                  gradeValueDisplay.style.color = gradeValues[grade].color;
+                  numericGradeDisplay.textContent = `${numeric}/4.0`;
+
+                  // Handle comment requirement
+                  if (selectedGrade.value !== 'A+' && selectedGrade.value !== 'A') {
+                      commentRequired.style.display = 'inline-flex';
+                      commentIndicator.style.display = 'flex';
+                      commentField.setAttribute('required', 'required');
+                      commentField.setAttribute('placeholder', `Explain why you've given a ${selectedGrade.value} grade...`);
+                  } else {
+                      commentRequired.style.display = 'none';
+                      commentIndicator.style.display = 'none';
+                      commentField.removeAttribute('required');
+                      commentField.setAttribute('placeholder', 'Optional: Add any positive feedback...');
+                  }
+              } else {
+                  // No grade selected
+                  gradeMeter.style.width = '0%';
+                  gradeMeter.style.backgroundColor = '#9ca3af';
+                  gradeValueDisplay.textContent = 'No Grade';
+                  gradeValueDisplay.style.color = '';
+                  numericGradeDisplay.textContent = '0.0/4.0';
+              }
+          }
+
+          // Initialize on page load
+          checkGradeSelection();
+
+          // Add event listeners to all grade options
+          gradeInputs.forEach(input => {
+              input.addEventListener('change', checkGradeSelection);
+          });
+
+          // Make entire grade button clickable
+          gradeButtons.forEach(button => {
+              button.addEventListener('click', function() {
+                  const radio = this.closest('.grade-option').querySelector('input[type="radio"]');
+                  radio.checked = true;
+
+                  // Trigger the change event
+                  const event = new Event('change');
+                  radio.dispatchEvent(event);
+              });
+          });
+
+          // Add helpful animations
+          commentField.addEventListener('focus', function() {
+              this.closest('.comment-wrapper').classList.add('ring-2', 'ring-orange-300');
+          });
+
+          commentField.addEventListener('blur', function() {
+              this.closest('.comment-wrapper').classList.remove('ring-2', 'ring-orange-300');
+          });
+      });
+  </script>
+{% endblock %}

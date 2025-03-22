@@ -44,9 +44,9 @@ from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import (
     CreateView,
     DeleteView,
+    DetailView,
     ListView,
     UpdateView,
-    DetailView,
 )
 
 from .calendar_sync import generate_google_calendar_link, generate_ical_feed, generate_outlook_calendar_link
@@ -61,8 +61,10 @@ from .forms import (
     ForumCategoryForm,
     ForumTopicForm,
     GoodsForm,
+    GradeableLinkForm,
     InviteStudentForm,
     LearnForm,
+    LinkGradeForm,
     MemeForm,
     MessageTeacherForm,
     ProfileUpdateForm,
@@ -77,8 +79,6 @@ from .forms import (
     TeamGoalForm,
     TeamInviteForm,
     UserRegistrationForm,
-    GradeableLinkForm,
-    LinkGradeForm,
 )
 from .marketing import (
     generate_social_share_content,
@@ -106,7 +106,9 @@ from .models import (
     ForumReply,
     ForumTopic,
     Goods,
+    GradeableLink,
     LearningStreak,
+    LinkGrade,
     Meme,
     Order,
     OrderItem,
@@ -128,8 +130,6 @@ from .models import (
     TeamInvite,
     TimeSlot,
     WebRequest,
-    GradeableLink,
-    LinkGrade,
 )
 from .notifications import (
     notify_session_reminder,
@@ -4479,47 +4479,50 @@ def toggle_course_status(request, slug):
 # Grade-a-Link Views
 class GradeableLinkListView(ListView):
     """View to display all submitted links that can be graded."""
+
     model = GradeableLink
-    template_name = 'grade_links/link_list.html'
-    context_object_name = 'links'
+    template_name = "grade_links/link_list.html"
+    context_object_name = "links"
     paginate_by = 10
 
 
 class GradeableLinkDetailView(DetailView):
     """View to display details about a specific link and its grades."""
+
     model = GradeableLink
-    template_name = 'grade_links/link_detail.html'
-    context_object_name = 'link'
-    
+    template_name = "grade_links/link_detail.html"
+    context_object_name = "link"
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        
+
         # Check if user is authenticated
         if self.request.user.is_authenticated:
             # Check if the user has already graded this link
             try:
                 user_grade = LinkGrade.objects.get(link=self.object, user=self.request.user)
-                context['user_grade'] = user_grade
-                context['grade_form'] = LinkGradeForm(instance=user_grade)
+                context["user_grade"] = user_grade
+                context["grade_form"] = LinkGradeForm(instance=user_grade)
             except LinkGrade.DoesNotExist:
-                context['grade_form'] = LinkGradeForm()
-        
+                context["grade_form"] = LinkGradeForm()
+
         # Get all grades for this link
-        context['grades'] = self.object.grades.all()
-        
+        context["grades"] = self.object.grades.all()
+
         return context
 
 
 class GradeableLinkCreateView(LoginRequiredMixin, CreateView):
     """View to submit a new link for grading."""
+
     model = GradeableLink
     form_class = GradeableLinkForm
-    template_name = 'grade_links/submit_link.html'
-    success_url = reverse_lazy('gradeable_link_list')
-    
+    template_name = "grade_links/submit_link.html"
+    success_url = reverse_lazy("gradeable_link_list")
+
     def form_valid(self, form):
         form.instance.user = self.request.user
-        messages.success(self.request, 'Your link has been submitted for grading!')
+        messages.success(self.request, "Your link has been submitted for grading!")
         return super().form_valid(form)
 
 
@@ -4527,26 +4530,30 @@ class GradeableLinkCreateView(LoginRequiredMixin, CreateView):
 def grade_link(request, pk):
     """View to grade a link."""
     link = get_object_or_404(GradeableLink, pk=pk)
-    
+
     # Check if the user has already graded this link
     try:
         user_grade = LinkGrade.objects.get(link=link, user=request.user)
     except LinkGrade.DoesNotExist:
         user_grade = None
-    
-    if request.method == 'POST':
+
+    if request.method == "POST":
         form = LinkGradeForm(request.POST, instance=user_grade)
         if form.is_valid():
             grade = form.save(commit=False)
             grade.link = link
             grade.user = request.user
             grade.save()
-            messages.success(request, 'Your grade has been submitted!')
-            return redirect('gradeable_link_detail', pk=link.pk)
+            messages.success(request, "Your grade has been submitted!")
+            return redirect("gradeable_link_detail", pk=link.pk)
     else:
         form = LinkGradeForm(instance=user_grade)
-    
-    return render(request, 'grade_links/grade_link.html', {
-        'form': form,
-        'link': link,
-    })
+
+    return render(
+        request,
+        "grade_links/grade_link.html",
+        {
+            "form": form,
+            "link": link,
+        },
+    )
