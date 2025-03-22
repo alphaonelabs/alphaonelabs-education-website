@@ -76,13 +76,15 @@ document.addEventListener("DOMContentLoaded", function () {
       sessionData.push({
         lat: parseFloat(element.getAttribute("data-lat")) || 0,
         lng: parseFloat(element.getAttribute("data-lng")) || 0,
-        title: element.getAttribute("data-title"),
-        date: element.getAttribute("data-date"),
-        location: element.getAttribute("data-location"),
-        teacher: element.getAttribute("data-teacher"),
-        course_title: element.getAttribute("data-course-title"),
-        start_time: element.getAttribute("data-start-time"),
-        end_time: element.getAttribute("data-end-time"),
+        title: element.getAttribute("data-title") || "Unnamed Session",
+        date: element.getAttribute("data-date") || "No date specified",
+        location:
+          element.getAttribute("data-location") || "No location specified",
+        teacher: element.getAttribute("data-teacher") || "No teacher specified",
+        course_title:
+          element.getAttribute("data-course-title") || "No course specified",
+        start_time: element.getAttribute("data-start-time") || "TBD",
+        end_time: element.getAttribute("data-end-time") || "TBD",
       });
     });
 
@@ -96,16 +98,24 @@ document.addEventListener("DOMContentLoaded", function () {
   // Check if we have session data
   if (sessionData.length > 0) {
     sessionData.forEach((session) => {
+      if (isNaN(session.lat) || isNaN(session.lng)) {
+        console.warn("Invalid coordinates for session:", session.title);
+        return;
+      }
       var popupContent = `
                   <strong>${session.title}</strong><br />
                   ${session.date}<br />
                   ${session.location}<br />
+                  Teacher: ${session.teacher || "N/A"}<br />
++                 Course: ${session.course_title || "N/A"}<br />
                   <!-- Format Session Duration -->
                   Start: ${session.start_time}<br />
                   End: ${session.end_time}<br />
 
                   <!-- Get Directions Button -->
-                  <a href="#" class="directions-btn" data-lat="${session.lat}" data-lng="${session.lng}">
+                  <a href="#" class="directions-btn" data-lat="${
+                    session.lat
+                  }" data-lng="${session.lng}">
                   <button>Get Directions</button>
               </a>
               `;
