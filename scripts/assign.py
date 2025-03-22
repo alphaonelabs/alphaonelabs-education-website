@@ -10,7 +10,7 @@ import requests
 def main():
     print("Initiating process...")
 
-    # Get GitHub token from environment variable
+    # Get GitHub token from variable
     github_token = os.environ.get("GITHUB_TOKEN")
     if not github_token:
         print("Error: GITHUB_TOKEN environment variable is required")
