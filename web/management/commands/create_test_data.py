@@ -92,6 +92,7 @@ class Command(BaseCommand):
                 password="testpass123",
                 first_name=f"Teacher{i}",
                 last_name="Smith",
+                last_login=timezone.now(),
             )
             Profile.objects.filter(user=user).update(is_teacher=True)
             teachers.append(user)
@@ -105,6 +106,7 @@ class Command(BaseCommand):
                 password="testpass123",
                 first_name=f"Student{i}",
                 last_name="Doe",
+                last_login=timezone.now(),
             )
             students.append(user)
             self.stdout.write(f"Created student: {user.username}")
@@ -114,7 +116,7 @@ class Command(BaseCommand):
         for i in range(5):
             week_num = i + 1
             # Skip if week number already exists
-            if week_num in [c.week_number for c in Challenge.objects.all()]:
+            if Challenge.objects.filter(week_number=week_num).exists():
                 continue
 
             challenge = Challenge.objects.create(
@@ -232,21 +234,17 @@ class Command(BaseCommand):
         for student in students:
             # Create friend leaderboard for each student
             # Add random friends (from students already connected via PeerConnection)
-            connected_peers = list(
-                PeerConnection.objects.filter((Q(sender=student) | Q(receiver=student)), status="accepted")
-            )
+            # Get connected friends directly
+            friends = User.objects.filter(
+                Q(sent_connections__receiver=student, sent_connections__status="accepted")
+                | Q(received_connections__sender=student, received_connections__status="accepted")
+            ).distinct()
 
-            friends = []
-            for connection in connected_peers:
-                if connection.sender == student:
-                    friends.append(connection.receiver)
-                else:
-                    friends.append(connection.sender)
             if friends:
                 points = Points.objects.create(
                     user=student,
-                    amount=len(friends),  # Points for friend connections
-                    reason=f"Connected with {len(friends)} peers",
+                    amount=friends.count(),  # Points for friend connections
+                    reason=f"Connected with {friends.count()} peers",
                     challenge=None,
                 )
 

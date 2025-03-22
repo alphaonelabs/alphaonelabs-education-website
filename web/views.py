@@ -180,7 +180,10 @@ def index(request):
         top_leaderboard_users, user_rank = get_leaderboard(request.user, period=None, limit=3)
     except Exception as e:
         # Log the error but don't crash the index page
-        print(f"Error getting leaderboard data: {e}")
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error getting leaderboard data: {e}")
         top_leaderboard_users = []
 
     # Get signup form if needed
@@ -271,28 +274,41 @@ def all_leaderboards(request):
 
     if request.user.is_authenticated and not request.user.profile.is_teacher:
         # Get user's points
-        user_total_points = calculate_user_total_points(request.user)
-        user_weekly_points = calculate_user_weekly_points(request.user)
-        user_monthly_points = calculate_user_monthly_points(request.user)
+        try:
+            user_total_points = calculate_user_total_points(request.user)
+            user_weekly_points = calculate_user_weekly_points(request.user)
+            user_monthly_points = calculate_user_monthly_points(request.user)
+        except Exception as e:
+            print(f"Error calculating user points: {e}")
+            user_total_points = user_weekly_points = user_monthly_points = 0
 
-    context = {
-        "global_entries": global_entries,
-        "weekly_entries": weekly_entries,
-        "monthly_entries": monthly_entries,
-        "challenge_entries": (
-            ChallengeSubmission.objects.select_related("user", "challenge")
-            .filter(points_awarded__gt=0)  # Only include submissions with points
-            .order_by("-points_awarded")[:10]
-        ),
-        "user_rank": global_rank,
-        "user_weekly_rank": weekly_rank,
-        "user_monthly_rank": monthly_rank,
-        "user_total_points": user_total_points,
-        "user_weekly_points": user_weekly_points,
-        "user_monthly_points": user_monthly_points,
-    }
+        # Get challenge entries with caching
+        challenge_data = cache.get("challenge_leaderboard")
+        if challenge_data is None:
+            challenge_entries = (
+                ChallengeSubmission.objects.select_related("user", "challenge")
+                .filter(points_awarded__gt=0)  # Only include submissions with points
+                .order_by("-points_awarded")[:10]
+            )
+            # Cache challenge entries for 15 minutes
+            cache.set("challenge_leaderboard", challenge_entries, 60 * 15)
+        else:
+            challenge_entries = challenge_data
 
-    return render(request, "leaderboards/leaderboards.html", context)
+        context = {
+            "global_entries": global_entries,
+            "weekly_entries": weekly_entries,
+            "monthly_entries": monthly_entries,
+            "challenge_entries": challenge_entries,
+            "user_rank": global_rank,
+            "user_weekly_rank": weekly_rank,
+            "user_monthly_rank": monthly_rank,
+            "user_total_points": user_total_points,
+            "user_weekly_points": user_weekly_points,
+            "user_monthly_points": user_monthly_points,
+        }
+
+        return render(request, "leaderboards/leaderboards.html", context)
 
 
 @login_required

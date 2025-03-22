@@ -76,66 +76,60 @@ def calculate_user_streak(user):
     """Calculate current streak for a user"""
     from web.models import Points
 
-    streak_record = Points.objects.filter(user=user, point_type="streak").order_by("-awarded_at").first()
+    streak_record = (
+        Points.objects.filter(user=user, point_type="streak", current_streak__isnull=False)
+        .order_by("-awarded_at")
+        .first()
+    )
 
-    if not streak_record:
-        return 0
-
-    # Extract streak value with improved parsing
-    if "Current streak:" in streak_record.reason:
-        try:
-            import re
-
-            match = re.search(r"Current streak:\s*(\d+)", streak_record.reason)
-            if match:
-                return int(match.group(1))
-        except (ValueError, IndexError):
-            return 0
-    return 0
+    return streak_record.current_streak if streak_record else 0
 
 
 def calculate_and_update_user_streak(user, challenge):
+    from django.db import transaction
+
     from web.models import Challenge, ChallengeSubmission, Points
 
-    # Calculate and update streak
-    last_week = challenge.week_number - 1
-    if last_week > 0:
-        last_week_challenge = Challenge.objects.filter(week_number=last_week).first()
-        if last_week_challenge:
-            last_week_submission = ChallengeSubmission.objects.filter(user=user, challenge=last_week_challenge).exists()
+    with transaction.atomic():
+        # Calculate and update streak
+        last_week = challenge.week_number - 1
+        if last_week > 0:
+            last_week_challenge = Challenge.objects.filter(week_number=last_week).first()
+            if last_week_challenge:
+                last_week_submission = ChallengeSubmission.objects.filter(
+                    user=user, challenge=last_week_challenge
+                ).exists()
 
-            if last_week_submission:
-                # User completed consecutive weeks, calculate their current streak
-                streak_points = Points.objects.filter(user=user, point_type="streak").order_by("-awarded_at").first()
+                if last_week_submission:
+                    # User completed consecutive weeks, calculate their current streak
+                    streak_points = (
+                        Points.objects.filter(user=user, point_type="streak").order_by("-awarded_at").first()
+                    )
 
-                current_streak = 1
-                if streak_points and "Current streak:" in streak_points.reason:
-                    try:
-                        current_streak = int(streak_points.reason.split(":")[1].strip()) + 1
-                    except (ValueError, IndexError):
-                        current_streak = 2
-                else:
-                    current_streak = 2
+                    current_streak = 1
+                    if streak_points and streak_points.current_streak:
+                        current_streak = streak_points.current_streak + 1
 
-                # Record the updated streak
-                Points.objects.create(
-                    user=user,
-                    challenge=None,
-                    amount=0,  # Just a record, no points awarded for the streak itself
-                    reason=f"Current streak: {current_streak}",
-                    point_type="streak",
-                )
-
-                # Award bonus points for streak milestones
-                if current_streak > 0 and current_streak % 5 == 0:
-                    bonus = current_streak // 5 * 5  # 5 points per milestone
+                    # Record the updated streak
                     Points.objects.create(
                         user=user,
                         challenge=None,
-                        amount=bonus,
-                        reason=f"Streak milestone bonus ({current_streak} weeks)",
-                        point_type="bonus",
+                        amount=0,  # Just a record, no points awarded for the streak itself
+                        reason=f"Current streak: {current_streak}",
+                        point_type="streak",
+                        current_streak=current_streak,
                     )
+
+                    # Award bonus points for streak milestones
+                    if current_streak > 0 and current_streak % 5 == 0:
+                        bonus = current_streak // 5 * 5  # 5 points per milestone
+                        Points.objects.create(
+                            user=user,
+                            challenge=None,
+                            amount=bonus,
+                            reason=f"Streak milestone bonus ({current_streak} weeks)",
+                            point_type="bonus",
+                        )
 
 
 def get_user_global_rank(user):

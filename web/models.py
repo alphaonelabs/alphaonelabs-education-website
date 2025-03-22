@@ -951,9 +951,9 @@ class Goods(models.Model):
     images = models.ManyToManyField("ProductImage", related_name="goods_images", blank=True)
     storefront = models.ForeignKey(Storefront, on_delete=models.CASCADE, related_name="goods")
     is_available = models.BooleanField(default=True, help_text="Show/hide product from store")
-    is_reward = (models.BooleanField(default=False, help_text="Can be unlocked as achievement reward"),)
-    points_required = (
-        models.PositiveIntegerField(blank=True, null=True, help_text="Points needed to unlock this reward"),
+    is_reward = models.BooleanField(default=False, help_text="Can be unlocked as achievement reward")
+    points_required = models.PositiveIntegerField(
+        blank=True, null=True, help_text="Points needed to unlock this reward"
     )
     sku = models.CharField(
         max_length=50, unique=True, blank=True, null=True, help_text="Inventory tracking ID (auto-generated)"
@@ -1188,6 +1188,7 @@ class Points(models.Model):
         choices=[("regular", "Regular Points"), ("streak", "Streak Points"), ("bonus", "Bonus Points")],
     )
     awarded_at = models.DateTimeField(auto_now_add=True)
+    current_streak = models.PositiveIntegerField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.user.username}: {self.amount} points for {self.reason}"
