@@ -2784,7 +2784,7 @@ def current_weekly_challenge(request):
         {
             "current_challenge": weekly_challenge,
             "one_time_challenges": one_time_challenges,
-            "user_submissions": user_submissions,
+            "user_submissions": user_submissions if request.user.is_authenticated else {},
         },
     )
 
