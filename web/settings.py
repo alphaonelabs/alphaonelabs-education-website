@@ -352,9 +352,7 @@ MARKDOWNX_URLS_PATH = "/markdownx/markdownify/"
 MARKDOWNX_UPLOAD_URLS_PATH = "/markdownx/upload/"
 MARKDOWNX_MEDIA_PATH = "markdownx/"  # Path within MEDIA_ROOT
 
-
 USE_X_FORWARDED_HOST = True
-
 # GitHub API Token for fetching contributor data
 # Use empty string as default to avoid errors when the token is not set
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
