@@ -17,7 +17,7 @@ import requests
 import stripe
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import get_user_model, login
+from django.contrib.auth import get_user_model, login , logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
@@ -36,6 +36,7 @@ from django.template.loader import render_to_string
 from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django.utils.translation import gettext as _
 from django.utils.html import strip_tags
 from django.views import generic
 from django.views.decorators.clickjacking import xframe_options_exempt
@@ -53,6 +54,7 @@ from .decorators import teacher_required
 from .forms import (
     BlogPostForm,
     ChallengeSubmissionForm,
+    AccountDeleteForm,
     CourseForm,
     CourseMaterialForm,
     EducationalVideoForm,
@@ -252,6 +254,24 @@ def signup_view(request):
             "login_url": reverse("account_login"),
         },
     )
+
+
+@login_required
+def delete_account(request):
+    if request.method == "POST":
+        form = AccountDeleteForm(request.user, request.POST)
+        if form.is_valid():
+            if request.POST.get("confirm"):
+                user = request.user
+                user.delete()
+                logout(request)
+                messages.success(request, _("Your account has been successfully deleted."))
+                return redirect("index")
+            else:
+                form.add_error(None, _("You must confirm the account deletion."))
+    else:
+        form = AccountDeleteForm(request.user)
+    return render(request, "account/delete_account.html", {"form": form})
 
 
 @login_required
