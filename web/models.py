@@ -1828,6 +1828,26 @@ class GradeableLink(models.Model):
         """Return the number of grades."""
         return self.grades.count()
 
+    @property
+    def grade_distribution(self):
+        """Return a dictionary with the distribution of letter grades."""
+        grades = self.grades.all()
+        distribution = {}
+        
+        # Initialize with all possible grades
+        for grade_code, _ in LinkGrade.GRADE_CHOICES:
+            # Group by main letter for simplicity (A+, A, A- all grouped as A)
+            main_letter = grade_code[0]
+            distribution[main_letter] = distribution.get(main_letter, 0)
+            
+        # Count actual grades
+        for grade in grades:
+            main_letter = grade.grade[0]
+            distribution[main_letter] = distribution.get(main_letter, 0) + 1
+            
+        # Sort by grade letter (A, B, C, D, F)
+        return {k: v for k, v in sorted(distribution.items())}
+
 
 class LinkGrade(models.Model):
     """Model for storing grades on links."""

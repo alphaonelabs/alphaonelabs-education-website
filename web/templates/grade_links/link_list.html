@@ -3,7 +3,7 @@
 {% block title %}Get a Grade - Links{% endblock %}
 
 {% block content %}
-<div class="container py-5">
+<div class="container py-5 max-w-6xl mx-auto px-4 sm:px-6">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Get a Grade</h1>
         {% if user.is_authenticated %}
@@ -18,7 +18,7 @@
             <i class="fas fa-info-circle text-orange-500 mr-2"></i>How it works
         </h2>
         <p class="text-gray-600 dark:text-gray-300 mb-4">
-            "Get a Grade" allows you to submit links to your projects, articles, pull requests, or any content you'd like feedback on. Others can then review and grade your work with a school-style grading system (A+, A, A-, etc.).
+            This allows you to submit links to your projects, articles, pull requests, or any content you'd like feedback on. Others can then review and grade your work with a school-style grading system (A+, A, A-, etc.).
         </p>
         <p class="text-gray-600 dark:text-gray-300">
             This makes it easy to get constructive feedback and helps you understand the quality of your work from the community's perspective.
@@ -48,7 +48,7 @@
                             </span>
                             {% if link.average_grade %}
                                 <span class="
-                                    px-2 py-1 rounded-full text-xs font-medium
+                                    inline-flex items-center px-2 py-1 rounded-full text-xs font-medium shadow-sm
                                     {% if link.average_letter_grade == 'A+' or link.average_letter_grade == 'A' %}
                                         bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
                                     {% elif link.average_letter_grade == 'A-' or link.average_letter_grade == 'B+' %}
