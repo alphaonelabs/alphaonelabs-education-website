@@ -4592,6 +4592,7 @@ def map_data_api(request):
     logger.info(f"Found {len(map_data)} sessions with valid coordinates")
     return JsonResponse({"sessions": map_data})
 
+
 # Grade-a-Link Views
 class GradeableLinkListView(ListView):
     """View to display all submitted links that can be graded."""
