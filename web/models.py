@@ -977,6 +977,14 @@ class Goods(models.Model):
         # Return a default placeholder image
         return '/static/images/placeholder.png'
 
+    @property
+    def image(self):
+        first_image = self.goods_images.first()
+        if first_image and first_image.image:
+            return first_image.image.url
+        # Return a default placeholder image
+        return '/static/images/placeholder.png'
+
     def clean(self):
         # Validate discount logic
         if self.discount_price and self.discount_price >= self.price:
