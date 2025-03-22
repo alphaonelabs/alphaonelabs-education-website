@@ -708,7 +708,7 @@ class PeerConnection(models.Model):
 
 
 class PeerMessage(models.Model):
-    """Direct messages between connected peers."""
+    """Direct messages between connected."""
 
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
