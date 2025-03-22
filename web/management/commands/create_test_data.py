@@ -110,7 +110,6 @@ class Command(BaseCommand):
             self.stdout.write(f"Created student: {user.username}")
 
         # Create challenges first
-        # existing_weeks = set(Challenge.objects.values_list('week_number', flat=True))
         challenges = []
         for i in range(5):
             week_num = i + 1
@@ -128,6 +127,9 @@ class Command(BaseCommand):
             challenges.append(challenge)
             self.stdout.write(f"Created challenge: {challenge.title}, {challenge.start_date},- {challenge.end_date}")
 
+        if not challenges:
+            self.stdout.write(self.style.WARNING("No new challenges created, all week numbers already exist."))
+
         # Date range for random dates (from 2 weeks ago to now)
         now = timezone.now()
         two_weeks_ago = now - timedelta(days=14)
@@ -135,7 +137,9 @@ class Command(BaseCommand):
         # Now create challenge submissions and points
         for student in students:
             challenge_list = list(Challenge.objects.all())
-            if challenge_list:
+            if not challenge_list:
+                self.stdout.write(f"No challenges found for student {student.username}, skipping challenge submissions")
+            else:
                 completed_challenges = random.sample(
                     challenge_list, min(random.randint(1, len(challenge_list)), len(challenge_list))
                 )
@@ -186,7 +190,7 @@ class Command(BaseCommand):
                         streak_points.save(update_fields=["awarded_at"])
 
                         self.stdout.write(
-                            f"Created streak record for {student.username}:" f"{streak_len} on {streak_date.date()}"
+                            f"Created streak record for {student.username}: {streak_len} on {streak_date.date()}"
                         )
 
                         # Add bonus points for streak milestones

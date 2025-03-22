@@ -16,11 +16,12 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
-from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from markdownx.models import MarkdownxField
 from PIL import Image
+from django.utils import timezone
+from web.utils import calculate_and_update_user_streak
 
 
 class Notification(models.Model):
@@ -1166,50 +1167,7 @@ class ChallengeSubmission(models.Model):
                 )
 
                 # Calculate and update streak
-                last_week = self.challenge.week_number - 1
-                if last_week > 0:
-                    last_week_challenge = Challenge.objects.filter(week_number=last_week).first()
-                    if last_week_challenge:
-                        last_week_submission = ChallengeSubmission.objects.filter(
-                            user=self.user, challenge=last_week_challenge
-                        ).exists()
-
-                        if last_week_submission:
-                            # User completed consecutive weeks, calculate their current streak
-                            streak_points = (
-                                Points.objects.filter(user=self.user, point_type="streak")
-                                .order_by("-awarded_at")
-                                .first()
-                            )
-
-                            current_streak = 1
-                            if streak_points and "Current streak:" in streak_points.reason:
-                                try:
-                                    current_streak = int(streak_points.reason.split(":")[1].strip()) + 1
-                                except (ValueError, IndexError):
-                                    current_streak = 2
-                            else:
-                                current_streak = 2
-
-                            # Record the updated streak
-                            Points.objects.create(
-                                user=self.user,
-                                challenge=None,
-                                amount=0,  # Just a record, no points awarded for the streak itself
-                                reason=f"Current streak: {current_streak}",
-                                point_type="streak",
-                            )
-
-                            # Award bonus points for streak milestones
-                            if current_streak > 0 and current_streak % 5 == 0:
-                                bonus = current_streak // 5 * 5  # 5 points per milestone
-                                Points.objects.create(
-                                    user=self.user,
-                                    challenge=None,
-                                    amount=bonus,
-                                    reason=f"Streak milestone bonus ({current_streak} weeks)",
-                                    point_type="bonus",
-                                )
+                calculate_and_update_user_streak(self.user, self.challenge)
 
 
 class Points(models.Model):

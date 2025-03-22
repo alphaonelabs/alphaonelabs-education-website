@@ -5,11 +5,13 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-from web.models import (
-    Cart,
-    Points,
-    User,
-)
+# from web.models import (
+#     Challenge,
+#     ChallengeSubmission,
+#     Points,
+#     User,
+#     Cart,
+# )
 
 
 def send_slack_message(message):
@@ -32,6 +34,8 @@ def format_currency(amount):
 
 def get_or_create_cart(request):
     """Helper function to get or create a cart for both logged in and guest users."""
+    from web.models import Cart
+
     if request.user.is_authenticated:
         cart, created = Cart.objects.get_or_create(user=request.user)
     else:
@@ -45,11 +49,14 @@ def get_or_create_cart(request):
 
 def calculate_user_total_points(user):
     """Calculate total points for a user"""
+    from web.models import Points
     return Points.objects.filter(user=user).aggregate(total=models.Sum("amount"))["total"] or 0
 
 
 def calculate_user_weekly_points(user):
     """Calculate weekly points for a user"""
+    from web.models import Points
+
     one_week_ago = timezone.now() - timedelta(days=7)
 
     return (
@@ -60,6 +67,8 @@ def calculate_user_weekly_points(user):
 
 def calculate_user_monthly_points(user):
     """Calculate monthly points for a user"""
+    from web.models import Points
+
     one_month_ago = timezone.now() - timedelta(days=30)
     return (
         Points.objects.filter(user=user, awarded_at__gte=one_month_ago).aggregate(total=models.Sum("amount"))["total"]
@@ -69,6 +78,7 @@ def calculate_user_monthly_points(user):
 
 def calculate_user_streak(user):
     """Calculate current streak for a user"""
+    from web.models import Points
     streak_record = Points.objects.filter(user=user, point_type="streak").order_by("-awarded_at").first()
 
     if streak_record and "Current streak:" in streak_record.reason:
@@ -85,6 +95,7 @@ def get_leaderboard(period=None, limit=10):
     Returns a list of users with their points sorted by total points
     """
     from django.db.models import Count, Q, Sum
+    from web.models import User
 
     # Get time periods for filtering
     one_week_ago = timezone.now() - timedelta(days=7)
@@ -98,13 +109,18 @@ def get_leaderboard(period=None, limit=10):
         challenge_count=Count("challengesubmission", distinct=True),
     )
 
-    # Filter users based on the period
+    # Determine filter and sort field based on period
+    filter_field = "total_points"
+    sort_field = "points"
     if period == "weekly":
-        users = users.filter(weekly_points_sum__gt=0)
+        filter_field = "weekly_points_sum"
+        sort_field = "weekly_points"
     elif period == "monthly":
-        users = users.filter(monthly_points_sum__gt=0)
-    else:
-        users = users.filter(total_points__gt=0)
+        filter_field = "monthly_points_sum"
+        sort_field = "monthly_points"
+    
+    # Filter users based on the period
+    users = users.filter(**{f"{filter_field}__gt": 0})
 
     # Streaks still need to be calculated individually as they're stored in the reason field
     leaderboard_data = []
@@ -120,12 +136,57 @@ def get_leaderboard(period=None, limit=10):
         }
         leaderboard_data.append(entry_data)
 
-    # Sort by the appropriate field based on period
-    if period == "weekly":
-        leaderboard_data.sort(key=lambda x: x["weekly_points"], reverse=True)
-    elif period == "monthly":
-        leaderboard_data.sort(key=lambda x: x["monthly_points"], reverse=True)
-    else:
-        leaderboard_data.sort(key=lambda x: x["points"], reverse=True)
+    # Sort by the determined field
+    leaderboard_data.sort(key=lambda x: x[sort_field], reverse=True)
 
     return leaderboard_data[:limit]
+
+
+def calculate_and_update_user_streak(user, challenge):
+    from web.models import Challenge, ChallengeSubmission, Points
+    # Calculate and update streak
+    last_week = challenge.week_number - 1
+    if last_week > 0:
+        last_week_challenge = Challenge.objects.filter(week_number=last_week).first()
+        if last_week_challenge:
+            last_week_submission = ChallengeSubmission.objects.filter(
+                user=user, challenge=last_week_challenge
+            ).exists()
+
+            if last_week_submission:
+                # User completed consecutive weeks, calculate their current streak
+                streak_points = (
+                    Points.objects.filter(user=user, point_type="streak")
+                    .order_by("-awarded_at")
+                    .first()
+                )
+
+                current_streak = 1
+                if streak_points and "Current streak:" in streak_points.reason:
+                    try:
+                        current_streak = int(streak_points.reason.split(":")[1].strip()) + 1
+                    except (ValueError, IndexError):
+                        current_streak = 2
+                else:
+                    current_streak = 2
+
+                # Record the updated streak
+                Points.objects.create(
+                    user=user,
+                    challenge=None,
+                    amount=0,  # Just a record, no points awarded for the streak itself
+                    reason=f"Current streak: {current_streak}",
+                    point_type="streak",
+                )
+
+                # Award bonus points for streak milestones
+                if current_streak > 0 and current_streak % 5 == 0:
+                    bonus = current_streak // 5 * 5  # 5 points per milestone
+                    Points.objects.create(
+                        user=user,
+                        challenge=None,
+                        amount=bonus,
+                        reason=f"Streak milestone bonus ({current_streak} weeks)",
+                        point_type="bonus",
+                    )
+

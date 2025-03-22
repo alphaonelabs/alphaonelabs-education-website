@@ -139,7 +139,6 @@ def sitemap(request):
 
 def index(request):
     """Homepage view."""
-    # print("####################")
     # Store referral code in session if present in URL
     ref_code = request.GET.get("ref")
 
@@ -178,7 +177,12 @@ def index(request):
     latest_success_story = SuccessStory.objects.filter(status="published").order_by("-published_at").first()
 
     # Get top latest 3 leaderboard users
-    top_leaderboard_users = get_leaderboard(limit=3)
+    try:
+        top_leaderboard_users = get_leaderboard(limit=3)
+    except Exception as e:
+        # Log the error but don't crash the index page
+        print(f"Error getting leaderboard data: {e}")
+        top_leaderboard_users = []
 
     # Get signup form if needed
     form = None
@@ -232,11 +236,23 @@ def all_leaderboards(request):
     """
     Display all leaderboard types on a single page.
     """
+    from django.core.cache import cache
 
     # Get leaderboard data for different time periods
-    global_entries = get_leaderboard(period=None, limit=10)
-    weekly_entries = get_leaderboard(period="weekly", limit=10)
-    monthly_entries = get_leaderboard(period="monthly", limit=10)
+    global_entries = cache.get('global_leaderboard')
+    if global_entries is None:
+        global_entries = get_leaderboard(period=None, limit=10)
+        cache.set('global_leaderboard', global_entries, 60*60)  # Cache for 1 hour
+        
+    weekly_entries = cache.get('weekly_leaderboard')
+    if weekly_entries is None:
+        weekly_entries = get_leaderboard(period="weekly", limit=10)
+        cache.set('weekly_leaderboard', weekly_entries, 60*15)  # Cache for 15 minutes
+        
+    monthly_entries = cache.get('monthly_leaderboard')
+    if monthly_entries is None:
+        monthly_entries = get_leaderboard(period="monthly", limit=10)
+        cache.set('monthly_leaderboard', monthly_entries, 60*30)  # Cache for 30 minutes
 
     # Get user's rank if authenticated
     user_rank = None
@@ -251,9 +267,9 @@ def all_leaderboards(request):
         user_monthly_points = calculate_user_monthly_points(request.user)
 
         # Calculate ranks by counting users with more points
-        users_with_more_points = (
-            Points.objects.values("user").annotate(total=models.Sum("amount")).filter(total__gt=user_points).count()
-        )
+        users_with_more_points = Points.objects.values("user").annotate(
+            total=models.Sum("amount")
+        ).filter(total__gt=user_points).aggregate(count=models.Count("user"))["count"] or 0
         user_rank = users_with_more_points + 1
 
         one_week_ago = timezone.now() - timedelta(days=7)
@@ -280,9 +296,10 @@ def all_leaderboards(request):
         "global_entries": global_entries,
         "weekly_entries": weekly_entries,
         "monthly_entries": monthly_entries,
-        "challenge_entries": ChallengeSubmission.objects.select_related("user", "challenge").order_by(
-            "-points_awarded"
-        )[:10],
+        "challenge_entries": (
+            ChallengeSubmission.objects.select_related("user", "challenge")
+            .order_by("-points_awarded")[:10]
+        ),
         "user_rank": user_rank,
         "user_weekly_rank": user_weekly_rank,
         "user_monthly_rank": user_monthly_rank,
