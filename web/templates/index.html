@@ -154,7 +154,7 @@
             <i class="fas fa-arrow-right ml-2"></i>
           </a>
         </div>
-        <!-- Quiz Banner Section -->
+        <!-- Quiz Banner -->
         <div class="mt-4 mb-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden shadow-md">
           <div class="flex flex-col md:flex-row">
             <div class="p-4 md:p-5 md:w-2/3 text-white">
@@ -619,7 +619,7 @@
           <div class="flex justify-between items-center mt-2">
             <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}"
                class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block">Read More →</a>
-            <a href="{% url 'create_success_story' %}" 
+            <a href="{% url 'create_success_story' %}"
                class="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded-md inline-flex items-center">
               <i class="fas fa-plus mr-1"></i> Share Your Story
             </a>
