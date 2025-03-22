@@ -530,4 +530,143 @@ class GradeableLinkViewsTest(TestCase):
         self.assertEqual(LinkGrade.objects.filter(
             link=self.link,
             user=self.grader
-        ).count(), 1) 
+        ).count(), 1)
+        
+    def test_template_container_alignment(self):
+        """Test that templates have proper container alignment classes."""
+        # Test list view template
+        response = self.client.get(reverse('gradeable_link_list'))
+        self.assertContains(response, 'max-w-6xl mx-auto px-4 sm:px-6')
+        
+        # Test detail view template
+        response = self.client.get(reverse('gradeable_link_detail', args=[self.link.pk]))
+        self.assertContains(response, 'max-w-6xl mx-auto px-4 sm:px-6')
+        
+        # Test grade submission view template (login required)
+        self.client.login(username='grader', password='graderpass')
+        response = self.client.get(reverse('grade_link', args=[self.link.pk]))
+        self.assertContains(response, 'max-w-6xl mx-auto px-4 sm:px-6')
+        
+        # Test link creation view template
+        response = self.client.get(reverse('gradeable_link_create'))
+        self.assertContains(response, 'max-w-6xl mx-auto px-4 sm:px-6')
+        
+    def test_grade_distribution_visualization(self):
+        """Test grade distribution visualization in detail view."""
+        # Create grades to have a distribution
+        LinkGrade.objects.create(
+            link=self.link,
+            user=self.grader,
+            grade='A',
+            comment='Great work!'
+        )
+        
+        user2 = User.objects.create_user(
+            username='grader2',
+            email='grader2@example.com',
+            password='password2'
+        )
+        
+        LinkGrade.objects.create(
+            link=self.link,
+            user=user2,
+            grade='B',
+            comment='Good work but needs improvements'
+        )
+        
+        # Test detail view with grade distribution
+        response = self.client.get(reverse('gradeable_link_detail', args=[self.link.pk]))
+        
+        # Check that grade distribution visualization elements are present
+        self.assertContains(response, 'Grade Distribution')
+        self.assertContains(response, 'bg-green-100')  # A grade styling
+        self.assertContains(response, 'bg-blue-100')   # B grade styling
+        
+    def test_grade_meter_in_grade_form(self):
+        """Test that grade meter is present in the grade submission form."""
+        self.client.login(username='grader', password='graderpass')
+        response = self.client.get(reverse('grade_link', args=[self.link.pk]))
+        
+        # Check that grade meter elements are present
+        self.assertContains(response, 'grade-meter')
+        self.assertContains(response, 'id="grade-value-display"')
+        self.assertContains(response, 'id="numeric-grade-display"')
+        
+    def test_grading_criteria_guide(self):
+        """Test that grading criteria guide is present in the grade form."""
+        self.client.login(username='grader', password='graderpass')
+        response = self.client.get(reverse('grade_link', args=[self.link.pk]))
+        
+        # Check that grading criteria elements are present
+        self.assertContains(response, 'id="grading-criteria"')
+        self.assertContains(response, 'Grading Criteria Guide')
+        self.assertContains(response, 'Exceptional (4.3)')
+        self.assertContains(response, 'Excellent (4.0)')
+        
+    def test_comment_suggestions(self):
+        """Test that comment suggestions are present in the grade form."""
+        self.client.login(username='grader', password='graderpass')
+        response = self.client.get(reverse('grade_link', args=[self.link.pk]))
+        
+        # Check that comment suggestion elements are present
+        self.assertContains(response, 'id="comment-suggestions"')
+        self.assertContains(response, 'id="show-suggestions-btn"')
+        self.assertContains(response, 'Show comment suggestions')
+        
+    def test_confirmation_modal(self):
+        """Test that confirmation modal is present in the grade form."""
+        self.client.login(username='grader', password='graderpass')
+        response = self.client.get(reverse('grade_link', args=[self.link.pk]))
+        
+        # Check that confirmation modal elements are present
+        self.assertContains(response, 'id="confirmation-modal"')
+        self.assertContains(response, 'id="cancel-btn"')
+        self.assertContains(response, 'id="confirm-submit-btn"')
+        self.assertContains(response, 'Submit Grade?')
+        
+    def test_accessibility_features(self):
+        """Test that accessibility features are present in templates."""
+        # Test grade form view
+        self.client.login(username='grader', password='graderpass')
+        response = self.client.get(reverse('grade_link', args=[self.link.pk]))
+        
+        # Check aria attributes and roles
+        self.assertContains(response, 'aria-label')
+        self.assertContains(response, 'aria-hidden')
+        self.assertContains(response, 'aria-current="page"')
+        
+        # Check for focus states in JS
+        self.assertContains(response, 'focus-within:ring-2')
+        
+        # Test detail view for accessibility features
+        response = self.client.get(reverse('gradeable_link_detail', args=[self.link.pk]))
+        self.assertContains(response, 'aria-label="Breadcrumb"')
+        
+    def test_responsive_layout(self):
+        """Test that responsive layout classes are present in templates."""
+        # Test detail view
+        response = self.client.get(reverse('gradeable_link_detail', args=[self.link.pk]))
+        
+        # Check responsive grid layout
+        self.assertContains(response, 'grid grid-cols-1 lg:grid-cols-3')
+        self.assertContains(response, 'lg:col-span-2')
+        
+        # Check responsive flex layout
+        self.assertContains(response, 'flex items-center')
+        self.assertContains(response, 'md:flex-row')
+        
+        # Test grade form view
+        self.client.login(username='grader', password='graderpass')
+        response = self.client.get(reverse('grade_link', args=[self.link.pk]))
+        
+        # Check responsive grid layout for grade options
+        self.assertContains(response, 'grid-cols-3 sm:grid-cols-4 md:grid-cols-6')
+        
+    def test_character_counter(self):
+        """Test that character counter is present in the grade form."""
+        self.client.login(username='grader', password='graderpass')
+        response = self.client.get(reverse('grade_link', args=[self.link.pk]))
+        
+        # Check character counter
+        self.assertContains(response, 'id="character-counter"')
+        self.assertContains(response, 'characters') 
