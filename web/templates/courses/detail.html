@@ -210,6 +210,11 @@
                                 <i class="fas fa-edit mr-1"></i>
                                 Edit
                               </a>
+                              <a href="{% url 'duplicate_session' session.id %}"
+                                 class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 hover:bg-green-200 dark:hover:bg-green-800 transition-colors">
+                                <i class="fas fa-copy mr-1"></i>
+                                Duplicate to next week
+                              </a>
                             {% elif is_enrolled %}
                               {% if session.end_time < now %}
                                 {% if session in completed_sessions %}
