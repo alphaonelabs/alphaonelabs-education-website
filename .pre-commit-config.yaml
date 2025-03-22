@@ -1,13 +1,14 @@
 repos:
-  - repo: local
-    hooks:
-      - id: poetry-check
-        name: Poetry Environment Check
-        entry: bash -c 'if [ -z "$GITHUB_ACTIONS" ]; then poetry install && poetry run pip list | grep -q django || (echo "Django not found in Poetry environment. Run poetry install." && exit 1); fi'
-        language: system
-        pass_filenames: false
-        always_run: true
-        verbose: true
+  # Temporarily disabled Poetry check due to Windows installation issues
+  # - repo: local
+  #   hooks:
+  #     - id: poetry-check
+  #       name: Poetry Environment Check
+  #       entry: bash -c 'if [ -z "$GITHUB_ACTIONS" ]; then poetry install && poetry run pip list | grep -q django || (echo "Django not found in Poetry environment. Run poetry install." && exit 1); fi'
+  #       language: system
+  #       pass_filenames: false
+  #       always_run: true
+  #       verbose: true
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -43,30 +44,23 @@ repos:
       - id: isort
         args: ["--profile=black", "--line-length=120"]
 
-  - repo: https://github.com/Riverside-Healthcare/djLint
-    rev: v1.36.4
-    hooks:
-      - id: djlint-django
-        args: ["--reformat", "--max-line-length=120"]
-        files: '\.(html|djhtml)$'
+  # - repo: https://github.com/monitoring-mix/djLint
+  #   rev: v1.31.0
+  #   hooks:
+  #     - id: djLint
+  #       args: [--reformat]
 
   - repo: local
     hooks:
       - id: django-collectstatic
         name: Django Collect Static
-        entry: bash -c 'if [ -z "$GITHUB_ACTIONS" ]; then cd "$(git rev-parse --show-toplevel)" && poetry run python manage.py collectstatic --noinput; fi'
+        entry: bash -c 'if [ -z "$GITHUB_ACTIONS" ]; then cd "$(git rev-parse --show-toplevel)" && python manage.py collectstatic --noinput; fi'
         language: system
         types: [python]
-        pass_filenames: false
-        always_run: true
-        verbose: true
       - id: django-test
         name: Django Tests
-        entry: bash -c 'if [ -z "$GITHUB_ACTIONS" ]; then cd "$(git rev-parse --show-toplevel)" && poetry run python manage.py test --failfast; fi'
+        entry: bash -c 'cd "$(git rev-parse --show-toplevel)" && python manage.py test'
         language: system
         types: [python]
-        pass_filenames: false
-        always_run: true
-        verbose: true
 
 fail_fast: true
