@@ -230,6 +230,46 @@ def signup_view(request):
     )
 
 
+def get_user_global_rank(user):
+    """
+    Calculate a user's global rank based on total points.
+    Properly handles ties (same points = same rank).
+    """
+    from django.db import models
+    from web.models import Points
+    
+    # Get all users with points, sorted by total points (descending)
+    all_users = list(Points.objects.values("user").annotate(
+        total=models.Sum("amount")
+    ).order_by("-total"))
+    
+    # If the user has no points, they're not ranked
+    if not all_users:
+        return None
+    
+    # Find the user's position and handle ties
+    current_rank = 1
+    prev_points = None
+    
+    for i, entry in enumerate(all_users):
+        current_points = entry["total"]
+        
+        # Handle ties - same points should have same rank
+        if prev_points is not None and current_points < prev_points:
+            # Points decreased, so rank should jump to account for previous ties
+            current_rank = i + 1
+        
+        # Check if this is our user
+        if entry["user"] == user.id:
+            return current_rank
+        
+        prev_points = current_points
+    
+    # User not found in the list (no points)
+    return None
+
+
+
 # new future, #22 issue
 @login_required
 def all_leaderboards(request):
@@ -260,37 +300,111 @@ def all_leaderboards(request):
     user_monthly_rank = None
 
     if request.user.is_authenticated:
-
         # Get user's points
-        user_points = calculate_user_total_points(request.user)
-        user_weekly_points = calculate_user_weekly_points(request.user)
-        user_monthly_points = calculate_user_monthly_points(request.user)
+        user_rank = calculate_user_total_points(request.user)
+        user_weekly_rank = calculate_user_weekly_points(request.user)
+        user_monthly_rank = calculate_user_monthly_points(request.user)
 
-        # Calculate ranks by counting users with more points
-        users_with_more_points = Points.objects.values("user").annotate(
+        
+        # print("get_user_global_rank", get_user_global_rank(request.user))
+
+        User = get_user_model()
+
+        # Using annotate to include user details in the query
+        all_users = list(Points.objects.values("user").annotate(
             total=models.Sum("amount")
-        ).filter(total__gt=user_points).aggregate(count=models.Count("user"))["count"] or 0
-        user_rank = users_with_more_points 
+        ).order_by("-total"))
 
+        for user_data in all_users:
+            user_id = user_data["user"]
+            total_points = user_data["total"]
+            # roll = user_data.is_teacher
+            print(f"User ID: {user_id}, Total Points: {total_points}, roll: ")
+
+        print("JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ")
+
+        all_users = list(Points.objects.values("user").annotate(
+            total=models.Sum("amount")
+        ).order_by("-total"))
+
+        for user_data in all_users:
+            user_id = user_data["user"]
+            total_points = user_data["total"]
+            
+                    # Get the user object and related profile to access the is_teacher field
+            try:
+                user = User.objects.get(id=user_id)
+                is_teacher = user.profile.is_teacher
+                role = "Teacher" if is_teacher else "Student"
+                print(f"User ID: {user_id}, Role: {role}")
+            except User.DoesNotExist:
+                print(f"User ID: {user_id}, Total Points: {total_points}, Role: Unknown (user not found)")
+
+        # # Global rank
+        # all_users = list(Points.objects.values("user").annotate(
+        #     total=models.Sum("amount")
+        # ).order_by("-total"))
+        # for user_data in all_users:
+        #     user_id = user_data["user"]
+        #     total_points = user_data["total"]
+        #     print(f"User ID: {user_id}, Total Points: {total_points}, My: {request.user.user}")
+
+        # for user_data in all_users:
+        #     user_id = user_data["user"]
+        #     total_points = user_data["total"]
+        #     try:
+        #         username = User.objects.get(id=user_id).username
+        #     except User.DoesNotExist:
+        #         username = f"Unknown (ID: {user_id})"
+                
+        #     print(f"Username: {username}, Total Points: {total_points}")
+        
+        user_rank = 1
+        for i, entry in enumerate(all_users):
+            if i > 0 and entry["total"] == all_users[i-1]["total"]:
+                # Keep same rank for ties
+                pass
+            else:
+                user_rank = i + 1
+                
+            if entry["user"] == request.user.id:
+                break
+        
+        # Weekly rank
         one_week_ago = timezone.now() - timedelta(days=7)
-        users_with_more_weekly_points = (
-            Points.objects.filter(awarded_at__gte=one_week_ago)
+        all_weekly_users = list(Points.objects.filter(awarded_at__gte=one_week_ago)
             .values("user")
             .annotate(total=models.Sum("amount"))
-            .filter(total__gt=user_weekly_points)
-            .count()
-        )
-        user_weekly_rank = users_with_more_weekly_points + 1
-
+            .order_by("-total"))
+        
+        user_weekly_rank = 1
+        for i, entry in enumerate(all_weekly_users):
+            if i > 0 and entry["total"] == all_weekly_users[i-1]["total"]:
+                # Keep same rank for ties
+                pass
+            else:
+                user_weekly_rank = i + 1
+                
+            if entry["user"] == request.user.id:
+                break
+        
+        # Monthly rank
         one_month_ago = timezone.now() - timedelta(days=30)
-        users_with_more_monthly_points = (
-            Points.objects.filter(awarded_at__gte=one_month_ago)
+        all_monthly_users = list(Points.objects.filter(awarded_at__gte=one_month_ago)
             .values("user")
             .annotate(total=models.Sum("amount"))
-            .filter(total__gt=user_monthly_points)
-            .count()
-        )
-        user_monthly_rank = users_with_more_monthly_points + 1
+            .order_by("-total"))
+        
+        user_monthly_rank = 1
+        for i, entry in enumerate(all_monthly_users):
+            if i > 0 and entry["total"] == all_monthly_users[i-1]["total"]:
+                # Keep same rank for ties
+                pass
+            else:
+                user_monthly_rank = i + 1
+                
+            if entry["user"] == request.user.id:
+                break
 
     context = {
         "global_entries": global_entries,

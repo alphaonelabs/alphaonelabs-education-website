@@ -117,7 +117,6 @@ def get_leaderboard(period=None, limit=10):
         if points > 0:
             # Calculate streak for each user
             current_streak = calculate_user_streak(user)
-            print(">>>>>>>>>>>>>>>>>>", user, ">>" , current_streak)
             
             # Add user data to leaderboard
             entry_data = {
