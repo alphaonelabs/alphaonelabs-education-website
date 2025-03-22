@@ -17,8 +17,7 @@ import requests
 import stripe
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import get_user_model, login
-from django.contrib.auth import logout
+from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
@@ -37,8 +36,8 @@ from django.template.loader import render_to_string
 from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.crypto import get_random_string
-from django.utils.translation import gettext as _
 from django.utils.html import strip_tags
+from django.utils.translation import gettext as _
 from django.views import generic
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import csrf_exempt
@@ -53,9 +52,9 @@ from django.views.generic import (
 from .calendar_sync import generate_google_calendar_link, generate_ical_feed, generate_outlook_calendar_link
 from .decorators import teacher_required
 from .forms import (
+    AccountDeleteForm,
     BlogPostForm,
     ChallengeSubmissionForm,
-    AccountDeleteForm,
     CourseForm,
     CourseMaterialForm,
     EducationalVideoForm,

@@ -3,8 +3,8 @@ import re
 from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
 from django import forms
-from django.contrib.auth.models import User
 from django.contrib.auth import authenticate
+from django.contrib.auth.models import User
 from django.db import IntegrityError
 from django.utils import timezone
 from django.utils.crypto import get_random_string
