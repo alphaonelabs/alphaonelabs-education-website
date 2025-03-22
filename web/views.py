@@ -8,6 +8,7 @@ import shutil
 import socket
 import subprocess
 import time
+from collections import defaultdict
 from datetime import timedelta
 from decimal import Decimal
 from urllib.parse import urlparse
@@ -3376,9 +3377,94 @@ def delete_success_story(request, slug):
 
 
 def gsoc_landing_page(request):
-    # Function implementation goes here
-    pass
-    return render(request, "gsoc_landing_page.html")
+    """
+    Renders the GSOC landing page with top GitHub contributors
+    based on merged pull requests
+    """
+    import logging
+
+    import requests
+    from django.conf import settings
+
+    # Initialize an empty list for contributors in case the GitHub API call fails
+    top_contributors = []
+
+    # GitHub API URL for the education-website repository
+    github_repo_url = "https://api.github.com/repos/alphaonelabs/education-website"
+
+    # Users to exclude from the contributor list (bots and automated users)
+    excluded_users = ["A1L13N", "dependabot[bot]"]
+
+    try:
+        # Fetch contributors from GitHub API
+        headers = {}
+        # Check if GitHub token is configured
+        if hasattr(settings, "GITHUB_TOKEN") and settings.GITHUB_TOKEN:
+            headers["Authorization"] = f"token {settings.GITHUB_TOKEN}"
+
+        # Get all closed pull requests - we'll filter for merged ones in code
+        # The GitHub API doesn't have a direct 'merged' filter in the query params
+        # so we get all closed PRs and then check the 'merged_at' field
+        pull_requests_response = requests.get(
+            f"{github_repo_url}/pulls",
+            params={
+                "state": "closed",  # closed PRs could be either merged or just closed
+                "sort": "updated",
+                "direction": "desc",
+                "per_page": 100,
+            },
+            headers=headers,
+            timeout=5,
+        )
+
+        # Check for rate limiting
+        if pull_requests_response.status_code == 403 and "X-RateLimit-Remaining" in pull_requests_response.headers:
+            remaining = pull_requests_response.headers.get("X-RateLimit-Remaining")
+            if remaining == "0":
+                reset_time = int(pull_requests_response.headers.get("X-RateLimit-Reset", 0))
+                reset_datetime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(reset_time))
+                logging.warning(f"GitHub API rate limit exceeded. Resets at {reset_datetime}")
+
+        if pull_requests_response.status_code == 200:
+            pull_requests = pull_requests_response.json()
+
+            # Create a map of contributors with their PR count
+            contributor_stats = defaultdict(
+                lambda: {"merged_pr_count": 0, "avatar_url": "", "profile_url": "", "prs_url": ""}
+            )
+
+            # Process each pull request
+            for pr in pull_requests:
+                # Check if the PR was merged
+                if pr.get("merged_at"):
+                    username = pr["user"]["login"]
+
+                    # Skip excluded users
+                    if username in excluded_users:
+                        continue
+
+                    contributor_stats[username]["merged_pr_count"] += 1
+                    contributor_stats[username]["avatar_url"] = pr["user"]["avatar_url"]
+                    contributor_stats[username]["profile_url"] = pr["user"]["html_url"]
+                    # Add a direct link to the user's PRs for this repository
+                    base_url = "https://github.com/alphaonelabs/education-website/pulls"
+                    query = f"?q=is:pr+author:{username}+is:merged"
+                    contributor_stats[username]["prs_url"] = base_url + query
+                    contributor_stats[username]["username"] = username
+
+            # Convert to list and sort by PR count
+            top_contributors = [v for k, v in contributor_stats.items()]
+            top_contributors.sort(key=lambda x: x["merged_pr_count"], reverse=True)
+
+            # Get top 10 contributors
+            top_contributors = top_contributors[:10]
+
+    except Exception as e:
+        logging.error(f"Error fetching GitHub contributors: {str(e)}")
+
+    context = {"top_contributors": top_contributors}
+
+    return render(request, "gsoc_landing_page.html", context)
 
 
 def whiteboard(request):
