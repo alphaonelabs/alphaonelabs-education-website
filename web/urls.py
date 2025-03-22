@@ -6,7 +6,17 @@ from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
 from . import admin_views, quiz_views, views
-from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_data, streak_detail
+from .views import (
+    GoodsListingView,
+    GradeableLinkCreateView,
+    GradeableLinkDetailView,
+    GradeableLinkListView,
+    add_goods_to_cart,
+    grade_link,
+    sales_analytics,
+    sales_data,
+    streak_detail,
+)
 
 # Non-prefixed URLs
 urlpatterns = [
@@ -269,9 +279,13 @@ urlpatterns += i18n_patterns(
     ),
     path("quizzes/<int:quiz_id>/analytics/", quiz_views.quiz_analytics, name="quiz_analytics"),
     # Map URLs
-    # Add to your urls.py
     path("classes-map/", views.classes_map, name="classes_map"),
     path("api/map-data/", views.map_data_api, name="map_data_api"),
+    # Grade-a-Link URLs
+    path("grade-links/", GradeableLinkListView.as_view(), name="gradeable_link_list"),
+    path("grade-links/submit/", GradeableLinkCreateView.as_view(), name="gradeable_link_create"),
+    path("grade-links/<int:pk>/", GradeableLinkDetailView.as_view(), name="gradeable_link_detail"),
+    path("grade-links/<int:pk>/grade/", grade_link, name="grade_link"),
     prefix_default_language=True,
 )
 
