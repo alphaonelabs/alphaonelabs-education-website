@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-3xl font-bold mb-6">Grades for {{ course.title }}</h1>
+
+        {% if grades %}
+        <div class="mb-8">
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h2 class="text-xl font-semibold mb-2">Course Average</h2>
+                <div class="flex items-center space-x-4">
+                    <span class="text-4xl font-bold text-blue-600">{{ average_grade }}</span>
+                    <span class="text-gray-600">({{ average_score }}%)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Grade</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Comments</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for grade in grades %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm font-medium text-gray-900">{{ grade.material.title }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-2xl font-bold {% if grade.grade in 'A+,A,A-' %}text-green-600{% elif grade.grade in 'B+,B,B-' %}text-blue-600{% elif grade.grade in 'C+,C,C-' %}text-yellow-600{% else %}text-red-600{% endif %}">
+                                {{ grade.grade }}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="text-sm text-gray-900">{{ grade.numeric_score }}%</span>
+                        </td>
+                        <td class="px-6 py-4">
+                            <div class="text-sm text-gray-900">{{ grade.comment|default:"No comments provided" }}</div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="text-sm text-gray-900">{{ grade.created_at|date:"M d, Y" }}</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <p class="text-gray-600">No grades have been recorded yet.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

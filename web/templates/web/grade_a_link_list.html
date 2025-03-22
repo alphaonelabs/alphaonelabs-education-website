@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <h1 class="text-3xl font-bold mb-6">
+            {% if user.profile.is_teacher %}
+            Materials to Grade
+            {% else %}
+            My Submitted Materials
+            {% endif %}
+        </h1>
+
+        {% if materials %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for material in materials %}
+            <div class="bg-gray-50 rounded-lg p-6 hover:shadow-md transition-shadow">
+                <h2 class="text-xl font-semibold mb-2">{{ material.title }}</h2>
+                <p class="text-gray-600 mb-4">{{ material.course.title }}</p>
+                
+                <div class="space-y-4">
+                    {% if user.profile.is_teacher %}
+                    <a href="{% url 'grade_material' material.course.slug material.id %}" 
+                       class="block w-full text-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                        Grade Submissions
+                    </a>
+                    {% else %}
+                    <a href="{% url 'view_grades' material.course.slug %}" 
+                       class="block w-full text-center bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        View Grades
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8">
+            <p class="text-gray-600">
+                {% if user.profile.is_teacher %}
+                No materials need grading at this time.
+                {% else %}
+                You haven't submitted any materials yet.
+                {% endif %}
+            </p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

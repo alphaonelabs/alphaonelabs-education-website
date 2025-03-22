@@ -268,6 +268,10 @@ urlpatterns += i18n_patterns(
         name="grade_short_answer",
     ),
     path("quizzes/<int:quiz_id>/analytics/", quiz_views.quiz_analytics, name="quiz_analytics"),
+    # Grading URLs
+    path("grade-a-link/", views.grade_a_link_list, name="grade_a_link_list"),
+    path("courses/<slug:course_slug>/materials/<int:material_id>/grade/", views.grade_material, name="grade_material"),
+    path("courses/<slug:course_slug>/grades/", views.view_grades, name="view_grades"),
     prefix_default_language=True,
 )
 

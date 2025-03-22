@@ -125,6 +125,7 @@ from .models import (
     TeamInvite,
     TimeSlot,
     WebRequest,
+    Grade,
 )
 from .notifications import (
     notify_session_reminder,
@@ -4469,3 +4470,122 @@ def toggle_course_status(request, slug):
 
     course.save()
     return redirect("course_detail", slug=slug)
+
+
+@login_required
+@teacher_required
+def grade_material(request, course_slug, material_id):
+    """View for teachers to grade student submissions"""
+    course = get_object_or_404(Course, slug=course_slug)
+    material = get_object_or_404(CourseMaterial, id=material_id, course=course)
+    
+    # Get all students who have submitted work for this material
+    students = User.objects.filter(
+        grades_received__material=material
+    ).distinct()
+    
+    if request.method == 'POST':
+        student_id = request.POST.get('student_id')
+        grade = request.POST.get('grade')
+        comment = request.POST.get('comment')
+        
+        if not student_id or not grade:
+            messages.error(request, 'Please select a student and grade.')
+            return redirect('grade_material', course_slug=course_slug, material_id=material_id)
+            
+        student = get_object_or_404(User, id=student_id)
+        
+        # Validate that comment is provided for grades below A-
+        if grade not in ['A+', 'A', 'A-'] and not comment:
+            messages.error(request, 'Please provide a comment for grades below A-.')
+            return redirect('grade_material', course_slug=course_slug, material_id=material_id)
+        
+        # Create or update the grade
+        Grade.objects.update_or_create(
+            student=student,
+            material=material,
+            defaults={
+                'grader': request.user,
+                'course': course,
+                'grade': grade,
+                'comment': comment
+            }
+        )
+        
+        messages.success(request, f'Grade updated for {student.username}')
+        return redirect('grade_material', course_slug=course_slug, material_id=material_id)
+    
+    context = {
+        'course': course,
+        'material': material,
+        'students': students,
+        'grade_choices': Grade.GRADE_CHOICES,
+    }
+    return render(request, 'web/grade_material.html', context)
+
+@login_required
+def view_grades(request, course_slug):
+    """View for students to see their grades"""
+    course = get_object_or_404(Course, slug=course_slug)
+    
+    # Get all grades for the current user in this course
+    grades = Grade.objects.filter(
+        student=request.user,
+        course=course
+    ).select_related('material')
+    
+    # Calculate average grade
+    if grades.exists():
+        avg_score = sum(grade.numeric_score for grade in grades) / grades.count()
+        # Convert numeric average back to letter grade
+        grade_ranges = {
+            'A+': (95, 100),
+            'A': (90, 94),
+            'A-': (85, 89),
+            'B+': (80, 84),
+            'B': (75, 79),
+            'B-': (70, 74),
+            'C+': (65, 69),
+            'C': (60, 64),
+            'C-': (55, 59),
+            'D+': (50, 54),
+            'D': (45, 49),
+            'D-': (40, 44),
+            'F': (0, 39),
+        }
+        for grade, (min_score, max_score) in grade_ranges.items():
+            if min_score <= avg_score <= max_score:
+                average_grade = grade
+                break
+    else:
+        average_grade = None
+        avg_score = 0
+    
+    context = {
+        'course': course,
+        'grades': grades,
+        'average_grade': average_grade,
+        'average_score': round(avg_score, 2),
+    }
+    return render(request, 'web/view_grades.html', context)
+
+@login_required
+def grade_a_link_list(request):
+    """View to list all materials that need grading"""
+    if request.user.profile.is_teacher:
+        # For teachers, show all materials that need grading
+        materials = CourseMaterial.objects.filter(
+            course__teacher=request.user,
+            material_type__in=['assignment', 'exercise']
+        ).select_related('course')
+    else:
+        # For students, show their submitted materials
+        materials = CourseMaterial.objects.filter(
+            grades_received__student=request.user,
+            material_type__in=['assignment', 'exercise']
+        ).select_related('course')
+    
+    context = {
+        'materials': materials,
+    }
+    return render(request, 'web/grade_a_link_list.html', context)

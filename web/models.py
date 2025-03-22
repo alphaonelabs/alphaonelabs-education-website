@@ -1653,8 +1653,7 @@ class UserQuiz(models.Model):
         verbose_name_plural = "User quiz attempts"
 
     def __str__(self):
-        user_str = self.user.username if self.user else f"Anonymous ({self.anonymous_id})"
-        return f"{user_str} - {self.quiz.title}"
+        return f"{self.user.username if self.user else 'Anonymous'}'s attempt at {self.quiz.title}"
 
     def calculate_score(self):
         """Calculate the score based on answers."""
@@ -1764,3 +1763,59 @@ class UserQuiz(models.Model):
     def created_at(self):
         """Alias for start_time for template compatibility."""
         return self.start_time
+
+
+class Grade(models.Model):
+    """Model for storing grades for course materials"""
+    
+    GRADE_CHOICES = [
+        ('A+', 'A+'),
+        ('A', 'A'),
+        ('A-', 'A-'),
+        ('B+', 'B+'),
+        ('B', 'B'),
+        ('B-', 'B-'),
+        ('C+', 'C+'),
+        ('C', 'C'),
+        ('C-', 'C-'),
+        ('D+', 'D+'),
+        ('D', 'D'),
+        ('D-', 'D-'),
+        ('F', 'F'),
+    ]
+
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='grades_received')
+    grader = models.ForeignKey(User, on_delete=models.CASCADE, related_name='grades_given')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='grades')
+    material = models.ForeignKey(CourseMaterial, on_delete=models.CASCADE, related_name='grades')
+    grade = models.CharField(max_length=2, choices=GRADE_CHOICES)
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ['student', 'material']
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.student.username}'s grade for {self.material.title}"
+
+    @property
+    def numeric_score(self):
+        """Convert letter grade to numeric score"""
+        grade_map = {
+            'A+': 100,
+            'A': 95,
+            'A-': 90,
+            'B+': 87,
+            'B': 85,
+            'B-': 80,
+            'C+': 77,
+            'C': 75,
+            'C-': 70,
+            'D+': 67,
+            'D': 65,
+            'D-': 60,
+            'F': 0
+        }
+        return grade_map.get(self.grade, 0)
