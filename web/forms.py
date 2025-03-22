@@ -104,19 +104,28 @@ class UserRegistrationForm(SignupForm):
         help_text="Optional - Enter a referral code if you have one",
     )
     captcha = CaptchaField(widget=TailwindCaptchaTextInput)
+    # NEW: Add radio buttons for profile visibility.
+    is_profile_public = forms.TypedChoiceField(
+        required=True,
+        choices=(("True", "Public"), ("False", "Private")),
+        coerce=lambda x: x == "True",  # Convert string to Boolean.
+        widget=forms.RadioSelect,
+        label="Profile Visibility",
+        help_text="Select whether your profile details will be public or private.",
+    )
 
     def __init__(self, *args, **kwargs):
         request = kwargs.pop("request", None)
         super().__init__(*args, **kwargs)
 
-        # Update email field
+        # Update email field widget.
         self.fields["email"].widget = TailwindEmailInput(
             attrs={
                 "placeholder": "your.email@example.com",
                 "value": self.initial.get("email", ""),
             }
         )
-        # Update password field
+        # Update password field widget.
         self.fields["password1"].widget = TailwindInput(
             attrs={
                 "type": "password",
@@ -129,21 +138,25 @@ class UserRegistrationForm(SignupForm):
             }
         )
 
-        # Handle referral code from session or POST data
-        if self.data:  # If form was submitted (POST)
+        # Handle referral code from POST data or session.
+        if self.data:  # If form was submitted.
             referral_code = self.data.get("referral_code")
             if referral_code:
                 self.fields["referral_code"].initial = referral_code
-        elif request and request.session.get("referral_code"):  # If new form (GET) with session data
+        elif request and request.session.get("referral_code"):
             referral_code = request.session.get("referral_code")
             self.fields["referral_code"].initial = referral_code
             self.initial["referral_code"] = referral_code
 
-        # Preserve values on form errors
+        # Preserve values on form errors.
         if self.data:
             for field_name in ["first_name", "last_name", "email", "referral_code", "username"]:
                 if field_name in self.data and field_name in self.fields:
                     self.fields[field_name].widget.attrs["value"] = self.data[field_name]
+
+        # Set a default for the new field if not provided.
+        if "is_profile_public" not in self.initial:
+            self.initial["is_profile_public"] = "False"  # Default to Private.
 
     def clean_username(self):
         username = self.cleaned_data.get("username")
@@ -161,9 +174,9 @@ class UserRegistrationForm(SignupForm):
             from allauth.account.utils import filter_users_by_email
 
             users = filter_users_by_email(email)
-            if users:  # If any users found with this email
+            if users:
                 raise forms.ValidationError(
-                    "There was a problem with your signup. " "Please try again with a different email address or login."
+                    "There was a problem with your signup. Please try again with a different email address or login."
                 )
         return email
 
@@ -175,34 +188,34 @@ class UserRegistrationForm(SignupForm):
         return referral_code
 
     def save(self, request):
-        # First call parent's save to create the user and send verification email
+        # Create the user using Allauth's default behavior.
         try:
             user = super().save(request)
         except IntegrityError:
             raise forms.ValidationError("This username is already taken. Please choose a different one.")
         except ValueError:
-            # This happens when an email address is already in use but not caught in clean_email
-            # This should be rare given the clean_email validation above
             raise forms.ValidationError(
-                "There was a problem with your signup. " "Please try again with a different email address or login."
+                "There was a problem with your signup. Please try again with a different email address or login."
             )
 
-        # Then update the additional fields
         user.first_name = self.cleaned_data["first_name"]
         user.last_name = self.cleaned_data["last_name"]
         user.save()
 
-        # Update the user's profile
+        # Update the profile with the new radio button value.
+        user.profile.is_profile_public = self.cleaned_data.get("is_profile_public")
+        user.profile.save()
+
+        # Update teacher flag if provided.
         if self.cleaned_data.get("is_teacher"):
             user.profile.is_teacher = True
             user.profile.save()
 
-        # Handle the referral
+        # Handle referral code if provided.
         referral_code = self.cleaned_data.get("referral_code")
         if referral_code:
             handle_referral(user, referral_code)
 
-        # Return the user object
         return user
 
 
@@ -511,6 +524,13 @@ class ProfileUpdateForm(forms.ModelForm):
         widget=TailwindFileInput(),
         help_text="Upload a profile picture (will be cropped to a square and resized to 200x200 pixels)",
     )
+    is_profile_public = forms.TypedChoiceField(
+        required=True,
+        choices=(("True", "Public"), ("False", "Private")),
+        coerce=lambda x: x == "True",
+        widget=forms.RadioSelect,
+        help_text="Select whether your profile details are public or private.",
+    )
 
     class Meta:
         model = User
@@ -523,6 +543,8 @@ class ProfileUpdateForm(forms.ModelForm):
                 profile = self.instance.profile
                 self.fields["bio"].initial = profile.bio
                 self.fields["expertise"].initial = profile.expertise
+                # Set initial value as a string.
+                self.initial["is_profile_public"] = "True" if profile.is_profile_public else "False"
             except Profile.DoesNotExist:
                 pass
 
@@ -541,6 +563,7 @@ class ProfileUpdateForm(forms.ModelForm):
             profile.expertise = self.cleaned_data["expertise"]
             if self.cleaned_data.get("avatar"):
                 profile.avatar = self.cleaned_data["avatar"]
+            profile.is_profile_public = self.cleaned_data.get("is_profile_public")
             profile.save()
         return user
 

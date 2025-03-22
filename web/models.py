@@ -75,9 +75,13 @@ class Profile(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_profile_public = models.BooleanField(
+        default=False, help_text="Toggle to make your profile public so your details and stats are visible."
+    )
 
     def __str__(self):
-        return f"{self.user.username}'s profile"
+        visibility = "Public" if self.is_profile_public else "Private"
+        return f"{self.user.username}'s profile ({visibility})"
 
     def save(self, *args, **kwargs):
         if not self.referral_code:

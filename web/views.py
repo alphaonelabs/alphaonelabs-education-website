@@ -258,36 +258,22 @@ def signup_view(request):
 def profile(request):
     if request.method == "POST":
         if "avatar" in request.FILES:
-            # Handle avatar upload
             request.user.profile.avatar = request.FILES["avatar"]
             request.user.profile.save()
             return redirect("profile")
 
-        form = ProfileUpdateForm(request.POST, instance=request.user)
+        form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
-            user = form.save()
-            user.profile.bio = form.cleaned_data["bio"]
-            user.profile.expertise = form.cleaned_data["expertise"]
-            user.profile.save()
+            request.user.profile.refresh_from_db()  # Refresh the instance so updated Profile is loaded
             messages.success(request, "Profile updated successfully!")
             return redirect("profile")
     else:
-        form = ProfileUpdateForm(
-            initial={
-                "username": request.user.username,
-                "email": request.user.email,
-                "first_name": request.user.first_name,
-                "last_name": request.user.last_name,
-                "bio": request.user.profile.bio,
-                "expertise": request.user.profile.expertise,
-            }
-        )
+        # Use the instance so the form loads all updated fields from the database.
+        form = ProfileUpdateForm(instance=request.user)
 
-    context = {
-        "form": form,
-    }
+    context = {"form": form}
 
-    # Add teacher-specific stats
+    # Teacher-specific stats
     if request.user.profile.is_teacher:
         courses = Course.objects.filter(teacher=request.user)
         total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
@@ -298,9 +284,7 @@ def profile(request):
             if course_ratings:
                 avg_rating += sum(review.rating for review in course_ratings)
                 total_ratings += len(course_ratings)
-
         avg_rating = round(avg_rating / total_ratings, 1) if total_ratings > 0 else 0
-
         context.update(
             {
                 "courses": courses,
@@ -308,13 +292,10 @@ def profile(request):
                 "avg_rating": avg_rating,
             }
         )
-
-    # Add student-specific stats
+    # Student-specific stats
     else:
         enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
         completed_courses = enrollments.filter(status="completed").count()
-
-        # Calculate average progress
         total_progress = 0
         progress_count = 0
         for enrollment in enrollments:
@@ -322,9 +303,7 @@ def profile(request):
             if progress.completion_percentage is not None:
                 total_progress += progress.completion_percentage
                 progress_count += 1
-
         avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
-
         context.update(
             {
                 "enrollments": enrollments,
@@ -333,7 +312,7 @@ def profile(request):
             }
         )
 
-    # Add created calendars with prefetched time slots
+    # Add created calendars with time slots if applicable
     created_calendars = request.user.created_calendars.prefetch_related("time_slots").order_by("-created_at")
     context["created_calendars"] = created_calendars
 
@@ -4469,3 +4448,53 @@ def toggle_course_status(request, slug):
 
     course.save()
     return redirect("course_detail", slug=slug)
+
+
+def public_profile(request, username):
+    user = get_object_or_404(User, username=username)
+
+    try:
+        profile = user.profile
+    except Profile.DoesNotExist:
+        # Instead of raising Http404, we call custom_404.
+        return custom_404(request, "Profile not found.")
+
+    if not profile.is_profile_public:
+        return custom_404(request, "Profile not found.")
+
+    context = {"profile": profile}
+
+    if profile.is_teacher:
+        courses = Course.objects.filter(teacher=user)
+        total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
+        context.update(
+            {
+                "teacher_stats": {
+                    "courses": courses,
+                    "total_courses": courses.count(),
+                    "total_students": total_students,
+                }
+            }
+        )
+    else:
+        enrollments = Enrollment.objects.filter(student=user)
+        completed_enrollments = enrollments.filter(status="completed")
+        total_courses = enrollments.count()
+        total_completed = completed_enrollments.count()
+        total_progress = 0
+        progress_count = 0
+        for enrollment in enrollments:
+            progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+            total_progress += progress.completion_percentage
+            progress_count += 1
+        avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+        context.update(
+            {
+                "total_courses": total_courses,
+                "total_completed": total_completed,
+                "avg_progress": avg_progress,
+                "completed_courses": completed_enrollments,
+            }
+        )
+
+    return render(request, "public_profile_detail.html", context)
