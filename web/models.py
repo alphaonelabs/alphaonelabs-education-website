@@ -966,7 +966,7 @@ class Goods(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     @property
     def image_url(self):
         """Return the URL of the first product image, or a default image if none exists."""

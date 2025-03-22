@@ -469,15 +469,15 @@
             What Would You Like To Do?
           </h2>
           <div class="space-y-4">
-            <a href="{% url 'teach' %}" 
+            <a href="{% url 'teach' %}"
             class="block w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-4 rounded-xl transition duration-200 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center">
            <i class="fa-solid fa-chalkboard-user text-2xl mb-2"></i>
            <span class="text-lg">I Want to Teach</span>
            <div class="text-sm font-normal">Share your knowledge with others</div>
          </a>
-         
-      
-            <a href="{% url 'learn' %}" 
+
+
+            <a href="{% url 'learn' %}"
                class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-4 rounded-xl transition duration-200 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center">
               <i class="fa-solid fa-graduation-cap mr-3 text-2xl mb-2"></i>
               <span class="text-lg">I Want to Learn</span>
@@ -618,7 +618,7 @@
           <div class="flex justify-between items-center mt-2">
             <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}"
                class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block">Read More →</a>
-            <a href="{% url 'create_success_story' %}" 
+            <a href="{% url 'create_success_story' %}"
                class="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded-md inline-flex items-center">
               <i class="fas fa-plus mr-1"></i> Share Your Story
             </a>
@@ -798,4 +798,4 @@
       </div>
     </div>
   </main>
-{% endblock content %} 
+{% endblock content %}
