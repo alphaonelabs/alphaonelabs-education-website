@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("web", "0031_achievement_badge_icon_and_more"),
+        ("web", "0032_rename_completion_date_teamgoalmember_completed_at_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
