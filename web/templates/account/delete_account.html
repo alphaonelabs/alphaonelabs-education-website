@@ -8,13 +8,13 @@
   <div class="max-w-md mx-auto">
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
       <h1 class="text-2xl font-bold mb-6 text-red-600 dark:text-red-500">{% trans "Delete Account" %}</h1>
-      
+
       <div class="bg-red-50 dark:bg-red-900 border-l-4 border-red-500 text-red-700 dark:text-red-200 p-4 mb-6">
         <h3 class="font-bold">{% trans "Warning" %}</h3>
         <p>{% trans "You are about to permanently delete your account. This action cannot be undone." %}</p>
         <p class="mt-2">{% trans "All your personal data will be removed from our systems." %}</p>
       </div>
-      
+
       {% if form.non_field_errors %}
         <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
           {% for error in form.non_field_errors %}
@@ -22,10 +22,10 @@
           {% endfor %}
         </div>
       {% endif %}
-      
+
       <form method="post" class="space-y-4">
         {% csrf_token %}
-        
+
         <div>
           <label for="{{ form.password.id_for_label }}" class="block text-sm font-medium mb-2">
             {% trans "Please enter your password to confirm" %}
@@ -37,7 +37,7 @@
             </div>
           {% endif %}
         </div>
-        
+
         <div class="flex items-center">
           <input id="confirm" name="confirm" type="checkbox" required
                  class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded">
@@ -45,9 +45,9 @@
             {% trans "I understand that this action is permanent and cannot be undone" %}
           </label>
         </div>
-        
+
         <div class="flex items-center justify-between mt-6">
-          <a href="{% url 'profile' %}" 
+          <a href="{% url 'profile' %}"
              class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium py-2 px-4 rounded">
             {% trans "Cancel" %}
           </a>
