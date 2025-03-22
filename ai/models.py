@@ -98,3 +98,38 @@ class StudyPlan(models.Model):
     
     def __str__(self):
         return f"{self.title} - {self.user.username}"
+
+class ChatSession(models.Model):
+    """Model to store chat sessions with history."""
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='chat_sessions')
+    title = models.CharField(max_length=255, default='Untitled Chat')
+    subject = models.CharField(max_length=100, default='general')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-updated_at']
+    
+    def __str__(self):
+        return f"{self.title} ({self.user.username})"
+
+
+class Message(models.Model):
+    """Model to store individual messages within a chat session."""
+    ROLE_CHOICES = [
+        ('user', 'User'),
+        ('assistant', 'Assistant'),
+        ('system', 'System')
+    ]
+    
+    chat = models.ForeignKey(ChatSession, on_delete=models.CASCADE, related_name='messages')
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='user')
+    content = models.TextField()
+    order = models.PositiveIntegerField(default=0)  # To maintain message order
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['order']
+    
+    def __str__(self):
+        return f"{self.role} message in {self.chat.title}"

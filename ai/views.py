@@ -6,7 +6,7 @@ import json
 import random
 import logging
 
-from .models import Interaction, StudentProfile
+from .models import Interaction, StudentProfile, ChatSession, Message
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,9 @@ def chat_view(request):
     # Get or create student profile
     profile, created = StudentProfile.objects.get_or_create(user=request.user)
     
+    # Get recent chat sessions for sidebar
+    chat_sessions = ChatSession.objects.filter(user=request.user).order_by('-updated_at')[:10]
+    
     subjects = [
         {'value': 'general', 'label': 'General'},
         {'value': 'mathematics', 'label': 'Mathematics'}, 
@@ -40,7 +43,8 @@ def chat_view(request):
         'recent_interactions': recent_interactions,
         'profile': profile,
         'subjects': subjects,
-        'page_title': 'AI Learning Assistant'
+        'page_title': 'AI Learning Assistant',
+        'chat_sessions': chat_sessions
     }
     
     return render(request, 'ai/chat.html', context)
@@ -54,7 +58,14 @@ def chat_completion(request):
         message = data.get('message', '')
         subject = data.get('subject', 'general')
         
+        # Extract response preferences
+        preferences = data.get('preferences', {})
+        response_format = preferences.get('responseFormat', 'paragraph')
+        response_length = preferences.get('responseLength', 'detailed')
+        response_style = preferences.get('responseStyle', 'formal')
+        
         logger.info(f"Received chat request: subject={subject}, message={message[:50]}...")
+        logger.info(f"Response preferences: format={response_format}, length={response_length}, style={response_style}")
         
         # Save the user's question to the database
         interaction = Interaction.objects.create(
@@ -64,8 +75,16 @@ def chat_completion(request):
             ai_provider='demo' if not AI_PROVIDER_AVAILABLE else 'ai'
         )
         
-        # Get AI response
-        response_text = get_ai_response(message, subject, request.user)
+        # Get AI response with preferences
+        response_text = get_ai_response(
+            message, 
+            subject,
+            request.user,
+            response_format=response_format,
+            response_length=response_length,
+            response_style=response_style
+        )
+        
         logger.info(f"Generated response: {response_text[:50]}...")
         
         # Update the interaction with the response
@@ -94,7 +113,7 @@ def chat_completion(request):
             'error': str(e)
         }, status=500)
 
-def get_ai_response(message, subject, user):
+def get_ai_response(message, subject, user, response_format='paragraph', response_length='detailed', response_style='formal'):
     """Generate AI response using the configured provider or fallback to demo."""
     try:
         # If AI provider module is available, use it
@@ -114,6 +133,11 @@ def get_ai_response(message, subject, user):
                 },
                 'user': {
                     'username': user.username,
+                },
+                'preferences': {
+                    'format': response_format,
+                    'length': response_length,
+                    'style': response_style
                 }
             }
             
@@ -121,15 +145,15 @@ def get_ai_response(message, subject, user):
             provider = get_ai_provider()
             return provider.generate_response(message, context)
         else:
-            # Fallback to built-in demo responses
-            return get_demo_response(message, subject)
+            # Fallback to built-in demo responses with preferences
+            return get_demo_response(message, subject, response_format, response_length, response_style)
             
     except Exception as e:
         logger.error(f"Error generating AI response: {str(e)}")
         return f"I apologize, but I encountered an error while processing your request. Please try again later."
 
-def get_demo_response(message, subject):
-    """Generate a demo response based on subject."""
+def get_demo_response(message, subject, response_format='paragraph', response_length='detailed', response_style='formal'):
+    """Generate a demo response based on subject and preferences."""
     responses = {
         'mathematics': [
             "That's an interesting math question! In mathematics, we approach this by identifying the key principles involved.",
@@ -165,12 +189,47 @@ def get_demo_response(message, subject):
         "Learning about this subject involves understanding these fundamental principles..."
     ])
     
-    response = random.choice(subject_responses)
+    basic_response = random.choice(subject_responses)
+    
+    # Adapt response based on format preference
+    if response_format == 'bullets':
+        points = ["Point 1: " + basic_response, "Point 2: Consider these additional aspects...", "Point 3: Finally, remember that..."]
+        return "Here's my response:\n\n* " + "\n* ".join(points)
+    elif response_format == 'step-by-step':
+        steps = ["Step 1: " + basic_response, "Step 2: Next, we need to consider...", "Step 3: Finally, we can conclude that..."]
+        return "Let me walk you through this:\n\n1. " + "\n2. ".join(steps)
+    elif response_format == 'conversational':
+        return "Great question! " + basic_response + " What do you think about that? I'd be happy to elaborate further."
+    
+    # Adapt response based on length preference
+    length_multiplier = {
+        'concise': 0.5,
+        'detailed': 1.0,
+        'comprehensive': 2.0
+    }.get(response_length, 1.0)
+    
+    # Adapt response based on style preference
+    if response_style == 'simple':
+        response = f"{basic_response} This is explained in simple terms."
+    elif response_style == 'technical':
+        response = f"{basic_response} From a technical standpoint, we can analyze this further using specific terminology and concepts."
+    elif response_style == 'formal':
+        response = f"{basic_response} Furthermore, it is important to consider the following aspects of this topic."
+    elif response_style == 'casual':
+        response = f"Hey there! {basic_response} Pretty cool, right? Let me know if you want to know more!"
+    else:
+        response = basic_response
+    
+    # Adjust length based on preference
+    if length_multiplier < 1.0:
+        return response.split('.')[0] + '.'
+    elif length_multiplier > 1.0:
+        return response + " In addition, we can explore several related concepts that help deepen our understanding of this topic. For instance, consider how this relates to other areas. There are also practical applications worth discussing."
     
     return response
 
 @login_required
-def dashboard(request):
+def dashboard_view(request):
     """Display AI learning dashboard with progress stats."""
     # Get recent conversations
     recent_conversations = Interaction.objects.filter(user=request.user).order_by('-created_at')[:5]
@@ -304,6 +363,176 @@ def tutor_completion(request):
         
     except Exception as e:
         logger.error(f"Error in tutor_completion: {str(e)}")
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=500)
+
+@login_required
+@require_POST
+def save_chat(request):
+    """Save a chat session with all messages."""
+    try:
+        data = json.loads(request.body)
+        chat_id = data.get('chat_id')
+        title = data.get('title', '')
+        messages = data.get('messages', [])
+        subject = data.get('subject', 'general')
+        
+        if not messages or len(messages) < 2:  # Require at least 1 user message and 1 AI response
+            return JsonResponse({'success': False, 'error': 'Chat is too short to save'})
+        
+        # Auto-generate title if none provided or it's the default
+        if not title or title == "New Conversation" or title == "Untitled Chat":
+            # Find the first user message
+            first_user_message = next((msg for msg in messages if msg.get('role') == 'user'), None)
+            if first_user_message:
+                # Generate a title from the first user message
+                user_message = first_user_message.get('content', '')
+                # Clean up the message and limit length
+                title = user_message.strip()
+                # Remove common punctuation and limit length
+                title = ''.join(c for c in title if c not in '?!.,;:\'\"')
+                if len(title) > 40:
+                    title = title[:40] + '...'
+            else:
+                title = 'Untitled Chat'
+                
+        # If chat_id is provided, try to find existing chat
+        chat = None
+        is_new = False
+        if chat_id:
+            try:
+                chat = ChatSession.objects.get(id=chat_id, user=request.user)
+            except ChatSession.DoesNotExist:
+                # If chat doesn't exist, create a new one
+                pass
+        
+        # If no existing chat was found, create a new one
+        if not chat:
+            chat = ChatSession.objects.create(
+                user=request.user,
+                title=title,
+                subject=subject
+            )
+            is_new = True
+        else:
+            # Update existing chat
+            chat.title = title
+            chat.subject = subject
+            chat.save()
+            
+            # Clear existing messages for this chat
+            chat.messages.all().delete()
+        
+        # Save all messages
+        for idx, msg in enumerate(messages):
+            Message.objects.create(
+                chat=chat,
+                role=msg.get('role', 'user'),
+                content=msg.get('content', ''),
+                order=idx
+            )
+        
+        return JsonResponse({
+            'success': True, 
+            'chat_id': chat.id,
+            'title': chat.title, # Return the title in case it was auto-generated
+            'is_new': is_new
+        })
+        
+    except Exception as e:
+        logger.error(f"Error saving chat: {str(e)}")
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@login_required
+def get_chat(request):
+    """Retrieve a chat session with all messages."""
+    try:
+        chat_id = request.GET.get('chat_id')
+        
+        if not chat_id:
+            return JsonResponse({'success': False, 'error': 'No chat ID provided'})
+        
+        try:
+            chat = ChatSession.objects.get(id=chat_id, user=request.user)
+        except ChatSession.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Chat not found'})
+        
+        # Get all messages for this chat in order
+        messages = chat.messages.all().order_by('order')
+        
+        # Format messages for the response
+        formatted_messages = [
+            {'role': msg.role, 'content': msg.content}
+            for msg in messages
+        ]
+        
+        return JsonResponse({
+            'success': True,
+            'chat_id': chat.id,
+            'title': chat.title,
+            'subject': chat.subject,
+            'created_at': chat.created_at.isoformat(),
+            'messages': formatted_messages
+        })
+        
+    except Exception as e:
+        logger.error(f"Error retrieving chat: {str(e)}")
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@login_required
+@require_POST
+def rate_interaction(request, interaction_id):
+    """Rate an AI interaction."""
+    try:
+        interaction = Interaction.objects.get(id=interaction_id)
+        
+        # Check if the user is authorized to rate this interaction
+        if interaction.user != request.user:
+            return JsonResponse({
+                'success': False,
+                'error': 'Unauthorized'
+            }, status=403)
+            
+        # Parse the request body
+        data = json.loads(request.body)
+        rating = data.get('rating')
+        comment = data.get('comment', '')
+        
+        # Validate the rating
+        if rating is None or not isinstance(rating, (int, float)) or int(rating) < 1 or int(rating) > 5:
+            return JsonResponse({
+                'success': False,
+                'error': 'Invalid rating value. Must be between 1 and 5.'
+            }, status=400)
+            
+        # Save the rating and comment
+        interaction.feedback_rating = int(rating)
+        if comment:
+            interaction.feedback_comment = comment
+        interaction.save()
+        
+        logger.info(f"Interaction {interaction_id} rated {rating}/5 by user {request.user.username}")
+        
+        return JsonResponse({
+            'success': True,
+            'interaction_id': interaction_id,
+            'rating': rating
+        })
+        
+    except Interaction.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Interaction not found'
+        }, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Invalid JSON in request body'
+        }, status=400)
+    except Exception as e:
+        logger.error(f"Error in rate_interaction: {str(e)}")
         return JsonResponse({
             'success': False,
             'error': str(e)
