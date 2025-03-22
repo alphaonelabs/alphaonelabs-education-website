@@ -168,6 +168,38 @@ def main():
                         print(f"User {user_login} is already assigned to this issue. No action needed.")
                         return
 
+                # Check if the issue has a "good first issue" label
+                has_good_first_issue_label = any(
+                    label.get("name") == "good first issue" for label in issue_data.get("labels", [])
+                )
+                print(f"'good first issue' label present: {has_good_first_issue_label}")
+
+                # If this is a "good first issue", check if the user has any merged PRs
+                if has_good_first_issue_label:
+                    print(f"Checking if user {user_login} has any merged PRs")
+                    # Search for merged PRs by this user
+                    search_url = "https://api.github.com/search/issues"
+                    search_query = f"type:pr is:merged author:{user_login} repo:{owner}/{repo}"
+                    search_params = {"q": search_query}
+                    print(f"Searching merged PRs with query: {search_query}")
+                    search_response = requests.get(search_url, headers=headers, params=search_params)
+                    print(f"Search response status: {search_response.status_code}")
+                    search_data = search_response.json()
+                    merged_pr_count = search_data.get("total_count", 0)
+                    print(f"User {user_login} has {merged_pr_count} merged PRs")
+
+                    if merged_pr_count > 0:
+                        # User has merged PRs, not eligible for "good first issue"
+                        comment_body = (
+                            f"@{user_login} This issue is labeled as 'good first issue' and is reserved for users "
+                            "who have not yet made contributions to this repository. "
+                            f"You already have {merged_pr_count} merged pull request(s). "
+                            "Please choose a different issue."
+                        )
+                        print(f"Rejecting assignment request from {user_login} - has existing merged PRs")
+                        requests.post(f"{issue_url}/comments", headers=headers, json={"body": comment_body})
+                        return
+
                 # Get user's open issues
                 issues_url = f"https://api.github.com/repos/{owner}/{repo}/issues"
                 params = {"state": "open", "assignee": user_login}
