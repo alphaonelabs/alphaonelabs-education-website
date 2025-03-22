@@ -154,7 +154,7 @@
             <i class="fas fa-arrow-right ml-2"></i>
           </a>
         </div>
-        <!-- Quiz Banner Section -->
+        <!-- Quiz Banner -->
         <div class="mt-4 mb-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden shadow-md">
           <div class="flex flex-col md:flex-row">
             <div class="p-4 md:p-5 md:w-2/3 text-white">
@@ -464,59 +464,22 @@
         {% endif %}
       </div>
       <div class="md:w-1/3 space-y-6">
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h2 class="text-xl font-semibold mb-4">
-            <i class="fa-solid fa-chalkboard-user mr-2"></i>
-            Teach a Course
-          </h2>
-          <form method="post" class="space-y-4">
-            {% csrf_token %}
-            {% if not user.is_authenticated or not user.profile.is_teacher %}
-              {% if request.user.is_authenticated %}
-                <input type="hidden" name="email" value="{{ user.email }}" />
-              {% else %}
-                <div>
-                  <label for="email" class="block text-sm font-medium mb-1">Email</label>
-                  <input type="email"
-                         id="email"
-                         name="email"
-                         class="block w-full border {% if form.email.errors %}border-red-500 dark:border-red-500{% else %}border-gray-300 dark:border-gray-600{% endif %} rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800"
-                         placeholder="your.email@example.com"
-                         value="{{ form.email.value|default:'' }}"
-                         required />
-                  {% if form.email.errors %}
-                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.email.errors|join:", " }}</p>
-                  {% endif %}
-                </div>
-              {% endif %}
-            {% endif %}
-            <div>
-              <label for="subject" class="block text-sm font-medium mb-1">Subject</label>
-              <input type="text"
-                     id="subject"
-                     name="subject"
-                     class="block w-full border {% if form.subject.errors %}border-red-500 dark:border-red-500{% else %}border-gray-300 dark:border-gray-600{% endif %} rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800"
-                     placeholder="Your subject to teach"
-                     value="{{ form.subject.value|default:'' }}"
-                     required />
-              {% if form.subject.errors %}
-                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.subject.errors|join:", " }}</p>
-              {% endif %}
-            </div>
-            <div>
-              <label for="captcha" class="block text-sm font-medium mb-1">Verification</label>
-              <div class="{% if form.captcha.errors %}border border-red-500 dark:border-red-500 rounded p-2{% endif %}">
-                {{ form.captcha }}
-              </div>
-              {% if form.captcha.errors %}
-                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.captcha.errors|join:", " }}</p>
-              {% endif %}
-            </div>
-            <button type="submit"
-                    class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full flex items-center">
-              <i class="fa-solid fa-arrow-right-to-bracket mr-2"></i> Continue
-            </button>
-          </form>
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 shadow-lg">
+          <h2 class="text-xl font-semibold mb-6 text-center text-gray-800 dark:text-gray-200">What Would You Like To Do?</h2>
+          <div class="space-y-4">
+            <a href="{% url 'teach' %}"
+               class="block w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-4 rounded-xl transition duration-200 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center">
+              <i class="fa-solid fa-chalkboard-user text-2xl mb-2"></i>
+              <span class="text-lg">I Want to Teach</span>
+              <div class="text-sm font-normal">Share your knowledge with others</div>
+            </a>
+            <a href="{% url 'learn' %}"
+               class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-4 rounded-xl transition duration-200 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center">
+              <i class="fa-solid fa-graduation-cap mr-3 text-2xl mb-2"></i>
+              <span class="text-lg">I Want to Learn</span>
+              <div class="text-sm font-normal">Discover new skills and expand your knowledge</div>
+            </a>
+          </div>
         </div>
         <!-- Progress Trackers Dashboard -->
         {% if user.is_authenticated %}
@@ -535,7 +498,9 @@
                     </div>
                     <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                       <div class="bg-{{ tracker.color }} h-3 rounded-full"
-                           style="width: {{ tracker.percentage }}%"></div>
+                           {% verbatim %}
+                           style="width: {% endverbatim %}{{ tracker.percentage }}{% verbatim %}%"
+                           {% endverbatim %}></div>
                     </div>
                   </div>
                 {% endfor %}
@@ -649,8 +614,14 @@
             <strong class="block text-gray-900 dark:text-gray-200 mb-1">{{ latest_success_story.title|default:"From Beginner to Expert in 3 Months" }}</strong>
             {{ latest_success_story.excerpt|default:"Discover how our platform helped a complete beginner transform into a confident expert through personalized learning paths and dedicated mentorship..." }}
           </p>
-          <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}"
-             class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block mt-2">Read More →</a>
+          <div class="flex justify-between items-center mt-2">
+            <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}"
+               class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block">Read More →</a>
+            <a href="{% url 'create_success_story' %}"
+               class="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded-md inline-flex items-center">
+              <i class="fas fa-plus mr-1"></i> Share Your Story
+            </a>
+          </div>
         </div>
         <!-- Recent Contributors -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
