@@ -4531,6 +4531,11 @@ def grade_link(request, pk):
     """View to grade a link."""
     link = get_object_or_404(GradeableLink, pk=pk)
 
+    # Prevent users from grading their own links
+    if link.user == request.user:
+        messages.error(request, "You cannot grade your own submissions!")
+        return redirect("gradeable_link_detail", pk=link.pk)
+
     # Check if the user has already graded this link
     try:
         user_grade = LinkGrade.objects.get(link=link, user=request.user)
