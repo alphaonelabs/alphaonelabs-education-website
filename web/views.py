@@ -270,7 +270,7 @@ def all_leaderboards(request):
         users_with_more_points = Points.objects.values("user").annotate(
             total=models.Sum("amount")
         ).filter(total__gt=user_points).aggregate(count=models.Count("user"))["count"] or 0
-        user_rank = users_with_more_points + 1
+        user_rank = users_with_more_points 
 
         one_week_ago = timezone.now() - timedelta(days=7)
         users_with_more_weekly_points = (
