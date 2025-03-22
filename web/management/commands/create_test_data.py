@@ -279,7 +279,7 @@ class Command(BaseCommand):
 
             self.stdout.write(f"Created {score} points for {user.username} on {random_date.date()}")
 
-        print(f"Created {len(users)} leaderboard entries!")
+        self.stdout.write(f"Created {len(users)} leaderboard entries!")
 
         # Create subjects
         subjects = []

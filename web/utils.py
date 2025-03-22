@@ -39,34 +39,37 @@ def get_or_create_cart(request):
     return cart
 
 
-def calculate_user_total_points(user):
-    """Calculate total points for a user"""
+def calculate_user_points_for_period(user, days=None):
+    """Calculate points for a user within a specific period
+
+    Args:
+        user: The user to calculate points for
+        days: Number of days to include (None for all-time)
+    """
     from web.models import Points
 
-    return Points.objects.filter(user=user).aggregate(total=models.Sum("amount"))["total"] or 0
+    queryset = Points.objects.filter(user=user)
+
+    if days is not None:
+        period_start = timezone.now() - timedelta(days=days)
+        queryset = queryset.filter(awarded_at__gte=period_start)
+
+    return queryset.aggregate(total=models.Sum("amount"))["total"] or 0
 
 
 def calculate_user_weekly_points(user):
     """Calculate weekly points for a user"""
-    from web.models import Points
-
-    one_week_ago = timezone.now() - timedelta(days=7)
-
-    return (
-        Points.objects.filter(user=user, awarded_at__gte=one_week_ago).aggregate(total=models.Sum("amount"))["total"]
-        or 0
-    )
+    return calculate_user_points_for_period(user, days=7)
 
 
 def calculate_user_monthly_points(user):
     """Calculate monthly points for a user"""
-    from web.models import Points
+    return calculate_user_points_for_period(user, days=30)
 
-    one_month_ago = timezone.now() - timedelta(days=30)
-    return (
-        Points.objects.filter(user=user, awarded_at__gte=one_month_ago).aggregate(total=models.Sum("amount"))["total"]
-        or 0
-    )
+
+def calculate_user_total_points(user):
+    """Calculate total points for a user"""
+    return calculate_user_points_for_period(user)
 
 
 def calculate_user_streak(user):
@@ -75,9 +78,17 @@ def calculate_user_streak(user):
 
     streak_record = Points.objects.filter(user=user, point_type="streak").order_by("-awarded_at").first()
 
-    if streak_record and "Current streak:" in streak_record.reason:
+    if not streak_record:
+        return 0
+
+    # Extract streak value with improved parsing
+    if "Current streak:" in streak_record.reason:
         try:
-            return int(streak_record.reason.split(":")[1].strip())
+            import re
+
+            match = re.search(r"Current streak:\s*(\d+)", streak_record.reason)
+            if match:
+                return int(match.group(1))
         except (ValueError, IndexError):
             return 0
     return 0

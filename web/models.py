@@ -951,6 +951,10 @@ class Goods(models.Model):
     images = models.ManyToManyField("ProductImage", related_name="goods_images", blank=True)
     storefront = models.ForeignKey(Storefront, on_delete=models.CASCADE, related_name="goods")
     is_available = models.BooleanField(default=True, help_text="Show/hide product from store")
+    is_reward = (models.BooleanField(default=False, help_text="Can be unlocked as achievement reward"),)
+    points_required = (
+        models.PositiveIntegerField(blank=True, null=True, help_text="Points needed to unlock this reward"),
+    )
     sku = models.CharField(
         max_length=50, unique=True, blank=True, null=True, help_text="Inventory tracking ID (auto-generated)"
     )
@@ -1142,7 +1146,7 @@ class ChallengeSubmission(models.Model):
     challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE)
     submission_text = models.TextField()
     submitted_at = models.DateTimeField(auto_now_add=True)
-    points_awarded = models.IntegerField(default=10)  # Base points for completing challenge
+    points_awarded = models.PositiveIntegerField(default=10)
 
     class Meta:
         unique_together = ["user", "challenge"]
@@ -1337,6 +1341,10 @@ class Donation(models.Model):
     stripe_customer_id = models.CharField(max_length=100, blank=True, default="")
     message = models.TextField(blank=True)
     anonymous = models.BooleanField(default=False)
+    award_points = (models.BooleanField(default=True, help_text="Award points to user for donation"),)
+    points_multiplier = (
+        models.DecimalField(decimal_places=2, max_digits=5, default=1.0, help_text="Points per dollar multiplier"),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

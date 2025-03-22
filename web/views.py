@@ -281,7 +281,7 @@ def all_leaderboards(request):
         "monthly_entries": monthly_entries,
         "challenge_entries": (
             ChallengeSubmission.objects.select_related("user", "challenge")
-            .filter(user__profile__is_teacher=False)  # Exclude teachers
+            .filter(points_awarded__gt=0)  # Only include submissions with points
             .order_by("-points_awarded")[:10]
         ),
         "user_rank": global_rank,
