@@ -18,6 +18,7 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 from markdownx.models import MarkdownxField
 from PIL import Image
 
@@ -619,20 +620,50 @@ class CourseProgress(models.Model):
         return f"{self.enrollment.student.username}'s progress in {self.enrollment.course.title}"
 
 
+class EducationalVideo(models.Model):
+    """Model for educational videos shared by users."""
+
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    video_url = models.URLField(help_text="URL for external content like YouTube videos")
+    category = models.ForeignKey(Subject, on_delete=models.PROTECT, related_name="educational_videos")
+    uploader = models.ForeignKey(User, on_delete=models.CASCADE, related_name="educational_videos")
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Educational Video"
+        verbose_name_plural = "Educational Videos"
+        ordering = ["-uploaded_at"]
+
+    def __str__(self):
+        return self.title
+
+
 class Achievement(models.Model):
     TYPES = [
         ("attendance", "Perfect Attendance"),
         ("completion", "Course Completion"),
         ("participation", "Active Participation"),
         ("excellence", "Academic Excellence"),
+        ("quiz", "High Quiz Score"),
+        ("streak", "Daily Learning Streak"),
     ]
 
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="achievements")
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="achievements")
+    # Making Course optional for streak badges and quiz
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="achievements", null=True, blank=True)
     achievement_type = models.CharField(max_length=20, choices=TYPES)
     title = models.CharField(max_length=200)
     description = models.TextField()
     awarded_at = models.DateTimeField(auto_now_add=True)
+    # Fields for icon-Based badges:
+    badge_icon = models.CharField(
+        max_length=100, blank=True, help_text="Icon class for the badge (e.g., 'fas fa-trophy')"
+    )
+    # Fields for criteria-based badges:(100% for course completion, 90 for quiz, 7 or 30 for streak)
+    criteria_threshold = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Optional threshold required to earn this badge"
+    )
 
     def __str__(self):
         return f"{self.student.username} - {self.title}"
@@ -1032,6 +1063,16 @@ class Goods(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    @property
+    def image_url(self):
+        """Return the URL of the first product image, or a default image if none exists."""
+        # Get images using the related name "goods_images" from ProductImage model
+        first_image = self.goods_images.first()
+        if first_image and first_image.image:
+            return first_image.image.url
+        # Return a default placeholder image
+        return '/static/images/placeholder.png'
 
     def clean(self):
         # Validate discount logic
@@ -1289,6 +1330,152 @@ class OrderItem(models.Model):
         return f"{self.quantity}x {self.goods.name}"
 
 
+class TeamGoal(models.Model):
+    """A goal that team members work together to achieve."""
+
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_goals")
+    deadline = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    STATUS_CHOICES = [("active", "Active"), ("completed", "Completed"), ("cancelled", "Cancelled")]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def completion_percentage(self):
+        """Calculate the percentage of members who have completed the goal."""
+        total_members = self.members.count()
+        if total_members == 0:
+            return 0
+        completed_members = self.members.filter(completed=True).count()
+        return int((completed_members / total_members) * 100)
+
+
+class TeamGoalMember(models.Model):
+    """Represents a member of a team goal."""
+
+    team_goal = models.ForeignKey(TeamGoal, on_delete=models.CASCADE, related_name="members")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    ROLE_CHOICES = [("leader", "Team Leader"), ("member", "Team Member")]
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="member")
+
+    class Meta:
+        unique_together = ["team_goal", "user"]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.team_goal.title}"
+
+    def mark_completed(self):
+        """Mark this member's participation as completed."""
+        self.completed = True
+        self.completed_at = timezone.now()
+        self.save()
+
+        Notification.objects.create(
+            user=self.team_goal.creator,
+            title="Goal Progress Update",
+            message=f"{self.user.get_full_name() or self.user.username} completed'{self.team_goal.title}'",
+            notification_type="success",
+        )
+
+
+class TeamInvite(models.Model):
+    """Invitation to join a team goal."""
+
+    goal = models.ForeignKey(TeamGoal, on_delete=models.CASCADE, related_name="invites")
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_invites")
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_invites")
+    created_at = models.DateTimeField(auto_now_add=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
+
+    STATUS_CHOICES = [("pending", "Pending"), ("accepted", "Accepted"), ("declined", "Declined")]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+
+    class Meta:
+        unique_together = ["goal", "recipient"]
+
+    def __str__(self):
+        return f"Invite to {self.goal.title} for {self.recipient.username}"
+
+    def save(self, *args, **kwargs):
+        created = not self.pk
+        super().save(*args, **kwargs)
+
+        if created and self.status == "pending":
+            Notification.objects.create(
+                user=self.recipient,
+                title="New Team Invitation",
+                message=f"Invited to '{self.goal.title}' by {self.sender.get_full_name() or self.sender.username}",
+                notification_type="info",
+            )
+
+        # Create notification when invite is accepted
+        if not created and self.status == "accepted":
+            Notification.objects.create(
+                user=self.sender,
+                title="Team Invitation Accepted",
+                message=f"{self.recipient.get_full_name() or self.recipient.username} has accepted your invitation",
+                notification_type="success",
+            )
+
+
+def validate_image_size(image):
+    """Validate that the image file is not too large."""
+    file_size = image.size
+    limit_mb = 2
+    if file_size > limit_mb * 1024 * 1024:
+        raise ValidationError(f"Image file is too large. Size should not exceed {limit_mb} MB.")
+
+
+def validate_image_extension(image):
+    """Validate that the file is a valid image type."""
+    import os
+
+    ext = os.path.splitext(image.name)[1]
+    valid_extensions = [".jpg", ".jpeg", ".png", ".gif"]
+    if ext.lower() not in valid_extensions:
+        raise ValidationError("Unsupported file type. Please use JPEG, PNG, or GIF images.")
+
+
+class Meme(models.Model):
+    title = models.CharField(max_length=200, blank=False, help_text=_("A descriptive title for the meme"))
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.SET_NULL,
+        related_name="memes",
+        null=True,
+        blank=False,
+        help_text=_("The educational subject this meme relates to"),
+    )
+    caption = models.TextField(help_text=_("The text content of the meme"), blank=True)
+    image = models.ImageField(
+        upload_to="memes/",
+        validators=[validate_image_size, validate_image_extension],
+        help_text=_("Upload a meme image (JPG, PNG, or GIF, max 2MB)"),
+    )
+    uploader = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, related_name="memes", null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.title
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["-created_at"]), models.Index(fields=["subject"])]
+        verbose_name = _("Meme")
+        verbose_name_plural = _("Memes")
+
+
 class Donation(models.Model):
     """Model for storing donation information."""
 
@@ -1335,3 +1522,334 @@ class Donation(models.Model):
         if self.user:
             return self.user.get_full_name() or self.user.username
         return self.email.split("@")[0]  # Use part before @ in email
+
+
+class Certificate(models.Model):
+    # Certificate Model
+    certificate_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    completion_date = models.DateField(auto_now_add=True)
+    course = models.ForeignKey(
+        "web.Course", on_delete=models.CASCADE, related_name="certificates", null=True, blank=True
+    )
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="certificates")
+
+    # New fields added as per feedback
+    created_at = models.DateTimeField(auto_now_add=True)
+    modified_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        course_title = self.course.title if self.course else "No Course"
+        return f"Certificate for {self.user.username} - {course_title}"
+
+    def clean(self):
+        """Validate that the user has completed the course."""
+        from django.core.exceptions import ValidationError
+
+        if self.course and self.user:
+            # Check if the user is enrolled in the course
+            enrollment = Enrollment.objects.filter(student=self.user, course=self.course, status="completed").exists()
+
+            if not enrollment:
+                raise ValidationError("User has not completed this course.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class ProgressTracker(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="progress_trackers")
+    title = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    current_value = models.IntegerField(default=0)
+    target_value = models.IntegerField()
+    color = models.CharField(
+        max_length=20,
+        default="blue-600",
+        choices=[
+            ("blue-600", "Primary"),
+            ("green-600", "Success"),
+            ("yellow-600", "Warning"),
+            ("red-600", "Danger"),
+            ("gray-600", "Secondary"),
+        ],
+    )
+    public = models.BooleanField(default=True)
+    embed_code = models.CharField(max_length=36, unique=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.embed_code:
+            import uuid
+
+            self.embed_code = str(uuid.uuid4())
+        super().save(*args, **kwargs)
+
+    @property
+    def percentage(self):
+        if self.target_value == 0:
+            return 0
+        return min(100, int((self.current_value / self.target_value) * 100))
+
+    def __str__(self):
+        return f"{self.title} ({self.percentage}%)"
+
+
+class LearningStreak(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="learning_streak")
+    current_streak = models.IntegerField(default=0)
+    longest_streak = models.IntegerField(default=0)
+    last_engagement = models.DateField(null=True, blank=True)
+
+    def update_streak(self):
+        today = timezone.now().date()
+        # Check if last engagement is in the future
+        if self.last_engagement and self.last_engagement > today:
+            # Treat future date as invalid and reset the streak
+            self.current_streak = 1
+        # If first engagement or gap > 1 day, reset streak to 1
+        elif not self.last_engagement or (today - self.last_engagement).days > 1:
+            self.current_streak = 1
+        # If last engagement was yesterday, increment streak
+        elif (today - self.last_engagement).days == 1:
+            self.current_streak += 1
+        # Else (if already engaged today), do nothing to the streak count
+
+        # Update the last engagement to today
+        self.last_engagement = today
+        # Update longest streak if current is higher
+        if self.current_streak > self.longest_streak:
+            self.longest_streak = self.current_streak
+        self.save()
+
+    def __str__(self):
+        return f"{self.user.username} - Current: {self.current_streak}, Longest: {self.longest_streak}"
+
+
+class Quiz(models.Model):
+    """Model for storing custom quizzes created by users."""
+
+    STATUS_CHOICES = [("draft", "Draft"), ("published", "Published"), ("private", "Private")]
+
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_quizzes")
+    subject = models.ForeignKey(Subject, on_delete=models.PROTECT, related_name="quizzes")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="draft")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    share_code = models.CharField(
+        max_length=8, unique=True, blank=True, null=True, help_text="Unique code for sharing the quiz"
+    )
+    allow_anonymous = models.BooleanField(
+        default=False, help_text="If enabled, users don't need to log in to take this quiz"
+    )
+    show_correct_answers = models.BooleanField(default=False, help_text="Show correct answers after quiz completion")
+    randomize_questions = models.BooleanField(default=False, help_text="Randomize the order of questions")
+    time_limit = models.PositiveIntegerField(null=True, blank=True, help_text="Time limit in minutes (optional)")
+    max_attempts = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Maximum number of attempts allowed (leave blank for unlimited)"
+    )
+    passing_score = models.PositiveIntegerField(default=70, help_text="Minimum percentage required to pass the quiz")
+
+    class Meta:
+        verbose_name_plural = "Quizzes"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title
+
+    def save(self, *args, **kwargs):
+        # Generate a unique share code if not provided
+        if not self.share_code:
+            import random
+            import string
+
+            while True:
+                code = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
+                if not Quiz.objects.filter(share_code=code).exists():
+                    self.share_code = code
+                    break
+        super().save(*args, **kwargs)
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+
+        return reverse("quiz_detail", kwargs={"pk": self.pk})
+
+    @property
+    def question_count(self):
+        return self.questions.count()
+
+    @property
+    def completion_count(self):
+        return self.user_quizzes.filter(completed=True).count()
+
+
+class QuizQuestion(models.Model):
+    """Model for storing quiz questions."""
+
+    QUESTION_TYPES = [("multiple", "Multiple Choice"), ("true_false", "True/False"), ("short", "Short Answer")]
+
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="questions")
+    text = models.TextField()
+    question_type = models.CharField(max_length=10, choices=QUESTION_TYPES, default="multiple")
+    explanation = models.TextField(blank=True, help_text="Explanation of the correct answer")
+    points = models.PositiveIntegerField(default=1)
+    order = models.PositiveIntegerField(default=0)
+    image = models.ImageField(upload_to="quiz_questions/", blank=True, default="")
+
+    class Meta:
+        ordering = ["order"]
+
+    def __str__(self):
+        return f"{self.text[:50]}{'...' if len(self.text) > 50 else ''}"
+
+
+class QuizOption(models.Model):
+    """Model for storing answer options for quiz questions."""
+
+    question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE, related_name="options")
+    text = models.CharField(max_length=255)
+    is_correct = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order"]
+
+    def __str__(self):
+        return self.text
+
+
+class UserQuiz(models.Model):
+    """Model for tracking user quiz attempts and responses"""
+
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="user_quizzes")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="quiz_attempts", null=True, blank=True)
+    anonymous_id = models.CharField(
+        max_length=36, blank=True, default="", help_text="Identifier for non-logged-in users"
+    )
+    score = models.PositiveIntegerField(default=0)
+    max_score = models.PositiveIntegerField(default=0)
+    completed = models.BooleanField(default=False)
+    start_time = models.DateTimeField(auto_now_add=True)
+    end_time = models.DateTimeField(null=True, blank=True)
+    answers = models.JSONField(default=dict, blank=True, help_text="JSON storing the user's answers and question IDs")
+
+    class Meta:
+        ordering = ["-start_time"]
+        verbose_name_plural = "User quiz attempts"
+
+    def __str__(self):
+        user_str = self.user.username if self.user else f"Anonymous ({self.anonymous_id})"
+        return f"{user_str} - {self.quiz.title}"
+
+    def calculate_score(self):
+        """Calculate the score based on answers."""
+        score = 0
+        max_score = 0
+
+        for q_id, answer_data in self.answers.items():
+            try:
+                question = QuizQuestion.objects.get(id=q_id)
+                max_score += question.points
+
+                if question.question_type == "multiple":
+                    # Check if selected options match correct options
+                    correct_options = set(question.options.filter(is_correct=True).values_list("id", flat=True))
+                    selected_options = set(answer_data.get("selected_options", []))
+                    if correct_options == selected_options:
+                        score += question.points
+                elif question.question_type == "true_false":
+                    # For true/false, there should be only one correct option
+                    correct_option = question.options.filter(is_correct=True).first()
+                    if correct_option and str(correct_option.id) == str(answer_data.get("selected_option")):
+                        score += question.points
+                elif question.question_type == "short":
+                    # Short answers require manual grading in this implementation
+                    # We could implement auto-grading logic here for simple cases
+                    pass
+            except QuizQuestion.DoesNotExist:
+                pass
+
+        self.score = score
+        self.max_score = max_score
+        self.save()
+
+    def complete_quiz(self):
+        """Mark the quiz as completed and calculate final score."""
+        from django.utils import timezone
+
+        self.completed = True
+        self.end_time = timezone.now()
+        self.calculate_score()
+        self.save()
+
+    @property
+    def duration(self):
+        """Return the duration of the quiz attempt as a formatted string."""
+        if self.start_time and self.end_time:
+            # Calculate duration in seconds
+            duration_seconds = (self.end_time - self.start_time).total_seconds()
+
+            # Format the duration
+            if duration_seconds < 60:
+                # Show with decimal precision for small durations
+                if duration_seconds < 10:
+                    return f"{duration_seconds:.1f}s"
+                return f"{int(duration_seconds)}s"
+
+            minutes, seconds = divmod(int(duration_seconds), 60)
+            if minutes < 60:
+                return f"{minutes}m {seconds}s"
+
+            hours, minutes = divmod(minutes, 60)
+            return f"{hours}h {minutes}m {seconds}s"
+        elif self.start_time and not self.end_time and self.completed:
+            # If completed but no end_time, use current time
+            from django.utils import timezone
+
+            duration_seconds = (timezone.now() - self.start_time).total_seconds()
+
+            # Format the duration
+            if duration_seconds < 60:
+                # Show with decimal precision for small durations
+                if duration_seconds < 10:
+                    return f"{duration_seconds:.1f}s"
+                return f"{int(duration_seconds)}s"
+
+            minutes, seconds = divmod(int(duration_seconds), 60)
+            if minutes < 60:
+                return f"{minutes}m {seconds}s"
+
+            hours, minutes = divmod(minutes, 60)
+            return f"{hours}h {minutes}m {seconds}s"
+        return "N/A"
+
+    @property
+    def status(self):
+        """Return the status of the quiz attempt."""
+        if not self.completed:
+            return "in_progress"
+
+        # Check if there's a passing score defined on the quiz
+        passing_score = getattr(self.quiz, "passing_score", 0)
+        if passing_score and self.score >= passing_score:
+            return "passed"
+        else:
+            return "failed"
+
+    def get_status_display(self):
+        """Return a human-readable status."""
+        if self.status == "passed":
+            return "Passed"
+        elif self.status == "failed":
+            return "Failed"
+        else:
+            return "In Progress"
+
+    @property
+    def created_at(self):
+        """Alias for start_time for template compatibility."""
+        return self.start_time

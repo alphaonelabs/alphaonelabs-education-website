@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  Taking: {{ quiz.title }}
+{% endblock title %}
+{% block extra_head %}
+  <script>
+      // Timer functionality
+      document.addEventListener('DOMContentLoaded', function() {
+          // Check if we have a time limit
+          const timeLimit = parseInt("{{ quiz.time_limit|default:0 }}");
+          if (timeLimit > 0) {
+              let remainingTime = timeLimit * 60; // convert to seconds
+
+              // Check if we have a stored time for this quiz attempt
+              const storedTime = localStorage.getItem('quiz_{{ user_quiz.id }}_remaining_time');
+              if (storedTime) {
+                  remainingTime = parseInt(storedTime);
+              }
+
+              const timerElement = document.getElementById('timer');
+
+              // Update the timer every second
+              const timerInterval = setInterval(function() {
+                  remainingTime--;
+
+                  // Store the remaining time in localStorage
+                  localStorage.setItem('quiz_{{ user_quiz.id }}_remaining_time', remainingTime.toString());
+
+                  // Format the time as MM:SS
+                  const minutes = Math.floor(remainingTime / 60);
+                  const seconds = remainingTime % 60;
+                  timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+                  // Visual cues when time is running low
+                  if (remainingTime <= 60) { // last minute
+                      timerElement.classList.add('text-red-600', 'dark:text-red-400');
+                      if (remainingTime <= 10) { // last 10 seconds
+                          timerElement.classList.add('animate-pulse');
+                      }
+                  }
+
+                  // Auto-submit when time is up
+                  if (remainingTime <= 0) {
+                      clearInterval(timerInterval);
+                      document.getElementById('quiz-form').submit();
+                  }
+              }, 1000);
+
+              // Add event listener to the form submission to clear the timer
+              document.getElementById('quiz-form').addEventListener('submit', function() {
+                  clearInterval(timerInterval);
+                  localStorage.removeItem('quiz_{{ user_quiz.id }}_remaining_time');
+              });
+          }
+      });
+
+      // Function to confirm quiz submission
+      function confirmSubmit() {
+          // Check if there are any unanswered questions
+          const totalQuestions = {
+              {
+                  questions | length
+              }
+          };
+          const answeredQuestions = document.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked, textarea:not(:empty)').length;
+
+          if (answeredQuestions < totalQuestions) {
+              return confirm("You have unanswered questions. Are you sure you want to submit?");
+          }
+
+          return true;
+      }
+  </script>
+{% endblock extra_head %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+    <nav class="text-sm mb-6">
+      <a href="{% url 'index' %}" class="text-blue-600 hover:text-blue-800">Home</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'quiz_list' %}"
+         class="text-blue-600 hover:text-blue-800">Quizzes</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-600">Taking: {{ quiz.title }}</span>
+    </nav>
+    <!-- Quiz Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-6">
+      <div class="p-6">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-2">{{ quiz.title }}</h1>
+            <div class="flex flex-wrap items-center text-sm text-gray-600 dark:text-gray-400">
+              <span class="mr-4"><i class="fas fa-user mr-1"></i> By {{ quiz.creator.username }}</span>
+              <span class="mr-4"><i class="fas fa-question-circle mr-1"></i> {{ questions|length }} questions</span>
+              {% if quiz.subject %}<span><i class="fas fa-book mr-1"></i> {{ quiz.subject.name }}</span>{% endif %}
+            </div>
+          </div>
+          <!-- Timer and Progress -->
+          <div class="flex items-center space-x-4">
+            {% if quiz.time_limit %}
+              <div class="flex items-center bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg">
+                <i class="fas fa-clock text-gray-600 dark:text-gray-400 mr-2"></i>
+                <span id="timer" class="text-xl font-mono font-bold">{{ quiz.time_limit }}:00</span>
+              </div>
+            {% endif %}
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              <span class="font-medium">Progress:</span>
+              <span id="question-progress">1</span> of {{ questions|length }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Quiz Form -->
+    <form id="quiz-form"
+          method="post"
+          action="{% url 'take_quiz' quiz.id %}"
+          onsubmit="return confirmSubmit()">
+      {% csrf_token %}
+      <input type="hidden" name="user_quiz_id" value="{{ user_quiz.id }}" />
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div class="p-6">
+          <!-- Questions -->
+          <div class="space-y-8" id="questions-container">
+            {% for question in questions %}
+              <div class="question-item {% if not forloop.first %}hidden{% endif %}"
+                   data-question-index="{{ forloop.counter }}">
+                <div class="flex items-center mb-4">
+                  <span class="inline-flex items-center justify-center bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-200 text-sm font-medium rounded-full h-8 w-8 mr-3">
+                    {{ forloop.counter }}
+                  </span>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if question.question_type == 'multiple' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 {% elif question.question_type == 'true_false' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 {% elif question.question_type == 'short' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300{% endif %}">
+                    {% if question.question_type == 'multiple' %}
+                      Multiple Choice
+                    {% elif question.question_type == 'true_false' %}
+                      True/False
+                    {% elif question.question_type == 'short' %}
+                      Short Answer
+                    {% endif %}
+                  </span>
+                </div>
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">{{ question.text }}</h2>
+                <div class="ml-4">
+                  {% if question.question_type == 'multiple' %}
+                    <div class="space-y-2">
+                      {% for option in question.options %}
+                        <div class="flex items-center">
+                          <input type="radio"
+                                 id="question_{{ question.id }}_option_{{ option.id }}"
+                                 name="question_{{ question.id }}"
+                                 value="{{ option.id }}"
+                                 class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
+                          <label for="question_{{ question.id }}_option_{{ option.id }}"
+                                 class="ml-3 block text-gray-700 dark:text-gray-300">{{ option.text }}</label>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% elif question.question_type == 'true_false' %}
+                    <div class="space-y-2">
+                      <div class="flex items-center">
+                        <input type="radio"
+                               id="question_{{ question.id }}_true"
+                               name="question_{{ question.id }}"
+                               value="true"
+                               class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
+                        <label for="question_{{ question.id }}_true"
+                               class="ml-3 block text-gray-700 dark:text-gray-300">True</label>
+                      </div>
+                      <div class="flex items-center">
+                        <input type="radio"
+                               id="question_{{ question.id }}_false"
+                               name="question_{{ question.id }}"
+                               value="false"
+                               class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
+                        <label for="question_{{ question.id }}_false"
+                               class="ml-3 block text-gray-700 dark:text-gray-300">False</label>
+                      </div>
+                    </div>
+                  {% elif question.question_type == 'short' %}
+                    <div>
+                      <textarea name="question_{{ question.id }}"
+                                rows="4"
+                                class="w-full px-3 py-2 text-gray-700 dark:text-gray-300 border rounded-lg focus:outline-none focus:border-teal-500 dark:bg-gray-700 dark:border-gray-600"
+                                placeholder="Type your answer here..."></textarea>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+          <!-- Navigation Buttons -->
+          <div class="flex justify-between mt-8">
+            <button type="button"
+                    id="prev-btn"
+                    class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hidden">
+              <i class="fas fa-arrow-left mr-2"></i> Previous
+            </button>
+            <div class="ml-auto flex space-x-4">
+              <button type="button"
+                      id="next-btn"
+                      class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg">
+                Next <i class="fas fa-arrow-right ml-2"></i>
+              </button>
+              <button type="submit"
+                      id="submit-btn"
+                      class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg hidden">
+                <i class="fas fa-check mr-2"></i> Submit Quiz
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          const questions = document.querySelectorAll('.question-item');
+          const prevBtn = document.getElementById('prev-btn');
+          const nextBtn = document.getElementById('next-btn');
+          const submitBtn = document.getElementById('submit-btn');
+          const progressCounter = document.getElementById('question-progress');
+
+          let currentQuestionIndex = 0;
+          const totalQuestions = questions.length;
+
+          // Show the current question and hide others
+          function showQuestion(index) {
+              questions.forEach((q, i) => {
+                  if (i === index) {
+                      q.classList.remove('hidden');
+                  } else {
+                      q.classList.add('hidden');
+                  }
+              });
+
+              // Update progress counter
+              progressCounter.textContent = index + 1;
+
+              // Update button visibility
+              prevBtn.classList.toggle('hidden', index === 0);
+
+              if (index === totalQuestions - 1) {
+                  nextBtn.classList.add('hidden');
+                  submitBtn.classList.remove('hidden');
+              } else {
+                  nextBtn.classList.remove('hidden');
+                  submitBtn.classList.add('hidden');
+              }
+          }
+
+          // Event listeners for navigation buttons
+          prevBtn.addEventListener('click', function() {
+              if (currentQuestionIndex > 0) {
+                  currentQuestionIndex--;
+                  showQuestion(currentQuestionIndex);
+              }
+          });
+
+          nextBtn.addEventListener('click', function() {
+              if (currentQuestionIndex < totalQuestions - 1) {
+                  currentQuestionIndex++;
+                  showQuestion(currentQuestionIndex);
+              }
+          });
+
+          // Initialize
+          showQuestion(currentQuestionIndex);
+      });
+  </script>
+{% endblock content %}
