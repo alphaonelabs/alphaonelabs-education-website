@@ -2,7 +2,7 @@ name: Delete Unauthorized Issues
 
 on:
   issues:
-    types: [opened, reopened]
+    types: [opened]
 
 jobs:
   delete-unauthorized:
