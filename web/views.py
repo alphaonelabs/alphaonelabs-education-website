@@ -17,7 +17,8 @@ import requests
 import stripe
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import get_user_model, login , logout
+from django.contrib.auth import get_user_model, login
+from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
