@@ -231,14 +231,12 @@ def signup_view(request):
 
 # new future, #22 issue
 @login_required
-@login_required
 def all_leaderboards(request):
     """
     Display all leaderboard types on a single page.
     """
     from django.core.cache import cache
 
-    # Get leaderboard data for different time periods
     # Global Leaderboard
     global_data = cache.get("global_leaderboard")
     if global_data is None:

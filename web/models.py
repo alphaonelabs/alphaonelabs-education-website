@@ -1190,7 +1190,10 @@ class Points(models.Model):
 
     class Meta:
         verbose_name_plural = "Points"
-        ordering = ["-awarded_at"]
+        indexes = [
+            models.Index(fields=["user", "awarded_at"]),
+            models.Index(fields=["awarded_at"]),
+        ]
 
 
 class ProductImage(models.Model):
