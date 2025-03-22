@@ -1006,6 +1006,7 @@ def student_progress(request, enrollment_id):
 
 @login_required
 def progress_visualization(request):
+    """Generate and render progress visualization statistics for a student's enrolled courses."""
     enrollments = Enrollment.objects.filter(student=request.user)
     total_courses = enrollments.count()
     courses_completed = enrollments.filter(status="completed").count()
