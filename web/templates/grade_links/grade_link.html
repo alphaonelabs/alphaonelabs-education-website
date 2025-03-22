@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Grade: {{ link.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <nav class="flex mb-5" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+            <li class="inline-flex items-center">
+                <a href="{% url 'index' %}" class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-orange-600 dark:text-gray-400 dark:hover:text-white">
+                    <i class="fas fa-home mr-2"></i>
+                    Home
+                </a>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                    <a href="{% url 'gradeable_link_list' %}" class="text-sm font-medium text-gray-700 hover:text-orange-600 dark:text-gray-400 dark:hover:text-white">Get a Grade</a>
+                </div>
+            </li>
+            <li>
+                <div class="flex items-center">
+                    <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                    <a href="{% url 'gradeable_link_detail' link.pk %}" class="text-sm font-medium text-gray-700 hover:text-orange-600 dark:text-gray-400 dark:hover:text-white">{{ link.title|truncatechars:25 }}</a>
+                </div>
+            </li>
+            <li aria-current="page">
+                <div class="flex items-center">
+                    <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+                    <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Grade</span>
+                </div>
+            </li>
+        </ol>
+    </nav>
+    
+    <div class="max-w-3xl mx-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-4 flex items-center">
+                <i class="fas fa-star text-orange-500 mr-3"></i> Grading: {{ link.title }}
+            </h1>
+            
+            <div class="border-b border-gray-200 dark:border-gray-700 pb-4 mb-6">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                        <span class="flex items-center mr-4">
+                            <i class="fas fa-user mr-1.5"></i> {{ link.user.username }}
+                        </span>
+                        <span class="flex items-center">
+                            <i class="fas fa-calendar-alt mr-1.5"></i> {{ link.created_at|date }}
+                        </span>
+                    </div>
+                    <span class="px-3 py-1.5 text-xs rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                        {{ link.get_link_type_display }}
+                    </span>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="flex items-center bg-blue-50 dark:bg-blue-900 rounded p-3">
+                        <a href="{{ link.url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center text-blue-600 dark:text-blue-300 hover:underline">
+                            <i class="fas fa-external-link-alt mr-2"></i> {{ link.url|truncatechars:60 }}
+                        </a>
+                    </div>
+                </div>
+                
+                {% if link.description %}
+                <div class="mb-2">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description:</h3>
+                    <div class="text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-sm">
+                        {{ link.description|linebreaks }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                    <div class="p-4 mb-4 text-sm text-red-700 bg-red-100 rounded-lg dark:bg-red-200 dark:text-red-800" role="alert">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+                
+                <div>
+                    <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-3">Select Grade:</h3>
+                    <div class="grid grid-cols-3 md:grid-cols-6 gap-2 mb-3">
+                        {% for radio in form.grade %}
+                            <div class="grade-option">
+                                <label class="flex flex-col items-center cursor-pointer">
+                                    {{ radio.tag }}
+                                    <span class="
+                                        mt-2 px-3 py-1.5 rounded-lg text-center w-full font-medium
+                                        {% if 'A+' in radio.choice_label %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                        {% elif 'A' in radio.choice_label %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                        {% elif 'A-' in radio.choice_label %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                                        {% elif 'B+' in radio.choice_label %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                                        {% elif 'B' in radio.choice_label %}bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200
+                                        {% elif 'B-' in radio.choice_label %}bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200
+                                        {% elif 'C+' in radio.choice_label %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                                        {% elif 'C' in radio.choice_label %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                                        {% elif 'C-' in radio.choice_label %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                                        {% elif 'D' in radio.choice_label %}bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200
+                                        {% else %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                                        {% endif %}
+                                    ">
+                                        {{ radio.choice_label }}
+                                    </span>
+                                </label>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    {% if form.grade.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.grade.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                
+                <div>
+                    <label for="{{ form.comment.id_for_label }}" class="block text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">
+                        Comment
+                        <span id="comment-required" class="text-red-500 text-sm ml-1" style="display: none;">
+                            (Required for grades below A)
+                        </span>
+                    </label>
+                    {{ form.comment }}
+                    {% if form.comment.errors %}
+                        <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ form.comment.errors.0 }}</p>
+                    {% endif %}
+                    <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Provide constructive feedback to help the submitter improve.</p>
+                </div>
+                
+                <div class="flex items-center justify-between pt-4">
+                    <a href="{% url 'gradeable_link_detail' link.pk %}" class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-300">
+                        <i class="fas fa-arrow-left mr-1"></i> Cancel
+                    </a>
+                    <button type="submit" class="px-6 py-2.5 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
+                        <i class="fas fa-paper-plane mr-2"></i> Submit Grade
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const gradeInputs = document.querySelectorAll('input[name="grade"]');
+        const commentRequired = document.getElementById('comment-required');
+        const commentField = document.querySelector('textarea[name="comment"]');
+        
+        function checkGradeSelection() {
+            const selectedGrade = document.querySelector('input[name="grade"]:checked');
+            
+            if (selectedGrade && selectedGrade.value !== 'A+' && selectedGrade.value !== 'A') {
+                commentRequired.style.display = 'inline';
+                commentField.setAttribute('required', 'required');
+            } else {
+                commentRequired.style.display = 'none';
+                commentField.removeAttribute('required');
+            }
+        }
+        
+        // Initialize on page load
+        checkGradeSelection();
+        
+        // Add event listeners to all grade options
+        gradeInputs.forEach(input => {
+            input.addEventListener('change', checkGradeSelection);
+        });
+    });
+</script>
+{% endblock %} 

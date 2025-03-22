@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Get a Grade - Links{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Get a Grade</h1>
+        {% if user.is_authenticated %}
+        <a href="{% url 'gradeable_link_create' %}" class="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
+            <i class="fas fa-plus mr-2"></i> Submit Link for Grading
+        </a>
+        {% endif %}
+    </div>
+    
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
+            <i class="fas fa-info-circle text-orange-500 mr-2"></i>How it works
+        </h2>
+        <p class="text-gray-600 dark:text-gray-300 mb-4">
+            "Get a Grade" allows you to submit links to your projects, articles, pull requests, or any content you'd like feedback on. Others can then review and grade your work with a school-style grading system (A+, A, A-, etc.).
+        </p>
+        <p class="text-gray-600 dark:text-gray-300">
+            This makes it easy to get constructive feedback and helps you understand the quality of your work from the community's perspective.
+        </p>
+    </div>
+    
+    {% if links %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for link in links %}
+                <a href="{% url 'gradeable_link_detail' link.pk %}" class="block p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">{{ link.title }}</h3>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">{{ link.created_at|date }}</span>
+                    </div>
+                    {% if link.description %}
+                    <p class="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">{{ link.description|truncatechars:150 }}</p>
+                    {% endif %}
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center">
+                            <span class="text-sm text-gray-500 dark:text-gray-400 mr-2">Posted by: {{ link.user.username }}</span>
+                            <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">{{ link.get_link_type_display }}</span>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs px-2 py-1 rounded-full mr-2">
+                                <i class="fas fa-comment-alt mr-1"></i> {{ link.grade_count }}
+                            </span>
+                            {% if link.average_grade %}
+                                <span class="
+                                    px-2 py-1 rounded-full text-xs font-medium
+                                    {% if link.average_letter_grade == 'A+' or link.average_letter_grade == 'A' %}
+                                        bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
+                                    {% elif link.average_letter_grade == 'A-' or link.average_letter_grade == 'B+' %}
+                                        bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
+                                    {% elif link.average_letter_grade == 'B' or link.average_letter_grade == 'B-' %}
+                                        bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200
+                                    {% elif link.average_letter_grade == 'C+' or link.average_letter_grade == 'C' %}
+                                        bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                                    {% else %}
+                                        bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                                    {% endif %}
+                                ">
+                                    <i class="fas fa-star mr-1"></i> {{ link.average_letter_grade }}
+                                </span>
+                            {% else %}
+                                <span class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-xs px-2 py-1 rounded-full">
+                                    <i class="fas fa-hourglass-half mr-1"></i> Needs grades
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+        
+        {% if is_paginated %}
+        <div class="flex justify-center mt-6">
+            <nav class="inline-flex rounded-md shadow">
+                {% if page_obj.has_previous %}
+                <a href="?page=1" class="px-3 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-2 border-t border-b border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+                {% endif %}
+                
+                <span class="px-3 py-2 border border-gray-300 dark:border-gray-600 bg-orange-500 text-white">
+                    {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+                
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-2 border-t border-b border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+                <a href="?page={{ page_obj.paginator.num_pages }}" class="px-3 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+                {% endif %}
+            </nav>
+        </div>
+        {% endif %}
+    {% else %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 text-center">
+            <i class="fas fa-link text-5xl text-orange-500 mb-4"></i>
+            <h3 class="text-xl font-medium text-gray-900 dark:text-white mb-2">No links have been submitted yet</h3>
+            <p class="text-gray-600 dark:text-gray-300 mb-4">Be the first to submit a link for grading!</p>
+            {% if user.is_authenticated %}
+                <a href="{% url 'gradeable_link_create' %}" class="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
+                    <i class="fas fa-plus mr-2"></i> Submit Link
+                </a>
+            {% else %}
+                <a href="{% url 'account_login' %}?next={% url 'gradeable_link_create' %}" class="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
+                    <i class="fas fa-sign-in-alt mr-2"></i> Login to Submit
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

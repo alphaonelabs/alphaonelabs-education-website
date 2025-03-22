@@ -17,7 +17,9 @@ from .models import (
     CourseMaterial,
     EducationalVideo,
     ForumCategory,
+    GradeableLink,
     Goods,
+    LinkGrade,
     Meme,
     ProductImage,
     Profile,
@@ -78,6 +80,8 @@ __all__ = [
     "QuizQuestionForm",
     "QuizOptionFormSet",
     "TakeQuizForm",
+    "GradeableLinkForm",
+    "LinkGradeForm",
 ]
 
 
@@ -1368,3 +1372,53 @@ class TakeQuizForm(forms.Form):
                         widget=TailwindTextarea(attrs={"rows": 2, "placeholder": "Your answer..."}),
                         required=False,
                     )
+
+
+class GradeableLinkForm(forms.ModelForm):
+    """Form for submitting a link to be graded."""
+    class Meta:
+        model = GradeableLink
+        fields = ['title', 'url', 'description', 'link_type']
+        widgets = {
+            'title': TailwindInput(attrs={'placeholder': 'Enter a descriptive title'}),
+            'url': TailwindInput(attrs={'placeholder': 'https://example.com', 'type': 'url'}),
+            'description': TailwindTextarea(attrs={
+                'rows': 4, 
+                'placeholder': 'Describe what you want feedback on...'
+            }),
+            'link_type': TailwindSelect(),
+        }
+        help_texts = {
+            'title': 'A clear title describing what you want feedback on',
+            'url': 'Link to the PR, article, or content you want graded',
+            'description': 'Provide context about what you\'re looking for feedback on',
+        }
+
+
+class LinkGradeForm(forms.ModelForm):
+    """Form for grading a link."""
+    class Meta:
+        model = LinkGrade
+        fields = ['grade', 'comment']
+        widgets = {
+            'comment': TailwindTextarea(attrs={
+                'rows': 4, 
+                'placeholder': 'Comment required for grades below A'
+            }),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # Use radio buttons for grade selection
+        self.fields['grade'].widget = forms.RadioSelect(choices=LinkGrade.GRADE_CHOICES)
+        
+    def clean(self):
+        cleaned_data = super().clean()
+        grade = cleaned_data.get('grade')
+        comment = cleaned_data.get('comment')
+        
+        if grade not in ['A+', 'A'] and not comment:
+            self.add_error('comment', 'A comment is required for grades below A.')
+        
+        return cleaned_data
