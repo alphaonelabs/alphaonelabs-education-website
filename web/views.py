@@ -309,6 +309,21 @@ def all_leaderboards(request):
         }
 
         return render(request, "leaderboards/leaderboards.html", context)
+    else:
+        # Provide a default or limited view for teachers or unauthenticated users
+        context = {
+            "global_entries": global_entries,
+            "weekly_entries": weekly_entries,
+            "monthly_entries": monthly_entries,
+            "challenge_entries": [],
+            "user_rank": global_rank,
+            "user_weekly_rank": weekly_rank,
+            "user_monthly_rank": monthly_rank,
+            "user_total_points": None,
+            "user_weekly_points": None,
+            "user_monthly_points": None,
+        }
+        return render(request, "leaderboards/leaderboards.html", context)
 
 
 @login_required

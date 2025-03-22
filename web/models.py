@@ -1342,9 +1342,9 @@ class Donation(models.Model):
     stripe_customer_id = models.CharField(max_length=100, blank=True, default="")
     message = models.TextField(blank=True)
     anonymous = models.BooleanField(default=False)
-    award_points = (models.BooleanField(default=True, help_text="Award points to user for donation"),)
-    points_multiplier = (
-        models.DecimalField(decimal_places=2, max_digits=5, default=1.0, help_text="Points per dollar multiplier"),
+    award_points = models.BooleanField(default=True, help_text="Award points to user for donation")
+    points_multiplier = models.DecimalField(
+        decimal_places=2, max_digits=5, default=1.0, help_text="Points per dollar multiplier"
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
