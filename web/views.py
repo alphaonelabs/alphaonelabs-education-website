@@ -245,38 +245,52 @@ def all_leaderboards(request):
     from django.core.cache import cache
 
     # Get leaderboard data for different time periods
-    global_entries = cache.get('global_leaderboard')
-    if global_entries is None:
-        global_entries = get_leaderboard(period=None, limit=10)
-        cache.set('global_leaderboard', global_entries, 60*60)  # Cache for 1 hour
-        
-    weekly_entries = cache.get('weekly_leaderboard')
-    if weekly_entries is None:
-        weekly_entries = get_leaderboard(period="weekly", limit=10)
-        cache.set('weekly_leaderboard', weekly_entries, 60*15)  # Cache for 15 minutes
-        
-    monthly_entries = cache.get('monthly_leaderboard')
-    if monthly_entries is None:
-        monthly_entries = get_leaderboard(period="monthly", limit=10)
-        cache.set('monthly_leaderboard', monthly_entries, 60*30)  # Cache for 30 minutes
+    # Global Leaderboard
+    global_data = cache.get('global_leaderboard')
+    if global_data is None:
+        global_entries, global_rank = get_leaderboard(request.user, period=None, limit=10)
+        # Cache both global_entries and global_rank for 1 hour
+        cache.set('global_leaderboard', (global_entries, global_rank), 60 * 60)
+    else:
+        global_entries, global_rank = global_data  # Unpack cached values
+
+    # Weekly Leaderboard
+    weekly_data = cache.get('weekly_leaderboard')
+    if weekly_data is None:
+        weekly_entries, weekly_rank = get_leaderboard(request.user, period="weekly", limit=10)
+        # Cache both weekly_entries and weekly_rank for 1 hour
+        cache.set('weekly_leaderboard', (weekly_entries, weekly_rank), 60 * 60)
+    else:
+        weekly_entries, weekly_rank = weekly_data  # Unpack cached values
+
+    # Monthly Leaderboard
+    monthly_data = cache.get('monthly_leaderboard')
+    if monthly_data is None:
+        monthly_entries, monthly_rank = get_leaderboard(request.user, period="monthly", limit=10)
+        # Cache both monthly_entries and monthly_rank for 1 hour
+        cache.set('monthly_leaderboard', (monthly_entries, monthly_rank), 60 * 60)
+    else:
+        monthly_entries, monthly_rank = monthly_data  # Unpack cached values
+
 
     # Get user's rank if authenticated
-    user_rank = None
-    user_weekly_rank = None
-    user_monthly_rank = None
+    # user_rank = None
+    # user_weekly_rank = None
+    # user_monthly_rank = None
 
     if request.user.is_authenticated:
         # Get user's points
-        total_points = calculate_user_total_points(request.user)
-        weekly_points = calculate_user_weekly_points(request.user)
-        monthly_points = calculate_user_monthly_points(request.user)
+        # total_points = calculate_user_total_points(request.user)
+        # weekly_points = calculate_user_weekly_points(request.user)
+        # monthly_points = calculate_user_monthly_points(request.user)
 
         # Only calculate ranks if user has points and is not a teacher
         if not request.user.profile.is_teacher:
             # Get user's ranks using the helper functions
-            user_rank = get_user_global_rank(request.user)
-            user_weekly_rank = get_user_weekly_rank(request.user)
-            user_monthly_rank = get_user_monthly_rank(request.user)
+            # user_rank = get_user_global_rank(request.user)
+            # user_weekly_rank = get_user_weekly_rank(request.user)
+            # user_monthly_rank = get_user_monthly_rank(request.user)
+            pass
 
     context = {
         "global_entries": global_entries,
@@ -287,9 +301,9 @@ def all_leaderboards(request):
             .filter(user__profile__is_teacher=False)  # Exclude teachers
             .order_by("-points_awarded")[:10]
         ),
-        "user_rank": user_rank,
-        "user_weekly_rank": user_weekly_rank,
-        "user_monthly_rank": user_monthly_rank,
+        "user_rank": global_rank,
+        "user_weekly_rank": weekly_rank,
+        "user_monthly_rank": monthly_rank,
     }
 
     return render(request, "leaderboards/leaderboards.html", context)

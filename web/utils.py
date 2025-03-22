@@ -91,56 +91,101 @@ def calculate_user_streak(user):
     return 0
 
 
-def get_leaderboard(period=None, limit=10):
+def get_leaderboard(current_user, period=None, limit=10):
     """
     Get leaderboard data based on period (None/global, weekly, or monthly)
     Returns a list of users with their points sorted by total points
     Excludes teachers from the leaderboard
     """
-    from django.db.models import Count
-    from web.models import User, ChallengeSubmission, Profile
+    from django.db.models import Count, Sum
+    from web.models import User, ChallengeSubmission, Points, Profile
+    from django.utils import timezone
+    from datetime import timedelta
 
-    # Get all users who have at least one submission and are not teachers
-    users = User.objects.annotate(
-        challenge_count=Count('challengesubmission', distinct=True)
-    ).filter(
-        challenge_count__gt=0,
-        profile__is_teacher=False  # Exclude teachers
-    )
+    # Define time periods if needed
+    one_week_ago = timezone.now() - timedelta(days=7)
+    one_month_ago = timezone.now() - timedelta(days=30)
     
-    leaderboard_data = []
-    for user in users:
-        print("user:", user)
-        # Calculate points based on period
-        if period == "weekly":
-            points = calculate_user_weekly_points(user)
-        elif period == "monthly":
-            points = calculate_user_monthly_points(user)
-        else:  # global or None
-            points = calculate_user_total_points(user)
+    # Get users directly from database with proper sorting
+    if period == "weekly":
+        # Get weekly leaderboard ordered by points
+        leaderboard_entries = Points.objects.filter(
+            awarded_at__gte=one_week_ago,
+            user__profile__is_teacher=False
+        ).values('user').annotate(
+            points=Sum('amount')
+        ).filter(
+            points__gt=0
+        ).order_by('-points')[:limit]
         
-        # Only include users with points
-        if points > 0:
-            # Calculate streak for each user
-            current_streak = calculate_user_streak(user)
+        # Get full user data
+        user_ids = [entry['user'] for entry in leaderboard_entries]
+        users = {user.id: user for user in User.objects.filter(id__in=user_ids).annotate(
+            challenge_count=Count('challengesubmission', distinct=True)
+        )}
+        
+    elif period == "monthly":
+        # Get monthly leaderboard ordered by points
+        leaderboard_entries = Points.objects.filter(
+            awarded_at__gte=one_month_ago,
+            user__profile__is_teacher=False
+        ).values('user').annotate(
+            points=Sum('amount')
+        ).filter(
+            points__gt=0
+        ).order_by('-points')[:limit]
+        
+        # Get full user data
+        user_ids = [entry['user'] for entry in leaderboard_entries]
+        users = {user.id: user for user in User.objects.filter(id__in=user_ids).annotate(
+            challenge_count=Count('challengesubmission', distinct=True)
+        )}
+        
+    else:  # Global leaderboard
+        # Get global leaderboard ordered by points
+        leaderboard_entries = Points.objects.filter(
+            user__profile__is_teacher=False
+        ).values('user').annotate(
+            points=Sum('amount')
+        ).filter(
+            points__gt=0
+        ).order_by('-points')[:limit]
+        
+        # Get full user data
+        user_ids = [entry['user'] for entry in leaderboard_entries]
+        users = {user.id: user for user in User.objects.filter(id__in=user_ids).annotate(
+            challenge_count=Count('challengesubmission', distinct=True)
+        )}
+    
+    # Prepare the final leaderboard with all necessary data
+    leaderboard_data = []
+    rank = 1
+    user_rank = 0
+    
+    for entry in leaderboard_entries:
+        user_id = entry['user']
+        points = entry['points']
+        user = users.get(user_id)
+        if current_user == user:
+            user_rank = rank
+        if user:
             
-            # Add user data to leaderboard
+            # Calculate additional stats for each user
             entry_data = {
                 "user": user,
+                "rank": rank,
                 "points": points,
-                "weekly_points": calculate_user_weekly_points(user),
-                "monthly_points": calculate_user_monthly_points(user),
-                "total_points": calculate_user_total_points(user),
-                "current_streak": current_streak,
-                "challenge_count": user.challenge_count,
+                "weekly_points": calculate_user_weekly_points(user) if period != "weekly" else points,
+                "monthly_points": calculate_user_monthly_points(user) if period != "monthly" else points,
+                "total_points": calculate_user_total_points(user) if period is not None else points,
+                "current_streak": calculate_user_streak(user),
+                "challenge_count": getattr(user, 'challenge_count', 0),
             }
+            rank += 1
             leaderboard_data.append(entry_data)
     
-    # Sort by the appropriate points field based on period
-    leaderboard_data.sort(key=lambda x: x["points"], reverse=True)
-    
-    # Return limited number of results
-    return leaderboard_data[:limit]
+    print("{{{{{{{{{}}}}}}}}}", leaderboard_data)
+    return leaderboard_data, user_rank
 
 # Fix the rank calculation in views.py by adding these helper functions:
 def get_user_weekly_rank(user):
@@ -235,37 +280,49 @@ def get_user_global_rank(user):
     Properly handles ties (same points = same rank).
     """
     from django.db import models
-    from web.models import Points
+    from django.db.models import Count, Sum
+    from web.models import Points, User
     
     # Get all users with points, sorted by total points (descending)
-    all_users = list(Points.objects.values("user").annotate(
-        total=models.Sum("amount")
-    ).order_by("-total"))
-    
-    # If the user has no points, they're not ranked
-    if not all_users:
-        return None
-    
-    # Find the user's position and handle ties
-    current_rank = 0
-    prev_points = None
-    
-    for i, entry in enumerate(all_users):
-        current_points = entry["total"]
-        
-        print("users", i," ; " , entry["user"], " my:", user.id, current_points)
-        # Handle ties - same points should have same rank
-        if prev_points is not None and current_points < prev_points:
-            # Points decreased, so rank should jump to account for previous ties
-            current_rank = i + 1
-        
-        # Check if this is our user
-        if entry["user"] == user.id:
-            return current_rank
 
-        prev_points = current_points
+    # leaderboard_entries = Points.objects.filter(
+    #     awarded_at__gte=one_month_ago,
+    #     user__profile__is_teacher=False
+    # ).values('user').annotate(
+    #     points=Sum('amount')
+    # ).filter(
+    #     points__gt=0
+    # ).order_by('-points')[:limit]
+        
+    # user_ids = [entry['user'] for entry in leaderboard_entries]
+    # users = {user.id: user for user in User.objects.filter(id__in=user_ids).annotate(
+    #     challenge_count=Count('challengesubmission', distinct=True)
+    # )}
+    # print("5555555555555555555555555", users)
+    # If the user has no points, they're not ranked
+    # if not all_users:
+    #     return None
     
-    # User not found in the list (no points)
+    # # Find the user's position and handle ties
+    # current_rank = 0
+    # prev_points = None
+    
+    # for i, entry in enumerate(all_users):
+    #     current_points = entry["total"]
+        
+    #     # print("users", i," ; " , entry["user"], " my:", user.id, current_points)
+    #     # Handle ties - same points should have same rank
+    #     if prev_points is not None and current_points < prev_points:
+    #         # Points decreased, so rank should jump to account for previous ties
+    #         current_rank = i + 1
+        
+    #     # Check if this is our user
+    #     if entry["user"] == user.id:
+    #         return current_rank
+
+    #     prev_points = current_points
+    
+    # # User not found in the list (no points)
     return None
 
 
