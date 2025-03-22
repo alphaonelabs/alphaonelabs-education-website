@@ -355,7 +355,7 @@ def tutor_completion(request):
             'success': True,
             'response': {
                 'text': response_text,
-                'provider': 'personalized',
+                'provider': 'personalized_tutor',
                 'personalized': True,
                 'interaction_id': interaction.id
             }

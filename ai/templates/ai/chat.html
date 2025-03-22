@@ -1152,6 +1152,8 @@ input:checked + .toggle-slider:before {
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <!-- Add Mermaid.js library -->
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<!-- Add DOMPurify for XSS protection -->
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.3/dist/purify.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
   // Configure marked to render images and sanitize HTML
@@ -1743,6 +1745,9 @@ document.addEventListener('DOMContentLoaded', function() {
       
       // Use marked for rendering AI messages with images and standard markdown
       formattedContent = marked.parse(formattedContent);
+      
+      // Sanitize the formatted content using DOMPurify
+      formattedContent = DOMPurify.sanitize(formattedContent);
       
       // Add voice controls for AI messages
       const voiceControlsHtml = `
