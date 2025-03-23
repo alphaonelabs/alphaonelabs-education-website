@@ -4871,7 +4871,8 @@ def prepare_time_series_data(enrollment, total_sessions):
     return {
         # Calculate progress percentage for each completed session
         "progress_over_time": [
-            round(((idx + 1) / total_sessions) * 100, 1) for idx, _ in enumerate(completed_sessions)
+            round(((idx + 1) / total_sessions) * 100, 1) if total_sessions else 0
+            for idx, _ in enumerate(completed_sessions)
         ],
         # Create sequential session numbers
         "sessions_points": list(range(1, len(completed_sessions) + 1)),
