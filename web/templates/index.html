@@ -4,6 +4,25 @@
 
 {% block content %}
   <main class="flex-1 w-full max-w-[90rem] mx-auto mt-6 px-4 md:px-6">
+    {% if is_debug %}
+      <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-6 rounded">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-code text-yellow-500"></i>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm text-yellow-700">Debug Mode: This banner and buttons are only visible in development.</p>
+            <div class="mt-2">
+              <a href="{% url 'create_test_data' %}"
+                 class="bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200 inline-flex items-center">
+                <i class="fas fa-database mr-2"></i>
+                Add Test Data
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
     <div class="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-6">
       <div class="md:w-3/4 space-y-7">
         <div class="space-y-4">
@@ -107,19 +126,19 @@
               <div class="flex items-center mb-3">
                 {% if course.teacher.profile.avatar %}
                   <img src="{{ course.teacher.profile.avatar.url }}"
-                       alt="{{ course.teacher.get_full_name|default:course.teacher.username }}"
+                       alt="{{ course.teacher.username }}"
                        class="h-12 w-12 rounded-full mr-3"
                        width="48"
                        height="48" />
                 {% else %}
                   <img src="{% static 'images/default_teacher.png' %}"
-                       alt="{{ course.teacher.get_full_name|default:course.teacher.username }}"
+                       alt="{{ course.teacher.username }}"
                        class="h-12 w-12 rounded-full mr-3"
                        width="48"
                        height="48" />
                 {% endif %}
                 <div>
-                  <span class="text-sm font-medium">{{ course.teacher.get_full_name|default:course.teacher.username }}</span>
+                  <span class="text-sm font-medium">{{ course.teacher.username }}</span>
                   {% if course.teacher.profile.expertise %}
                     <p class="text-xs text-gray-600 dark:text-gray-400">{{ course.teacher.profile.expertise }}</p>
                   {% endif %}
@@ -193,6 +212,66 @@
               <div class="flex items-center">
                 <i class="fas fa-share-alt mr-1"></i>
                 <span>Share results</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Peer Challenges Section -->
+        <div class="mb-6 bg-gradient-to-r from-purple-600 to-pink-500 rounded-lg overflow-hidden shadow-md">
+          <div class="flex flex-col md:flex-row">
+            <div class="p-4 md:w-3/4 text-white relative overflow-hidden">
+              <div class="relative z-10">
+                <div class="flex items-center mb-1">
+                  <span class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">New Feature</span>
+                </div>
+                <h2 class="text-lg md:text-xl font-bold mb-2">Challenge Your Friends with Peer Quizzes!</h2>
+                <p class="mb-3 text-pink-100 text-sm">
+                  Create personalized quiz challenges, invite friends, and compete on the leaderboard!
+                </p>
+                <div class="flex flex-wrap gap-2">
+                  <a href="{% url 'challenge_list' %}"
+                     class="bg-white text-purple-600 hover:bg-purple-50 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition duration-200 inline-flex items-center">
+                    <i class="fas fa-trophy mr-1.5"></i> View Challenges
+                  </a>
+                  {% if user.is_authenticated %}
+                    <a href="{% url 'create_challenge' %}"
+                       class="bg-transparent hover:bg-white/20 border border-white px-3 py-1.5 rounded-lg text-sm font-medium transition duration-200 inline-flex items-center">
+                      <i class="fas fa-plus mr-1.5"></i> Create Challenge
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            <div class="hidden md:block md:w-1/4 bg-gradient-to-br from-purple-500/30 to-pink-500/30 p-2 relative">
+              <!-- Single Challenge Card visual -->
+              <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <div class="bg-white/90 dark:bg-gray-800/90 rounded-lg shadow-md p-2 w-36 border-t-4 border-yellow-500">
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-bold text-purple-600 dark:text-purple-400">Math Challenge</span>
+                    <span class="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded-full">1st</span>
+                  </div>
+                  <div class="text-xs text-gray-600 dark:text-gray-300">
+                    <div class="flex items-center">
+                      <i class="fas fa-user-friends mr-1 text-xs"></i> 8 Participants
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-purple-700/30 py-1.5 px-4">
+            <div class="flex flex-wrap items-center justify-between text-xs text-white">
+              <div class="flex items-center">
+                <i class="fas fa-users mr-1"></i>
+                <span>Challenge friends</span>
+              </div>
+              <div class="flex items-center">
+                <i class="fas fa-crown mr-1"></i>
+                <span>Compete</span>
+              </div>
+              <div class="flex items-center">
+                <i class="fas fa-chart-bar mr-1"></i>
+                <span>Track results</span>
               </div>
             </div>
           </div>
@@ -421,7 +500,7 @@
                       {% for invite in team_invites|slice:":3" %}
                         <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition duration-200">
                           <h4 class="font-medium text-white">{{ invite.goal.title }}</h4>
-                          <p class="text-sm text-gray-200 mt-1">Invited by {{ invite.sender.get_full_name|default:invite.sender.username }}</p>
+                          <p class="text-sm text-gray-200 mt-1">Invited by {{ invite.sender.username }}</p>
                           <div class="flex items-center space-x-2 mt-3">
                             <form method="post"
                                   action="{% url 'accept_team_invite' invite.id %}"
@@ -481,6 +560,47 @@
             </a>
           </div>
         </div>
+        {% if user.is_authenticated and teaching_courses %}
+          <!-- Courses Teaching Section -->
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 shadow-lg">
+            <h2 class="text-lg font-semibold mb-4 flex items-center">
+              <i class="fa-solid fa-chalkboard-teacher text-teal-300 dark:text-teal-300 mr-2"></i>
+              My Teaching Courses
+            </h2>
+            <div class="space-y-3">
+              {% for course in teaching_courses %}
+                <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200">
+                  <div class="flex items-center justify-between mb-1">
+                    <a href="{% url 'course_detail' course.slug %}"
+                       class="font-medium text-gray-800 dark:text-gray-200 hover:text-teal-300 dark:hover:text-teal-300 transition">
+                      {{ course.title|truncatechars:28 }}
+                    </a>
+                    <span class="text-xs {% if course.status == 'published' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% elif course.status == 'draft' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %} px-2 py-1 rounded-full">
+                      {{ course.get_status_display }}
+                    </span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-300">
+                    <div class="flex items-center">
+                      <i class="fas fa-eye text-gray-400 mr-1.5"></i>
+                      <span>{{ course.view_count|default:"0" }} views</span>
+                    </div>
+                    <div class="flex items-center">
+                      <i class="fas fa-users text-gray-400 mr-1.5"></i>
+                      <span>{{ course.enrolled_students }}/{{ course.max_students }} enrolled</span>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+              {% if teaching_courses.count > 3 %}
+                <a href="{% url 'teacher_dashboard' %}"
+                   class="text-teal-300 hover:text-teal-400 dark:text-teal-300 dark:hover:text-teal-400 text-sm flex items-center justify-center mt-2">
+                  <span>View all courses</span>
+                  <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
         <!-- Progress Trackers Dashboard -->
         {% if user.is_authenticated %}
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">

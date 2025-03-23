@@ -92,19 +92,19 @@
               <div class="flex items-center mb-3">
                 {% if course.teacher.profile.avatar %}
                   <img src="{{ course.teacher.profile.avatar.url }}"
-                       alt="{{ course.teacher.get_full_name|default:course.teacher.username }}"
+                       alt="{{ course.teacher.username }}"
                        class="h-12 w-12 rounded-full mr-3"
                        width="48"
                        height="48" />
                 {% else %}
                   <img src="{% static 'images/default_teacher.png' %}"
-                       alt="{{ course.teacher.get_full_name|default:course.teacher.username }}"
+                       alt="{{ course.teacher.username }}"
                        class="h-12 w-12 rounded-full mr-3"
                        width="48"
                        height="48" />
                 {% endif %}
                 <div>
-                  <span class="text-sm font-medium">{{ course.teacher.get_full_name|default:course.teacher.username }}</span>
+                  <span class="text-sm font-medium">{{ course.teacher.username }}</span>
                   {% if course.teacher.profile.expertise %}
                     <p class="text-xs text-gray-600 dark:text-gray-400">{{ course.teacher.profile.expertise }}</p>
                   {% endif %}

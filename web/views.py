@@ -22,11 +22,13 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
+from django.core.management import call_command
 from django.core.paginator import Paginator
 from django.db import IntegrityError, models, transaction
 from django.db.models import Avg, Count, Q, Sum
 from django.http import (
     FileResponse,
+    Http404,
     HttpResponse,
     HttpResponseForbidden,
     JsonResponse,
@@ -129,6 +131,7 @@ from .models import (
     TeamGoalMember,
     TeamInvite,
     TimeSlot,
+    UserBadge,
     WebRequest,
 )
 from .notifications import (
@@ -155,6 +158,8 @@ def sitemap(request):
 
 def index(request):
     """Homepage view."""
+    from django.conf import settings
+
     # Store referral code in session if present in URL
     ref_code = request.GET.get("ref")
     if ref_code:
@@ -208,6 +213,7 @@ def index(request):
         "latest_post": latest_post,
         "latest_success_story": latest_success_story,
         "form": form,
+        "is_debug": settings.DEBUG,
     }
     if request.user.is_authenticated:
         user_team_goals = (
@@ -226,6 +232,23 @@ def index(request):
                 "team_invites": team_invites,
             }
         )
+
+        # Add courses that the user is teaching if they have any
+        teaching_courses = (
+            Course.objects.filter(teacher=request.user)
+            .annotate(
+                view_count=Sum("web_requests__count", default=0),
+                enrolled_students=Count("enrollments", filter=Q(enrollments__status="approved")),
+            )
+            .order_by("-created_at")
+        )
+
+        if teaching_courses.exists():
+            context.update(
+                {
+                    "teaching_courses": teaching_courses,
+                }
+            )
     return render(request, "index.html", context)
 
 
@@ -260,37 +283,28 @@ def signup_view(request):
 @login_required
 def profile(request):
     if request.method == "POST":
-        if "avatar" in request.FILES:
-            # Handle avatar upload
-            request.user.profile.avatar = request.FILES["avatar"]
-            request.user.profile.save()
-            return redirect("profile")
-
-        form = ProfileUpdateForm(request.POST, instance=request.user)
+        form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
-            user = form.save()
-            user.profile.bio = form.cleaned_data["bio"]
-            user.profile.expertise = form.cleaned_data["expertise"]
-            user.profile.save()
+            form.save()  # Save the form data including the is_profile_public field
+            request.user.profile.refresh_from_db()  # Refresh the instance so updated Profile is loaded
             messages.success(request, "Profile updated successfully!")
             return redirect("profile")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Error in {field}: {error}")
     else:
-        form = ProfileUpdateForm(
-            initial={
-                "username": request.user.username,
-                "email": request.user.email,
-                "first_name": request.user.first_name,
-                "last_name": request.user.last_name,
-                "bio": request.user.profile.bio,
-                "expertise": request.user.profile.expertise,
-            }
-        )
+        # Use the instance so the form loads all updated fields from the database.
+        form = ProfileUpdateForm(instance=request.user)
+
+    badges = UserBadge.objects.filter(user=request.user).select_related("badge")
 
     context = {
         "form": form,
+        "badges": badges,
     }
 
-    # Add teacher-specific stats
+    # Teacher-specific stats
     if request.user.profile.is_teacher:
         courses = Course.objects.filter(teacher=request.user)
         total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
@@ -301,9 +315,7 @@ def profile(request):
             if course_ratings:
                 avg_rating += sum(review.rating for review in course_ratings)
                 total_ratings += len(course_ratings)
-
         avg_rating = round(avg_rating / total_ratings, 1) if total_ratings > 0 else 0
-
         context.update(
             {
                 "courses": courses,
@@ -311,13 +323,10 @@ def profile(request):
                 "avg_rating": avg_rating,
             }
         )
-
-    # Add student-specific stats
+    # Student-specific stats
     else:
         enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
         completed_courses = enrollments.filter(status="completed").count()
-
-        # Calculate average progress
         total_progress = 0
         progress_count = 0
         for enrollment in enrollments:
@@ -325,9 +334,7 @@ def profile(request):
             if progress.completion_percentage is not None:
                 total_progress += progress.completion_percentage
                 progress_count += 1
-
         avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
-
         context.update(
             {
                 "enrollments": enrollments,
@@ -336,7 +343,7 @@ def profile(request):
             }
         )
 
-    # Add created calendars with prefetched time slots
+    # Add created calendars with time slots if applicable
     created_calendars = request.user.created_calendars.prefetch_related("time_slots").order_by("-created_at")
     context["created_calendars"] = created_calendars
 
@@ -378,6 +385,17 @@ def course_detail(request, slug):
                 student=request.user, session__course=course, status="completed"
             ).values_list("session__id", flat=True)
             completed_sessions = course.sessions.filter(id__in=completed_sessions)
+
+    # Get attendance data for all enrolled students
+    student_attendance = {}
+    total_sessions = sessions.count()
+
+    if is_teacher or is_enrolled:
+        for enroll in course.enrollments.all():
+            attended_sessions = SessionAttendance.objects.filter(
+                student=enroll.student, session__course=course, status__in=["present", "late"]
+            ).count()
+            student_attendance[enroll.student.id] = {"attended": attended_sessions, "total": total_sessions}
 
     # Mark past sessions as completed for display
     past_sessions = sessions.filter(end_time__lt=now)
@@ -441,6 +459,7 @@ def course_detail(request, slug):
         "current_month": current_month,
         "prev_month": prev_month,
         "next_month": next_month,
+        "student_attendance": student_attendance,
     }
 
     return render(request, "courses/detail.html", context)
@@ -1763,6 +1782,7 @@ def teacher_dashboard(request):
         "courses": courses,
         "upcoming_sessions": upcoming_sessions,
         "course_stats": course_stats,
+        "total_students": total_students,
         "completion_rate": (total_completed / total_students * 100) if total_students > 0 else 0,
         "total_earnings": round(total_earnings, 2),
         "storefront": storefront,
@@ -2790,18 +2810,23 @@ def current_weekly_challenge(request):
 
 
 def challenge_detail(request, week_number):
-    challenge = get_object_or_404(Challenge, week_number=week_number)
-    submissions = ChallengeSubmission.objects.filter(challenge=challenge)
-    # Check if the current user has submitted this challenge
-    user_submission = None
-    if request.user.is_authenticated:
-        user_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
+    try:
+        challenge = get_object_or_404(Challenge, week_number=week_number)
+        submissions = ChallengeSubmission.objects.filter(challenge=challenge)
+        # Check if the current user has submitted this challenge
+        user_submission = None
+        if request.user.is_authenticated:
+            user_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
 
-    return render(
-        request,
-        "web/challenge_detail.html",
-        {"challenge": challenge, "submissions": submissions, "user_submission": user_submission},
-    )
+        return render(
+            request,
+            "web/challenge_detail.html",
+            {"challenge": challenge, "submissions": submissions, "user_submission": user_submission},
+        )
+    except Http404:
+        # Redirect to weekly challenges list if specific weekly challenge not found
+        messages.info(request, "Weekly challenge #" + str(week_number) + " not found. Returning to challenges list.")
+        return redirect("current_weekly_challenge")
 
 
 @login_required
@@ -3474,6 +3499,10 @@ def gsoc_landing_page(request):
 
 def whiteboard(request):
     return render(request, "whiteboard.html")
+
+
+def graphing_calculator(request):
+    return render(request, "graphing_calculator.html")
 
 
 def meme_list(request):
@@ -4492,7 +4521,56 @@ def toggle_course_status(request, slug):
     return redirect("course_detail", slug=slug)
 
 
-# Grade-a-Link Views
+def public_profile(request, username):
+    user = get_object_or_404(User, username=username)
+
+    try:
+        profile = user.profile
+    except Profile.DoesNotExist:
+        # Instead of raising Http404, we call custom_404.
+        return custom_404(request, "Profile not found.")
+
+    if not profile.is_profile_public:
+        return custom_404(request, "Profile not found.")
+
+    context = {"profile": profile}
+
+    if profile.is_teacher:
+        courses = Course.objects.filter(teacher=user)
+        total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
+        context.update(
+            {
+                "teacher_stats": {
+                    "courses": courses,
+                    "total_courses": courses.count(),
+                    "total_students": total_students,
+                }
+            }
+        )
+    else:
+        enrollments = Enrollment.objects.filter(student=user)
+        completed_enrollments = enrollments.filter(status="completed")
+        total_courses = enrollments.count()
+        total_completed = completed_enrollments.count()
+        total_progress = 0
+        progress_count = 0
+        for enrollment in enrollments:
+            progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+            total_progress += progress.completion_percentage
+            progress_count += 1
+        avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+        context.update(
+            {
+                "total_courses": total_courses,
+                "total_completed": total_completed,
+                "avg_progress": avg_progress,
+                "completed_courses": completed_enrollments,
+            }
+        )
+
+    return render(request, "public_profile_detail.html", context)
+
+
 class GradeableLinkListView(ListView):
     """View to display all submitted links that can be graded."""
 
@@ -4616,3 +4694,20 @@ def duplicate_session(request, session_id):
     messages.success(request, msg)
 
     return redirect("course_detail", slug=course.slug)
+
+
+def run_create_test_data(request):
+    """Run the create_test_data management command and redirect to homepage."""
+    from django.conf import settings
+
+    if not settings.DEBUG:
+        messages.error(request, "This action is only available in debug mode.")
+        return redirect("index")
+
+    try:
+        call_command("create_test_data")
+        messages.success(request, "Test data has been created successfully!")
+    except Exception as e:
+        messages.error(request, f"Error creating test data: {str(e)}")
+
+    return redirect("index")

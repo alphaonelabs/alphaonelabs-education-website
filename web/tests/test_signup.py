@@ -43,7 +43,7 @@ class SignupFormTest(TestCase):
 
     def test_signup_with_referral_code(self):
         """Test that signup works with and without a referral code"""
-        # Test without referral code
+        # Test without referral code.
         data = {
             "email": "newuser@example.com",
             "first_name": "New",
@@ -52,15 +52,16 @@ class SignupFormTest(TestCase):
             "password2": "testpass123",
             "captcha_0": "dummy-hash",
             "captcha_1": "PASSED",
+            "is_profile_public": False,  # New required field
         }
         response = self.client.post(self.signup_url, data)
         self.assertEqual(response.status_code, 302)  # Should redirect after successful signup
 
-        # Verify user was created without referral
+        # Verify user was created without referral.
         new_user = User.objects.get(email="newuser@example.com")
         self.assertIsNone(new_user.profile.referred_by)
 
-        # Test with invalid referral code
+        # Test with invalid referral code.
         data = {
             "email": "anotheruser@example.com",
             "first_name": "Another",
@@ -70,17 +71,18 @@ class SignupFormTest(TestCase):
             "referral_code": "INVALID",
             "captcha_0": "dummy-hash",
             "captcha_1": "PASSED",
+            "is_profile_public": False,  # Include the field here as well
         }
         response = self.client.post(self.signup_url, data)
         self.assertEqual(response.status_code, 200)
         self.assertIn("Invalid referral code", str(response.context["form"].errors["referral_code"]))
 
-        # Test with valid referral code
+        # Test with valid referral code.
         data["referral_code"] = "TEST123"
         response = self.client.post(self.signup_url, data)
         self.assertEqual(response.status_code, 302)  # Should redirect after successful signup
 
-        # Verify user was created and referral was handled
+        # Verify user was created and referral was handled.
         another_user = User.objects.get(email="anotheruser@example.com")
         self.assertEqual(another_user.profile.referred_by, self.referrer.profile)
 
@@ -122,6 +124,7 @@ class SignupFormTest(TestCase):
             "referral_code": "TEST123",
             "captcha_0": "dummy-hash",
             "captcha_1": "PASSED",
+            "is_profile_public": False,
         }
         response = self.client.post(self.signup_url, data)
         self.assertEqual(response.status_code, 302)  # Should redirect after successful signup
@@ -154,6 +157,7 @@ class SignupFormTest(TestCase):
             "referral_code": "TEST123",
             "captcha_0": "dummy-hash",
             "captcha_1": "PASSED",
+            "is_profile_public": True,  # New required field
         }
         response = self.client.post(self.signup_url, data)
         self.assertEqual(response.status_code, 302)  # Should redirect after successful signup

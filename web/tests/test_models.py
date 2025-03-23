@@ -34,7 +34,8 @@ class UserModelTests(TestCase):
     def test_profile_str(self):
         """Test the string representation of a Profile"""
         user = User.objects.get(username="testuser")
-        self.assertEqual(str(user.profile), "testuser's profile")
+        expected_str = f"{user.username}'s profile (Private)"
+        self.assertEqual(str(user.profile), expected_str)
 
     def test_profile_fields(self):
         """Test that profile fields can be set and retrieved"""
