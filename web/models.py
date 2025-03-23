@@ -80,6 +80,9 @@ class Profile(models.Model):
     is_profile_public = models.BooleanField(
         default=False, help_text="Toggle to make your profile public so your details and stats are visible."
     )
+    how_did_you_hear_about_us = models.TextField(
+        blank=True, help_text="How did you hear about us? You can enter text or a link."
+    )
 
     def __str__(self):
         visibility = "Public" if self.is_profile_public else "Private"
