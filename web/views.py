@@ -27,6 +27,7 @@ from django.db import IntegrityError, models, transaction
 from django.db.models import Avg, Count, Q, Sum
 from django.http import (
     FileResponse,
+    Http404,
     HttpResponse,
     HttpResponseForbidden,
     JsonResponse,
@@ -2873,18 +2874,23 @@ def current_weekly_challenge(request):
 
 
 def challenge_detail(request, week_number):
-    challenge = get_object_or_404(Challenge, week_number=week_number)
-    submissions = ChallengeSubmission.objects.filter(challenge=challenge)
-    # Check if the current user has submitted this challenge
-    user_submission = None
-    if request.user.is_authenticated:
-        user_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
+    try:
+        challenge = get_object_or_404(Challenge, week_number=week_number)
+        submissions = ChallengeSubmission.objects.filter(challenge=challenge)
+        # Check if the current user has submitted this challenge
+        user_submission = None
+        if request.user.is_authenticated:
+            user_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
 
-    return render(
-        request,
-        "web/challenge_detail.html",
-        {"challenge": challenge, "submissions": submissions, "user_submission": user_submission},
-    )
+        return render(
+            request,
+            "web/challenge_detail.html",
+            {"challenge": challenge, "submissions": submissions, "user_submission": user_submission},
+        )
+    except Http404:
+        # Redirect to weekly challenges list if specific weekly challenge not found
+        messages.info(request, "Weekly challenge #" + str(week_number) + " not found. Returning to challenges list.")
+        return redirect("current_weekly_challenge")
 
 
 @login_required

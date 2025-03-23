@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  Peer Challenges | Alpha One Labs
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+    <nav class="text-sm mb-6">
+      <a href="{% url 'index' %}" class="text-blue-600 hover:text-blue-800">Home</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-600">Peer Challenges</span>
+    </nav>
+    <!-- Header with create button -->
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Peer Challenges</h1>
+      <a href="{% url 'create_challenge' %}"
+         class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg flex items-center">
+        <i class="fas fa-plus mr-2"></i> Create Challenge
+      </a>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Left column - My Challenges -->
+      <div class="lg:col-span-1">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+          <div class="bg-teal-600 p-4">
+            <h2 class="text-xl font-bold text-white flex items-center">
+              <i class="fas fa-trophy mr-2"></i> My Challenges
+            </h2>
+          </div>
+          <div class="p-4">
+            {% if user_created_challenges %}
+              <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for challenge in user_created_challenges %}
+                  <div class="py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-lg">
+                    <a href="{% url 'peer_challenge_detail' challenge.id %}" class="block">
+                      <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-1">{{ challenge.title }}</h3>
+                      <div class="flex items-center text-sm text-gray-600 dark:text-gray-300 mb-2">
+                        <span class="flex items-center mr-4">
+                          <i class="fas fa-question-circle mr-1"></i> {{ challenge.quiz.title }}
+                        </span>
+                        {% if challenge.expires_at %}
+                          <span class="flex items-center">
+                            <i class="fas fa-clock mr-1"></i> Expires: {{ challenge.expires_at|date:"M d, Y" }}
+                          </span>
+                        {% endif %}
+                      </div>
+                      <div class="flex items-center justify-between mt-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if challenge.status == 'active' %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 {% elif challenge.status == 'completed' %} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 {% else %} bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 {% endif %}">
+                          {{ challenge.get_status_display }}
+                        </span>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">{{ challenge.created_at|date:"M d, Y" }}</span>
+                      </div>
+                    </a>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="py-8 text-center text-gray-500 dark:text-gray-400">
+                <i class="fas fa-trophy text-4xl mb-3"></i>
+                <p>You haven't created any challenges yet</p>
+                <a href="{% url 'create_challenge' %}"
+                   class="mt-3 inline-block text-teal-600 hover:text-teal-700">Create your first challenge</a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <!-- Middle column - Challenge Invitations -->
+      <div class="lg:col-span-1">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden h-full">
+          <div class="bg-blue-600 p-4">
+            <h2 class="text-xl font-bold text-white flex items-center">
+              <i class="fas fa-envelope mr-2"></i> Challenge Invitations
+            </h2>
+          </div>
+          <div class="p-4">
+            {% if invitations %}
+              <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for invitation in invitations %}
+                  <div class="py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-lg">
+                    <a href="{% url 'peer_challenge_detail' invitation.challenge.id %}"
+                       class="block">
+                      <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-1">{{ invitation.challenge.title }}</h3>
+                      <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        from <span class="font-medium">{{ invitation.challenge.creator.username }}</span>
+                      </p>
+                      <div class="flex items-center text-sm text-gray-600 dark:text-gray-300 mb-2">
+                        <span class="flex items-center mr-4">
+                          <i class="fas fa-question-circle mr-1"></i> {{ invitation.challenge.quiz.title }}
+                        </span>
+                      </div>
+                      {% if invitation.message %}
+                        <div class="bg-gray-50 dark:bg-gray-700 p-2 rounded-lg my-2 text-sm">
+                          <i class="fas fa-quote-left text-gray-400 mr-1"></i>
+                          {{ invitation.message }}
+                        </div>
+                      {% endif %}
+                      <div class="flex items-center justify-between mt-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if invitation.status == 'pending' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 {% elif invitation.status == 'accepted' %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 {% elif invitation.status == 'completed' %} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 {% endif %}">
+                          {{ invitation.get_status_display }}
+                        </span>
+                      </div>
+                      {% if invitation.status == 'pending' %}
+                        <div class="flex space-x-2 mt-3">
+                          <a href="{% url 'accept_invitation' invitation.id %}"
+                             class="bg-green-600 hover:bg-green-700 text-white text-sm py-1 px-3 rounded">Accept</a>
+                          <a href="{% url 'decline_invitation' invitation.id %}"
+                             class="bg-red-600 hover:bg-red-700 text-white text-sm py-1 px-3 rounded">Decline</a>
+                        </div>
+                      {% elif invitation.status == 'accepted' %}
+                        <div class="mt-3">
+                          <a href="{% url 'take_challenge' invitation.id %}"
+                             class="bg-blue-600 hover:bg-blue-700 text-white text-sm py-1 px-3 rounded">Take Quiz</a>
+                        </div>
+                      {% endif %}
+                    </a>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="py-8 text-center text-gray-500 dark:text-gray-400">
+                <i class="fas fa-envelope-open text-4xl mb-3"></i>
+                <p>No pending challenge invitations</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      <!-- Right column - Completed Challenges -->
+      <div class="lg:col-span-1">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden h-full">
+          <div class="bg-purple-600 p-4">
+            <h2 class="text-xl font-bold text-white flex items-center">
+              <i class="fas fa-medal mr-2"></i> Completed Challenges
+            </h2>
+          </div>
+          <div class="p-4">
+            {% if completed_challenges %}
+              <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for invitation in completed_challenges %}
+                  <div class="py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-lg">
+                    <a href="{% url 'peer_challenge_detail' invitation.challenge.id %}"
+                       class="block">
+                      <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-1">{{ invitation.challenge.title }}</h3>
+                      <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        by <span class="font-medium">{{ invitation.challenge.creator.username }}</span>
+                      </p>
+                      <div class="flex items-center text-sm text-gray-600 dark:text-gray-300 mb-1">
+                        <span class="flex items-center mr-4">
+                          <i class="fas fa-check-circle mr-1 text-green-500"></i> Completed on {{ invitation.updated_at|date:"M d, Y" }}
+                        </span>
+                      </div>
+                      {% if invitation.user_quiz %}
+                        <div class="flex items-center mt-2">
+                          <a href="{% url 'quiz_results' invitation.user_quiz.id %}"
+                             class="text-sm text-blue-600 hover:text-blue-800">
+                            View Results <i class="fas fa-arrow-right ml-1"></i>
+                          </a>
+                        </div>
+                      {% endif %}
+                    </a>
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="py-8 text-center text-gray-500 dark:text-gray-400">
+                <i class="fas fa-medal text-4xl mb-3"></i>
+                <p>You haven't completed any challenges yet</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
