@@ -342,6 +342,32 @@
             <p>No featured products available.</p>
           {% endfor %}
         </div>
+        <div class="border border-pink-100 dark:border-pink-800/30 rounded-lg p-6 shadow-sm bg-gradient-to-br from-pink-50/50 to-white dark:from-pink-900/20 dark:to-gray-800/50 mb-6">
+          <h2 class="text-lg font-medium flex items-center mb-4 text-pink-600 dark:text-pink-400">
+            <i class="fas fa-handshake text-pink-400 dark:text-pink-500 mr-2"></i> Our Affiliations
+          </h2>
+          <div class="flex justify-center">
+            <!-- Open Science Labs Logo -->
+            <div class="flex flex-col items-center p-4 bg-white/30 dark:bg-gray-800/30 rounded-lg shadow-sm">
+              <a href="https://opensciencelabs.org"
+                 target="_blank"
+                 rel="noopener"
+                 class="block">
+                <img src="{% static 'images/osl-color-horizontal-removebg-preview.png' %}"
+                     alt="Open Science Labs"
+                     class="h-32 w-auto"
+                     title="Open Science Labs"
+                     loading="eager"
+                     height="128"
+                     width="auto" />
+              </a>
+              <p class="text-sm text-pink-600 dark:text-pink-400 mt-2 text-center">Open Science Labs</p>
+            </div>
+          </div>
+          <p class="text-center text-sm text-pink-500 dark:text-pink-400/80 mt-6">
+            Alpha One Labs is proudly affiliated with Open Science Labs, advancing education technology and open learning initiatives.
+          </p>
+        </div>
         <!-- Add view more link -->
         <div class="text-right mt-4">
           <a href="{% url 'goods_listing' %}"
