@@ -1,0 +1,81 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run pre-commit on all files",
+            "type": "shell",
+            "command": "pre-commit run --all-files",
+            "group": {
+                "kind": "test",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "new",
+                "focus": true
+            },
+            "problemMatcher": [],
+            "detail": "Runs all pre-commit hooks on all files in the repository"
+        },
+        {
+            "label": "Run pre-commit on staged files",
+            "type": "shell",
+            "command": "pre-commit run",
+            "group": "test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": [],
+            "detail": "Runs all pre-commit hooks on staged files only"
+        },
+        {
+            "label": "Run pre-commit hook: flake8",
+            "type": "shell",
+            "command": "pre-commit run flake8 --all-files",
+            "group": "test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": [],
+            "detail": "Runs only the flake8 pre-commit hook on all files"
+        },
+        {
+            "label": "Run pre-commit hook: black",
+            "type": "shell",
+            "command": "pre-commit run black --all-files",
+            "group": "test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": [],
+            "detail": "Runs only the black pre-commit hook on all files"
+        },
+        {
+            "label": "Run pre-commit hook: isort",
+            "type": "shell",
+            "command": "pre-commit run isort --all-files",
+            "group": "test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": [],
+            "detail": "Runs only the isort pre-commit hook on all files"
+        },
+        {
+            "label": "Run pre-commit hook: djlint",
+            "type": "shell",
+            "command": "pre-commit run djlint-django --all-files",
+            "group": "test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": [],
+            "detail": "Runs only the djlint pre-commit hook on all files"
+        }
+    ]
+}
