@@ -186,12 +186,23 @@ Copy `.env.sample` to `.env` and configure the variables.
 
 ### Pre-commit Hooks
 
-We use pre-commit hooks to ensure code quality:
+We use pre-commit hooks to ensure code quality and automatically format code:
 
 ```bash
+# Install pre-commit
+pip install pre-commit
+
+# Install the git hooks
 pre-commit install
-pre-commit run --all-files
+
+# Automatically fix formatting issues
+poetry run pre-commit run --hook-stage commit
+
+# Run all checks on all files
+poetry run pre-commit run --all-files
 ```
+
+See [PRE-COMMIT-README.md](PRE-COMMIT-README.md) for detailed information about our pre-commit workflow and configuration.
 
 ### Documentation
 

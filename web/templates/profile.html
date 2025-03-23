@@ -3,115 +3,229 @@
 {% load static %}
 
 {% block title %}
-  Profile - {{ user.get_full_name|default:user.username }}
+  Profile - {{ user.username }}
 {% endblock title %}
 {% block content %}
-  <div class="container mx-auto px-4 py-8">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  <div class="container mx-auto px-4 py-6">
+    <!-- Messages -->
+    {% if messages %}
+      <div class="mb-4">
+        {% for message in messages %}
+          <div class="p-3 mb-3 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 {% elif message.tags == 'error' %}bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100 {% elif message.tags == 'warning' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100 {% else %}bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100{% endif %}">
+            <div class="flex items-center">
+              <i class="mr-2 {% if message.tags == 'success' %}fas fa-check-circle {% elif message.tags == 'error' %}fas fa-exclamation-circle {% elif message.tags == 'warning' %}fas fa-exclamation-triangle {% else %}fas fa-info-circle{% endif %}"></i>
+              <span>{{ message }}</span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Profile Information -->
       <div class="lg:col-span-1">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-          <div class="flex items-center justify-between mb-6">
-            <h2 class="text-2xl font-bold">Profile</h2>
-            {% if user.profile.is_teacher %}
-              <span class="bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200 text-sm font-medium px-3 py-1 rounded-full">Teacher</span>
-            {% endif %}
-          </div>
-          <!-- Profile Picture -->
-          <div class="mb-6 flex flex-col items-center">
-            {% if user.profile.avatar %}
-              <img src="{{ user.profile.avatar.url }}"
-                   alt="{{ user.username }}'s avatar"
-                   class="w-32 h-32 rounded-full object-cover mb-4"
-                   height="128"
-                   width="128" />
-            {% else %}
-              {% if user.profile.is_teacher %}
-                <img src="{% static 'images/default_teacher.png' %}"
-                     alt="{{ user.username }}'s avatar"
-                     class="w-32 h-32 rounded-full object-cover mb-4"
-                     height="128"
-                     width="128" />
-              {% else %}
-                <div class="w-32 h-32 rounded-full bg-orange-500 flex items-center justify-center text-white text-4xl mb-4">
-                  {{ user.first_name|first|default:user.username|first|upper }}
-                </div>
-              {% endif %}
-            {% endif %}
-            <form method="post"
-                  enctype="multipart/form-data"
-                  class="w-full flex flex-col items-center">
-              {% csrf_token %}
-              <label for="avatar-upload"
-                     class="cursor-pointer mb-4 text-sm text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300">
-                <span class="flex items-center">
-                  <i class="fas fa-camera mr-2"></i>
-                  Change Avatar
-                </span>
-                <input type="file"
-                       id="avatar-upload"
-                       name="avatar"
-                       accept="image/*"
-                       class="hidden"
-                       onchange="this.form.submit()" />
-              </label>
-            </form>
-            <h3 class="text-lg font-medium">{{ user.username }}</h3>
-            {% if user.get_full_name %}<p class="text-sm text-gray-500 dark:text-gray-400">{{ user.get_full_name }}</p>{% endif %}
-          </div>
-          <form method="post" enctype="multipart/form-data" class="space-y-6">
-            {% csrf_token %}
-            {% for field in form %}
-              <div>
-                <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-2">{{ field.label }}</label>
-                {{ field }}
-                {% if field.help_text %}
-                  <small class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ field.help_text }}</small>
+        <form method="post" enctype="multipart/form-data" class="space-y-4">
+          {% csrf_token %}
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+            <!-- Header Section -->
+            <div class="px-6 py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white">
+              <div class="flex items-center justify-between">
+                <h2 class="text-xl font-bold">Your Profile</h2>
+                {% if user.profile.is_teacher %}
+                  <span class="bg-white bg-opacity-20 text-white text-sm font-medium px-3 py-1 rounded-full">Teacher</span>
                 {% endif %}
-                {% if field.errors %}<div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>{% endif %}
               </div>
-            {% endfor %}
-            <button type="submit"
-                    class="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
-              Update Profile
-            </button>
-          </form>
-        </div>
-        {% if user.profile.is_teacher %}
-          <!-- Stripe Connect Information -->
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
-            <h2 class="text-2xl font-bold mb-6">Payment Settings</h2>
-            <div class="space-y-4">
-              <div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Account Status</p>
-                <div class="flex items-center mt-1">
-                  {% if user.profile.stripe_account_status == "verified" %}
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                      <i class="fas fa-check-circle mr-2"></i> Verified
-                    </span>
-                  {% elif user.profile.stripe_account_status == "pending" %}
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                      <i class="fas fa-clock mr-2"></i> Pending Verification
-                    </span>
+            </div>
+            <!-- Content Area -->
+            <div class="p-5">
+              <!-- Avatar Upload Section -->
+              <div class="flex items-start mb-6">
+                <!-- Current Avatar Display -->
+                <div class="flex-shrink-0 mr-5">
+                  {% if user.profile.avatar %}
+                    <img src="{{ user.profile.avatar.url }}"
+                         alt="{{ user.username }}'s avatar"
+                         class="w-24 h-24 rounded-full object-cover border-2 border-teal-300 dark:border-teal-500"
+                         height="96"
+                         width="96" />
                   {% else %}
-                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
-                      <i class="fas fa-exclamation-circle mr-2"></i> Not Connected
-                    </span>
+                    {% if user.profile.is_teacher %}
+                      <img src="{% static 'images/default_teacher.png' %}"
+                           alt="{{ user.username }}'s avatar"
+                           class="w-24 h-24 rounded-full object-cover border-2 border-teal-300 dark:border-teal-500"
+                           height="96"
+                           width="96" />
+                    {% else %}
+                      <div class="w-24 h-24 rounded-full bg-orange-500 flex items-center justify-center text-white text-3xl border-2 border-teal-300 dark:border-teal-500">
+                        {{ user.first_name|first|default:user.username|first|upper }}
+                      </div>
+                    {% endif %}
+                  {% endif %}
+                </div>
+                <!-- Avatar Upload Controls -->
+                <div class="flex-grow">
+                  <label for="{{ form.avatar.id_for_label }}"
+                         class="block text-sm font-medium mb-1">Change profile picture</label>
+                  {{ form.avatar }}
+                  {% if form.avatar.help_text %}
+                    <small class="text-xs text-gray-500 dark:text-gray-400 block">{{ form.avatar.help_text }}</small>
+                  {% endif %}
+                  {% if form.avatar.errors %}
+                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.avatar.errors }}</div>
                   {% endif %}
                 </div>
               </div>
-              <div>
-                <p class="text-sm text-gray-500 dark:text-gray-400">Commission Rate</p>
-                <p class="text-lg font-medium">{{ user.profile.commission_rate }}%</p>
+              <!-- Profile Visibility Section - Compact Version -->
+              <div class="mb-5 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+                <div class="flex items-center mb-2">
+                  <i class="fas fa-shield-alt text-teal-600 dark:text-teal-400 mr-2"></i>
+                  <h3 class="text-sm font-medium">Profile Visibility</h3>
+                </div>
+                <div class="flex flex-wrap gap-3 mb-2">
+                  {% for value, text in form.is_profile_public.field.choices %}
+                    <label class="flex items-center p-2 {% if value == 'False' %}bg-yellow-50 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-800{% else %}bg-green-50 dark:bg-green-900 border border-green-200 dark:border-green-800{% endif %} rounded cursor-pointer">
+                      <input type="radio"
+                             name="{{ form.is_profile_public.name }}"
+                             value="{{ value }}"
+                             class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
+                             {% if form.is_profile_public.value == value %}checked{% endif %} />
+                      <span class="ml-2 text-sm font-medium {% if value == 'False' %}text-yellow-800 dark:text-yellow-200{% else %}text-green-800 dark:text-green-200{% endif %}">
+                        {{ text }}
+                        {% if value == "True" %}
+                          <span class="inline-block ml-1 text-xs px-1.5 py-0.5 bg-green-600 text-white rounded-full">Visible to All</span>
+                        {% else %}
+                          <span class="inline-block ml-1 text-xs px-1.5 py-0.5 bg-yellow-600 text-white rounded-full">Limited Access</span>
+                        {% endif %}
+                      </span>
+                    </label>
+                  {% endfor %}
+                </div>
+                <p class="text-xs text-gray-600 dark:text-gray-300 italic">
+                  <i class="fas fa-info-circle mr-1"></i> Public profiles share your bio, expertise and username. Real name and email remain private.
+                </p>
+                <a href="{% url 'public_profile' user.username %}"
+                   class="text-xs text-teal-600 dark:text-teal-400 hover:underline mt-1 flex items-center gap-1">
+                  <i class="fas fa-external-link-alt"></i>
+                  Preview your public profile
+                </a>
               </div>
+              <!-- Core Profile Fields - Username, Email -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                <div>
+                  <label for="{{ form.username.id_for_label }}"
+                         class="block text-sm font-medium mb-1">Username</label>
+                  {{ form.username }}
+                  {% if form.username.errors %}
+                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.username.errors }}</div>
+                  {% endif %}
+                </div>
+                <div>
+                  <label for="{{ form.email.id_for_label }}"
+                         class="block text-sm font-medium mb-1">Email</label>
+                  {{ form.email }}
+                  {% if form.email.errors %}
+                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.email.errors }}</div>
+                  {% endif %}
+                </div>
+              </div>
+              <!-- Full Name Fields -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-5">
+                <div>
+                  <label for="{{ form.first_name.id_for_label }}"
+                         class="block text-sm font-medium mb-1">First Name</label>
+                  {{ form.first_name }}
+                  {% if form.first_name.errors %}
+                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.first_name.errors }}</div>
+                  {% endif %}
+                </div>
+                <div>
+                  <label for="{{ form.last_name.id_for_label }}"
+                         class="block text-sm font-medium mb-1">Last Name</label>
+                  {{ form.last_name }}
+                  {% if form.last_name.errors %}
+                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.last_name.errors }}</div>
+                  {% endif %}
+                </div>
+              </div>
+              <!-- Professional Info -->
+              <div class="mb-5">
+                <label for="{{ form.expertise.id_for_label }}"
+                       class="block text-sm font-medium mb-1">Areas of Expertise</label>
+                {{ form.expertise }}
+                {% if form.expertise.help_text %}
+                  <small class="text-xs text-gray-500 dark:text-gray-400">{{ form.expertise.help_text }}</small>
+                {% endif %}
+                {% if form.expertise.errors %}
+                  <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.expertise.errors }}</div>
+                {% endif %}
+              </div>
+              <!-- Bio Field -->
+              <div class="mb-5">
+                <label for="{{ form.bio.id_for_label }}"
+                       class="block text-sm font-medium mb-1">Bio</label>
+                {{ form.bio }}
+                {% if form.bio.help_text %}
+                  <small class="text-xs text-gray-500 dark:text-gray-400">{{ form.bio.help_text }}</small>
+                {% endif %}
+                {% if form.bio.errors %}
+                  <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.bio.errors }}</div>
+                {% endif %}
+              </div>
+              <!-- Other Hidden Fields -->
+              {% for field in form %}
+                {% if field.name != 'avatar' and field.name != 'is_profile_public' and field.name != 'username' and field.name != 'email' and field.name != 'first_name' and field.name != 'last_name' and field.name != 'bio' and field.name != 'expertise' %}
+                  <div class="mb-5">
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-1">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.help_text %}
+                      <small class="text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% if field.errors %}<div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ field.errors }}</div>{% endif %}
+                  </div>
+                {% endif %}
+              {% endfor %}
+              <!-- Submit Button -->
+              <button type="submit"
+                      class="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition duration-150">
+                <i class="fas fa-save mr-2"></i> Update Profile
+              </button>
+            </div>
+          </div>
+        </form>
+        <!-- Additional Panels -->
+        {% if user.profile.is_teacher %}
+          <!-- Stripe Connect Information -->
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mt-4">
+            <div class="flex items-center justify-between mb-3">
+              <h2 class="text-lg font-bold">Payment Settings</h2>
+              <div>
+                {% if user.profile.stripe_account_status == "verified" %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                    <i class="fas fa-check-circle mr-1"></i> Verified
+                  </span>
+                {% elif user.profile.stripe_account_status == "pending" %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                    <i class="fas fa-clock mr-1"></i> Pending
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                    <i class="fas fa-exclamation-circle mr-1"></i> Not Connected
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+            <div class="flex items-center justify-between py-2 border-b border-gray-200 dark:border-gray-700">
+              <span class="text-sm text-gray-500 dark:text-gray-400">Commission Rate</span>
+              <span class="text-sm font-medium">{{ user.profile.commission_rate }}%</span>
+            </div>
+            <div class="mt-3">
               {% if not user.profile.stripe_account_id %}
                 <a href="{% url 'stripe_connect_onboarding' %}"
-                   class="inline-block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                   class="inline-block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded text-sm">
                   <i class="fab fa-stripe mr-2"></i> Connect with Stripe
                 </a>
               {% elif user.profile.stripe_account_status == "pending" %}
                 <a href="{% url 'stripe_connect_onboarding' %}"
-                   class="inline-block w-full text-center bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                   class="inline-block w-full text-center bg-yellow-600 hover:bg-yellow-700 text-white font-medium py-2 px-4 rounded text-sm">
                   <i class="fas fa-external-link-alt mr-2"></i> Complete Verification
                 </a>
               {% endif %}
@@ -119,59 +233,27 @@
           </div>
         {% endif %}
         <!-- Quick Actions Section -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
-          <h2 class="text-xl font-semibold mb-4">Quick Actions</h2>
-          <div class="space-y-3">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mt-4">
+          <h2 class="text-lg font-bold mb-3">Quick Actions</h2>
+          <div class="space-y-2">
+            <a href="{% url 'public_profile' user.username %}"
+               class="block w-full text-center bg-teal-300 hover:bg-teal-400 text-gray-700 dark:text-gray-100 font-medium py-2 px-4 rounded text-sm">
+              <i class="fas fa-user-circle mr-2"></i> View Public Profile
+              {% if not user.profile.is_profile_public %}
+                <span class="inline-block ml-1 text-xs px-1.5 py-0.5 bg-yellow-600 text-white rounded-full">Private</span>
+              {% endif %}
+            </a>
             <a href="{% url 'create_calendar' %}"
-               class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded">
+               class="block w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded text-sm">
               <i class="fas fa-calendar-plus mr-2"></i> Create Event Calendar
             </a>
             {% if user.profile.is_teacher %}
               <a href="{% url 'create_course' %}"
-                 class="block w-full text-center bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded">
+                 class="block w-full text-center bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded text-sm">
                 <i class="fas fa-plus mr-2"></i> Create Course
               </a>
             {% endif %}
           </div>
-        </div>
-        <!-- Created Calendars Section -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
-          <h2 class="text-xl font-semibold mb-4">My Event Calendars</h2>
-          {% if created_calendars %}
-            <div class="space-y-4">
-              {% for calendar in created_calendars %}
-                <a href="{% url 'view_calendar' calendar.share_token %}"
-                   class="block bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg p-4 transition duration-150">
-                  <div class="flex justify-between items-center">
-                    <h3 class="font-medium">{{ calendar.title }}</h3>
-                    <span class="text-sm px-2 py-1 rounded bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                      {{ calendar.unique_participants_count }} participant{{ calendar.unique_participants_count|pluralize }}
-                    </span>
-                  </div>
-                  {% if calendar.description %}
-                    <p class="text-sm text-gray-600 dark:text-gray-300 mt-2">{{ calendar.description|truncatewords:30 }}</p>
-                  {% endif %}
-                  <div class="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    <span class="flex items-center">
-                      <i class="fas fa-calendar mr-1"></i>
-                      Created {{ calendar.created_at|date:"M j, Y" }}
-                    </span>
-                  </div>
-                </a>
-              {% endfor %}
-            </div>
-          {% else %}
-            <div class="text-center py-8">
-              <div class="text-gray-400 dark:text-gray-500 mb-4">
-                <i class="fas fa-calendar text-4xl"></i>
-              </div>
-              <p class="text-gray-600 dark:text-gray-300 mb-4">You haven't created any event calendars yet.</p>
-              <a href="{% url 'create_calendar' %}"
-                 class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded">
-                <i class="fas fa-plus mr-2"></i> Create Your First Calendar
-              </a>
-            </div>
-          {% endif %}
         </div>
       </div>
       <!-- Stats and Activity -->
@@ -325,7 +407,7 @@
                       <div class="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-400">
                         <span class="flex items-center">
                           <i class="fas fa-user-tie mr-1"></i>
-                          {{ enrollment.course.teacher.get_full_name|default:enrollment.course.teacher.username }}
+                          {{ enrollment.course.teacher.username }}
                         </span>
                         <span class="mx-2">•</span>
                         <span class="flex items-center">
@@ -354,13 +436,19 @@
             <div class="p-6">
               <h2 class="text-xl font-semibold mb-6">My Badges</h2>
               {% if badges %}
-                {% for user_badge in badges %}
-                  <div class="badge-item">
-                    <img src="{{ user_badge.badge.image.url }}"
-                         alt="{{ user_badge.badge.name }}" />
-                    <p>{{ user_badge.badge.name }}</p>
-                  </div>
-                {% endfor %}
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {% for user_badge in badges %}
+                    <div class="flex flex-col items-center bg-gray-50 dark:bg-gray-700 rounded-lg p-3 shadow-sm">
+                      <img src="{{ user_badge.badge.image.url }}"
+                           alt="{{ user_badge.badge.name }}"
+                           height="64"
+                           width="64"
+                           class="h-16 w-16 object-contain mb-2" />
+                      <p class="text-sm font-medium text-center text-gray-600 dark:text-gray-300">{{ user_badge.badge.name }}</p>
+                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Earned: {{ user_badge.awarded_at|date:"M j, Y" }}</p>
+                    </div>
+                  {% endfor %}
+                </div>
               {% else %}
                 <div class="text-center py-8">
                   <div class="text-gray-400 dark:text-gray-500 mb-4">
