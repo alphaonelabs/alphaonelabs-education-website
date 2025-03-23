@@ -2,7 +2,7 @@
 
 A modern, feature-rich education platform built with Django and Tailwind CSS that enables seamless learning experiences through course creation, peer connections, study groups, and interactive forums.
 
-## Project Overview
+## Project Overview here
 
 Alpha One Labs is an education platform designed to facilitate both learning and teaching. The platform provides a comprehensive environment where educators can create and manage courses, while students can learn, collaborate, and engage with peers. With features like study groups, peer connections, and discussion forums, we aim to create a collaborative learning environment that goes beyond traditional online education.
 
