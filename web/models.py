@@ -1457,8 +1457,8 @@ class Meetup(models.Model):
 
     def get_default_user():
         return User.objects.filter(is_superuser=True).first().id
-    
-    creator = models.ForeignKey(User, on_delete=models.CASCADE , default=get_default_user)  # Creator field
+
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, default=get_default_user)  # Creator field
 
     def clean(self):
         super().clean()
@@ -1485,6 +1485,8 @@ class Meetup(models.Model):
     def can_edit(self, user):
         """Check if the given user can edit this meetup."""
         return user == self.creator or user.is_staff
+
+
 class Badge(models.Model):
     BADGE_TYPES = [
         ("challenge", "Challenge Completion"),

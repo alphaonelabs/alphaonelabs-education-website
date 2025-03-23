@@ -18,9 +18,9 @@ from .models import (
     EducationalVideo,
     ForumCategory,
     Goods,
-    Meetup,
     GradeableLink,
     LinkGrade,
+    Meetup,
     Meme,
     PeerChallenge,
     PeerChallengeInvitation,
@@ -1410,6 +1410,7 @@ class MeetupForm(forms.ModelForm):
             self.add_error("link", "Link is required for online events.")
 
         return cleaned_data
+
 
 class QuizForm(forms.ModelForm):
     """Form for creating and editing quizzes."""
