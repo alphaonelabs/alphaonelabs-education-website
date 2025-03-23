@@ -3439,6 +3439,11 @@ def whiteboard(request):
     return render(request, "whiteboard.html")
 
 
+def graph_tool(request):
+    """Graphing calculator view using Desmos API"""
+    return render(request, "graph.html")
+
+
 def meme_list(request):
     memes = Meme.objects.all().order_by("-created_at")
     subjects = Subject.objects.filter(memes__isnull=False).distinct()

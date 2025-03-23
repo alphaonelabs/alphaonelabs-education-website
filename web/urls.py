@@ -36,6 +36,7 @@ urlpatterns += i18n_patterns(
     path("teach/", views.teach, name="teach"),
     path("about/", views.about, name="about"),
     path("profile/<str:username>/", views.public_profile, name="public_profile"),
+    path("graph/", views.graph_tool, name="graph_tool"),
     path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
     path("certificate/generate/<int:enrollment_id>/", views.generate_certificate, name="generate_certificate"),
     path("donate/", views.donate, name="donate"),
