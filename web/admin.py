@@ -664,3 +664,4 @@ class QuizOptionAdmin(admin.ModelAdmin):
     search_fields = ("text", "question__text")
     autocomplete_fields = ["question"]
 
+
