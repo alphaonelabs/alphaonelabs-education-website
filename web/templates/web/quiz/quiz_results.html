@@ -335,6 +335,19 @@
             </a>
           </div>
           <div class="space-x-2">
+            {% if user.is_authenticated and challenge_invitation %}
+              {% if challenge_invitation.status == 'completed' %}
+                <a href="{% url 'challenge_leaderboard' challenge_invitation.challenge.id %}"
+                   class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
+                  <i class="fas fa-trophy mr-2"></i> See Challenge Leaderboard
+                </a>
+              {% else %}
+                <a href="{% url 'submit_to_leaderboard' user_quiz.id %}"
+                   class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
+                  <i class="fas fa-trophy mr-2"></i> Submit to Challenge Leaderboard
+                </a>
+              {% endif %}
+            {% endif %}
             {% if user_quiz.user == request.user and user_quiz.quiz.max_attempts > 0 and user_attempts < user_quiz.quiz.max_attempts %}
               <a href="{% url 'take_quiz' user_quiz.quiz.id %}"
                  class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
