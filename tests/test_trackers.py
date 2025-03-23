@@ -5,7 +5,7 @@ from django.urls import reverse
 from web.models import ProgressTracker
 
 
-class ProgressTrackerTests(SimpleTestCase):
+class ProgressTrackerTests(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(username="testuser", password="testpassword")
@@ -26,14 +26,14 @@ class ProgressTrackerTests(SimpleTestCase):
         self.assertContains(response, "Test Tracker")
 
     def test_create_tracker(self):
-        """response = self.client.post(reverse('create_tracker'), {
+        response = self.client.post(reverse('create_tracker'), {
             'title': 'New Tracker',
             'description': 'New description',
             'current_value': 10,
             'target_value': 50,
             'color': 'green-600',
             'public': True
-        })"""
+        })
         self.assertEqual(ProgressTracker.objects.count(), 2)
         new_tracker = ProgressTracker.objects.get(title="New Tracker")
         self.assertEqual(new_tracker.current_value, 10)
