@@ -75,9 +75,13 @@ class Profile(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_profile_public = models.BooleanField(
+        default=False, help_text="Toggle to make your profile public so your details and stats are visible."
+    )
 
     def __str__(self):
-        return f"{self.user.username}'s profile"
+        visibility = "Public" if self.is_profile_public else "Private"
+        return f"{self.user.username}'s profile ({visibility})"
 
     def save(self, *args, **kwargs):
         if not self.referral_code:
@@ -708,7 +712,7 @@ class PeerConnection(models.Model):
 
 
 class PeerMessage(models.Model):
-    """Direct messages between connected peers."""
+    """Direct messages between connected."""
 
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
@@ -966,7 +970,7 @@ class Goods(models.Model):
     slug = models.SlugField(unique=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     @property
     def image_url(self):
         """Return the URL of the first product image, or a default image if none exists."""
@@ -975,7 +979,15 @@ class Goods(models.Model):
         if first_image and first_image.image:
             return first_image.image.url
         # Return a default placeholder image
-        return '/static/images/placeholder.png'
+        return "/static/images/placeholder.png"
+
+    @property
+    def image(self):
+        first_image = self.goods_images.first()
+        if first_image and first_image.image:
+            return first_image.image.url
+        # Return a default placeholder image
+        return "/static/images/placeholder.png"
 
     def clean(self):
         # Validate discount logic
@@ -1889,3 +1901,150 @@ class UserQuiz(models.Model):
     def created_at(self):
         """Alias for start_time for template compatibility."""
         return self.start_time
+
+
+class GradeableLink(models.Model):
+    """Model for storing links that users want to get grades on."""
+
+    LINK_TYPES = [
+        ("pr", "Pull Request"),
+        ("article", "Article"),
+        ("website", "Website"),
+        ("project", "Project"),
+        ("other", "Other"),
+    ]
+
+    title = models.CharField(max_length=200)
+    url = models.URLField()
+    description = models.TextField(blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="submitted_links")
+    link_type = models.CharField(max_length=20, choices=LINK_TYPES, default="other")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title
+
+    def get_absolute_url(self):
+        return reverse("gradeable_link_detail", kwargs={"pk": self.pk})
+
+    @property
+    def average_grade(self):
+        """Calculate the average numeric grade."""
+        grades = self.grades.all()
+        if not grades:
+            return None
+        return sum(grade.numeric_grade for grade in grades) / grades.count()
+
+    @property
+    def average_letter_grade(self):
+        """Convert the average numeric grade back to a letter grade."""
+        avg = self.average_grade
+        if avg is None:
+            return "No grades yet"
+
+        if avg >= 4.0:
+            return "A+"
+        elif avg >= 3.7:
+            return "A"
+        elif avg >= 3.3:
+            return "A-"
+        elif avg >= 3.0:
+            return "B+"
+        elif avg >= 2.7:
+            return "B"
+        elif avg >= 2.3:
+            return "B-"
+        elif avg >= 2.0:
+            return "C+"
+        elif avg >= 1.7:
+            return "C"
+        elif avg >= 1.3:
+            return "C-"
+        elif avg >= 1.0:
+            return "D"
+        else:
+            return "F"
+
+    @property
+    def grade_count(self):
+        """Return the number of grades."""
+        return self.grades.count()
+
+    @property
+    def grade_distribution(self):
+        """Return a dictionary with the distribution of letter grades."""
+        grades = self.grades.all()
+        distribution = {}
+
+        # Initialize with all possible grades
+        for grade_code, grade_name in LinkGrade.GRADE_CHOICES:
+            # Group by main letter for simplicity (A+, A, A- all grouped as A)
+            main_letter = grade_code[0]
+            distribution[main_letter] = distribution.get(main_letter, 0)
+
+        # Count actual grades
+        for grade in grades:
+            main_letter = grade.grade[0]
+            distribution[main_letter] = distribution.get(main_letter, 0) + 1
+
+        # Sort by grade letter (A, B, C, D, F)
+        return {k: v for k, v in sorted(distribution.items())}
+
+
+class LinkGrade(models.Model):
+    """Model for storing grades on links."""
+
+    GRADE_CHOICES = [
+        ("A+", "A+"),
+        ("A", "A"),
+        ("A-", "A-"),
+        ("B+", "B+"),
+        ("B", "B"),
+        ("B-", "B-"),
+        ("C+", "C+"),
+        ("C", "C"),
+        ("C-", "C-"),
+        ("D", "D"),
+        ("F", "F"),
+    ]
+
+    GRADE_VALUES = {
+        "A+": 4.3,
+        "A": 4.0,
+        "A-": 3.7,
+        "B+": 3.3,
+        "B": 3.0,
+        "B-": 2.7,
+        "C+": 2.3,
+        "C": 2.0,
+        "C-": 1.7,
+        "D": 1.0,
+        "F": 0.0,
+    }
+
+    link = models.ForeignKey(GradeableLink, on_delete=models.CASCADE, related_name="grades")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="given_grades")
+    grade = models.CharField(max_length=2, choices=GRADE_CHOICES)
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ["link", "user"]  # One grade per user per link
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user.username} graded {self.link.title} with {self.grade}"
+
+    @property
+    def numeric_grade(self):
+        """Convert letter grade to numeric value."""
+        return self.GRADE_VALUES.get(self.grade, 0.0)
+
+    def clean(self):
+        """Validate that comments are provided for lower grades."""
+        if self.grade not in ["A+", "A"] and not self.comment:
+            raise ValidationError("A comment is required for grades below A.")
