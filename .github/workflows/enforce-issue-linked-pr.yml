@@ -40,8 +40,46 @@ jobs:
               return;
             }
 
-            // Check for linked issues in the Development section (via GitHub UI)
-            // First get all linked issues/PRs
+            // Check if the PR directly has linked issues in the "Development" section
+            // This uses the GraphQL API to check for linked issues
+            try {
+              const query = `
+                query($owner:String!, $repo:String!, $pr_number:Int!) {
+                  repository(owner:$owner, name:$repo) {
+                    pullRequest(number:$pr_number) {
+                      closingIssuesReferences(first:10) {
+                        nodes {
+                          number
+                          title
+                        }
+                      }
+                    }
+                  }
+                }
+              `;
+
+              const variables = {
+                owner: repo.owner,
+                repo: repo.repo,
+                pr_number: prNumber
+              };
+
+              const result = await github.graphql(query, variables);
+              const linkedIssues = result.repository.pullRequest.closingIssuesReferences.nodes;
+
+              if (linkedIssues && linkedIssues.length > 0) {
+                console.log(`Found ${linkedIssues.length} linked issues in the Development section:`);
+                for (const issue of linkedIssues) {
+                  console.log(`- Issue #${issue.number}: ${issue.title}`);
+                }
+                return;
+              }
+            } catch (error) {
+              console.log(`Error checking linked issues via GraphQL API: ${error.message}`);
+              // Continue with other checks
+            }
+
+            // Fallback to REST API for linked items if GraphQL fails
             try {
               const { data: linkedItems } = await github.rest.pulls.listLinkedItems({
                 owner: repo.owner,
@@ -49,22 +87,20 @@ jobs:
                 pull_number: prNumber,
               });
 
-              // Filter for issues that would be closed by this PR
+              // Fix the filter logic with proper parentheses
               const linkedIssues = linkedItems.items.filter(item =>
-                item.type === 'ISSUE' &&
-                item.link_type === 'CLOSING' ||
-                item.link_type === 'LINKED'
+                item.type === 'ISSUE' && (item.link_type === 'CLOSING' || item.link_type === 'LINKED')
               );
 
               if (linkedIssues.length > 0) {
-                console.log(`Found ${linkedIssues.length} linked issues in the Development section`);
+                console.log(`Found ${linkedIssues.length} linked issues via REST API`);
                 for (const issue of linkedIssues) {
                   console.log(`- Issue #${issue.number}: ${issue.title}`);
                 }
                 return;
               }
             } catch (error) {
-              console.log(`Error checking linked items via API: ${error.message}`);
+              console.log(`Error checking linked items via REST API: ${error.message}`);
               // Continue with other checks
             }
 
@@ -177,21 +213,6 @@ jobs:
                - Click "Link an issue" or "Link issues"
                - Select the relevant issue(s)
             3. If no issue exists yet, please create one first
-
-            ### Exceptions
-
-            PRs with these labels don't require linked issues:
-            - documentation
-            - dependencies
-            - typo
-            - ci
-            - chore
-
-            Or with titles starting with:
-            - docs:
-            - chore:
-            - deps:
-            - ci:
 
             This PR will be automatically closed. Feel free to reopen it once you've linked it to an issue or added appropriate labels.
 

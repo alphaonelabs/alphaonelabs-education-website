@@ -21,6 +21,7 @@ from .models import (
     GradeableLink,
     LinkGrade,
     Meme,
+    NotificationPreference,
     PeerChallenge,
     PeerChallengeInvitation,
     ProductImage,
@@ -111,6 +112,14 @@ class UserRegistrationForm(SignupForm):
         widget=TailwindInput(attrs={"placeholder": "Enter referral code"}),
         help_text="Optional - Enter a referral code if you have one",
     )
+    how_did_you_hear_about_us = forms.CharField(
+        max_length=500,
+        required=False,
+        widget=TailwindTextarea(
+            attrs={"rows": 2, "placeholder": "How did you hear about us? You can enter text or a link."}
+        ),
+        help_text="Optional - Tell us how you found us. You can enter text or a link.",
+    )
     captcha = CaptchaField(widget=TailwindCaptchaTextInput)
     # NEW: Add radio buttons for profile visibility.
     is_profile_public = forms.TypedChoiceField(
@@ -162,6 +171,10 @@ class UserRegistrationForm(SignupForm):
                 if field_name in self.data and field_name in self.fields:
                     self.fields[field_name].widget.attrs["value"] = self.data[field_name]
 
+            # Initialize how_did_you_hear_about_us if provided
+            if "how_did_you_hear_about_us" in self.data:
+                self.fields["how_did_you_hear_about_us"].initial = self.data["how_did_you_hear_about_us"]
+
         # Set a default for the new field if not provided.
         if "is_profile_public" not in self.initial:
             self.initial["is_profile_public"] = "False"  # Default to Private.
@@ -212,6 +225,8 @@ class UserRegistrationForm(SignupForm):
 
         # Update the profile with the new radio button value.
         user.profile.is_profile_public = self.cleaned_data.get("is_profile_public")
+        # Save how_did_you_hear_about_us
+        user.profile.how_did_you_hear_about_us = self.cleaned_data.get("how_did_you_hear_about_us", "")
         user.profile.save()
 
         # Update teacher flag if provided.
@@ -1508,3 +1523,13 @@ class LinkGradeForm(forms.ModelForm):
             self.add_error("comment", "A comment is required for grades below A.")
 
         return cleaned_data
+
+
+class NotificationPreferencesForm(forms.ModelForm):
+    class Meta:
+        model = NotificationPreference
+        fields = ["reminder_days_before", "reminder_hours_before", "email_notifications", "in_app_notifications"]
+        widgets = {
+            "reminder_days_before": forms.NumberInput(attrs={"min": 1, "max": 14}),
+            "reminder_hours_before": forms.NumberInput(attrs={"min": 1, "max": 72}),
+        }
