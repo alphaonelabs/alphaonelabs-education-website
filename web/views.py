@@ -246,6 +246,23 @@ def index(request):
                 "team_invites": team_invites,
             }
         )
+
+        # Add courses that the user is teaching if they have any
+        teaching_courses = (
+            Course.objects.filter(teacher=request.user)
+            .annotate(
+                view_count=Sum("web_requests__count", default=0),
+                enrolled_students=Count("enrollments", filter=Q(enrollments__status="approved")),
+            )
+            .order_by("-created_at")
+        )
+
+        if teaching_courses.exists():
+            context.update(
+                {
+                    "teaching_courses": teaching_courses,
+                }
+            )
     return render(request, "index.html", context)
 
 
@@ -381,16 +398,16 @@ def all_leaderboards(request):
 @login_required
 def profile(request):
     if request.method == "POST":
-        if "avatar" in request.FILES:
-            request.user.profile.avatar = request.FILES["avatar"]
-            request.user.profile.save()
-            return redirect("profile")
-
         form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
+            form.save()  # Save the form data including the is_profile_public field
             request.user.profile.refresh_from_db()  # Refresh the instance so updated Profile is loaded
             messages.success(request, "Profile updated successfully!")
             return redirect("profile")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Error in {field}: {error}")
     else:
         # Use the instance so the form loads all updated fields from the database.
         form = ProfileUpdateForm(instance=request.user)

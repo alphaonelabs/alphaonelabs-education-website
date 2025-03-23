@@ -2,7 +2,7 @@ start with 5 emojis that best describe what you are about to do and one word on 
 
 # HTML Styling Rules
 - Always use Tailwind CSS classes for styling HTML elements
-- Never use custom CSS classes unless absolutely necessary
+- Never use custom CSS classes
 - Never use inline styles
 - Follow the project's color scheme using Tailwind's color classes:
   - Primary: teal-300
@@ -52,3 +52,4 @@ the tests are in the tests folder
 the admin.py file is in the web folder
 
 make sure to fix the linting errors
+dont create .md files
