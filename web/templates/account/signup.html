@@ -129,6 +129,33 @@
           {% endif %}
           <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.referral_code.help_text }}</p>
         </div>
+        <!-- Profile Visibility Section -->
+        <div class="border border-orange-500 p-4 rounded mt-4">
+          <p class="text-sm text-gray-600 dark:text-gray-300 mb-2">
+            We value your privacy and encourage you to stay safe online. A private profile will only be visible to you and site administrators, while a public profile can be viewed by anyone.
+          </p>
+          <div class="flex items-center space-x-4">
+            <label class="flex items-center">
+              <input type="radio"
+                     name="is_profile_public"
+                     value="True"
+                     class="form-radio text-orange-500"
+                     {% if form.is_profile_public.value == "True" %}checked{% elif form.is_profile_public.value is None and form.is_teacher.value %}checked{% endif %} />
+              <span class="ml-2">Public</span>
+            </label>
+            <label class="flex items-center">
+              <input type="radio"
+                     name="is_profile_public"
+                     value="False"
+                     class="form-radio text-orange-500"
+                     {% if form.is_profile_public.value == "False" %}checked{% elif form.is_profile_public.value is None and not form.is_teacher.value %}checked{% endif %} />
+              <span class="ml-2">Private</span>
+            </label>
+          </div>
+          {% if form.is_profile_public.errors %}
+            <p class="mt-1 text-xs text-red-600">{{ form.is_profile_public.errors|join:", " }}</p>
+          {% endif %}
+        </div>
         <!-- Password Fields -->
         <div class="grid grid-cols-2 gap-3">
           <div>

@@ -7,6 +7,9 @@
 {% endblock title %}
 {% block extra_head %}
   <script>
+      // Define user_quiz_id for use in JavaScript
+      const user_quiz_id = "{{ user_quiz_id }}";
+
       // Timer functionality
       document.addEventListener('DOMContentLoaded', function() {
           // Check if we have a time limit
@@ -15,19 +18,25 @@
               let remainingTime = timeLimit * 60; // convert to seconds
 
               // Check if we have a stored time for this quiz attempt
-              const storedTime = localStorage.getItem('quiz_{{ user_quiz.id }}_remaining_time');
+              const storedTime = localStorage.getItem('quiz_' + user_quiz_id + '_remaining_time');
               if (storedTime) {
                   remainingTime = parseInt(storedTime);
               }
 
               const timerElement = document.getElementById('timer');
+              if (!timerElement) return; // Exit if timer element doesn't exist
+
+              // Format and display initial time
+              const initialMinutes = Math.floor(remainingTime / 60);
+              const initialSeconds = remainingTime % 60;
+              timerElement.textContent = `${initialMinutes.toString().padStart(2, '0')}:${initialSeconds.toString().padStart(2, '0')}`;
 
               // Update the timer every second
               const timerInterval = setInterval(function() {
                   remainingTime--;
 
                   // Store the remaining time in localStorage
-                  localStorage.setItem('quiz_{{ user_quiz.id }}_remaining_time', remainingTime.toString());
+                  localStorage.setItem('quiz_' + user_quiz_id + '_remaining_time', remainingTime.toString());
 
                   // Format the time as MM:SS
                   const minutes = Math.floor(remainingTime / 60);
@@ -45,6 +54,7 @@
                   // Auto-submit when time is up
                   if (remainingTime <= 0) {
                       clearInterval(timerInterval);
+                      localStorage.removeItem('quiz_' + user_quiz_id + '_remaining_time');
                       document.getElementById('quiz-form').submit();
                   }
               }, 1000);
@@ -52,7 +62,10 @@
               // Add event listener to the form submission to clear the timer
               document.getElementById('quiz-form').addEventListener('submit', function() {
                   clearInterval(timerInterval);
-                  localStorage.removeItem('quiz_{{ user_quiz.id }}_remaining_time');
+                  localStorage.removeItem('quiz_' + user_quiz_id + '_remaining_time');
+
+                  // Save the remaining time in the hidden field for server-side processing
+                  document.getElementById('quiz_timer_value').value = remainingTime;
               });
           }
       });
@@ -65,7 +78,7 @@
                   questions | length
               }
           };
-          const answeredQuestions = document.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked, textarea:not(:empty)').length;
+          const answeredQuestions = document.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked, textarea:not(:placeholder-shown)').length;
 
           if (answeredQuestions < totalQuestions) {
               return confirm("You have unanswered questions. Are you sure you want to submit?");
@@ -103,7 +116,7 @@
             {% if quiz.time_limit %}
               <div class="flex items-center bg-gray-100 dark:bg-gray-700 px-4 py-2 rounded-lg">
                 <i class="fas fa-clock text-gray-600 dark:text-gray-400 mr-2"></i>
-                <span id="timer" class="text-xl font-mono font-bold">{{ quiz.time_limit }}:00</span>
+                <span id="timer" class="text-xl font-mono font-bold"></span>
               </div>
             {% endif %}
             <div class="text-sm text-gray-600 dark:text-gray-400">
@@ -120,7 +133,8 @@
           action="{% url 'take_quiz' quiz.id %}"
           onsubmit="return confirmSubmit()">
       {% csrf_token %}
-      <input type="hidden" name="user_quiz_id" value="{{ user_quiz.id }}" />
+      <input type="hidden" name="user_quiz_id" value="{{ user_quiz_id }}" />
+      <input type="hidden" id="quiz_timer_value" name="quiz_timer_value" value="" />
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
         <div class="p-6">
           <!-- Questions -->
