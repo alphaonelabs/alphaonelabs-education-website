@@ -28,8 +28,6 @@ else:
 # Debug settings
 DEBUG = env.bool("DJANGO_DEBUG", default=False)
 
-DESMOS_API_KEY = env("DESMOS_API_KEY")
-
 PA_USER = "alphaonelabs99282llkb"
 PA_HOST = PA_USER + ".pythonanywhere.com"
 PA_WSGI = "/var/www/" + PA_USER + "_pythonanywhere_com_wsgi.py"
