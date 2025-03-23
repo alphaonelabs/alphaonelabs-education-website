@@ -5,3 +5,4 @@ db.sqlite3
 .vscode/settings.json
 .vscode/launch.json
 venv/
+/media

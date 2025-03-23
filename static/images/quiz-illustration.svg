@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" fill="none">
+  <!-- Background elements -->
+  <circle cx="250" cy="250" r="200" fill="#ffffff" opacity="0.1"/>
+  <circle cx="250" cy="250" r="150" fill="#ffffff" opacity="0.15"/>
+
+  <!-- Lightbulb - Knowledge icon -->
+  <path d="M250 100C200 100 160 140 160 190C160 223 180 255 210 270L220 320H280L290 270C320 255 340 223 340 190C340 140 300 100 250 100Z" fill="#ffffff" opacity="0.9"/>
+  <rect x="220" y="320" width="60" height="20" rx="5" fill="#ffffff" opacity="0.9"/>
+  <rect x="230" y="340" width="40" height="10" rx="5" fill="#ffffff" opacity="0.9"/>
+
+  <!-- Question marks around the bulb -->
+  <text x="130" y="150" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#ffffff" opacity="0.7">?</text>
+  <text x="350" y="150" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#ffffff" opacity="0.7">?</text>
+  <text x="170" y="250" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#ffffff" opacity="0.7">?</text>
+  <text x="320" y="250" font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#ffffff" opacity="0.7">?</text>
+
+  <!-- Quiz elements -->
+  <rect x="120" y="320" width="80" height="20" rx="10" fill="#ffffff" opacity="0.6"/>
+  <rect x="300" y="320" width="80" height="20" rx="10" fill="#ffffff" opacity="0.6"/>
+  <rect x="150" y="360" width="200" height="20" rx="10" fill="#ffffff" opacity="0.6"/>
+  <rect x="180" y="400" width="140" height="20" rx="10" fill="#ffffff" opacity="0.6"/>
+
+  <!-- Brain icon element -->
+  <path d="M250 60C240 60 230 65 225 72C220 65 210 60 200 60C180 60 165 75 165 95C165 105 170 115 177 120C170 125 165 135 165 145C165 155 170 165 177 170C170 175 165 185 165 195C165 215 180 230 200 230C210 230 220 225 225 218C230 225 240 230 250 230C260 230 270 225 275 218C280 225 290 230 300 230C320 230 335 215 335 195C335 185 330 175 323 170C330 165 335 155 335 145C335 135 330 125 323 120C330 115 335 105 335 95C335 75 320 60 300 60C290 60 280 65 275 72C270 65 260 60 250 60Z" fill="#ffffff" opacity="0.15"/>
+</svg>

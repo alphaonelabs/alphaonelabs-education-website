@@ -1,0 +1,255 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  All Attempts: {{ quiz.title }}
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+    <nav class="text-sm mb-6">
+      <a href="{% url 'index' %}" class="text-blue-600 hover:text-blue-800">Home</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'quiz_list' %}"
+         class="text-blue-600 hover:text-blue-800">Quizzes</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'quiz_detail' quiz.id %}"
+         class="text-blue-600 hover:text-blue-800">{{ quiz.title }}</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'quiz_analytics' quiz.id %}"
+         class="text-blue-600 hover:text-blue-800">Analytics</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-600">All Attempts</span>
+    </nav>
+    <!-- Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-6">
+      <div class="p-6">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+          <div>
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-white">All Quiz Attempts</h1>
+            <p class="text-gray-600 dark:text-gray-400 mt-1">{{ quiz.title }} - {{ quiz.user_quizzes.count }} total attempts</p>
+          </div>
+          <div class="flex items-center space-x-3">
+            <a href="{% url 'quiz_analytics' quiz.id %}"
+               class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
+              <i class="fas fa-arrow-left mr-2"></i> Back to Analytics
+            </a>
+            <a href="#"
+               onclick="window.print(); return false;"
+               class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
+              <i class="fas fa-print mr-2"></i> Print
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Filters and Search -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-6">
+      <div class="p-6">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Filter Attempts</h2>
+        <form method="get" action="{% url 'quiz_all_attempts' quiz.id %}">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- User Filter -->
+            <div>
+              <label for="user_filter"
+                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">User</label>
+              <select name="user"
+                      id="user_filter"
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white">
+                <option value="">All Users</option>
+                {% for user in users %}
+                  <option value="{{ user.id }}"
+                          {% if request.GET.user == user.id|stringformat:"s" %}selected{% endif %}>
+                    {{ user.username }}
+                  </option>
+                {% endfor %}
+              </select>
+            </div>
+            <!-- Status Filter -->
+            <div>
+              <label for="status_filter"
+                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+              <select name="status"
+                      id="status_filter"
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white">
+                <option value="">All Statuses</option>
+                <option value="completed"
+                        {% if request.GET.status == 'completed' %}selected{% endif %}>Completed</option>
+                <option value="in_progress"
+                        {% if request.GET.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                <option value="grading"
+                        {% if request.GET.status == 'grading' %}selected{% endif %}>Needs Grading</option>
+              </select>
+            </div>
+            <!-- Score Range -->
+            <div>
+              <label for="score_range"
+                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Score Range</label>
+              <select name="score_range"
+                      id="score_range"
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white">
+                <option value="">All Scores</option>
+                <option value="pass"
+                        {% if request.GET.score_range == 'pass' %}selected{% endif %}>
+                  Passing ({{ quiz.passing_score }}%+)
+                </option>
+                <option value="fail"
+                        {% if request.GET.score_range == 'fail' %}selected{% endif %}>
+                  Failing (Below {{ quiz.passing_score }}%)
+                </option>
+                <option value="perfect"
+                        {% if request.GET.score_range == 'perfect' %}selected{% endif %}>Perfect (100%)</option>
+              </select>
+            </div>
+            <!-- Date Range -->
+            <div>
+              <label for="date_range"
+                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date Range</label>
+              <select name="date_range"
+                      id="date_range"
+                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white">
+                <option value="">All Time</option>
+                <option value="today"
+                        {% if request.GET.date_range == 'today' %}selected{% endif %}>Today</option>
+                <option value="week"
+                        {% if request.GET.date_range == 'week' %}selected{% endif %}>Past Week</option>
+                <option value="month"
+                        {% if request.GET.date_range == 'month' %}selected{% endif %}>Past Month</option>
+              </select>
+            </div>
+          </div>
+          <div class="flex justify-end mt-4">
+            <button type="submit"
+                    class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
+              <i class="fas fa-filter mr-2"></i> Apply Filters
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- Attempts Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div class="p-6">
+        {% if attempts %}
+          <div class="overflow-x-auto">
+            <table class="min-w-full">
+              <thead class="bg-gray-100 dark:bg-gray-700">
+                <tr>
+                  <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">ID</th>
+                  <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">User</th>
+                  <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Date/Time
+                  </th>
+                  <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Score
+                  </th>
+                  <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Time Taken
+                  </th>
+                  <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for attempt in attempts %}
+                  <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{{ attempt.id }}</td>
+                    <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">
+                      {% if attempt.user %}
+                        {{ attempt.user.username }}
+                      {% else %}
+                        Anonymous
+                      {% endif %}
+                    </td>
+                    <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{{ attempt.created_at|date:"M d, Y H:i" }}</td>
+                    <td class="py-3 px-4 text-sm font-medium {% if attempt.score >= quiz.passing_score %}text-green-600 dark:text-green-400 {% else %}text-red-600 dark:text-red-400{% endif %}">
+                      {{ attempt.score }}%
+                    </td>
+                    <td class="py-3 px-4 text-sm">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if attempt.status == 'completed' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 {% elif attempt.status == 'in_progress' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 {% elif attempt.status == 'grading' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300{% endif %}">
+                        {{ attempt.get_status_display }}
+                      </span>
+                    </td>
+                    <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{{ attempt.duration }}</td>
+                    <td class="py-3 px-4 text-sm">
+                      <div class="flex space-x-2">
+                        <a href="{% url 'quiz_results' attempt.id %}"
+                           class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                          <i class="fas fa-eye"></i>
+                        </a>
+                        {% if attempt.status == 'grading' %}
+                          <a href="{% url 'grade_quiz' attempt.id %}"
+                             class="text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300">
+                            <i class="fas fa-check-square"></i>
+                          </a>
+                        {% endif %}
+                        <form action="{% url 'delete_attempt' attempt.id %}"
+                              method="post"
+                              class="inline"
+                              onsubmit="return confirm('Are you sure you want to delete this attempt? This action cannot be undone.');">
+                          {% csrf_token %}
+                          <button type="submit"
+                                  class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">
+                            <i class="fas fa-trash-alt"></i>
+                          </button>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <!-- Pagination -->
+          {% if is_paginated %}
+            <div class="flex justify-center mt-6">
+              <nav class="flex items-center">
+                {% if page_obj.has_previous %}
+                  <a href="?{% url_replace request 'page' page_obj.previous_page_number %}"
+                     class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-l-lg hover:bg-gray-300 dark:hover:bg-gray-600">
+                    <i class="fas fa-chevron-left"></i>
+                  </a>
+                {% else %}
+                  <span class="px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 rounded-l-lg">
+                    <i class="fas fa-chevron-left"></i>
+                  </span>
+                {% endif %}
+                <div class="px-4 py-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                  Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </div>
+                {% if page_obj.has_next %}
+                  <a href="?{% url_replace request 'page' page_obj.next_page_number %}"
+                     class="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-r-lg hover:bg-gray-300 dark:hover:bg-gray-600">
+                    <i class="fas fa-chevron-right"></i>
+                  </a>
+                {% else %}
+                  <span class="px-3 py-2 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 rounded-r-lg">
+                    <i class="fas fa-chevron-right"></i>
+                  </span>
+                {% endif %}
+              </nav>
+            </div>
+          {% endif %}
+        {% else %}
+          <div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div class="text-gray-400 dark:text-gray-500 mb-4">
+              <i class="fas fa-clipboard-list text-5xl"></i>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400">No attempts found matching your criteria</p>
+            {% if request.GET %}
+              <a href="{% url 'quiz_all_attempts' quiz.id %}"
+                 class="mt-4 inline-block text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                Clear filters
+              </a>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock content %}
