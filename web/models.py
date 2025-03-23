@@ -75,9 +75,13 @@ class Profile(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_profile_public = models.BooleanField(
+        default=False, help_text="Toggle to make your profile public so your details and stats are visible."
+    )
 
     def __str__(self):
-        return f"{self.user.username}'s profile"
+        visibility = "Public" if self.is_profile_public else "Private"
+        return f"{self.user.username}'s profile ({visibility})"
 
     def save(self, *args, **kwargs):
         if not self.referral_code:
@@ -1468,6 +1472,139 @@ class Donation(models.Model):
         return self.email.split("@")[0]  # Use part before @ in email
 
 
+class Badge(models.Model):
+    BADGE_TYPES = [
+        ("challenge", "Challenge Completion"),
+        ("course", "Course Completion"),
+        ("achievement", "Special Achievement"),
+        ("teacher_awarded", "Teacher Awarded"),
+    ]
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    image = models.ImageField(upload_to="badges/")
+    badge_type = models.CharField(max_length=20, choices=BADGE_TYPES)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True, related_name="badges")
+    challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, null=True, blank=True, related_name="badges")
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_badges")
+    is_active = models.BooleanField(default=True)
+    criteria = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if self.image:
+            img = Image.open(self.image)
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+            img = img.resize((200, 200), Image.Resampling.LANCZOS)
+            buffer = BytesIO()
+            img.save(buffer, format="PNG", quality=90)
+            file_name = self.image.name
+            self.image.delete(save=False)
+            self.image.save(file_name, ContentFile(buffer.getvalue()), save=False)
+        super().save(*args, **kwargs)
+
+    class Meta:
+        ordering = ["badge_type", "name"]
+
+
+class UserBadge(models.Model):
+    AWARD_METHODS = [
+        ("challenge_completion", "Challenge Completion"),
+        ("course_completion", "Course Completion"),
+        ("teacher_awarded", "Teacher Awarded"),
+        ("system_awarded", "System Awarded"),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="badges")
+    badge = models.ForeignKey(Badge, on_delete=models.CASCADE, related_name="awarded_to")
+    award_method = models.CharField(max_length=20, choices=AWARD_METHODS)
+    awarded_at = models.DateTimeField(auto_now_add=True)
+    challenge_submission = models.ForeignKey(
+        ChallengeSubmission, on_delete=models.SET_NULL, null=True, blank=True, related_name="badges"
+    )
+    course_enrollment = models.ForeignKey(
+        Enrollment, on_delete=models.SET_NULL, null=True, blank=True, related_name="badges"
+    )
+    awarded_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="awarded_badges"
+    )
+    award_message = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.badge.name}"
+
+    class Meta:
+        unique_together = ["user", "badge"]
+        ordering = ["-awarded_at"]
+
+
+@receiver(post_save, sender=ChallengeSubmission)
+def award_challenge_badge(sender, instance, created, **kwargs):
+    if created:
+        challenge_badges = Badge.objects.filter(challenge=instance.challenge, badge_type="challenge", is_active=True)
+        for badge in challenge_badges:
+            if not UserBadge.objects.filter(user=instance.user, badge=badge).exists():
+                UserBadge.objects.create(
+                    user=instance.user, badge=badge, award_method="challenge_completion", challenge_submission=instance
+                )
+                Notification.objects.create(
+                    user=instance.user,
+                    title=f"New Badge: {badge.name}",
+                    message=f"Congrats! You've earned {badge.name} for completing {instance.challenge.title}",
+                    notification_type="success",
+                )
+
+
+@receiver(post_save, sender=Enrollment)
+def award_course_completion_badge(sender, instance, **kwargs):
+    if instance.status == "completed":
+        course_badges = Badge.objects.filter(course=instance.course, badge_type="course", is_active=True)
+        for badge in course_badges:
+            if not UserBadge.objects.filter(user=instance.student, badge=badge).exists():
+                UserBadge.objects.create(
+                    user=instance.student, badge=badge, award_method="course_completion", course_enrollment=instance
+                )
+                Notification.objects.create(
+                    user=instance.student,
+                    title=f"New Badge: {badge.name}",
+                    message=f"Congrats! You've earned {badge.name} for completing {instance.course.title}",
+                    notification_type="success",
+                )
+
+
+def award_badge_to_student(badge_id, student_id, teacher_id, message=""):
+    try:
+        badge = Badge.objects.get(id=badge_id)
+        student = User.objects.get(id=student_id)
+        teacher = User.objects.get(id=teacher_id)
+        if not teacher.profile.is_teacher:
+            return None
+        if UserBadge.objects.filter(user=student, badge=badge).exists():
+            return None
+        user_badge = UserBadge.objects.create(
+            user=student, badge=badge, award_method="teacher_awarded", awarded_by=teacher, award_message=message
+        )
+        Notification.objects.create(
+            user=student,
+            title=f"New Badge: {badge.name}",
+            message=f"You were awarded {badge.name} by {teacher.username}. {message}",
+            notification_type="success",
+        )
+        return user_badge
+    except (Badge.DoesNotExist, User.DoesNotExist):
+        return None
+
+
+def get_user_badges(self):
+    return UserBadge.objects.filter(user=self.user)
+
+
+Profile.get_user_badges = get_user_badges
+
+
 class Certificate(models.Model):
     # Certificate Model
     certificate_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
@@ -1942,3 +2079,151 @@ class LinkGrade(models.Model):
         """Validate that comments are provided for lower grades."""
         if self.grade not in ["A+", "A"] and not self.comment:
             raise ValidationError("A comment is required for grades below A.")
+
+
+class PeerChallenge(models.Model):
+    """Model for challenges between users for quizzes or tasks."""
+
+    STATUS_CHOICES = [
+        ("active", "Active"),
+        ("completed", "Completed"),
+        ("cancelled", "Cancelled"),
+    ]
+
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="peer_challenges")
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_challenges")
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Peer Challenge"
+        verbose_name_plural = "Peer Challenges"
+
+    def __str__(self):
+        return f"{self.title} by {self.creator.username}"
+
+    @property
+    def is_expired(self):
+        """Check if the challenge has expired."""
+        if self.expires_at and timezone.now() > self.expires_at:
+            return True
+        return False
+
+    @property
+    def total_participants(self):
+        """Get the total number of participants in this challenge."""
+        return self.invitations.filter(status__in=["accepted", "completed"]).count() + 1  # +1 for creator
+
+    @property
+    def leaderboard(self):
+        """Get sorted list of participants by score."""
+        participants = []
+
+        # Add creator's best attempt
+        creator_attempts = (
+            UserQuiz.objects.filter(quiz=self.quiz, user=self.creator, completed=True, start_time__gte=self.created_at)
+            .order_by("-score")
+            .first()
+        )
+
+        if creator_attempts:
+            participants.append(
+                {
+                    "user": self.creator,
+                    "score": creator_attempts.score,
+                    "max_score": creator_attempts.max_score,
+                    "completion_time": creator_attempts.end_time,
+                    "is_creator": True,
+                }
+            )
+
+        # Add invited participants' best attempts
+        for invitation in self.invitations.filter(status="completed"):
+            participant_attempt = invitation.user_quiz
+            if participant_attempt and participant_attempt.completed:
+                participants.append(
+                    {
+                        "user": invitation.participant,
+                        "score": participant_attempt.score,
+                        "max_score": participant_attempt.max_score,
+                        "completion_time": participant_attempt.end_time,
+                        "is_creator": False,
+                    }
+                )
+
+        # Sort by score (descending) and completion time (ascending)
+        return sorted(participants, key=lambda x: (-x["score"], x["completion_time"]))
+
+
+class PeerChallengeInvitation(models.Model):
+    """Model for invitations to peer challenges."""
+
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("accepted", "Accepted"),
+        ("completed", "Completed"),
+        ("declined", "Declined"),
+        ("expired", "Expired"),
+    ]
+
+    challenge = models.ForeignKey(PeerChallenge, on_delete=models.CASCADE, related_name="invitations")
+    participant = models.ForeignKey(User, on_delete=models.CASCADE, related_name="challenge_invitations")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
+    user_quiz = models.ForeignKey(
+        UserQuiz, on_delete=models.SET_NULL, null=True, blank=True, related_name="challenge_invitation"
+    )
+    message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        unique_together = ["challenge", "participant"]
+
+    def __str__(self):
+        return f"{self.challenge.title} invitation for {self.participant.username}"
+
+    def accept(self):
+        """Accept the challenge invitation."""
+        self.status = "accepted"
+        self.save()
+
+        # Create notification for challenge creator
+        Notification.objects.create(
+            user=self.challenge.creator,
+            title="Challenge Accepted",
+            message=f"{self.participant.username} has accepted your challenge: {self.challenge.title}",
+            notification_type="info",
+        )
+
+    def decline(self):
+        """Decline the challenge invitation."""
+        self.status = "declined"
+        self.save()
+
+        # Create notification for challenge creator
+        Notification.objects.create(
+            user=self.challenge.creator,
+            title="Challenge Declined",
+            message=f"{self.participant.username} has declined your challenge: {self.challenge.title}",
+            notification_type="info",
+        )
+
+    def complete(self, user_quiz):
+        """Mark the challenge as completed."""
+        self.status = "completed"
+        self.user_quiz = user_quiz
+        self.save()
+
+        # Create notification for challenge creator
+        Notification.objects.create(
+            user=self.challenge.creator,
+            title="Challenge Completed",
+            message=f"{self.participant.username} has completed your challenge: {self.challenge.title}",
+            notification_type="success",
+        )

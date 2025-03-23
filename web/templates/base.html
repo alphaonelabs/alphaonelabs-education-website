@@ -289,19 +289,16 @@
                   <i class="fas fa-plus-circle"></i>
                   <span>Create Course</span>
                 </a>
-                {% if user.profile.is_teacher %}
-                  <a href="{% url 'teacher_dashboard' %}"
-                     class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                    <i class="fas fa-chalkboard-teacher"></i>
-                    <span>Teacher Dashboard</span>
-                  </a>
-                {% else %}
-                  <a href="{% url 'student_dashboard' %}"
-                     class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                    <i class="fas fa-user-graduate"></i>
-                    <span>Student Dashboard</span>
-                  </a>
-                {% endif %}
+                <a href="{% url 'student_dashboard' %}"
+                   class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                  <i class="fas fa-user-graduate"></i>
+                  <span>Student Dashboard</span>
+                </a>
+                <a href="{% url 'teacher_dashboard' %}"
+                   class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                  <i class="fas fa-chalkboard-teacher"></i>
+                  <span>Teacher Dashboard</span>
+                </a>
                 {% if user.is_superuser %}
                   <a href="{% url 'admin:index' %}"
                      class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
@@ -422,6 +419,16 @@
                    class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                   <i class="fas fa-user-circle"></i>
                   <span>Profile</span>
+                </a>
+                <a href="{% url 'student_dashboard' %}"
+                   class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                  <i class="fas fa-user-graduate"></i>
+                  <span>Student Dashboard</span>
+                </a>
+                <a href="{% url 'teacher_dashboard' %}"
+                   class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                  <i class="fas fa-chalkboard-teacher"></i>
+                  <span>Teacher Dashboard</span>
                 </a>
                 {% if user.is_superuser %}
                   <a href="{% url 'admin:index' %}"

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  Create Peer Challenge | Alpha One Labs
+{% endblock title %}
+{% block extra_head %}
+  <!-- Flatpickr for date/time input -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+{% endblock extra_head %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+    <nav class="text-sm mb-6">
+      <a href="{% url 'index' %}" class="text-blue-600 hover:text-blue-800">Home</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'challenge_list' %}"
+         class="text-blue-600 hover:text-blue-800">Peer Challenges</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-600">Create Challenge</span>
+    </nav>
+    <div class="max-w-3xl mx-auto">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div class="bg-teal-600 p-4">
+          <h1 class="text-2xl font-bold text-white">Create Peer Challenge</h1>
+        </div>
+        <div class="p-6">
+          <form method="post" class="space-y-6">
+            {% csrf_token %}
+            <!-- Challenge Form Section -->
+            <div>
+              <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Challenge Details</h2>
+              <!-- Quiz Selection -->
+              <div class="mb-4">
+                <label for="{{ form.quiz.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Quiz</label>
+                {{ form.quiz }}
+                {% if form.quiz.errors %}<div class="text-red-600 text-sm mt-1">{{ form.quiz.errors }}</div>{% endif %}
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Only your published quizzes are available for challenges
+                </div>
+              </div>
+              <!-- Title -->
+              <div class="mb-4">
+                <label for="{{ form.title.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Challenge Title</label>
+                {{ form.title }}
+                {% if form.title.errors %}<div class="text-red-600 text-sm mt-1">{{ form.title.errors }}</div>{% endif %}
+              </div>
+              <!-- Description -->
+              <div class="mb-4">
+                <label for="{{ form.description.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                {{ form.description }}
+                {% if form.description.errors %}<div class="text-red-600 text-sm mt-1">{{ form.description.errors }}</div>{% endif %}
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Describe what this challenge is about and what participants should expect
+                </div>
+              </div>
+              <!-- Expiration Date -->
+              <div class="mb-4">
+                <label for="{{ form.expires_at.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Expiration Date (Optional)
+                </label>
+                {{ form.expires_at }}
+                {% if form.expires_at.errors %}<div class="text-red-600 text-sm mt-1">{{ form.expires_at.errors }}</div>{% endif %}
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ form.expires_at.help_text }}</div>
+              </div>
+            </div>
+            <!-- Invitation Form Section -->
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+              <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Invite Participants</h2>
+              <!-- Participants -->
+              <div class="mb-4">
+                <label for="{{ invitation_form.participants.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Participants</label>
+                {{ invitation_form.participants }}
+                {% if invitation_form.participants.errors %}
+                  <div class="text-red-600 text-sm mt-1">{{ invitation_form.participants.errors }}</div>
+                {% endif %}
+                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ invitation_form.participants.help_text }}</div>
+              </div>
+              <!-- Invitation Message -->
+              <div class="mb-4">
+                <label for="{{ invitation_form.message.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Invitation Message (Optional)
+                </label>
+                {{ invitation_form.message }}
+                {% if invitation_form.message.errors %}
+                  <div class="text-red-600 text-sm mt-1">{{ invitation_form.message.errors }}</div>
+                {% endif %}
+              </div>
+            </div>
+            <!-- Form Buttons -->
+            <div class="flex justify-end space-x-3 border-t border-gray-200 dark:border-gray-700 pt-6">
+              <a href="{% url 'challenge_list' %}"
+                 class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-4 rounded-lg">Cancel</a>
+              <button type="submit"
+                      class="bg-teal-600 hover:bg-teal-700 text-white font-semibold py-2 px-4 rounded-lg">
+                Create Challenge
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+      // Initialize Flatpickr for date/time picker
+      document.addEventListener('DOMContentLoaded', function() {
+          flatpickr("#{{ form.expires_at.id_for_label }}", {
+              enableTime: true,
+              dateFormat: "Y-m-d H:i",
+              minDate: "today",
+              time_24hr: true
+          });
+      });
+  </script>
+{% endblock content %}
