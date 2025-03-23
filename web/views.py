@@ -70,6 +70,7 @@ from .forms import (
     LinkGradeForm,
     MemeForm,
     MessageTeacherForm,
+    NotificationPreferencesForm,
     ProfileUpdateForm,
     ProgressTrackerForm,
     ReviewForm,
@@ -113,6 +114,7 @@ from .models import (
     LearningStreak,
     LinkGrade,
     Meme,
+    NotificationPreference,
     Order,
     OrderItem,
     PeerConnection,
@@ -4822,3 +4824,26 @@ def run_create_test_data(request):
         messages.error(request, f"Error creating test data: {str(e)}")
 
     return redirect("index")
+
+
+@login_required
+def notification_preferences(request):
+    """
+    Display and update the notification preferences for the logged-in user.
+    """
+    # Get (or create) the user's notification preferences.
+    preference, created = NotificationPreference.objects.get_or_create(user=request.user)
+
+    if request.method == "POST":
+        form = NotificationPreferencesForm(request.POST, instance=preference)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your notification preferences have been updated.")
+            # Redirect to the profile page after saving
+            return redirect("profile")
+        else:
+            messages.error(request, "There was an error updating your preferences.")
+    else:
+        form = NotificationPreferencesForm(instance=preference)
+
+    return render(request, "account/notification_preferences.html", {"form": form})

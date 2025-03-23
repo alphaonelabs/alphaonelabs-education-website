@@ -448,6 +448,11 @@ class CourseMaterial(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # New fields for assignment deadlines and reminder tracking
+    due_date = models.DateTimeField(null=True, blank=True, help_text="Deadline for assignment submission")
+    reminder_sent = models.BooleanField(default=False, help_text="Whether an early reminder has been sent")
+    final_reminder_sent = models.BooleanField(default=False, help_text="Whether a final reminder has been sent")
+
     class Meta:
         ordering = ["order", "created_at"]
 
@@ -2230,3 +2235,14 @@ class PeerChallengeInvitation(models.Model):
             message=f"{self.participant.username} has completed your challenge: {self.challenge.title}",
             notification_type="success",
         )
+
+
+class NotificationPreference(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="notification_preferences")
+    reminder_days_before = models.IntegerField(default=3, help_text="Days before deadline to send first reminder")
+    reminder_hours_before = models.IntegerField(default=24, help_text="Hours before deadline to send final reminder")
+    email_notifications = models.BooleanField(default=True)
+    in_app_notifications = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"Notification preferences for {self.user.username}"
