@@ -4759,7 +4759,9 @@ def calculate_attendance_stats(user, enrollments):
 
 def calculate_learning_activity(user, enrollments):
     """Calculate learning activity metrics like active days, streaks, and learning hours."""
-    all_completed_sessions = get_all_completed_sessions(enrollments)
+    all_completed_sessions = [
+        s for s in get_all_completed_sessions(enrollments) if s.start_time and s.end_time and s.end_time > s.start_time
+    ]
     now = timezone.now()
 
     # Find the most active day of the week

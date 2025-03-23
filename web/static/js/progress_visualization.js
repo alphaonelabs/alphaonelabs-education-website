@@ -111,7 +111,9 @@ document.addEventListener("DOMContentLoaded", function() {
                 doc.setFillColor(200, 200, 200);
                 doc.rect(20, y, 150, 5, 'F');
 
-                doc.setFillColor(course.color);
+                const [r, g, b] = course.color.split(',').map(val => parseInt(val.trim()));
+                doc.setFillColor(r, g, b);
+
                 doc.rect(20, y, 150 * (course.progress / 100), 5, 'F');
 
                 doc.text(`${course.progress}%`, 175, y + 4);
