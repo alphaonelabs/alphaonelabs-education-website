@@ -22,7 +22,6 @@ from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
-from django.core.cache import cache
 from django.core.mail import send_mail
 from django.core.management import call_command
 from django.core.paginator import Paginator
@@ -147,11 +146,12 @@ from .notifications import (
 from .referrals import send_referral_reward_email
 from .social import get_social_stats
 from .utils import (
-    calculate_user_monthly_points,
-    calculate_user_total_points,
-    calculate_user_weekly_points,
+    create_leaderboard_context,
+    get_cached_challenge_entries,
+    get_cached_leaderboard_data,
     get_leaderboard,
     get_or_create_cart,
+    get_user_points,
 )
 
 GOOGLE_CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "google_credentials.json")
@@ -296,102 +296,52 @@ def signup_view(request):
     )
 
 
-# new future, #22 issue
 @login_required
 def all_leaderboards(request):
     """
     Display all leaderboard types on a single page.
     """
+    # Get cached leaderboard data or fetch fresh data
+    global_entries, global_rank = get_cached_leaderboard_data(request.user, None, 10, "global_leaderboard", 60 * 60)
+    weekly_entries, weekly_rank = get_cached_leaderboard_data(request.user, "weekly", 10, "weekly_leaderboard", 60 * 15)
+    monthly_entries, monthly_rank = get_cached_leaderboard_data(
+        request.user, "monthly", 10, "monthly_leaderboard", 60 * 30
+    )
 
-    # Global Leaderboard
-    global_data = cache.get("global_leaderboard")
-    if global_data is None:
-        global_entries, global_rank = get_leaderboard(request.user, period=None, limit=10)
-        # Cache both global_entries and global_rank for 1 hour
-        cache.set("global_leaderboard", (global_entries, global_rank), 60 * 60)
-    else:
-        global_entries, global_rank = global_data  # Unpack cached values
-
-    # Weekly Leaderboard
-    weekly_data = cache.get("weekly_leaderboard")
-    if weekly_data is None:
-        weekly_entries, weekly_rank = get_leaderboard(request.user, period="weekly", limit=10)
-        # Cache both weekly_entries and weekly_rank for 15 minutes
-        cache.set("weekly_leaderboard", (weekly_entries, weekly_rank), 60 * 15)
-    else:
-        weekly_entries, weekly_rank = weekly_data  # Unpack cached values
-
-    # Monthly Leaderboard
-    monthly_data = cache.get("monthly_leaderboard")
-    if monthly_data is None:
-        monthly_entries, monthly_rank = get_leaderboard(request.user, period="monthly", limit=10)
-        # Cache both monthly_entries and monthly_rank for 30 minutes
-        cache.set("monthly_leaderboard", (monthly_entries, monthly_rank), 60 * 30)
-    else:
-        monthly_entries, monthly_rank = monthly_data  # Unpack cached values
-
-    # Get user's points if authenticated
-    user_total_points = None
-    user_weekly_points = None
-    user_monthly_points = None
+    # Get user points and challenge entries if authenticated non-teacher
+    challenge_entries = []
+    user_points = None
 
     if request.user.is_authenticated and not request.user.profile.is_teacher:
-        # Get user's points
-        try:
-            user_total_points = calculate_user_total_points(request.user)
-            user_weekly_points = calculate_user_weekly_points(request.user)
-            user_monthly_points = calculate_user_monthly_points(request.user)
-        except Exception as e:
-            logger = logging.getLogger(__name__)
-            logger.error(f"Error calculating user points: {e}")
-            user_total_points = user_weekly_points = user_monthly_points = 0
+        user_points = get_user_points(request.user)
+        challenge_entries = get_cached_challenge_entries()
 
-        # Get challenge entries with caching
-        challenge_data = cache.get("challenge_leaderboard")
-        if challenge_data is None:
-            try:
-                challenge_entries = (
-                    ChallengeSubmission.objects.select_related("user", "challenge")
-                    .filter(points_awarded__gt=0)  # Only include submissions with points
-                    .order_by("-points_awarded")[:10]
-                )
-                # Cache challenge entries for 15 minutes
-                cache.set("challenge_leaderboard", challenge_entries, 60 * 15)
-            except Exception as e:
-                logger = logging.getLogger(__name__)
-                logger.error(f"Error retrieving challenge entries: {e}")
-                challenge_entries = []
-        else:
-            challenge_entries = challenge_data
-
-        context = {
-            "global_entries": global_entries,
-            "weekly_entries": weekly_entries,
-            "monthly_entries": monthly_entries,
-            "challenge_entries": challenge_entries,
-            "user_rank": global_rank,
-            "user_weekly_rank": weekly_rank,
-            "user_monthly_rank": monthly_rank,
-            "user_total_points": user_total_points,
-            "user_weekly_points": user_weekly_points,
-            "user_monthly_points": user_monthly_points,
-        }
-
+        context = create_leaderboard_context(
+            global_entries,
+            weekly_entries,
+            monthly_entries,
+            challenge_entries,
+            global_rank,
+            weekly_rank,
+            monthly_rank,
+            user_points["total"],
+            user_points["weekly"],
+            user_points["monthly"],
+        )
         return render(request, "leaderboards/leaderboards.html", context)
     else:
-        # Provide a default or limited view for teachers or unauthenticated users
-        context = {
-            "global_entries": global_entries,
-            "weekly_entries": weekly_entries,
-            "monthly_entries": monthly_entries,
-            "challenge_entries": [],
-            "user_rank": global_rank,
-            "user_weekly_rank": weekly_rank,
-            "user_monthly_rank": monthly_rank,
-            "user_total_points": None,
-            "user_weekly_points": None,
-            "user_monthly_points": None,
-        }
+        context = create_leaderboard_context(
+            global_entries,
+            weekly_entries,
+            monthly_entries,
+            [],
+            global_rank,
+            weekly_rank,
+            monthly_rank,
+            None,
+            None,
+            None,
+        )
         return render(request, "leaderboards/leaderboards.html", context)
 
 

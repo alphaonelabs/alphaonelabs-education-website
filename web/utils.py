@@ -1,7 +1,9 @@
+import logging
 from datetime import timedelta
 
 import requests
 from django.conf import settings
+from django.core.cache import cache
 from django.db import models
 from django.utils import timezone
 
@@ -333,3 +335,78 @@ def get_leaderboard(current_user=None, period=None, limit=10):
             user_rank = get_user_global_rank(current_user)
 
     return leaderboard_data, user_rank
+
+
+# Helper functions that would be defined elsewhere
+def get_cached_leaderboard_data(user, period, limit, cache_key, cache_timeout):
+    """Get leaderboard data from cache or fetch fresh data"""
+    data = cache.get(cache_key)
+    if data is None:
+        entries, rank = get_leaderboard(user, period=period, limit=limit)
+        cache.set(cache_key, (entries, rank), cache_timeout)
+    else:
+        entries, rank = data
+    return entries, rank
+
+
+def get_user_points(user):
+    """Calculate points for a user with error handling"""
+    try:
+        return {
+            "total": calculate_user_total_points(user),
+            "weekly": calculate_user_weekly_points(user),
+            "monthly": calculate_user_monthly_points(user),
+        }
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error calculating user points: {e}")
+        return {"total": 0, "weekly": 0, "monthly": 0}
+
+
+def get_cached_challenge_entries():
+    """Get challenge entries from cache or fetch fresh data"""
+    from web.models import ChallengeSubmission
+
+    challenge_data = cache.get("challenge_leaderboard")
+    if challenge_data is None:
+        try:
+            challenge_entries = (
+                ChallengeSubmission.objects.select_related("user", "challenge")
+                .filter(points_awarded__gt=0)
+                .order_by("-points_awarded")[:10]
+            )
+            cache.set("challenge_leaderboard", challenge_entries, 60 * 15)
+        except Exception as e:
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error retrieving challenge entries: {e}")
+            challenge_entries = []
+    else:
+        challenge_entries = challenge_data
+    return challenge_entries
+
+
+def create_leaderboard_context(
+    global_entries,
+    weekly_entries,
+    monthly_entries,
+    challenge_entries,
+    user_rank,
+    user_weekly_rank,
+    user_monthly_rank,
+    user_total_points,
+    user_weekly_points,
+    user_monthly_points,
+):
+    """Create context dictionary for the leaderboard template"""
+    return {
+        "global_entries": global_entries,
+        "weekly_entries": weekly_entries,
+        "monthly_entries": monthly_entries,
+        "challenge_entries": challenge_entries,
+        "user_rank": user_rank,
+        "user_weekly_rank": user_weekly_rank,
+        "user_monthly_rank": user_monthly_rank,
+        "user_total_points": user_total_points,
+        "user_weekly_points": user_weekly_points,
+        "user_monthly_points": user_monthly_points,
+    }
