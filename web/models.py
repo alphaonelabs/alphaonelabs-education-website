@@ -1480,10 +1480,10 @@ class Meetup(models.Model):
         self.full_clean()  # Call full_clean to enforce validation
         if not self.slug:
             self.slug = slugify(self.title)
-            while Meetup.objects.filter(slug=self.slug).exists():
-                self.slug = f"{self.slug}-{Meetup.objects.filter(slug__startswith=self.slug).count() + 1}"
+            if Meetup.objects.filter(slug=self.slug).exists():
+                suffix = uuid.uuid4().hex[:6]
+                self.slug = f"{self.slug}-{suffix}"
         super().save(*args, **kwargs)
-
     def __str__(self):
         return self.title
 
