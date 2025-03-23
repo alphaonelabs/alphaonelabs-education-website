@@ -3445,9 +3445,8 @@ def whiteboard(request):
     return render(request, "whiteboard.html")
 
 
-def graph_tool(request):
-    """Graphing calculator view using Desmos API"""
-    return render(request, "graphing-calculator.html")
+def graphing_calculator(request):
+    return render(request, "graphingCalculator.html")
 
 
 def meme_list(request):
