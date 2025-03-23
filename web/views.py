@@ -209,9 +209,6 @@ def index(request):
     try:
         top_leaderboard_users, user_rank = get_leaderboard(request.user, period=None, limit=3)
     except Exception as e:
-        # Log the error but don't crash the index page
-        import logging
-
         logger = logging.getLogger(__name__)
         logger.error(f"Error getting leaderboard data: {e}")
         top_leaderboard_users = []
@@ -391,7 +388,6 @@ def profile(request):
 
         form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
-            request.user.profile.refresh_from_db()  # Refresh the instance so updated Profile is loaded
             request.user.profile.refresh_from_db()  # Refresh the instance so updated Profile is loaded
             messages.success(request, "Profile updated successfully!")
             return redirect("profile")
