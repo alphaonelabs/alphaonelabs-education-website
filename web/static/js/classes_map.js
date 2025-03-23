@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", function () {
   // Load session locations from extracted data
   var markers = [];
   var sessionData = extractSessionData();
-
+  console.log(sessionData);
   // Check if we have session data
   if (sessionData.length > 0) {
     sessionData.forEach((session) => {
@@ -102,12 +102,13 @@ document.addEventListener("DOMContentLoaded", function () {
         console.warn("Invalid coordinates for session:", session.title);
         return;
       }
+
       var popupContent = `
                   <strong>${session.title}</strong><br />
                   ${session.date}<br />
                   ${session.location}<br />
                   Teacher: ${session.teacher || "N/A"}<br />
-+                 Course: ${session.course_title || "N/A"}<br />
+                  Course: ${session.course_title || "N/A"}<br />
                   <!-- Format Session Duration -->
                   Start: ${session.start_time}<br />
                   End: ${session.end_time}<br />

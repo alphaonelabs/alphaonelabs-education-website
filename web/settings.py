@@ -244,11 +244,11 @@ if DEBUG:
     EMAIL_BACKEND = "web.email_backend.SlackNotificationEmailBackend"
     print("Using console email backend with Slack notifications for development")
     DEFAULT_FROM_EMAIL = "noreply@example.com"  # Default for development
-    # SENDGRID_API_KEY = None  # Not needed in development
+    SENDGRID_API_KEY = None  # Not needed in development
 else:
     # Production email settings
     EMAIL_BACKEND = "web.email_backend.SlackNotificationEmailBackend"
-    # SENDGRID_API_KEY = env.str("SENDGRID_API_KEY", default=env.str("SENDGRID_PASSWORD", default=""))
+    SENDGRID_API_KEY = env.str("SENDGRID_API_KEY", default=env.str("SENDGRID_PASSWORD", default=""))
     EMAIL_HOST = "smtp.sendgrid.net"
     EMAIL_PORT = 587
     EMAIL_USE_TLS = True

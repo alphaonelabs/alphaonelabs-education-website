@@ -4505,10 +4505,13 @@ def toggle_course_status(request, slug):
     course.save()
     return redirect("course_detail", slug=slug)
 
- # Live Classes map views
+
+# Live Classes map views
 def classes_map(request):
     """View for displaying classes near the user."""
     now = timezone.now()
+
+    # Query sessions that are either upcoming or currently live
     sessions = (
         Session.objects.filter(
             Q(start_time__gte=now) | Q(start_time__lte=now, end_time__gte=now)  # Future or Live classes
@@ -4517,14 +4520,20 @@ def classes_map(request):
         .select_related("course", "course__teacher")
     )
 
+    # Get filter parameters
     course_id = request.GET.get("course")
     age_group = request.GET.get("age_group")
+    teaching_style = request.GET.get("teaching_style")  # "true" (Online) or "false" (In-Person)
 
+    # Apply filters
     if course_id:
         sessions = sessions.filter(course_id=course_id)
     if age_group:
         sessions = sessions.filter(course__level=age_group)
+    if teaching_style in ["true", "false"]:  # Ensure valid boolean input
+        sessions = sessions.filter(is_virtual=(teaching_style == "true"))
 
+    # Fetch course and age group choices
     courses = Course.objects.only("id", "title").order_by("title")
     age_groups = Course._meta.get_field("level").choices
 
