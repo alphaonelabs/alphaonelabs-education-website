@@ -3482,7 +3482,7 @@ def whiteboard(request):
 
 def graph_tool(request):
     """Graphing calculator view using Desmos API"""
-    return render(request, "graph.html", {"desmos_api_key": settings.DESMOS_API_KEY})
+    return render(request, "graph.html")
 
 
 def meme_list(request):
