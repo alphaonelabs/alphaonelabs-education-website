@@ -129,6 +129,7 @@ from .models import (
     TeamGoalMember,
     TeamInvite,
     TimeSlot,
+    UserBadge,
     WebRequest,
 )
 from .notifications import (
@@ -377,7 +378,9 @@ def profile(request):
             return redirect("profile")
 
         form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
+        form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
+            request.user.profile.refresh_from_db()  # Refresh the instance so updated Profile is loaded
             request.user.profile.refresh_from_db()  # Refresh the instance so updated Profile is loaded
             messages.success(request, "Profile updated successfully!")
             return redirect("profile")
@@ -385,8 +388,14 @@ def profile(request):
         # Use the instance so the form loads all updated fields from the database.
         form = ProfileUpdateForm(instance=request.user)
 
-    context = {"form": form}
+    badges = UserBadge.objects.filter(user=request.user).select_related("badge")
 
+    context = {
+        "form": form,
+        "badges": badges,
+    }
+
+    # Teacher-specific stats
     # Teacher-specific stats
     if request.user.profile.is_teacher:
         courses = Course.objects.filter(teacher=request.user)
@@ -407,6 +416,7 @@ def profile(request):
             }
         )
     # Student-specific stats
+    # Student-specific stats
     else:
         enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
         completed_courses = enrollments.filter(status="completed").count()
@@ -426,6 +436,7 @@ def profile(request):
             }
         )
 
+    # Add created calendars with time slots if applicable
     # Add created calendars with time slots if applicable
     created_calendars = request.user.created_calendars.prefetch_related("time_slots").order_by("-created_at")
     context["created_calendars"] = created_calendars

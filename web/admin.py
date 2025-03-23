@@ -10,6 +10,7 @@ from django.utils.html import format_html
 
 from .models import (
     Achievement,
+    Badge,
     BlogComment,
     BlogPost,
     Cart,
@@ -43,6 +44,7 @@ from .models import (
     Storefront,
     Subject,
     SuccessStory,
+    UserBadge,
     WebRequest,
 )
 
@@ -615,6 +617,21 @@ class DonationAdmin(admin.ModelAdmin):
         return obj.display_name
 
     display_name.short_description = "Name"
+
+
+@admin.register(Badge)
+class BadgeAdmin(admin.ModelAdmin):
+    list_display = ("name", "badge_type", "is_active", "created_by", "created_at")
+    list_filter = ("badge_type", "is_active")
+    search_fields = ("name", "description")
+
+
+@admin.register(UserBadge)
+class UserBadgeAdmin(admin.ModelAdmin):
+    list_display = ("user", "badge", "award_method", "awarded_at")
+    list_filter = ("award_method", "badge__badge_type")
+    search_fields = ("user__username", "badge__name")
+    date_hierarchy = "awarded_at"
 
 
 @admin.register(LearningStreak)
