@@ -2,25 +2,48 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Run pre-commit on all files",
+            "label": "Run Pre-commit (Auto-fix)",
             "type": "shell",
-            "command": "pre-commit run --all-files",
+            "command": "poetry run pre-commit run --hook-stage commit",
             "group": {
-                "kind": "test",
+                "kind": "build",
                 "isDefault": true
             },
             "presentation": {
                 "reveal": "always",
-                "panel": "new",
-                "focus": true
+                "panel": "new"
+            },
+            "problemMatcher": [],
+            "detail": "Runs only formatting hooks that auto-fix issues without failing"
+        },
+        {
+            "label": "Run Pre-commit (All Checks)",
+            "type": "shell",
+            "command": "poetry run pre-commit run --all-files",
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
             },
             "problemMatcher": [],
             "detail": "Runs all pre-commit hooks on all files in the repository"
         },
         {
-            "label": "Run pre-commit on staged files",
+            "label": "Run Pre-commit Manual Hooks",
             "type": "shell",
-            "command": "pre-commit run",
+            "command": "poetry run pre-commit run --hook-stage manual",
+            "group": "build",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": [],
+            "detail": "Runs only the manual stage hooks (like tests)"
+        },
+        {
+            "label": "Run Pre-commit on Staged Files",
+            "type": "shell",
+            "command": "poetry run pre-commit run",
             "group": "test",
             "presentation": {
                 "reveal": "always",
@@ -30,9 +53,9 @@
             "detail": "Runs all pre-commit hooks on staged files only"
         },
         {
-            "label": "Run pre-commit hook: flake8",
+            "label": "Run Hook: flake8",
             "type": "shell",
-            "command": "pre-commit run flake8 --all-files",
+            "command": "poetry run pre-commit run flake8 --all-files",
             "group": "test",
             "presentation": {
                 "reveal": "always",
@@ -42,9 +65,9 @@
             "detail": "Runs only the flake8 pre-commit hook on all files"
         },
         {
-            "label": "Run pre-commit hook: black",
+            "label": "Run Hook: black",
             "type": "shell",
-            "command": "pre-commit run black --all-files",
+            "command": "poetry run pre-commit run black --all-files",
             "group": "test",
             "presentation": {
                 "reveal": "always",
@@ -54,9 +77,9 @@
             "detail": "Runs only the black pre-commit hook on all files"
         },
         {
-            "label": "Run pre-commit hook: isort",
+            "label": "Run Hook: isort",
             "type": "shell",
-            "command": "pre-commit run isort --all-files",
+            "command": "poetry run pre-commit run isort --all-files",
             "group": "test",
             "presentation": {
                 "reveal": "always",
@@ -66,9 +89,9 @@
             "detail": "Runs only the isort pre-commit hook on all files"
         },
         {
-            "label": "Run pre-commit hook: djlint",
+            "label": "Run Hook: djlint",
             "type": "shell",
-            "command": "pre-commit run djlint-django --all-files",
+            "command": "poetry run pre-commit run djlint-django --all-files",
             "group": "test",
             "presentation": {
                 "reveal": "always",

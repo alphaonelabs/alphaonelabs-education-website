@@ -22,6 +22,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
+from django.core.management import call_command
 from django.core.paginator import Paginator
 from django.db import IntegrityError, models, transaction
 from django.db.models import Avg, Count, Q, Sum
@@ -157,6 +158,8 @@ def sitemap(request):
 
 def index(request):
     """Homepage view."""
+    from django.conf import settings
+
     # Store referral code in session if present in URL
     ref_code = request.GET.get("ref")
     if ref_code:
@@ -210,6 +213,7 @@ def index(request):
         "latest_post": latest_post,
         "latest_success_story": latest_success_story,
         "form": form,
+        "is_debug": settings.DEBUG,
     }
     if request.user.is_authenticated:
         user_team_goals = (
@@ -1751,6 +1755,7 @@ def teacher_dashboard(request):
         "courses": courses,
         "upcoming_sessions": upcoming_sessions,
         "course_stats": course_stats,
+        "total_students": total_students,
         "completion_rate": (total_completed / total_students * 100) if total_students > 0 else 0,
         "total_earnings": round(total_earnings, 2),
         "storefront": storefront,
@@ -4644,3 +4649,20 @@ def duplicate_session(request, session_id):
     messages.success(request, msg)
 
     return redirect("course_detail", slug=course.slug)
+
+
+def run_create_test_data(request):
+    """Run the create_test_data management command and redirect to homepage."""
+    from django.conf import settings
+
+    if not settings.DEBUG:
+        messages.error(request, "This action is only available in debug mode.")
+        return redirect("index")
+
+    try:
+        call_command("create_test_data")
+        messages.success(request, "Test data has been created successfully!")
+    except Exception as e:
+        messages.error(request, f"Error creating test data: {str(e)}")
+
+    return redirect("index")
