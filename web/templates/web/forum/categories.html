@@ -60,5 +60,23 @@
         </div>
       {% endfor %}
     </div>
+    <!-- GitHub Milestones -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+      <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+        <i class="fa-brands fa-github mr-2 text-blue-600 dark:text-blue-400"></i>
+        Milestones
+      </h2>
+      {% if user.is_superuser %}
+        <div class="mb-4">
+          <a href="{% url 'sync_github_milestones' %}"
+             class="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-medium p-2 rounded-lg transition-colors duration-200">
+            <i class="fa-solid fa-sync mr-2"></i>
+            Sync GitHub Milestones
+          </a>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">Updates forum with latest milestones</p>
+        </div>
+      {% endif %}
+      <div id="github-milestones" class="text-sm"></div>
+    </div>
   </main>
 {% endblock content %}

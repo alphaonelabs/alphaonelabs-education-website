@@ -1,0 +1,432 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  Analytics: {{ quiz.title }}
+{% endblock title %}
+{% block extra_head %}
+  <!-- Chart.js for analytics visualizations -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock extra_head %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+    <nav class="text-sm mb-6">
+      <a href="{% url 'index' %}" class="text-blue-600 hover:text-blue-800">Home</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'quiz_list' %}"
+         class="text-blue-600 hover:text-blue-800">Quizzes</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'quiz_detail' quiz.id %}"
+         class="text-blue-600 hover:text-blue-800">{{ quiz.title }}</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-600">Analytics</span>
+    </nav>
+    <!-- Analytics Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mb-4">
+      <div class="p-4">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-2 mb-2">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Analytics: {{ quiz.title }}</h1>
+            <p class="text-sm text-gray-600 dark:text-gray-400">Performance data and statistics for your quiz</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <a href="{% url 'quiz_detail' quiz.id %}"
+               class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded text-sm inline-flex items-center">
+              <i class="fas fa-arrow-left mr-1"></i> Back
+            </a>
+            <button onclick="window.print()"
+                    class="bg-teal-600 hover:bg-teal-700 text-white py-1 px-3 rounded text-sm inline-flex items-center">
+              <i class="fas fa-print mr-1"></i> Print
+            </button>
+          </div>
+        </div>
+        <!-- Quiz Summary Stats -->
+        <div class="grid grid-cols-3 gap-2 mt-3">
+          <div class="bg-blue-50 dark:bg-blue-900 p-2 rounded text-center">
+            <p class="text-blue-600 dark:text-blue-300 text-xs font-medium">Total Attempts</p>
+            <p class="text-2xl font-bold text-blue-800 dark:text-blue-100">{{ total_attempts }}</p>
+          </div>
+          <div class="bg-green-50 dark:bg-green-900 p-2 rounded text-center">
+            <p class="text-green-600 dark:text-green-300 text-xs font-medium">Avg. Score</p>
+            <p class="text-2xl font-bold text-green-800 dark:text-green-100">{{ avg_score|floatformat:1 }}%</p>
+          </div>
+          <div class="bg-yellow-50 dark:bg-yellow-900 p-2 rounded text-center">
+            <p class="text-yellow-600 dark:text-yellow-300 text-xs font-medium">Pass Rate</p>
+            <p class="text-2xl font-bold text-yellow-800 dark:text-yellow-100">{{ pass_rate|floatformat:1 }}%</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Analytics Content -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+      <!-- Score Distribution Chart -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div class="p-3">
+          <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Score Distribution</h2>
+          <div class="h-56">
+            <canvas id="scoreDistributionChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <!-- Question Performance Chart -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div class="p-3">
+          <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Question Performance</h2>
+          <div class="h-56">
+            <canvas id="questionPerformanceChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <!-- Time Trend Chart -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div class="p-3">
+          <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Attempts Over Time</h2>
+          <div class="h-56">
+            <canvas id="attemptsTimeChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <!-- User Performance Chart -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div class="p-3">
+          <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Top Performers</h2>
+          {% if user_performances %}
+            <div class="overflow-x-auto">
+              <table class="min-w-full">
+                <thead class="bg-gray-100 dark:bg-gray-700">
+                  <tr>
+                    <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">User</th>
+                    <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Attempts
+                    </th>
+                    <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Best Score
+                    </th>
+                    <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                      Avg. Score
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                  {% for performance in user_performances %}
+                    <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{{ performance.user.username }}</td>
+                      <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{{ performance.attempts }}</td>
+                      <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{{ performance.best_score }}%</td>
+                      <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{{ performance.avg_score|floatformat:1 }}%</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-center py-3">
+              <p class="text-gray-500 dark:text-gray-400">No user data available yet</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <!-- Question Detail Analysis -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+      <div class="p-3">
+        <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-3">Question Analysis</h2>
+        <div class="space-y-3">
+          {% for question in question_analysis %}
+            <div class="border-b border-gray-200 dark:border-gray-700 pb-3 last:border-b-0">
+              <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-2 mb-2">
+                <div>
+                  <h3 class="text-base font-medium text-gray-800 dark:text-white">
+                    Q{{ forloop.counter }}: {{ question.text|truncatechars:100 }}
+                  </h3>
+                  <div class="flex items-center mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if question.type == 'multiple_choice' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 {% elif question.type == 'true_false' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 {% elif question.type == 'short_answer' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300{% endif %} mr-2">
+                      {{ question.get_type_display }}
+                    </span>
+                    <span>{{ question.points }} point{{ question.points|pluralize }}</span>
+                  </div>
+                </div>
+                <div class="flex items-center bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded text-center">
+                  <div class="mr-6">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Correct Rate</p>
+                    <p class="text-2xl font-bold {% if question.correct_rate >= 70 %}text-green-600 dark:text-green-400{% elif question.correct_rate >= 40 %}text-yellow-600 dark:text-yellow-400{% else %}text-red-600 dark:text-red-400{% endif %}">
+                      {{ question.correct_rate|floatformat:1 }}%
+                    </p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Difficulty</p>
+                    <p class="text-lg font-medium">
+                      {% if question.correct_rate >= 80 %}
+                        <span class="text-green-600 dark:text-green-400">Easy</span>
+                      {% elif question.correct_rate >= 50 %}
+                        <span class="text-yellow-600 dark:text-yellow-400">Medium</span>
+                      {% else %}
+                        <span class="text-red-600 dark:text-red-400">Hard</span>
+                      {% endif %}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {% if question.type != 'short_answer' %}
+                <div class="mt-4">
+                  <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Answer Distribution</h4>
+                  <div class="space-y-2">
+                    {% for option in question.options %}
+                      <div>
+                        <div class="flex items-center">
+                          <span class="w-5 mr-2">
+                            {% if option.is_correct %}<i class="fas fa-check-circle text-green-500"></i>{% endif %}
+                          </span>
+                          <span class="text-gray-800 dark:text-gray-200 {% if option.is_correct %}font-medium{% endif %}">
+                            {{ option.text }}
+                          </span>
+                          <span class="ml-4 text-sm text-gray-600 dark:text-gray-400">
+                            {{ option.selection_count }} selection{{ option.selection_count|pluralize }}
+                          </span>
+                        </div>
+                        <div class="mt-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                          <div class="h-full rounded-full {% if option.is_correct %}bg-green-500{% else %}bg-red-500{% endif %}"
+                               style="width: {{ option.selection_percentage }}%"></div>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <!-- Recent Attempts Table -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mt-4">
+      <div class="p-3">
+        <h2 class="text-lg font-bold text-gray-800 dark:text-white mb-2">Recent Attempts</h2>
+        {% if recent_attempts %}
+          <div class="overflow-x-auto">
+            <table class="min-w-full">
+              <thead class="bg-gray-100 dark:bg-gray-700">
+                <tr>
+                  <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">User</th>
+                  <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Date/Time
+                  </th>
+                  <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Score
+                  </th>
+                  <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th class="py-3 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for attempt in recent_attempts %}
+                  <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">
+                      {% if attempt.user %}
+                        {{ attempt.user.username }}
+                      {% else %}
+                        Anonymous
+                      {% endif %}
+                    </td>
+                    <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{{ attempt.created_at|date:"M d, Y H:i" }}</td>
+                    <td class="py-3 px-4 text-sm font-medium {% if attempt.score >= quiz.passing_score %}text-green-600 dark:text-green-400 {% else %}text-red-600 dark:text-red-400{% endif %}">
+                      {{ attempt.score }}%
+                    </td>
+                    <td class="py-3 px-4 text-sm">
+                      <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if attempt.status == 'passed' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 {% elif attempt.status == 'failed' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 {% elif attempt.status == 'in_progress' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 {% elif attempt.status == 'grading' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300{% endif %}">
+                        {{ attempt.get_status_display }}
+                      </span>
+                    </td>
+                    <td class="py-3 px-4 text-sm">
+                      <a href="{% url 'quiz_results' attempt.id %}"
+                         class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                        <i class="fas fa-eye mr-1"></i> View Results
+                      </a>
+                    </td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% if has_more_attempts %}
+            <div class="mt-4 text-center">
+              <a href="{% url 'quiz_all_attempts' quiz.id %}"
+                 class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center">
+                View all attempts <i class="fas fa-arrow-right ml-1"></i>
+              </a>
+            </div>
+          {% endif %}
+        {% else %}
+          <div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
+            <div class="text-gray-400 dark:text-gray-500 mb-4">
+              <i class="fas fa-chart-line text-5xl"></i>
+            </div>
+            <p class="text-gray-600 dark:text-gray-400">No attempts have been made on this quiz yet</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+
+          // Set up Chart.js default styling
+          Chart.defaults.color = document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#374151';
+          Chart.defaults.borderColor = document.documentElement.classList.contains('dark') ? '#4b5563' : '#e5e7eb';
+
+          // Score Distribution Chart
+          const scoreCtx = document.getElementById('scoreDistributionChart').getContext('2d');
+          new Chart(scoreCtx, {
+              type: 'bar',
+              data: {
+                  labels: {
+                      {
+                          score_distribution.labels | safe
+                      }
+                  },
+                  datasets: [{
+                      label: 'Number of Attempts',
+                      data: {
+                          {
+                              score_distribution.data | safe
+                          }
+                      },
+                      backgroundColor: '#4c9be8',
+                      borderColor: '#3b82f6',
+                      borderWidth: 1
+                  }]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                      y: {
+                          beginAtZero: true,
+                          ticks: {
+                              precision: 0
+                          }
+                      }
+                  },
+                  plugins: {
+                      legend: {
+                          display: false
+                      },
+                      tooltip: {
+                          callbacks: {
+                              label: function(context) {
+                                  return context.raw + ' attempt' + (context.raw !== 1 ? 's' : '');
+                              }
+                          }
+                      }
+                  }
+              }
+          });
+
+          // Question Performance Chart
+          const questionCtx = document.getElementById('questionPerformanceChart').getContext('2d');
+          new Chart(questionCtx, {
+              type: 'bar',
+              data: {
+                  labels: {
+                      {
+                          question_performance.labels | safe
+                      }
+                  },
+                  datasets: [{
+                      label: 'Correct Rate (%)',
+                      data: {
+                          {
+                              question_performance.data | safe
+                          }
+                      },
+                      backgroundColor: function(context) {
+                          const value = context.dataset.data[context.dataIndex];
+                          return value >= 70 ? '#34d399' : value >= 40 ? '#fbbf24' : '#ef4444';
+                      },
+                      borderColor: function(context) {
+                          const value = context.dataset.data[context.dataIndex];
+                          return value >= 70 ? '#10b981' : value >= 40 ? '#f59e0b' : '#dc2626';
+                      },
+                      borderWidth: 1
+                  }]
+              },
+              options: {
+                  indexAxis: 'y',
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                      x: {
+                          min: 0,
+                          max: 100
+                      }
+                  },
+                  plugins: {
+                      legend: {
+                          display: false
+                      },
+                      tooltip: {
+                          callbacks: {
+                              label: function(context) {
+                                  return context.raw + '% correct';
+                              }
+                          }
+                      }
+                  }
+              }
+          });
+
+          // Attempts Time Chart
+          const timeCtx = document.getElementById('attemptsTimeChart').getContext('2d');
+          new Chart(timeCtx, {
+              type: 'line',
+              data: {
+                  labels: {
+                      {
+                          time_chart.labels | safe
+                      }
+                  },
+                  datasets: [{
+                      label: 'Attempts',
+                      data: {
+                          {
+                              time_chart.data | safe
+                          }
+                      },
+                      backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                      borderColor: 'rgba(139, 92, 246, 1)',
+                      borderWidth: 2,
+                      tension: 0.4,
+                      fill: true
+                  }]
+              },
+              options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  scales: {
+                      y: {
+                          beginAtZero: true,
+                          ticks: {
+                              precision: 0
+                          }
+                      }
+                  },
+                  plugins: {
+                      tooltip: {
+                          callbacks: {
+                              label: function(context) {
+                                  return context.raw + ' attempt' + (context.raw !== 1 ? 's' : '');
+                              }
+                          }
+                      }
+                  }
+              }
+          });
+      });
+  </script>
+{% endblock content %}

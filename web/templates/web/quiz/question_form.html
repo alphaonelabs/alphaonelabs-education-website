@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  {{ title }} | Quiz Management
+{% endblock title %}
+{% block extra_head %}
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          const questionTypeField = document.getElementById('id_question_type');
+          const optionsSection = document.getElementById('options-section');
+
+          // Function to toggle options visibility
+          function toggleOptionsVisibility() {
+              if (questionTypeField.value === 'short') {
+                  optionsSection.classList.add('hidden');
+              } else {
+                  optionsSection.classList.remove('hidden');
+              }
+          }
+
+          // Set initial state
+          toggleOptionsVisibility();
+
+          // Add event listener for changes
+          questionTypeField.addEventListener('change', toggleOptionsVisibility);
+
+          // Add option button functionality
+          const addOptionBtn = document.getElementById('add-option-btn');
+          if (addOptionBtn) {
+              addOptionBtn.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  const totalFormsField = document.getElementById('id_options-TOTAL_FORMS');
+                  const optionsContainer = document.getElementById('options-container');
+
+                  // Get current form count
+                  let formCount = parseInt(totalFormsField.value);
+
+                  // Clone the first option form
+                  const formTemplate = document.querySelector('.option-form').cloneNode(true);
+
+                  // Update all IDs and names to use the new index
+                  const inputs = formTemplate.querySelectorAll('input, select, textarea');
+                  inputs.forEach(input => {
+                      input.id = input.id.replace('-0-', `-${formCount}-`);
+                      input.name = input.name.replace('-0-', `-${formCount}-`);
+
+                      // Clear values except for hidden inputs
+                      if (!input.classList.contains('keep-value')) {
+                          input.value = '';
+                      }
+
+                      // Uncheck checkboxes
+                      if (input.type === 'checkbox') {
+                          input.checked = false;
+                      }
+                  });
+
+                  // Update form count
+                  totalFormsField.value = formCount + 1;
+
+                  // Add the new form
+                  optionsContainer.appendChild(formTemplate);
+              });
+          }
+      });
+  </script>
+{% endblock extra_head %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+    <nav class="text-sm mb-6">
+      <a href="{% url 'index' %}" class="text-blue-600 hover:text-blue-800">Home</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'quiz_list' %}"
+         class="text-blue-600 hover:text-blue-800">Quizzes</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'quiz_detail' quiz.id %}"
+         class="text-blue-600 hover:text-blue-800">{{ quiz.title }}</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-600">{{ title }}</span>
+    </nav>
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-white">{{ title }}</h1>
+      <p class="text-gray-600 dark:text-gray-400 mt-2">Add a question to your "{{ quiz.title }}" quiz</p>
+    </div>
+    <!-- Question Form -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div class="p-6">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+            <div class="mb-6 p-4 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300 rounded-lg">
+              {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+          {% endif %}
+          <!-- Question Information -->
+          <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Question Information</h2>
+            <div class="grid grid-cols-1 gap-6">
+              <!-- Question Text -->
+              <div>
+                <label for="{{ form.text.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Question Text <span class="text-red-600">*</span>
+                </label>
+                <textarea name="{{ form.text.html_name }}"
+                          id="{{ form.text.id_for_label }}"
+                          rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                          placeholder="Enter your question"
+                          required>{{ form.text.value|default:'' }}</textarea>
+                {% if form.text.errors %}
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.text.errors.0 }}</p>
+                {% endif %}
+              </div>
+              <!-- Question Type -->
+              <div>
+                <label for="{{ form.question_type.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Question Type <span class="text-red-600">*</span>
+                </label>
+                <select name="{{ form.question_type.html_name }}"
+                        id="{{ form.question_type.id_for_label }}"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                        required>
+                  {% for choice in form.question_type.field.choices %}
+                    <option value="{{ choice.0 }}"
+                            {% if form.question_type.value == choice.0 %}selected{% endif %}>{{ choice.1 }}</option>
+                  {% endfor %}
+                </select>
+                {% if form.question_type.errors %}
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.question_type.errors.0 }}</p>
+                {% endif %}
+              </div>
+              <!-- Points -->
+              <div>
+                <label for="{{ form.points.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Points <span class="text-red-600">*</span>
+                </label>
+                <input type="number"
+                       name="{{ form.points.html_name }}"
+                       id="{{ form.points.id_for_label }}"
+                       value="{{ form.points.value|default:'1' }}"
+                       min="1"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                       required />
+                {% if form.points.errors %}
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.points.errors.0 }}</p>
+                {% endif %}
+              </div>
+              <!-- Explanation (optional) -->
+              <div>
+                <label for="{{ form.explanation.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Explanation (Optional)
+                </label>
+                <textarea name="{{ form.explanation.html_name }}"
+                          id="{{ form.explanation.id_for_label }}"
+                          rows="2"
+                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                          placeholder="Provide an explanation that will be shown after the question is answered">{{ form.explanation.value|default:'' }}</textarea>
+                {% if form.explanation.errors %}
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.explanation.errors.0 }}</p>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          <!-- Answer Options -->
+          <div id="options-section" class="mb-8">
+            <div class="flex justify-between items-center mb-4">
+              <h2 class="text-xl font-bold text-gray-800 dark:text-white">Answer Options</h2>
+              <button id="add-option-btn"
+                      class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded-lg text-sm">
+                <i class="fas fa-plus mr-1"></i> Add Option
+              </button>
+            </div>
+            <!-- Management form for formset -->
+            {{ formset.management_form }}
+            <div id="options-container" class="space-y-4">
+              {% for option_form in formset %}
+                <div class="option-form bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <div class="grid grid-cols-12 gap-4">
+                    <div class="col-span-10">
+                      <label for="{{ option_form.text.id_for_label }}"
+                             class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Option Text
+                        {% if forloop.first %}<span class="text-red-600">*</span>{% endif %}
+                      </label>
+                      <input type="text"
+                             name="{{ option_form.text.html_name }}"
+                             id="{{ option_form.text.id_for_label }}"
+                             value="{{ option_form.text.value|default:'' }}"
+                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                             {% if forloop.first %}required{% endif %} />
+                      {% if option_form.text.errors %}
+                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ option_form.text.errors.0 }}</p>
+                      {% endif %}
+                    </div>
+                    <div class="col-span-2 flex items-center justify-center pt-6">
+                      <div class="flex items-center">
+                        <input type="checkbox"
+                               name="{{ option_form.is_correct.html_name }}"
+                               id="{{ option_form.is_correct.id_for_label }}"
+                               {% if option_form.is_correct.value %}checked{% endif %}
+                               class="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
+                        <label for="{{ option_form.is_correct.id_for_label }}"
+                               class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Correct</label>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- Hidden fields -->
+                  {% for hidden in option_form.hidden_fields %}{{ hidden }}{% endfor %}
+                </div>
+              {% endfor %}
+            </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              For multiple choice questions, select all correct options. For true/false, mark only one option as correct.
+            </p>
+          </div>
+          <!-- Form Buttons -->
+          <div class="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
+            <a href="{% url 'quiz_detail' quiz.id %}"
+               class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-lg">
+              Cancel
+            </a>
+            <div>
+              <button type="submit"
+                      name="save"
+                      class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg mr-2">Save Question</button>
+              <button type="submit"
+                      name="save_and_add"
+                      class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg">Save & Add Another</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
