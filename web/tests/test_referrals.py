@@ -57,13 +57,9 @@ class ReferralTests(TestCase):
             slug="test-course",
         )
 
-        # Create enrollments for referred users
-        Enrollment.objects.create(student=self.referred_user1, course=self.course, status="approved")
+        Enrollment.objects.create(student=cls.referred_user1, course=cls.course, status="approved")
 
-        # Create some web requests (clicks)
-        WebRequest.objects.create(
-            path="/some/path?ref=CODE1", ip_address="127.0.0.1", user=self.referred_user1, count=5
-        )
+        WebRequest.objects.create(path="/some/path?ref=CODE1", ip_address="127.0.0.1", user=cls.referred_user1, count=5)
 
     def test_referral_stats_calculation(self):
         """Test that referral statistics are calculated correctly"""

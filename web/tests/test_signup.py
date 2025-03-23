@@ -33,7 +33,7 @@ class SignupFormTest(TestCase):
         # Mock captcha validation
         patcher = patch("captcha.fields.CaptchaField.clean", return_value=True)
         cls.mock_captcha = patcher.start()
-        cls.addCleanup(patcher.stop)
+        cls.addCleanup(lambda: patcher.stop())  # Wrap in lambda to provide a function
 
         # Create a user with a referral code
         cls.referrer = User.objects.create_user(

@@ -10,10 +10,6 @@ from web.models import Course, Subject
 class PublicProfileViewTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        # Patch Slack messaging so that it does nothing during tests.
-        cls.slack_patcher = patch("web.views.send_slack_message", return_value=None)
-        cls.mock_slack = cls.slack_patcher.start()
-
         # Create a subject needed for courses.
         cls.subject = Subject.objects.create(name="Mathematics", slug="mathematics")
 
@@ -62,8 +58,11 @@ class PublicProfileViewTest(TestCase):
         )
         cls.client = Client()
 
-    def tearDown(self):
-        self.slack_patcher.stop()
+    def setUp(self):
+        # Add this instead:
+        self.slack_patcher = patch("web.views.send_slack_message", return_value=None)
+        self.mock_slack = self.slack_patcher.start()
+        self.addCleanup(self.slack_patcher.stop)  # This handles cleanup automatically
 
     def test_public_teacher_profile(self):
         url = reverse("public_profile", kwargs={"username": self.teacher.username})

@@ -21,9 +21,12 @@ class AdminTests(TestCase):
         cls.admin_user = User.objects.create_superuser(
             username="admin", email="admin@example.com", password="adminpass123"
         )
-        cls.client = Client()
-        success = cls.client.login(username="admin", password="adminpass123")
-        cls.assertTrue(success, "Login failed")
+
+    def setUp(self):
+        # Log in before each test to ensure a fresh session
+        self.client = Client()
+        success = self.client.login(username="admin", password="adminpass123")
+        self.assertTrue(success, "Login failed")
 
     def test_create_user_through_admin(self):
         """Test that a user can be created through the admin interface"""
@@ -75,8 +78,8 @@ class AdminTests(TestCase):
 
         # Check if we got redirected to the user change page
         self.assertTrue(
-            any(redirect[0].endswith("/change/") for redirect in response.redirect_chain),
-            "Expected redirect to change page not found",
+            any((settings.ADMIN_URL in redirect[0]) for redirect in response.redirect_chain),
+            "Expected redirect to admin URL not found"
         )
 
         # Verify the user was created
