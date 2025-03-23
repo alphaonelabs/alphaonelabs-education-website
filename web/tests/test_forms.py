@@ -130,17 +130,18 @@ class CourseCreationFormTests(TestCase):
         cls.stripe_patcher.stop()
         super().tearDownClass()
 
-    def setUp(self):
-        self.User = get_user_model()
-        self.teacher = self.User.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.User = get_user_model()
+        cls.teacher = cls.User.objects.create_user(
             username="teacher", email="teacher@example.com", password="teacherpass123"
         )
         # Update existing profile instead of creating a new one
-        self.teacher.profile.is_teacher = True
-        self.teacher.profile.save()
+        cls.teacher.profile.is_teacher = True
+        cls.teacher.profile.save()
 
         # Create a test subject
-        self.subject = Subject.objects.create(
+        cls.subject = Subject.objects.create(
             name="Programming5",
             slug="programming5",
             description="Programming courses",
@@ -188,24 +189,25 @@ class CourseCreationFormTests(TestCase):
 
 
 class SessionFormTests(TestCase):
-    def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="testpass123")
-        self.user.profile.is_teacher = True
-        self.user.profile.save()
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(username="testuser", password="testpass123")
+        cls.user.profile.is_teacher = True
+        cls.user.profile.save()
 
-        self.subject = Subject.objects.create(
+        cls.subject = Subject.objects.create(
             name="Programming Sessions",
             slug="programming-sessions",
             description="Programming courses for sessions",
         )
 
-        self.course = Course.objects.create(
+        cls.course = Course.objects.create(
             title="Test Course",
             description="Test Description",
-            teacher=self.user,
+            teacher=cls.user,
             price=50.00,
             max_students=50,
-            subject=self.subject,
+            subject=cls.subject,
             level="beginner",
             status="draft",
         )
@@ -288,24 +290,25 @@ class CourseSearchFormTests(TestCase):
 
 
 class CourseUpdateFormTests(TestCase):
-    def setUp(self):
-        self.user = User.objects.create_user(username="testuser", password="testpass123")
-        self.user.profile.is_teacher = True
-        self.user.profile.save()
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(username="testuser", password="testpass123")
+        cls.user.profile.is_teacher = True
+        cls.user.profile.save()
 
-        self.subject = Subject.objects.create(
+        cls.subject = Subject.objects.create(
             name="Programming Updates",
             slug="programming-updates",
             description="Programming courses for updates",
         )
 
-        self.course = Course.objects.create(
+        cls.course = Course.objects.create(
             title="Test Course",
             description="Test Description",
-            teacher=self.user,
+            teacher=cls.user,
             price=50.00,
             max_students=50,
-            subject=self.subject,
+            subject=cls.subject,
             level="beginner",
             status="draft",
         )
@@ -385,8 +388,9 @@ class MaterialUploadFormTests(TestCase):
 
 
 class TopicCreationFormTests(TestCase):
-    def setUp(self):
-        self.category = ForumCategory.objects.create(name="General Discussion")
+    @classmethod
+    def setUpTestData(cls):
+        cls.category = ForumCategory.objects.create(name="General Discussion")
 
     def test_valid_topic_form(self):
         """Test topic creation with valid data"""
@@ -520,14 +524,15 @@ class TeachingInquiryFormTests(TestCase):
 
 
 class ProfileUpdateFormTests(TestCase):
-    def setUp(self):
-        self.user = User.objects.create_user(username="testuser", email="test@example.com", password="testpass123")
+    @classmethod
+    def setUpTestData(cls):
+        cls.user = User.objects.create_user(username="testuser", email="test@example.com", password="testpass123")
         # Create a small valid GIF file (1x1 transparent pixel)
         gif_content = (
             b"GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00!"
             b"\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;"
         )
-        self.test_image = SimpleUploadedFile(name="test_avatar.gif", content=gif_content, content_type="image/gif")
+        cls.test_image = SimpleUploadedFile(name="test_avatar.gif", content=gif_content, content_type="image/gif")
 
     def test_valid_profile_form(self):
         """Test profile update with valid data"""

@@ -22,51 +22,52 @@ class FreeCourseEnrollmentTest(TestCase):
         cls.stripe_patcher.stop()
         super().tearDownClass()
 
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # Create a subject for the course
-        self.subject = Subject.objects.create(
+        cls.subject = Subject.objects.create(
             name="Free Courses", slug="free-courses", description="Free courses", icon="fas fa-gift"
         )
 
         # Create a teacher
-        self.teacher = User.objects.create_user(
+        cls.teacher = User.objects.create_user(
             username="freeteacher", password="teacherpass", email="freeteacher@example.com"
         )
-        self.teacher.profile.is_teacher = True
-        self.teacher.profile.save()
+        cls.teacher.profile.is_teacher = True
+        cls.teacher.profile.save()
 
         # Create a free course (price=0)
-        self.free_course = Course.objects.create(
+        cls.free_course = Course.objects.create(
             title="Free Test Course",
             slug=slugify("Free Test Course"),
-            teacher=self.teacher,
+            teacher=cls.teacher,
             description="A free test course",
             learning_objectives="Learn free stuff",
             prerequisites="None",
             price=0.00,  # Free course
             allow_individual_sessions=False,
             max_students=50,
-            subject=self.subject,
+            subject=cls.subject,
             level="beginner",
         )
 
         # Create a paid course for comparison
-        self.paid_course = Course.objects.create(
+        cls.paid_course = Course.objects.create(
             title="Paid Test Course",
             slug=slugify("Paid Test Course"),
-            teacher=self.teacher,
+            teacher=cls.teacher,
             description="A paid test course",
             learning_objectives="Learn paid stuff",
             prerequisites="None",
             price=9.99,  # Paid course
             allow_individual_sessions=False,
             max_students=50,
-            subject=self.subject,
+            subject=cls.subject,
             level="beginner",
         )
 
         # Create a student
-        self.student = User.objects.create_user(
+        cls.student = User.objects.create_user(
             username="freestudent", password="studentpass", email="freestudent@example.com"
         )
 

@@ -8,58 +8,59 @@ from web.models import Course, Subject
 
 
 class PublicProfileViewTest(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # Patch Slack messaging so that it does nothing during tests.
-        self.slack_patcher = patch("web.views.send_slack_message", return_value=None)
-        self.mock_slack = self.slack_patcher.start()
+        cls.slack_patcher = patch("web.views.send_slack_message", return_value=None)
+        cls.mock_slack = cls.slack_patcher.start()
 
         # Create a subject needed for courses.
-        self.subject = Subject.objects.create(name="Mathematics", slug="mathematics")
+        cls.subject = Subject.objects.create(name="Mathematics", slug="mathematics")
 
         # Create a teacher user with a public profile.
-        self.teacher = User.objects.create_user(
+        cls.teacher = User.objects.create_user(
             username="teacheruser", password="password", email="teacher@example.com"
         )
-        self.teacher.profile.is_teacher = True
-        self.teacher.profile.is_profile_public = True
-        self.teacher.profile.bio = "Teacher bio"
-        self.teacher.profile.expertise = "Mathematics, Physics"
-        self.teacher.profile.save()
+        cls.teacher.profile.is_teacher = True
+        cls.teacher.profile.is_profile_public = True
+        cls.teacher.profile.bio = "Teacher bio"
+        cls.teacher.profile.expertise = "Mathematics, Physics"
+        cls.teacher.profile.save()
 
         # Create a student user with a public profile.
-        self.student = User.objects.create_user(
+        cls.student = User.objects.create_user(
             username="studentuser", password="password", email="student@example.com"
         )
-        self.student.profile.is_teacher = False
-        self.student.profile.is_profile_public = True
-        self.student.profile.bio = "Student bio"
-        self.student.profile.expertise = "Physics"
-        self.student.profile.save()
+        cls.student.profile.is_teacher = False
+        cls.student.profile.is_profile_public = True
+        cls.student.profile.bio = "Student bio"
+        cls.student.profile.expertise = "Physics"
+        cls.student.profile.save()
 
         # Create a private user.
-        self.private_user = User.objects.create_user(
+        cls.private_user = User.objects.create_user(
             username="privateuser", password="password", email="private@example.com"
         )
-        self.private_user.profile.is_teacher = False
-        self.private_user.profile.is_profile_public = False
-        self.private_user.profile.bio = "Private bio"
-        self.private_user.profile.expertise = "Chemistry"
-        self.private_user.profile.save()
+        cls.private_user.profile.is_teacher = False
+        cls.private_user.profile.is_profile_public = False
+        cls.private_user.profile.bio = "Private bio"
+        cls.private_user.profile.expertise = "Chemistry"
+        cls.private_user.profile.save()
 
         # Create a sample course for the teacher.
-        self.course = Course.objects.create(
+        cls.course = Course.objects.create(
             title="Sample Course",
             slug="sample-course",
-            teacher=self.teacher,
+            teacher=cls.teacher,
             description="A sample course",
             learning_objectives="Learn testing",
             prerequisites="None",
             price=10,
             max_students=30,
-            subject=self.subject,
+            subject=cls.subject,
             level="beginner",
         )
-        self.client = Client()
+        cls.client = Client()
 
     def tearDown(self):
         self.slack_patcher.stop()

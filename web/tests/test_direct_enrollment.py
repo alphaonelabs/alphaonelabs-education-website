@@ -7,21 +7,22 @@ from web.models import Course, Enrollment, Subject
 
 
 class DirectEnrollmentTest(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # Create a subject for the course
-        self.subject = Subject.objects.create(
+        cls.subject = Subject.objects.create(
             name="Mathematics", slug="mathematics", description="Mathematics courses", icon="fas fa-calculator"
         )
         # Create a teacher with a unique email
-        self.teacher = User.objects.create_user(username="teacher1", password="pass", email="teacher1@example.com")
-        self.teacher.profile.is_teacher = True
-        self.teacher.profile.save()
+        cls.teacher = User.objects.create_user(username="teacher1", password="pass", email="teacher1@example.com")
+        cls.teacher.profile.is_teacher = True
+        cls.teacher.profile.save()
 
         # Create a course for the teacher.
-        self.course = Course.objects.create(
+        cls.course = Course.objects.create(
             title="Test Course",
             slug=slugify("Test Course"),
-            teacher=self.teacher,
+            teacher=cls.teacher,
             description="A test course",
             learning_objectives="Learn testing",
             prerequisites="None",
@@ -29,13 +30,13 @@ class DirectEnrollmentTest(TestCase):
             allow_individual_sessions=False,
             invite_only=False,
             max_students=30,
-            subject=self.subject,  # Use the created subject
+            subject=cls.subject,  # Use the created subject
             level="beginner",
             tags="test,course",
         )
 
         # Create a student with a unique email.
-        self.student = User.objects.create_user(username="student1", password="pass", email="student1@example.com")
+        cls.student = User.objects.create_user(username="student1", password="pass", email="student1@example.com")
 
     def test_get_add_student_view(self):
         # Teacher logs in and retrieves the enrollment form.

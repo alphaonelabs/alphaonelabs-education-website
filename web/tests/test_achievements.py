@@ -10,28 +10,29 @@ User = get_user_model()
 
 
 class AchievementTests(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # Create a test user.
-        self.user = User.objects.create_user(username="testuser", password="pass")
+        cls.user = User.objects.create_user(username="testuser", password="pass")
         # Create a subject (required for Course).
-        self.subject = Subject.objects.create(name="Test Subject", slug="test-subject")
+        cls.subject = Subject.objects.create(name="Test Subject", slug="test-subject")
         # Create a course with the subject.
-        self.course = Course.objects.create(
-            title="Test Course", teacher=self.user, price=0, max_students=10, subject=self.subject, level="beginner"
+        cls.course = Course.objects.create(
+            title="Test Course", teacher=cls.user, price=0, max_students=10, subject=cls.subject, level="beginner"
         )
         # Create an enrollment and mark it as completed.
-        self.enrollment = Enrollment.objects.create(student=self.user, course=self.course, status="completed")
-        self.progress, _ = CourseProgress.objects.get_or_create(enrollment=self.enrollment)
+        cls.enrollment = Enrollment.objects.create(student=cls.user, course=cls.course, status="completed")
+        cls.progress, _ = CourseProgress.objects.get_or_create(enrollment=cls.enrollment)
         # Create a session and mark it as completed to simulate full course progress.
-        self.session = Session.objects.create(
-            course=self.course,
+        cls.session = Session.objects.create(
+            course=cls.course,
             title="Test Session",
             description="A test session.",
             start_time=timezone.now(),
             end_time=timezone.now() + timezone.timedelta(hours=1),
             is_virtual=True,
         )
-        self.progress.completed_sessions.add(self.session)
+        cls.progress.completed_sessions.add(cls.session)
 
     def test_award_completion_badge(self):
         self.assertFalse(

@@ -7,32 +7,33 @@ from web.models import Challenge, Course, Subject, WebRequest
 
 
 class WebRequestMiddlewareTests(TestCase):
-    def setUp(self):
-        self.client = Client()
+    @classmethod
+    def setUpTestData(cls):
+        cls.client = Client()
 
         # Create test user
-        self.user = User.objects.create_user(username="testuser", email="test@example.com", password="testpass123")
+        cls.user = User.objects.create_user(username="testuser", email="test@example.com", password="testpass123")
 
         # Create test subject
-        self.subject = Subject.objects.create(name="Test Subject", slug="test-subject", description="Test Description")
+        cls.subject = Subject.objects.create(name="Test Subject", slug="test-subject", description="Test Description")
 
         # Create test course
-        self.course = Course.objects.create(
+        cls.course = Course.objects.create(
             title="Test Course",
             slug="test-course",
             description="Test Description",
             learning_objectives="Test Objectives",
-            teacher=self.user,
+            teacher=cls.user,
             price=99.99,
             max_students=50,
-            subject=self.subject,
+            subject=cls.subject,
             level="beginner",
             status="published",
             is_featured=True,
         )
 
         # Create a test challenge for the homepage
-        self.challenge = Challenge.objects.create(
+        cls.challenge = Challenge.objects.create(
             title="Test Challenge",
             description="Test Description",
             week_number=1,

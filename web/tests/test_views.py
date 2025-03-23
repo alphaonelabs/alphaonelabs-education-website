@@ -16,35 +16,36 @@ from web.views import send_welcome_email
 
 @override_settings(STRIPE_SECRET_KEY="dummy_key")
 class BaseViewTest(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # Debug statement
 
-        self.client = Client()
+        cls.client = Client()
 
         # Create teacher user and profile
-        self.teacher = User.objects.create_user(
+        cls.teacher = User.objects.create_user(
             username="teacher",
             email="teacher@example.com",
             password="teacherpass123",
         )
-        self.teacher_profile, created_teacher_profile = Profile.objects.get_or_create(
-            user=self.teacher,
+        cls.teacher_profile, created_teacher_profile = Profile.objects.get_or_create(
+            user=cls.teacher,
             defaults={"is_teacher": True},
         )
 
         # Create student user and profile
-        self.student = User.objects.create_user(
+        cls.student = User.objects.create_user(
             username="student",
             email="student@example.com",
             password="studentpass123",
         )
-        self.student_profile, created_student_profile = Profile.objects.get_or_create(
-            user=self.student,
+        cls.student_profile, created_student_profile = Profile.objects.get_or_create(
+            user=cls.student,
             defaults={"is_teacher": False},
         )
 
         # Create test subject
-        self.subject = Subject.objects.create(
+        cls.subject = Subject.objects.create(
             name="Programming2",
             slug="programming2",
             description="Programming courses",
@@ -52,14 +53,14 @@ class BaseViewTest(TestCase):
         )
 
         # Create test course
-        self.course = Course.objects.create(
+        cls.course = Course.objects.create(
             title="Test Course",
             description="Test Description",
-            teacher=self.teacher,
+            teacher=cls.teacher,
             learning_objectives="Test Objectives",
             price=99.99,
             max_students=50,
-            subject=self.subject,
+            subject=cls.subject,
             level="beginner",
         )
 
@@ -78,29 +79,30 @@ class BaseViewTest(TestCase):
     },
 )
 class AuthenticationTests(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # Debug statement
 
-        self.client = Client()
-        self.username = "testuser"
-        self.email = "test@example.com"
-        self.password = "testpass123"
+        cls.client = Client()
+        cls.username = "testuser"
+        cls.email = "test@example.com"
+        cls.password = "testpass123"
 
         # Create user with username (required) but login will use email
-        self.user = User.objects.create_user(
-            username=self.username,
-            email=self.email,
-            password=self.password,
+        cls.user = User.objects.create_user(
+            username=cls.username,
+            email=cls.email,
+            password=cls.password,
         )
 
         # Verify email for allauth
         EmailAddress.objects.create(
-            user=self.user,
-            email=self.email,
+            user=cls.user,
+            email=cls.email,
             primary=True,
             verified=True,
         )
-        self.login_url = reverse("account_login")
+        cls.login_url = reverse("account_login")
 
     def test_successful_login_with_email(self):
         """Test that a user can successfully login with email and password"""
@@ -129,28 +131,29 @@ class AuthenticationTests(TestCase):
     GOOGLE_CREDENTIALS_PATH="dummy_path",
 )
 class CartCheckoutTest(BaseViewTest):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # First call parent setUp
-        super().setUp()
+        super().setUpTestData()
 
         # Allow individual sessions for the course
-        self.course.allow_individual_sessions = True
-        self.course.save()
+        cls.course.allow_individual_sessions = True
+        cls.course.save()
 
         # Create test session
         start = timezone.now() + timezone.timedelta(days=1)
         end = start + timezone.timedelta(hours=1)
-        self.session = Session.objects.create(
-            course=self.course,
+        cls.session = Session.objects.create(
+            course=cls.course,
             title="Test Session",
             description="Test Session Description",
             start_time=start,
             end_time=end,
             price=Decimal("29.99"),
         )
-        self.cart_url = reverse("cart_view")
-        self.add_course_url = reverse("add_course_to_cart", args=[self.course.id])
-        self.add_session_url = reverse("add_session_to_cart", args=[self.session.id])
+        cls.cart_url = reverse("cart_view")
+        cls.add_course_url = reverse("add_course_to_cart", args=[cls.course.id])
+        cls.add_session_url = reverse("add_session_to_cart", args=[cls.session.id])
 
     @patch("web.views.send_welcome_email")
     @patch("stripe.PaymentIntent.retrieve")
@@ -232,9 +235,10 @@ class CartCheckoutTest(BaseViewTest):
 class PageLoadTests(BaseViewTest):
     """Test that all important pages load correctly"""
 
-    def setUp(self):
-        super().setUp()
-        self.urls_to_test = {
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.urls_to_test = {
             "index": reverse("index"),
             "subjects": reverse("subjects"),
             "learn": reverse("learn"),
@@ -242,7 +246,7 @@ class PageLoadTests(BaseViewTest):
             "course_search": reverse("course_search"),
             "cart": reverse("cart_view"),
         }
-        self.authenticated_urls = {
+        cls.authenticated_urls = {
             "student_dashboard": reverse("student_dashboard"),
         }
 
@@ -305,25 +309,26 @@ class PageLoadTests(BaseViewTest):
 
 
 class CourseInvitationTests(TestCase):
-    def setUp(self):
-        self.client = Client()
+    @classmethod
+    def setUpTestData(cls):
+        cls.client = Client()
         # Create a teacher
-        self.teacher = User.objects.create_user(
+        cls.teacher = User.objects.create_user(
             username="testteacher", email="teacher@test.com", password="testpass123"
         )
         # Create a subject
-        self.subject = Subject.objects.create(name="Test Subject")
+        cls.subject = Subject.objects.create(name="Test Subject")
         # Create a course
-        self.course = Course.objects.create(
+        cls.course = Course.objects.create(
             title="Test Course",
             description="Test Description",
-            teacher=self.teacher,
-            subject=self.subject,
+            teacher=cls.teacher,
+            subject=cls.subject,
             price=29.99,
             status="published",
             max_students=50,
         )
-        self.invite_url = reverse("invite_student", args=[self.course.id])
+        cls.invite_url = reverse("invite_student", args=[cls.course.id])
 
     def test_invite_student_view_access(self):
         """Test that only the course teacher can access the invite view"""
@@ -375,32 +380,33 @@ class CourseInvitationTests(TestCase):
 
 
 class CourseDetailTests(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         """Set up test data for course detail tests"""
-        self.client = Client()
+        cls.client = Client()
 
         # Create users
-        self.teacher = User.objects.create_user(username="teacher", email="teacher@test.com", password="testpass123")
-        self.student = User.objects.create_user(username="student", email="student@test.com", password="testpass123")
+        cls.teacher = User.objects.create_user(username="teacher", email="teacher@test.com", password="testpass123")
+        cls.student = User.objects.create_user(username="student", email="student@test.com", password="testpass123")
 
         # Create subject
-        self.subject = Subject.objects.create(
+        cls.subject = Subject.objects.create(
             name="Test Subject",
             slug="test-subject",
             description="Test Description",
         )
 
         # Create course
-        self.course = Course.objects.create(
+        cls.course = Course.objects.create(
             title="Test Course",
             slug="test-course",
-            teacher=self.teacher,
+            teacher=cls.teacher,
             description="Test Description",
             learning_objectives="Test Objectives",
             prerequisites="Test Prerequisites",
             price=99.99,
             max_students=50,
-            subject=self.subject,
+            subject=cls.subject,
             level="beginner",
             status="published",
             allow_individual_sessions=True,
@@ -408,8 +414,8 @@ class CourseDetailTests(TestCase):
 
         # Create sessions
         now = timezone.now()
-        self.future_session = Session.objects.create(
-            course=self.course,
+        cls.future_session = Session.objects.create(
+            course=cls.course,
             title="Future Session",
             description="Future Session Description",
             start_time=now + timezone.timedelta(days=1),
@@ -418,8 +424,8 @@ class CourseDetailTests(TestCase):
             is_virtual=True,
             meeting_link="https://meet.test.com",
         )
-        self.past_session = Session.objects.create(
-            course=self.course,
+        cls.past_session = Session.objects.create(
+            course=cls.course,
             title="Past Session",
             description="Past Session Description",
             start_time=now - timezone.timedelta(days=1),
@@ -429,21 +435,21 @@ class CourseDetailTests(TestCase):
         )
 
         # Create enrollment for student
-        self.enrollment = Enrollment.objects.create(
-            student=self.student,
-            course=self.course,
+        cls.enrollment = Enrollment.objects.create(
+            student=cls.student,
+            course=cls.course,
             status="approved",
         )
 
         # Create attendance for past session
-        self.attendance = SessionAttendance.objects.create(
-            student=self.student,
-            session=self.past_session,
+        cls.attendance = SessionAttendance.objects.create(
+            student=cls.student,
+            session=cls.past_session,
             status="completed",
         )
 
         # URL for detail page
-        self.detail_url = reverse("course_detail", args=[self.course.slug])
+        cls.detail_url = reverse("course_detail", args=[cls.course.slug])
 
     def test_course_detail_page_load(self):
         """Test course detail page loads for different user types"""

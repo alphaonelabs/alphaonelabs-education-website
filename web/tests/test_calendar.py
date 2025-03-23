@@ -5,12 +5,13 @@ from django.urls import reverse
 
 
 class CalendarTests(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # Create a single test user for calendar creation
-        self.user = get_user_model().objects.create_user(
+        cls.user = get_user_model().objects.create_user(
             username="testuser", email="testuser@example.com", password="testpass123"
         )
-        self.client = Client()
+        cls.client = Client()
 
     def test_calendar_creation_and_sharing_flow(self):
         """Test the full flow of creating a calendar and adding time slots"""

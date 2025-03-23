@@ -6,12 +6,13 @@ from web.models import ProgressTracker
 
 
 class ProgressTrackerTests(TestCase):
-    def setUp(self):
-        self.client = Client()
-        self.user = User.objects.create_user(username="testuser", password="testpassword")
-        self.client.login(username="testuser", password="testpassword")
-        self.tracker = ProgressTracker.objects.create(
-            user=self.user,
+    @classmethod
+    def setUpTestData(cls):
+        cls.client = Client()
+        cls.user = User.objects.create_user(username="testuser", password="testpassword")
+        cls.client.login(username="testuser", password="testpassword")
+        cls.tracker = ProgressTracker.objects.create(
+            user=cls.user,
             title="Test Tracker",
             description="Testing progress",
             current_value=25,

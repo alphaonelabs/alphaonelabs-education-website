@@ -17,9 +17,10 @@
 
 # # Test case for NitterClient
 # class TestNitterClient(TestCase):
-#     def setUp(self):
-#         self.username = "testuser"
-#         self.client = NitterClient(self.username)
+#    @classmethod
+#    def setUpTestData(cls):
+#         cls.username = "testuser"
+#         cls.client = NitterClient(cls.username)
 #         # Clear cache before each test
 #         cache.clear()
 

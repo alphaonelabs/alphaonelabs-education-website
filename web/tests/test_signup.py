@@ -26,20 +26,21 @@ staticfiles_storage.url = lambda path: f"/static/{path}"
     },
 )
 class SignupFormTest(TestCase):
-    def setUp(self):
-        self.client = Client()
-        self.signup_url = reverse("account_signup")
+    @classmethod
+    def setUpTestData(cls):
+        cls.client = Client()
+        cls.signup_url = reverse("account_signup")
         # Mock captcha validation
         patcher = patch("captcha.fields.CaptchaField.clean", return_value=True)
-        self.mock_captcha = patcher.start()
-        self.addCleanup(patcher.stop)
+        cls.mock_captcha = patcher.start()
+        cls.addCleanup(patcher.stop)
 
         # Create a user with a referral code
-        self.referrer = User.objects.create_user(
+        cls.referrer = User.objects.create_user(
             username="referrer", email="referrer@example.com", password="testpass123"
         )
-        self.referrer.profile.referral_code = "TEST123"
-        self.referrer.profile.save()
+        cls.referrer.profile.referral_code = "TEST123"
+        cls.referrer.profile.save()
 
     def test_signup_with_referral_code(self):
         """Test that signup works with and without a referral code"""

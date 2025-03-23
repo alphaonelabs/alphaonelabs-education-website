@@ -15,14 +15,15 @@ TEMP_DIR = tempfile.mkdtemp()
     STATIC_ROOT=TEMP_DIR,
 )
 class AdminTests(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # Create superuser for admin access
-        self.admin_user = User.objects.create_superuser(
+        cls.admin_user = User.objects.create_superuser(
             username="admin", email="admin@example.com", password="adminpass123"
         )
-        self.client = Client()
-        success = self.client.login(username="admin", password="adminpass123")
-        self.assertTrue(success, "Login failed")
+        cls.client = Client()
+        success = cls.client.login(username="admin", password="adminpass123")
+        cls.assertTrue(success, "Login failed")
 
     def test_create_user_through_admin(self):
         """Test that a user can be created through the admin interface"""

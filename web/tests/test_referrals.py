@@ -13,44 +13,45 @@ from web.models import Course, Enrollment, Profile, Subject, WebRequest
     ACCOUNT_AUTHENTICATION_METHOD="email",
 )
 class ReferralTests(TestCase):
-    def setUp(self):
-        self.client = Client()
+    @classmethod
+    def setUpTestData(cls):
+        cls.client = Client()
 
         # Create test users
-        self.user1 = User.objects.create_user(username="user1", email="user1@example.com", password="testpass123")
-        self.user2 = User.objects.create_user(username="user2", email="user2@example.com", password="testpass123")
-        self.user3 = User.objects.create_user(username="user3", email="user3@example.com", password="testpass123")
+        cls.user1 = User.objects.create_user(username="user1", email="user1@example.com", password="testpass123")
+        cls.user2 = User.objects.create_user(username="user2", email="user2@example.com", password="testpass123")
+        cls.user3 = User.objects.create_user(username="user3", email="user3@example.com", password="testpass123")
 
         # Set up referral codes
-        self.user1.profile.referral_code = "CODE1"
-        self.user1.profile.save()
-        self.user2.profile.referral_code = "CODE2"
-        self.user2.profile.save()
-        self.user3.profile.referral_code = "CODE3"
-        self.user3.profile.save()
+        cls.user1.profile.referral_code = "CODE1"
+        cls.user1.profile.save()
+        cls.user2.profile.referral_code = "CODE2"
+        cls.user2.profile.save()
+        cls.user3.profile.referral_code = "CODE3"
+        cls.user3.profile.save()
 
         # Create some referrals
-        self.referred_user1 = User.objects.create_user(
+        cls.referred_user1 = User.objects.create_user(
             username="referred1", email="referred1@example.com", password="testpass123"
         )
-        self.referred_user1.profile.referred_by = self.user1.profile
-        self.referred_user1.profile.save()
+        cls.referred_user1.profile.referred_by = cls.user1.profile
+        cls.referred_user1.profile.save()
 
-        self.referred_user2 = User.objects.create_user(
+        cls.referred_user2 = User.objects.create_user(
             username="referred2", email="referred2@example.com", password="testpass123"
         )
-        self.referred_user2.profile.referred_by = self.user1.profile
-        self.referred_user2.profile.save()
+        cls.referred_user2.profile.referred_by = cls.user1.profile
+        cls.referred_user2.profile.save()
 
         # Create a subject first
-        self.subject = Subject.objects.create(name="Test Subject", slug="test-subject")
+        cls.subject = Subject.objects.create(name="Test Subject", slug="test-subject")
 
         # Create a course and enrollments
-        self.course = Course.objects.create(
+        cls.course = Course.objects.create(
             title="Test Course",
             description="Test Description",
-            subject=self.subject,
-            teacher=self.user1,
+            subject=cls.subject,
+            teacher=cls.user1,
             price=100,
             max_students=50,
             slug="test-course",

@@ -17,16 +17,17 @@ User = get_user_model()
 class GradeableLinkModelTest(TestCase):
     """Test cases for the GradeableLink model."""
 
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # Create a test user
-        self.user = User.objects.create_user(username="testuser", email="test@example.com", password="testpassword")
+        cls.user = User.objects.create_user(username="testuser", email="test@example.com", password="testpassword")
 
         # Create a test link
-        self.link = GradeableLink.objects.create(
+        cls.link = GradeableLink.objects.create(
             title="Test Link",
             url="https://example.com/test",
             description="This is a test link",
-            user=self.user,
+            user=cls.user,
             link_type="article",
         )
 
@@ -109,24 +110,25 @@ class GradeableLinkModelTest(TestCase):
 class LinkGradeModelTest(TestCase):
     """Test cases for the LinkGrade model."""
 
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # Create a test user and a grader
-        self.user = User.objects.create_user(username="testuser", email="test@example.com", password="testpassword")
+        cls.user = User.objects.create_user(username="testuser", email="test@example.com", password="testpassword")
 
-        self.grader = User.objects.create_user(username="grader", email="grader@example.com", password="graderpass")
+        cls.grader = User.objects.create_user(username="grader", email="grader@example.com", password="graderpass")
 
         # Create a test link
-        self.link = GradeableLink.objects.create(
+        cls.link = GradeableLink.objects.create(
             title="Test Link",
             url="https://example.com/test",
             description="This is a test link",
-            user=self.user,
+            user=cls.user,
             link_type="article",
         )
 
         # Create a grade
-        self.grade = LinkGrade.objects.create(
-            link=self.link, user=self.grader, grade="A-", comment="Good work, but could use some improvements."
+        cls.grade = LinkGrade.objects.create(
+            link=cls.link, user=cls.grader, grade="A-", comment="Good work, but could use some improvements."
         )
 
     def test_grade_creation(self):
@@ -287,23 +289,24 @@ class LinkGradeFormTest(TestCase):
 class GradeableLinkViewsTest(TestCase):
     """Test cases for the gradeable link views."""
 
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # Create a test user and a grader
-        self.user = User.objects.create_user(username="testuser", email="test@example.com", password="testpassword")
+        cls.user = User.objects.create_user(username="testuser", email="test@example.com", password="testpassword")
 
-        self.grader = User.objects.create_user(username="grader", email="grader@example.com", password="graderpass")
+        cls.grader = User.objects.create_user(username="grader", email="grader@example.com", password="graderpass")
 
         # Create a test link
-        self.link = GradeableLink.objects.create(
+        cls.link = GradeableLink.objects.create(
             title="Test Link",
             url="https://example.com/test",
             description="This is a test link",
-            user=self.user,
+            user=cls.user,
             link_type="article",
         )
 
         # Set up the test client
-        self.client = Client()
+        cls.client = Client()
 
     def test_link_list_view(self):
         """Test that the link list view works."""

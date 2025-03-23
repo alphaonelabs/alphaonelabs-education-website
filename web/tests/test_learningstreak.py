@@ -10,10 +10,11 @@ User = get_user_model()
 
 
 class LearningStreakEdgeCaseTests(TestCase):
-    def setUp(self):
+    @classmethod
+    def setUpTestData(cls):
         # Create a test user and a corresponding LearningStreak record.
-        self.user = User.objects.create_user(username="edgeuser", password="pass")
-        self.streak = LearningStreak.objects.create(user=self.user)
+        cls.user = User.objects.create_user(username="edgeuser", password="pass")
+        cls.streak = LearningStreak.objects.create(user=cls.user)
 
     def test_first_time_engagement(self):
         """
