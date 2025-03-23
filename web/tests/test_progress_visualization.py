@@ -1,16 +1,18 @@
 import json
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.contrib.messages import get_messages
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from web.models import Course, CourseProgress, Enrollment, Session, SessionAttendance, Subject
+from web.models import Course, CourseProgress, Enrollment, LearningStreak, Session, SessionAttendance, Subject
 
 
 class ProgressVisualizationTest(TestCase):
-    """Test cases for the progress_visualization view."""
+    """Test cases for the progress_visualization view and its helper functions."""
 
     def setUp(self):
         """Set up test data for progress visualization tests."""
@@ -125,14 +127,25 @@ class ProgressVisualizationTest(TestCase):
                 status="present" if session != self.sessions_c2[1] else "late",
             )
 
-    def test_progress_visualization_view(self):
+        # Create learning streak record
+        self.streak = LearningStreak.objects.create(user=self.user, current_streak=5)
+
+    @patch("django.core.cache.cache.get")
+    @patch("django.core.cache.cache.set")
+    def test_progress_visualization_view(self, mock_cache_set, mock_cache_get):
         """Test that the progress visualization view returns correct data."""
+        # Set the mock to return None, so the view calculates the context
+        mock_cache_get.return_value = None
+
         url = reverse("progress_visualization")
         response = self.client.get(url)
 
         # Check basic response properties
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "courses/progress_visualization.html")
+
+        # Verify that cache was set
+        self.assertTrue(mock_cache_set.called)
 
         # Check context data calculations
         context = response.context
@@ -151,6 +164,14 @@ class ProgressVisualizationTest(TestCase):
         # Check that most_active_day is a valid day of the week
         days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
         self.assertIn(context["most_active_day"], days_of_week)
+
+        # Check learning activity stats
+        self.assertEqual(context["current_streak"], 5)  # From the created LearningStreak object
+        self.assertIsInstance(context["total_learning_hours"], float)
+        self.assertIsInstance(context["avg_sessions_per_week"], float)
+
+        # Check completion pace
+        self.assertIn("days/course", context["completion_pace"])
 
         # Course data
         self.assertEqual(len(context["courses"]), 2)
@@ -179,3 +200,87 @@ class ProgressVisualizationTest(TestCase):
         # Should redirect to login page
         self.assertEqual(response.status_code, 302)
         self.assertTrue(response.url.startswith("/en/accounts/login/"))
+
+    def test_calculate_course_stats(self):
+        """Test the calculate_course_stats helper function."""
+        from web.views import calculate_course_stats
+
+        enrollments = Enrollment.objects.filter(student=self.user)
+        stats = calculate_course_stats(enrollments)
+
+        self.assertEqual(stats["total_courses"], 2)
+        self.assertEqual(stats["courses_completed"], 1)
+        self.assertEqual(stats["courses_completed_percentage"], 50)
+        self.assertEqual(stats["topics_mastered"], 6)
+
+    def test_calculate_attendance_stats(self):
+        """Test the calculate_attendance_stats helper function."""
+        from web.views import calculate_attendance_stats
+
+        enrollments = Enrollment.objects.filter(student=self.user)
+        stats = calculate_attendance_stats(self.user, enrollments)
+
+        self.assertEqual(stats["average_attendance"], 86)
+
+    def test_calculate_learning_activity(self):
+        """Test the calculate_learning_activity helper function."""
+        from web.views import calculate_learning_activity
+
+        enrollments = Enrollment.objects.filter(student=self.user)
+        stats = calculate_learning_activity(self.user, enrollments)
+
+        self.assertEqual(stats["current_streak"], 5)
+        self.assertIsInstance(stats["total_learning_hours"], float)
+        self.assertIsInstance(stats["avg_sessions_per_week"], float)
+
+        days_of_week = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        self.assertIn(stats["most_active_day"], days_of_week)
+
+    def test_calculate_completion_pace(self):
+        """Test the calculate_completion_pace helper function."""
+        from web.views import calculate_completion_pace
+
+        enrollments = Enrollment.objects.filter(student=self.user)
+        stats = calculate_completion_pace(enrollments)
+
+        self.assertIn("days/course", stats["completion_pace"])
+
+    def test_get_all_completed_sessions(self):
+        """Test the get_all_completed_sessions helper function."""
+        from web.views import get_all_completed_sessions
+
+        enrollments = Enrollment.objects.filter(student=self.user)
+        sessions = get_all_completed_sessions(enrollments)
+
+        self.assertEqual(len(sessions), 6)  # 3 from course1 + 3 from course2
+
+    def test_prepare_chart_data(self):
+        """Test the prepare_chart_data helper function."""
+        from web.views import prepare_chart_data
+
+        enrollments = Enrollment.objects.filter(student=self.user)
+        chart_data = prepare_chart_data(enrollments)
+
+        self.assertEqual(len(chart_data["courses"]), 2)
+        self.assertIn("progress_dates", chart_data)
+        self.assertIn("sessions_completed", chart_data)
+        self.assertIn("courses_json", chart_data)
+
+
+def test_teacher_access_denied(self):
+    """Test that teachers are redirected with an error message."""
+    # Update user profile to be a teacher
+    self.user.profile.is_teacher = True
+    self.user.profile.save()
+
+    url = reverse("progress_visualization")
+    response = self.client.get(url)
+
+    # Should redirect to profile page
+    self.assertEqual(response.status_code, 302)
+    self.assertEqual(response.url, reverse("profile"))
+
+    # Check for error message
+    messages = list(get_messages(response.wsgi_request))
+    self.assertEqual(len(messages), 1)
+    self.assertEqual(str(messages[0]), "This Progress Chart is for students only.")
