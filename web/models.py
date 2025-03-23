@@ -412,7 +412,7 @@ class Session(models.Model):
         return self.start_time <= now <= self.end_time
 
     def get_absolute_url(self):
-        return f"/sessions/{self.id}/enroll"
+        return reverse("session_enroll", kwargs={"session_id": self.id})
 
 
 class CourseMaterial(models.Model):
