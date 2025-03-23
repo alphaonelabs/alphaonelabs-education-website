@@ -21,6 +21,7 @@ from .models import (
     GradeableLink,
     LinkGrade,
     Meme,
+    NotificationPreference,
     PeerChallenge,
     PeerChallengeInvitation,
     ProductImage,
@@ -1522,3 +1523,13 @@ class LinkGradeForm(forms.ModelForm):
             self.add_error("comment", "A comment is required for grades below A.")
 
         return cleaned_data
+
+
+class NotificationPreferencesForm(forms.ModelForm):
+    class Meta:
+        model = NotificationPreference
+        fields = ["reminder_days_before", "reminder_hours_before", "email_notifications", "in_app_notifications"]
+        widgets = {
+            "reminder_days_before": forms.NumberInput(attrs={"min": 1, "max": 14}),
+            "reminder_hours_before": forms.NumberInput(attrs={"min": 1, "max": 72}),
+        }

@@ -3,3 +3,6 @@
 
 # Send weekly progress updates every Monday at 8 AM
 0 8 * * 1 cd /home/a/projects/AlphaOneLabs/education-website && poetry run python manage.py send_weekly_updates
+
+# Send assignment reminders daily at 8 AM
+0 8 * * * cd /home/a/projects/AlphaOneLabs/education-website && poetry run python manage.py send_assignment_reminders >> /home/a/projects/AlphaOneLabs/education-website/reminder_log.log 2>&1
