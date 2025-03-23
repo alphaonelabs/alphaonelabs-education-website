@@ -34,6 +34,7 @@ repos:
       - id: black
         args: ["--line-length=120"]
         stages: [commit]
+        fail_fast: true
 
   - repo: https://github.com/pycqa/isort
     rev: 6.0.1
@@ -41,6 +42,7 @@ repos:
       - id: isort
         args: ["--profile=black", "--line-length=120"]
         stages: [commit]
+        fail_fast: true
 
   - repo: https://github.com/Riverside-Healthcare/djLint
     rev: v1.36.4
@@ -49,7 +51,7 @@ repos:
         args: ["--reformat", "--max-line-length=120"]
         files: '\.(html|djhtml)$'
         stages: [commit]
-
+        fail_fast: true
   # Analysis hooks that need manual intervention
   - repo: https://github.com/pycqa/flake8
     rev: 7.1.2
@@ -58,7 +60,7 @@ repos:
         args: ["--max-line-length=120"]
         additional_dependencies: [flake8-django]
         stages: [commit, manual]
-
+        fail_fast: true
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
@@ -76,7 +78,7 @@ repos:
         stages: [commit, manual]
       - id: detect-private-key
         stages: [commit, manual]
-
+        fail_fast: true
   - repo: local
     hooks:
       - id: django-collectstatic
