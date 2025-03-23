@@ -245,7 +245,6 @@ urlpatterns += i18n_patterns(
     path("memes/add/", views.add_meme, name="add_meme"),
     path("whiteboard/", views.whiteboard, name="whiteboard"),
     path("graph/", views.graph_tool, name="graph_tool"),
-    path("accounts/delete/", views.delete_account, name="delete_account"),
     path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
     # Team Collaboration URLs
     path("teams/", views.team_goals, name="team_goals"),
