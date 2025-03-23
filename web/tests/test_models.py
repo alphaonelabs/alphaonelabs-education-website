@@ -1,3 +1,4 @@
+import pytest
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
 
@@ -129,6 +130,7 @@ class EnrollmentModelTests(TestCase):
             level="beginner",
         )
 
+    @pytest.mark.slow
     def test_enrollment_creation(self):
         """Test enrollment creation"""
         enrollment = Enrollment.objects.create(
@@ -239,7 +241,7 @@ class OrderModelTests(TestCase):
         # Process payment (this would typically call Stripe in your actual code)
         # If your code has a process_payment function, call it here
         # process_payment(order)
-        
+
         # For now, simulate payment completion manually
         order.status = "completed"
         order.save()

@@ -14,9 +14,7 @@ class PublicProfileViewTest(TestCase):
         cls.subject = Subject.objects.create(name="Mathematics", slug="mathematics")
 
         # Create a teacher user with a public profile.
-        cls.teacher = User.objects.create_user(
-            username="teacheruser", password="password", email="teacher@example.com"
-        )
+        cls.teacher = User.objects.create_user(username="teacheruser", password="password", email="teacher@example.com")
         cls.teacher.profile.is_teacher = True
         cls.teacher.profile.is_profile_public = True
         cls.teacher.profile.bio = "Teacher bio"
@@ -24,9 +22,7 @@ class PublicProfileViewTest(TestCase):
         cls.teacher.profile.save()
 
         # Create a student user with a public profile.
-        cls.student = User.objects.create_user(
-            username="studentuser", password="password", email="student@example.com"
-        )
+        cls.student = User.objects.create_user(username="studentuser", password="password", email="student@example.com")
         cls.student.profile.is_teacher = False
         cls.student.profile.is_profile_public = True
         cls.student.profile.bio = "Student bio"

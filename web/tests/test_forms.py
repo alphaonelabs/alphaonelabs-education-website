@@ -3,7 +3,7 @@ from unittest.mock import patch
 from django import forms
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, SimpleTestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.utils import timezone
 
 from web.forms import CourseCreationForm, CourseMaterialForm, ProfileUpdateForm, SessionForm, UserRegistrationForm

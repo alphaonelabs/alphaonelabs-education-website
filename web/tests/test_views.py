@@ -313,9 +313,7 @@ class CourseInvitationTests(TestCase):
     def setUpTestData(cls):
         cls.client = Client()
         # Create a teacher
-        cls.teacher = User.objects.create_user(
-            username="testteacher", email="teacher@test.com", password="testpass123"
-        )
+        cls.teacher = User.objects.create_user(username="testteacher", email="teacher@test.com", password="testpass123")
         # Create a subject
         cls.subject = Subject.objects.create(name="Test Subject")
         # Create a course

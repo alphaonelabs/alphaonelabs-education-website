@@ -5,7 +5,7 @@ from django.urls import reverse
 from web.models import ProgressTracker
 
 
-class ProgressTrackerTests(TestCase): 
+class ProgressTrackerTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         # Create user once for the whole test class
@@ -32,14 +32,17 @@ class ProgressTrackerTests(TestCase):
         self.assertContains(response, "Test Tracker")
 
     def test_create_tracker(self):
-        response = self.client.post(reverse('create_tracker'), {
-            'title': 'New Tracker',
-            'description': 'New description',
-            'current_value': 10,
-            'target_value': 50,
-            'color': 'green-600',
-            'public': True
-        })
+        response = self.client.post(
+            reverse("create_tracker"),
+            {
+                "title": "New Tracker",
+                "description": "New description",
+                "current_value": 10,
+                "target_value": 50,
+                "color": "green-600",
+                "public": True,
+            },
+        )
         # Check for redirect after successful form submission
         self.assertEqual(response.status_code, 302)  # Should redirect after creation
         # Now there should be 2 trackers (the one from setUpTestData + the new one)

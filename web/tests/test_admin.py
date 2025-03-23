@@ -79,7 +79,7 @@ class AdminTests(TestCase):
         # Check if we got redirected to the user change page
         self.assertTrue(
             any((settings.ADMIN_URL in redirect[0]) for redirect in response.redirect_chain),
-            "Expected redirect to admin URL not found"
+            "Expected redirect to admin URL not found",
         )
 
         # Verify the user was created
