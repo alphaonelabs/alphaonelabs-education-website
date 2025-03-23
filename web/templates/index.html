@@ -919,6 +919,149 @@
             </p>
           </div>
         </div>
+        <!-- Top Contributors -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mt-6">
+          <h2 class="text-lg font-semibold mb-4 flex items-center">
+            <i class="fa-solid fa-trophy text-amber-600 dark:text-amber-400 mr-2"></i>
+            Top Contributors
+          </h2>
+          <div class="space-y-4" id="top-contributors">
+            <div class="animate-pulse space-y-3">
+              {% for i in "123456"|make_list %}
+                <div class="flex items-center space-x-3">
+                  <div class="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                  <div class="flex-1">
+                    <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                    <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-2"></div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+          <script>
+              function fetchTopContributors() {
+                  fetch('https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=closed&per_page=100')
+                      .then(response => response.json())
+                      .then(pulls => {
+                          const contributors = {};
+                          pulls.forEach(pull => {
+                              const username = pull.user.login;
+
+                              //skipping bots :)
+                              if (username.includes('[bot]') || username.includes('dependabot')) {
+                                  return;
+                              }
+
+                              //procedding further if merged pr
+                              if (!pull.merged_at) {
+                                  return;
+                              }
+                              if (!contributors[username]) {
+                                  contributors[username] = {
+                                      username: username,
+                                      avatar_url: pull.user.avatar_url,
+                                      profile_url: pull.user.html_url,
+                                      merged_count: 0,
+                                      prs: [],
+                                      latest_merged_at: null
+                                  };
+                              }
+
+                              contributors[username].merged_count++;
+
+                              contributors[username].prs.push({
+                                  number: pull.number,
+                                  title: pull.title,
+                                  url: pull.html_url,
+                                  merged_at: pull.merged_at,
+                                  created_at: pull.created_at
+                              });
+
+                              //update the latest merge date if this is more recent
+                              if (!contributors[username].latest_merged_at ||
+                                  new Date(pull.merged_at) > new Date(contributors[username].latest_merged_at)) {
+                                  contributors[username].latest_merged_at = pull.merged_at;
+                              }
+                          });
+
+                          //converting to array and sorting:
+                          // 1. by number of merged PRs (descending)
+                          // 2. in case of tie, by most recent merge date (descending)
+                          const topContributors = Object.values(contributors)
+                              .sort((a, b) => {
+                                  const countDiff = b.merged_count - a.merged_count;
+                                  if (countDiff !== 0) return countDiff;
+                                  return new Date(b.latest_merged_at) - new Date(a.latest_merged_at);
+                              })
+                              .slice(0, 6); //here also taking top 6
+                          topContributors.forEach(contributor => {
+                              contributor.prs.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
+                              contributor.most_recent_pr = contributor.prs[0];
+                          });
+                          const container = document.getElementById('top-contributors');
+                          container.innerHTML = '';
+
+                          if (topContributors.length === 0) {
+                              container.innerHTML = `
+                      <div class="text-sm text-gray-600 dark:text-gray-400 text-center py-4">
+                        No merged pull requests found.
+                      </div>
+                    `;
+                              return;
+                          }
+
+                          topContributors.forEach((contributor, index) => {
+                              const recentDate = new Date(contributor.most_recent_pr.merged_at).toLocaleDateString();
+                              const div = document.createElement('div');
+                              div.className = 'flex items-center space-x-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
+
+                              let rankBadge = '';
+                              if (index === 0) {
+                                  rankBadge = '<span class="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 text-xs px-2 py-0.5 rounded-full">🥇 #1</span>';
+                              } else if (index === 1) {
+                                  rankBadge = '<span class="bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 text-xs px-2 py-0.5 rounded-full">🥈 #2</span>';
+                              } else if (index === 2) {
+                                  rankBadge = '<span class="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300 text-xs px-2 py-0.5 rounded-full">🥉 #3</span>';
+                              } else {
+                                  rankBadge = `<span class="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 text-xs px-2 py-0.5 rounded-full">#${index + 1}</span>`;
+                              }
+
+                              div.innerHTML = `
+                      <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-10 h-10 rounded-full" loading="lazy" />
+                      <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between">
+                          <div class="flex items-center space-x-2">
+                            <a href="${contributor.profile_url}" target="_blank" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400">
+                              ${contributor.username}
+                            </a>
+                            ${rankBadge}
+                          </div>
+                          <span class="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 text-xs px-2 py-1 rounded-full">
+                            <i class="fas fa-code-pull-request mr-1"></i>${contributor.merged_count} PRs
+                          </span>
+                        </div>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          Latest: <a href="${contributor.most_recent_pr.url}" target="_blank" class="hover:underline">#${contributor.most_recent_pr.number}</a> · ${recentDate}
+                        </p>
+                      </div>
+                    `;
+                              container.appendChild(div);
+                          });
+                      })
+                      .catch(error => {
+                          const container = document.getElementById('top-contributors');
+                          container.innerHTML = `
+                    <div class="text-sm text-gray-600 dark:text-gray-400 text-center py-4">
+                      <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+                      Failed to load top contributors. Please try again later.
+                    </div>
+                  `;
+                          console.error('Error fetching top contributors:', error);
+                      });
+              }
+              fetchTopContributors();
+          </script>
+        </div>
         <!-- Referral Program -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mt-6">
           <h2 class="text-lg font-semibold mb-4 flex items-center">
