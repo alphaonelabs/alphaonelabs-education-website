@@ -129,6 +129,7 @@ from .models import (
     TeamGoalMember,
     TeamInvite,
     TimeSlot,
+    UserBadge,
     WebRequest,
 )
 from .notifications import (
@@ -276,7 +277,12 @@ def profile(request):
         # Use the instance so the form loads all updated fields from the database.
         form = ProfileUpdateForm(instance=request.user)
 
-    context = {"form": form}
+    badges = UserBadge.objects.filter(user=request.user).select_related("badge")
+
+    context = {
+        "form": form,
+        "badges": badges,
+    }
 
     # Teacher-specific stats
     if request.user.profile.is_teacher:
