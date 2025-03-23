@@ -3,7 +3,7 @@ from unittest.mock import patch
 from django import forms
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, override_settings
 from django.utils import timezone
 
 from web.forms import CourseCreationForm, CourseMaterialForm, ProfileUpdateForm, SessionForm, UserRegistrationForm
@@ -25,7 +25,7 @@ from web.models import Course, ForumCategory, Subject, User
     STRIPE_SECRET_KEY="dummy_key",
     ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE=True,
 )
-class UserRegistrationFormTests(TestCase):
+class UserRegistrationFormTests(SimpleTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -117,7 +117,7 @@ class UserRegistrationFormTests(TestCase):
 
 
 @override_settings(STRIPE_SECRET_KEY="dummy_key")
-class CourseCreationFormTests(TestCase):
+class CourseCreationFormTests(SimpleTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -188,7 +188,7 @@ class CourseCreationFormTests(TestCase):
         self.assertIn("subject", form.errors)
 
 
-class SessionFormTests(TestCase):
+class SessionFormTests(SimpleTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user(username="testuser", password="testpass123")
@@ -253,7 +253,7 @@ class SessionFormTests(TestCase):
         self.assertIn("Meeting link is required for virtual sessions", str(form.errors))
 
 
-class CourseSearchFormTests(TestCase):
+class CourseSearchFormTests(SimpleTestCase):
     def test_valid_search_form(self):
         form_data = {
             "query": "python",
@@ -289,7 +289,7 @@ class CourseSearchFormTests(TestCase):
         self.assertIn("Minimum price cannot be greater than maximum price", form.errors["__all__"])
 
 
-class CourseUpdateFormTests(TestCase):
+class CourseUpdateFormTests(SimpleTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user(username="testuser", password="testpass123")
@@ -342,7 +342,7 @@ class CourseUpdateFormTests(TestCase):
         self.assertFalse(form.is_valid())
 
 
-class CourseReviewFormTests(TestCase):
+class CourseReviewFormTests(SimpleTestCase):
     def test_valid_review_form(self):
         """Test course review with valid data"""
         form_data = {
@@ -362,7 +362,7 @@ class CourseReviewFormTests(TestCase):
         self.assertFalse(form.is_valid())
 
 
-class MaterialUploadFormTests(TestCase):
+class MaterialUploadFormTests(SimpleTestCase):
     def test_valid_upload_form(self):
         """Test material upload with valid data"""
         test_file = SimpleUploadedFile("test.pdf", b"file_content", content_type="application/pdf")
@@ -387,7 +387,7 @@ class MaterialUploadFormTests(TestCase):
         self.assertFalse(form.is_valid())
 
 
-class TopicCreationFormTests(TestCase):
+class TopicCreationFormTests(SimpleTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.category = ForumCategory.objects.create(name="General Discussion")
@@ -411,7 +411,7 @@ class TopicCreationFormTests(TestCase):
         self.assertFalse(form.is_valid())
 
 
-class StudyGroupFormTests(TestCase):
+class StudyGroupFormTests(SimpleTestCase):
     def test_valid_group_form(self):
         """Test study group creation with valid data"""
         form_data = {
@@ -433,7 +433,7 @@ class StudyGroupFormTests(TestCase):
         self.assertFalse(form.is_valid())
 
 
-class BlogCommentFormTests(TestCase):
+class BlogCommentFormTests(SimpleTestCase):
     def test_valid_comment_form(self):
         """Test blog comment with valid data"""
         form_data = {
@@ -451,7 +451,7 @@ class BlogCommentFormTests(TestCase):
         self.assertFalse(form.is_valid())
 
 
-class MessageFormTests(TestCase):
+class MessageFormTests(SimpleTestCase):
     def test_valid_message_form(self):
         """Test message with valid data"""
         form_data = {
@@ -469,7 +469,7 @@ class MessageFormTests(TestCase):
         self.assertFalse(form.is_valid())
 
 
-class LearningInquiryFormTests(TestCase):
+class LearningInquiryFormTests(SimpleTestCase):
     def test_valid_inquiry_form(self):
         form_data = {
             "name": "John Doe",
@@ -501,7 +501,7 @@ class LearningInquiryFormTests(TestCase):
         self.assertIn("experience_level", form.errors)
 
 
-class TeachingInquiryFormTests(TestCase):
+class TeachingInquiryFormTests(SimpleTestCase):
     def test_valid_inquiry_form(self):
         """Test teaching inquiry with valid data"""
         form_data = {
@@ -523,7 +523,7 @@ class TeachingInquiryFormTests(TestCase):
         self.assertFalse(form.is_valid())
 
 
-class ProfileUpdateFormTests(TestCase):
+class ProfileUpdateFormTests(SimpleTestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user(username="testuser", email="test@example.com", password="testpass123")

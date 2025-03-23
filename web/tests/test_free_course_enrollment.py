@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
-from django.test import TestCase, override_settings
+from django.test import SimpleTestCase, override_settings
 from django.urls import reverse
 from django.utils.text import slugify
 
@@ -9,7 +9,7 @@ from web.models import Course, Enrollment, Subject
 
 
 @override_settings(STRIPE_SECRET_KEY="dummy_key")
-class FreeCourseEnrollmentTest(TestCase):
+class FreeCourseEnrollmentTest(SimpleTestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()

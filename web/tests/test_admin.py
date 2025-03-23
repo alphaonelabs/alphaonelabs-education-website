@@ -2,7 +2,7 @@ import tempfile
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.test import Client, TestCase, override_settings
+from django.test import Client, SimpleTestCase, override_settings
 
 User = get_user_model()
 
@@ -14,7 +14,7 @@ TEMP_DIR = tempfile.mkdtemp()
     SLACK_WEBHOOK_URL=None,
     STATIC_ROOT=TEMP_DIR,
 )
-class AdminTests(TestCase):
+class AdminTests(SimpleTestCase):
     @classmethod
     def setUpTestData(cls):
         # Create superuser for admin access

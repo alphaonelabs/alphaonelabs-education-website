@@ -1,16 +1,16 @@
 from django.contrib.auth.models import User
-from django.test import Client, TestCase, SimpleTestCase
+from django.test import Client, SimpleTestCase
 from django.urls import reverse
 
 from web.models import ProgressTracker
 
 
-class ProgressTrackerTests(TestCase):
+class ProgressTrackerTests(SimpleTestCase): 
     @classmethod
     def setUpTestData(cls):
-        cls.client = Client()
+        # Create user once for the whole test class
         cls.user = User.objects.create_user(username="testuser", password="testpassword")
-        cls.client.login(username="testuser", password="testpassword")
+        # Create tracker once for the whole test class
         cls.tracker = ProgressTracker.objects.create(
             user=cls.user,
             title="Test Tracker",
@@ -20,6 +20,11 @@ class ProgressTrackerTests(TestCase):
             color="blue-600",
             public=True,
         )
+
+    def setUp(self):
+        # Set up a fresh client and login for each test
+        self.client = Client()
+        self.client.login(username="testuser", password="testpassword")
 
     def test_tracker_list(self):
         response = self.client.get(reverse("tracker_list"))
@@ -35,6 +40,9 @@ class ProgressTrackerTests(TestCase):
             'color': 'green-600',
             'public': True
         })
+        # Check for redirect after successful form submission
+        self.assertEqual(response.status_code, 302)  # Should redirect after creation
+        # Now there should be 2 trackers (the one from setUpTestData + the new one)
         self.assertEqual(ProgressTracker.objects.count(), 2)
         new_tracker = ProgressTracker.objects.get(title="New Tracker")
         self.assertEqual(new_tracker.current_value, 10)

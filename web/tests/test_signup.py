@@ -31,9 +31,8 @@ class SignupFormTest(TestCase):
         cls.client = Client()
         cls.signup_url = reverse("account_signup")
         # Mock captcha validation
-        patcher = patch("captcha.fields.CaptchaField.clean", return_value=True)
-        cls.mock_captcha = patcher.start()
-        cls.addCleanup(lambda: patcher.stop())  # Wrap in lambda to provide a function
+        cls.patcher = patch("captcha.fields.CaptchaField.clean", return_value=True)
+        cls.mock_captcha = cls.patcher.start()
 
         # Create a user with a referral code
         cls.referrer = User.objects.create_user(
@@ -41,6 +40,12 @@ class SignupFormTest(TestCase):
         )
         cls.referrer.profile.referral_code = "TEST123"
         cls.referrer.profile.save()
+
+    @classmethod
+    def tearDownClass(cls):
+        # Stop the patcher in tearDownClass
+        cls.patcher.stop()
+        super().tearDownClass()
 
     def test_signup_with_referral_code(self):
         """Test that signup works with and without a referral code"""

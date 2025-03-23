@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.test import SimpleTestCase
 from django.utils import timezone
 
 from web.models import LearningStreak
@@ -9,7 +9,7 @@ from web.models import LearningStreak
 User = get_user_model()
 
 
-class LearningStreakEdgeCaseTests(TestCase):
+class LearningStreakEdgeCaseTests(SimpleTestCase):
     @classmethod
     def setUpTestData(cls):
         # Create a test user and a corresponding LearningStreak record.
