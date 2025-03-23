@@ -1,6 +1,0 @@
-[33mcommit 7e85bddf631c53c071d1ab767e66f3443030c65a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mlanding-page[m[33m, [m[1;31morigin/landing-page[m[33m)[m
-Merge: 554d06e 1214181
-Author: Ashutosh-KARNX7 <karns7844@gmail.com>
-Date:   Sat Mar 22 21:40:12 2025 +0530
-
-    merge: resolve conflicts and fix line endings in gsoc_landing_page.html
