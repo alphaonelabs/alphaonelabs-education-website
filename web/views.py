@@ -378,7 +378,6 @@ def profile(request):
             return redirect("profile")
 
         form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
-        form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
             request.user.profile.refresh_from_db()  # Refresh the instance so updated Profile is loaded
             request.user.profile.refresh_from_db()  # Refresh the instance so updated Profile is loaded
