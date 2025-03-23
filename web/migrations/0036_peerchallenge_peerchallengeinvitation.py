@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("web", "0034_profile_is_profile_public"),
+        ("web", "0035_badge_userbadge"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
