@@ -711,9 +711,9 @@ def learn(request):
                 )
                 messages.success(request, "Thank you for your interest! We'll be in touch soon.")
                 return redirect("index")
-            except Exception as e:
+            except Exception:
                 logger = logging.getLogger(__name__)
-                logger.error(f"Error sending email: {e}")
+                logger.exception("Error sending email")
                 messages.error(request, "Sorry, there was an error sending your inquiry. Please try again later.")
     else:
         initial_data = {}

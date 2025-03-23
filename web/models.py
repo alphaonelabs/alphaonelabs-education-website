@@ -1014,6 +1014,10 @@ class Goods(models.Model):
         if self.product_type == "physical" and self.stock is None:
             raise ValidationError("Physical products must have a stock quantity.")
 
+        # Validate reward items
+        if self.is_reward and (self.points_required is None or self.points_required <= 0):
+            raise ValidationError("Reward items must have a positive 'points_required' value.")
+
     def save(self, *args, **kwargs):
         if not self.sku:
             self.sku = f"{slugify(self.name[:20])}-{self.id}"
@@ -1223,7 +1227,7 @@ class Points(models.Model):
     challenge = models.ForeignKey(
         "Challenge", on_delete=models.CASCADE, null=True, blank=True, related_name="points_awarded"
     )
-    amount = models.IntegerField(default=0)
+    amount = models.PositiveIntegerField(default=0)
     reason = models.CharField(max_length=255, help_text="Reason for awarding points")
     point_type = models.CharField(
         max_length=20,
