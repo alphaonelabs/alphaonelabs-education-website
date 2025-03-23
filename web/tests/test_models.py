@@ -236,7 +236,11 @@ class OrderModelTests(TestCase):
         self.assertEqual(order_item.quantity, 1)
         self.assertEqual(order_item.price_at_purchase, self.goods.price)
 
-        # Simulate payment completion
+        # Process payment (this would typically call Stripe in your actual code)
+        # If your code has a process_payment function, call it here
+        # process_payment(order)
+        
+        # For now, simulate payment completion manually
         order.status = "completed"
         order.save()
         self.assertEqual(order.status, "completed")
