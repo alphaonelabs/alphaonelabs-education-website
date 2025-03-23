@@ -1318,9 +1318,13 @@ class Meetup(models.Model):
     event_type = models.CharField(
         choices=[("online", "Online"), ("in_person", "In Person")], default="online", max_length=10
     )
-    creator = models.ForeignKey(User, on_delete=models.CASCADE)  # Creator field
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def get_default_user():
+        return User.objects.filter(is_superuser=True).first().id
+    
+    creator = models.ForeignKey(User, on_delete=models.CASCADE , default=get_default_user)  # Creator field
 
     def clean(self):
         super().clean()
