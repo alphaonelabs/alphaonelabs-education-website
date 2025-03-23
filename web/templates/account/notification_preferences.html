@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  Notification Preferences
+{% endblock title %}
+{% block content %}
+  <div class="min-h-screen bg-gray-50 dark:bg-gray-900 py-10">
+    <div class="max-w-3xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">
+      <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-6 border-b pb-2">Notification Preferences</h1>
+      {% if messages %}
+        <div class="mb-6 space-y-4">
+          {% for message in messages %}
+            <div class="p-4 rounded-md {% if message.tags == 'success' %} bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 {% elif message.tags == 'error' %} bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100 {% elif message.tags == 'warning' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100 {% else %} bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100 {% endif %}">
+              <div class="flex items-center">
+                <i class="mr-3 {% if message.tags == 'success' %} fas fa-check-circle {% elif message.tags == 'error' %} fas fa-exclamation-circle {% elif message.tags == 'warning' %} fas fa-exclamation-triangle {% else %} fas fa-info-circle {% endif %} text-lg"></i>
+                <span class="text-base">{{ message }}</span>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+      <form method="post" class="space-y-8">
+        {% csrf_token %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div>
+            <label for="{{ form.reminder_days_before.id_for_label }}"
+                   class="block text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Reminder Days Before Deadline
+            </label>
+            {{ form.reminder_days_before }}
+            {% if form.reminder_days_before.help_text %}
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ form.reminder_days_before.help_text }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label for="{{ form.reminder_hours_before.id_for_label }}"
+                   class="block text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Reminder Hours Before Deadline
+            </label>
+            {{ form.reminder_hours_before }}
+            {% if form.reminder_hours_before.help_text %}
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ form.reminder_hours_before.help_text }}</p>
+            {% endif %}
+          </div>
+        </div>
+        <div class="flex flex-col md:flex-row md:space-x-10">
+          <div class="flex items-center">
+            <input type="checkbox"
+                   name="{{ form.email_notifications.name }}"
+                   id="{{ form.email_notifications.id_for_label }}"
+                   class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300"
+                   {% if form.email_notifications.value %}checked{% endif %} />
+            <label for="{{ form.email_notifications.id_for_label }}"
+                   class="ml-3 text-lg text-gray-700 dark:text-gray-300">Email Notifications</label>
+          </div>
+          <div class="flex items-center mt-4 md:mt-0">
+            <input type="checkbox"
+                   name="{{ form.in_app_notifications.name }}"
+                   id="{{ form.in_app_notifications.id_for_label }}"
+                   class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300"
+                   {% if form.in_app_notifications.value %}checked{% endif %} />
+            <label for="{{ form.in_app_notifications.id_for_label }}"
+                   class="ml-3 text-lg text-gray-700 dark:text-gray-300">In-App Notifications</label>
+          </div>
+        </div>
+        <div class="flex justify-end">
+          <button type="submit"
+                  class="inline-flex items-center justify-center px-8 py-3 border border-transparent rounded-md shadow-sm text-lg font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+            <i class="fas fa-save mr-2"></i> Save Preferences
+          </button>
+        </div>
+      </form>
+      <div class="mt-8 text-center">
+        <a href="{% url 'profile' %}"
+           class="text-lg text-blue-600 hover:underline">&larr; Return to Profile</a>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
