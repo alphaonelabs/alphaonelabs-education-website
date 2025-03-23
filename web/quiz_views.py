@@ -451,6 +451,7 @@ def _process_quiz_taking(request, quiz):
         "questions": prepared_questions,
         "form": form,
         "user_quiz_id": user_quiz.id,
+        "user_quiz": user_quiz,
         "time_limit": quiz.time_limit,
     }
 
@@ -541,6 +542,33 @@ def quiz_results(request, user_quiz_id):
             "options": list(question.options.all()) if question.question_type != "short" else None,
         }
         all_quiz_questions.append(q_info)
+
+    # Update quiz completion status and score
+    user_quiz.completed = True
+    user_quiz.end_time = timezone.now()  # Ensure end_time is set if not already
+    user_quiz.save()
+
+    # Check if this quiz is associated with a challenge
+    challenge_invitation = None
+    if request.user.is_authenticated:
+        from .models import PeerChallengeInvitation
+
+        # First try to find an invitation that's already associated with this user_quiz
+        challenge_invitation = PeerChallengeInvitation.objects.filter(
+            user_quiz=user_quiz, participant=request.user
+        ).first()
+
+        # If not found, look for an invitation for this quiz
+        if not challenge_invitation:
+            challenge_invitation = PeerChallengeInvitation.objects.filter(
+                participant=request.user, challenge__quiz=quiz
+            ).first()
+
+    # Get user attempts count for this quiz
+    user_attempts = 0
+    if request.user.is_authenticated:
+        user_attempts = UserQuiz.objects.filter(quiz=quiz, user=request.user).count()
+
     context = {
         "user_quiz": user_quiz,
         "quiz": quiz,
@@ -553,6 +581,9 @@ def quiz_results(request, user_quiz_id):
         "questions_attempted": questions_attempted,
         "correct_count": correct_count,
         "duration": duration,
+        "answers": answers,
+        "challenge_invitation": challenge_invitation,
+        "user_attempts": user_attempts,
     }
 
     return render(request, "web/quiz/quiz_results.html", context)

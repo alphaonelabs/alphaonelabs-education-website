@@ -22,11 +22,13 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
+from django.core.management import call_command
 from django.core.paginator import Paginator
 from django.db import IntegrityError, models, transaction
 from django.db.models import Avg, Count, Q, Sum
 from django.http import (
     FileResponse,
+    Http404,
     HttpResponse,
     HttpResponseForbidden,
     JsonResponse,
@@ -44,6 +46,7 @@ from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import (
     CreateView,
     DeleteView,
+    DetailView,
     ListView,
     UpdateView,
 )
@@ -60,8 +63,10 @@ from .forms import (
     ForumCategoryForm,
     ForumTopicForm,
     GoodsForm,
+    GradeableLinkForm,
     InviteStudentForm,
     LearnForm,
+    LinkGradeForm,
     MemeForm,
     MessageTeacherForm,
     ProfileUpdateForm,
@@ -103,7 +108,9 @@ from .models import (
     ForumReply,
     ForumTopic,
     Goods,
+    GradeableLink,
     LearningStreak,
+    LinkGrade,
     Meme,
     Order,
     OrderItem,
@@ -124,6 +131,7 @@ from .models import (
     TeamGoalMember,
     TeamInvite,
     TimeSlot,
+    UserBadge,
     WebRequest,
 )
 from .notifications import (
@@ -150,6 +158,8 @@ def sitemap(request):
 
 def index(request):
     """Homepage view."""
+    from django.conf import settings
+
     # Store referral code in session if present in URL
     ref_code = request.GET.get("ref")
     if ref_code:
@@ -203,6 +213,7 @@ def index(request):
         "latest_post": latest_post,
         "latest_success_story": latest_success_story,
         "form": form,
+        "is_debug": settings.DEBUG,
     }
     if request.user.is_authenticated:
         user_team_goals = (
@@ -258,36 +269,27 @@ def signup_view(request):
 def profile(request):
     if request.method == "POST":
         if "avatar" in request.FILES:
-            # Handle avatar upload
             request.user.profile.avatar = request.FILES["avatar"]
             request.user.profile.save()
             return redirect("profile")
 
-        form = ProfileUpdateForm(request.POST, instance=request.user)
+        form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
-            user = form.save()
-            user.profile.bio = form.cleaned_data["bio"]
-            user.profile.expertise = form.cleaned_data["expertise"]
-            user.profile.save()
+            request.user.profile.refresh_from_db()  # Refresh the instance so updated Profile is loaded
             messages.success(request, "Profile updated successfully!")
             return redirect("profile")
     else:
-        form = ProfileUpdateForm(
-            initial={
-                "username": request.user.username,
-                "email": request.user.email,
-                "first_name": request.user.first_name,
-                "last_name": request.user.last_name,
-                "bio": request.user.profile.bio,
-                "expertise": request.user.profile.expertise,
-            }
-        )
+        # Use the instance so the form loads all updated fields from the database.
+        form = ProfileUpdateForm(instance=request.user)
+
+    badges = UserBadge.objects.filter(user=request.user).select_related("badge")
 
     context = {
         "form": form,
+        "badges": badges,
     }
 
-    # Add teacher-specific stats
+    # Teacher-specific stats
     if request.user.profile.is_teacher:
         courses = Course.objects.filter(teacher=request.user)
         total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
@@ -298,9 +300,7 @@ def profile(request):
             if course_ratings:
                 avg_rating += sum(review.rating for review in course_ratings)
                 total_ratings += len(course_ratings)
-
         avg_rating = round(avg_rating / total_ratings, 1) if total_ratings > 0 else 0
-
         context.update(
             {
                 "courses": courses,
@@ -308,13 +308,10 @@ def profile(request):
                 "avg_rating": avg_rating,
             }
         )
-
-    # Add student-specific stats
+    # Student-specific stats
     else:
         enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
         completed_courses = enrollments.filter(status="completed").count()
-
-        # Calculate average progress
         total_progress = 0
         progress_count = 0
         for enrollment in enrollments:
@@ -322,9 +319,7 @@ def profile(request):
             if progress.completion_percentage is not None:
                 total_progress += progress.completion_percentage
                 progress_count += 1
-
         avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
-
         context.update(
             {
                 "enrollments": enrollments,
@@ -333,7 +328,7 @@ def profile(request):
             }
         )
 
-    # Add created calendars with prefetched time slots
+    # Add created calendars with time slots if applicable
     created_calendars = request.user.created_calendars.prefetch_related("time_slots").order_by("-created_at")
     context["created_calendars"] = created_calendars
 
@@ -1760,6 +1755,7 @@ def teacher_dashboard(request):
         "courses": courses,
         "upcoming_sessions": upcoming_sessions,
         "course_stats": course_stats,
+        "total_students": total_students,
         "completion_rate": (total_completed / total_students * 100) if total_students > 0 else 0,
         "total_earnings": round(total_earnings, 2),
         "storefront": storefront,
@@ -2769,18 +2765,23 @@ def current_weekly_challenge(request):
 
 
 def challenge_detail(request, week_number):
-    challenge = get_object_or_404(Challenge, week_number=week_number)
-    submissions = ChallengeSubmission.objects.filter(challenge=challenge)
-    # Check if the current user has submitted this challenge
-    user_submission = None
-    if request.user.is_authenticated:
-        user_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
+    try:
+        challenge = get_object_or_404(Challenge, week_number=week_number)
+        submissions = ChallengeSubmission.objects.filter(challenge=challenge)
+        # Check if the current user has submitted this challenge
+        user_submission = None
+        if request.user.is_authenticated:
+            user_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
 
-    return render(
-        request,
-        "web/challenge_detail.html",
-        {"challenge": challenge, "submissions": submissions, "user_submission": user_submission},
-    )
+        return render(
+            request,
+            "web/challenge_detail.html",
+            {"challenge": challenge, "submissions": submissions, "user_submission": user_submission},
+        )
+    except Http404:
+        # Redirect to weekly challenges list if specific weekly challenge not found
+        messages.info(request, "Weekly challenge #" + str(week_number) + " not found. Returning to challenges list.")
+        return redirect("current_weekly_challenge")
 
 
 @login_required
@@ -4469,3 +4470,195 @@ def toggle_course_status(request, slug):
 
     course.save()
     return redirect("course_detail", slug=slug)
+
+
+def public_profile(request, username):
+    user = get_object_or_404(User, username=username)
+
+    try:
+        profile = user.profile
+    except Profile.DoesNotExist:
+        # Instead of raising Http404, we call custom_404.
+        return custom_404(request, "Profile not found.")
+
+    if not profile.is_profile_public:
+        return custom_404(request, "Profile not found.")
+
+    context = {"profile": profile}
+
+    if profile.is_teacher:
+        courses = Course.objects.filter(teacher=user)
+        total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
+        context.update(
+            {
+                "teacher_stats": {
+                    "courses": courses,
+                    "total_courses": courses.count(),
+                    "total_students": total_students,
+                }
+            }
+        )
+    else:
+        enrollments = Enrollment.objects.filter(student=user)
+        completed_enrollments = enrollments.filter(status="completed")
+        total_courses = enrollments.count()
+        total_completed = completed_enrollments.count()
+        total_progress = 0
+        progress_count = 0
+        for enrollment in enrollments:
+            progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+            total_progress += progress.completion_percentage
+            progress_count += 1
+        avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+        context.update(
+            {
+                "total_courses": total_courses,
+                "total_completed": total_completed,
+                "avg_progress": avg_progress,
+                "completed_courses": completed_enrollments,
+            }
+        )
+
+    return render(request, "public_profile_detail.html", context)
+
+
+class GradeableLinkListView(ListView):
+    """View to display all submitted links that can be graded."""
+
+    model = GradeableLink
+    template_name = "grade_links/link_list.html"
+    context_object_name = "links"
+    paginate_by = 10
+
+
+class GradeableLinkDetailView(DetailView):
+    """View to display details about a specific link and its grades."""
+
+    model = GradeableLink
+    template_name = "grade_links/link_detail.html"
+    context_object_name = "link"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Check if user is authenticated
+        if self.request.user.is_authenticated:
+            # Check if the user has already graded this link
+            try:
+                user_grade = LinkGrade.objects.get(link=self.object, user=self.request.user)
+                context["user_grade"] = user_grade
+                context["grade_form"] = LinkGradeForm(instance=user_grade)
+            except LinkGrade.DoesNotExist:
+                context["grade_form"] = LinkGradeForm()
+
+        # Get all grades for this link
+        context["grades"] = self.object.grades.all()
+
+        return context
+
+
+class GradeableLinkCreateView(LoginRequiredMixin, CreateView):
+    """View to submit a new link for grading."""
+
+    model = GradeableLink
+    form_class = GradeableLinkForm
+    template_name = "grade_links/submit_link.html"
+    success_url = reverse_lazy("gradeable_link_list")
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        messages.success(self.request, "Your link has been submitted for grading!")
+        return super().form_valid(form)
+
+
+@login_required
+def grade_link(request, pk):
+    """View to grade a link."""
+    link = get_object_or_404(GradeableLink, pk=pk)
+
+    # Prevent users from grading their own links
+    if link.user == request.user:
+        messages.error(request, "You cannot grade your own submissions!")
+        return redirect("gradeable_link_detail", pk=link.pk)
+
+    # Check if the user has already graded this link
+    try:
+        user_grade = LinkGrade.objects.get(link=link, user=request.user)
+    except LinkGrade.DoesNotExist:
+        user_grade = None
+
+    if request.method == "POST":
+        form = LinkGradeForm(request.POST, instance=user_grade)
+        if form.is_valid():
+            grade = form.save(commit=False)
+            grade.link = link
+            grade.user = request.user
+            grade.save()
+            messages.success(request, "Your grade has been submitted!")
+            return redirect("gradeable_link_detail", pk=link.pk)
+    else:
+        form = LinkGradeForm(instance=user_grade)
+
+    return render(
+        request,
+        "grade_links/grade_link.html",
+        {
+            "form": form,
+            "link": link,
+        },
+    )
+
+
+def duplicate_session(request, session_id):
+    """Duplicate a session to next week."""
+    # Get the original session
+    session = get_object_or_404(Session, id=session_id)
+    course = session.course
+
+    # Check if user is the course teacher
+    if request.user != course.teacher:
+        messages.error(request, "Only the course teacher can duplicate sessions!")
+        return redirect("course_detail", slug=course.slug)
+
+    # Create a new session with the same properties but dates shifted forward by a week
+    new_session = Session(
+        course=course,
+        title=session.title,
+        description=session.description,
+        is_virtual=session.is_virtual,
+        meeting_link=session.meeting_link,
+        meeting_id="",  # Clear meeting ID as it will be a new meeting
+        location=session.location,
+        price=session.price,
+        enable_rollover=session.enable_rollover,
+        rollover_pattern=session.rollover_pattern,
+    )
+
+    # Set dates one week later
+    time_shift = timezone.timedelta(days=7)
+    new_session.start_time = session.start_time + time_shift
+    new_session.end_time = session.end_time + time_shift
+
+    # Save the new session
+    new_session.save()
+    msg = f"Session '{session.title}' duplicated for {new_session.start_time.strftime('%b %d, %Y')}"
+    messages.success(request, msg)
+
+    return redirect("course_detail", slug=course.slug)
+
+
+def run_create_test_data(request):
+    """Run the create_test_data management command and redirect to homepage."""
+    from django.conf import settings
+
+    if not settings.DEBUG:
+        messages.error(request, "This action is only available in debug mode.")
+        return redirect("index")
+
+    try:
+        call_command("create_test_data")
+        messages.success(request, "Test data has been created successfully!")
+    except Exception as e:
+        messages.error(request, f"Error creating test data: {str(e)}")
+
+    return redirect("index")

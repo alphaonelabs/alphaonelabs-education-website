@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  Leaderboard | {{ challenge.title }}
+{% endblock title %}
+{% block extra_head %}
+  <style>
+      .hover-scale {
+          transition: transform 0.3s ease;
+      }
+
+      .hover-scale:hover {
+          transform: scale(1.03);
+      }
+
+      .podium {
+          transition: all 0.3s ease;
+      }
+
+      .podium:hover {
+          transform: translateY(-10px);
+          box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      }
+
+      .bounce-in {
+          animation: bounceIn 0.8s ease-out forwards;
+      }
+
+      @keyframes bounceIn {
+          0% {
+              opacity: 0;
+              transform: scale(0.3) translateY(20px);
+          }
+
+          50% {
+              opacity: 1;
+              transform: scale(1.05) translateY(-5px);
+          }
+
+          70% {
+              transform: scale(0.9) translateY(3px);
+          }
+
+          100% {
+              transform: scale(1) translateY(0);
+          }
+      }
+
+      .ranking-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+      }
+
+      .float {
+          animation: float 4s ease-in-out infinite;
+      }
+
+      @keyframes float {
+          0% {
+              transform: translateY(0px);
+          }
+
+          50% {
+              transform: translateY(-10px);
+          }
+
+          100% {
+              transform: translateY(0px);
+          }
+      }
+
+      .delay-0 {
+          animation-delay: 0s;
+      }
+
+      .delay-200 {
+          animation-delay: 0.2s;
+      }
+
+      .delay-400 {
+          animation-delay: 0.4s;
+      }
+
+      /* Staggered animation delays for table rows */
+      .delay-row-1 {
+          animation-delay: 0.1s;
+      }
+
+      .delay-row-2 {
+          animation-delay: 0.15s;
+      }
+
+      .delay-row-3 {
+          animation-delay: 0.2s;
+      }
+
+      .delay-row-4 {
+          animation-delay: 0.25s;
+      }
+
+      .delay-row-5 {
+          animation-delay: 0.3s;
+      }
+
+      .delay-row-6 {
+          animation-delay: 0.35s;
+      }
+
+      .delay-row-7 {
+          animation-delay: 0.4s;
+      }
+
+      .delay-row-8 {
+          animation-delay: 0.45s;
+      }
+
+      .delay-row-9 {
+          animation-delay: 0.5s;
+      }
+
+      .delay-row-10 {
+          animation-delay: 0.55s;
+      }
+
+      /* Progress bar animation */
+      .progress-animate {
+          animation: progressGrow 1s ease-out forwards;
+          transform-origin: left;
+      }
+
+      @keyframes progressGrow {
+          from {
+              transform: scaleX(0);
+          }
+
+          to {
+              transform: scaleX(1);
+          }
+      }
+
+      /* Dynamic progress bar classes */
+      .w-0 {
+          width: 0%;
+      }
+
+      .w-10p {
+          width: 10%;
+      }
+
+      .w-20p {
+          width: 20%;
+      }
+
+      .w-30p {
+          width: 30%;
+      }
+
+      .w-40p {
+          width: 40%;
+      }
+
+      .w-50p {
+          width: 50%;
+      }
+
+      .w-60p {
+          width: 60%;
+      }
+
+      .w-70p {
+          width: 70%;
+      }
+
+      .w-80p {
+          width: 80%;
+      }
+
+      .w-90p {
+          width: 90%;
+      }
+
+      .w-100p {
+          width: 100%;
+      }
+
+      /* Podium position classes */
+      .podium-second {
+          position: absolute;
+          left: 25%;
+          transform: translateX(-32px);
+      }
+
+      .podium-first {
+          position: absolute;
+          left: 50%;
+          transform: translateX(-50%);
+      }
+
+      .podium-third {
+          position: absolute;
+          left: 75%;
+          transform: translateX(32px);
+      }
+
+      /* Progress bar delays */
+      .progress-delay-1 {
+          animation-delay: 0.6s;
+      }
+
+      .progress-delay-2 {
+          animation-delay: 0.7s;
+      }
+
+      .progress-delay-3 {
+          animation-delay: 0.8s;
+      }
+
+      .progress-delay-4 {
+          animation-delay: 0.9s;
+      }
+
+      .progress-delay-5 {
+          animation-delay: 1.0s;
+      }
+
+      .progress-delay-6 {
+          animation-delay: 1.1s;
+      }
+
+      .progress-delay-7 {
+          animation-delay: 1.2s;
+      }
+
+      .progress-delay-8 {
+          animation-delay: 1.3s;
+      }
+
+      .progress-delay-9 {
+          animation-delay: 1.4s;
+      }
+
+      .progress-delay-10 {
+          animation-delay: 1.5s;
+      }
+  </style>
+{% endblock extra_head %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+    <nav class="text-sm mb-6">
+      <a href="{% url 'index' %}" class="text-blue-600 hover:text-blue-800">Home</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'challenge_list' %}"
+         class="text-blue-600 hover:text-blue-800">Peer Challenges</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'peer_challenge_detail' challenge.id %}"
+         class="text-blue-600 hover:text-blue-800">{{ challenge.title }}</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-600">Leaderboard</span>
+    </nav>
+    <div class="max-w-4xl mx-auto">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden hover-scale">
+        <div class="bg-gradient-to-r from-purple-600 to-blue-500 p-6">
+          <h1 class="text-2xl font-bold text-white flex items-center">
+            <i class="fas fa-trophy mr-3 text-yellow-300"></i> Leaderboard: {{ challenge.title }}
+          </h1>
+          <p class="text-purple-100 mt-1">Challenge by {{ challenge.creator.username }}</p>
+        </div>
+        <!-- Top 3 Winners Section -->
+        {% if leaderboard|length >= 3 %}
+          <div class="bg-gradient-to-b from-purple-50 to-white dark:from-purple-900 dark:to-gray-800 p-6">
+            <div class="relative flex justify-center items-end h-64 mb-8">
+              <!-- Second Place -->
+              <div class="podium-second text-center podium bounce-in delay-200">
+                <div class="bg-gradient-to-b from-gray-300 to-gray-100 dark:from-gray-700 dark:to-gray-500 h-28 w-20 rounded-t-lg mx-auto shadow-lg">
+                </div>
+                <div class="bg-gray-200 dark:bg-gray-600 rounded-full p-6 w-16 h-16 mx-auto -mt-8 border-4 border-white dark:border-gray-800 relative shadow-md">
+                  <i class="fas fa-medal text-gray-500 text-2xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></i>
+                  <span class="absolute -top-2 -right-2 bg-gray-400 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                </div>
+                <div class="mt-2 font-bold text-gray-800 dark:text-white">{{ leaderboard.1.participant.username }}</div>
+                <div class="text-gray-600 dark:text-gray-300 text-sm">
+                  {{ leaderboard.1.correct_count }}/{{ leaderboard.1.total_questions }}
+                  <span class="block text-xs">({{ leaderboard.1.percentage|floatformat:0 }}%)</span>
+                </div>
+                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  <i class="fas fa-stopwatch mr-1"></i>{{ leaderboard.1.completion_time }}
+                </div>
+              </div>
+              <!-- First Place -->
+              <div class="podium-first text-center podium bounce-in float delay-0">
+                <div class="bg-gradient-to-b from-yellow-300 to-yellow-100 dark:from-yellow-600 dark:to-yellow-400 h-40 w-24 rounded-t-lg mx-auto shadow-lg">
+                </div>
+                <div class="bg-yellow-200 dark:bg-yellow-500 rounded-full p-8 w-20 h-20 mx-auto -mt-10 border-4 border-white dark:border-gray-800 relative shadow-md">
+                  <i class="fas fa-trophy text-yellow-500 dark:text-yellow-800 text-3xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></i>
+                  <span class="absolute -top-2 -right-2 bg-yellow-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                </div>
+                <div class="mt-2 text-xl font-bold text-gray-800 dark:text-white">{{ leaderboard.0.participant.username }}</div>
+                <div class="text-gray-600 dark:text-gray-300 text-sm">
+                  {{ leaderboard.0.correct_count }}/{{ leaderboard.0.total_questions }}
+                  <span class="block text-xs">({{ leaderboard.0.percentage|floatformat:0 }}%)</span>
+                </div>
+                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  <i class="fas fa-stopwatch mr-1"></i>{{ leaderboard.0.completion_time }}
+                </div>
+              </div>
+              <!-- Third Place -->
+              <div class="podium-third text-center podium bounce-in delay-400">
+                <div class="bg-gradient-to-b from-amber-700 to-amber-500 dark:from-amber-800 dark:to-amber-600 h-20 w-20 rounded-t-lg mx-auto shadow-lg">
+                </div>
+                <div class="bg-amber-600 dark:bg-amber-700 rounded-full p-6 w-16 h-16 mx-auto -mt-8 border-4 border-white dark:border-gray-800 relative shadow-md">
+                  <i class="fas fa-medal text-amber-800 dark:text-amber-900 text-2xl absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2"></i>
+                  <span class="absolute -top-2 -right-2 bg-amber-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                </div>
+                <div class="mt-2 font-bold text-gray-800 dark:text-white">{{ leaderboard.2.participant.username }}</div>
+                <div class="text-gray-600 dark:text-gray-300 text-sm">
+                  {{ leaderboard.2.correct_count }}/{{ leaderboard.2.total_questions }}
+                  <span class="block text-xs">({{ leaderboard.2.percentage|floatformat:0 }}%)</span>
+                </div>
+                <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  <i class="fas fa-stopwatch mr-1"></i>{{ leaderboard.2.completion_time }}
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+        {% if not has_entries %}
+          <!-- No Entries Message -->
+          <div class="p-6 text-center">
+            <div class="text-gray-500 dark:text-gray-400 mb-4">
+              <i class="fas fa-info-circle text-4xl"></i>
+            </div>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-2">No Leaderboard Entries Yet</h2>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">
+              No participants have completed this challenge yet. Check back later when participants have submitted their answers.
+            </p>
+            <div class="mt-4">
+              <a href="{% url 'peer_challenge_detail' challenge.id %}"
+                 class="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white py-2 px-6 rounded-lg inline-flex items-center transition duration-300 transform hover:scale-105 hover:shadow-lg">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Challenge
+              </a>
+            </div>
+          </div>
+        {% else %}
+          <!-- Full Leaderboard Table -->
+          <div class="p-6">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4 flex items-center">
+              <i class="fas fa-list-ol text-blue-500 mr-2"></i> Complete Rankings
+            </h2>
+            <div class="overflow-x-auto hover-scale">
+              <table class="min-w-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow">
+                <thead class="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                  <tr>
+                    <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Rank</th>
+                    <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Participant</th>
+                    <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Score</th>
+                    <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Correct</th>
+                    <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Completion Time</th>
+                    <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Completed On</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                  {% for entry in leaderboard %}
+                    <tr class="{% if entry.participant == user %}bg-blue-50 dark:bg-blue-900{% endif %} hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150 bounce-in delay-row-{{ forloop.counter }}">
+                      <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">
+                        {% if entry.rank == 1 %}
+                          <div class="w-8 h-8 rounded-full bg-yellow-100 dark:bg-yellow-900 flex items-center justify-center mr-1">
+                            <span class="text-yellow-500 flex items-center font-bold"><i class="fas fa-trophy text-yellow-500 mr-1"></i>{{ entry.rank }}</span>
+                          </div>
+                        {% elif entry.rank == 2 %}
+                          <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mr-1">
+                            <span class="text-gray-500 flex items-center font-bold"><i class="fas fa-medal text-gray-400 mr-1"></i>{{ entry.rank }}</span>
+                          </div>
+                        {% elif entry.rank == 3 %}
+                          <div class="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900 flex items-center justify-center mr-1">
+                            <span class="text-amber-600 flex items-center font-bold"><i class="fas fa-medal text-amber-600 mr-1"></i>{{ entry.rank }}</span>
+                          </div>
+                        {% else %}
+                          <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                            <span class="font-bold">{{ entry.rank }}</span>
+                          </div>
+                        {% endif %}
+                      </td>
+                      <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">
+                        <div class="font-medium">{{ entry.participant.username }}</div>
+                      </td>
+                      <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">
+                        <div class="font-medium">{{ entry.score }}%</div>
+                      </td>
+                      <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">
+                        <div class="flex items-center">
+                          <div class="w-16 bg-gray-200 dark:bg-gray-600 rounded-full h-2.5 mr-2">
+                            <div class="bg-blue-600 h-2.5 rounded-full progress-animate progress-delay-{{ forloop.counter }} {% if entry.percentage <= 10 %}w-10p {% elif entry.percentage <= 20 %}w-20p {% elif entry.percentage <= 30 %}w-30p {% elif entry.percentage <= 40 %}w-40p {% elif entry.percentage <= 50 %}w-50p {% elif entry.percentage <= 60 %}w-60p {% elif entry.percentage <= 70 %}w-70p {% elif entry.percentage <= 80 %}w-80p {% elif entry.percentage <= 90 %}w-90p {% else %}w-100p {% endif %}">
+                            </div>
+                          </div>
+                          {{ entry.correct_count }}/{{ entry.total_questions }}
+                        </div>
+                      </td>
+                      <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">
+                        {% if entry.completion_time %}
+                          <span class="inline-flex items-center">
+                            <i class="fas fa-stopwatch text-blue-500 mr-1"></i> {{ entry.completion_time }}
+                          </span>
+                        {% else %}
+                          -
+                        {% endif %}
+                      </td>
+                      <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{{ entry.completed_at|date:"M d, Y H:i" }}</td>
+                    </tr>
+                  {% empty %}
+                    <tr>
+                      <td colspan="6" class="py-8 text-center text-gray-500 dark:text-gray-400">
+                        <i class="fas fa-users text-4xl mb-3 text-gray-300 dark:text-gray-600"></i>
+                        <p>No participants have completed the challenge yet.</p>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <!-- Back to challenge button -->
+            <div class="mt-8 text-center">
+              <a href="{% url 'peer_challenge_detail' challenge.id %}"
+                 class="bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white font-semibold py-2 px-6 rounded-lg inline-flex items-center transition duration-300 transform hover:scale-105 hover:shadow-lg">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Challenge
+              </a>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          // Add animations for podium elements
+          if (document.querySelector('.podium')) {
+              // Animate the podiums with a slight delay between each
+              const secondPlace = document.querySelector('.podium-second');
+              const firstPlace = document.querySelector('.podium-first');
+              const thirdPlace = document.querySelector('.podium-third');
+
+              // Create a better visual sequence
+              setTimeout(() => {
+                  // First animate the winner (1st place)
+                  firstPlace.classList.add('bounce-in');
+
+                  // Then animate 2nd place
+                  setTimeout(() => {
+                      secondPlace.classList.add('bounce-in');
+
+                      // Then animate 3rd place
+                      setTimeout(() => {
+                          thirdPlace.classList.add('bounce-in');
+
+                          // Add floating animation to 1st place after all have appeared
+                          setTimeout(() => {
+                              firstPlace.classList.add('float');
+                          }, 600);
+                      }, 200);
+                  }, 200);
+              }, 300);
+          }
+      });
+  </script>
+{% endblock content %}
