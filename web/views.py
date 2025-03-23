@@ -232,6 +232,23 @@ def index(request):
                 "team_invites": team_invites,
             }
         )
+
+        # Add courses that the user is teaching if they have any
+        teaching_courses = (
+            Course.objects.filter(teacher=request.user)
+            .annotate(
+                view_count=Sum("web_requests__count", default=0),
+                enrolled_students=Count("enrollments", filter=Q(enrollments__status="approved")),
+            )
+            .order_by("-created_at")
+        )
+
+        if teaching_courses.exists():
+            context.update(
+                {
+                    "teaching_courses": teaching_courses,
+                }
+            )
     return render(request, "index.html", context)
 
 
@@ -268,16 +285,16 @@ def signup_view(request):
 @login_required
 def profile(request):
     if request.method == "POST":
-        if "avatar" in request.FILES:
-            request.user.profile.avatar = request.FILES["avatar"]
-            request.user.profile.save()
-            return redirect("profile")
-
         form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
+            form.save()  # Save the form data including the is_profile_public field
             request.user.profile.refresh_from_db()  # Refresh the instance so updated Profile is loaded
             messages.success(request, "Profile updated successfully!")
             return redirect("profile")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Error in {field}: {error}")
     else:
         # Use the instance so the form loads all updated fields from the database.
         form = ProfileUpdateForm(instance=request.user)
@@ -371,6 +388,17 @@ def course_detail(request, slug):
             ).values_list("session__id", flat=True)
             completed_sessions = course.sessions.filter(id__in=completed_sessions)
 
+    # Get attendance data for all enrolled students
+    student_attendance = {}
+    total_sessions = sessions.count()
+
+    if is_teacher or is_enrolled:
+        for enroll in course.enrollments.all():
+            attended_sessions = SessionAttendance.objects.filter(
+                student=enroll.student, session__course=course, status__in=["present", "late"]
+            ).count()
+            student_attendance[enroll.student.id] = {"attended": attended_sessions, "total": total_sessions}
+
     # Mark past sessions as completed for display
     past_sessions = sessions.filter(end_time__lt=now)
     future_sessions = sessions.filter(end_time__gte=now)
@@ -433,6 +461,7 @@ def course_detail(request, slug):
         "current_month": current_month,
         "prev_month": prev_month,
         "next_month": next_month,
+        "student_attendance": student_attendance,
     }
 
     return render(request, "courses/detail.html", context)

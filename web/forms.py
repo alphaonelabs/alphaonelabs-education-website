@@ -111,6 +111,14 @@ class UserRegistrationForm(SignupForm):
         widget=TailwindInput(attrs={"placeholder": "Enter referral code"}),
         help_text="Optional - Enter a referral code if you have one",
     )
+    how_did_you_hear_about_us = forms.CharField(
+        max_length=500,
+        required=False,
+        widget=TailwindTextarea(
+            attrs={"rows": 2, "placeholder": "How did you hear about us? You can enter text or a link."}
+        ),
+        help_text="Optional - Tell us how you found us. You can enter text or a link.",
+    )
     captcha = CaptchaField(widget=TailwindCaptchaTextInput)
     # NEW: Add radio buttons for profile visibility.
     is_profile_public = forms.TypedChoiceField(
@@ -162,6 +170,10 @@ class UserRegistrationForm(SignupForm):
                 if field_name in self.data and field_name in self.fields:
                     self.fields[field_name].widget.attrs["value"] = self.data[field_name]
 
+            # Initialize how_did_you_hear_about_us if provided
+            if "how_did_you_hear_about_us" in self.data:
+                self.fields["how_did_you_hear_about_us"].initial = self.data["how_did_you_hear_about_us"]
+
         # Set a default for the new field if not provided.
         if "is_profile_public" not in self.initial:
             self.initial["is_profile_public"] = "False"  # Default to Private.
@@ -212,6 +224,8 @@ class UserRegistrationForm(SignupForm):
 
         # Update the profile with the new radio button value.
         user.profile.is_profile_public = self.cleaned_data.get("is_profile_public")
+        # Save how_did_you_hear_about_us
+        user.profile.how_did_you_hear_about_us = self.cleaned_data.get("how_did_you_hear_about_us", "")
         user.profile.save()
 
         # Update teacher flag if provided.
@@ -516,15 +530,14 @@ class ProfileUpdateForm(forms.ModelForm):
     bio = forms.CharField(
         required=False,
         widget=TailwindTextarea(attrs={"rows": 4}),
-        help_text="Tell us about yourself - this will be visible on your public profile",
+        help_text="Tell us about yourself - this will be visible if your profile is public",
     )
     expertise = forms.CharField(
-        max_length=200,
         required=False,
         widget=TailwindInput(),
         help_text=(
             "List your areas of expertise (e.g. Python, Machine Learning, Web Development) - "
-            "this will be visible on your public profile"
+            "this will be visible if your profile is public"
         ),
     )
     avatar = forms.ImageField(
@@ -571,7 +584,10 @@ class ProfileUpdateForm(forms.ModelForm):
             profile.expertise = self.cleaned_data["expertise"]
             if self.cleaned_data.get("avatar"):
                 profile.avatar = self.cleaned_data["avatar"]
-            profile.is_profile_public = self.cleaned_data.get("is_profile_public")
+
+            # Get the is_profile_public value and ensure it's a boolean
+            is_public = self.cleaned_data.get("is_profile_public")
+            profile.is_profile_public = is_public
             profile.save()
         return user
 
