@@ -1,11 +1,11 @@
 from django.contrib.auth.models import User
-from django.test import Client, SimpleTestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 
 from web.models import ProgressTracker
 
 
-class ProgressTrackerTests(SimpleTestCase): 
+class ProgressTrackerTests(TestCase): 
     @classmethod
     def setUpTestData(cls):
         # Create user once for the whole test class

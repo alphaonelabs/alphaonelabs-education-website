@@ -3,7 +3,7 @@ from unittest.mock import patch
 from django import forms
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import SimpleTestCase, override_settings
+from django.test import TestCase, SimpleTestCase, override_settings
 from django.utils import timezone
 
 from web.forms import CourseCreationForm, CourseMaterialForm, ProfileUpdateForm, SessionForm, UserRegistrationForm
@@ -25,7 +25,7 @@ from web.models import Course, ForumCategory, Subject, User
     STRIPE_SECRET_KEY="dummy_key",
     ACCOUNT_SIGNUP_PASSWORD_ENTER_TWICE=True,
 )
-class UserRegistrationFormTests(SimpleTestCase):
+class UserRegistrationFormTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -117,7 +117,7 @@ class UserRegistrationFormTests(SimpleTestCase):
 
 
 @override_settings(STRIPE_SECRET_KEY="dummy_key")
-class CourseCreationFormTests(SimpleTestCase):
+class CourseCreationFormTests(TestCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -188,7 +188,7 @@ class CourseCreationFormTests(SimpleTestCase):
         self.assertIn("subject", form.errors)
 
 
-class SessionFormTests(SimpleTestCase):
+class SessionFormTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user(username="testuser", password="testpass123")
@@ -289,7 +289,7 @@ class CourseSearchFormTests(SimpleTestCase):
         self.assertIn("Minimum price cannot be greater than maximum price", form.errors["__all__"])
 
 
-class CourseUpdateFormTests(SimpleTestCase):
+class CourseUpdateFormTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user(username="testuser", password="testpass123")
@@ -387,7 +387,7 @@ class MaterialUploadFormTests(SimpleTestCase):
         self.assertFalse(form.is_valid())
 
 
-class TopicCreationFormTests(SimpleTestCase):
+class TopicCreationFormTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.category = ForumCategory.objects.create(name="General Discussion")
@@ -523,7 +523,7 @@ class TeachingInquiryFormTests(SimpleTestCase):
         self.assertFalse(form.is_valid())
 
 
-class ProfileUpdateFormTests(SimpleTestCase):
+class ProfileUpdateFormTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         cls.user = User.objects.create_user(username="testuser", email="test@example.com", password="testpass123")

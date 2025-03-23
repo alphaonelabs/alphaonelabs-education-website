@@ -1,10 +1,10 @@
 from django.contrib.auth import get_user_model
 from django.middleware.csrf import get_token
-from django.test import Client, SimpleTestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 
 
-class CalendarTests(SimpleTestCase):
+class CalendarTests(TestCase):
     @classmethod
     def setUpTestData(cls):
         # Create a single test user for calendar creation

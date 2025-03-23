@@ -1,12 +1,12 @@
 from django.contrib.auth.models import User
-from django.test import SimpleTestCase
+from django.test import TestCase
 from django.urls import reverse
 from django.utils.text import slugify
 
 from web.models import Course, Enrollment, Subject
 
 
-class DirectEnrollmentTest(SimpleTestCase):
+class DirectEnrollmentTest(TestCase):
     @classmethod
     def setUpTestData(cls):
         # Create a subject for the course

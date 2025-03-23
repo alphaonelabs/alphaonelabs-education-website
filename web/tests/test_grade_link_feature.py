@@ -3,7 +3,7 @@ from datetime import datetime
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError
-from django.test import Client, SimpleTestCase
+from django.test import Client, TestCase
 from django.urls import reverse
 
 from web.forms import GradeableLinkForm, LinkGradeForm
@@ -14,7 +14,7 @@ User = get_user_model()
 # Note: This file should NOT import pytest to ensure compatibility with Docker environment
 
 
-class GradeableLinkModelTest(SimpleTestCase):
+class GradeableLinkModelTest(TestCase):
     """Test cases for the GradeableLink model."""
 
     @classmethod
@@ -107,7 +107,7 @@ class GradeableLinkModelTest(SimpleTestCase):
         self.assertEqual(self.link.grade_count, 2)
 
 
-class LinkGradeModelTest(SimpleTestCase):
+class LinkGradeModelTest(TestCase):
     """Test cases for the LinkGrade model."""
 
     @classmethod
@@ -210,7 +210,7 @@ class LinkGradeModelTest(SimpleTestCase):
             )
 
 
-class GradeableLinkFormTest(SimpleTestCase):
+class GradeableLinkFormTest(TestCase):
     """Test cases for the GradeableLinkForm."""
 
     def test_form_valid_data(self):
@@ -250,7 +250,7 @@ class GradeableLinkFormTest(SimpleTestCase):
         self.assertIn("url", form.errors)
 
 
-class LinkGradeFormTest(SimpleTestCase):
+class LinkGradeFormTest(TestCase):
     """Test cases for the LinkGradeForm."""
 
     def test_form_valid_data_with_comment(self):
@@ -286,7 +286,7 @@ class LinkGradeFormTest(SimpleTestCase):
         self.assertIn("grade", form.errors)
 
 
-class GradeableLinkViewsTest(SimpleTestCase):
+class GradeableLinkViewsTest(TestCase):
     """Test cases for the gradeable link views."""
 
     @classmethod
