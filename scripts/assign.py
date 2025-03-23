@@ -229,8 +229,7 @@ def main():
 
                 # Add assignment comment
                 assignment_msg = (
-                    f"Hey @{user_login}! You're assigned to [{owner}/{repo} issue #{issue_number}]"
-                    f"(https://github.com/{owner}/{repo}/issues/{issue_number}). "
+                    f"Hey @{user_login}! You're now assigned to this issue. "
                     f"Please finish your PR within 1 day."
                 )
                 print("Posting assignment comment.")

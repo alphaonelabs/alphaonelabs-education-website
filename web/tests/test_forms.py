@@ -66,6 +66,7 @@ class UserRegistrationFormTests(TestCase):
             "password1": "testpass123",
             "password2": "testpass123",
             "is_teacher": False,
+            "is_profile_public": False,
             "captcha_0": "dummy-hash",
             "captcha_1": "PASSED",
             "referral_code": "TEST123",
@@ -536,6 +537,7 @@ class ProfileUpdateFormTests(TestCase):
             "first_name": "Test",
             "last_name": "User",
             "expertise": "Python, Django",
+            "is_profile_public": False,  # explicitly set the field
         }
         form_files = {"avatar": self.test_image}
         form = ProfileUpdateForm(data=form_data, files=form_files, instance=self.user)
@@ -550,6 +552,7 @@ class ProfileUpdateFormTests(TestCase):
             "email": "john@example.com",
             "bio": "Python developer",
             "expertise": "Python, Django",
+            "is_profile_public": False,  # explicitly set the field
         }
         form = ProfileUpdateForm(data=form_data, instance=self.user)
         self.assertTrue(form.is_valid(), msg=form.errors)

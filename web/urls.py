@@ -6,7 +6,17 @@ from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
 from . import admin_views, peer_challenge_views, quiz_views, views
-from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_data, streak_detail
+from .views import (
+    GoodsListingView,
+    GradeableLinkCreateView,
+    GradeableLinkDetailView,
+    GradeableLinkListView,
+    add_goods_to_cart,
+    grade_link,
+    sales_analytics,
+    sales_data,
+    streak_detail,
+)
 
 # Non-prefixed URLs
 urlpatterns = [
@@ -25,6 +35,7 @@ urlpatterns += i18n_patterns(
     path("learn/", views.learn, name="learn"),
     path("teach/", views.teach, name="teach"),
     path("about/", views.about, name="about"),
+    path("profile/<str:username>/", views.public_profile, name="public_profile"),
     path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
     path("certificate/generate/<int:enrollment_id>/", views.generate_certificate, name="generate_certificate"),
     path("donate/", views.donate, name="donate"),
@@ -68,6 +79,7 @@ urlpatterns += i18n_patterns(
     path("courses/<slug:slug>/message-students/", views.message_enrolled_students, name="message_students"),
     path("courses/<slug:slug>/add-student/", views.add_student_to_course, name="add_student_to_course"),
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
+    path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session"),
     # Payment URLs
     path(
         "courses/<slug:slug>/create-payment-intent/",
@@ -268,6 +280,11 @@ urlpatterns += i18n_patterns(
         name="grade_short_answer",
     ),
     path("quizzes/<int:quiz_id>/analytics/", quiz_views.quiz_analytics, name="quiz_analytics"),
+    # Grade-a-Link URLs
+    path("grade-links/", GradeableLinkListView.as_view(), name="gradeable_link_list"),
+    path("grade-links/submit/", GradeableLinkCreateView.as_view(), name="gradeable_link_create"),
+    path("grade-links/<int:pk>/", GradeableLinkDetailView.as_view(), name="gradeable_link_detail"),
+    path("grade-links/<int:pk>/grade/", grade_link, name="grade_link"),
     # Peer Challenges URLs
     path("peer-challenges/", peer_challenge_views.challenge_list, name="challenge_list"),
     path("peer-challenges/create/", peer_challenge_views.create_challenge, name="create_challenge"),
