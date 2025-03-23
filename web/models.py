@@ -1261,9 +1261,10 @@ class Points(models.Model):
     @classmethod
     def get_user_points_summary(cls, user, period=None):
         """Get summary of user points by period (daily, weekly, monthly, or all-time)"""
+        import datetime
+
         from django.db.models import Sum
         from django.utils import timezone
-        import datetime
 
         query = cls.objects.filter(user=user)
 
