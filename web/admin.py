@@ -66,6 +66,7 @@ class ProfileInline(admin.StackedInline):
         "referred_by",
         "referral_earnings",
         "commission_rate",
+        "how_did_you_hear_about_us",
     )
     raw_id_fields = ("referred_by",)
 
@@ -94,7 +95,10 @@ class ProfileAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
         (None, {"fields": ("user", "is_teacher")}),
-        ("Profile Information", {"fields": ("bio", "expertise", "avatar")}),
+        (
+            "Profile Information",
+            {"fields": ("bio", "expertise", "avatar", "is_profile_public", "how_did_you_hear_about_us")},
+        ),
         ("Stripe Information", {"fields": ("stripe_account_id", "stripe_account_status", "commission_rate")}),
         (
             "Timestamps",
