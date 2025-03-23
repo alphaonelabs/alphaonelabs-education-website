@@ -229,8 +229,7 @@ def main():
 
                 # Add assignment comment
                 assignment_msg = (
-                    f"Hey @{user_login}! You're now assigned to this issue. "
-                    f"Please finish your PR within 1 day."
+                    f"Hey @{user_login}! You're now assigned to this issue. " f"Please finish your PR within 1 day."
                 )
                 print("Posting assignment comment.")
                 comment_response = requests.post(
