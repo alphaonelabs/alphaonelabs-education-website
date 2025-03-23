@@ -772,6 +772,153 @@
             </p>
           </div>
         </div>
+        <!-- New Contributors -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mt-6">
+          <h2 class="text-lg font-semibold mb-4 flex items-center">
+            <i class="fa-solid fa-user-plus text-green-600 dark:text-green-400 mr-2"></i>
+            New Contributors
+          </h2>
+          <div class="space-y-4" id="new-contributors">
+            <div class="animate-pulse space-y-3">
+              {% for i in "123456"|make_list %}
+                <div class="flex items-center space-x-3">
+                  <div class="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                  <div class="flex-1">
+                    <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                    <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-2"></div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+          <script>
+              function fetchNewContributors() {
+                  //taking all contributors first
+                  fetch('https://api.github.com/repos/AlphaOneLabs/education-website/contributors?per_page=50')
+                      .then(response => response.json())
+                      .then(contributors => {
+                          //now taking their all pr
+                          return fetch('https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100')
+                              .then(response => response.json())
+                              .then(pulls => {
+                                  const prCounts = {};
+                                  const mergedPrCounts = {};
+                                  const firstPrDetails = {};
+                                  pulls.forEach(pull => {
+                                      const username = pull.user.login;
+
+                                      //skipping bots
+                                      if (username.includes('[bot]') || username.includes('dependabot')) {
+                                          return;
+                                      }
+
+                                      if (!prCounts[username]) {
+                                          prCounts[username] = 1;
+                                      } else {
+                                          prCounts[username]++;
+                                      }
+
+                                      //count merged PRs for each user
+                                      if (pull.merged_at) {
+                                          if (!mergedPrCounts[username]) {
+                                              mergedPrCounts[username] = 1;
+                                          } else {
+                                              mergedPrCounts[username]++;
+                                          }
+
+                                          //track the first merged PR (or update if this one is older)
+                                          if (!firstPrDetails[username] || new Date(pull.merged_at) < new Date(firstPrDetails[username].merged_at)) {
+                                              firstPrDetails[username] = {
+                                                  username: username,
+                                                  avatar_url: pull.user.avatar_url,
+                                                  pr_url: pull.html_url,
+                                                  pr_title: pull.title,
+                                                  pr_number: pull.number,
+                                                  created_at: pull.created_at,
+                                                  profile_url: pull.user.html_url,
+                                                  merged_at: pull.merged_at,
+                                                  state: pull.state
+                                              };
+                                          }
+                                      }
+                                  });
+
+                                  //filter for users with exactly one merged PR
+                                  const newContributors = Object.keys(mergedPrCounts)
+                                      .filter(username => mergedPrCounts[username] === 1)
+                                      .map(username => firstPrDetails[username]);
+
+                                  //sort by most recently merged first
+                                  const sortedNewContributors = newContributors
+                                      .sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at))
+                                      .slice(0, 6); //only top 6 shown
+
+                                  const container = document.getElementById('new-contributors');
+                                  container.innerHTML = '';
+
+                                  if (sortedNewContributors.length === 0) {
+                                      container.innerHTML = `
+                          <div class="text-sm text-gray-600 dark:text-gray-400 text-center py-4">
+                            No new contributors with a single merged PR yet.
+                          </div>
+                        `;
+                                      return;
+                                  }
+
+                                  sortedNewContributors.forEach(contributor => {
+                                      const date = new Date(contributor.created_at).toLocaleDateString();
+                                      const mergedDate = new Date(contributor.merged_at).toLocaleDateString();
+                                      const div = document.createElement('div');
+                                      div.className = 'flex items-center space-x-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
+
+                                      //mark as new if contribution was within the last 30 days
+                                      const isNewlyJoined = (new Date() - new Date(contributor.merged_at)) / (1000 * 60 * 60 * 24) < 30;
+                                      const newBadge = isNewlyJoined ?
+                                          `<span class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 text-xs px-2 py-0.5 rounded-full ml-2">New</span>` : '';
+
+                                      div.innerHTML = `
+                          <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-10 h-10 rounded-full" loading="lazy" />
+                          <div class="flex-1 min-w-0">
+                            <div class="flex items-center">
+                              <a href="${contributor.profile_url}" target="_blank" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400">
+                                ${contributor.username}
+                              </a>
+                              ${newBadge}
+                            </div>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                              First PR: <a href="${contributor.pr_url}" target="_blank" class="hover:underline">#${contributor.pr_number}</a> · ${date} ·
+                            </p>
+                          </div>
+                        `;
+                                      container.appendChild(div);
+                                  });
+                              });
+                      })
+                      .catch(error => {
+                          const container = document.getElementById('new-contributors');
+                          container.innerHTML = `
+                    <div class="text-sm text-gray-600 dark:text-gray-400 text-center py-4">
+                      <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
+                      Failed to load new contributors. Please try again later.
+                    </div>
+                  `;
+                          console.error('Error processing contributors:', error);
+                      });
+              }
+              fetchNewContributors();
+          </script>
+          <div class="mt-4 p-4 border border-green-200 dark:border-green-800 rounded-lg bg-green-50 dark:bg-green-900/50">
+            <p class="text-sm text-green-800 dark:text-green-200">
+              <i class="fas fa-handshake mr-2"></i>
+              New to open source? We welcome first-time contributors!
+              <a href="https://github.com/AlphaOneLabs/education-website/blob/main/CONTRIBUTING.md"
+                 class="inline-flex items-center text-green-600 dark:text-green-400 hover:underline ml-1">
+                How to get started
+                <i class="fas fa-arrow-right ml-1 text-xs"></i>
+              </a>
+            </p>
+          </div>
+        </div>
         <!-- Referral Program -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mt-6">
           <h2 class="text-lg font-semibold mb-4 flex items-center">
