@@ -1248,6 +1248,39 @@ class Points(models.Model):
             models.Index(fields=["awarded_at"]),
         ]
 
+    @classmethod
+    def add_points(cls, user, amount, reason, point_type="regular", challenge=None):
+        """Atomic method to add points to a user"""
+        from django.db import transaction
+
+        with transaction.atomic():
+            return cls.objects.create(
+                user=user, challenge=challenge, amount=amount, reason=reason, point_type=point_type
+            )
+
+    @classmethod
+    def get_user_points_summary(cls, user, period=None):
+        """Get summary of user points by period (daily, weekly, monthly, or all-time)"""
+        from django.db.models import Sum
+        from django.utils import timezone
+        import datetime
+
+        query = cls.objects.filter(user=user)
+
+        if period == "daily":
+            today = timezone.now().date()
+            query = query.filter(awarded_at__date=today)
+        elif period == "weekly":
+            today = timezone.now().date()
+            start_of_week = today - datetime.timedelta(days=today.weekday())
+            query = query.filter(awarded_at__date__gte=start_of_week)
+        elif period == "monthly":
+            today = timezone.now().date()
+            start_of_month = today.replace(day=1)
+            query = query.filter(awarded_at__date__gte=start_of_month)
+
+        return query.aggregate(total=Sum("amount"))["total"] or 0
+
 
 class ProductImage(models.Model):
     goods = models.ForeignKey(Goods, on_delete=models.CASCADE, related_name="goods_images")
