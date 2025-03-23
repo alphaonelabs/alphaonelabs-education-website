@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Graphing Calculator{% endblock %}
+
+{% block content %}
+<div class="container mx-auto p-6">
+  <h1 class="text-3xl font-bold mb-6 text-center">Graphing Calculator</h1>
+
+  <div class="bg-white dark:bg-gray-800 shadow rounded p-4 mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:space-x-4 space-y-4 sm:space-y-0">
+      <input type="text" id="equationInput" 
+             placeholder="Enter equation (e.g., y = sin(x) or y = x^2)" 
+             class="flex-1 p-3 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 dark:bg-gray-700 dark:text-white">
+      <button onclick="addEquation()" 
+              class="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none">
+        Plot Equation
+      </button>
+      <button onclick="clearAll()" 
+              class="px-6 py-3 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none">
+        Clear All
+      </button>
+    </div>
+    <div class="mt-4">
+      <p class="text-sm text-gray-600 dark:text-gray-300">
+        Try examples:
+        <span class="cursor-pointer text-blue-500 hover:underline" onclick="addExample('y = x^2')">Parabola</span>,
+        <span class="cursor-pointer text-blue-500 hover:underline" onclick="addExample('y = sin(x)')">Sine Wave</span>,
+        <span class="cursor-pointer text-blue-500 hover:underline" onclick="addExample('x^2 + y^2 = 25')">Circle</span>.
+        Use functions like <code>sin</code>, <code>cos</code>, <code>tan</code>, <code>log</code>, etc.
+      </p>
+    </div>
+  </div>
+
+  <div id="calculator" class="border rounded-lg shadow overflow-hidden" style="width: 100%; height: 600px;"></div>
+</div>
+<script src="https://www.desmos.com/api/v1.7/calculator.js?apiKey={{ desmos_api_key }}"></script>
+<script>
+  const calcElement = document.getElementById('calculator');
+  const calculator = Desmos.GraphingCalculator(calcElement, {
+      keypad: true,
+      settingsMenu: true,
+      expressions: true,
+      backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff'
+  });
+  function addEquation() {
+      const eqInput = document.getElementById('equationInput');
+      let equation = eqInput.value.trim();
+      if (equation) {
+          if (!equation.includes('=')) {
+              equation = "y=" + equation;
+          }
+          calculator.setExpression({
+              id: 'eq' + Date.now(),
+              latex: equation,
+              color: Desmos.Colors.BLUE
+          });
+          console.log("Equation added:", equation);
+          eqInput.value = '';
+      }
+  }
+  function clearAll() {
+      const expressions = calculator.getExpressions();
+      console.log("Clearing", expressions.length, "expressions");
+      expressions.forEach(exp => {
+          calculator.removeExpression({ id: exp.id });
+      });
+  }
+  function addExample(equation) {
+      document.getElementById('equationInput').value = equation;
+      addEquation();
+  }
+  function updateCalculatorTheme() {
+      const isDark = document.documentElement.classList.contains('dark');
+      calculator.updateSettings({
+          backgroundColor: isDark ? '#1f2937' : '#ffffff'
+      });
+  }
+  new MutationObserver(updateCalculatorTheme).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class']
+  });
+  updateCalculatorTheme();
+</script>
+{% endblock %}

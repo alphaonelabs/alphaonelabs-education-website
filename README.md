@@ -15,6 +15,7 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 - 📝 Study group creation and participation
 - 💬 Interactive discussion forums
 - 📊 Progress tracking and analytics
+- 🌟 Submit links and receive grades with feedback
 - 🌙 Dark mode support
 - 📱 Responsive design for all devices
 
@@ -24,6 +25,7 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 - 📊 Student progress monitoring
 - 📈 Analytics dashboard
 - 📣 Marketing tools for course promotion
+- 💯 Grade submitted links and provide feedback
 - 💰 Payment integration with Stripe
 - 📧 Email marketing capabilities
 - 🔔 Automated notifications
@@ -37,6 +39,7 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 - ⚡ Real-time updates
 - 🔍 Search functionality
 - 🎨 Customizable UI
+- 🏆 "Get a Grade" system with academic grading scale
 
 ## Tech Stack
 

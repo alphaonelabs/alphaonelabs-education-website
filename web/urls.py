@@ -6,7 +6,17 @@ from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
 from . import admin_views, quiz_views, views
-from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_data, streak_detail
+from .views import (
+    GoodsListingView,
+    GradeableLinkCreateView,
+    GradeableLinkDetailView,
+    GradeableLinkListView,
+    add_goods_to_cart,
+    grade_link,
+    sales_analytics,
+    sales_data,
+    streak_detail,
+)
 
 # Non-prefixed URLs
 urlpatterns = [
@@ -68,6 +78,7 @@ urlpatterns += i18n_patterns(
     path("courses/<slug:slug>/message-students/", views.message_enrolled_students, name="message_students"),
     path("courses/<slug:slug>/add-student/", views.add_student_to_course, name="add_student_to_course"),
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
+    path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session"),
     # Payment URLs
     path(
         "courses/<slug:slug>/create-payment-intent/",
@@ -233,6 +244,7 @@ urlpatterns += i18n_patterns(
     path("memes/", views.meme_list, name="meme_list"),
     path("memes/add/", views.add_meme, name="add_meme"),
     path("whiteboard/", views.whiteboard, name="whiteboard"),
+    path("graph/", views.graph_tool, name="graph_tool"),
     path("accounts/delete/", views.delete_account, name="delete_account"),
     path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
     # Team Collaboration URLs
@@ -269,6 +281,11 @@ urlpatterns += i18n_patterns(
         name="grade_short_answer",
     ),
     path("quizzes/<int:quiz_id>/analytics/", quiz_views.quiz_analytics, name="quiz_analytics"),
+    # Grade-a-Link URLs
+    path("grade-links/", GradeableLinkListView.as_view(), name="gradeable_link_list"),
+    path("grade-links/submit/", GradeableLinkCreateView.as_view(), name="gradeable_link_create"),
+    path("grade-links/<int:pk>/", GradeableLinkDetailView.as_view(), name="gradeable_link_detail"),
+    path("grade-links/<int:pk>/grade/", grade_link, name="grade_link"),
     prefix_default_language=True,
 )
 

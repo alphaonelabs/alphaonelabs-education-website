@@ -2,7 +2,7 @@ name: Delete Unauthorized Issues
 
 on:
   issues:
-    types: [opened, reopened]
+    types: [opened]
 
 jobs:
   delete-unauthorized:
@@ -17,7 +17,7 @@ jobs:
             const issueCreator = context.payload.issue.user.login;
 
             // Define authorized users and organizations
-            const authorizedUsers = ['A1L13N'];
+            const authorizedUsers = ['A1L13N','Satyamkumarnavneet'];
             const authorizedOrgs = ['alphaonelabs'];
 
             // Check if user is directly authorized

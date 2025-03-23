@@ -1,0 +1,347 @@
+{% extends "base.html" %}
+
+{% block title %}{{ link.title }} - Get a Grade{% endblock %}
+{% block content %}
+  <div class="container py-5 max-w-6xl mx-auto px-4 sm:px-6">
+    <nav class="flex mb-5" aria-label="Breadcrumb">
+      <ol class="inline-flex items-center space-x-1 md:space-x-3">
+        <li class="inline-flex items-center">
+          <a href="{% url 'index' %}"
+             class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-orange-600 dark:text-gray-400 dark:hover:text-white">
+            <i class="fas fa-home mr-2"></i>
+            Home
+          </a>
+        </li>
+        <li>
+          <div class="flex items-center">
+            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+            <a href="{% url 'gradeable_link_list' %}"
+               class="text-sm font-medium text-gray-700 hover:text-orange-600 dark:text-gray-400 dark:hover:text-white">Get a Grade</a>
+          </div>
+        </li>
+        <li aria-current="page">
+          <div class="flex items-center">
+            <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+            <span class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ link.title|truncatechars:25 }}</span>
+          </div>
+        </li>
+      </ol>
+    </nav>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+      <!-- Left column: Link details and grades -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Link details card -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+          <div class="p-6">
+            <div class="flex justify-between items-start mb-4">
+              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ link.title }}</h1>
+              <span class="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-200">
+                {{ link.get_link_type_display }}
+              </span>
+            </div>
+            <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4">
+              <span class="flex items-center mr-4">
+                <i class="fas fa-user mr-1.5"></i> {{ link.user.username }}
+              </span>
+              <span class="flex items-center">
+                <i class="fas fa-calendar-alt mr-1.5"></i> {{ link.created_at|date }}
+              </span>
+            </div>
+            {% if link.grade_count > 0 %}
+              <div class="mb-6 bg-gradient-to-r from-gray-50 to-white dark:from-gray-700 dark:to-gray-800 p-5 rounded-xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-3">
+                  <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-2 sm:mb-0">
+                    <i class="fas fa-chart-line text-blue-500 mr-2"></i> Grade Summary
+                  </h3>
+                  <span class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium px-3 py-1 rounded-full">
+                    {{ link.grade_count }} {{ link.grade_count|pluralize:"grade,grades" }}
+                  </span>
+                </div>
+                <div class="flex flex-col sm:flex-row items-center justify-around">
+                  <div class="text-center mb-4 sm:mb-0">
+                    <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Average Letter Grade</div>
+                    <div class="mt-1 text-4xl font-bold px-4 py-2 rounded-lg inline-block {% if link.average_letter_grade == 'A+' or link.average_letter_grade == 'A' %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% elif link.average_letter_grade == 'A-' or link.average_letter_grade == 'B+' %} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 {% elif link.average_letter_grade == 'B' or link.average_letter_grade == 'B-' %} bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 {% elif link.average_letter_grade == 'C+' or link.average_letter_grade == 'C' or link.average_letter_grade == 'C-' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% elif link.average_letter_grade == 'D' %} bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 {% elif link.average_letter_grade == 'F' %} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 {% else %} bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200 {% endif %} ">
+                      {{ link.average_letter_grade }}
+                    </div>
+                  </div>
+                  <div class="text-center">
+                    <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Numeric Equivalent</div>
+                    <div class="mt-1 text-4xl font-bold text-gray-800 dark:text-gray-200">{{ link.average_grade|floatformat:2 }}</div>
+                    <div class="text-xs text-gray-500 dark:text-gray-400">(4.0 scale)</div>
+                  </div>
+                </div>
+                <div class="flex items-center mt-2">
+                  <span class="text-sm text-gray-500 dark:text-gray-400">{{ link.grade_count }} grade{{ link.grade_count|pluralize }}</span>
+                </div>
+                <!-- Grade distribution visualization -->
+                <div class="mt-4">
+                  <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Grade Distribution</h4>
+                  <div class="space-y-2">
+                    {% with grade_counts=link.grade_distribution %}
+                      {% for grade, count in grade_counts.items %}
+                        <div class="flex items-center">
+                          <span class="w-8 inline-flex justify-center items-center py-1 mr-2 {% if grade == 'A' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% elif grade == 'B' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 {% elif grade == 'C' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% elif grade == 'D' %}bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 {% else %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200{% endif %} text-xs font-semibold rounded-md shadow-sm">
+                            {{ grade }}
+                          </span>
+                          <div class="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                            <div class="h-full rounded-full shadow-inner {% if grade == 'A' %}bg-green-500 {% elif grade == 'B' %}bg-blue-500 {% elif grade == 'C' %}bg-yellow-500 {% elif grade == 'D' %}bg-orange-500 {% else %}bg-red-500{% endif %}"
+                                 style="width: {% widthratio count link.grade_count 100 %}%"></div>
+                          </div>
+                          <div class="flex items-center ml-2">
+                            <span class="text-xs text-gray-600 dark:text-gray-400 w-6 text-right">{{ count }}</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-500 ml-1">({% widthratio count link.grade_count 100 %}%)</span>
+                          </div>
+                        </div>
+                      {% empty %}
+                        <div class="text-sm text-gray-500 dark:text-gray-400 italic">No grades yet</div>
+                      {% endfor %}
+                    {% endwith %}
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+            {% if link.description %}
+              <div class="mb-6">
+                <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">Description</h3>
+                <div class="text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  {{ link.description|linebreaks }}
+                </div>
+              </div>
+            {% endif %}
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-4">
+              <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">Link URL</h3>
+              <div class="flex items-center">
+                <a href="{{ link.url }}"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded transition">
+                  <i class="fas fa-external-link-alt mr-2"></i> Open URL
+                </a>
+                <span class="ml-3 text-sm text-gray-500 dark:text-gray-400 truncate max-w-xs">{{ link.url }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Grades list -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">
+              <i class="fas fa-star text-yellow-500 mr-2"></i> Grades
+            </h2>
+            <span class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm font-medium px-2.5 py-0.5 rounded-full">
+              {{ link.grade_count }} total
+            </span>
+          </div>
+          {% if grades %}
+            <div class="divide-y divide-gray-200 dark:divide-gray-700">
+              {% for grade in grades %}
+                <div class="p-6">
+                  <div class="flex flex-col md:flex-row md:justify-between md:items-start">
+                    <div class="flex items-center mb-3 md:mb-0">
+                      {% if grade.user.profile.avatar %}
+                        <img src="{{ grade.user.profile.avatar.url }}"
+                             alt="{{ grade.user.username }}"
+                             class="w-10 h-10 rounded-full mr-3" />
+                      {% else %}
+                        <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center mr-3">
+                          <i class="fas fa-user text-gray-500 dark:text-gray-400"></i>
+                        </div>
+                      {% endif %}
+                      <div>
+                        <div class="font-medium text-gray-800 dark:text-gray-200">{{ grade.user.username }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ grade.created_at|date:"F j, Y - g:i A" }}</div>
+                      </div>
+                    </div>
+                    <div class="flex items-center">
+                      <span class=" text-2xl font-bold px-4 py-2 rounded-lg {% if grade.grade == 'A+' or grade.grade == 'A' %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% elif grade.grade == 'A-' or grade.grade == 'B+' %} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 {% elif grade.grade == 'B' or grade.grade == 'B-' %} bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 {% elif grade.grade == 'C+' or grade.grade == 'C' or grade.grade == 'C-' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% elif grade.grade == 'D' %} bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 {% elif grade.grade == 'F' %} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 {% endif %} ">
+                        {{ grade.grade }}
+                      </span>
+                      <div class="ml-3 text-center">
+                        <div class="text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">Numeric</div>
+                        <div class="font-semibold text-gray-800 dark:text-gray-200">{{ grade.numeric_grade }}</div>
+                      </div>
+                    </div>
+                  </div>
+                  {% if grade.comment %}
+                    <div class="mt-4 bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                      <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        <i class="fas fa-comment-alt text-gray-400 mr-2"></i> Comment:
+                      </h4>
+                      <div class="text-gray-600 dark:text-gray-300">{{ grade.comment|linebreaks }}</div>
+                    </div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="p-6 text-center">
+              <p class="text-gray-500 dark:text-gray-400">No grades have been submitted yet.</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      <!-- Right column: Actions and info -->
+      <div class="lg:col-span-1 space-y-6">
+        <!-- Actions card -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">
+              <i class="fas fa-tasks text-blue-500 mr-2"></i> Actions
+            </h2>
+          </div>
+          <div class="p-6 space-y-4">
+            {% if user.is_authenticated and user != link.user %}
+              {% if user_grade %}
+                <a href="{% url 'grade_link' link.pk %}"
+                   class="flex items-center justify-center w-full px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition">
+                  <i class="fas fa-edit mr-2"></i> Edit Your Grade
+                </a>
+                <div class="text-center text-sm text-gray-500 dark:text-gray-400">
+                  <i class="fas fa-info-circle mr-1"></i> You've already graded this link
+                </div>
+              {% else %}
+                <a href="{% url 'grade_link' link.pk %}"
+                   class="flex items-center justify-center w-full px-6 py-4 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white rounded-lg text-lg font-bold shadow-md hover:shadow-lg transition transform hover:-translate-y-1">
+                  <i class="fas fa-star mr-2"></i> Grade This Link
+                </a>
+                <div class="text-center text-sm text-gray-500 dark:text-gray-400">
+                  <i class="fas fa-info-circle mr-1"></i> Provide feedback with a grade
+                </div>
+              {% endif %}
+            {% elif user == link.user %}
+              <div class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-center p-4 rounded-lg">
+                <i class="fas fa-info-circle mr-2"></i> You cannot grade your own submission
+              </div>
+            {% else %}
+              <a href="{% url 'account_login' %}?next={{ request.path }}"
+                 class="flex items-center justify-center w-full px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition">
+                <i class="fas fa-sign-in-alt mr-2"></i> Log in to Grade
+              </a>
+            {% endif %}
+            <a href="{% url 'gradeable_link_list' %}"
+               class="flex items-center justify-center w-full px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition">
+              <i class="fas fa-list mr-2"></i> Back to List
+            </a>
+          </div>
+        </div>
+        <!-- Grade Summary Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+          <div class="p-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Grade Summary</h2>
+            <div class="text-center py-6">
+              {% if link.average_grade %}
+                <div class=" text-6xl font-extrabold mb-2 {% if link.average_letter_grade == 'A+' or link.average_letter_grade == 'A' %} text-green-500 {% elif link.average_letter_grade == 'A-' or link.average_letter_grade == 'B+' %} text-blue-500 {% elif link.average_letter_grade == 'B' or link.average_letter_grade == 'B-' %} text-indigo-500 {% elif link.average_letter_grade == 'C+' or link.average_letter_grade == 'C' %} text-yellow-500 {% else %} text-red-500 {% endif %} ">
+                  {{ link.average_letter_grade }}
+                </div>
+                <p class="text-gray-500 dark:text-gray-400 text-sm">Average score from {{ link.grade_count }} grades</p>
+                <p class="text-gray-700 dark:text-gray-300 mt-2">Numeric: {{ link.average_grade|floatformat:2 }}/4.3</p>
+              {% else %}
+                <div class="text-4xl font-light text-gray-400 dark:text-gray-500 mb-2">No grades yet</div>
+                <p class="text-gray-500 dark:text-gray-400 text-sm">Be the first to grade this link!</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        <!-- Grade form -->
+        {% if user.is_authenticated %}
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+              <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">
+                {% if user_grade %}
+                  Update Your Grade
+                {% else %}
+                  Add Your Grade
+                {% endif %}
+              </h2>
+            </div>
+            <div class="p-6">
+              <form method="post"
+                    action="{% url 'grade_link' link.pk %}"
+                    class="space-y-4">
+                {% csrf_token %}
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Select Grade:</label>
+                  <div class="grid grid-cols-3 md:grid-cols-6 gap-2">
+                    {% for radio in grade_form.grade %}
+                      <div class="grade-option">
+                        <label class="flex flex-col items-center cursor-pointer">
+                          {{ radio.tag }}
+                          <span class=" mt-2 px-3 py-1.5 rounded-lg text-center w-full font-medium {% if 'A+' in radio.choice_label %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% elif 'A' in radio.choice_label %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% elif 'A-' in radio.choice_label %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 {% elif 'B+' in radio.choice_label %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 {% elif 'B' in radio.choice_label %}bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 {% elif 'B-' in radio.choice_label %}bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 {% elif 'C+' in radio.choice_label %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% elif 'C' in radio.choice_label %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% elif 'C-' in radio.choice_label %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% elif 'D' in radio.choice_label %}bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200 {% else %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 {% endif %} ">
+                            {{ radio.choice_label }}
+                          </span>
+                        </label>
+                      </div>
+                    {% endfor %}
+                  </div>
+                  {% if grade_form.grade.errors %}
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ grade_form.grade.errors.0 }}</p>
+                  {% endif %}
+                </div>
+                <div class="mt-4">
+                  <label for="{{ grade_form.comment.id_for_label }}"
+                         class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Comment
+                    <span id="comment-required"
+                          class="text-red-500 text-xs ml-1"
+                          style="display: none">(Required for grades below A)</span>
+                  </label>
+                  {{ grade_form.comment }}
+                  {% if grade_form.comment.errors %}
+                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ grade_form.comment.errors.0 }}</p>
+                  {% endif %}
+                </div>
+                <div class="pt-4">
+                  <button type="submit"
+                          class="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2">
+                    {% if user_grade %}
+                      <i class="fas fa-sync-alt mr-2"></i> Update Grade
+                    {% else %}
+                      <i class="fas fa-pencil-alt mr-2"></i> Submit Grade
+                    {% endif %}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        {% else %}
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 text-center">
+            <i class="fas fa-lock text-4xl text-gray-400 dark:text-gray-500 mb-3"></i>
+            <h3 class="text-lg font-medium text-gray-800 dark:text-gray-200 mb-2">Login to Grade</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">You need to be logged in to provide your grade and feedback.</p>
+            <a href="{% url 'account_login' %}?next={{ request.path }}"
+               class="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
+              <i class="fas fa-sign-in-alt mr-2"></i> Login to Grade
+            </a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          const gradeInputs = document.querySelectorAll('input[name="grade"]');
+          const commentRequired = document.getElementById('comment-required');
+          const commentField = document.querySelector('textarea[name="comment"]');
+
+          function checkGradeSelection() {
+              const selectedGrade = document.querySelector('input[name="grade"]:checked');
+
+              if (selectedGrade && selectedGrade.value !== 'A+' && selectedGrade.value !== 'A') {
+                  commentRequired.style.display = 'inline';
+                  commentField.setAttribute('required', 'required');
+              } else {
+                  commentRequired.style.display = 'none';
+                  commentField.removeAttribute('required');
+              }
+          }
+
+          // Initialize on page load
+          checkGradeSelection();
+
+          // Add event listeners to all grade options
+          gradeInputs.forEach(input => {
+              input.addEventListener('change', checkGradeSelection);
+          });
+      });
+  </script>
+{% endblock %}
