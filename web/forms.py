@@ -10,6 +10,8 @@ from django.utils.crypto import get_random_string
 from django.utils.text import slugify
 from markdownx.fields import MarkdownxFormField
 
+
+
 from .models import (
     Achievement,
     Avatar,
@@ -40,6 +42,7 @@ from .models import (
     SuccessStory,
     TeamGoal,
     TeamInvite,
+    Achievement,
 )
 from .referrals import handle_referral
 from .widgets import (
@@ -245,7 +248,63 @@ class UserRegistrationForm(SignupForm):
             handle_referral(user, referral_code)
 
         return user
+# start Award achievement..............
 
+class AwardAchievementForm(forms.Form):
+    student = forms.ModelChoiceField(
+        queryset=User.objects.none(),
+        empty_label="Select a student",
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    achievement_type = forms.ChoiceField(
+        choices=Achievement.TYPES,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    course = forms.ModelChoiceField(
+        queryset=Course.objects.all(),
+        empty_label="Select a course (optional)",
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    title = forms.CharField(
+        max_length=100,
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    
+    description = forms.CharField(
+        widget=forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+        required=False
+    )
+    
+    badge_icon = forms.ChoiceField(
+        choices=[(
+            'fas fa-trophy', 'Trophy'),
+            ('fas fa-medal', 'Medal'),
+            ('fas fa-award', 'Award'),
+            ('fas fa-star', 'Star'),
+            ('fas fa-certificate', 'Certificate'),
+            ('fas fa-graduation-cap', 'Graduation Cap')
+        ],
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    
+    def __init__(self, *args, **kwargs):
+        teacher = kwargs.pop('teacher', None)
+        super().__init__(*args, **kwargs)
+        
+        # If teacher is provided, filter students to only those in the teacher's courses
+        if teacher:
+            teacher_courses = Course.objects.filter(teacher=teacher)
+            student_ids = []
+            for course in teacher_courses:
+                student_ids.extend(course.students.values_list('id', flat=True))
+            
+            self.fields['student'].queryset = User.objects.filter(id__in=student_ids)
+            self.fields['course'].queryset = teacher_courses
+# end award achievement..................
 
 class AwardAchievementForm(forms.Form):
     student = forms.ModelChoiceField(
