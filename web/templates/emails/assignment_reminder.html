@@ -1,0 +1,31 @@
+{% extends "emails/base_email.html" %}
+
+{% block content %}
+  <h2>Assignment Reminder</h2>
+  <p>Hello {{ student.first_name }},</p>
+  <p>
+    This is a reminder that your assignment <strong>{{ assignment.title }}</strong> for the course <strong>{{ course.title }}</strong> is due
+    {% if days_remaining is defined %}
+      in {{ days_remaining }} day(s).
+    {% elif hours_remaining is defined %}
+      in {{ hours_remaining }} hour(s).
+    {% endif %}
+  </p>
+  <div style="margin: 20px 0;
+              padding: 15px;
+              background-color: #f8f9fa;
+              border-left: 4px solid #ff9800">
+    <p>
+      <strong>Due Date:</strong> {{ due_date|date:"F j, Y, g:i a" }}
+    </p>
+  </div>
+  <p>Please ensure you complete and submit your assignment on time.</p>
+  <div style="margin: 25px 0;">
+    <a href="{{ site_url }}{% url 'course_detail' course.slug %}"
+       style="padding: 10px 16px;
+              background-color: #4CAF50;
+              color: white;
+              text-decoration: none;
+              border-radius: 4px">View Assignment</a>
+  </div>
+{% endblock %}
