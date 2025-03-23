@@ -4578,3 +4578,41 @@ def grade_link(request, pk):
             "link": link,
         },
     )
+
+
+def duplicate_session(request, session_id):
+    """Duplicate a session to next week."""
+    # Get the original session
+    session = get_object_or_404(Session, id=session_id)
+    course = session.course
+
+    # Check if user is the course teacher
+    if request.user != course.teacher:
+        messages.error(request, "Only the course teacher can duplicate sessions!")
+        return redirect("course_detail", slug=course.slug)
+
+    # Create a new session with the same properties but dates shifted forward by a week
+    new_session = Session(
+        course=course,
+        title=session.title,
+        description=session.description,
+        is_virtual=session.is_virtual,
+        meeting_link=session.meeting_link,
+        meeting_id="",  # Clear meeting ID as it will be a new meeting
+        location=session.location,
+        price=session.price,
+        enable_rollover=session.enable_rollover,
+        rollover_pattern=session.rollover_pattern,
+    )
+
+    # Set dates one week later
+    time_shift = timezone.timedelta(days=7)
+    new_session.start_time = session.start_time + time_shift
+    new_session.end_time = session.end_time + time_shift
+
+    # Save the new session
+    new_session.save()
+    msg = f"Session '{session.title}' duplicated for {new_session.start_time.strftime('%b %d, %Y')}"
+    messages.success(request, msg)
+
+    return redirect("course_detail", slug=course.slug)
