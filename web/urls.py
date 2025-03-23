@@ -6,6 +6,8 @@ from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
 from . import admin_views, peer_challenge_views, quiz_views, views
+from web import views
+
 from .views import (
     GoodsListingView,
     GradeableLinkCreateView,
@@ -23,6 +25,8 @@ from .views import (
 urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs
     path("captcha/", include("captcha.urls")),  # CAPTCHA URLs should not be language-prefixed
+
+
 ]
 
 if settings.DEBUG:
@@ -233,6 +237,7 @@ urlpatterns += i18n_patterns(
         name="store_order_management",
     ),
     path("orders/item/<int:item_id>/update-status/", views.update_order_status, name="update_order_status"),
+    path('award-achievement/', views.award_achievement, name='award_achievement'),
     # Analytics
     path(
         "store/<slug:store_slug>/analytics/",

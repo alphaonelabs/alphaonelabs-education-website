@@ -82,6 +82,7 @@ from .forms import (
     TeamGoalForm,
     TeamInviteForm,
     UserRegistrationForm,
+    AwardAchievementForm,
 )
 from .marketing import (
     generate_social_share_content,
@@ -1001,7 +1002,51 @@ def mark_session_completed(request, session_id):
 
     messages.success(request, "Session marked as completed!")
     return redirect("course_detail", slug=session.course.slug)
+# start award achievement
 
+from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from web.forms import AwardAchievementForm
+from web.models import Achievement, Profile
+
+@login_required
+def award_achievement(request):
+    # Check if user is a teacher
+    try:
+        profile = request.user.profile
+        if not profile.is_teacher:
+            messages.error(request, 'You do not have permission to award achievements.')
+            return redirect('dashboard')
+    except Profile.DoesNotExist:
+        messages.error(request, 'Profile not found.')
+        return redirect('dashboard')
+    
+    if request.method == 'POST':
+        form = AwardAchievementForm(request.POST, teacher=request.user)
+        if form.is_valid():
+            # Create the achievement
+            achievement = Achievement.objects.create(
+                student=form.cleaned_data['student'],
+                course=form.cleaned_data['course'],
+                achievement_type=form.cleaned_data['achievement_type'],
+                title=form.cleaned_data['title'],
+                description=form.cleaned_data['description'],
+                badge_icon=form.cleaned_data['badge_icon']
+            )
+            
+            messages.success(
+                request, 
+                f'Achievement "{form.cleaned_data["title"]}" awarded to {form.cleaned_data["student"].username}'
+            )
+            return redirect('teacher_dashboard')
+    else:
+        form = AwardAchievementForm(teacher=request.user)
+    
+    return render(request, 'award_achievement.html', {'form': form})
+
+
+# end award achievement
 
 @login_required
 def student_progress(request, enrollment_id):
