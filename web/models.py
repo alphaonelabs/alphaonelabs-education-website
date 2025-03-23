@@ -2048,3 +2048,151 @@ class LinkGrade(models.Model):
         """Validate that comments are provided for lower grades."""
         if self.grade not in ["A+", "A"] and not self.comment:
             raise ValidationError("A comment is required for grades below A.")
+
+
+class PeerChallenge(models.Model):
+    """Model for challenges between users for quizzes or tasks."""
+
+    STATUS_CHOICES = [
+        ("active", "Active"),
+        ("completed", "Completed"),
+        ("cancelled", "Cancelled"),
+    ]
+
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="peer_challenges")
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_challenges")
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Peer Challenge"
+        verbose_name_plural = "Peer Challenges"
+
+    def __str__(self):
+        return f"{self.title} by {self.creator.username}"
+
+    @property
+    def is_expired(self):
+        """Check if the challenge has expired."""
+        if self.expires_at and timezone.now() > self.expires_at:
+            return True
+        return False
+
+    @property
+    def total_participants(self):
+        """Get the total number of participants in this challenge."""
+        return self.invitations.filter(status__in=["accepted", "completed"]).count() + 1  # +1 for creator
+
+    @property
+    def leaderboard(self):
+        """Get sorted list of participants by score."""
+        participants = []
+
+        # Add creator's best attempt
+        creator_attempts = (
+            UserQuiz.objects.filter(quiz=self.quiz, user=self.creator, completed=True, start_time__gte=self.created_at)
+            .order_by("-score")
+            .first()
+        )
+
+        if creator_attempts:
+            participants.append(
+                {
+                    "user": self.creator,
+                    "score": creator_attempts.score,
+                    "max_score": creator_attempts.max_score,
+                    "completion_time": creator_attempts.end_time,
+                    "is_creator": True,
+                }
+            )
+
+        # Add invited participants' best attempts
+        for invitation in self.invitations.filter(status="completed"):
+            participant_attempt = invitation.user_quiz
+            if participant_attempt and participant_attempt.completed:
+                participants.append(
+                    {
+                        "user": invitation.participant,
+                        "score": participant_attempt.score,
+                        "max_score": participant_attempt.max_score,
+                        "completion_time": participant_attempt.end_time,
+                        "is_creator": False,
+                    }
+                )
+
+        # Sort by score (descending) and completion time (ascending)
+        return sorted(participants, key=lambda x: (-x["score"], x["completion_time"]))
+
+
+class PeerChallengeInvitation(models.Model):
+    """Model for invitations to peer challenges."""
+
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("accepted", "Accepted"),
+        ("completed", "Completed"),
+        ("declined", "Declined"),
+        ("expired", "Expired"),
+    ]
+
+    challenge = models.ForeignKey(PeerChallenge, on_delete=models.CASCADE, related_name="invitations")
+    participant = models.ForeignKey(User, on_delete=models.CASCADE, related_name="challenge_invitations")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
+    user_quiz = models.ForeignKey(
+        UserQuiz, on_delete=models.SET_NULL, null=True, blank=True, related_name="challenge_invitation"
+    )
+    message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        unique_together = ["challenge", "participant"]
+
+    def __str__(self):
+        return f"{self.challenge.title} invitation for {self.participant.username}"
+
+    def accept(self):
+        """Accept the challenge invitation."""
+        self.status = "accepted"
+        self.save()
+
+        # Create notification for challenge creator
+        Notification.objects.create(
+            user=self.challenge.creator,
+            title="Challenge Accepted",
+            message=f"{self.participant.username} has accepted your challenge: {self.challenge.title}",
+            notification_type="info",
+        )
+
+    def decline(self):
+        """Decline the challenge invitation."""
+        self.status = "declined"
+        self.save()
+
+        # Create notification for challenge creator
+        Notification.objects.create(
+            user=self.challenge.creator,
+            title="Challenge Declined",
+            message=f"{self.participant.username} has declined your challenge: {self.challenge.title}",
+            notification_type="info",
+        )
+
+    def complete(self, user_quiz):
+        """Mark the challenge as completed."""
+        self.status = "completed"
+        self.user_quiz = user_quiz
+        self.save()
+
+        # Create notification for challenge creator
+        Notification.objects.create(
+            user=self.challenge.creator,
+            title="Challenge Completed",
+            message=f"{self.participant.username} has completed your challenge: {self.challenge.title}",
+            notification_type="success",
+        )

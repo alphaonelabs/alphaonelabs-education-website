@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
-from . import admin_views, quiz_views, views
+from . import admin_views, peer_challenge_views, quiz_views, views
 from .views import (
     GoodsListingView,
     GradeableLinkCreateView,
@@ -286,6 +286,42 @@ urlpatterns += i18n_patterns(
     path("grade-links/submit/", GradeableLinkCreateView.as_view(), name="gradeable_link_create"),
     path("grade-links/<int:pk>/", GradeableLinkDetailView.as_view(), name="gradeable_link_detail"),
     path("grade-links/<int:pk>/grade/", grade_link, name="grade_link"),
+    # Peer Challenges URLs
+    path("peer-challenges/", peer_challenge_views.challenge_list, name="challenge_list"),
+    path("peer-challenges/create/", peer_challenge_views.create_challenge, name="create_challenge"),
+    path(
+        "peer-challenges/<int:challenge_id>/", peer_challenge_views.peer_challenge_detail, name="peer_challenge_detail"
+    ),
+    path(
+        "peer-challenges/invitation/<int:invitation_id>/accept/",
+        peer_challenge_views.accept_invitation,
+        name="accept_invitation",
+    ),
+    path(
+        "peer-challenges/invitation/<int:invitation_id>/decline/",
+        peer_challenge_views.decline_invitation,
+        name="decline_invitation",
+    ),
+    path(
+        "peer-challenges/invitation/<int:invitation_id>/take/",
+        peer_challenge_views.take_challenge,
+        name="take_challenge",
+    ),
+    path(
+        "peer-challenges/complete/<int:user_quiz_id>/",
+        peer_challenge_views.complete_challenge,
+        name="complete_challenge",
+    ),
+    path(
+        "peer-challenges/<int:challenge_id>/leaderboard/",
+        peer_challenge_views.leaderboard,
+        name="challenge_leaderboard",
+    ),
+    path(
+        "peer-challenges/submit-to-leaderboard/<int:user_quiz_id>/",
+        peer_challenge_views.submit_to_leaderboard,
+        name="submit_to_leaderboard",
+    ),
     prefix_default_language=True,
 )
 
