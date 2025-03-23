@@ -95,28 +95,47 @@
             integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
             crossorigin="anonymous"></script>
     <script>
-        // Toggle the language dropdown
-        function toggleLanguageDropdown() {
-            document.getElementById('language-dropdown').classList.toggle('hidden');
-        }
-        // Toggle the user dropdown
-        function toggleUserDropdown() {
-            document.getElementById('user-dropdown').classList.toggle('hidden');
-        }
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function(event) {
-            const languageDropdown = document.getElementById('language-dropdown');
-            const userDropdown = document.getElementById('user-dropdown');
-            const languageButton = event.target.closest('[onclick="toggleLanguageDropdown()"]');
-            const userButton = event.target.closest('[onclick="toggleUserDropdown()"]');
-
-            if (!languageButton && !languageDropdown.contains(event.target)) {
-                languageDropdown.classList.add('hidden');
+        // Replace the existing dropdown event listener code with this safer version
+        document.addEventListener('DOMContentLoaded', function() {
+            // Toggle the language dropdown
+            function toggleLanguageDropdown() {
+                const dropdown = document.getElementById('language-dropdown');
+                if (dropdown) {
+                    dropdown.classList.toggle('hidden');
+                }
             }
 
-            if (userDropdown && !userButton && !userDropdown.contains(event.target)) {
-                userDropdown.classList.add('hidden');
+            // Toggle the user dropdown
+            function toggleUserDropdown() {
+                const dropdown = document.getElementById('user-dropdown');
+                if (dropdown) {
+                    dropdown.classList.toggle('hidden');
+                }
             }
+
+            // Make these functions globally available
+            window.toggleLanguageDropdown = toggleLanguageDropdown;
+            window.toggleUserDropdown = toggleUserDropdown;
+
+            // Close dropdowns when clicking outside
+            document.addEventListener('click', function(event) {
+                const languageDropdown = document.getElementById('language-dropdown');
+                const userDropdown = document.getElementById('user-dropdown');
+
+                if (languageDropdown) {
+                    const languageButton = event.target.closest('[onclick="toggleLanguageDropdown()"]');
+                    if (!languageButton && !languageDropdown.contains(event.target)) {
+                        languageDropdown.classList.add('hidden');
+                    }
+                }
+
+                if (userDropdown) {
+                    const userButton = event.target.closest('[onclick="toggleUserDropdown()"]');
+                    if (!userButton && !userDropdown.contains(event.target)) {
+                        userDropdown.classList.add('hidden');
+                    }
+                }
+            });
         });
     </script>
     <style>
@@ -788,16 +807,23 @@
     <script>
         function toggleMobileMenu() {
             const mobileMenu = document.getElementById('mobile-menu');
-            mobileMenu.classList.toggle('hidden');
-            document.body.classList.toggle('overflow-hidden');
+            if (mobileMenu) {
+                mobileMenu.classList.toggle('hidden');
+                document.body.classList.toggle('overflow-hidden');
+            }
         }
 
-        // Toggle mobile sections without closing the menu
         function toggleMobileSection(sectionId) {
             const section = document.getElementById(sectionId);
             const icon = document.getElementById(`${sectionId}-icon`);
-            section.classList.toggle('hidden');
-            icon.classList.toggle('rotate-180');
+
+            if (section) {
+                section.classList.toggle('hidden');
+            }
+
+            if (icon) {
+                icon.classList.toggle('rotate-180');
+            }
         }
 
         // Close mobile menu only when clicking a category link
