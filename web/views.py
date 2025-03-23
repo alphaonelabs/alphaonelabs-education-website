@@ -3446,7 +3446,7 @@ def whiteboard(request):
 
 
 def graphing_calculator(request):
-    return render(request, "graphingCalculator.html")
+    return render(request, "graphing_calculator.html")
 
 
 def meme_list(request):
