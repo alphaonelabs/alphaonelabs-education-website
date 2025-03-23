@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db import transaction  # Moved here
 from django.template.loader import render_to_string
 from django.utils import timezone
 
@@ -23,10 +24,7 @@ def send_notification(user, notification_data):
     subject = notification_data["title"]
     html_message = render_to_string(
         "emails/notification.html",
-        {
-            "user": user,
-            "notification": notification,
-        },
+        {"user": user, "notification": notification},
     )
     send_mail(
         subject,
@@ -51,11 +49,7 @@ def send_enrollment_confirmation(enrollment):
     subject = f"Welcome to {enrollment.course.title}!"
     html_message = render_to_string(
         "emails/enrollment_confirmation.html",
-        {
-            "student": enrollment.student,
-            "course": enrollment.course,
-            "teacher": enrollment.course.teacher,
-        },
+        {"student": enrollment.student, "course": enrollment.course, "teacher": enrollment.course.teacher},
     )
     send_mail(
         subject,
@@ -71,10 +65,7 @@ def notify_teacher_new_enrollment(enrollment):
     subject = f"New Student Enrolled in {enrollment.course.title}"
     html_message = render_to_string(
         "emails/new_enrollment_notification.html",
-        {
-            "student": enrollment.student,
-            "course": enrollment.course,
-        },
+        {"student": enrollment.student, "course": enrollment.course},
     )
     send_mail(
         subject,
@@ -92,11 +83,7 @@ def notify_session_reminder(session):
     for enrollment in enrollments:
         html_message = render_to_string(
             "emails/session_reminder.html",
-            {
-                "student": enrollment.student,
-                "session": session,
-                "course": session.course,
-            },
+            {"student": enrollment.student, "session": session, "course": session.course},
         )
         send_mail(
             subject,
@@ -114,11 +101,7 @@ def notify_course_update(course, update_message):
     for enrollment in enrollments:
         html_message = render_to_string(
             "emails/course_update.html",
-            {
-                "student": enrollment.student,
-                "course": course,
-                "update_message": update_message,
-            },
+            {"student": enrollment.student, "course": course, "update_message": update_message},
         )
         send_mail(
             subject,
@@ -133,10 +116,7 @@ def send_upcoming_session_reminders():
     """Send reminders for sessions happening in the next 24 hours."""
     now = timezone.now()
     reminder_window = now + timedelta(hours=24)
-    upcoming_sessions = Session.objects.filter(
-        start_time__gt=now,
-        start_time__lte=reminder_window,
-    )
+    upcoming_sessions = Session.objects.filter(start_time__gt=now, start_time__lte=reminder_window)
     for session in upcoming_sessions:
         notify_session_reminder(session)
 
@@ -250,8 +230,6 @@ def send_assignment_reminders():
     early_window = now + timedelta(days=3)  # Early reminders: assignments due in next 3 days.
     final_window = now + timedelta(hours=24)  # Final reminders: assignments due in next 24 hours.
 
-from django.db import transaction
-
     # Process Early Reminders
     early_assignments = CourseMaterial.objects.filter(
         material_type="assignment", due_date__gt=now, due_date__lte=early_window, reminder_sent=False
@@ -282,7 +260,8 @@ from django.db import transaction
                             student,
                             {
                                 "title": subject,
-                                "message": f"Your assignment '{assignment.title}' is due in {days_before_deadline} days.",
+                                "message": f"Your assignment '{assignment.title}'\
+                                     is due in {days_before_deadline} days.",
                                 "notification_type": "warning",
                             },
                         )
@@ -296,7 +275,6 @@ from django.db import transaction
                         )
             assignment.reminder_sent = True
             assignment.save()
-        assignment.save()
 
     # Process Final Reminders
     final_assignments = CourseMaterial.objects.filter(
@@ -327,8 +305,8 @@ from django.db import transaction
                         student,
                         {
                             "title": subject,
-                            "message": f"Final reminder: Your assignment '{assignment.title}' \
-                            is due in {hours_remaining} hours.",
+                            "message": f"Final reminder: Your assignment\
+                                 '{assignment.title}' is due in {hours_remaining} hours.",
                             "notification_type": "warning",
                         },
                     )
