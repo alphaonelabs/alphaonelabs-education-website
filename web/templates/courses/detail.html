@@ -10,15 +10,118 @@
 {% block extra_head %}
   <!-- Share dropdown -->
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Check Alpine.js version -->
+  <script>
+      document.addEventListener('alpine:init', () => {
+          console.log('Alpine.js initialized, version:', window.Alpine.version);
+      });
+  </script>
+  <!-- Initialize open student modal function -->
+  <script>
+      // Global variable to track pending modal requests
+      window.pendingStudentModal = null;
+
+      // Initialize a simple modal opener that doesn't rely on Alpine.js
+      window.openStudentModal = function(name, id) {
+          console.log("openStudentModal called for student:", name, "id:", id);
+          // Store the request info to be processed when DOM is ready
+          window.pendingStudentModal = {
+              name,
+              id
+          };
+
+          // Try to trigger the modal directly if the page is already loaded
+          document.addEventListener('DOMContentLoaded', function() {
+              const event = new CustomEvent('open-student-modal', {
+                  detail: {
+                      name: name,
+                      id: id
+                  }
+              });
+              document.dispatchEvent(event);
+          });
+
+          // Also dispatch the event now in case DOM is already loaded
+          if (document.readyState === 'complete' || document.readyState === 'interactive') {
+              const event = new CustomEvent('open-student-modal', {
+                  detail: {
+                      name: name,
+                      id: id
+                  }
+              });
+              document.dispatchEvent(event);
+          }
+
+          return false; // Prevent default link behavior
+      };
+
+      // Define the Alpine.js component data
+      window.studentManagementData = function() {
+          return {
+              open: false,
+              activeTab: 'attendance',
+              studentName: '',
+              enrollmentId: null,
+              setStudent(name, id) {
+                  this.studentName = name;
+                  this.enrollmentId = id;
+                  this.open = true;
+              },
+              init() {
+                  console.log("Alpine component initialized for student management modal");
+
+                  // Listen for custom event
+                  document.addEventListener('open-student-modal', (event) => {
+                      this.setStudent(event.detail.name, event.detail.id);
+                  });
+
+                  // Check for pending modal request
+                  if (window.pendingStudentModal) {
+                      console.log("Found pending student modal data, processing it");
+                      this.setStudent(
+                          window.pendingStudentModal.name,
+                          window.pendingStudentModal.id
+                      );
+                      window.pendingStudentModal = null;
+                  }
+              }
+          };
+      };
+  </script>
+  <style>
+      /* Notification system styles */
+      .notification {
+          position: fixed;
+          top: 1rem;
+          right: 1rem;
+          z-index: 100;
+          transition: all 0.3s ease-in-out;
+          transform: translateX(100%);
+          opacity: 0;
+      }
+
+      .notification.show {
+          transform: translateX(0);
+          opacity: 1;
+      }
+  </style>
 {% endblock extra_head %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <!-- Breadcrumbs -->
-    <nav class="text-sm mb-4">
+    <nav class="flex items-center text-sm bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm mb-6">
+      <a href="{% url 'index' %}"
+         class="text-gray-500 dark:text-gray-400 hover:text-teal-500 dark:hover:text-teal-400">
+        <i class="fas fa-home"></i>
+      </a>
+      <span class="mx-2 text-gray-400 dark:text-gray-600">/</span>
       <a href="{% url 'course_search' %}"
-         class="text-blue-600 hover:text-blue-800">Courses</a>
-      <span class="mx-2">/</span>
-      <span class="text-gray-600">{{ course.title }}</span>
+         class="text-gray-500 dark:text-gray-400 hover:text-teal-500 dark:hover:text-teal-400">Courses</a>
+      <span class="mx-2 text-gray-400 dark:text-gray-600">/</span>
+      <a href="{% url 'course_search' %}?subject={{ course.subject.slug }}"
+         class="text-gray-500 dark:text-gray-400 hover:text-teal-500 dark:hover:text-teal-400">{{ course.subject.name }}</a>
+      <span class="mx-2 text-gray-400 dark:text-gray-600">/</span>
+      <span class="text-gray-700 dark:text-gray-300 font-medium">{{ course.title|truncatechars:40 }}</span>
     </nav>
     <!-- Course Header Section -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
@@ -31,20 +134,23 @@
                 <img src="{{ course.image.url }}"
                      alt="{{ course.title }}"
                      class="w-full h-full object-cover"
-                     height=""
-                     width="" />
+                     width="500"
+                     height="500" />
               {% else %}
                 <img src="{% static 'images/default-course.jpg' %}"
                      alt="{{ course.title }}"
                      class="w-full h-full object-cover"
-                     height=""
-                     width="" />
+                     width="500"
+                     height="500" />
               {% endif %}
             </div>
             <!-- Quick Stats -->
-            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 space-y-3">
-              <div class="flex items-center justify-between">
-                <span class="text-gray-600 dark:text-gray-300">Price</span>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 space-y-3">
+              <div class="flex items-center justify-between border-b dark:border-gray-700 pb-3">
+                <span class="text-gray-600 dark:text-gray-300 font-medium flex items-center">
+                  <i class="fas fa-tag text-teal-500 dark:text-teal-400 mr-2"></i>
+                  Price
+                </span>
                 <span class="text-3xl font-bold text-teal-600 dark:text-teal-400">
                   {% if course.price == 0 %}
                     Free
@@ -53,27 +159,54 @@
                   {% endif %}
                 </span>
               </div>
-              <div class="flex items-center justify-between">
-                <span class="text-gray-600 dark:text-gray-300">Level</span>
-                <span class="font-medium">{{ course.get_level_display }}</span>
+              <div class="flex items-center justify-between py-2">
+                <span class="text-gray-600 dark:text-gray-300 font-medium flex items-center">
+                  <i class="fas fa-signal text-indigo-500 dark:text-indigo-400 mr-2"></i>
+                  Level
+                </span>
+                <span class="font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-full text-sm">
+                  {{ course.get_level_display }}
+                </span>
               </div>
-              <div class="flex items-center justify-between">
-                <span class="text-gray-600 dark:text-gray-300">Students</span>
-                <span class="font-medium">{{ course.enrollments.count }} / {{ course.max_students }}</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-gray-600 dark:text-gray-300">Rating</span>
+              <div class="flex items-center justify-between py-2">
+                <span class="text-gray-600 dark:text-gray-300 font-medium flex items-center">
+                  <i class="fas fa-users text-blue-500 dark:text-blue-400 mr-2"></i>
+                  Students
+                </span>
                 <span class="font-medium">
-                  <i class="fas fa-star text-yellow-400"></i>
-                  {{ course.average_rating|default:"No ratings yet" }}
+                  <span class="text-blue-600 dark:text-blue-400 font-bold">{{ course.enrollments.count }}</span> / {{ course.max_students }}
+                </span>
+              </div>
+              <div class="flex items-center justify-between py-2 border-t dark:border-gray-700 pt-2">
+                <span class="text-gray-600 dark:text-gray-300 font-medium flex items-center">
+                  <i class="fas fa-star text-yellow-500 dark:text-yellow-400 mr-2"></i>
+                  Rating
+                </span>
+                <span class="font-medium flex items-center">
+                  {% if course.average_rating %}
+                    <span class="flex items-center">
+                      {% for i in "12345" %}
+                        {% if forloop.counter <= course.average_rating|floatformat:"0" %}
+                          <i class="fas fa-star text-yellow-400 mr-0.5"></i>
+                        {% elif forloop.counter <= course.average_rating|add:"0.5"|floatformat:"0" %}
+                          <i class="fas fa-star-half-alt text-yellow-400 mr-0.5"></i>
+                        {% else %}
+                          <i class="far fa-star text-yellow-400 mr-0.5"></i>
+                        {% endif %}
+                      {% endfor %}
+                      <span class="ml-1 text-gray-700 dark:text-gray-300">{{ course.average_rating }}</span>
+                    </span>
+                  {% else %}
+                    <span class="text-gray-500 dark:text-gray-400">No ratings yet</span>
+                  {% endif %}
                 </span>
               </div>
               {% if not is_enrolled %}
                 {% if course.invite_only %}
-                  <div class="flex items-center justify-between text-indigo-600 dark:text-indigo-400">
-                    <span class="text-sm">
-                      <i class="fas fa-lock mr-1"></i>
-                      Invite Only
+                  <div class="flex items-center justify-between text-indigo-600 dark:text-indigo-400 mt-3 py-2 border-t dark:border-gray-700">
+                    <span class="text-sm flex items-center">
+                      <i class="fas fa-lock mr-2"></i>
+                      <span>This is an invite-only course</span>
                     </span>
                   </div>
                 {% else %}
@@ -81,9 +214,9 @@
                     <!-- Free Course Enrollment Button -->
                     <form method="get"
                           action="{% url 'enroll_course' course.slug %}"
-                          class="mt-2">
+                          class="mt-3 pt-2 border-t dark:border-gray-700">
                       <button type="submit"
-                              class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center">
+                              class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center transition duration-200">
                         <i class="fas fa-check-circle mr-2"></i>
                         Enroll for Free
                       </button>
@@ -92,10 +225,10 @@
                     <!-- Paid Course Cart Button -->
                     <form method="post"
                           action="{% url 'add_course_to_cart' course.id %}"
-                          class="mt-2">
+                          class="mt-3 pt-2 border-t dark:border-gray-700">
                       {% csrf_token %}
                       <button type="submit"
-                              class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center">
+                              class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center transition duration-200">
                         <i class="fas fa-cart-plus mr-2"></i>
                         Add to Cart
                       </button>
@@ -104,32 +237,109 @@
                 {% endif %}
               {% endif %}
             </div>
-            <!-- Course Creator Info -->
-            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-              <h3 class="font-semibold mb-3">Course Creator</h3>
-              <div class="flex items-center space-x-3">
-                {% if course.teacher.profile.avatar %}
-                  <img src="{{ course.teacher.profile.avatar.url }}"
-                       alt="{{ course.teacher.get_full_name }}"
-                       class="w-12 h-12 rounded-full"
-                       width="48"
-                       height="48" />
+            <!-- Enrolled Students List -->
+            {% if is_teacher or is_enrolled %}
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+                <div class="flex items-center justify-between mb-3">
+                  <h3 class="font-semibold text-lg text-gray-800 dark:text-gray-200 flex items-center">
+                    <i class="fas fa-users text-teal-500 dark:text-teal-400 mr-2"></i>
+                    Enrolled Students
+                  </h3>
+                  <span class="text-sm text-gray-500 dark:text-gray-400">{{ course.enrollments.count }} / {{ course.max_students }}</span>
+                </div>
+                {% if course.enrollments.exists %}
+                  <div class="max-h-40 overflow-y-auto pr-1 space-y-2">
+                    {% for enrollment in course.enrollments.all %}
+                      <div class="flex items-center space-x-2 p-2 {% cycle 'bg-gray-50' 'bg-white' %} dark:{% cycle 'bg-gray-700' 'bg-gray-800' %} rounded-lg">
+                        {% if enrollment.student.profile.avatar %}
+                          <img src="{{ enrollment.student.profile.avatar.url }}"
+                               alt="{{ enrollment.student.get_full_name|default:enrollment.student.username }}"
+                               class="w-8 h-8 rounded-full object-cover"
+                               width="32"
+                               height="32" />
+                        {% else %}
+                          <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                            <i class="fas fa-user text-gray-400 dark:text-gray-400"></i>
+                          </div>
+                        {% endif %}
+                        <div class="flex-grow">
+                          <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                            {{ enrollment.student.get_full_name|default:enrollment.student.username }}
+                          </div>
+                          <div class="text-xs text-gray-500 dark:text-gray-400">Enrolled: {{ enrollment.enrollment_date|date:"M d, Y" }}</div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                          <!-- Public Profile Link -->
+                          <a href="{% url 'public_profile' enrollment.student.username %}"
+                             class="p-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900 transition-colors"
+                             title="View public profile">
+                            <i class="fas fa-user-circle"></i>
+                          </a>
+                          <!-- Teacher View (only for course teacher) -->
+                          {% if user == course.teacher %}
+                            <a href="#"
+                               class="p-1.5 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900 transition-colors"
+                               title="Teacher view - Manage progress, badges & attendance"
+                               onclick="try { return openStudentModal('{{ enrollment.student.get_full_name|default:enrollment.student.username }}', {{ enrollment.id }}); } catch(e) { console.error('Error opening modal:', e); return false; }">
+                              <i class="fas fa-chalkboard-teacher"></i>
+                            </a>
+                          {% endif %}
+                        </div>
+                        {% if enrollment.status == 'completed' %}
+                          <span class="flex-shrink-0 px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                            <i class="fas fa-check-circle mr-1"></i>Completed
+                          </span>
+                        {% elif enrollment.status == 'in_progress' %}
+                          <span class="flex-shrink-0 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                            <i class="fas fa-spinner mr-1"></i>In Progress
+                          </span>
+                        {% endif %}
+                      </div>
+                    {% endfor %}
+                  </div>
                 {% else %}
-                  <img src="{% static 'images/default_teacher.png' %}"
-                       alt="{{ course.teacher.get_full_name }}"
-                       class="w-12 h-12 rounded-full"
-                       width="48"
-                       height="48" />
+                  <p class="text-sm text-gray-500 dark:text-gray-400 italic">No students enrolled yet.</p>
                 {% endif %}
-                <div>
-                  <p class="font-medium">{{ course.teacher.get_full_name|default:course.teacher.username }}</p>
+              </div>
+            {% endif %}
+            <!-- Course Creator Info -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+              <h3 class="font-semibold text-lg mb-4 text-gray-800 dark:text-gray-200 flex items-center">
+                <i class="fas fa-chalkboard-teacher text-teal-500 dark:text-teal-400 mr-2"></i>
+                Course Creator
+              </h3>
+              <div class="flex items-start space-x-4">
+                <div class="flex-shrink-0">
+                  {% if course.teacher.profile.avatar %}
+                    <img src="{{ course.teacher.profile.avatar.url }}"
+                         alt="{{ course.teacher.get_full_name }}"
+                         class="w-16 h-16 rounded-full object-cover border-2 border-teal-300 dark:border-teal-600"
+                         width="64"
+                         height="64" />
+                  {% else %}
+                    <img src="{% static 'images/default_teacher.png' %}"
+                         alt="{{ course.teacher.get_full_name }}"
+                         class="w-16 h-16 rounded-full object-cover border-2 border-teal-300 dark:border-teal-600"
+                         width="64"
+                         height="64" />
+                  {% endif %}
+                </div>
+                <div class="flex-grow">
+                  <p class="font-semibold text-lg text-gray-800 dark:text-white">
+                    {{ course.teacher.get_full_name|default:course.teacher.username }}
+                  </p>
                   {% if course.teacher.profile.expertise %}
-                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ course.teacher.profile.expertise }}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ course.teacher.profile.expertise }}</p>
                   {% endif %}
                   <a href="{% url 'message_teacher' course.teacher.id %}"
-                     class="inline-flex items-center mt-2 text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                    <i class="fas fa-envelope mr-1"></i>
+                     class="inline-flex items-center px-3 py-1.5 text-sm bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition duration-200">
+                    <i class="fas fa-envelope mr-2"></i>
                     Message Teacher
+                  </a>
+                  <a href="{% url 'public_profile' course.teacher.username %}"
+                     class="inline-flex items-center px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg ml-2 transition duration-200">
+                    <i class="fas fa-user mr-2"></i>
+                    View Profile
                   </a>
                 </div>
               </div>
@@ -173,11 +383,11 @@
                           <div class="text-xs text-gray-600 dark:text-gray-400 space-y-1">
                             <div class="flex items-center">
                               <i class="far fa-calendar mr-2"></i>
-                              {{ session.start_time|date:"M d, Y" }}
+                              {{ session.start_time|date:"M j, Y" }}
                             </div>
                             <div class="flex items-center">
                               <i class="far fa-clock mr-2"></i>
-                              {{ session.start_time|time }} - {{ session.end_time|time }}
+                              {{ session.start_time|date:"g:i A" }} {{ session.start_time|date:"e" }} - {{ session.end_time|date:"g:i A" }} {{ session.end_time|date:"e" }}
                             </div>
                             {% if session.is_virtual %}
                               <div class="flex items-center text-blue-600 dark:text-blue-400">
@@ -335,302 +545,319 @@
           </div>
           <!-- Middle and Right Columns - Course Info -->
           <div class="md:col-span-2 space-y-6">
-            <div>
-              <div class="flex justify-between items-start mb-4">
-                <div class="flex items-center gap-4">
-                  <h1 class="text-3xl font-bold">{{ course.title }}</h1>
-                  {% if user == course.teacher %}
-                    <div class="flex items-center gap-3">
-                      <a href="{% url 'update_course' course.slug %}"
-                         class="inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition duration-200">
-                        <i class="fas fa-edit mr-2"></i>
-                        Edit Course
-                      </a>
-                      <a href="{% url 'toggle_course_status' course.slug %}"
-                         class="inline-flex items-center px-4 py-2 {% if course.status == 'draft' %}bg-green-600 hover:bg-green-700{% else %}bg-yellow-600 hover:bg-yellow-700{% endif %} text-white rounded-lg transition duration-200">
-                        {% if course.status == 'draft' %}
-                          <i class="fas fa-globe mr-2"></i>
-                          Publish Course
-                        {% else %}
-                          <i class="fas fa-pencil-alt mr-2"></i>
-                          Unpublish to Draft
-                        {% endif %}
-                      </a>
-                      <a href="{% url 'course_progress_overview' course.slug %}"
-                         class="inline-flex items-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition duration-200">
-                        <i class="fas fa-chart-line mr-2"></i>
-                        Progress Overview
-                      </a>
-                      <a href="{% url 'message_students' course.slug %}"
-                         class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition duration-200">
-                        <i class="fas fa-envelope mr-2"></i>
-                        Message Students
-                      </a>
-                      <a href="{% url 'add_student_to_course' course.slug %}"
-                         class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition duration-200">
-                        <i class="fas fa-user-plus mr-2"></i>
-                        Enroll Student
-                      </a>
-                    </div>
-                  {% endif %}
-                </div>
-                {% if user == course.teacher %}
-                  <div class="mt-3 {% if course.status == 'draft' %}bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 dark:bg-yellow-900 dark:border-yellow-600 dark:text-yellow-200{% else %}bg-blue-50 border-l-4 border-blue-400 text-blue-700 dark:bg-blue-900 dark:border-blue-600 dark:text-blue-200{% endif %} p-4 rounded-md">
-                    {% if course.status == 'draft' %}
-                      <div class="flex items-center">
-                        <i class="fas fa-exclamation-triangle mr-2"></i>
-                        <span><strong>Draft Status:</strong> This course is currently in draft mode and is only visible to you. Students cannot enroll until you publish it.</span>
-                      </div>
-                    {% else %}
-                      <div class="flex items-center">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        <span><strong>Published Status:</strong> This course is live and visible to all users. Students can now enroll in this course.</span>
-                      </div>
-                    {% endif %}
+            <!-- Improved Course Header -->
+            <div class="bg-gradient-to-r from-teal-50 to-blue-50 dark:from-gray-750 dark:to-gray-800 rounded-xl shadow-md p-6 border border-gray-100 dark:border-gray-700">
+              <!-- Course Title and Status -->
+              <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div>
+                  <div class="flex items-center gap-3 mb-2">
+                    <h1 class="text-3xl font-bold text-gray-800 dark:text-white">{{ course.title }}</h1>
+                    <span class="px-3 py-1 rounded-full text-sm font-medium inline-flex items-center gap-1 {% if course.status == 'draft' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% elif course.status == 'published' %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% else %} bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 {% endif %}">
+                      {% if course.status == 'draft' %}
+                        <i class="fas fa-pencil-alt"></i>
+                      {% elif course.status == 'published' %}
+                        <i class="fas fa-globe"></i>
+                      {% else %}
+                        <i class="fas fa-archive"></i>
+                      {% endif %}
+                      {{ course.get_status_display }}
+                    </span>
                   </div>
-                {% endif %}
-                {% if user.is_authenticated and enrollment %}
-                  <div class="flex items-center gap-4">
+                  <div class="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-400">
+                    <span class="inline-flex items-center">
+                      <i class="fas fa-folder-open mr-2"></i>
+                      {{ course.subject.name }}
+                    </span>
+                    {% if course.tags %}
+                      <span class="inline-flex items-center">
+                        <i class="fas fa-tags mr-2"></i>
+                        {{ course.tags }}
+                      </span>
+                    {% endif %}
+                    <span class="inline-flex items-center">
+                      <i class="fas fa-signal mr-2"></i>
+                      {{ course.get_level_display }}
+                    </span>
+                  </div>
+                </div>
+                <!-- Enrolled Status or Share -->
+                <div class="flex items-center">
+                  {% if user.is_authenticated and enrollment %}
                     <div class="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-4 py-2 rounded-lg flex items-center">
                       <i class="fas fa-check-circle mr-2"></i>
                       <span>You're enrolled!</span>
                     </div>
-                  </div>
-                {% endif %}
-                <!-- Share Button -->
-                <div class="relative ml-2" x-data="{ open: false }">
-                  <button class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 p-2 rounded-full"
-                          @click="open = !open">
-                    <i class="fas fa-share-alt text-gray-600 dark:text-gray-300"></i>
-                  </button>
-                  <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10"
-                       x-show="open"
-                       @click.away="open = false">
-                    <div class="p-2 space-y-1">
-                      <a href="https://twitter.com/intent/tweet?text=Check%20out%20this%20course%3A%20{{ course.title|urlencode }}&url={{ request.build_absolute_uri|urlencode }}"
-                         target="_blank"
-                         class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                        <i class="fab fa-twitter text-blue-400 mr-2"></i>
-                        <span class="text-sm">Share on Twitter</span>
-                      </a>
-                      <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri|urlencode }}"
-                         target="_blank"
-                         class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                        <i class="fab fa-facebook text-blue-600 mr-2"></i>
-                        <span class="text-sm">Share on Facebook</span>
-                      </a>
-                      <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri|urlencode }}"
-                         target="_blank"
-                         class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
-                        <i class="fab fa-linkedin text-blue-700 mr-2"></i>
-                        <span class="text-sm">Share on LinkedIn</span>
-                      </a>
-                      <button class="w-full flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
-                              @click="navigator.clipboard.writeText('{{ request.build_absolute_uri }}'); $dispatch('notification', {message: 'Link copied!'})">
-                        <i class="fas fa-link text-gray-600 dark:text-gray-400 mr-2"></i>
-                        <span class="text-sm">Copy Link</span>
-                      </button>
+                  {% endif %}
+                  <!-- Share Button -->
+                  <div class="relative ml-2" x-data="{ open: false }">
+                    <button class="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 p-2 rounded-full"
+                            @click="open = !open">
+                      <i class="fas fa-share-alt text-gray-600 dark:text-gray-300"></i>
+                    </button>
+                    <div class="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10"
+                         x-show="open"
+                         @click.away="open = false">
+                      <div class="p-2 space-y-1">
+                        <a href="https://twitter.com/intent/tweet?text=Check%20out%20this%20course%3A%20{{ course.title|urlencode }}&url={{ request.build_absolute_uri|urlencode }}"
+                           target="_blank"
+                           class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                          <i class="fab fa-twitter text-blue-400 mr-2"></i>
+                          <span class="text-sm">Share on Twitter</span>
+                        </a>
+                        <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.build_absolute_uri|urlencode }}"
+                           target="_blank"
+                           class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                          <i class="fab fa-facebook text-blue-600 mr-2"></i>
+                          <span class="text-sm">Share on Facebook</span>
+                        </a>
+                        <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri|urlencode }}"
+                           target="_blank"
+                           class="flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded">
+                          <i class="fab fa-linkedin text-blue-700 mr-2"></i>
+                          <span class="text-sm">Share on LinkedIn</span>
+                        </a>
+                        <button class="w-full flex items-center p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded"
+                                @click="navigator.clipboard.writeText('{{ request.build_absolute_uri }}'); $dispatch('notification', {message: 'Link copied!'})">
+                          <i class="fas fa-link text-gray-600 dark:text-gray-400 mr-2"></i>
+                          <span class="text-sm">Copy Link</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-              <div class="flex items-center space-x-4 mb-4">
-                <span class="px-3 py-1 rounded-full text-sm font-medium inline-flex items-center gap-1 {% if course.status == 'draft' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% elif course.status == 'published' %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% else %} bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 {% endif %}">
+              <!-- Teacher Action Buttons -->
+              {% if user == course.teacher %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
+                  <a href="{% url 'update_course' course.slug %}"
+                     class="inline-flex items-center justify-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition duration-200">
+                    <i class="fas fa-edit mr-2"></i>
+                    Edit
+                  </a>
+                  <a href="{% url 'toggle_course_status' course.slug %}"
+                     class="inline-flex items-center justify-center px-4 py-2 {% if course.status == 'draft' %}bg-green-600 hover:bg-green-700{% else %}bg-yellow-600 hover:bg-yellow-700{% endif %} text-white rounded-lg transition duration-200">
+                    {% if course.status == 'draft' %}
+                      <i class="fas fa-globe mr-2"></i>
+                      Publish
+                    {% else %}
+                      <i class="fas fa-pencil-alt mr-2"></i>
+                      Unpublish
+                    {% endif %}
+                  </a>
+                  <a href="{% url 'course_progress_overview' course.slug %}"
+                     class="inline-flex items-center justify-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition duration-200">
+                    <i class="fas fa-chart-line mr-2"></i>
+                    Progress
+                  </a>
+                  <a href="{% url 'message_students' course.slug %}"
+                     class="inline-flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition duration-200">
+                    <i class="fas fa-envelope mr-2"></i>
+                    Message
+                  </a>
+                  <a href="{% url 'add_student_to_course' course.slug %}"
+                     class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition duration-200">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    Enroll Students
+                  </a>
+                </div>
+                <!-- Status Information Alert -->
+                <div class="{% if course.status == 'draft' %}bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 dark:bg-yellow-900/30 dark:border-yellow-600 dark:text-yellow-200{% else %}bg-blue-50 border-l-4 border-blue-400 text-blue-700 dark:bg-blue-900/30 dark:border-blue-600 dark:text-blue-200{% endif %} p-4 rounded-md">
                   {% if course.status == 'draft' %}
-                    <i class="fas fa-pencil-alt"></i>
-                  {% elif course.status == 'published' %}
-                    <i class="fas fa-globe"></i>
+                    <div class="flex items-center">
+                      <i class="fas fa-exclamation-triangle mr-2"></i>
+                      <span><strong>Draft Status:</strong> This course is currently in draft mode and is only visible to you. Students cannot enroll until you publish it.</span>
+                    </div>
                   {% else %}
-                    <i class="fas fa-archive"></i>
+                    <div class="flex items-center">
+                      <i class="fas fa-info-circle mr-2"></i>
+                      <span><strong>Published Status:</strong> This course is live and visible to all users. Students can now enroll in this course.</span>
+                    </div>
                   {% endif %}
-                  {{ course.get_status_display }}
-                </span>
-                <span class="text-sm text-gray-600 dark:text-gray-400">{{ course.subject.name }}</span>
-                {% if course.tags %}<span class="text-sm text-gray-600 dark:text-gray-400">{{ course.tags }}</span>{% endif %}
-              </div>
-              <!-- Course Description -->
-              <div class="markdown-content space-y-6 text-gray-800 dark:text-gray-200">
-                <div class="space-y-2">
-                  <!-- Course Progress -->
-                  {% if is_enrolled and enrollment %}
-                    <div x-data="{ showAllSessions: false, activeSession: null }">
-                      <h2 class="text-xl font-bold mb-4 flex items-center">
-                        <i class="fas fa-chart-line text-teal-500 dark:text-teal-400 mr-2"></i>
-                        Your Progress
-                      </h2>
-                      <div class="md:min-h-screen dark:from-gray-800 dark:to-gray-900 rounded-lg shadow-md p-3 border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-                        <!-- Top section with Progress and Materials side by side -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <!-- Left Column with Progress + Session stacked -->
-                          <div>
-                            <!-- Progress Tracker (Compact) -->
-                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 mb-4">
-                              <!-- Progress Header (Simplified) -->
-                              <div class="relative mb-2">
-                                <div class="flex justify-between items-center">
-                                  <h3 class="font-semibold text-lg bg-clip-text text-transparent from-teal-600 to-blue-600 dark:from-teal-400 dark:to-blue-400">
-                                    {{ course.title }}
-                                  </h3>
-                                  <div class="text-xl font-bold bg-clip-text text-transparent from-green-600 to-green-400 dark:from-green-500 dark:to-green-300">
-                                    {{ enrollment.progress.completion_percentage }}%
-                                  </div>
-                                </div>
-                                <!-- Green Gradient Progress Bar -->
-                                <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full my-1 overflow-hidden shadow-inner">
-                                  <div class="h-full rounded-full bg-gradient-to-r from-green-400 to-teal-500 dark:from-green-500 dark:to-teal-400 relative overflow-hidden transition-all duration-500 ease-out"
-                                       style="width: {{ enrollment.progress.completion_percentage }}%"></div>
+                </div>
+              {% endif %}
+            </div>
+            <!-- Course Description -->
+            <div class="markdown-content space-y-6 text-gray-800 dark:text-gray-200">
+              <div class="space-y-2">
+                <!-- Course Progress -->
+                {% if is_enrolled and enrollment %}
+                  <div x-data="{ showAllSessions: false, activeSession: null }">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                      <i class="fas fa-chart-line text-teal-500 dark:text-teal-400 mr-2"></i>
+                      Your Progress
+                    </h2>
+                    <div class="md:min-h-screen dark:from-gray-800 dark:to-gray-900 rounded-lg shadow-md p-3 border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
+                      <!-- Top section with Progress and Materials side by side -->
+                      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Left Column with Progress + Session stacked -->
+                        <div>
+                          <!-- Progress Tracker (Compact) -->
+                          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 mb-4">
+                            <!-- Progress Header (Simplified) -->
+                            <div class="relative mb-2">
+                              <div class="flex justify-between items-center">
+                                <h3 class="font-semibold text-lg bg-clip-text text-transparent from-teal-600 to-blue-600 dark:from-teal-400 dark:to-blue-400">
+                                  {{ course.title }}
+                                </h3>
+                                <div class="text-xl font-bold bg-clip-text text-transparent from-green-600 to-green-400 dark:from-green-500 dark:to-green-300">
+                                  {{ enrollment.progress.completion_percentage }}%
                                 </div>
                               </div>
-                              <!-- Compact Stats -->
-                              <div class="flex flex-wrap items-center justify-between bg-gray-50 dark:bg-slate-700 rounded-lg px-2 py-1 text-xs">
-                                <div class="flex items-center space-x-1">
-                                  <i class="fas fa-check-circle text-indigo-500 dark:text-indigo-400"></i>
-                                  <span class="text-gray-500 dark:text-gray-400">Completed:</span>
-                                  <span class="font-bold text-indigo-600 dark:text-indigo-400">{{ enrollment.progress.completed_sessions.count }}</span>
-                                </div>
-                                <div class="flex items-center space-x-1">
-                                  <i class="fas fa-hourglass-half text-orange-500 dark:text-orange-400"></i>
-                                  <span class="text-gray-500 dark:text-gray-400">Remaining:</span>
-                                  <span class="font-bold text-orange-600 dark:text-orange-400"
-                                        id="remaining-count"
-                                        data-total-sessions="{{ course.sessions.count|default:0 }}"
-                                        data-completed-sessions="{% if enrollment and enrollment.progress %}{{ enrollment.progress.completed_sessions.count }}{% else %}0{% endif %}">
-                                    <!-- Will be filled by JavaScript -->
-                                  </span>
-                                </div>
+                              <!-- Green Gradient Progress Bar -->
+                              <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full my-1 overflow-hidden shadow-inner">
+                                <div class="h-full rounded-full bg-gradient-to-r from-green-400 to-teal-500 dark:from-green-500 dark:to-teal-400 relative overflow-hidden transition-all duration-500 ease-out"
+                                     style="width: {{ enrollment.progress.completion_percentage }}%"></div>
                               </div>
                             </div>
-                            <!-- Session Completion (Directly below Progress Tracker) -->
-                            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3">
-                              <div class="flex justify-between items-center mb-2">
-                                <h4 class="font-medium">Session Completion</h4>
-                                <span class="text-xs text-gray-600 dark:text-gray-400">
-                                  <i class="fas fa-check-circle text-green-500 dark:text-green-400"></i>
-                                  <span class="ml-1">
-                                    <span class="font-semibold">{{ enrollment.progress.completed_sessions.count }}</span> of
-                                    <span class="font-semibold">{{ course.sessions.count }}</span> completed
-                                  </span>
+                            <!-- Compact Stats -->
+                            <div class="flex flex-wrap items-center justify-between bg-gray-50 dark:bg-slate-700 rounded-lg px-2 py-1 text-xs">
+                              <div class="flex items-center space-x-1">
+                                <i class="fas fa-check-circle text-indigo-500 dark:text-indigo-400"></i>
+                                <span class="text-gray-500 dark:text-gray-400">Completed:</span>
+                                <span class="font-bold text-indigo-600 dark:text-indigo-400">{{ enrollment.progress.completed_sessions.count }}</span>
+                              </div>
+                              <div class="flex items-center space-x-1">
+                                <i class="fas fa-hourglass-half text-orange-500 dark:text-orange-400"></i>
+                                <span class="text-gray-500 dark:text-gray-400">Remaining:</span>
+                                <span class="font-bold text-orange-600 dark:text-orange-400"
+                                      id="remaining-count"
+                                      data-total-sessions="{{ course.sessions.count|default:0 }}"
+                                      data-completed-sessions="{% if enrollment and enrollment.progress %}{{ enrollment.progress.completed_sessions.count }}{% else %}0{% endif %}">
+                                  <!-- Will be filled by JavaScript -->
                                 </span>
                               </div>
-                              <div class="h-64 relative overflow-y-auto pr-2 space-y-1">
-                                <!-- Fade effect at bottom -->
-                                <div class="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white dark:from-gray-800 to-transparent pointer-events-none">
+                            </div>
+                          </div>
+                          <!-- Session Completion (Directly below Progress Tracker) -->
+                          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3">
+                            <div class="flex justify-between items-center mb-2">
+                              <h4 class="font-medium">Session Completion</h4>
+                              <span class="text-xs text-gray-600 dark:text-gray-400">
+                                <i class="fas fa-check-circle text-green-500 dark:text-green-400"></i>
+                                <span class="ml-1">
+                                  <span class="font-semibold">{{ enrollment.progress.completed_sessions.count }}</span> of
+                                  <span class="font-semibold">{{ course.sessions.count }}</span> completed
+                                </span>
+                              </span>
+                            </div>
+                            <div class="h-64 relative overflow-y-auto pr-2 space-y-1">
+                              <!-- Fade effect at bottom -->
+                              <div class="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white dark:from-gray-800 to-transparent pointer-events-none">
+                              </div>
+                              {% for session in course.sessions.all %}
+                                <div class="flex items-center justify-between p-2 {% if session in enrollment.progress.completed_sessions.all %}bg-green-50 dark:bg-green-900/20{% else %}bg-gray-50 dark:bg-gray-700/50{% endif %} rounded-lg border border-gray-100 dark:border-gray-700">
+                                  <div class="flex items-center space-x-2">
+                                    {% if session in enrollment.progress.completed_sessions.all %}
+                                      <i class="fas fa-check-circle text-green-500 dark:text-green-400"></i>
+                                    {% elif session.end_time < now %}
+                                      <i class="fas fa-circle text-red-500 dark:text-red-400"></i>
+                                    {% else %}
+                                      <i class="far fa-circle text-gray-400 dark:text-gray-500"></i>
+                                    {% endif %}
+                                    <span class="font-medium">{{ session.title }}</span>
+                                  </div>
+                                  <div class="text-sm text-gray-600 dark:text-gray-400">
+                                    {{ session.start_time|date:"M d, Y g:i A e" }}
+                                    {% if session in enrollment.progress.completed_sessions.all %}
+                                      <span class="ml-2 text-green-600 dark:text-green-400">Completed</span>
+                                    {% elif session.end_time < now %}
+                                      <span class="ml-2 text-red-600 dark:text-red-400">Missed</span>
+                                    {% else %}
+                                      <span class="ml-2 text-blue-600 dark:text-blue-400">Upcoming</span>
+                                    {% endif %}
+                                  </div>
                                 </div>
-                                {% for session in course.sessions.all %}
-                                  <div class="flex items-center justify-between p-2 {% if session in enrollment.progress.completed_sessions.all %}bg-green-50 dark:bg-green-900/20{% else %}bg-gray-50 dark:bg-gray-700/50{% endif %} rounded-lg border border-gray-100 dark:border-gray-700">
-                                    <div class="flex items-center space-x-2">
-                                      {% if session in enrollment.progress.completed_sessions.all %}
-                                        <i class="fas fa-check-circle text-green-500 dark:text-green-400"></i>
-                                      {% elif session.end_time < now %}
-                                        <i class="fas fa-circle text-red-500 dark:text-red-400"></i>
-                                      {% else %}
-                                        <i class="far fa-circle text-gray-400 dark:text-gray-500"></i>
-                                      {% endif %}
-                                      <span class="font-medium">{{ session.title }}</span>
-                                    </div>
-                                    <div class="text-sm text-gray-600 dark:text-gray-400">
-                                      {{ session.start_time|date:"M d, Y g:i A e" }}
-                                      {% if session in enrollment.progress.completed_sessions.all %}
-                                        <span class="ml-2 text-green-600 dark:text-green-400">Completed</span>
-                                      {% elif session.end_time < now %}
-                                        <span class="ml-2 text-red-600 dark:text-red-400">Missed</span>
-                                      {% else %}
-                                        <span class="ml-2 text-blue-600 dark:text-blue-400">Upcoming</span>
+                              {% endfor %}
+                            </div>
+                            <div class="mt-3">
+                              <a href="{% url 'student_progress' enrollment.id %}"
+                                 class="inline-flex items-center px-3 py-1 text-sm bg-teal-300 hover:bg-teal-400 font-medium rounded-lg transition duration-200">
+                                <i class="fas fa-chart-bar mr-1"></i>
+                                Detailed Report
+                              </a>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- Right Column: Course Materials -->
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                          <div class="flex justify-between items-center mb-2">
+                            <h2 class="text-xl font-bold">Course Materials</h2>
+                            {% if user == course.teacher %}
+                              <a href="{% url 'upload_material' course.slug %}"
+                                 class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg transition duration-200 text-sm">
+                                <i class="fas fa-plus mr-1"></i>Add Material
+                              </a>
+                            {% endif %}
+                          </div>
+                          {% if course.materials.exists %}
+                            <div class="max-h-96 overflow-y-auto pr-2">
+                              <div class="space-y-3">
+                                {% for material in course.materials.all %}
+                                  <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 shadow-sm">
+                                    <div class="flex justify-between items-start">
+                                      <div>
+                                        <h3 class="font-semibold text-sm">
+                                          {% if is_enrolled or not material.requires_enrollment or is_teacher %}
+                                            {% if material.external_url %}
+                                              <a href="{{ material.external_url }}"
+                                                 target="_blank"
+                                                 class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                                {{ material.title }}
+                                                <i class="fas fa-external-link-alt ml-1 text-xs"></i>
+                                              </a>
+                                            {% else %}
+                                              <a href="{% url 'download_material' course.slug material.id %}"
+                                                 class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                                {{ material.title }}
+                                                <i class="fas fa-download ml-1 text-xs"></i>
+                                              </a>
+                                            {% endif %}
+                                          {% else %}
+                                            {{ material.preview_content }}
+                                            <span class="ml-2 text-xs text-gray-500">(Enroll to access)</span>
+                                          {% endif %}
+                                        </h3>
+                                        {% if material.description %}
+                                          <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">{{ material.description|truncatechars:50 }}</p>
+                                        {% endif %}
+                                      </div>
+                                      {% if user == course.teacher %}
+                                        <a href="{% url 'delete_material' course.slug material.id %}"
+                                           class="text-red-600 hover:text-red-800 dark:text-red-400 text-sm">
+                                          <i class="fas fa-trash"></i>
+                                        </a>
                                       {% endif %}
                                     </div>
                                   </div>
                                 {% endfor %}
                               </div>
-                              <div class="mt-3">
-                                <a href="{% url 'student_progress' enrollment.id %}"
-                                   class="inline-flex items-center px-3 py-1 text-sm bg-teal-300 hover:bg-teal-400 font-medium rounded-lg transition duration-200">
-                                  <i class="fas fa-chart-bar mr-1"></i>
-                                  Detailed Report
-                                </a>
-                              </div>
                             </div>
-                          </div>
-                          <!-- Right Column: Course Materials -->
-                          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                            <div class="flex justify-between items-center mb-2">
-                              <h2 class="text-xl font-bold">Course Materials</h2>
-                              {% if user == course.teacher %}
-                                <a href="{% url 'upload_material' course.slug %}"
-                                   class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg transition duration-200 text-sm">
-                                  <i class="fas fa-plus mr-1"></i>Add Material
-                                </a>
-                              {% endif %}
-                            </div>
-                            {% if course.materials.exists %}
-                              <div class="max-h-96 overflow-y-auto pr-2">
-                                <div class="space-y-3">
-                                  {% for material in course.materials.all %}
-                                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 shadow-sm">
-                                      <div class="flex justify-between items-start">
-                                        <div>
-                                          <h3 class="font-semibold text-sm">
-                                            {% if is_enrolled or not material.requires_enrollment or is_teacher %}
-                                              {% if material.external_url %}
-                                                <a href="{{ material.external_url }}"
-                                                   target="_blank"
-                                                   class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                                  {{ material.title }}
-                                                  <i class="fas fa-external-link-alt ml-1 text-xs"></i>
-                                                </a>
-                                              {% else %}
-                                                <a href="{% url 'download_material' course.slug material.id %}"
-                                                   class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                                  {{ material.title }}
-                                                  <i class="fas fa-download ml-1 text-xs"></i>
-                                                </a>
-                                              {% endif %}
-                                            {% else %}
-                                              {{ material.preview_content }}
-                                              <span class="ml-2 text-xs text-gray-500">(Enroll to access)</span>
-                                            {% endif %}
-                                          </h3>
-                                          {% if material.description %}
-                                            <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">{{ material.description|truncatechars:50 }}</p>
-                                          {% endif %}
-                                        </div>
-                                        {% if user == course.teacher %}
-                                          <a href="{% url 'delete_material' course.slug material.id %}"
-                                             class="text-red-600 hover:text-red-800 dark:text-red-400 text-sm">
-                                            <i class="fas fa-trash"></i>
-                                          </a>
-                                        {% endif %}
-                                      </div>
-                                    </div>
-                                  {% endfor %}
-                                </div>
-                              </div>
-                            {% else %}
-                              <p class="text-gray-500 dark:text-gray-400 text-sm italic">No materials available for this course yet.</p>
-                            {% endif %}
-                          </div>
+                          {% else %}
+                            <p class="text-gray-500 dark:text-gray-400 text-sm italic">No materials available for this course yet.</p>
+                          {% endif %}
                         </div>
                       </div>
                     </div>
-                  {% endif %}
-                  <!-- Course Materials -->
-                  <!-- Schedule -->
-                  <div>
-                    <h2 class="text-xl font-bold mb-2">Schedule</h2>
-                    {{ course.description|markdown }}
                   </div>
-                  <!-- Learning Objectives -->
-                  <div class="mt-8">
-                    <h2 class="text-xl font-bold mb-2">Learning Objectives</h2>
-                    {{ course.learning_objectives|markdown }}
-                  </div>
-                  <!-- Prerequisites -->
-                  {% if course.prerequisites %}
-                    <div class="mt-8">
-                      <h2 class="text-xl font-bold mb-2">Prerequisites</h2>
-                      {{ course.prerequisites|markdown }}
-                    </div>
-                  {% endif %}
+                {% endif %}
+                <!-- Course Materials -->
+                <!-- Schedule -->
+                <div>
+                  <h2 class="text-xl font-bold mb-2">Schedule</h2>
+                  {{ course.description|markdown }}
                 </div>
+                <!-- Learning Objectives -->
+                <div class="mt-8">
+                  <h2 class="text-xl font-bold mb-2">Learning Objectives</h2>
+                  {{ course.learning_objectives|markdown }}
+                </div>
+                <!-- Prerequisites -->
+                {% if course.prerequisites %}
+                  <div class="mt-8">
+                    <h2 class="text-xl font-bold mb-2">Prerequisites</h2>
+                    {{ course.prerequisites|markdown }}
+                  </div>
+                {% endif %}
               </div>
             </div>
           </div>
@@ -639,12 +866,10 @@
     </div>
   </div>
   <!-- Notification -->
-  <div x-data="{ show: false, message: '' }"
-       @notification.window="show = true; message = $event.detail.message; setTimeout(() => show = false, 2000)"
-       x-show="show"
-       x-transition
-       class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg">
-    <span x-text="message"></span>
+  <div id="notification"
+       class="notification bg-blue-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center">
+    <i class="fas fa-info-circle notification-icon mr-2"></i>
+    <span class="notification-message">This is a notification</span>
   </div>
   <script>
       function loadCalendar(year, month) {
@@ -702,4 +927,404 @@
           }
       });
   </script>
+  <!-- Student Management Modal -->
+  {% if user == course.teacher %}
+    <div x-data="{ open: false, activeTab: 'attendance', studentName: '', enrollmentId: null, setStudent(name, id) { this.studentName = name; this.enrollmentId = id; this.open = true; }, init() { console.log('Student modal component initialized'); document.addEventListener('open-student-modal', (e) => { this.setStudent(e.detail.name, e.detail.id); });  if (window.pendingStudentModal) { this.setStudent( window.pendingStudentModal.name, window.pendingStudentModal.id ); window.pendingStudentModal = null; } } }"
+         x-cloak
+         id="studentManagementModal"
+         class="fixed inset-0 z-50 overflow-y-auto"
+         x-show="open"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+      <!-- Modal backdrop -->
+      <div class="fixed inset-0 bg-black bg-opacity-50"
+           x-show="open"
+           @click="open = false"></div>
+      <!-- Modal content -->
+      <div class="relative min-h-screen flex items-center justify-center p-4">
+        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl mx-auto"
+             @click.away="open = false"
+             x-show="open"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 transform scale-95"
+             x-transition:enter-end="opacity-100 transform scale-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 transform scale-100"
+             x-transition:leave-end="opacity-0 transform scale-95">
+          <!-- Modal header -->
+          <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200">
+              <i class="fas fa-user-graduate text-teal-500 dark:text-teal-400 mr-2"></i>
+              Managing: <span x-text="studentName" class="font-bold"></span>
+            </h3>
+            <button @click="open = false"
+                    class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          <!-- Tabs navigation -->
+          <div class="border-b border-gray-200 dark:border-gray-700">
+            <nav class="flex -mb-px">
+              <button @click="activeTab = 'attendance'"
+                      :class="{'border-teal-500 dark:border-teal-400 text-teal-600 dark:text-teal-400': activeTab === 'attendance', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'attendance'}"
+                      class="py-3 px-6 border-b-2 font-medium text-sm focus:outline-none flex items-center">
+                <i class="fas fa-clipboard-check mr-2"></i> Attendance
+              </button>
+              <button @click="activeTab = 'badges'"
+                      :class="{'border-teal-500 dark:border-teal-400 text-teal-600 dark:text-teal-400': activeTab === 'badges', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'badges'}"
+                      class="py-3 px-6 border-b-2 font-medium text-sm focus:outline-none flex items-center">
+                <i class="fas fa-award mr-2"></i> Badges & Achievements
+              </button>
+              <button @click="activeTab = 'progress'"
+                      :class="{'border-teal-500 dark:border-teal-400 text-teal-600 dark:text-teal-400': activeTab === 'progress', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'progress'}"
+                      class="py-3 px-6 border-b-2 font-medium text-sm focus:outline-none flex items-center">
+                <i class="fas fa-chart-line mr-2"></i> Progress Tracking
+              </button>
+              <button @click="activeTab = 'notes'"
+                      :class="{'border-teal-500 dark:border-teal-400 text-teal-600 dark:text-teal-400': activeTab === 'notes', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'notes'}"
+                      class="py-3 px-6 border-b-2 font-medium text-sm focus:outline-none flex items-center">
+                <i class="fas fa-sticky-note mr-2"></i> Teacher Notes
+              </button>
+            </nav>
+          </div>
+          <!-- Tab contents -->
+          <div class="p-4 max-h-[70vh] overflow-y-auto">
+            <!-- Attendance Tab -->
+            <div x-show="activeTab === 'attendance'" class="space-y-4">
+              <div class="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-400 dark:border-blue-600 p-4 rounded-md mb-4">
+                <div class="flex items-center text-blue-700 dark:text-blue-300">
+                  <i class="fas fa-info-circle mr-2"></i>
+                  <p>Mark attendance for each session. You can also set the status and add notes.</p>
+                </div>
+              </div>
+              <form method="post" action="#" id="attendanceForm" onsubmit="return false;">
+                {% csrf_token %}
+                <input type="hidden" name="student_id" :value="enrollmentId" />
+                <div class="space-y-3">
+                  {% for session in course.sessions.all %}
+                    <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                      <div class="flex items-center justify-between">
+                        <div>
+                          <h4 class="font-medium text-gray-800 dark:text-gray-200">{{ session.title }}</h4>
+                          <p class="text-sm text-gray-500 dark:text-gray-400">
+                            {{ session.start_time|date:"M d, Y" }} at {{ session.start_time|time:"g:i A" }}
+                          </p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                          <select name="status_{{ session.id }}"
+                                  class="rounded-lg border border-gray-300 dark:border-gray-600 text-sm py-1 px-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                            <option value="present">Present</option>
+                            <option value="absent">Absent</option>
+                            <option value="excused">Excused</option>
+                            <option value="late">Late</option>
+                          </select>
+                          <button type="button"
+                                  onclick="updateAttendance({{ session.id }})"
+                                  class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg text-sm">
+                            Save
+                          </button>
+                        </div>
+                      </div>
+                      <div class="mt-2">
+                        <textarea name="notes_{{ session.id }}"
+                                  placeholder="Add attendance notes (optional)"
+                                  class="w-full rounded-lg border border-gray-300 dark:border-gray-600 text-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"></textarea>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </form>
+            </div>
+            <!-- Badges Tab -->
+            <div x-show="activeTab === 'badges'" class="space-y-4">
+              <div class="bg-purple-50 dark:bg-purple-900/30 border-l-4 border-purple-400 dark:border-purple-600 p-4 rounded-md mb-4">
+                <div class="flex items-start text-purple-700 dark:text-purple-300">
+                  <i class="fas fa-trophy mt-1 mr-2"></i>
+                  <div>
+                    <p class="font-medium">Recognize student achievements</p>
+                    <p class="text-sm mt-1">Award badges to acknowledge student accomplishments and motivate continued progress.</p>
+                  </div>
+                </div>
+              </div>
+              <!-- Available Badges -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Badge 1 -->
+                <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                      <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center text-yellow-600 dark:text-yellow-400">
+                        <i class="fas fa-star text-xl"></i>
+                      </div>
+                      <div class="ml-3">
+                        <h5 class="font-medium text-gray-800 dark:text-gray-200">Perfect Attendance</h5>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">For attending all sessions without absence</p>
+                      </div>
+                    </div>
+                    <button class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-lg text-sm"
+                            onclick="showNotification('Perfect Attendance badge awarded!', 'success')">Award</button>
+                  </div>
+                </div>
+                <!-- Badge 2 -->
+                <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                      <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400">
+                        <i class="fas fa-brain text-xl"></i>
+                      </div>
+                      <div class="ml-3">
+                        <h5 class="font-medium text-gray-800 dark:text-gray-200">Quick Learner</h5>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">For exceptional progress in course material</p>
+                      </div>
+                    </div>
+                    <button class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-lg text-sm"
+                            onclick="showNotification('Quick Learner badge awarded!', 'success')">Award</button>
+                  </div>
+                </div>
+                <!-- Badge 3 -->
+                <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                      <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center text-green-600 dark:text-green-400">
+                        <i class="fas fa-hands-helping text-xl"></i>
+                      </div>
+                      <div class="ml-3">
+                        <h5 class="font-medium text-gray-800 dark:text-gray-200">Helpful Peer</h5>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">For assisting fellow students in understanding</p>
+                      </div>
+                    </div>
+                    <button class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-lg text-sm"
+                            onclick="showNotification('Helpful Peer badge awarded!', 'success')">Award</button>
+                  </div>
+                </div>
+                <!-- Badge 4 -->
+                <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                      <div class="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center text-red-600 dark:text-red-400">
+                        <i class="fas fa-fire text-xl"></i>
+                      </div>
+                      <div class="ml-3">
+                        <h5 class="font-medium text-gray-800 dark:text-gray-200">Top Performer</h5>
+                        <p class="text-xs text-gray-500 dark:text-gray-400">For exceptional results in course assignments</p>
+                      </div>
+                    </div>
+                    <button class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-lg text-sm"
+                            onclick="showNotification('Top Performer badge awarded!', 'success')">Award</button>
+                  </div>
+                </div>
+              </div>
+              <!-- Custom Achievement -->
+              <div class="mt-6 bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <h5 class="font-medium text-gray-800 dark:text-gray-200 mb-3">Create Custom Achievement</h5>
+                <form class="space-y-3">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Achievement Title</label>
+                    <input type="text"
+                           class="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2 px-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200" />
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
+                    <textarea class="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2 px-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                              rows="2"></textarea>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Icon</label>
+                    <select class="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2 px-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                      <option value="star">⭐ Star</option>
+                      <option value="trophy">🏆 Trophy</option>
+                      <option value="medal">🥇 Medal</option>
+                      <option value="lightbulb">💡 Lightbulb</option>
+                      <option value="rocket">🚀 Rocket</option>
+                    </select>
+                  </div>
+                  <button type="button"
+                          class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
+                          onclick="const title = this.closest('form').querySelector('input').value; showNotification(`Custom achievement '${title}' created and awarded!`, 'success');">
+                    Create & Award Achievement
+                  </button>
+                </form>
+              </div>
+            </div>
+            <!-- Progress Tab -->
+            <div x-show="activeTab === 'progress'" class="space-y-4">
+              <div class="bg-green-50 dark:bg-green-900/30 border-l-4 border-green-400 dark:border-green-600 p-4 rounded-md mb-4">
+                <div class="flex items-center text-green-700 dark:text-green-300">
+                  <i class="fas fa-chart-line mr-2"></i>
+                  <p>Track and update student's course progress.</p>
+                </div>
+              </div>
+              <!-- Progress Overview -->
+              <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-2">Progress Overview</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div class="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
+                    <div class="text-sm text-blue-600 dark:text-blue-400">Completion Rate</div>
+                    <div class="text-xl font-bold text-blue-700 dark:text-blue-300">75%</div>
+                  </div>
+                  <div class="bg-teal-50 dark:bg-teal-900/30 p-3 rounded-lg">
+                    <div class="text-sm text-teal-600 dark:text-teal-400">Attendance Rate</div>
+                    <div class="text-xl font-bold text-teal-700 dark:text-teal-300">90%</div>
+                  </div>
+                  <div class="bg-purple-50 dark:bg-purple-900/30 p-3 rounded-lg">
+                    <div class="text-sm text-purple-600 dark:text-purple-400">Average Performance</div>
+                    <div class="text-xl font-bold text-purple-700 dark:text-purple-300">B+</div>
+                  </div>
+                </div>
+                <!-- Progress Chart -->
+                <div class="h-64 bg-gray-50 dark:bg-gray-700 rounded-lg p-3 flex items-center justify-center">
+                  <p class="text-gray-500 dark:text-gray-400">Progress chart will be displayed here</p>
+                </div>
+              </div>
+              <!-- Update Progress -->
+              <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-2">Update Progress</h4>
+                <form class="space-y-3">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Overall Performance Grade</label>
+                    <select class="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2 px-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                      <option value="A+">A+</option>
+                      <option value="A">A</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B">B</option>
+                      <option value="B-">B-</option>
+                      <option value="C+">C+</option>
+                      <option value="C">C</option>
+                      <option value="C-">C-</option>
+                      <option value="D">D</option>
+                      <option value="F">F</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Completion Status</label>
+                    <select class="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2 px-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                      <option value="in_progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                      <option value="on_hold">On Hold</option>
+                      <option value="withdrawn">Withdrawn</option>
+                    </select>
+                  </div>
+                  <button type="button"
+                          class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
+                          onclick="const grade = this.closest('form').querySelector('select').value; showNotification(`Student progress updated! New grade: ${grade}`, 'success');">
+                    Update Progress
+                  </button>
+                </form>
+              </div>
+            </div>
+            <!-- Notes Tab -->
+            <div x-show="activeTab === 'notes'" class="space-y-4">
+              <div class="bg-orange-50 dark:bg-orange-900/30 border-l-4 border-orange-400 dark:border-orange-600 p-4 rounded-md mb-4">
+                <div class="flex items-center text-orange-700 dark:text-orange-300">
+                  <i class="fas fa-sticky-note mr-2"></i>
+                  <p>Keep private notes about this student for your reference.</p>
+                </div>
+              </div>
+              <!-- Teacher Notes Form -->
+              <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-2">Teacher Notes</h4>
+                <form class="space-y-3">
+                  <textarea class="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2 px-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                            rows="6"
+                            placeholder="Add your private notes about this student here..."></textarea>
+                  <div class="flex justify-between items-center">
+                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                      <i class="fas fa-lock mr-1"></i> Private to you
+                    </div>
+                    <button type="button"
+                            class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
+                            onclick="showNotification('Teacher notes saved successfully!', 'success')">
+                      Save Notes
+                    </button>
+                  </div>
+                </form>
+              </div>
+              <!-- Previous Notes History -->
+              <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-2">Notes History</h4>
+                <div class="space-y-3 max-h-64 overflow-y-auto">
+                  <div class="border-b border-gray-200 dark:border-gray-700 pb-3">
+                    <div class="flex justify-between items-start">
+                      <p class="text-sm text-gray-800 dark:text-gray-200">
+                        Student has shown exceptional progress in the last two sessions. Asking great questions and helping peers.
+                      </p>
+                      <span class="text-xs text-gray-500 dark:text-gray-400">May 15, 2023</span>
+                    </div>
+                  </div>
+                  <div class="border-b border-gray-200 dark:border-gray-700 pb-3">
+                    <div class="flex justify-between items-start">
+                      <p class="text-sm text-gray-800 dark:text-gray-200">
+                        Needs more support with the advanced topics. Consider additional resources or one-on-one time.
+                      </p>
+                      <span class="text-xs text-gray-500 dark:text-gray-400">Apr 28, 2023</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Modal footer -->
+          <div class="flex items-center justify-end p-4 border-t border-gray-200 dark:border-gray-700">
+            <a :href="'/student-progress/' + enrollmentId + '/'"
+               class="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-lg mr-2">
+              Go to Full Student View
+            </a>
+            <button @click="open = false"
+                    class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium px-4 py-2 rounded-lg">
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+        // Function to handle attendance updates
+        function updateAttendance(sessionId) {
+            showNotification('Attendance saved for session #' + sessionId, 'success');
+        }
+
+        // Function to show notifications
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            const iconEl = notification.querySelector('.notification-icon');
+            const messageEl = notification.querySelector('.notification-message');
+
+            // Set icon based on notification type
+            let icon = 'fa-info-circle';
+            let bgColor = 'bg-blue-500';
+
+            if (type === 'success') {
+                icon = 'fa-check-circle';
+                bgColor = 'bg-green-500';
+            } else if (type === 'error') {
+                icon = 'fa-exclamation-circle';
+                bgColor = 'bg-red-500';
+            } else if (type === 'warning') {
+                icon = 'fa-exclamation-triangle';
+                bgColor = 'bg-yellow-500';
+            }
+
+            // Update notification content
+            iconEl.className = `fas ${icon} notification-icon mr-2`;
+            notification.className = `notification ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center`;
+            messageEl.textContent = message;
+
+            // Show notification
+            notification.classList.add('show');
+
+            // Hide after 3 seconds
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Ensure these functions are available globally
+        window.updateAttendance = updateAttendance;
+        window.showNotification = showNotification;
+    </script>
+  {% endif %}
 {% endblock content %}

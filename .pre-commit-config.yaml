@@ -9,14 +9,21 @@ repos:
         always_run: true
         verbose: true
 
-  # Auto-fixing formatting hooks (won't fail the commit, will just fix issues)
+  # Critical formatting checks that must pass before tests run
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        stages: [commit]
+        stages: [pre-commit]
+        fail_fast: true
       - id: end-of-file-fixer
-        stages: [commit]
+        stages: [pre-commit]
+        fail_fast: true
+
+  # Auto-fixing formatting hooks (won't fail the commit, will just fix issues)
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
       - id: mixed-line-ending
         args: [--fix=lf]
         stages: [commit]

@@ -516,15 +516,14 @@ class ProfileUpdateForm(forms.ModelForm):
     bio = forms.CharField(
         required=False,
         widget=TailwindTextarea(attrs={"rows": 4}),
-        help_text="Tell us about yourself - this will be visible on your public profile",
+        help_text="Tell us about yourself - this will be visible if your profile is public",
     )
     expertise = forms.CharField(
-        max_length=200,
         required=False,
         widget=TailwindInput(),
         help_text=(
             "List your areas of expertise (e.g. Python, Machine Learning, Web Development) - "
-            "this will be visible on your public profile"
+            "this will be visible if your profile is public"
         ),
     )
     avatar = forms.ImageField(
@@ -571,7 +570,10 @@ class ProfileUpdateForm(forms.ModelForm):
             profile.expertise = self.cleaned_data["expertise"]
             if self.cleaned_data.get("avatar"):
                 profile.avatar = self.cleaned_data["avatar"]
-            profile.is_profile_public = self.cleaned_data.get("is_profile_public")
+
+            # Get the is_profile_public value and ensure it's a boolean
+            is_public = self.cleaned_data.get("is_profile_public")
+            profile.is_profile_public = is_public
             profile.save()
         return user
 

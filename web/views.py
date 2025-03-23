@@ -384,17 +384,17 @@ def all_leaderboards(request):
 @login_required
 def profile(request):
     if request.method == "POST":
-        if "avatar" in request.FILES:
-            request.user.profile.avatar = request.FILES["avatar"]
-            request.user.profile.save()
-            return redirect("profile")
-
         form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
+            form.save()  # Save the form data including the is_profile_public field
             request.user.profile.refresh_from_db()  # Refresh the instance so updated Profile is loaded
             request.user.profile.refresh_from_db()  # Refresh the instance so updated Profile is loaded
             messages.success(request, "Profile updated successfully!")
             return redirect("profile")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Error in {field}: {error}")
     else:
         # Use the instance so the form loads all updated fields from the database.
         form = ProfileUpdateForm(instance=request.user)
