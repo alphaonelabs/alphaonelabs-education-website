@@ -3,7 +3,7 @@
 {% load static %}
 
 {% block title %}
-  Profile - {{ user.get_full_name|default:user.username }}
+  Profile - {{ user.username }}
 {% endblock title %}
 {% block content %}
   <div class="container mx-auto px-4 py-6">
@@ -407,7 +407,7 @@
                       <div class="flex items-center mt-2 text-sm text-gray-500 dark:text-gray-400">
                         <span class="flex items-center">
                           <i class="fas fa-user-tie mr-1"></i>
-                          {{ enrollment.course.teacher.get_full_name|default:enrollment.course.teacher.username }}
+                          {{ enrollment.course.teacher.username }}
                         </span>
                         <span class="mx-2">•</span>
                         <span class="flex items-center">

@@ -253,7 +253,7 @@
                       <div class="flex items-center space-x-2 p-2 {% cycle 'bg-gray-50' 'bg-white' %} dark:{% cycle 'bg-gray-700' 'bg-gray-800' %} rounded-lg">
                         {% if enrollment.student.profile.avatar %}
                           <img src="{{ enrollment.student.profile.avatar.url }}"
-                               alt="{{ enrollment.student.get_full_name|default:enrollment.student.username }}"
+                               alt="{{ enrollment.student.username }}"
                                class="w-8 h-8 rounded-full object-cover"
                                width="32"
                                height="32" />
@@ -263,9 +263,7 @@
                           </div>
                         {% endif %}
                         <div class="flex-grow">
-                          <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {{ enrollment.student.get_full_name|default:enrollment.student.username }}
-                          </div>
+                          <div class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ enrollment.student.username }}</div>
                           <div class="text-xs text-gray-500 dark:text-gray-400">Enrolled: {{ enrollment.enrollment_date|date:"M d, Y" }}</div>
                         </div>
                         <div class="flex items-center space-x-2">
@@ -280,7 +278,7 @@
                             <a href="#"
                                class="p-1.5 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900 transition-colors"
                                title="Teacher view - Manage progress, badges & attendance"
-                               onclick="try { return openStudentModal('{{ enrollment.student.get_full_name|default:enrollment.student.username }}', {{ enrollment.id }}); } catch(e) { console.error('Error opening modal:', e); return false; }">
+                               onclick="try { return openStudentModal('{{ enrollment.student.username }}', {{ enrollment.id }}); } catch(e) { console.error('Error opening modal:', e); return false; }">
                               <i class="fas fa-chalkboard-teacher"></i>
                             </a>
                           {% endif %}
@@ -312,22 +310,20 @@
                 <div class="flex-shrink-0">
                   {% if course.teacher.profile.avatar %}
                     <img src="{{ course.teacher.profile.avatar.url }}"
-                         alt="{{ course.teacher.get_full_name }}"
+                         alt="{{ course.teacher.username }}"
                          class="w-16 h-16 rounded-full object-cover border-2 border-teal-300 dark:border-teal-600"
                          width="64"
                          height="64" />
                   {% else %}
                     <img src="{% static 'images/default_teacher.png' %}"
-                         alt="{{ course.teacher.get_full_name }}"
+                         alt="{{ course.teacher.username }}"
                          class="w-16 h-16 rounded-full object-cover border-2 border-teal-300 dark:border-teal-600"
                          width="64"
                          height="64" />
                   {% endif %}
                 </div>
                 <div class="flex-grow">
-                  <p class="font-semibold text-lg text-gray-800 dark:text-white">
-                    {{ course.teacher.get_full_name|default:course.teacher.username }}
-                  </p>
+                  <p class="font-semibold text-lg text-gray-800 dark:text-white">{{ course.teacher.username }}</p>
                   {% if course.teacher.profile.expertise %}
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ course.teacher.profile.expertise }}</p>
                   {% endif %}
