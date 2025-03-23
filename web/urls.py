@@ -323,6 +323,7 @@ urlpatterns += i18n_patterns(
         peer_challenge_views.submit_to_leaderboard,
         name="submit_to_leaderboard",
     ),
+    path("update-avatar/", views.update_avatar, name="update_avatar"),
     prefix_default_language=True,
 )
 

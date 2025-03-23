@@ -4695,3 +4695,29 @@ def run_create_test_data(request):
         messages.error(request, f"Error creating test data: {str(e)}")
 
     return redirect("index")
+
+
+@login_required
+@require_POST
+def update_avatar(request):
+    if "avatar" in request.FILES:
+        try:
+            # Get the uploaded file
+            avatar_file = request.FILES["avatar"]
+
+            # Update the user's profile avatar
+            profile = request.user.profile
+            # Delete old avatar if it exists
+            if profile.avatar:
+                profile.avatar.delete()
+
+            profile.avatar = avatar_file
+            profile.save()
+
+            return JsonResponse(
+                {"success": True, "message": "Avatar updated successfully", "avatar_url": profile.avatar.url}
+            )
+        except Exception as e:
+            return JsonResponse({"success": False, "message": str(e)}, status=400)
+
+    return JsonResponse({"success": False, "message": "No avatar file provided"}, status=400)
