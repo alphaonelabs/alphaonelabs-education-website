@@ -16,7 +16,7 @@ class UserModelTests(TestCase):
         cls.user.delete()
         super().tearDownClass()
 
-    def setUp(self):
+    def setUpTestData(self):
         self.profile, _ = Profile.objects.get_or_create(user=self.user)
 
     def test_user_creation(self):
@@ -53,31 +53,32 @@ class UserModelTests(TestCase):
 
 @override_settings(STRIPE_SECRET_KEY="dummy_key")
 class CourseModelTests(TestCase):
-    def setUp(self):
-        self.teacher = User.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.teacher = User.objects.create_user(
             username="teacher",
             email="teacher@example.com",
             password="teacherpass123",
         )
-        self.teacher_profile, _ = Profile.objects.get_or_create(user=self.teacher, defaults={"is_teacher": True})
+        cls.teacher_profile, _ = Profile.objects.get_or_create(user=cls.teacher, defaults={"is_teacher": True})
 
         # Create test subject
-        self.subject = Subject.objects.create(
+        cls.subject = Subject.objects.create(
             name="Programming3",
             slug="programming3",
             description="Programming courses",
             icon="fas fa-code",
         )
 
-        self.course = Course.objects.create(
+        cls.course = Course.objects.create(
             title="Test Course",
             description="Test Description",
-            teacher=self.teacher,
+            teacher=cls.teacher,
             learning_objectives="Test Objectives",
             prerequisites="Test Prerequisites",
             price=99.99,
             max_students=50,
-            subject=self.subject,
+            subject=cls.subject,
             level="beginner",
         )
 
@@ -101,37 +102,37 @@ class CourseModelTests(TestCase):
 
 
 class EnrollmentModelTests(TestCase):
-    def setUp(self):
-        self.teacher = User.objects.create_user(
+    def setUpTestData(cls):
+        cls.teacher = User.objects.create_user(
             username="teacher",
             email="teacher@example.com",
             password="teacherpass123",
         )
-        self.student = User.objects.create_user(
+        cls.student = User.objects.create_user(
             username="student",
             email="student@example.com",
             password="studentpass123",
         )
 
-        self.teacher_profile, _ = Profile.objects.get_or_create(user=self.teacher, defaults={"is_teacher": True})
-        self.student_profile, _ = Profile.objects.get_or_create(user=self.student, defaults={"is_teacher": False})
+        cls.teacher_profile, _ = Profile.objects.get_or_create(user=cls.teacher, defaults={"is_teacher": True})
+        cls.student_profile, _ = Profile.objects.get_or_create(user=cls.student, defaults={"is_teacher": False})
 
-        self.subject = Subject.objects.create(
+        cls.subject = Subject.objects.create(
             name="Programming4",
             slug="programming4",
             description="Programming courses",
             icon="fas fa-code",
         )
 
-        self.course = Course.objects.create(
+        cls.course = Course.objects.create(
             title="Test Course",
             description="Test Description",
-            teacher=self.teacher,
+            teacher=cls.teacher,
             learning_objectives="Test Objectives",
             prerequisites="Test Prerequisites",
             price=99.99,
             max_students=50,
-            subject=self.subject,
+            subject=cls.subject,
             level="beginner",
         )
 
@@ -159,15 +160,16 @@ class EnrollmentModelTests(TestCase):
 
 
 class GoodsModelTests(TestCase):
-    def setUp(self):
-        self.teacher = User.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.teacher = User.objects.create_user(
             username="teacher",
             email="teacher@example.com",
             password="teacherpass123",
         )
-        self.teacher_profile, _ = Profile.objects.get_or_create(user=self.teacher, defaults={"is_teacher": True})
-        self.storefront = Storefront.objects.create(
-            teacher=self.teacher,
+        cls.teacher_profile, _ = Profile.objects.get_or_create(user=cls.teacher, defaults={"is_teacher": True})
+        cls.storefront = Storefront.objects.create(
+            teacher=cls.teacher,
             name="Test Store",
             description="Test Store Description",
         )
@@ -192,32 +194,33 @@ class GoodsModelTests(TestCase):
 
 
 class OrderModelTests(TestCase):
-    def setUp(self):
-        self.teacher = User.objects.create_user(
+    @classmethod
+    def setUpTestData(cls):
+        cls.teacher = User.objects.create_user(
             username="teacher",
             email="teacher@example.com",
             password="teacherpass123",
         )
-        self.student = User.objects.create_user(
+        cls.student = User.objects.create_user(
             username="student",
             email="student@example.com",
             password="studentpass123",
         )
-        self.teacher_profile, _ = Profile.objects.get_or_create(user=self.teacher, defaults={"is_teacher": True})
-        self.student_profile, _ = Profile.objects.get_or_create(user=self.student, defaults={"is_teacher": False})
-        self.storefront = Storefront.objects.create(
-            teacher=self.teacher,
+        cls.teacher_profile, _ = Profile.objects.get_or_create(user=cls.teacher, defaults={"is_teacher": True})
+        cls.student_profile, _ = Profile.objects.get_or_create(user=cls.student, defaults={"is_teacher": False})
+        cls.storefront = Storefront.objects.create(
+            teacher=cls.teacher,
             name="Test Store",
             description="Test Store Description",
         )
-        self.goods = Goods.objects.create(
+        cls.goods = Goods.objects.create(
             name="Test Good",
             description="Test Good Description",
             price=49.99,
             discount_price=39.99,  # Provide a default value for discount_price
             product_type="physical",
             stock=100,
-            storefront=self.storefront,
+            storefront=cls.storefront,
         )
 
     def test_checkout_item(self):
