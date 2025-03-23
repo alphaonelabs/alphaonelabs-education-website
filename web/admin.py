@@ -10,6 +10,7 @@ from django.utils.html import format_html
 
 from .models import (
     Achievement,
+    Badge,
     BlogComment,
     BlogPost,
     Cart,
@@ -31,6 +32,8 @@ from .models import (
     Order,
     OrderItem,
     Payment,
+    PeerChallenge,
+    PeerChallengeInvitation,
     ProductImage,
     Profile,
     ProgressTracker,
@@ -44,8 +47,11 @@ from .models import (
     Storefront,
     Subject,
     SuccessStory,
+    UserBadge,
     WebRequest,
 )
+
+admin.site.unregister(EmailAddress)
 
 
 class ProfileInline(admin.StackedInline):
@@ -61,6 +67,7 @@ class ProfileInline(admin.StackedInline):
         "referred_by",
         "referral_earnings",
         "commission_rate",
+        "how_did_you_hear_about_us",
     )
     raw_id_fields = ("referred_by",)
 
@@ -89,7 +96,10 @@ class ProfileAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
         (None, {"fields": ("user", "is_teacher")}),
-        ("Profile Information", {"fields": ("bio", "expertise", "avatar")}),
+        (
+            "Profile Information",
+            {"fields": ("bio", "expertise", "avatar", "is_profile_public", "how_did_you_hear_about_us")},
+        ),
         ("Stripe Information", {"fields": ("stripe_account_id", "stripe_account_status", "commission_rate")}),
         (
             "Timestamps",
@@ -98,9 +108,40 @@ class ProfileAdmin(admin.ModelAdmin):
     )
 
 
+class EmailVerifiedFilter(admin.SimpleListFilter):
+    title = "Email Verification"
+    parameter_name = "email_verified"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("verified", "Verified"),
+            ("unverified", "Not Verified"),
+            ("no_record", "No Verification Record"),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == "verified":
+            return queryset.filter(emailaddress__verified=True)
+        elif self.value() == "unverified":
+            return queryset.filter(emailaddress__verified=False)
+        elif self.value() == "no_record":
+            # Users with no EmailAddress record
+            return queryset.exclude(id__in=EmailAddress.objects.values_list("user_id", flat=True))
+        return queryset
+
+
 class CustomUserAdmin(BaseUserAdmin):
     inlines = (ProfileInline, EmailAddressInline)
-    list_display = ("username", "email", "first_name", "last_name", "is_staff", "get_enrollment_count")
+    list_display = (
+        "username",
+        "email",
+        "first_name",
+        "last_name",
+        "is_staff",
+        "email_verified",
+        "get_enrollment_count",
+    )
+    list_filter = BaseUserAdmin.list_filter + (EmailVerifiedFilter,)
 
     # Add email to the add_fieldsets
     add_fieldsets = (
@@ -112,6 +153,20 @@ class CustomUserAdmin(BaseUserAdmin):
             },
         ),
     )
+
+    def email_verified(self, obj):
+        from django.utils.html import format_html
+
+        email_obj = EmailAddress.objects.filter(user=obj, email=obj.email).first()
+        if email_obj:
+            if email_obj.verified:
+                return format_html('<span style="color: green;">✓ Verified</span>')
+            else:
+                return format_html('<span style="color: red;">✗ Not verified</span>')
+        return format_html('<span style="color: orange;">? No record</span>')
+
+    email_verified.short_description = "Email Verified"
+    email_verified.admin_order_field = "emailaddress__verified"
 
     def get_enrollment_count(self, obj):
         count = obj.enrollments.count()
@@ -314,9 +369,9 @@ class CourseProgressAdmin(admin.ModelAdmin):
 
 @admin.register(Achievement)
 class AchievementAdmin(admin.ModelAdmin):
-    list_display = ("student", "course", "achievement_type", "title", "awarded_at")
+    list_display = ("student", "course", "achievement_type", "title", "badge_icon", "criteria_threshold", "awarded_at")
     list_filter = ("achievement_type", "awarded_at")
-    search_fields = ("student__username", "course__title", "title", "description")
+    search_fields = ("student__username", "course__title", "title", "description", "badge_icon")
     raw_id_fields = ("student", "course")
 
 
@@ -572,10 +627,54 @@ class DonationAdmin(admin.ModelAdmin):
     display_name.short_description = "Name"
 
 
+@admin.register(Badge)
+class BadgeAdmin(admin.ModelAdmin):
+    list_display = ("name", "badge_type", "is_active", "created_by", "created_at")
+    list_filter = ("badge_type", "is_active")
+    search_fields = ("name", "description")
+
+
+@admin.register(UserBadge)
+class UserBadgeAdmin(admin.ModelAdmin):
+    list_display = ("user", "badge", "award_method", "awarded_at")
+    list_filter = ("award_method", "badge__badge_type")
+    search_fields = ("user__username", "badge__name")
+    date_hierarchy = "awarded_at"
+
+
 @admin.register(LearningStreak)
 class LearningStreakAdmin(admin.ModelAdmin):
     list_display = ("user", "current_streak", "longest_streak", "last_engagement")
     search_fields = ("user__username",)
+
+
+# Register Peer Challenge models
+@admin.register(PeerChallenge)
+class PeerChallengeAdmin(admin.ModelAdmin):
+    list_display = ("title", "creator", "quiz", "status", "created_at", "expires_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("title", "description", "creator__username")
+    raw_id_fields = ("creator", "quiz")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (None, {"fields": ("creator", "quiz", "title", "description")}),
+        ("Status", {"fields": ("status", "expires_at")}),
+        ("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
+
+
+@admin.register(PeerChallengeInvitation)
+class PeerChallengeInvitationAdmin(admin.ModelAdmin):
+    list_display = ("challenge", "participant", "status", "created_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("challenge__title", "participant__username", "participant__email")
+    raw_id_fields = ("challenge", "participant", "user_quiz")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (None, {"fields": ("challenge", "participant")}),
+        ("Status", {"fields": ("status", "user_quiz")}),
+        ("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
 
 
 # Register Quiz-related models

@@ -5,8 +5,18 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
-from . import admin_views, quiz_views, views
-from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_data, streak_detail
+from . import admin_views, peer_challenge_views, quiz_views, views
+from .views import (
+    GoodsListingView,
+    GradeableLinkCreateView,
+    GradeableLinkDetailView,
+    GradeableLinkListView,
+    add_goods_to_cart,
+    grade_link,
+    sales_analytics,
+    sales_data,
+    streak_detail,
+)
 
 # Non-prefixed URLs
 urlpatterns = [
@@ -28,9 +38,12 @@ if settings.DEBUG:
 # Language-prefixed URLs
 urlpatterns += i18n_patterns(
     path("", views.index, name="index"),
+    path("create-test-data/", views.run_create_test_data, name="create_test_data"),
     path("learn/", views.learn, name="learn"),
     path("teach/", views.teach, name="teach"),
     path("about/", views.about, name="about"),
+    path("profile/<str:username>/", views.public_profile, name="public_profile"),
+    path("graphing_calculator/", views.graphing_calculator, name="graphing_calculator"),
     path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
     path("certificate/generate/<int:enrollment_id>/", views.generate_certificate, name="generate_certificate"),
     path("donate/", views.donate, name="donate"),
@@ -65,6 +78,7 @@ urlpatterns += i18n_patterns(
     path("courses/<slug:course_slug>/enroll/", views.enroll_course, name="enroll_course"),
     path("courses/<slug:slug>/add-session/", views.add_session, name="add_session"),
     path("courses/<slug:slug>/edit/", views.update_course, name="update_course"),
+    path("courses/<slug:slug>/toggle-status/", views.toggle_course_status, name="toggle_course_status"),
     path("sessions/<int:session_id>/edit/", views.edit_session, name="edit_session"),
     path("courses/<slug:slug>/add-review/", views.add_review, name="add_review"),
     path("courses/<slug:slug>/delete/", views.delete_course, name="delete_course"),
@@ -73,6 +87,7 @@ urlpatterns += i18n_patterns(
     path("courses/<slug:slug>/message-students/", views.message_enrolled_students, name="message_students"),
     path("courses/<slug:slug>/add-student/", views.add_student_to_course, name="add_student_to_course"),
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
+    path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session"),
     # Payment URLs
     path(
         "courses/<slug:slug>/create-payment-intent/",
@@ -149,6 +164,7 @@ urlpatterns += i18n_patterns(
         name="forum_topic",
     ),
     path("forum/topic/<int:topic_id>/edit/", views.edit_topic, name="edit_topic"),
+    path("forum/sync-milestones/", views.sync_github_milestones, name="sync_github_milestones"),
     # Peer Networking URLs
     path("peers/", views.peer_connections, name="peer_connections"),
     path(
@@ -236,7 +252,18 @@ urlpatterns += i18n_patterns(
     path("analytics/data/", sales_data, name="sales_data"),
     path("memes/", views.meme_list, name="meme_list"),
     path("memes/add/", views.add_meme, name="add_meme"),
+    path("whiteboard/", views.whiteboard, name="whiteboard"),
     path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
+    # Team Collaboration URLs
+    path("teams/", views.team_goals, name="team_goals"),
+    path("teams/create/", views.create_team_goal, name="create_team_goal"),
+    path("teams/<int:goal_id>/", views.team_goal_detail, name="team_goal_detail"),
+    path("teams/invite/<int:invite_id>/accept/", views.accept_team_invite, name="accept_team_invite"),
+    path("teams/invite/<int:invite_id>/decline/", views.decline_team_invite, name="decline_team_invite"),
+    path("teams/<int:goal_id>/mark-contribution/", views.mark_team_contribution, name="mark_team_contribution"),
+    path("teams/<int:goal_id>/delete/", views.delete_team_goal, name="delete_team_goal"),
+    path("teams/<int:goal_id>/remove-member/<int:member_id>/", views.remove_team_member, name="remove_team_member"),
+    path("teams/<int:goal_id>/edit/", views.edit_team_goal, name="edit_team_goal"),
     path("trackers/", views.tracker_list, name="tracker_list"),
     path("trackers/create/", views.create_tracker, name="create_tracker"),
     path("trackers/<int:tracker_id>/", views.tracker_detail, name="tracker_detail"),
@@ -261,6 +288,47 @@ urlpatterns += i18n_patterns(
         name="grade_short_answer",
     ),
     path("quizzes/<int:quiz_id>/analytics/", quiz_views.quiz_analytics, name="quiz_analytics"),
+    # Grade-a-Link URLs
+    path("grade-links/", GradeableLinkListView.as_view(), name="gradeable_link_list"),
+    path("grade-links/submit/", GradeableLinkCreateView.as_view(), name="gradeable_link_create"),
+    path("grade-links/<int:pk>/", GradeableLinkDetailView.as_view(), name="gradeable_link_detail"),
+    path("grade-links/<int:pk>/grade/", grade_link, name="grade_link"),
+    # Peer Challenges URLs
+    path("peer-challenges/", peer_challenge_views.challenge_list, name="challenge_list"),
+    path("peer-challenges/create/", peer_challenge_views.create_challenge, name="create_challenge"),
+    path(
+        "peer-challenges/<int:challenge_id>/", peer_challenge_views.peer_challenge_detail, name="peer_challenge_detail"
+    ),
+    path(
+        "peer-challenges/invitation/<int:invitation_id>/accept/",
+        peer_challenge_views.accept_invitation,
+        name="accept_invitation",
+    ),
+    path(
+        "peer-challenges/invitation/<int:invitation_id>/decline/",
+        peer_challenge_views.decline_invitation,
+        name="decline_invitation",
+    ),
+    path(
+        "peer-challenges/invitation/<int:invitation_id>/take/",
+        peer_challenge_views.take_challenge,
+        name="take_challenge",
+    ),
+    path(
+        "peer-challenges/complete/<int:user_quiz_id>/",
+        peer_challenge_views.complete_challenge,
+        name="complete_challenge",
+    ),
+    path(
+        "peer-challenges/<int:challenge_id>/leaderboard/",
+        peer_challenge_views.leaderboard,
+        name="challenge_leaderboard",
+    ),
+    path(
+        "peer-challenges/submit-to-leaderboard/<int:user_quiz_id>/",
+        peer_challenge_views.submit_to_leaderboard,
+        name="submit_to_leaderboard",
+    ),
     prefix_default_language=True,
 )
 

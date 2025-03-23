@@ -1,27 +1,34 @@
 import calendar
+import html
+import ipaddress
 import json
 import os
 import re
 import shutil
+import socket
 import subprocess
 import time
+from collections import defaultdict
 from datetime import timedelta
 from decimal import Decimal
+from urllib.parse import urlparse
 
 import requests
 import stripe
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.mail import send_mail
+from django.core.management import call_command
 from django.core.paginator import Paginator
 from django.db import IntegrityError, models, transaction
 from django.db.models import Avg, Count, Q, Sum
 from django.http import (
     FileResponse,
+    Http404,
     HttpResponse,
     HttpResponseForbidden,
     JsonResponse,
@@ -40,6 +47,7 @@ from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import (
     CreateView,
     DeleteView,
+    DetailView,
     ListView,
     UpdateView,
 )
@@ -56,9 +64,11 @@ from .forms import (
     ForumCategoryForm,
     ForumTopicForm,
     GoodsForm,
+    GradeableLinkForm,
     InviteStudentForm,
     LearnForm,
     MeetupForm,
+    LinkGradeForm,
     MemeForm,
     MessageTeacherForm,
     ProfileUpdateForm,
@@ -70,6 +80,8 @@ from .forms import (
     SuccessStoryForm,
     TeacherSignupForm,
     TeachForm,
+    TeamGoalForm,
+    TeamInviteForm,
     UserRegistrationForm,
 )
 from .marketing import (
@@ -98,8 +110,10 @@ from .models import (
     ForumReply,
     ForumTopic,
     Goods,
+    GradeableLink,
     LearningStreak,
     Meetup,
+    LinkGrade,
     Meme,
     Order,
     OrderItem,
@@ -116,10 +130,21 @@ from .models import (
     StudyGroup,
     Subject,
     SuccessStory,
+    TeamGoal,
+    TeamGoalMember,
+    TeamInvite,
     TimeSlot,
+    UserBadge,
     WebRequest,
 )
-from .notifications import notify_session_reminder, notify_teacher_new_enrollment, send_enrollment_confirmation
+from .notifications import (
+    notify_session_reminder,
+    notify_teacher_new_enrollment,
+    notify_team_goal_completion,
+    notify_team_invite,
+    notify_team_invite_response,
+    send_enrollment_confirmation,
+)
 from .referrals import send_referral_reward_email
 from .social import get_social_stats
 from .utils import get_or_create_cart
@@ -136,6 +161,8 @@ def sitemap(request):
 
 def index(request):
     """Homepage view."""
+    from django.conf import settings
+
     # Store referral code in session if present in URL
     ref_code = request.GET.get("ref")
     if ref_code:
@@ -189,14 +216,51 @@ def index(request):
         "latest_post": latest_post,
         "latest_success_story": latest_success_story,
         "form": form,
+        "is_debug": settings.DEBUG,
     }
+    if request.user.is_authenticated:
+        user_team_goals = (
+            TeamGoal.objects.filter(Q(creator=request.user) | Q(members__user=request.user))
+            .distinct()
+            .order_by("-created_at")[:3]
+        )
+
+        team_invites = TeamInvite.objects.filter(recipient=request.user, status="pending").select_related(
+            "goal", "sender"
+        )
+
+        context.update(
+            {
+                "user_team_goals": user_team_goals,
+                "team_invites": team_invites,
+            }
+        )
+
+        # Add courses that the user is teaching if they have any
+        teaching_courses = (
+            Course.objects.filter(teacher=request.user)
+            .annotate(
+                view_count=Sum("web_requests__count", default=0),
+                enrolled_students=Count("enrollments", filter=Q(enrollments__status="approved")),
+            )
+            .order_by("-created_at")
+        )
+
+        if teaching_courses.exists():
+            context.update(
+                {
+                    "teaching_courses": teaching_courses,
+                }
+            )
     return render(request, "index.html", context)
 
 
 def signup_view(request):
     """Custom signup view that properly handles referral codes."""
     if request.method == "POST":
+        # Initialize the registration form with POST data and request context
         form = UserRegistrationForm(request.POST, request=request)
+        # Validate the form data before saving the new user
         if form.is_valid():
             form.save(request)
             return redirect("account_email_verification_sent")
@@ -224,37 +288,28 @@ def signup_view(request):
 @login_required
 def profile(request):
     if request.method == "POST":
-        if "avatar" in request.FILES:
-            # Handle avatar upload
-            request.user.profile.avatar = request.FILES["avatar"]
-            request.user.profile.save()
-            return redirect("profile")
-
-        form = ProfileUpdateForm(request.POST, instance=request.user)
+        form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
-            user = form.save()
-            user.profile.bio = form.cleaned_data["bio"]
-            user.profile.expertise = form.cleaned_data["expertise"]
-            user.profile.save()
+            form.save()  # Save the form data including the is_profile_public field
+            request.user.profile.refresh_from_db()  # Refresh the instance so updated Profile is loaded
             messages.success(request, "Profile updated successfully!")
             return redirect("profile")
+        else:
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"Error in {field}: {error}")
     else:
-        form = ProfileUpdateForm(
-            initial={
-                "username": request.user.username,
-                "email": request.user.email,
-                "first_name": request.user.first_name,
-                "last_name": request.user.last_name,
-                "bio": request.user.profile.bio,
-                "expertise": request.user.profile.expertise,
-            }
-        )
+        # Use the instance so the form loads all updated fields from the database.
+        form = ProfileUpdateForm(instance=request.user)
+
+    badges = UserBadge.objects.filter(user=request.user).select_related("badge")
 
     context = {
         "form": form,
+        "badges": badges,
     }
 
-    # Add teacher-specific stats
+    # Teacher-specific stats
     if request.user.profile.is_teacher:
         courses = Course.objects.filter(teacher=request.user)
         total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
@@ -265,9 +320,7 @@ def profile(request):
             if course_ratings:
                 avg_rating += sum(review.rating for review in course_ratings)
                 total_ratings += len(course_ratings)
-
         avg_rating = round(avg_rating / total_ratings, 1) if total_ratings > 0 else 0
-
         context.update(
             {
                 "courses": courses,
@@ -275,13 +328,10 @@ def profile(request):
                 "avg_rating": avg_rating,
             }
         )
-
-    # Add student-specific stats
+    # Student-specific stats
     else:
         enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
         completed_courses = enrollments.filter(status="completed").count()
-
-        # Calculate average progress
         total_progress = 0
         progress_count = 0
         for enrollment in enrollments:
@@ -289,9 +339,7 @@ def profile(request):
             if progress.completion_percentage is not None:
                 total_progress += progress.completion_percentage
                 progress_count += 1
-
         avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
-
         context.update(
             {
                 "enrollments": enrollments,
@@ -300,7 +348,7 @@ def profile(request):
             }
         )
 
-    # Add created calendars with prefetched time slots
+    # Add created calendars with time slots if applicable
     created_calendars = request.user.created_calendars.prefetch_related("time_slots").order_by("-created_at")
     context["created_calendars"] = created_calendars
 
@@ -342,6 +390,17 @@ def course_detail(request, slug):
                 student=request.user, session__course=course, status="completed"
             ).values_list("session__id", flat=True)
             completed_sessions = course.sessions.filter(id__in=completed_sessions)
+
+    # Get attendance data for all enrolled students
+    student_attendance = {}
+    total_sessions = sessions.count()
+
+    if is_teacher or is_enrolled:
+        for enroll in course.enrollments.all():
+            attended_sessions = SessionAttendance.objects.filter(
+                student=enroll.student, session__course=course, status__in=["present", "late"]
+            ).count()
+            student_attendance[enroll.student.id] = {"attended": attended_sessions, "total": total_sessions}
 
     # Mark past sessions as completed for display
     past_sessions = sessions.filter(end_time__lt=now)
@@ -405,6 +464,7 @@ def course_detail(request, slug):
         "current_month": current_month,
         "prev_month": prev_month,
         "next_month": next_month,
+        "student_attendance": student_attendance,
     }
 
     return render(request, "courses/detail.html", context)
@@ -433,21 +493,19 @@ def enroll_course(request, course_slug):
                 referrer.add_referral_earnings(5)
                 send_referral_reward_email(referrer.user, request.user, 5, "enrollment")
 
-    # Create enrollment
-    enrollment = Enrollment.objects.create(
-        student=request.user, course=course, status="pending" if course.price > 0 else "approved"
-    )
-
-    # For paid courses, create pending enrollment and redirect to payment
-    if course.price > 0:
+    # For free courses, create approved enrollment immediately
+    if course.price == 0:
+        enrollment = Enrollment.objects.create(student=request.user, course=course, status="approved")
+        # Send notifications for free courses
+        send_enrollment_confirmation(enrollment)
+        notify_teacher_new_enrollment(enrollment)
+        messages.success(request, "You have successfully enrolled in this free course.")
+        return redirect("course_detail", slug=course_slug)
+    else:
+        # For paid courses, create pending enrollment
+        enrollment = Enrollment.objects.create(student=request.user, course=course, status="pending")
         messages.info(request, "Please complete the payment process to enroll in this course.")
         return redirect("course_detail", slug=course_slug)
-
-    # For free courses, send notifications
-    send_enrollment_confirmation(enrollment)
-    notify_teacher_new_enrollment(enrollment)
-    messages.success(request, "You have successfully enrolled in this course.")
-    return redirect("course_detail", slug=course_slug)
 
 
 @login_required
@@ -470,7 +528,7 @@ def add_session(request, slug):
     else:
         form = SessionForm()
 
-    return render(request, "courses/add_session.html", {"form": form, "course": course})
+    return render(request, "courses/session_form.html", {"form": form, "course": course, "is_edit": False})
 
 
 @login_required
@@ -756,8 +814,33 @@ def create_payment_intent(request, slug):
     """Create a payment intent for Stripe."""
     course = get_object_or_404(Course, slug=slug)
 
+    # Prevent creating payment intents for free courses
+    if course.price == 0:
+        # Find the enrollment and update its status to approved if it's pending
+        enrollment = get_object_or_404(Enrollment, student=request.user, course=course)
+        if enrollment.status == "pending":
+            enrollment.status = "approved"
+            enrollment.save()
+
+            # Send notifications
+            send_enrollment_confirmation(enrollment)
+            notify_teacher_new_enrollment(enrollment)
+
+        return JsonResponse({"free_course": True, "message": "Enrollment approved for free course"})
+
     # Ensure user has a pending enrollment
-    get_object_or_404(Enrollment, student=request.user, course=course, status="pending")
+    enrollment = get_object_or_404(Enrollment, student=request.user, course=course, status="pending")
+
+    # Validate price is greater than zero for Stripe
+    if course.price <= 0:
+        enrollment.status = "approved"
+        enrollment.save()
+
+        # Send notifications
+        send_enrollment_confirmation(enrollment)
+        notify_teacher_new_enrollment(enrollment)
+
+        return JsonResponse({"free_course": True, "message": "Enrollment approved for free course"})
 
     try:
         # Create a PaymentIntent with the order amount and currency
@@ -1619,12 +1702,15 @@ def blog_detail(request, slug):
 
 @login_required
 def student_dashboard(request):
-    """Dashboard view for students showing their enrollments, progress, upcoming sessions, and learning streak."""
+    """
+    Dashboard view for students showing enrollments, progress, upcoming sessions, learning streak,
+    and an Achievements section.
+    """
     if request.user.profile.is_teacher:
         messages.error(request, "This dashboard is for students only.")
         return redirect("profile")
 
-    # Updated learning streak for the current student
+    # Update the learning streak.
     streak, created = LearningStreak.objects.get_or_create(user=request.user)
     streak.update_streak()
 
@@ -1633,7 +1719,6 @@ def student_dashboard(request):
         course__enrollments__student=request.user, start_time__gt=timezone.now()
     ).order_by("start_time")[:5]
 
-    # Get progress for each enrollment and set a flag for certificate existence
     progress_data = []
     total_progress = 0
     for enrollment in enrollments:
@@ -1646,15 +1731,18 @@ def student_dashboard(request):
         )
         total_progress += progress.completion_percentage
 
-    # Calculate average progress
     avg_progress = round(total_progress / len(progress_data)) if progress_data else 0
+
+    # Query achievements for the user.
+    achievements = Achievement.objects.filter(student=request.user).order_by("-awarded_at")
 
     context = {
         "enrollments": enrollments,
         "upcoming_sessions": upcoming_sessions,
         "progress_data": progress_data,
         "avg_progress": avg_progress,
-        "streak": streak,  # Passing the streak object to the template (optional)
+        "streak": streak,
+        "achievements": achievements,
     }
     return render(request, "dashboard/student.html", context)
 
@@ -1699,6 +1787,7 @@ def teacher_dashboard(request):
         "courses": courses,
         "upcoming_sessions": upcoming_sessions,
         "course_stats": course_stats,
+        "total_students": total_students,
         "completion_rate": (total_completed / total_students * 100) if total_students > 0 else 0,
         "total_earnings": round(total_earnings, 2),
         "storefront": storefront,
@@ -1996,12 +2085,14 @@ def send_welcome_email(user):
 @login_required
 def edit_session(request, session_id):
     """Edit an existing session."""
+    # Get the session and verify that the current user is the course teacher
     session = get_object_or_404(Session, id=session_id)
+    course = session.course
 
     # Check if user is the course teacher
-    if request.user != session.course.teacher:
+    if request.user != course.teacher:
         messages.error(request, "Only the course teacher can edit sessions!")
-        return redirect("course_detail", slug=session.course.slug)
+        return redirect("course_detail", slug=course.slug)
 
     if request.method == "POST":
         form = SessionForm(request.POST, instance=session)
@@ -2012,7 +2103,9 @@ def edit_session(request, session_id):
     else:
         form = SessionForm(instance=session)
 
-    return render(request, "courses/edit_session.html", {"form": form, "session": session, "course": session.course})
+    return render(
+        request, "courses/session_form.html", {"form": form, "session": session, "course": course, "is_edit": True}
+    )
 
 
 @login_required
@@ -2704,18 +2797,23 @@ def current_weekly_challenge(request):
 
 
 def challenge_detail(request, week_number):
-    challenge = get_object_or_404(Challenge, week_number=week_number)
-    submissions = ChallengeSubmission.objects.filter(challenge=challenge)
-    # Check if the current user has submitted this challenge
-    user_submission = None
-    if request.user.is_authenticated:
-        user_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
+    try:
+        challenge = get_object_or_404(Challenge, week_number=week_number)
+        submissions = ChallengeSubmission.objects.filter(challenge=challenge)
+        # Check if the current user has submitted this challenge
+        user_submission = None
+        if request.user.is_authenticated:
+            user_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
 
-    return render(
-        request,
-        "web/challenge_detail.html",
-        {"challenge": challenge, "submissions": submissions, "user_submission": user_submission},
-    )
+        return render(
+            request,
+            "web/challenge_detail.html",
+            {"challenge": challenge, "submissions": submissions, "user_submission": user_submission},
+        )
+    except Http404:
+        # Redirect to weekly challenges list if specific weekly challenge not found
+        messages.info(request, "Weekly challenge #" + str(week_number) + " not found. Returning to challenges list.")
+        return redirect("current_weekly_challenge")
 
 
 @login_required
@@ -2744,13 +2842,72 @@ def challenge_submit(request, week_number):
 
 @require_GET
 def fetch_video_title(request):
+    """
+    Fetch video title from a URL with proper security measures to prevent SSRF attacks.
+    """
     url = request.GET.get("url")
     if not url:
         return JsonResponse({"error": "URL parameter is required"}, status=400)
 
+    # Validate URL
     try:
-        response = requests.get(url)
+        parsed_url = urlparse(url)
+
+        # Check for scheme - only allow http and https
+        if parsed_url.scheme not in ["http", "https"]:
+            return JsonResponse({"error": "Invalid URL scheme. Only HTTP and HTTPS are supported."}, status=400)
+
+        # Check for private/internal IP addresses
+        if parsed_url.netloc:
+            hostname = parsed_url.netloc.split(":")[0]
+
+            # Block localhost variations and common internal domains
+            blocked_hosts = [
+                "localhost",
+                "127.0.0.1",
+                "0.0.0.0",
+                "internal",
+                "intranet",
+                "local",
+                "lan",
+                "corp",
+                "private",
+                "::1",
+            ]
+
+            if any(blocked in hostname.lower() for blocked in blocked_hosts):
+                return JsonResponse({"error": "Access to internal networks is not allowed"}, status=403)
+
+            # Resolve hostname to IP and check if it's private
+            try:
+                ip_address = socket.gethostbyname(hostname)
+                ip_obj = ipaddress.ip_address(ip_address)
+
+                # Check if the IP is private/internal
+                if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_multicast:
+                    return JsonResponse({"error": "Access to internal/private networks is not allowed"}, status=403)
+            except (socket.gaierror, ValueError):
+                # If hostname resolution fails or IP parsing fails, continue
+                pass
+
+    except Exception as e:
+        return JsonResponse({"error": f"Invalid URL format: {str(e)}"}, status=400)
+
+    # Set a timeout to prevent hanging requests
+    timeout = 5  # seconds
+
+    try:
+        # Only allow HEAD and GET methods with limited redirects
+        response = requests.get(
+            url,
+            timeout=timeout,
+            allow_redirects=True,
+            headers={
+                "User-Agent": "Educational-Website-Validator/1.0",
+            },
+        )
         response.raise_for_status()
+
         # Extract title from response headers or content
         title = response.headers.get("title", "")
         if not title:
@@ -2758,9 +2915,14 @@ def fetch_video_title(request):
             content = response.text
             title_match = re.search(r"<title>(.*?)</title>", content)
             title = title_match.group(1) if title_match else "Untitled Video"
+
+            # Sanitize the title
+            title = html.escape(title)
+
         return JsonResponse({"title": title})
+
     except requests.RequestException:
-        return JsonResponse({"error": "Failed to fetch video title"}, status=500)
+        return JsonResponse({"error": "Failed to fetch video title:"}, status=500)
 
 
 def get_referral_stats():
@@ -3278,9 +3440,102 @@ def delete_success_story(request, slug):
 
 
 def gsoc_landing_page(request):
-    # Function implementation goes here
-    pass
-    return render(request, "gsoc_landing_page.html")
+    """
+    Renders the GSOC landing page with top GitHub contributors
+    based on merged pull requests
+    """
+    import logging
+
+    import requests
+    from django.conf import settings
+
+    # Initialize an empty list for contributors in case the GitHub API call fails
+    top_contributors = []
+
+    # GitHub API URL for the education-website repository
+    github_repo_url = "https://api.github.com/repos/alphaonelabs/education-website"
+
+    # Users to exclude from the contributor list (bots and automated users)
+    excluded_users = ["A1L13N", "dependabot[bot]"]
+
+    try:
+        # Fetch contributors from GitHub API
+        headers = {}
+        # Check if GitHub token is configured
+        if hasattr(settings, "GITHUB_TOKEN") and settings.GITHUB_TOKEN:
+            headers["Authorization"] = f"token {settings.GITHUB_TOKEN}"
+
+        # Get all closed pull requests - we'll filter for merged ones in code
+        # The GitHub API doesn't have a direct 'merged' filter in the query params
+        # so we get all closed PRs and then check the 'merged_at' field
+        pull_requests_response = requests.get(
+            f"{github_repo_url}/pulls",
+            params={
+                "state": "closed",  # closed PRs could be either merged or just closed
+                "sort": "updated",
+                "direction": "desc",
+                "per_page": 100,
+            },
+            headers=headers,
+            timeout=5,
+        )
+
+        # Check for rate limiting
+        if pull_requests_response.status_code == 403 and "X-RateLimit-Remaining" in pull_requests_response.headers:
+            remaining = pull_requests_response.headers.get("X-RateLimit-Remaining")
+            if remaining == "0":
+                reset_time = int(pull_requests_response.headers.get("X-RateLimit-Reset", 0))
+                reset_datetime = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(reset_time))
+                logging.warning(f"GitHub API rate limit exceeded. Resets at {reset_datetime}")
+
+        if pull_requests_response.status_code == 200:
+            pull_requests = pull_requests_response.json()
+
+            # Create a map of contributors with their PR count
+            contributor_stats = defaultdict(
+                lambda: {"merged_pr_count": 0, "avatar_url": "", "profile_url": "", "prs_url": ""}
+            )
+
+            # Process each pull request
+            for pr in pull_requests:
+                # Check if the PR was merged
+                if pr.get("merged_at"):
+                    username = pr["user"]["login"]
+
+                    # Skip excluded users
+                    if username in excluded_users:
+                        continue
+
+                    contributor_stats[username]["merged_pr_count"] += 1
+                    contributor_stats[username]["avatar_url"] = pr["user"]["avatar_url"]
+                    contributor_stats[username]["profile_url"] = pr["user"]["html_url"]
+                    # Add a direct link to the user's PRs for this repository
+                    base_url = "https://github.com/alphaonelabs/education-website/pulls"
+                    query = f"?q=is:pr+author:{username}+is:merged"
+                    contributor_stats[username]["prs_url"] = base_url + query
+                    contributor_stats[username]["username"] = username
+
+            # Convert to list and sort by PR count
+            top_contributors = [v for k, v in contributor_stats.items()]
+            top_contributors.sort(key=lambda x: x["merged_pr_count"], reverse=True)
+
+            # Get top 10 contributors
+            top_contributors = top_contributors[:10]
+
+    except Exception as e:
+        logging.error(f"Error fetching GitHub contributors: {str(e)}")
+
+    context = {"top_contributors": top_contributors}
+
+    return render(request, "gsoc_landing_page.html", context)
+
+
+def whiteboard(request):
+    return render(request, "whiteboard.html")
+
+
+def graphing_calculator(request):
+    return render(request, "graphing_calculator.html")
 
 
 def meme_list(request):
@@ -3314,6 +3569,239 @@ def add_meme(request):
 
 
 @login_required
+def team_goals(request):
+    """List all team goals the user is part of or has created."""
+    user_goals = (
+        TeamGoal.objects.filter(Q(creator=request.user) | Q(members__user=request.user))
+        .distinct()
+        .order_by("-created_at")
+    )
+
+    paginator = Paginator(user_goals, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    pending_invites = TeamInvite.objects.filter(recipient=request.user, status="pending").select_related(
+        "goal", "sender"
+    )
+
+    context = {
+        "goals": page_obj,
+        "pending_invites": pending_invites,
+        "is_paginated": paginator.num_pages > 1,
+    }
+    return render(request, "teams/list.html", context)
+
+
+@login_required
+def create_team_goal(request):
+    """Create a new team goal."""
+    if request.method == "POST":
+        form = TeamGoalForm(request.POST)
+        if form.is_valid():
+            with transaction.atomic():
+                goal = form.save(commit=False)
+                goal.creator = request.user
+                goal.save()
+
+                # Add creator as a member
+                TeamGoalMember.objects.create(team_goal=goal, user=request.user, role="leader")
+
+                messages.success(request, "Team goal created successfully!")
+                return redirect("team_goal_detail", goal_id=goal.id)
+    else:
+        form = TeamGoalForm()
+
+    return render(request, "teams/create.html", {"form": form})
+
+
+@login_required
+def team_goal_detail(request, goal_id):
+    """View and manage a specific team goal."""
+    goal = get_object_or_404(TeamGoal.objects.prefetch_related("members__user"), id=goal_id)
+
+    # Check if user has access to this goal
+    if not (goal.creator == request.user or goal.members.filter(user=request.user).exists()):
+        messages.error(request, "You do not have access to this team goal.")
+        return redirect("team_goals")
+
+    # Get existing team members to exclude from invitation
+    existing_members = goal.members.values_list("user_id", flat=True)
+
+    # Handle inviting new members
+    if request.method == "POST":
+        form = TeamInviteForm(request.POST)
+        if form.is_valid():
+            # Check for existing invites using the validated User object
+            if TeamInvite.objects.filter(
+                goal__id=goal.id, recipient=form.cleaned_data["recipient"]  # Changed to use User object
+            ).exists():
+                messages.warning(request, "An invite for this user is already pending.")
+                return redirect("team_goal_detail", goal_id=goal.id)
+            invite = form.save(commit=False)
+            invite.sender = request.user
+            invite.goal = goal
+            invite.save()
+            messages.success(request, f"Invitation sent to {invite.recipient.email}!")
+            notify_team_invite(invite)
+            return redirect("team_goal_detail", goal_id=goal.id)
+
+    else:
+        form = TeamInviteForm()
+
+    # Get users that can be invited (exclude existing members and the creator)
+    available_users = User.objects.exclude(id__in=list(existing_members) + [goal.creator.id]).values(
+        "id", "username", "email"
+    )
+
+    context = {
+        "goal": goal,
+        "invite_form": form,
+        "user_is_leader": goal.members.filter(user=request.user, role="leader").exists(),
+        "available_users": available_users,
+    }
+    return render(request, "teams/detail.html", context)
+
+
+@login_required
+def accept_team_invite(request, invite_id):
+    """Accept a team invitation."""
+    invite = get_object_or_404(
+        TeamInvite.objects.select_related("goal"), id=invite_id, recipient=request.user, status="pending"
+    )
+
+    # Create team member using get_or_create to avoid race conditions
+    member, created = TeamGoalMember.objects.get_or_create(
+        team_goal=invite.goal, user=request.user, defaults={"role": "member"}
+    )
+
+    if not created:
+        messages.info(request, f"You are already a member of {invite.goal.title}.")
+    else:
+        messages.success(request, f"You have joined {invite.goal.title}!")
+
+    # Update invite status
+    invite.status = "accepted"
+    invite.responded_at = timezone.now()
+    invite.save()
+
+    notify_team_invite_response(invite)
+    return redirect("team_goal_detail", goal_id=invite.goal.id)
+
+
+@login_required
+def decline_team_invite(request, invite_id):
+    """Decline a team invitation."""
+    invite = get_object_or_404(TeamInvite, id=invite_id, recipient=request.user, status="pending")
+
+    invite.status = "declined"
+    invite.responded_at = timezone.now()
+    invite.save()
+
+    notify_team_invite_response(invite)
+    messages.info(request, f"You have declined to join {invite.goal.title}.")
+    return redirect("team_goals")
+
+
+@login_required
+def edit_team_goal(request, goal_id):
+    """Edit an existing team goal."""
+    goal = get_object_or_404(TeamGoal, id=goal_id)
+
+    # Check if user is the creator or a leader
+    if not (goal.creator == request.user or goal.members.filter(user=request.user, role="leader").exists()):
+        messages.error(request, "You don't have permission to edit this team goal.")
+        return redirect("team_goal_detail", goal_id=goal_id)
+
+    if request.method == "POST":
+        form = TeamGoalForm(request.POST, instance=goal)
+        if form.is_valid():
+            # Validate that deadline is not in the past
+            if form.cleaned_data["deadline"] < timezone.now():
+                form.add_error("deadline", "Deadline cannot be in the past.")
+                context = {
+                    "form": form,
+                    "goal": goal,
+                    "is_edit": True,
+                }
+                return render(request, "teams/create.html", context)
+            form.save()
+            messages.success(request, "Team goal updated successfully!")
+            return redirect("team_goal_detail", goal_id=goal.id)
+    else:
+        form = TeamGoalForm(instance=goal)
+
+    context = {
+        "form": form,
+        "goal": goal,
+        "is_edit": True,
+    }
+    return render(request, "teams/create.html", context)
+
+
+@login_required
+def mark_team_contribution(request, goal_id):
+    """Allow a team member to mark their contribution as complete."""
+    goal = get_object_or_404(TeamGoal, id=goal_id)
+
+    # Find the current user's membership in this goal
+    member = goal.members.filter(user=request.user).first()
+
+    if not member:
+        messages.error(request, "You are not a member of this team goal.")
+        return redirect("team_goal_detail", goal_id=goal_id)
+
+    if member.completed:
+        messages.info(request, "Your contribution is already marked as complete.")
+        return redirect("team_goal_detail", goal_id=goal_id)
+
+    # Mark the user's contribution as complete
+    member.mark_completed()
+    messages.success(request, "Your contribution has been marked as complete.")
+    notify_team_goal_completion(goal, request.user)
+    return redirect("team_goal_detail", goal_id=goal_id)
+
+
+@login_required
+def remove_team_member(request, goal_id, member_id):
+    """Remove a member from a team goal."""
+    goal = get_object_or_404(TeamGoal, id=goal_id)
+
+    # Check if user is the creator or a leader
+    if not (goal.creator == request.user or goal.members.filter(user=request.user, role="leader").exists()):
+        messages.error(request, "You don't have permission to remove members.")
+        return redirect("team_goal_detail", goal_id=goal_id)
+
+    member = get_object_or_404(TeamGoalMember, id=member_id, team_goal=goal)
+
+    # Prevent removing the creator
+    if member.user == goal.creator:
+        messages.error(request, "The team creator cannot be removed.")
+        return redirect("team_goal_detail", goal_id=goal_id)
+
+    member.delete()
+    messages.success(request, f"{member.user.username} has been removed from the team.")
+    return redirect("team_goal_detail", goal_id=goal_id)
+
+
+@login_required
+def delete_team_goal(request, goal_id):
+    """Delete a team goal."""
+    goal = get_object_or_404(TeamGoal, id=goal_id)
+
+    # Only creator can delete the goal
+    if request.user != goal.creator:
+        messages.error(request, "Only the creator can delete this team goal.")
+        return redirect("team_goal_detail", goal_id=goal_id)
+
+    if request.method == "POST":
+        goal.delete()
+        messages.success(request, "Team goal has been deleted.")
+        return redirect("team_goals")
+
+    return render(request, "teams/delete_confirm.html", {"goal": goal})
+
+
 @teacher_required
 def add_student_to_course(request, slug):
     course = get_object_or_404(Course, slug=slug)
@@ -3940,8 +4428,319 @@ def embed_tracker(request, embed_code):
 
 @login_required
 def streak_detail(request):
-    """
-    Full-page view to display the user's learning streak details.
-    """
+    """Display the user's learning streak."""
+    if not request.user.is_authenticated:
+        return redirect("account_login")
     streak, created = LearningStreak.objects.get_or_create(user=request.user)
     return render(request, "streak_detail.html", {"streak": streak})
+
+
+def is_superuser(user):
+    return user.is_superuser
+
+
+@user_passes_test(is_superuser)
+def sync_github_milestones(request):
+    """Sync GitHub milestones with forum topics."""
+    github_repo = "alphaonelabs/alphaonelabs-education-website"
+    milestones_url = f"https://api.github.com/repos/{github_repo}/milestones"
+
+    try:
+        # Get GitHub milestones
+        response = requests.get(milestones_url)
+        response.raise_for_status()
+        milestones = response.json()
+
+        # Get or create a forum category for milestones
+        category, created = ForumCategory.objects.get_or_create(
+            name="GitHub Milestones",
+            defaults={
+                "slug": "github-milestones",
+                "description": "Discussions about GitHub milestones and project roadmap",
+                "icon": "fa-github",
+            },
+        )
+
+        # Count for tracking
+        created_count = 0
+        updated_count = 0
+
+        for milestone in milestones:
+            milestone_title = milestone["title"]
+            milestone_description = milestone["description"] or "No description provided."
+            milestone_url = milestone["html_url"]
+            milestone_state = milestone["state"]
+            open_issues = milestone["open_issues"]
+            closed_issues = milestone["closed_issues"]
+            due_date = milestone.get("due_on", "No due date")
+
+            # Format content with progress information
+            progress = 0
+            if open_issues + closed_issues > 0:
+                progress = (closed_issues / (open_issues + closed_issues)) * 100
+
+            content = f"""
+## Milestone: {milestone_title}
+
+{milestone_description}
+
+**State:** {milestone_state}
+**Progress:** {progress:.1f}% ({closed_issues} closed / {open_issues} open issues)
+**Due Date:** {due_date}
+
+[View on GitHub]({milestone_url})
+            """
+
+            # Try to find an existing topic for this milestone
+            topic = ForumTopic.objects.filter(
+                category=category, title__startswith=f"Milestone: {milestone_title}"
+            ).first()
+
+            if topic:
+                # Update existing topic
+                topic.content = content
+                topic.is_pinned = milestone_state == "open"  # Pin open milestones
+                topic.save()
+                updated_count += 1
+            else:
+                # Create new topic
+                # Use the first superuser as the author
+                author = User.objects.filter(is_superuser=True).first()
+                if author:
+                    ForumTopic.objects.create(
+                        category=category,
+                        title=f"Milestone: {milestone_title}",
+                        content=content,
+                        author=author,
+                        is_pinned=(milestone_state == "open"),
+                    )
+                    created_count += 1
+
+        if created_count or updated_count:
+            messages.success(
+                request, f"Successfully synced GitHub milestones: {created_count} created, {updated_count} updated."
+            )
+        else:
+            messages.info(request, "No GitHub milestones to sync.")
+
+    except requests.exceptions.RequestException as e:
+        messages.error(request, f"Error fetching GitHub milestones: {str(e)}")
+    except Exception as e:
+        messages.error(request, f"Error syncing milestones: {str(e)}")
+
+    return redirect("forum_categories")
+
+
+@login_required
+def toggle_course_status(request, slug):
+    """Toggle a course between draft and published status"""
+    course = get_object_or_404(Course, slug=slug)
+
+    # Check if user is the course teacher
+    if request.user != course.teacher:
+        messages.error(request, "Only the course teacher can modify course status!")
+        return redirect("course_detail", slug=slug)
+
+    # Toggle the status between draft and published
+    if course.status == "draft":
+        course.status = "published"
+        messages.success(request, "Course has been published successfully!")
+    elif course.status == "published":
+        course.status = "draft"
+        messages.success(request, "Course has been unpublished and is now in draft mode.")
+    # Note: We don't toggle from/to 'archived' status as that's a separate action
+
+    course.save()
+    return redirect("course_detail", slug=slug)
+
+
+def public_profile(request, username):
+    user = get_object_or_404(User, username=username)
+
+    try:
+        profile = user.profile
+    except Profile.DoesNotExist:
+        # Instead of raising Http404, we call custom_404.
+        return custom_404(request, "Profile not found.")
+
+    if not profile.is_profile_public:
+        return custom_404(request, "Profile not found.")
+
+    context = {"profile": profile}
+
+    if profile.is_teacher:
+        courses = Course.objects.filter(teacher=user)
+        total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
+        context.update(
+            {
+                "teacher_stats": {
+                    "courses": courses,
+                    "total_courses": courses.count(),
+                    "total_students": total_students,
+                }
+            }
+        )
+    else:
+        enrollments = Enrollment.objects.filter(student=user)
+        completed_enrollments = enrollments.filter(status="completed")
+        total_courses = enrollments.count()
+        total_completed = completed_enrollments.count()
+        total_progress = 0
+        progress_count = 0
+        for enrollment in enrollments:
+            progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+            total_progress += progress.completion_percentage
+            progress_count += 1
+        avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+        context.update(
+            {
+                "total_courses": total_courses,
+                "total_completed": total_completed,
+                "avg_progress": avg_progress,
+                "completed_courses": completed_enrollments,
+            }
+        )
+
+    return render(request, "public_profile_detail.html", context)
+
+
+class GradeableLinkListView(ListView):
+    """View to display all submitted links that can be graded."""
+
+    model = GradeableLink
+    template_name = "grade_links/link_list.html"
+    context_object_name = "links"
+    paginate_by = 10
+
+
+class GradeableLinkDetailView(DetailView):
+    """View to display details about a specific link and its grades."""
+
+    model = GradeableLink
+    template_name = "grade_links/link_detail.html"
+    context_object_name = "link"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Check if user is authenticated
+        if self.request.user.is_authenticated:
+            # Check if the user has already graded this link
+            try:
+                user_grade = LinkGrade.objects.get(link=self.object, user=self.request.user)
+                context["user_grade"] = user_grade
+                context["grade_form"] = LinkGradeForm(instance=user_grade)
+            except LinkGrade.DoesNotExist:
+                context["grade_form"] = LinkGradeForm()
+
+        # Get all grades for this link
+        context["grades"] = self.object.grades.all()
+
+        return context
+
+
+class GradeableLinkCreateView(LoginRequiredMixin, CreateView):
+    """View to submit a new link for grading."""
+
+    model = GradeableLink
+    form_class = GradeableLinkForm
+    template_name = "grade_links/submit_link.html"
+    success_url = reverse_lazy("gradeable_link_list")
+
+    def form_valid(self, form):
+        form.instance.user = self.request.user
+        messages.success(self.request, "Your link has been submitted for grading!")
+        return super().form_valid(form)
+
+
+@login_required
+def grade_link(request, pk):
+    """View to grade a link."""
+    link = get_object_or_404(GradeableLink, pk=pk)
+
+    # Prevent users from grading their own links
+    if link.user == request.user:
+        messages.error(request, "You cannot grade your own submissions!")
+        return redirect("gradeable_link_detail", pk=link.pk)
+
+    # Check if the user has already graded this link
+    try:
+        user_grade = LinkGrade.objects.get(link=link, user=request.user)
+    except LinkGrade.DoesNotExist:
+        user_grade = None
+
+    if request.method == "POST":
+        form = LinkGradeForm(request.POST, instance=user_grade)
+        if form.is_valid():
+            grade = form.save(commit=False)
+            grade.link = link
+            grade.user = request.user
+            grade.save()
+            messages.success(request, "Your grade has been submitted!")
+            return redirect("gradeable_link_detail", pk=link.pk)
+    else:
+        form = LinkGradeForm(instance=user_grade)
+
+    return render(
+        request,
+        "grade_links/grade_link.html",
+        {
+            "form": form,
+            "link": link,
+        },
+    )
+
+
+def duplicate_session(request, session_id):
+    """Duplicate a session to next week."""
+    # Get the original session
+    session = get_object_or_404(Session, id=session_id)
+    course = session.course
+
+    # Check if user is the course teacher
+    if request.user != course.teacher:
+        messages.error(request, "Only the course teacher can duplicate sessions!")
+        return redirect("course_detail", slug=course.slug)
+
+    # Create a new session with the same properties but dates shifted forward by a week
+    new_session = Session(
+        course=course,
+        title=session.title,
+        description=session.description,
+        is_virtual=session.is_virtual,
+        meeting_link=session.meeting_link,
+        meeting_id="",  # Clear meeting ID as it will be a new meeting
+        location=session.location,
+        price=session.price,
+        enable_rollover=session.enable_rollover,
+        rollover_pattern=session.rollover_pattern,
+    )
+
+    # Set dates one week later
+    time_shift = timezone.timedelta(days=7)
+    new_session.start_time = session.start_time + time_shift
+    new_session.end_time = session.end_time + time_shift
+
+    # Save the new session
+    new_session.save()
+    msg = f"Session '{session.title}' duplicated for {new_session.start_time.strftime('%b %d, %Y')}"
+    messages.success(request, msg)
+
+    return redirect("course_detail", slug=course.slug)
+
+
+def run_create_test_data(request):
+    """Run the create_test_data management command and redirect to homepage."""
+    from django.conf import settings
+
+    if not settings.DEBUG:
+        messages.error(request, "This action is only available in debug mode.")
+        return redirect("index")
+
+    try:
+        call_command("create_test_data")
+        messages.success(request, "Test data has been created successfully!")
+    except Exception as e:
+        messages.error(request, f"Error creating test data: {str(e)}")
+
+    return redirect("index")

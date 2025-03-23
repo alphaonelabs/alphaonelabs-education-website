@@ -4,6 +4,25 @@
 
 {% block content %}
   <main class="flex-1 w-full max-w-[90rem] mx-auto mt-6 px-4 md:px-6">
+    {% if is_debug %}
+      <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-6 rounded">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-code text-yellow-500"></i>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm text-yellow-700">Debug Mode: This banner and buttons are only visible in development.</p>
+            <div class="mt-2">
+              <a href="{% url 'create_test_data' %}"
+                 class="bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200 inline-flex items-center">
+                <i class="fas fa-database mr-2"></i>
+                Add Test Data
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
     <div class="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-6">
       <div class="md:w-3/4 space-y-7">
         <div class="space-y-4">
@@ -89,11 +108,11 @@
                   {% if first_session and last_session %}
                     <div class="flex items-center mb-1">
                       <i class="fas fa-calendar-day mr-2"></i>
-                      <span>Starts: {{ first_session.start_time|date:"M j, Y" }}</span>
+                      <span>Starts: {{ first_session.start_time|date:"M j, Y g:i A e" }}</span>
                     </div>
                     <div class="flex items-center">
                       <i class="fas fa-calendar-check mr-2"></i>
-                      <span>Ends: {{ last_session.end_time|date:"M j, Y" }}</span>
+                      <span>Ends: {{ last_session.end_time|date:"M j, Y g:i A e" }}</span>
                     </div>
                   {% else %}
                     <div class="flex items-center mb-1">
@@ -107,19 +126,19 @@
               <div class="flex items-center mb-3">
                 {% if course.teacher.profile.avatar %}
                   <img src="{{ course.teacher.profile.avatar.url }}"
-                       alt="{{ course.teacher.get_full_name|default:course.teacher.username }}"
+                       alt="{{ course.teacher.username }}"
                        class="h-12 w-12 rounded-full mr-3"
                        width="48"
                        height="48" />
                 {% else %}
                   <img src="{% static 'images/default_teacher.png' %}"
-                       alt="{{ course.teacher.get_full_name|default:course.teacher.username }}"
+                       alt="{{ course.teacher.username }}"
                        class="h-12 w-12 rounded-full mr-3"
                        width="48"
                        height="48" />
                 {% endif %}
                 <div>
-                  <span class="text-sm font-medium">{{ course.teacher.get_full_name|default:course.teacher.username }}</span>
+                  <span class="text-sm font-medium">{{ course.teacher.username }}</span>
                   {% if course.teacher.profile.expertise %}
                     <p class="text-xs text-gray-600 dark:text-gray-400">{{ course.teacher.profile.expertise }}</p>
                   {% endif %}
@@ -154,23 +173,23 @@
             <i class="fas fa-arrow-right ml-2"></i>
           </a>
         </div>
-        <!-- Quiz Banner Section -->
-        <div class="mt-8 mb-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl overflow-hidden shadow-lg">
+        <!-- Quiz Banner -->
+        <div class="mt-4 mb-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden shadow-md">
           <div class="flex flex-col md:flex-row">
-            <div class="p-6 md:p-8 md:w-2/3 text-white">
-              <h2 class="text-2xl md:text-3xl font-bold mb-3">Test Your Knowledge with Our Quizzes!</h2>
-              <p class="mb-6 text-blue-100">
-                Challenge yourself, earn badges, and track your progress with our interactive quizzes. Perfect for students looking to test their understanding or anyone wanting to learn something new!
+            <div class="p-4 md:p-5 md:w-2/3 text-white">
+              <h2 class="text-sm md:text-base font-semibold mb-1">Test Your Knowledge with Our Quizzes!</h2>
+              <p class="mb-3 text-blue-100 text-xs md:text-sm">
+                Challenge yourself with our interactive quizzes. Perfect for testing your understanding.
               </p>
-              <div class="flex flex-wrap gap-4">
+              <div class="flex flex-wrap gap-2">
                 <a href="{% url 'quiz_list' %}"
-                   class="bg-white text-blue-600 hover:bg-blue-50 px-6 py-3 rounded-lg font-semibold shadow-md transition duration-200 inline-flex items-center">
-                  <i class="fas fa-puzzle-piece mr-2"></i> Browse Quizzes
+                   class="bg-white text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition duration-200 inline-flex items-center">
+                  <i class="fas fa-puzzle-piece mr-1.5"></i> Browse Quizzes
                 </a>
                 {% if user.is_authenticated %}
                   <a href="{% url 'create_quiz' %}"
-                     class="bg-transparent hover:bg-white/20 border-2 border-white px-6 py-3 rounded-lg font-semibold transition duration-200 inline-flex items-center">
-                    <i class="fas fa-plus mr-2"></i> Create Quiz
+                     class="bg-transparent hover:bg-white/20 border border-white px-3 py-1.5 rounded-md text-xs font-medium transition duration-200 inline-flex items-center">
+                    <i class="fas fa-plus mr-1.5"></i> Create Quiz
                   </a>
                 {% endif %}
               </div>
@@ -180,19 +199,79 @@
                    style="background-image: url('{% static "images/quiz-illustration.svg" %}')"></div>
             </div>
           </div>
-          <div class="bg-blue-700/30 py-3 px-8">
-            <div class="flex flex-wrap items-center justify-between text-sm text-white">
-              <div class="flex items-center mb-2 md:mb-0">
-                <i class="fas fa-chart-line mr-2"></i>
-                <span>Track your progress over time</span>
+          <div class="bg-blue-700/30 py-1.5 px-4">
+            <div class="flex flex-wrap items-center justify-between text-xs text-white">
+              <div class="flex items-center mb-1 md:mb-0">
+                <i class="fas fa-chart-line mr-1"></i>
+                <span>Track progress</span>
               </div>
-              <div class="flex items-center mb-2 md:mb-0">
-                <i class="fas fa-medal mr-2"></i>
-                <span>Earn badges for high scores</span>
+              <div class="flex items-center mb-1 md:mb-0">
+                <i class="fas fa-medal mr-1"></i>
+                <span>Earn badges</span>
               </div>
               <div class="flex items-center">
-                <i class="fas fa-share-alt mr-2"></i>
-                <span>Share results with friends</span>
+                <i class="fas fa-share-alt mr-1"></i>
+                <span>Share results</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Peer Challenges Section -->
+        <div class="mb-6 bg-gradient-to-r from-purple-600 to-pink-500 rounded-lg overflow-hidden shadow-md">
+          <div class="flex flex-col md:flex-row">
+            <div class="p-4 md:w-3/4 text-white relative overflow-hidden">
+              <div class="relative z-10">
+                <div class="flex items-center mb-1">
+                  <span class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">New Feature</span>
+                </div>
+                <h2 class="text-lg md:text-xl font-bold mb-2">Challenge Your Friends with Peer Quizzes!</h2>
+                <p class="mb-3 text-pink-100 text-sm">
+                  Create personalized quiz challenges, invite friends, and compete on the leaderboard!
+                </p>
+                <div class="flex flex-wrap gap-2">
+                  <a href="{% url 'challenge_list' %}"
+                     class="bg-white text-purple-600 hover:bg-purple-50 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition duration-200 inline-flex items-center">
+                    <i class="fas fa-trophy mr-1.5"></i> View Challenges
+                  </a>
+                  {% if user.is_authenticated %}
+                    <a href="{% url 'create_challenge' %}"
+                       class="bg-transparent hover:bg-white/20 border border-white px-3 py-1.5 rounded-lg text-sm font-medium transition duration-200 inline-flex items-center">
+                      <i class="fas fa-plus mr-1.5"></i> Create Challenge
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            <div class="hidden md:block md:w-1/4 bg-gradient-to-br from-purple-500/30 to-pink-500/30 p-2 relative">
+              <!-- Single Challenge Card visual -->
+              <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <div class="bg-white/90 dark:bg-gray-800/90 rounded-lg shadow-md p-2 w-36 border-t-4 border-yellow-500">
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-bold text-purple-600 dark:text-purple-400">Math Challenge</span>
+                    <span class="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded-full">1st</span>
+                  </div>
+                  <div class="text-xs text-gray-600 dark:text-gray-300">
+                    <div class="flex items-center">
+                      <i class="fas fa-user-friends mr-1 text-xs"></i> 8 Participants
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-purple-700/30 py-1.5 px-4">
+            <div class="flex flex-wrap items-center justify-between text-xs text-white">
+              <div class="flex items-center">
+                <i class="fas fa-users mr-1"></i>
+                <span>Challenge friends</span>
+              </div>
+              <div class="flex items-center">
+                <i class="fas fa-crown mr-1"></i>
+                <span>Compete</span>
+              </div>
+              <div class="flex items-center">
+                <i class="fas fa-chart-bar mr-1"></i>
+                <span>Track results</span>
               </div>
             </div>
           </div>
@@ -358,62 +437,170 @@
             </ul>
           </div>
         </div>
-      </div>
-      <div class="md:w-1/3 space-y-6">
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h2 class="text-xl font-semibold mb-4">
-            <i class="fa-solid fa-chalkboard-user mr-2"></i>
-            Teach a Course
-          </h2>
-          <form method="post" class="space-y-4">
-            {% csrf_token %}
-            {% if not user.is_authenticated or not user.profile.is_teacher %}
-              {% if request.user.is_authenticated %}
-                <input type="hidden" name="email" value="{{ user.email }}" />
-              {% else %}
-                <div>
-                  <label for="email" class="block text-sm font-medium mb-1">Email</label>
-                  <input type="email"
-                         id="email"
-                         name="email"
-                         class="block w-full border {% if form.email.errors %}border-red-500 dark:border-red-500{% else %}border-gray-300 dark:border-gray-600{% endif %} rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800"
-                         placeholder="your.email@example.com"
-                         value="{{ form.email.value|default:'' }}"
-                         required />
-                  {% if form.email.errors %}
-                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.email.errors|join:", " }}</p>
+        {% if user.is_authenticated %}
+          <!-- Team Collaboration Section -->
+          <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg p-6 mt-8">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-2xl font-bold text-white">Team Collaboration</h2>
+              <a href="{% url 'team_goals' %}"
+                 class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
+                <span>View All</span>
+                <i class="fas fa-arrow-right ml-2"></i>
+              </a>
+            </div>
+            {% if user.is_authenticated %}
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- My Team Goals -->
+                <div class="space-y-4">
+                  <h3 class="text-lg font-semibold text-white">My Team Goals</h3>
+                  {% if user_team_goals %}
+                    <div class="space-y-3">
+                      {% for goal in user_team_goals|slice:":3" %}
+                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition duration-200">
+                          <h4 class="font-medium text-white">{{ goal.title }}</h4>
+                          <p class="text-sm text-gray-200 mt-1">{{ goal.description|truncatechars:100 }}</p>
+                          {% if goal.deadline %}
+                            <div class="text-sm text-gray-200 mt-2">
+                              <i class="fas fa-calendar-alt mr-1"></i>
+                              {% load i18n %}
+
+                              <span>{% trans "Due" %}: {{ goal.deadline|date:"M j, Y" }}</span>
+                              {% if goal.deadline < now %}
+                                <span class="text-red-300 ml-1">({% trans "Overdue" %})</span>
+                              {% else %}
+                                <span class="text-gray-300 ml-1">({{ goal.deadline|timeuntil }} {% trans "left" %})</span>
+                              {% endif %}
+                            </div>
+                          {% endif %}
+                          <div class="flex items-center justify-between mt-3">
+                            <span class="text-sm text-gray-200">
+                              <i class="fas fa-users mr-1"></i>
+                              {{ goal.members.count }} members
+                            </span>
+                            <a href="{% url 'team_goal_detail' goal.id %}"
+                               class="text-white hover:text-gray-200 text-sm">View Details</a>
+                          </div>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% else %}
+                    <p class="text-gray-200">You haven't created or joined any team goals yet.</p>
+                  {% endif %}
+                  <a href="{% url 'create_team_goal' %}"
+                     class="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-gray-100 rounded-lg transition duration-200">
+                    <i class="fas fa-plus mr-2"></i>
+                    Create New Team Goal
+                  </a>
+                </div>
+                <!-- Team Invitations -->
+                <div class="space-y-4">
+                  <h3 class="text-lg font-semibold text-white">Team Invitations</h3>
+                  {% if team_invites %}
+                    <div class="space-y-3">
+                      {% for invite in team_invites|slice:":3" %}
+                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition duration-200">
+                          <h4 class="font-medium text-white">{{ invite.goal.title }}</h4>
+                          <p class="text-sm text-gray-200 mt-1">Invited by {{ invite.sender.username }}</p>
+                          <div class="flex items-center space-x-2 mt-3">
+                            <form method="post"
+                                  action="{% url 'accept_team_invite' invite.id %}"
+                                  class="inline">
+                              {% csrf_token %}
+                              <button type="submit"
+                                      class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition duration-200">
+                                Accept
+                              </button>
+                            </form>
+                            <form method="post"
+                                  action="{% url 'decline_team_invite' invite.id %}"
+                                  class="inline">
+                              {% csrf_token %}
+                              <button type="submit"
+                                      class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition duration-200">
+                                Decline
+                              </button>
+                            </form>
+                          </div>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% else %}
+                    <p class="text-gray-200">You have no pending team invitations.</p>
                   {% endif %}
                 </div>
-              {% endif %}
-            {% endif %}
-            <div>
-              <label for="subject" class="block text-sm font-medium mb-1">Subject</label>
-              <input type="text"
-                     id="subject"
-                     name="subject"
-                     class="block w-full border {% if form.subject.errors %}border-red-500 dark:border-red-500{% else %}border-gray-300 dark:border-gray-600{% endif %} rounded p-2 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-800 bg-white dark:bg-gray-800"
-                     placeholder="Your subject to teach"
-                     value="{{ form.subject.value|default:'' }}"
-                     required />
-              {% if form.subject.errors %}
-                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.subject.errors|join:", " }}</p>
-              {% endif %}
-            </div>
-            <div>
-              <label for="captcha" class="block text-sm font-medium mb-1">Verification</label>
-              <div class="{% if form.captcha.errors %}border border-red-500 dark:border-red-500 rounded p-2{% endif %}">
-                {{ form.captcha }}
               </div>
-              {% if form.captcha.errors %}
-                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.captcha.errors|join:", " }}</p>
+            {% else %}
+              <div class="text-center py-8">
+                <p class="text-gray-200 mb-4">Sign in to create or join team goals and collaborate with others!</p>
+                <a href="{% url 'login' %}"
+                   class="inline-flex items-center px-6 py-3 bg-white text-blue-600 hover:bg-gray-100 rounded-lg transition duration-200">
+                  <i class="fas fa-sign-in-alt mr-2"></i>
+                  Sign In to Get Started
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+      <div class="md:w-1/3 space-y-6">
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 shadow-lg">
+          <h2 class="text-xl font-semibold mb-6 text-center text-gray-800 dark:text-gray-200">What Would You Like To Do?</h2>
+          <div class="space-y-4">
+            <a href="{% url 'teach' %}"
+               class="block w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-4 rounded-xl transition duration-200 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center">
+              <i class="fa-solid fa-chalkboard-user text-2xl mb-2"></i>
+              <span class="text-lg">I Want to Teach</span>
+              <div class="text-sm font-normal">Share your knowledge with others</div>
+            </a>
+            <a href="{% url 'learn' %}"
+               class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-4 rounded-xl transition duration-200 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center">
+              <i class="fa-solid fa-graduation-cap mr-3 text-2xl mb-2"></i>
+              <span class="text-lg">I Want to Learn</span>
+              <div class="text-sm font-normal">Discover new skills and expand your knowledge</div>
+            </a>
+          </div>
+        </div>
+        {% if user.is_authenticated and teaching_courses %}
+          <!-- Courses Teaching Section -->
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 shadow-lg">
+            <h2 class="text-lg font-semibold mb-4 flex items-center">
+              <i class="fa-solid fa-chalkboard-teacher text-teal-300 dark:text-teal-300 mr-2"></i>
+              My Teaching Courses
+            </h2>
+            <div class="space-y-3">
+              {% for course in teaching_courses %}
+                <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200">
+                  <div class="flex items-center justify-between mb-1">
+                    <a href="{% url 'course_detail' course.slug %}"
+                       class="font-medium text-gray-800 dark:text-gray-200 hover:text-teal-300 dark:hover:text-teal-300 transition">
+                      {{ course.title|truncatechars:28 }}
+                    </a>
+                    <span class="text-xs {% if course.status == 'published' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% elif course.status == 'draft' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %} px-2 py-1 rounded-full">
+                      {{ course.get_status_display }}
+                    </span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-300">
+                    <div class="flex items-center">
+                      <i class="fas fa-eye text-gray-400 mr-1.5"></i>
+                      <span>{{ course.view_count|default:"0" }} views</span>
+                    </div>
+                    <div class="flex items-center">
+                      <i class="fas fa-users text-gray-400 mr-1.5"></i>
+                      <span>{{ course.enrolled_students }}/{{ course.max_students }} enrolled</span>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+              {% if teaching_courses.count > 3 %}
+                <a href="{% url 'teacher_dashboard' %}"
+                   class="text-teal-300 hover:text-teal-400 dark:text-teal-300 dark:hover:text-teal-400 text-sm flex items-center justify-center mt-2">
+                  <span>View all courses</span>
+                  <i class="fas fa-arrow-right ml-1"></i>
+                </a>
               {% endif %}
             </div>
-            <button type="submit"
-                    class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full flex items-center">
-              <i class="fa-solid fa-arrow-right-to-bracket mr-2"></i> Continue
-            </button>
-          </form>
-        </div>
+          </div>
+        {% endif %}
         <!-- Progress Trackers Dashboard -->
         {% if user.is_authenticated %}
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
@@ -431,7 +618,9 @@
                     </div>
                     <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
                       <div class="bg-{{ tracker.color }} h-3 rounded-full"
-                           style="width: {{ tracker.percentage }}%"></div>
+                           {% verbatim %}
+                           style="width: {% endverbatim %}{{ tracker.percentage }}{% verbatim %}%"
+                           {% endverbatim %}></div>
                     </div>
                   </div>
                 {% endfor %}
@@ -570,8 +759,14 @@
             <strong class="block text-gray-900 dark:text-gray-200 mb-1">{{ latest_success_story.title|default:"From Beginner to Expert in 3 Months" }}</strong>
             {{ latest_success_story.excerpt|default:"Discover how our platform helped a complete beginner transform into a confident expert through personalized learning paths and dedicated mentorship..." }}
           </p>
-          <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}"
-             class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block mt-2">Read More →</a>
+          <div class="flex justify-between items-center mt-2">
+            <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}"
+               class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block">Read More →</a>
+            <a href="{% url 'create_success_story' %}"
+               class="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded-md inline-flex items-center">
+              <i class="fas fa-plus mr-1"></i> Share Your Story
+            </a>
+          </div>
         </div>
         <!-- Recent Contributors -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">

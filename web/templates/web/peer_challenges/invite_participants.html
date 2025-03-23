@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  Invite Participants | {{ challenge.title }}
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+    <nav class="text-sm mb-6">
+      <a href="{% url 'index' %}" class="text-blue-600 hover:text-blue-800">Home</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'challenge_list' %}"
+         class="text-blue-600 hover:text-blue-800">Peer Challenges</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'peer_challenge_detail' challenge.id %}"
+         class="text-blue-600 hover:text-blue-800">{{ challenge.title }}</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-600">Invite Participants</span>
+    </nav>
+    <div class="max-w-3xl mx-auto">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div class="bg-indigo-600 p-4">
+          <h1 class="text-2xl font-bold text-white">Invite Participants</h1>
+          <p class="text-indigo-100 mt-1">{{ challenge.title }}</p>
+        </div>
+        <div class="p-6">
+          <!-- Challenge Information -->
+          <div class="mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">Challenge Information</h2>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+              <div class="font-medium text-gray-800 dark:text-white">{{ challenge.title }}</div>
+              <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">Quiz: {{ challenge.quiz.title }}</div>
+              {% if challenge.expires_at %}
+                <div class="mt-2 text-sm flex items-center {% if is_expired %}text-red-600 dark:text-red-400{% else %}text-gray-600 dark:text-gray-400{% endif %}">
+                  <i class="fas fa-clock mr-1"></i>
+                  {% if is_expired %}
+                    Expired on {{ challenge.expires_at|date:"M d, Y" }}
+                  {% else %}
+                    Expires on {{ challenge.expires_at|date:"M d, Y" }}
+                  {% endif %}
+                </div>
+              {% endif %}
+              <div class="mt-2 text-sm flex items-center text-gray-600 dark:text-gray-400">
+                <i class="fas fa-users mr-1"></i>
+                {{ challenge.total_participants }} participant{{ challenge.total_participants|pluralize }} so far
+              </div>
+            </div>
+          </div>
+          <!-- Current Participants -->
+          <div class="mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">Current Participants</h2>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+              {% if existing_invitations %}
+                <div class="overflow-x-auto">
+                  <table class="min-w-full bg-white dark:bg-gray-800">
+                    <thead class="bg-gray-100 dark:bg-gray-700">
+                      <tr>
+                        <th class="py-2 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Participant
+                        </th>
+                        <th class="py-2 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Status
+                        </th>
+                        <th class="py-2 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Invited On
+                        </th>
+                        <th class="py-2 px-4 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                      {% for invitation in existing_invitations %}
+                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{{ invitation.participant.username }}</td>
+                          <td class="py-3 px-4 text-sm">
+                            {% if invitation.status == 'pending' %}
+                              <span class="inline-flex px-2 py-1 text-xs font-semibold bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 rounded-full">
+                                Pending
+                              </span>
+                            {% elif invitation.status == 'accepted' %}
+                              <span class="inline-flex px-2 py-1 text-xs font-semibold bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 rounded-full">
+                                Accepted
+                              </span>
+                            {% elif invitation.status == 'completed' %}
+                              <span class="inline-flex px-2 py-1 text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded-full">
+                                Completed
+                              </span>
+                            {% elif invitation.status == 'declined' %}
+                              <span class="inline-flex px-2 py-1 text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 rounded-full">
+                                Declined
+                              </span>
+                            {% elif invitation.status == 'expired' %}
+                              <span class="inline-flex px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 rounded-full">
+                                Expired
+                              </span>
+                            {% endif %}
+                          </td>
+                          <td class="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">{{ invitation.created_at|date:"M d, Y" }}</td>
+                          <td class="py-3 px-4 text-sm">
+                            {% if invitation.status == 'pending' %}
+                              <form method="post"
+                                    action="{% url 'cancel_invitation' invitation.id %}"
+                                    class="inline">
+                                {% csrf_token %}
+                                <button type="submit"
+                                        class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300">
+                                  Cancel
+                                </button>
+                              </form>
+                            {% elif invitation.status == 'completed' %}
+                              <a href="{% url 'participant_results' invitation.id %}"
+                                 class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                                View Results
+                              </a>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+              {% else %}
+                <div class="text-center py-4 text-gray-500 dark:text-gray-400">
+                  <p>No participants have been invited to this challenge yet.</p>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          <!-- Invite Form -->
+          <div class="mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">Invite New Participants</h2>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+              <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <!-- Participants Field -->
+                <div>
+                  <label for="{{ form.participants.id_for_label }}"
+                         class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Select Participants
+                  </label>
+                  {{ form.participants }}
+                  {% if form.participants.errors %}
+                    <div class="text-red-600 text-sm mt-1">{{ form.participants.errors }}</div>
+                  {% endif %}
+                  <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ form.participants.help_text }}</div>
+                </div>
+                <!-- Message Field -->
+                <div>
+                  <label for="{{ form.message.id_for_label }}"
+                         class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Personal Message (Optional)
+                  </label>
+                  {{ form.message }}
+                  {% if form.message.errors %}<div class="text-red-600 text-sm mt-1">{{ form.message.errors }}</div>{% endif %}
+                  <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Add a personal note to accompany your invitation</div>
+                </div>
+                <!-- Submit Button -->
+                <div class="mt-6 flex justify-end">
+                  <button type="submit"
+                          class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-lg inline-flex items-center">
+                    <i class="fas fa-paper-plane mr-2"></i> Send Invitations
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+          <!-- Other Options -->
+          <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Other Options</h2>
+            <div class="space-y-4">
+              <!-- Share Link -->
+              <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <h3 class="font-medium text-gray-800 dark:text-white mb-2">Share Challenge Link</h3>
+                <div class="flex">
+                  <input type="text"
+                         value="{{ share_url }}"
+                         readonly
+                         class="flex-1 border border-gray-300 dark:border-gray-600 rounded-l-lg px-3 py-2 text-sm text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <button onclick="copyToClipboard('{{ share_url }}')"
+                          class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-4 rounded-r-lg inline-flex items-center">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  Share this link with friends so they can join your challenge
+                </p>
+              </div>
+              {% if challenge.status == 'active' %}
+                <!-- End Challenge -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                  <h3 class="font-medium text-gray-800 dark:text-white mb-2">End Challenge</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    Ending the challenge will prevent new participants from joining and finalize the leaderboard.
+                  </p>
+                  <form method="post" action="{% url 'complete_challenge' challenge.id %}">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg inline-flex items-center">
+                      <i class="fas fa-flag-checkered mr-2"></i> End Challenge
+                    </button>
+                  </form>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+          <!-- Back Button -->
+          <div class="flex justify-start border-t border-gray-200 dark:border-gray-700 pt-6 mt-6">
+            <a href="{% url 'peer_challenge_detail' challenge.id %}"
+               class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">
+              <i class="fas fa-arrow-left mr-1"></i> Back to Challenge Details
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+      function copyToClipboard(text) {
+          navigator.clipboard.writeText(text).then(function() {
+              // Create a temporary element for notification
+              const notification = document.createElement('div');
+              notification.textContent = 'Copied to clipboard!';
+              notification.style.position = 'fixed';
+              notification.style.bottom = '20px';
+              notification.style.left = '50%';
+              notification.style.transform = 'translateX(-50%)';
+              notification.style.backgroundColor = '#4f46e5';
+              notification.style.color = 'white';
+              notification.style.padding = '10px 20px';
+              notification.style.borderRadius = '8px';
+              notification.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+              notification.style.zIndex = '9999';
+
+              document.body.appendChild(notification);
+
+              // Remove after 2 seconds
+              setTimeout(() => {
+                  notification.style.opacity = '0';
+                  notification.style.transition = 'opacity 0.5s ease';
+                  setTimeout(() => {
+                      document.body.removeChild(notification);
+                  }, 500);
+              }, 2000);
+          });
+      }
+  </script>
+{% endblock content %}
