@@ -560,6 +560,47 @@
             </a>
           </div>
         </div>
+        {% if user.is_authenticated and teaching_courses %}
+          <!-- Courses Teaching Section -->
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 shadow-lg">
+            <h2 class="text-lg font-semibold mb-4 flex items-center">
+              <i class="fa-solid fa-chalkboard-teacher text-teal-300 dark:text-teal-300 mr-2"></i>
+              My Teaching Courses
+            </h2>
+            <div class="space-y-3">
+              {% for course in teaching_courses %}
+                <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200">
+                  <div class="flex items-center justify-between mb-1">
+                    <a href="{% url 'course_detail' course.slug %}"
+                       class="font-medium text-gray-800 dark:text-gray-200 hover:text-teal-300 dark:hover:text-teal-300 transition">
+                      {{ course.title|truncatechars:28 }}
+                    </a>
+                    <span class="text-xs {% if course.status == 'published' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% elif course.status == 'draft' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %} px-2 py-1 rounded-full">
+                      {{ course.get_status_display }}
+                    </span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-300">
+                    <div class="flex items-center">
+                      <i class="fas fa-eye text-gray-400 mr-1.5"></i>
+                      <span>{{ course.view_count|default:"0" }} views</span>
+                    </div>
+                    <div class="flex items-center">
+                      <i class="fas fa-users text-gray-400 mr-1.5"></i>
+                      <span>{{ course.enrolled_students }}/{{ course.max_students }} enrolled</span>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+              {% if teaching_courses.count > 3 %}
+                <a href="{% url 'teacher_dashboard' %}"
+                   class="text-teal-300 hover:text-teal-400 dark:text-teal-300 dark:hover:text-teal-400 text-sm flex items-center justify-center mt-2">
+                  <span>View all courses</span>
+                  <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
         <!-- Progress Trackers Dashboard -->
         {% if user.is_authenticated %}
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
