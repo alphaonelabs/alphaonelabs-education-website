@@ -13,6 +13,7 @@ from .views import (
     GradeableLinkListView,
     add_goods_to_cart,
     grade_link,
+    notification_preferences,
     sales_analytics,
     sales_data,
     streak_detail,
@@ -61,6 +62,7 @@ urlpatterns += i18n_patterns(
     # Authentication URLs
     path("accounts/signup/", views.signup_view, name="account_signup"),  # Our custom signup view
     path("accounts/", include("allauth.urls")),
+    path("account/notification-preferences/", notification_preferences, name="notification_preferences"),
     path("profile/", views.profile, name="profile"),
     path("accounts/profile/", views.profile, name="accounts_profile"),
     # Dashboard URLs
