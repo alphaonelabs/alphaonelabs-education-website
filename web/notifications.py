@@ -250,48 +250,52 @@ def send_assignment_reminders():
     early_window = now + timedelta(days=3)  # Early reminders: assignments due in next 3 days.
     final_window = now + timedelta(hours=24)  # Final reminders: assignments due in next 24 hours.
 
+from django.db import transaction
+
     # Process Early Reminders
     early_assignments = CourseMaterial.objects.filter(
         material_type="assignment", due_date__gt=now, due_date__lte=early_window, reminder_sent=False
     )
 
     for assignment in early_assignments:
-        course = assignment.course
-        enrollments = course.enrollments.filter(status="approved")
-        for enrollment in enrollments:
-            student = enrollment.student
-            preferences, _ = NotificationPreference.objects.get_or_create(user=student)
-            days_before_deadline = (assignment.due_date - now).days
-            if days_before_deadline <= preferences.reminder_days_before:
-                subject = f"Upcoming Assignment Deadline: {assignment.title}"
-                html_message = render_to_string(
-                    "emails/assignment_reminder.html",
-                    {
-                        "student": student,
-                        "assignment": assignment,
-                        "course": course,
-                        "due_date": assignment.due_date,
-                        "days_remaining": days_before_deadline,
-                    },
-                )
-                if preferences.in_app_notifications:
-                    send_notification(
-                        student,
+        with transaction.atomic():
+            course = assignment.course
+            enrollments = course.enrollments.filter(status="approved")
+            for enrollment in enrollments:
+                student = enrollment.student
+                preferences, _ = NotificationPreference.objects.get_or_create(user=student)
+                days_before_deadline = (assignment.due_date - now).days
+                if days_before_deadline <= preferences.reminder_days_before:
+                    subject = f"Upcoming Assignment Deadline: {assignment.title}"
+                    html_message = render_to_string(
+                        "emails/assignment_reminder.html",
                         {
-                            "title": subject,
-                            "message": f"Your assignment '{assignment.title}' is due in {days_before_deadline} days.",
-                            "notification_type": "warning",
+                            "student": student,
+                            "assignment": assignment,
+                            "course": course,
+                            "due_date": assignment.due_date,
+                            "days_remaining": days_before_deadline,
                         },
                     )
-                if preferences.email_notifications:
-                    send_mail(
-                        subject,
-                        "",  # Plain text version
-                        settings.DEFAULT_FROM_EMAIL,
-                        [student.email],
-                        html_message=html_message,
-                    )
-        assignment.reminder_sent = True
+                    if preferences.in_app_notifications:
+                        send_notification(
+                            student,
+                            {
+                                "title": subject,
+                                "message": f"Your assignment '{assignment.title}' is due in {days_before_deadline} days.",
+                                "notification_type": "warning",
+                            },
+                        )
+                    if preferences.email_notifications:
+                        send_mail(
+                            subject,
+                            "",  # Plain text version
+                            settings.DEFAULT_FROM_EMAIL,
+                            [student.email],
+                            html_message=html_message,
+                        )
+            assignment.reminder_sent = True
+            assignment.save()
         assignment.save()
 
     # Process Final Reminders
