@@ -7,17 +7,9 @@ from web.models import Course, Enrollment, Goods, Order, OrderItem, Profile, Sto
 @override_settings(STRIPE_SECRET_KEY="dummy_key")
 class UserModelTests(TestCase):
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
+    def setUpTestData(cls):
         cls.user = User.objects.create_user(username="testuser", email="test@example.com", password="testpass123")
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.user.delete()
-        super().tearDownClass()
-
-    def setUpTestData(self):
-        self.profile, _ = Profile.objects.get_or_create(user=self.user)
+        cls.profile, _ = Profile.objects.get_or_create(user=cls.user)
 
     def test_user_creation(self):
         """Test that a user can be created"""
@@ -102,6 +94,7 @@ class CourseModelTests(TestCase):
 
 
 class EnrollmentModelTests(TestCase):
+    @classmethod  # Added this decorator - this was the main error!
     def setUpTestData(cls):
         cls.teacher = User.objects.create_user(
             username="teacher",
@@ -156,7 +149,7 @@ class EnrollmentModelTests(TestCase):
         )
         expected_str = f"{self.student.username} - {self.course.title}"
         self.assertEqual(str(enrollment), expected_str)
-        self.assertEqual(str(enrollment), expected_str)
+        # Removed duplicate assertion here
 
 
 class GoodsModelTests(TestCase):
