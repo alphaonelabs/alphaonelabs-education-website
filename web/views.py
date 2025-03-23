@@ -2,6 +2,7 @@ import calendar
 import html
 import ipaddress
 import json
+import logging
 import os
 import re
 import shutil
@@ -21,6 +22,7 @@ from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.core.mail import send_mail
 from django.core.management import call_command
 from django.core.paginator import Paginator
@@ -286,7 +288,6 @@ def all_leaderboards(request):
     """
     Display all leaderboard types on a single page.
     """
-    from django.core.cache import cache
 
     # Global Leaderboard
     global_data = cache.get("global_leaderboard")
@@ -327,19 +328,25 @@ def all_leaderboards(request):
             user_weekly_points = calculate_user_weekly_points(request.user)
             user_monthly_points = calculate_user_monthly_points(request.user)
         except Exception as e:
-            print(f"Error calculating user points: {e}")
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error calculating user points: {e}")
             user_total_points = user_weekly_points = user_monthly_points = 0
 
         # Get challenge entries with caching
         challenge_data = cache.get("challenge_leaderboard")
         if challenge_data is None:
-            challenge_entries = (
-                ChallengeSubmission.objects.select_related("user", "challenge")
-                .filter(points_awarded__gt=0)  # Only include submissions with points
-                .order_by("-points_awarded")[:10]
-            )
-            # Cache challenge entries for 15 minutes
-            cache.set("challenge_leaderboard", challenge_entries, 60 * 15)
+            try:
+                challenge_entries = (
+                    ChallengeSubmission.objects.select_related("user", "challenge")
+                    .filter(points_awarded__gt=0)  # Only include submissions with points
+                    .order_by("-points_awarded")[:10]
+                )
+                # Cache challenge entries for 15 minutes
+                cache.set("challenge_leaderboard", challenge_entries, 60 * 15)
+            except Exception as e:
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error retrieving challenge entries: {e}")
+                challenge_entries = []
         else:
             challenge_entries = challenge_data
 
@@ -400,7 +407,6 @@ def profile(request):
     }
 
     # Teacher-specific stats
-    # Teacher-specific stats
     if request.user.profile.is_teacher:
         courses = Course.objects.filter(teacher=request.user)
         total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
@@ -419,7 +425,6 @@ def profile(request):
                 "avg_rating": avg_rating,
             }
         )
-    # Student-specific stats
     # Student-specific stats
     else:
         enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
@@ -440,7 +445,6 @@ def profile(request):
             }
         )
 
-    # Add created calendars with time slots if applicable
     # Add created calendars with time slots if applicable
     created_calendars = request.user.created_calendars.prefetch_related("time_slots").order_by("-created_at")
     context["created_calendars"] = created_calendars
@@ -733,7 +737,8 @@ def learn(request):
                 messages.success(request, "Thank you for your interest! We'll be in touch soon.")
                 return redirect("index")
             except Exception as e:
-                print(f"Error sending email: {e}")
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error sending email: {e}")
                 messages.error(request, "Sorry, there was an error sending your inquiry. Please try again later.")
     else:
         initial_data = {}

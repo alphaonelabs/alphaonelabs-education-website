@@ -1204,8 +1204,15 @@ class ChallengeSubmission(models.Model):
                     point_type="regular",
                 )
 
-                # Calculate and update streak
-                calculate_and_update_user_streak(self.user, self.challenge)
+                # Calculate and update streak with error handling
+                try:
+                    calculate_and_update_user_streak(self.user, self.challenge)
+                except Exception as e:
+                    # Log the error but don't prevent submission from being saved
+                    import logging
+
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Error calculating streak for user {self.user.id}: {e}")
 
 
 class Points(models.Model):
@@ -1222,6 +1229,7 @@ class Points(models.Model):
     )
     awarded_at = models.DateTimeField(auto_now_add=True)
     current_streak = models.PositiveIntegerField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.user.username}: {self.amount} points for {self.reason}"
