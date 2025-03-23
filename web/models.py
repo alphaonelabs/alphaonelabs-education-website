@@ -75,9 +75,16 @@ class Profile(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_profile_public = models.BooleanField(
+        default=False, help_text="Toggle to make your profile public so your details and stats are visible."
+    )
+    how_did_you_hear_about_us = models.TextField(
+        blank=True, help_text="How did you hear about us? You can enter text or a link."
+    )
 
     def __str__(self):
-        return f"{self.user.username}'s profile"
+        visibility = "Public" if self.is_profile_public else "Private"
+        return f"{self.user.username}'s profile ({visibility})"
 
     def save(self, *args, **kwargs):
         if not self.referral_code:
@@ -708,7 +715,7 @@ class PeerConnection(models.Model):
 
 
 class PeerMessage(models.Model):
-    """Direct messages between connected peers."""
+    """Direct messages between connected."""
 
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
@@ -967,6 +974,24 @@ class Goods(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    @property
+    def image_url(self):
+        """Return the URL of the first product image, or a default image if none exists."""
+        # Get images using the related name "goods_images" from ProductImage model
+        first_image = self.goods_images.first()
+        if first_image and first_image.image:
+            return first_image.image.url
+        # Return a default placeholder image
+        return "/static/images/placeholder.png"
+
+    @property
+    def image(self):
+        first_image = self.goods_images.first()
+        if first_image and first_image.image:
+            return first_image.image.url
+        # Return a default placeholder image
+        return "/static/images/placeholder.png"
+
     def clean(self):
         # Validate discount logic
         if self.discount_price and self.discount_price >= self.price:
@@ -1223,6 +1248,104 @@ class OrderItem(models.Model):
         return f"{self.quantity}x {self.goods.name}"
 
 
+class TeamGoal(models.Model):
+    """A goal that team members work together to achieve."""
+
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_goals")
+    deadline = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    STATUS_CHOICES = [("active", "Active"), ("completed", "Completed"), ("cancelled", "Cancelled")]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def completion_percentage(self):
+        """Calculate the percentage of members who have completed the goal."""
+        total_members = self.members.count()
+        if total_members == 0:
+            return 0
+        completed_members = self.members.filter(completed=True).count()
+        return int((completed_members / total_members) * 100)
+
+
+class TeamGoalMember(models.Model):
+    """Represents a member of a team goal."""
+
+    team_goal = models.ForeignKey(TeamGoal, on_delete=models.CASCADE, related_name="members")
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    ROLE_CHOICES = [("leader", "Team Leader"), ("member", "Team Member")]
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="member")
+
+    class Meta:
+        unique_together = ["team_goal", "user"]
+
+    def __str__(self):
+        return f"{self.user.username} - {self.team_goal.title}"
+
+    def mark_completed(self):
+        """Mark this member's participation as completed."""
+        self.completed = True
+        self.completed_at = timezone.now()
+        self.save()
+
+        Notification.objects.create(
+            user=self.team_goal.creator,
+            title="Goal Progress Update",
+            message=f"{self.user.get_full_name() or self.user.username} completed'{self.team_goal.title}'",
+            notification_type="success",
+        )
+
+
+class TeamInvite(models.Model):
+    """Invitation to join a team goal."""
+
+    goal = models.ForeignKey(TeamGoal, on_delete=models.CASCADE, related_name="invites")
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_invites")
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_invites")
+    created_at = models.DateTimeField(auto_now_add=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
+
+    STATUS_CHOICES = [("pending", "Pending"), ("accepted", "Accepted"), ("declined", "Declined")]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+
+    class Meta:
+        unique_together = ["goal", "recipient"]
+
+    def __str__(self):
+        return f"Invite to {self.goal.title} for {self.recipient.username}"
+
+    def save(self, *args, **kwargs):
+        created = not self.pk
+        super().save(*args, **kwargs)
+
+        if created and self.status == "pending":
+            Notification.objects.create(
+                user=self.recipient,
+                title="New Team Invitation",
+                message=f"Invited to '{self.goal.title}' by {self.sender.get_full_name() or self.sender.username}",
+                notification_type="info",
+            )
+
+        # Create notification when invite is accepted
+        if not created and self.status == "accepted":
+            Notification.objects.create(
+                user=self.sender,
+                title="Team Invitation Accepted",
+                message=f"{self.recipient.get_full_name() or self.recipient.username} has accepted your invitation",
+                notification_type="success",
+            )
+
+
 def validate_image_size(image):
     """Validate that the image file is not too large."""
     file_size = image.size
@@ -1358,6 +1481,137 @@ class Meetup(models.Model):
     def can_edit(self, user):
         """Check if the given user can edit this meetup."""
         return user == self.creator or user.is_staff
+class Badge(models.Model):
+    BADGE_TYPES = [
+        ("challenge", "Challenge Completion"),
+        ("course", "Course Completion"),
+        ("achievement", "Special Achievement"),
+        ("teacher_awarded", "Teacher Awarded"),
+    ]
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    image = models.ImageField(upload_to="badges/")
+    badge_type = models.CharField(max_length=20, choices=BADGE_TYPES)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True, related_name="badges")
+    challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, null=True, blank=True, related_name="badges")
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_badges")
+    is_active = models.BooleanField(default=True)
+    criteria = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if self.image:
+            img = Image.open(self.image)
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+            img = img.resize((200, 200), Image.Resampling.LANCZOS)
+            buffer = BytesIO()
+            img.save(buffer, format="PNG", quality=90)
+            file_name = self.image.name
+            self.image.delete(save=False)
+            self.image.save(file_name, ContentFile(buffer.getvalue()), save=False)
+        super().save(*args, **kwargs)
+
+    class Meta:
+        ordering = ["badge_type", "name"]
+
+
+class UserBadge(models.Model):
+    AWARD_METHODS = [
+        ("challenge_completion", "Challenge Completion"),
+        ("course_completion", "Course Completion"),
+        ("teacher_awarded", "Teacher Awarded"),
+        ("system_awarded", "System Awarded"),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="badges")
+    badge = models.ForeignKey(Badge, on_delete=models.CASCADE, related_name="awarded_to")
+    award_method = models.CharField(max_length=20, choices=AWARD_METHODS)
+    awarded_at = models.DateTimeField(auto_now_add=True)
+    challenge_submission = models.ForeignKey(
+        ChallengeSubmission, on_delete=models.SET_NULL, null=True, blank=True, related_name="badges"
+    )
+    course_enrollment = models.ForeignKey(
+        Enrollment, on_delete=models.SET_NULL, null=True, blank=True, related_name="badges"
+    )
+    awarded_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="awarded_badges"
+    )
+    award_message = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.badge.name}"
+
+    class Meta:
+        unique_together = ["user", "badge"]
+        ordering = ["-awarded_at"]
+
+
+@receiver(post_save, sender=ChallengeSubmission)
+def award_challenge_badge(sender, instance, created, **kwargs):
+    if created:
+        challenge_badges = Badge.objects.filter(challenge=instance.challenge, badge_type="challenge", is_active=True)
+        for badge in challenge_badges:
+            if not UserBadge.objects.filter(user=instance.user, badge=badge).exists():
+                UserBadge.objects.create(
+                    user=instance.user, badge=badge, award_method="challenge_completion", challenge_submission=instance
+                )
+                Notification.objects.create(
+                    user=instance.user,
+                    title=f"New Badge: {badge.name}",
+                    message=f"Congrats! You've earned {badge.name} for completing {instance.challenge.title}",
+                    notification_type="success",
+                )
+
+
+@receiver(post_save, sender=Enrollment)
+def award_course_completion_badge(sender, instance, **kwargs):
+    if instance.status == "completed":
+        course_badges = Badge.objects.filter(course=instance.course, badge_type="course", is_active=True)
+        for badge in course_badges:
+            if not UserBadge.objects.filter(user=instance.student, badge=badge).exists():
+                UserBadge.objects.create(
+                    user=instance.student, badge=badge, award_method="course_completion", course_enrollment=instance
+                )
+                Notification.objects.create(
+                    user=instance.student,
+                    title=f"New Badge: {badge.name}",
+                    message=f"Congrats! You've earned {badge.name} for completing {instance.course.title}",
+                    notification_type="success",
+                )
+
+
+def award_badge_to_student(badge_id, student_id, teacher_id, message=""):
+    try:
+        badge = Badge.objects.get(id=badge_id)
+        student = User.objects.get(id=student_id)
+        teacher = User.objects.get(id=teacher_id)
+        if not teacher.profile.is_teacher:
+            return None
+        if UserBadge.objects.filter(user=student, badge=badge).exists():
+            return None
+        user_badge = UserBadge.objects.create(
+            user=student, badge=badge, award_method="teacher_awarded", awarded_by=teacher, award_message=message
+        )
+        Notification.objects.create(
+            user=student,
+            title=f"New Badge: {badge.name}",
+            message=f"You were awarded {badge.name} by {teacher.username}. {message}",
+            notification_type="success",
+        )
+        return user_badge
+    except (Badge.DoesNotExist, User.DoesNotExist):
+        return None
+
+
+def get_user_badges(self):
+    return UserBadge.objects.filter(user=self.user)
+
+
+Profile.get_user_badges = get_user_badges
 
 
 class Certificate(models.Model):
@@ -1559,7 +1813,7 @@ class QuizOption(models.Model):
 
 
 class UserQuiz(models.Model):
-    """Model for tracking user quiz attempts and responses."""
+    """Model for tracking user quiz attempts and responses"""
 
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="user_quizzes")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="quiz_attempts", null=True, blank=True)
@@ -1689,3 +1943,298 @@ class UserQuiz(models.Model):
     def created_at(self):
         """Alias for start_time for template compatibility."""
         return self.start_time
+
+
+class GradeableLink(models.Model):
+    """Model for storing links that users want to get grades on."""
+
+    LINK_TYPES = [
+        ("pr", "Pull Request"),
+        ("article", "Article"),
+        ("website", "Website"),
+        ("project", "Project"),
+        ("other", "Other"),
+    ]
+
+    title = models.CharField(max_length=200)
+    url = models.URLField()
+    description = models.TextField(blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="submitted_links")
+    link_type = models.CharField(max_length=20, choices=LINK_TYPES, default="other")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title
+
+    def get_absolute_url(self):
+        return reverse("gradeable_link_detail", kwargs={"pk": self.pk})
+
+    @property
+    def average_grade(self):
+        """Calculate the average numeric grade."""
+        grades = self.grades.all()
+        if not grades:
+            return None
+        return sum(grade.numeric_grade for grade in grades) / grades.count()
+
+    @property
+    def average_letter_grade(self):
+        """Convert the average numeric grade back to a letter grade."""
+        avg = self.average_grade
+        if avg is None:
+            return "No grades yet"
+
+        if avg >= 4.0:
+            return "A+"
+        elif avg >= 3.7:
+            return "A"
+        elif avg >= 3.3:
+            return "A-"
+        elif avg >= 3.0:
+            return "B+"
+        elif avg >= 2.7:
+            return "B"
+        elif avg >= 2.3:
+            return "B-"
+        elif avg >= 2.0:
+            return "C+"
+        elif avg >= 1.7:
+            return "C"
+        elif avg >= 1.3:
+            return "C-"
+        elif avg >= 1.0:
+            return "D"
+        else:
+            return "F"
+
+    @property
+    def grade_count(self):
+        """Return the number of grades."""
+        return self.grades.count()
+
+    @property
+    def grade_distribution(self):
+        """Return a dictionary with the distribution of letter grades."""
+        grades = self.grades.all()
+        distribution = {}
+
+        # Initialize with all possible grades
+        for grade_code, grade_name in LinkGrade.GRADE_CHOICES:
+            # Group by main letter for simplicity (A+, A, A- all grouped as A)
+            main_letter = grade_code[0]
+            distribution[main_letter] = distribution.get(main_letter, 0)
+
+        # Count actual grades
+        for grade in grades:
+            main_letter = grade.grade[0]
+            distribution[main_letter] = distribution.get(main_letter, 0) + 1
+
+        # Sort by grade letter (A, B, C, D, F)
+        return {k: v for k, v in sorted(distribution.items())}
+
+
+class LinkGrade(models.Model):
+    """Model for storing grades on links."""
+
+    GRADE_CHOICES = [
+        ("A+", "A+"),
+        ("A", "A"),
+        ("A-", "A-"),
+        ("B+", "B+"),
+        ("B", "B"),
+        ("B-", "B-"),
+        ("C+", "C+"),
+        ("C", "C"),
+        ("C-", "C-"),
+        ("D", "D"),
+        ("F", "F"),
+    ]
+
+    GRADE_VALUES = {
+        "A+": 4.3,
+        "A": 4.0,
+        "A-": 3.7,
+        "B+": 3.3,
+        "B": 3.0,
+        "B-": 2.7,
+        "C+": 2.3,
+        "C": 2.0,
+        "C-": 1.7,
+        "D": 1.0,
+        "F": 0.0,
+    }
+
+    link = models.ForeignKey(GradeableLink, on_delete=models.CASCADE, related_name="grades")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="given_grades")
+    grade = models.CharField(max_length=2, choices=GRADE_CHOICES)
+    comment = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ["link", "user"]  # One grade per user per link
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user.username} graded {self.link.title} with {self.grade}"
+
+    @property
+    def numeric_grade(self):
+        """Convert letter grade to numeric value."""
+        return self.GRADE_VALUES.get(self.grade, 0.0)
+
+    def clean(self):
+        """Validate that comments are provided for lower grades."""
+        if self.grade not in ["A+", "A"] and not self.comment:
+            raise ValidationError("A comment is required for grades below A.")
+
+
+class PeerChallenge(models.Model):
+    """Model for challenges between users for quizzes or tasks."""
+
+    STATUS_CHOICES = [
+        ("active", "Active"),
+        ("completed", "Completed"),
+        ("cancelled", "Cancelled"),
+    ]
+
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="peer_challenges")
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_challenges")
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Peer Challenge"
+        verbose_name_plural = "Peer Challenges"
+
+    def __str__(self):
+        return f"{self.title} by {self.creator.username}"
+
+    @property
+    def is_expired(self):
+        """Check if the challenge has expired."""
+        if self.expires_at and timezone.now() > self.expires_at:
+            return True
+        return False
+
+    @property
+    def total_participants(self):
+        """Get the total number of participants in this challenge."""
+        return self.invitations.filter(status__in=["accepted", "completed"]).count() + 1  # +1 for creator
+
+    @property
+    def leaderboard(self):
+        """Get sorted list of participants by score."""
+        participants = []
+
+        # Add creator's best attempt
+        creator_attempts = (
+            UserQuiz.objects.filter(quiz=self.quiz, user=self.creator, completed=True, start_time__gte=self.created_at)
+            .order_by("-score")
+            .first()
+        )
+
+        if creator_attempts:
+            participants.append(
+                {
+                    "user": self.creator,
+                    "score": creator_attempts.score,
+                    "max_score": creator_attempts.max_score,
+                    "completion_time": creator_attempts.end_time,
+                    "is_creator": True,
+                }
+            )
+
+        # Add invited participants' best attempts
+        for invitation in self.invitations.filter(status="completed"):
+            participant_attempt = invitation.user_quiz
+            if participant_attempt and participant_attempt.completed:
+                participants.append(
+                    {
+                        "user": invitation.participant,
+                        "score": participant_attempt.score,
+                        "max_score": participant_attempt.max_score,
+                        "completion_time": participant_attempt.end_time,
+                        "is_creator": False,
+                    }
+                )
+
+        # Sort by score (descending) and completion time (ascending)
+        return sorted(participants, key=lambda x: (-x["score"], x["completion_time"]))
+
+
+class PeerChallengeInvitation(models.Model):
+    """Model for invitations to peer challenges."""
+
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("accepted", "Accepted"),
+        ("completed", "Completed"),
+        ("declined", "Declined"),
+        ("expired", "Expired"),
+    ]
+
+    challenge = models.ForeignKey(PeerChallenge, on_delete=models.CASCADE, related_name="invitations")
+    participant = models.ForeignKey(User, on_delete=models.CASCADE, related_name="challenge_invitations")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
+    user_quiz = models.ForeignKey(
+        UserQuiz, on_delete=models.SET_NULL, null=True, blank=True, related_name="challenge_invitation"
+    )
+    message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        unique_together = ["challenge", "participant"]
+
+    def __str__(self):
+        return f"{self.challenge.title} invitation for {self.participant.username}"
+
+    def accept(self):
+        """Accept the challenge invitation."""
+        self.status = "accepted"
+        self.save()
+
+        # Create notification for challenge creator
+        Notification.objects.create(
+            user=self.challenge.creator,
+            title="Challenge Accepted",
+            message=f"{self.participant.username} has accepted your challenge: {self.challenge.title}",
+            notification_type="info",
+        )
+
+    def decline(self):
+        """Decline the challenge invitation."""
+        self.status = "declined"
+        self.save()
+
+        # Create notification for challenge creator
+        Notification.objects.create(
+            user=self.challenge.creator,
+            title="Challenge Declined",
+            message=f"{self.participant.username} has declined your challenge: {self.challenge.title}",
+            notification_type="info",
+        )
+
+    def complete(self, user_quiz):
+        """Mark the challenge as completed."""
+        self.status = "completed"
+        self.user_quiz = user_quiz
+        self.save()
+
+        # Create notification for challenge creator
+        Notification.objects.create(
+            user=self.challenge.creator,
+            title="Challenge Completed",
+            message=f"{self.participant.username} has completed your challenge: {self.challenge.title}",
+            notification_type="success",
+        )

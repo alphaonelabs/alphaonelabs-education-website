@@ -2,10 +2,10 @@ start with 5 emojis that best describe what you are about to do and one word on 
 
 # HTML Styling Rules
 - Always use Tailwind CSS classes for styling HTML elements
-- Never use custom CSS classes unless absolutely necessary
+- Never use custom CSS classes
 - Never use inline styles
 - Follow the project's color scheme using Tailwind's color classes:
-  - Primary: blue-600
+  - Primary: teal-300
   - Secondary: gray-600
   - Success: green-600
   - Warning: yellow-600
@@ -19,7 +19,7 @@ start with 5 emojis that best describe what you are about to do and one word on 
   - Inputs: w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500
   - Labels: block text-sm font-medium text-gray-700 dark:text-gray-300
   - Buttons:
-    - Primary: bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition duration-200
+    - Primary: bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200
     - Secondary: bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300
 - Typography:
   - Headings: text-2xl font-bold (adjust size as needed)
@@ -52,3 +52,4 @@ the tests are in the tests folder
 the admin.py file is in the web folder
 
 make sure to fix the linting errors
+dont create .md files

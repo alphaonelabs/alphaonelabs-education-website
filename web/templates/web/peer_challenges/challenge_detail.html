@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  {{ challenge.title }} | Peer Challenge
+{% endblock title %}
+{% block extra_head %}
+  <style>
+      .animate-pulse-slow {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+
+      @keyframes pulse {
+
+          0%,
+          100% {
+              opacity: 1;
+          }
+
+          50% {
+              opacity: 0.7;
+          }
+      }
+
+      .hover-scale {
+          transition: transform 0.3s ease;
+      }
+
+      .hover-scale:hover {
+          transform: scale(1.03);
+      }
+  </style>
+{% endblock extra_head %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <!-- Breadcrumbs -->
+    <nav class="text-sm mb-6">
+      <a href="{% url 'index' %}" class="text-blue-600 hover:text-blue-800">Home</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'challenge_list' %}"
+         class="text-blue-600 hover:text-blue-800">Peer Challenges</a>
+      <span class="mx-2">/</span>
+      <span class="text-gray-600">{{ challenge.title }}</span>
+    </nav>
+    <!-- Challenge Details -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-8 hover-scale">
+      <div class="bg-gradient-to-r from-purple-600 to-blue-500 p-4">
+        <div class="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+          <div>
+            <h1 class="text-3xl font-bold text-white flex items-center">
+              <i class="fas fa-trophy mr-3 text-yellow-300"></i>{{ challenge.title }}
+            </h1>
+            <div class="flex flex-wrap items-center mt-2 text-sm text-white">
+              <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-3 {% if challenge.status == 'active' %} bg-green-500 text-white {% elif challenge.status == 'completed' %} bg-blue-600 text-white {% else %} bg-gray-600 text-white {% endif %}">
+                {{ challenge.get_status_display }}
+              </span>
+              <span class="mr-4"><i class="fas fa-user mr-1"></i> Created by {{ challenge.creator.username }}</span>
+              <span class="mr-4"><i class="fas fa-calendar-alt mr-1"></i> Created {{ challenge.created_at|date:"M d, Y" }}</span>
+              {% if challenge.expires_at %}
+                <span>
+                  <i class="fas fa-clock mr-1"></i>
+                  {% if is_expired %}
+                    <span class="text-red-300 animate-pulse-slow">Expired on {{ challenge.expires_at|date:"M d, Y" }}</span>
+                  {% else %}
+                    <span>Expires on {{ challenge.expires_at|date:"M d, Y" }}</span>
+                  {% endif %}
+                </span>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="p-6">
+        <!-- Challenge description -->
+        {% if challenge.description %}
+          <div class="mb-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-2 flex items-center">
+              <i class="fas fa-info-circle text-blue-500 mr-2"></i>Description
+            </h2>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border-l-4 border-blue-500 hover-scale">
+              {{ challenge.description|linebreaks }}
+            </div>
+          </div>
+        {% endif %}
+        <!-- Associated Quiz Details -->
+        <div class="mb-6">
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-2 flex items-center">
+            <i class="fas fa-question-circle text-purple-500 mr-2"></i>Quiz Details
+          </h2>
+          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 shadow-inner hover-scale">
+            <h3 class="text-lg font-medium text-gray-800 dark:text-white mb-2">{{ challenge.quiz.title }}</h3>
+            <div class="flex items-center text-sm text-gray-600 dark:text-gray-300 mb-2">
+              <span class="flex items-center mr-4 bg-purple-100 dark:bg-purple-900 px-3 py-1 rounded-full">
+                <i class="fas fa-question-circle mr-1 text-purple-600 dark:text-purple-400"></i> {{ challenge.quiz.questions.count }} questions
+              </span>
+              <span class="flex items-center bg-blue-100 dark:bg-blue-900 px-3 py-1 rounded-full">
+                <i class="fas fa-clock mr-1 text-blue-600 dark:text-blue-400"></i> {{ challenge.quiz.time_limit|default:"No" }} min time limit
+              </span>
+            </div>
+            {% if user_invitation and user_invitation.status == 'accepted' %}
+              <div class="mt-4">
+                <a href="{% url 'take_challenge' user_invitation.id %}"
+                   class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-6 rounded-md inline-flex items-center transition duration-300 transform hover:scale-105 hover:shadow-lg">
+                  <i class="fas fa-play-circle mr-2"></i> Take Quiz
+                </a>
+              </div>
+            {% elif user_invitation and user_invitation.status == 'completed' %}
+              <div class="mt-4">
+                <a href="{% url 'quiz_results' user_invitation.user_quiz.id %}"
+                   class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-md inline-flex items-center transition duration-300 transform hover:scale-105 hover:shadow-lg">
+                  <i class="fas fa-chart-bar mr-2"></i> View My Results
+                </a>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Participants Section -->
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-2">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white flex items-center">
+              <i class="fas fa-users text-green-500 mr-2"></i>Participants
+            </h2>
+            {% if challenge.creator == user and challenge.status == 'active' %}
+              <a href="{% url 'invite_participants' challenge.id %}"
+                 class="text-sm text-teal-600 hover:text-teal-700 flex items-center bg-teal-100 dark:bg-teal-900 px-3 py-1 rounded-full transition duration-300 hover:shadow-md">
+                <i class="fas fa-user-plus mr-1"></i> Invite More
+              </a>
+            {% endif %}
+          </div>
+          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+            {% if invitations %}
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {% for invitation in invitations %}
+                  <div class="bg-white dark:bg-gray-800 rounded-lg p-3 shadow hover-scale transition duration-300 hover:shadow-md">
+                    <div class="flex items-center mb-2">
+                      <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-400 to-purple-500 flex items-center justify-center mr-3">
+                        <i class="fas fa-user text-white"></i>
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-800 dark:text-white">{{ invitation.participant.username }}</div>
+                        <div class="text-xs">
+                          {% if invitation.status == 'pending' %}
+                            <span class="text-yellow-600 bg-yellow-100 dark:bg-yellow-900 dark:text-yellow-300 px-2 py-0.5 rounded-full">Pending</span>
+                          {% elif invitation.status == 'accepted' %}
+                            <span class="text-green-600 bg-green-100 dark:bg-green-900 dark:text-green-300 px-2 py-0.5 rounded-full">Accepted</span>
+                          {% elif invitation.status == 'completed' %}
+                            <span class="text-blue-600 bg-blue-100 dark:bg-blue-900 dark:text-blue-300 px-2 py-0.5 rounded-full">Completed</span>
+                          {% elif invitation.status == 'declined' %}
+                            <span class="text-red-600 bg-red-100 dark:bg-red-900 dark:text-red-300 px-2 py-0.5 rounded-full">Declined</span>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                    {% if invitation.status == 'completed' and invitation.user_quiz %}
+                      <div class="text-xs text-gray-600 dark:text-gray-400 mt-1">Completed on {{ invitation.updated_at|date:"M d, Y" }}</div>
+                      <div class="flex justify-between items-center mt-2">
+                        <span class="text-sm font-medium">
+                          Score: {{ invitation.correct_answer_count }}/{{ invitation.user_quiz.quiz.questions.count }}
+                          <span class="text-xs text-gray-500 dark:text-gray-400">({{ invitation.user_quiz.score|floatformat:0 }}%)</span>
+                        </span>
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            {% else %}
+              <div class="text-center py-8 text-gray-500 dark:text-gray-400">
+                <i class="fas fa-users text-4xl mb-3 text-gray-300 dark:text-gray-600"></i>
+                <p>No participants yet</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Leaderboard Section -->
+        {% if leaderboard %}
+          <div>
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-2 flex items-center">
+              <i class="fas fa-award text-yellow-500 mr-2"></i>Leaderboard
+            </h2>
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover-scale">
+              <div class="overflow-x-auto">
+                <table class="min-w-full bg-white dark:bg-gray-800 rounded-lg overflow-hidden shadow">
+                  <thead class="bg-gradient-to-r from-blue-500 to-purple-500 text-white">
+                    <tr>
+                      <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Rank</th>
+                      <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Participant</th>
+                      <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Score</th>
+                      <th class="py-3 px-4 text-left text-xs font-medium uppercase tracking-wider">Completion Time</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for entry in leaderboard %}
+                      <tr class="{% if entry.participant == user %}bg-blue-50 dark:bg-blue-900{% endif %} hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-150">
+                        <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">
+                          {% if entry.rank == 1 %}
+                            <span class="text-yellow-500 flex items-center"><i class="fas fa-trophy mr-1 animate-pulse-slow"></i> {{ entry.rank }}</span>
+                          {% elif entry.rank == 2 %}
+                            <span class="text-gray-400 flex items-center"><i class="fas fa-medal mr-1"></i> {{ entry.rank }}</span>
+                          {% elif entry.rank == 3 %}
+                            <span class="text-amber-600 flex items-center"><i class="fas fa-medal mr-1"></i> {{ entry.rank }}</span>
+                          {% else %}
+                            <span class="ml-6">{{ entry.rank }}</span>
+                          {% endif %}
+                        </td>
+                        <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">
+                          <div class="font-medium">{{ entry.participant.username }}</div>
+                        </td>
+                        <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">
+                          <div class="flex items-center">
+                            <div class="w-16 bg-gray-200 dark:bg-gray-600 rounded-full h-2.5 mr-2">
+                              <div class="bg-blue-600 h-2.5 rounded-full"
+                                   style="width: {{ entry.percentage }}%"></div>
+                            </div>
+                            <span>{{ entry.score }}/{{ entry.total_questions }}
+                              <span class="text-xs text-gray-500 dark:text-gray-400">({{ entry.percentage|floatformat:0 }}%)</span></span>
+                            </div>
+                          </td>
+                          <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">
+                            {% if entry.completion_time %}
+                              <span class="inline-flex items-center">
+                                <i class="fas fa-stopwatch text-blue-500 mr-1"></i> {{ entry.completion_time }}
+                              </span>
+                            {% else %}
+                              -
+                            {% endif %}
+                          </td>
+                        </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+                <div class="mt-6 text-center">
+                  <a href="{% url 'challenge_leaderboard' challenge.id %}"
+                     class="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white py-2 px-6 rounded-lg inline-flex items-center transition duration-300 transform hover:scale-105 hover:shadow-lg">
+                    <i class="fas fa-trophy mr-2"></i> View Full Leaderboard
+                  </a>
+                </div>
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add subtle hover effects to participant cards
+            const participantCards = document.querySelectorAll('.hover-scale');
+
+            // Add subtle animated indicators for completion status
+            const statusIndicators = document.querySelectorAll('.status-indicator');
+            statusIndicators.forEach(indicator => {
+                if (indicator.classList.contains('completed')) {
+                    indicator.classList.add('animate-pulse-slow');
+                }
+            });
+        });
+    </script>
+  {% endblock content %}

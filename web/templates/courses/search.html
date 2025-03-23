@@ -18,13 +18,17 @@
                   <a href="{% url 'course_detail' course.slug %}">
                     <img src="{{ course.image.url }}"
                          alt="{{ course.title }}"
-                         class="w-full h-full object-cover" />
+                         class="w-full h-full object-cover"
+                         width="300"
+                         height="300" />
                   </a>
                 {% else %}
                   <a href="{% url 'course_detail' course.slug %}">
                     <img src="{% static 'images/default-course.jpg' %}"
                          alt="{{ course.title }}"
-                         class="w-full h-full object-cover" />
+                         class="w-full h-full object-cover"
+                         width="300"
+                         height="300" />
                   </a>
                 {% endif %}
               </div>
@@ -70,11 +74,11 @@
                   {% if first_session and last_session %}
                     <div class="flex items-center mb-1">
                       <i class="fas fa-calendar-day mr-2"></i>
-                      <span>Starts: {{ first_session.start_time|date:"M j, Y" }}</span>
+                      <span>Starts: {{ first_session.start_time|date:"M j, Y g:i A e" }}</span>
                     </div>
                     <div class="flex items-center">
                       <i class="fas fa-calendar-check mr-2"></i>
-                      <span>Ends: {{ last_session.end_time|date:"M j, Y" }}</span>
+                      <span>Ends: {{ last_session.end_time|date:"M j, Y g:i A e" }}</span>
                     </div>
                   {% else %}
                     <div class="flex items-center mb-1">
@@ -88,19 +92,19 @@
               <div class="flex items-center mb-3">
                 {% if course.teacher.profile.avatar %}
                   <img src="{{ course.teacher.profile.avatar.url }}"
-                       alt="{{ course.teacher.get_full_name|default:course.teacher.username }}"
+                       alt="{{ course.teacher.username }}"
                        class="h-12 w-12 rounded-full mr-3"
                        width="48"
                        height="48" />
                 {% else %}
                   <img src="{% static 'images/default_teacher.png' %}"
-                       alt="{{ course.teacher.get_full_name|default:course.teacher.username }}"
+                       alt="{{ course.teacher.username }}"
                        class="h-12 w-12 rounded-full mr-3"
                        width="48"
                        height="48" />
                 {% endif %}
                 <div>
-                  <span class="text-sm font-medium">{{ course.teacher.get_full_name|default:course.teacher.username }}</span>
+                  <span class="text-sm font-medium">{{ course.teacher.username }}</span>
                   {% if course.teacher.profile.expertise %}
                     <p class="text-xs text-gray-600 dark:text-gray-400">{{ course.teacher.profile.expertise }}</p>
                   {% endif %}
