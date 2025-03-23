@@ -89,7 +89,7 @@ repos:
         pass_filenames: false
         always_run: true
         verbose: true
-        stages: [manual]
+        stages: [commit]
 
 default_stages: [commit]
 fail_fast: false
