@@ -80,24 +80,16 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const badgeIconSelect = document.getElementById('{{ form.badge_icon.id_for_label }}');
-    const iconPreview = document.getElementById('icon-preview');
-    
-    badgeIconSelect.addEventListener('change', function() {
-        iconPreview.className = badgeIconSelect.value + ' fa-2x';
-    });
-});
-// Add this to a JavaScript file or inline in the template
+
 function initBadgePreview() {
     const badgeIconSelect = document.getElementById('id_badge_icon');
     const iconPreview = document.getElementById('icon-preview');
-    
+
     if (badgeIconSelect && iconPreview) {
         badgeIconSelect.addEventListener('change', function() {
             iconPreview.className = badgeIconSelect.value + ' fa-2x';
         });
-        
+
         // Initialize with the current value
         iconPreview.className = badgeIconSelect.value + ' fa-2x';
     }
@@ -105,4 +97,6 @@ function initBadgePreview() {
 
 document.addEventListener('DOMContentLoaded', initBadgePreview);
 </script>
+
+
 {% endblock %}
