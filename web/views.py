@@ -278,14 +278,12 @@ def profile(request):
         # Use the instance so the form loads all updated fields from the database.
         form = ProfileUpdateForm(instance=request.user)
 
-
     badges = UserBadge.objects.filter(user=request.user).select_related("badge")
 
     context = {
         "form": form,
         "badges": badges,
     }
-
 
     # Teacher-specific stats
     if request.user.profile.is_teacher:

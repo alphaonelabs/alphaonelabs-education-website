@@ -621,7 +621,6 @@ class DonationAdmin(admin.ModelAdmin):
     display_name.short_description = "Name"
 
 
-
 @admin.register(Badge)
 class BadgeAdmin(admin.ModelAdmin):
     list_display = ("name", "badge_type", "is_active", "created_by", "created_at")
@@ -635,6 +634,7 @@ class UserBadgeAdmin(admin.ModelAdmin):
     list_filter = ("award_method", "badge__badge_type")
     search_fields = ("user__username", "badge__name")
     date_hierarchy = "awarded_at"
+
 
 @admin.register(LearningStreak)
 class LearningStreakAdmin(admin.ModelAdmin):
@@ -694,5 +694,3 @@ class QuizOptionAdmin(admin.ModelAdmin):
     list_filter = ("is_correct",)
     search_fields = ("text", "question__text")
     autocomplete_fields = ["question"]
-
-
