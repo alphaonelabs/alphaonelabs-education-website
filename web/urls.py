@@ -32,10 +32,12 @@ if settings.DEBUG:
 # Language-prefixed URLs
 urlpatterns += i18n_patterns(
     path("", views.index, name="index"),
+    path("create-test-data/", views.run_create_test_data, name="create_test_data"),
     path("learn/", views.learn, name="learn"),
     path("teach/", views.teach, name="teach"),
     path("about/", views.about, name="about"),
     path("profile/<str:username>/", views.public_profile, name="public_profile"),
+    path("graphing_calculator/", views.graphing_calculator, name="graphing_calculator"),
     path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
     path("certificate/generate/<int:enrollment_id>/", views.generate_certificate, name="generate_certificate"),
     path("donate/", views.donate, name="donate"),
