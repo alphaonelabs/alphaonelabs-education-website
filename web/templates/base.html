@@ -141,6 +141,10 @@
             display: none !important;
         }
 
+        .show {
+            display: block;
+        }
+
         *,
         *::before,
         *::after {
@@ -203,16 +207,28 @@
                class="hover:underline flex items-center">
               <i class="fa-solid fa-store mr-1"></i> Products
             </a>
-            <a href="{% url 'meme_list' %}"
-               class="hover:underline flex items-center">
-              <i class="fa-solid fa-face-smile mr-1"></i> Edu Memes
-            </a>
-            <a href="{% url 'whiteboard' %}">
-              <i class="fas fa-palette"></i> whiteboard
-            </a>
-            <a href="{% url 'graphing_calculator' %}">
-              <i class="fas fa-chart-line mr-1"></i> Graphing Calculator
-            </a>
+            <!-- Dropdown for additional items -->
+            <div class="relative">
+              <button class="focus:outline-none hover:underline flex items-center p-2 hover:bg-teal-700 rounded-lg"
+                      onclick="toggleDropdown()">
+                <i class="fas fa-ellipsis-h"></i> More
+              </button>
+              <div id="dropdown-menu"
+                   class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50">
+                <a href="{% url 'meme_list' %}"
+                   class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <i class="fa-solid fa-face-smile mr-1"></i> Edu Memes
+                </a>
+                <a href="{% url 'whiteboard' %}"
+                   class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <i class="fas fa-palette mr-1"></i> Whiteboard
+                </a>
+                <a href="{% url 'graphing_calculator' %}"
+                   class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <i class="fas fa-chart-line mr-1"></i> Graphing Calculator
+                </a>
+              </div>
+            </div>
           </div>
           <!-- Language and Dark Mode -->
           <div class="flex items-center space-x-2">
@@ -601,6 +617,28 @@
       </div>
     </footer>
     <script>
+        function toggleDropdown() {
+            const dropdownMenu = document.getElementById('dropdown-menu');
+            dropdownMenu.classList.toggle('hidden');
+        }
+
+        window.addEventListener('resize', function() {
+            const dropdownMenu = document.getElementById('dropdown-menu');
+            if (window.innerWidth > 768) {
+                dropdownMenu.classList.add('hidden');
+            }
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdownMenu = document.getElementById('dropdown-menu');
+            const dropdownButton = event.target.closest('[onclick="toggleDropdown()"]');
+
+            if (!dropdownButton && !dropdownMenu.contains(event.target)) {
+                dropdownMenu.classList.add('hidden');
+            }
+        });
+
         function toggleMobileMenu() {
             const menu = document.getElementById('mobile-menu');
             menu.classList.toggle('hidden');
