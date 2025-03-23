@@ -239,6 +239,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+print("***************", DEBUG)
 # Email settings
 if DEBUG:
     EMAIL_BACKEND = "web.email_backend.SlackNotificationEmailBackend"
