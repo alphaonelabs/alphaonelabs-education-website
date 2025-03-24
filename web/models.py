@@ -197,6 +197,7 @@ class Subject(models.Model):
     order = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    facts = models.JSONField(default=list, blank=True, help_text="List of facts about this subject")
 
     class Meta:
         ordering = ["order", "name"]
@@ -208,6 +209,27 @@ class Subject(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
+
+    def add_fact(self, fact_text):
+        """Add a new fact to the subject if it doesn't exist already."""
+        if not self.facts:
+            self.facts = []
+        for fact in self.facts:
+            if fact.get("text") == fact_text:
+                return False
+        from django.utils import timezone
+
+        self.facts.append({"text": fact_text, "generated_at": timezone.now().isoformat()})
+        self.save(update_fields=["facts"])
+        return True
+
+    def get_random_fact(self):
+        """Return a random fact about this subject."""
+        import random
+
+        if self.facts:
+            return random.choice(self.facts)["text"]
+        return None
 
 
 class WebRequest(models.Model):
@@ -2470,18 +2492,3 @@ class NotificationPreference(models.Model):
 
     def __str__(self):
         return f"Notification preferences for {self.user.username}"
-
-
-class SubjectFact(models.Model):
-    """Model to store generated facts about subjects."""
-
-    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="facts")
-    fact_text = models.CharField(max_length=500)  # Changed from TextField
-    generated_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ["-generated_at"]
-        unique_together = ["subject", "fact_text"]  # preventing exact duplicates
-
-    def __str__(self):
-        return f"{self.subject.name} fact: {self.fact_text[:30]}..."

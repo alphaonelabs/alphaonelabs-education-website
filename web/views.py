@@ -138,7 +138,6 @@ from .models import (
     StudyGroup,
     StudyGroupInvite,
     Subject,
-    SubjectFact,
     SuccessStory,
     TeamGoal,
     TeamGoalMember,
@@ -5269,32 +5268,26 @@ def api_get_subject_fact(request, subject_id):
     try:
         subject = Subject.objects.get(id=subject_id)
         force_new = request.GET.get("new", "false").lower() == "true"
-
+        recent_facts = request.session.get(f"recent_facts_{subject_id}", [])
         # if not forcing new, try to get an unused fact from the database first
-        if not force_new:
-            # take existing facts for this subject that haven't been shown recently
-            recent_facts_ids = request.session.get(f"recent_facts_{subject_id}", [])
-            unused_fact = (
-                SubjectFact.objects.filter(subject=subject).exclude(id__in=recent_facts_ids).order_by("?").first()
-            )
+        if not force_new and subject.facts:
+            available_facts = [fact for fact in subject.facts if fact["text"] not in recent_facts]
+            if available_facts:
+                import random
 
-            if unused_fact:
-                recent_facts = request.session.get(f"recent_facts_{subject_id}", [])
-                recent_facts.append(unused_fact.id)
-                # keeping only the most recent 5 facts in history to eventually allow reuse of older facts
-                request.session[f"recent_facts_{subject_id}"] = recent_facts[-5:]
+                chosen_fact = random.choice(available_facts)
+                recent_facts.append(chosen_fact["text"])
+                request.session[f"recent_facts_{subject_id}"] = recent_facts[-5:]  # only recent 5
                 request.session.modified = True
-
-                return JsonResponse({"fact": unused_fact.fact_text})
+                return JsonResponse({"fact": chosen_fact["text"]})
 
         # new fact generated
         fact = generate_fact_for_subject(subject.name)
 
         try:
-            new_fact = SubjectFact.objects.create(subject=subject, fact_text=fact)
-            recent_facts = request.session.get(f"recent_facts_{subject_id}", [])
-            recent_facts.append(new_fact.id)
-            request.session[f"recent_facts_{subject_id}"] = recent_facts[-5:]  # keep only last 5
+            subject.add_fact(fact)
+            recent_facts.append(fact)
+            request.session[f"recent_facts_{subject_id}"] = recent_facts[-5:]
             request.session.modified = True
 
         except Exception as e:
@@ -5321,7 +5314,11 @@ def generate_fact_for_subject(subject_name):
         model = genai.GenerativeModel("gemini-1.5-flash")
 
         # take existing facts for this subject to explicitly avoid them
-        existing_facts = SubjectFact.objects.filter(subject__name=subject_name).values_list("fact_text", flat=True)
+        try:
+            subject = Subject.objects.get(name=subject_name)
+            existing_facts = [fact["text"] for fact in subject.facts]
+        except Subject.DoesNotExist:
+            existing_facts = []
         existing_facts_text = "\n".join(existing_facts[:10])  # limit to 10 most recent to keep prompt size reasonable
         prompt = f"""Generate ONE fascinating and educational fact about {subject_name}.
 
