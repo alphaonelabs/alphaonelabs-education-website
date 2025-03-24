@@ -1620,6 +1620,7 @@ class Meetup(models.Model):
                 suffix = uuid.uuid4().hex[:6]
                 self.slug = f"{self.slug}-{suffix}"
         super().save(*args, **kwargs)
+
     def __str__(self):
         return self.title
 
