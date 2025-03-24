@@ -5263,6 +5263,7 @@ def api_get_subjects(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
+
 def api_get_subject_fact(request, subject_id):
     """API endpoint to get a fact for a specific subject."""
     try:
