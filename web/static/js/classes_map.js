@@ -12,21 +12,21 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Custom icon CSS
   var userIcon = L.icon({
-    iconUrl: "static/images/red-dot.png",
+    iconUrl: "/static/images/red-dot.png",
     iconSize: [32, 32],
     iconAnchor: [16, 32],
     popupAnchor: [0, -32],
-  });
+  }); // <-- Closing bracket added
 
   var defaultIcon = L.icon({
-    iconUrl: "static/images/blue-dot.png",
+    iconUrl: "/static/images/blue-dot.png",
     iconSize: [32, 32],
     iconAnchor: [16, 32],
     popupAnchor: [0, -32],
   });
 
   var highlightedIcon = L.icon({
-    iconUrl: "static/images/yellow-dot.png", // Use a different color
+    iconUrl: "/static/images/yellow-dot.png", // Use a different color
     iconSize: [38, 38], // Slightly bigger for emphasis
     iconAnchor: [19, 38],
     popupAnchor: [0, -38],

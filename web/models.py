@@ -399,6 +399,7 @@ class Session(models.Model):
     def save(self, *args, **kwargs):
         # Store original times when first created
         # calculate the lat and longitiude dynamically
+
         if self.location and (self.latitude is None or self.longitude is None):
             self.fetch_coordinates()
 
