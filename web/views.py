@@ -26,6 +26,7 @@ from django.core.management import call_command
 from django.core.paginator import Paginator
 from django.db import IntegrityError, models, transaction
 from django.db.models import Avg, Count, Q, Sum
+from django.db.models.functions import Coalesce
 from django.http import (
     FileResponse,
     Http404,
@@ -241,7 +242,7 @@ def index(request):
         teaching_courses = (
             Course.objects.filter(teacher=request.user)
             .annotate(
-                view_count=Sum("web_requests__count", default=0),
+                view_count=Coalesce(Sum("web_requests__count"), 0),
                 enrolled_students=Count("enrollments", filter=Q(enrollments__status="approved")),
             )
             .order_by("-created_at")
@@ -466,6 +467,7 @@ def course_detail(request, slug):
         "prev_month": prev_month,
         "next_month": next_month,
         "student_attendance": student_attendance,
+        "completed_enrollment_count": course.enrollments.filter(status="completed").count(),
     }
 
     return render(request, "courses/detail.html", context)
