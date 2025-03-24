@@ -151,9 +151,9 @@
     {% endblock extra_head %}
     <link rel="stylesheet" href="{% static 'css/markdown.css' %}" />
   </head>
-  <body class="min-h-screen flex flex-col bg-white text-gray-900 dark:bg-black dark:text-gray-100 transition-colors duration-300 overflow-x-hidden">
+  <body class="min-h-screen flex flex-col bg-white text-gray-900 dark:bg-black dark:text-gray-100 transition-colors duration-300 overflow-x-hidden pt-[70px]">
     <!-- HEADER -->
-    <header class="w-full bg-teal-600 dark:bg-teal-800 text-white shadow-md">
+    <header class="fixed top-0 left-0 w-full z-50 bg-teal-600 dark:bg-teal-800 text-white shadow-md">
       <div class="max-w-[90rem] mx-auto px-4 md:px-6 flex items-center justify-between h-[70px] relative">
         <!-- Logo and Title -->
         <a href="{% url 'index' %}" class="flex items-center space-x-2">
