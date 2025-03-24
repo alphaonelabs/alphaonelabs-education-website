@@ -2,6 +2,7 @@ import calendar
 import html
 import ipaddress
 import json
+import logging
 import os
 import re
 import shutil
@@ -26,6 +27,7 @@ from django.core.management import call_command
 from django.core.paginator import Paginator
 from django.db import IntegrityError, models, transaction
 from django.db.models import Avg, Count, Q, Sum
+from django.db.models.functions import Coalesce
 from django.http import (
     FileResponse,
     Http404,
@@ -91,6 +93,7 @@ from .marketing import (
 )
 from .models import (
     Achievement,
+    Badge,
     BlogComment,
     BlogPost,
     Cart,
@@ -113,6 +116,7 @@ from .models import (
     LearningStreak,
     LinkGrade,
     Meme,
+    NoteHistory,
     NotificationPreference,
     Order,
     OrderItem,
@@ -146,7 +150,14 @@ from .notifications import (
 )
 from .referrals import send_referral_reward_email
 from .social import get_social_stats
-from .utils import get_or_create_cart
+from .utils import (
+    create_leaderboard_context,
+    get_cached_challenge_entries,
+    get_cached_leaderboard_data,
+    get_leaderboard,
+    get_or_create_cart,
+    get_user_points,
+)
 
 GOOGLE_CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "google_credentials.json")
 
@@ -164,31 +175,28 @@ def index(request):
 
     # Store referral code in session if present in URL
     ref_code = request.GET.get("ref")
+
     if ref_code:
         request.session["referral_code"] = ref_code
 
+    # Get top referrers
+    top_referrers = Profile.objects.annotate(
+        total_signups=models.Count("referrals"),
+        total_enrollments=models.Count(
+            "referrals__user__enrollments", filter=models.Q(referrals__user__enrollments__status="approved")
+        ),
+        total_clicks=models.Count(
+            "referrals__user",
+            filter=models.Q(
+                referrals__user__username__in=WebRequest.objects.filter(path__contains="ref=").values_list(
+                    "user", flat=True
+                )
+            ),
+        ),
+    ).order_by("-total_signups", "-total_enrollments")[:3]
+
     # Get current user's profile if authenticated
     profile = request.user.profile if request.user.is_authenticated else None
-
-    # Get top referrers
-    top_referrers = (
-        Profile.objects.annotate(
-            total_signups=Count("referrals"),
-            total_enrollments=Count(
-                "referrals__user__enrollments", filter=Q(referrals__user__enrollments__status="approved")
-            ),
-            total_clicks=Count(
-                "referrals__user",
-                filter=Q(
-                    referrals__user__username__in=WebRequest.objects.filter(path__contains="ref=").values_list(
-                        "user", flat=True
-                    )
-                ),
-            ),
-        )
-        .filter(total_signups__gt=0)
-        .order_by("-total_signups")[:5]
-    )
 
     # Get featured courses
     featured_courses = Course.objects.filter(status="published", is_featured=True).order_by("-created_at")[:3]
@@ -202,6 +210,14 @@ def index(request):
     # Get latest success story
     latest_success_story = SuccessStory.objects.filter(status="published").order_by("-published_at").first()
 
+    # Get top latest 3 leaderboard users
+    try:
+        top_leaderboard_users, user_rank = get_leaderboard(request.user, period=None, limit=3)
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error getting leaderboard data: {e}")
+        top_leaderboard_users = []
+
     # Get signup form if needed
     form = None
     if not request.user.is_authenticated or not request.user.profile.is_teacher:
@@ -209,11 +225,12 @@ def index(request):
 
     context = {
         "profile": profile,
-        "top_referrers": top_referrers,
         "featured_courses": featured_courses,
         "current_challenge": current_challenge,
         "latest_post": latest_post,
         "latest_success_story": latest_success_story,
+        "top_referrers": top_referrers,
+        "top_leaderboard_users": top_leaderboard_users,
         "form": form,
         "is_debug": settings.DEBUG,
     }
@@ -239,7 +256,7 @@ def index(request):
         teaching_courses = (
             Course.objects.filter(teacher=request.user)
             .annotate(
-                view_count=Sum("web_requests__count", default=0),
+                view_count=Coalesce(Sum("web_requests__count"), 0),
                 enrolled_students=Count("enrollments", filter=Q(enrollments__status="approved")),
             )
             .order_by("-created_at")
@@ -280,6 +297,55 @@ def signup_view(request):
             "login_url": reverse("account_login"),
         },
     )
+
+
+@login_required
+def all_leaderboards(request):
+    """
+    Display all leaderboard types on a single page.
+    """
+    # Get cached leaderboard data or fetch fresh data
+    global_entries, global_rank = get_cached_leaderboard_data(request.user, None, 10, "global_leaderboard", 60 * 60)
+    weekly_entries, weekly_rank = get_cached_leaderboard_data(request.user, "weekly", 10, "weekly_leaderboard", 60 * 15)
+    monthly_entries, monthly_rank = get_cached_leaderboard_data(
+        request.user, "monthly", 10, "monthly_leaderboard", 60 * 30
+    )
+
+    # Get user points and challenge entries if authenticated non-teacher
+    challenge_entries = []
+    user_points = None
+
+    if request.user.is_authenticated and not request.user.profile.is_teacher:
+        user_points = get_user_points(request.user)
+        challenge_entries = get_cached_challenge_entries()
+
+        context = create_leaderboard_context(
+            global_entries,
+            weekly_entries,
+            monthly_entries,
+            challenge_entries,
+            global_rank,
+            weekly_rank,
+            monthly_rank,
+            user_points["total"],
+            user_points["weekly"],
+            user_points["monthly"],
+        )
+        return render(request, "leaderboards/leaderboards.html", context)
+    else:
+        context = create_leaderboard_context(
+            global_entries,
+            weekly_entries,
+            monthly_entries,
+            [],
+            global_rank,
+            weekly_rank,
+            monthly_rank,
+            None,
+            None,
+            None,
+        )
+        return render(request, "leaderboards/leaderboards.html", context)
 
 
 @login_required
@@ -462,6 +528,8 @@ def course_detail(request, slug):
         "prev_month": prev_month,
         "next_month": next_month,
         "student_attendance": student_attendance,
+        "completed_enrollment_count": course.enrollments.filter(status="completed").count(),
+        "in_progress_enrollment_count": course.enrollments.filter(status="in_progress").count(),
     }
 
     return render(request, "courses/detail.html", context)
@@ -648,8 +716,9 @@ def learn(request):
                 )
                 messages.success(request, "Thank you for your interest! We'll be in touch soon.")
                 return redirect("index")
-            except Exception as e:
-                print(f"Error sending email: {e}")
+            except Exception:
+                logger = logging.getLogger(__name__)
+                logger.exception("Error sending email")
                 messages.error(request, "Sorry, there was an error sending your inquiry. Please try again later.")
     else:
         initial_data = {}
@@ -4716,6 +4785,291 @@ def run_create_test_data(request):
 
 
 @login_required
+@require_POST
+def update_student_attendance(request):
+    if not request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse({"success": False, "message": "Invalid request"}, status=400)
+
+    try:
+        session_id = request.POST.get("session_id")
+        student_id = request.POST.get("student_id")
+        status = request.POST.get("status")
+        notes = request.POST.get("notes", "")
+
+        if not all([session_id, student_id, status]):
+            return JsonResponse({"success": False, "message": "Missing required fields"}, status=400)
+
+        session = Session.objects.get(id=session_id)
+        student = User.objects.get(id=student_id)
+
+        # Check if the user is the course teacher
+        if request.user != session.course.teacher:
+            return JsonResponse(
+                {"success": False, "message": "Unauthorized: Only the course teacher can update attendance"}, status=403
+            )
+
+        # Update or create the attendance record
+        attendance, created = SessionAttendance.objects.update_or_create(
+            session=session, student=student, defaults={"status": status, "notes": notes}
+        )
+
+        return JsonResponse(
+            {"success": True, "message": "Attendance updated successfully", "created": created, "status": status}
+        )
+    except Session.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Session not found"}, status=404)
+    except User.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Student not found"}, status=404)
+    except Exception:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.error("Error updating student attendance", exc_info=True)
+        return JsonResponse({"success": False, "message": "An internal error has occurred."}, status=500)
+
+
+@login_required
+def get_student_attendance(request):
+    """Get a student's attendance data for a specific course."""
+    if not request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse({"success": False, "message": "Invalid request"}, status=400)
+
+    student_id = request.GET.get("student_id")
+    course_id = request.GET.get("course_id")
+
+    if not all([student_id, course_id]):
+        return JsonResponse({"success": False, "message": "Missing required parameters"}, status=400)
+
+    try:
+        course = Course.objects.get(id=course_id)
+        student = User.objects.get(id=student_id)
+
+        # Check if user is authorized (must be the course teacher)
+        if request.user != course.teacher:
+            return JsonResponse(
+                {"success": False, "message": "Unauthorized: Only the course teacher can view this data"}, status=403
+            )
+
+        # Get all attendance records for this student in this course
+        attendance_records = SessionAttendance.objects.filter(student=student, session__course=course).select_related(
+            "session"
+        )
+
+        # Format the data for the frontend
+        attendance_data = {}
+        for record in attendance_records:
+            attendance_data[record.session.id] = {
+                "status": record.status,
+                "notes": record.notes,
+                "created_at": record.created_at.isoformat(),
+                "updated_at": record.updated_at.isoformat(),
+            }
+
+        return JsonResponse({"success": True, "attendance": attendance_data})
+
+    except Course.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Course not found"}, status=404)
+    except User.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Student not found"}, status=404)
+    except Exception:
+        return JsonResponse({"success": False, "message": "Error: get_student_attendance"}, status=500)
+
+
+@login_required
+@teacher_required
+def student_management(request, course_slug, student_id):
+    """
+    View for managing a specific student in a course.
+    This replaces the modal functionality with a dedicated page.
+    """
+    course = get_object_or_404(Course, slug=course_slug)
+    student = get_object_or_404(User, id=student_id)
+
+    # Check if user is the course teacher
+    if request.user != course.teacher:
+        messages.error(request, "Only the course teacher can manage students!")
+        return redirect("course_detail", slug=course.slug)
+
+    # Check if student is enrolled in this course
+    enrollment = get_object_or_404(Enrollment, course=course, student=student)
+
+    # Get sessions for this course
+    sessions = course.sessions.all().order_by("start_time")
+
+    # Get attendance records
+    attendance_records = SessionAttendance.objects.filter(student=student, session__course=course).select_related(
+        "session"
+    )
+
+    # Format attendance data for easier access in template
+    attendance_data = {}
+    for record in attendance_records:
+        attendance_data[record.session.id] = {"status": record.status, "notes": record.notes}
+
+    # Get student progress data
+    progress = CourseProgress.objects.filter(enrollment=enrollment).first()
+    completed_sessions = []
+    if progress:
+        completed_sessions = progress.completed_sessions.all()
+
+    # Calculate attendance rate
+    total_sessions = sessions.count()
+    attended_sessions = SessionAttendance.objects.filter(
+        student=student, session__course=course, status__in=["present", "late"]
+    ).count()
+
+    attendance_rate = 0
+    if total_sessions > 0:
+        attendance_rate = int((attended_sessions / total_sessions) * 100)
+
+    # Get badges earned by this student
+    user_badges = student.badges.all()
+
+    context = {
+        "course": course,
+        "student": student,
+        "enrollment": enrollment,
+        "sessions": sessions,
+        "attendance_data": attendance_data,
+        "attendance_rate": attendance_rate,
+        "progress": progress,
+        "completed_sessions": completed_sessions,
+        "badges": user_badges,
+    }
+
+    return render(request, "courses/student_management.html", context)
+
+
+@login_required
+@teacher_required
+def update_student_progress(request, enrollment_id):
+    """
+    View for updating a student's progress in a course.
+    """
+    enrollment = get_object_or_404(Enrollment, id=enrollment_id)
+    course = enrollment.course
+
+    # Check if user is the course teacher
+    if request.user != course.teacher:
+        messages.error(request, "Only the course teacher can update student progress!")
+        return redirect("course_detail", slug=course.slug)
+
+    if request.method == "POST":
+        grade = request.POST.get("grade")
+        status = request.POST.get("status")
+        comments = request.POST.get("comments", "")
+
+        # Update enrollment
+        enrollment.grade = grade
+        enrollment.status = status
+        enrollment.notes = comments
+        enrollment.last_grade_update = timezone.now()
+        enrollment.save()
+
+        messages.success(request, f"Progress for {enrollment.student.username} updated successfully!")
+        return redirect("student_management", course_slug=course.slug, student_id=enrollment.student.id)
+
+    # If not POST, redirect back to student management
+    return redirect("student_management", course_slug=course.slug, student_id=enrollment.student.id)
+
+
+@login_required
+@teacher_required
+def update_teacher_notes(request, enrollment_id):
+    """
+    View for updating teacher's private notes for a student.
+    """
+    enrollment = get_object_or_404(Enrollment, id=enrollment_id)
+    course = enrollment.course
+
+    # Check if user is the course teacher
+    if request.user != course.teacher:
+        messages.error(request, "Only the course teacher can update notes!")
+        return redirect("course_detail", slug=course.slug)
+
+    if request.method == "POST":
+        notes = request.POST.get("teacher_notes", "")
+
+        # If notes have changed, create a new note history entry
+        if enrollment.teacher_notes != notes and notes.strip():
+            NoteHistory.objects.create(enrollment=enrollment, content=notes, created_by=request.user)
+
+        # Update enrollment
+        enrollment.teacher_notes = notes
+        enrollment.save()
+
+        messages.success(request, f"Notes for {enrollment.student.username} updated successfully!")
+
+    return redirect("student_management", course_slug=course.slug, student_id=enrollment.student.id)
+
+
+@login_required
+@teacher_required
+@require_POST
+def award_badge(request):
+    """
+    AJAX view for awarding badges to students.
+    """
+    if not request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse({"success": False, "message": "Invalid request"}, status=400)
+
+    student_id = request.POST.get("student_id")
+    badge_type = request.POST.get("badge_type")
+    course_slug = request.POST.get("course_slug")
+
+    if not all([student_id, badge_type, course_slug]):
+        return JsonResponse({"success": False, "message": "Missing required parameters"}, status=400)
+
+    try:
+        student = User.objects.get(id=student_id)
+        course = Course.objects.get(slug=course_slug)
+
+        # Check if user is the course teacher
+        if request.user != course.teacher:
+            return JsonResponse(
+                {"success": False, "message": "Unauthorized: Only the course teacher can award badges"}, status=403
+            )
+
+        # Handle different badge types
+        badge = None
+        if badge_type == "perfect_attendance":
+            badge, created = Badge.objects.get_or_create(
+                name="Perfect Attendance",
+                defaults={"description": "Awarded for attending all sessions in a course", "points": 50},
+            )
+        elif badge_type == "participation":
+            badge, created = Badge.objects.get_or_create(
+                name="Outstanding Participation",
+                defaults={"description": "Awarded for exceptional participation in course discussions", "points": 75},
+            )
+        elif badge_type == "completion":
+            badge, created = Badge.objects.get_or_create(
+                name="Course Completion",
+                defaults={"description": "Awarded for successfully completing the course", "points": 100},
+            )
+        else:
+            return JsonResponse({"success": False, "message": "Invalid badge type"}, status=400)
+
+        # Award the badge to the student
+        user_badge, created = UserBadge.objects.get_or_create(
+            user=student, badge=badge, defaults={"awarded_by": request.user, "course": course}
+        )
+
+        if not created:
+            return JsonResponse({"success": False, "message": "Student already has this badge"}, status=400)
+
+        return JsonResponse(
+            {"success": True, "message": f"Badge '{badge.name}' awarded successfully to {student.username}"}
+        )
+
+    except User.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Student not found"}, status=404)
+    except Course.DoesNotExist:
+        return JsonResponse({"success": False, "message": "Course not found"}, status=404)
+    except Exception:
+        return JsonResponse({"success": False, "message": "Error: award_badge"}, status=500)
+
+
 def notification_preferences(request):
     """
     Display and update the notification preferences for the logged-in user.
