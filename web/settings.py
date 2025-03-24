@@ -125,6 +125,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "web.context_processors.last_modified",
+                "web.context_processors.invitation_notifications",
             ],
         },
     },

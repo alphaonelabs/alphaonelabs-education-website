@@ -22,6 +22,8 @@ from django.utils.translation import gettext_lazy as _
 from markdownx.models import MarkdownxField
 from PIL import Image
 
+from web.utils import calculate_and_update_user_streak
+
 
 class Notification(models.Model):
     NOTIFICATION_TYPES = [
@@ -50,7 +52,11 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(max_length=500, blank=True)
     expertise = models.CharField(max_length=200, blank=True)
-    avatar = models.ImageField(upload_to="avatars/", blank=True, default="")
+    # Avatar fields
+    avatar = models.ImageField(upload_to="avatars", blank=True, default="")
+    custom_avatar = models.OneToOneField(
+        "Avatar", on_delete=models.SET_NULL, null=True, blank=True, related_name="profile"
+    )
     is_teacher = models.BooleanField(default=False)
     referral_code = models.CharField(max_length=20, unique=True, blank=True)
     referred_by = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="referrals")
@@ -89,20 +95,7 @@ class Profile(models.Model):
     def save(self, *args, **kwargs):
         if not self.referral_code:
             self.referral_code = self.generate_referral_code()
-        if self.avatar:
-            img = Image.open(self.avatar)
-            if img.mode != "RGB":
-                img = img.convert("RGB")
-            # Resize to a square avatar
-            size = (200, 200)
-            img = img.resize(size, Image.Resampling.LANCZOS)
-            # Save the resized image
-            buffer = BytesIO()
-            img.save(buffer, format="JPEG", quality=90)
-            # Update the ImageField
-            file_name = self.avatar.name
-            self.avatar.delete(save=False)  # Delete old image
-            self.avatar.save(file_name, ContentFile(buffer.getvalue()), save=False)
+        # Skip image processing for SVG files
         super().save(*args, **kwargs)
 
     def generate_referral_code(self):
@@ -134,6 +127,66 @@ class Profile(models.Model):
     @property
     def can_receive_payments(self):
         return self.is_teacher and self.stripe_account_id and self.stripe_account_status == "verified"
+
+
+class Avatar(models.Model):
+    style = models.CharField(max_length=50, default="circle")
+    background_color = models.CharField(max_length=7, default="#FFFFFF")
+    top = models.CharField(max_length=50, default="short_flat")
+    eyebrows = models.CharField(max_length=50, default="default")
+    eyes = models.CharField(max_length=50, default="default")
+    nose = models.CharField(max_length=50, default="default")
+    mouth = models.CharField(max_length=50, default="default")
+    facial_hair = models.CharField(max_length=50, default="none")
+    skin_color = models.CharField(max_length=50, default="light")
+    hair_color = models.CharField(max_length=7, default="#000000")
+    accessory = models.CharField(max_length=50, default="none")
+    clothing = models.CharField(max_length=50, default="hoodie")
+    clothing_color = models.CharField(max_length=7, default="#0000FF")
+    svg = models.TextField(blank=True, help_text="Stored SVG string of the custom avatar")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Avatar for {self.profile.user.username if hasattr(self, 'profile') and self.profile else 'No Profile'}"
+
+    def save(self, *args, **kwargs):
+        from python_avatars import (
+            AccessoryType,
+        )
+        from python_avatars import Avatar as PythonAvatar
+        from python_avatars import (
+            AvatarStyle,
+            ClothingType,
+            EyebrowType,
+            EyeType,
+            FacialHairType,
+            HairType,
+            MouthType,
+            NoseType,
+            SkinColor,
+        )
+
+        # Create avatar using python_avatars
+        avatar = PythonAvatar(
+            style=getattr(AvatarStyle, self.style.upper(), AvatarStyle.CIRCLE),
+            background_color=self.background_color,
+            top=getattr(HairType, self.top.upper(), HairType.SHORT_FLAT),
+            eyebrows=getattr(EyebrowType, self.eyebrows.upper(), EyebrowType.DEFAULT),
+            eyes=getattr(EyeType, self.eyes.upper(), EyeType.DEFAULT),
+            nose=getattr(NoseType, self.nose.upper(), NoseType.DEFAULT),
+            mouth=getattr(MouthType, self.mouth.upper(), MouthType.DEFAULT),
+            facial_hair=getattr(FacialHairType, self.facial_hair.upper(), FacialHairType.NONE),
+            skin_color=getattr(SkinColor, self.skin_color.upper(), SkinColor.LIGHT),
+            hair_color=self.hair_color,
+            accessory=getattr(AccessoryType, self.accessory.upper(), AccessoryType.NONE),
+            clothing=getattr(ClothingType, self.clothing.upper(), ClothingType.HOODIE),
+            clothing_color=self.clothing_color,
+        )
+
+        # Save SVG string
+        self.svg = avatar.render()
+        super().save(*args, **kwargs)
 
 
 class Subject(models.Model):
@@ -564,18 +617,24 @@ class Achievement(models.Model):
         ("streak", "Daily Learning Streak"),
     ]
 
+    BADGE_ICONS = [
+        ("fas fa-trophy", "Trophy"),
+        ("fas fa-medal", "Medal"),
+        ("fas fa-award", "Award"),
+        ("fas fa-star", "Star"),
+        ("fas fa-certificate", "Certificate"),
+        ("fas fa-graduation-cap", "Graduation Cap"),
+    ]
+
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="achievements")
-    # Making Course optional for streak badges and quiz
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="achievements", null=True, blank=True)
     achievement_type = models.CharField(max_length=20, choices=TYPES)
     title = models.CharField(max_length=200)
     description = models.TextField()
     awarded_at = models.DateTimeField(auto_now_add=True)
-    # Fields for icon-Based badges:
     badge_icon = models.CharField(
         max_length=100, blank=True, help_text="Icon class for the badge (e.g., 'fas fa-trophy')"
     )
-    # Fields for criteria-based badges:(100% for course completion, 90 for quiz, 7 or 30 for streak)
     criteria_threshold = models.PositiveIntegerField(
         null=True, blank=True, help_text="Optional threshold required to earn this badge"
     )
@@ -742,7 +801,7 @@ class StudyGroup(models.Model):
     description = models.TextField()
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="study_groups")
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_groups")
-    members = models.ManyToManyField(User, related_name="joined_groups")
+    members = models.ManyToManyField(User, related_name="joined_groups", blank=True)
     max_members = models.IntegerField(default=10)
     is_private = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -750,6 +809,58 @@ class StudyGroup(models.Model):
 
     def __str__(self):
         return self.name
+
+    def can_add_member(self):
+        return self.members.count() < self.max_members
+
+    def add_member(self, user):
+        if self.can_add_member():
+            self.members.add(user)
+            return True
+        return False
+
+    def is_full(self):
+        return self.members.count() >= self.max_members
+
+
+class StudyGroupInvite(models.Model):
+    """Invitations to join study groups."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, related_name="invites")
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_group_invites")
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_group_invites")
+    created_at = models.DateTimeField(auto_now_add=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
+    STATUS_CHOICES = [("pending", "Pending"), ("accepted", "Accepted"), ("declined", "Declined")]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+
+    class Meta:
+        unique_together = ["group", "recipient"]
+
+    def __str__(self):
+        return f"Invitation to {self.group.name} for {self.recipient.username}"
+
+    def accept(self):
+        """Accept the invitation and add the recipient to the study group."""
+        self.status = "accepted"
+        self.responded_at = timezone.now()
+        self.save()
+        member_added = self.group.add_member(self.recipient)
+        if not member_added:
+            # Group is full, create notification or handle this case
+            Notification.objects.create(
+                user=self.recipient,
+                title="Group Full",
+                message=f"Could not join {self.group.name} as it's already full",
+                notification_type="warning",
+            )
+
+    def decline(self):
+        """Decline the invitation."""
+        self.status = "declined"
+        self.responded_at = timezone.now()
+        self.save()
 
 
 @receiver(post_save, sender=User)
@@ -972,6 +1083,10 @@ class Goods(models.Model):
     images = models.ManyToManyField("ProductImage", related_name="goods_images", blank=True)
     storefront = models.ForeignKey(Storefront, on_delete=models.CASCADE, related_name="goods")
     is_available = models.BooleanField(default=True, help_text="Show/hide product from store")
+    is_reward = models.BooleanField(default=False, help_text="Can be unlocked as achievement reward")
+    points_required = models.PositiveIntegerField(
+        blank=True, null=True, help_text="Points needed to unlock this reward"
+    )
     sku = models.CharField(
         max_length=50, unique=True, blank=True, null=True, help_text="Inventory tracking ID (auto-generated)"
     )
@@ -1012,6 +1127,10 @@ class Goods(models.Model):
         # Validate physical product constraints
         if self.product_type == "physical" and self.stock is None:
             raise ValidationError("Physical products must have a stock quantity.")
+
+        # Validate reward items
+        if self.is_reward and (self.points_required is None or self.points_required <= 0):
+            raise ValidationError("Reward items must have a positive 'points_required' value.")
 
     def save(self, *args, **kwargs):
         if not self.sku:
@@ -1166,14 +1285,36 @@ class SearchLog(models.Model):
 
 
 class Challenge(models.Model):
+    CHALLENGE_TYPE_CHOICES = [
+        ("weekly", "Weekly Challenge"),
+        ("one_time", "One-time Challenge"),
+    ]
+
     title = models.CharField(max_length=200)
     description = models.TextField()
-    week_number = models.PositiveIntegerField(unique=True)
+    challenge_type = models.CharField(max_length=10, choices=CHALLENGE_TYPE_CHOICES, default="weekly")
+    week_number = models.PositiveIntegerField(null=True, blank=True)
     start_date = models.DateField()
     end_date = models.DateField()
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["week_number"],
+                condition=models.Q(challenge_type="weekly"),
+                name="unique_week_number_for_weekly_challenges",
+            )
+        ]
+
     def __str__(self):
-        return f"Week {self.week_number}: {self.title}"
+        if self.challenge_type == "weekly":
+            return f"Week {self.week_number}: {self.title}"
+        return f"One-time: {self.title}"
+
+    def clean(self):
+        super().clean()
+        if self.challenge_type == "weekly" and not self.week_number:
+            raise ValidationError({"week_number": "Week number is required for weekly challenges."})
 
 
 class ChallengeSubmission(models.Model):
@@ -1181,9 +1322,103 @@ class ChallengeSubmission(models.Model):
     challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE)
     submission_text = models.TextField()
     submitted_at = models.DateTimeField(auto_now_add=True)
+    points_awarded = models.PositiveIntegerField(default=10)
+
+    class Meta:
+        unique_together = ["user", "challenge"]
 
     def __str__(self):
-        return f"{self.user.username}'s submission for Week {self.challenge.week_number}"
+        if self.challenge.challenge_type == "weekly":
+            return f"{self.user.username}'s submission for Week {self.challenge.week_number}"
+        return f"{self.user.username}'s submission for {self.challenge.title}"
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        from django.db import transaction
+
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+
+            if is_new:
+                # Add regular points for completing the challenge
+                Points.objects.create(
+                    user=self.user,
+                    challenge=self.challenge,
+                    amount=self.points_awarded,
+                    reason=f"Completed challenge: Week {self.challenge.week_number}",
+                    point_type="regular",
+                )
+
+                # Calculate and update streak with error handling
+                try:
+                    calculate_and_update_user_streak(self.user, self.challenge)
+                except Exception as e:
+                    # Log the error but don't prevent submission from being saved
+                    import logging
+
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Error calculating streak for user {self.user.id}: {e}")
+
+
+class Points(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="points")
+    challenge = models.ForeignKey(
+        "Challenge", on_delete=models.CASCADE, null=True, blank=True, related_name="points_awarded"
+    )
+    amount = models.PositiveIntegerField(default=0)
+    reason = models.CharField(max_length=255, help_text="Reason for awarding points")
+    point_type = models.CharField(
+        max_length=20,
+        default="regular",
+        choices=[("regular", "Regular Points"), ("streak", "Streak Points"), ("bonus", "Bonus Points")],
+    )
+    awarded_at = models.DateTimeField(auto_now_add=True)
+    current_streak = models.PositiveIntegerField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username}: {self.amount} points for {self.reason}"
+
+    class Meta:
+        verbose_name_plural = "Points"
+        indexes = [
+            models.Index(fields=["user", "awarded_at"]),
+            models.Index(fields=["awarded_at"]),
+        ]
+
+    @classmethod
+    def add_points(cls, user, amount, reason, point_type="regular", challenge=None):
+        """Atomic method to add points to a user"""
+        from django.db import transaction
+
+        with transaction.atomic():
+            return cls.objects.create(
+                user=user, challenge=challenge, amount=amount, reason=reason, point_type=point_type
+            )
+
+    @classmethod
+    def get_user_points_summary(cls, user, period=None):
+        """Get summary of user points by period (daily, weekly, monthly, or all-time)"""
+        import datetime
+
+        from django.db.models import Sum
+        from django.utils import timezone
+
+        query = cls.objects.filter(user=user)
+
+        if period == "daily":
+            today = timezone.now().date()
+            query = query.filter(awarded_at__date=today)
+        elif period == "weekly":
+            today = timezone.now().date()
+            start_of_week = today - datetime.timedelta(days=today.weekday())
+            query = query.filter(awarded_at__date__gte=start_of_week)
+        elif period == "monthly":
+            today = timezone.now().date()
+            start_of_month = today.replace(day=1)
+            query = query.filter(awarded_at__date__gte=start_of_month)
+
+        return query.aggregate(total=Sum("amount"))["total"] or 0
 
 
 class ProductImage(models.Model):
@@ -1425,6 +1660,10 @@ class Donation(models.Model):
     stripe_customer_id = models.CharField(max_length=100, blank=True, default="")
     message = models.TextField(blank=True)
     anonymous = models.BooleanField(default=False)
+    award_points = models.BooleanField(default=True, help_text="Award points to user for donation")
+    points_multiplier = models.DecimalField(
+        decimal_places=2, max_digits=5, default=1.0, help_text="Points per dollar multiplier"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -2204,6 +2443,22 @@ class PeerChallengeInvitation(models.Model):
             message=f"{self.participant.username} has completed your challenge: {self.challenge.title}",
             notification_type="success",
         )
+
+
+class NoteHistory(models.Model):
+    """Model for tracking changes to teacher notes on enrollments."""
+
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE, related_name="note_history")
+    content = models.TextField()
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="note_history_entries")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.created_by.username} updated notes for {self.enrollment.student.username}"
 
 
 class NotificationPreference(models.Model):

@@ -1,6 +1,9 @@
 from allauth.account.signals import user_signed_up
+from django.core.cache import cache
+from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
 
+from .models import CourseProgress, Enrollment, LearningStreak, Session, SessionAttendance
 from .utils import send_slack_message
 
 
@@ -15,3 +18,46 @@ def notify_slack_on_signup(request, user, **kwargs):
     )
 
     send_slack_message(message)
+
+
+def invalidate_progress_cache(user):
+    """Helper function to invalidate a student's progress cache."""
+    cache_key = f"user_progress_{user.id}"
+    cache.delete(cache_key)
+
+
+@receiver(post_save, sender=Enrollment)
+@receiver(post_delete, sender=Enrollment)
+def invalidate_enrollment_cache(sender, instance, **kwargs):
+    invalidate_progress_cache(instance.student)
+
+
+@receiver(post_save, sender=SessionAttendance)
+@receiver(post_delete, sender=SessionAttendance)
+def invalidate_attendance_cache(sender, instance, **kwargs):
+    invalidate_progress_cache(instance.student)
+
+
+@receiver(post_save, sender=CourseProgress)
+@receiver(post_delete, sender=CourseProgress)
+def invalidate_course_progress_cache(sender, instance, **kwargs):
+    invalidate_progress_cache(instance.enrollment.student)
+
+
+@receiver(m2m_changed, sender=CourseProgress.completed_sessions.through)
+def invalidate_completed_sessions_cache(sender, instance, action, **kwargs):
+    if action in ["post_add", "post_remove", "post_clear"]:
+        invalidate_progress_cache(instance.enrollment.student)
+
+
+@receiver(post_save, sender=LearningStreak)
+def invalidate_streak_cache(sender, instance, **kwargs):
+    invalidate_progress_cache(instance.user)
+
+
+@receiver(post_save, sender=Session)
+@receiver(post_delete, sender=Session)
+def invalidate_session_cache(sender, instance, **kwargs):
+    enrollments = Enrollment.objects.filter(course=instance.course)
+    for enrollment in enrollments:
+        invalidate_progress_cache(enrollment.student)

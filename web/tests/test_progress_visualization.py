@@ -133,8 +133,8 @@ class ProgressVisualizationTest(TestCase):
     @patch("django.core.cache.cache.get")
     @patch("django.core.cache.cache.set")
     def test_progress_visualization_view(self, mock_cache_set, mock_cache_get):
-        """Test that the progress visualization view returns correct data."""
-        # Set the mock to return None, so the view calculates the context
+        """Test that the progress visualization view returns correct data and uses cache appropriately."""
+        # Set the mock to return None initially (cache miss)
         mock_cache_get.return_value = None
 
         url = reverse("progress_visualization")
@@ -146,6 +146,13 @@ class ProgressVisualizationTest(TestCase):
 
         # Verify that cache was set
         self.assertTrue(mock_cache_set.called)
+        mock_cache_set.assert_called_once()
+
+        # Get call arguments (args and kwargs)
+        call_args, call_kwargs = mock_cache_set.call_args
+        self.assertEqual(call_args[0], f"user_progress_{self.user.id}")  # Cache key
+        self.assertIsInstance(call_args[1], dict)  # Context is a dictionary
+        self.assertIsNone(call_kwargs.get("timeout"))  # Timeout should be None in kwargs
 
         # Check context data calculations
         context = response.context
@@ -154,8 +161,6 @@ class ProgressVisualizationTest(TestCase):
         self.assertEqual(context["total_courses"], 2)
         self.assertEqual(context["courses_completed"], 1)
         self.assertEqual(context["courses_completed_percentage"], 50)
-
-        # Topic mastery should equal completed sessions
         self.assertEqual(context["topics_mastered"], 6)
 
         # Attendance stats
@@ -166,7 +171,7 @@ class ProgressVisualizationTest(TestCase):
         self.assertIn(context["most_active_day"], days_of_week)
 
         # Check learning activity stats
-        self.assertEqual(context["current_streak"], 5)  # From the created LearningStreak object
+        self.assertEqual(context["current_streak"], 5)
         self.assertIsInstance(context["total_learning_hours"], float)
         self.assertIsInstance(context["avg_sessions_per_week"], float)
 
@@ -190,6 +195,16 @@ class ProgressVisualizationTest(TestCase):
             self.assertEqual(len(parsed_courses), 2)
         except json.JSONDecodeError:
             self.fail("JSON data in context is not properly formatted")
+
+        # Test cache hit scenario
+        mock_cache_get.reset_mock()
+        mock_cache_set.reset_mock()
+        # Convert ContextList to a plain dict for cache hit simulation
+        context_dict = dict(context)
+        mock_cache_get.return_value = context_dict
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(mock_cache_set.called)  # Cache should not be set again on hit
 
     def test_unauthenticated_access(self):
         """Test that unauthenticated users are redirected to login."""
