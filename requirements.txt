@@ -21,6 +21,7 @@ google-api-python-client==2.161.0 ; python_version >= "3.10" and python_version 
 google-auth-httplib2==0.2.0 ; python_version >= "3.10" and python_version < "4.0"
 google-auth-oauthlib==1.2.1 ; python_version >= "3.10" and python_version < "4.0"
 google-auth==2.38.0 ; python_version >= "3.10" and python_version < "4.0"
+google-generativeai==0.5.4 ; python_version >= "3.10" and python_version < "4.0"
 googleapis-common-protos==1.67.0 ; python_version >= "3.10" and python_version < "4.0"
 httplib2==0.22.0 ; python_version >= "3.10" and python_version < "4.0"
 icalendar==5.0.13 ; python_version >= "3.10" and python_version < "4.0"

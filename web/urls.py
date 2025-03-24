@@ -368,6 +368,10 @@ urlpatterns += i18n_patterns(
         name="update_teacher_notes",
     ),
     path("award-badge/", views.award_badge, name="award_badge"),
+    # infographics
+    path("infographics/", views.infographics, name="infographics"),
+    path("api/subjects/", views.api_get_subjects, name="api_get_subjects"),
+    path("api/subject-fact/<int:subject_id>/", views.api_get_subject_fact, name="api_get_subject_fact"),
     prefix_default_language=True,
 )
 

@@ -2470,3 +2470,18 @@ class NotificationPreference(models.Model):
 
     def __str__(self):
         return f"Notification preferences for {self.user.username}"
+
+
+class SubjectFact(models.Model):
+    """Model to store generated facts about subjects."""
+
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="facts")
+    fact_text = models.TextField()
+    generated_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-generated_at"]
+        unique_together = ["subject", "fact_text"]  # preventing exact duplicates
+
+    def __str__(self):
+        return f"{self.subject.name} fact: {self.fact_text[:30]}..."

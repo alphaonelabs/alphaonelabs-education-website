@@ -4,6 +4,7 @@ import ipaddress
 import json
 import logging
 import os
+import random
 import re
 import shutil
 import socket
@@ -14,6 +15,7 @@ from datetime import timedelta
 from decimal import Decimal
 from urllib.parse import urlparse
 
+import google.generativeai as genai
 import requests
 import stripe
 from django.conf import settings
@@ -136,6 +138,7 @@ from .models import (
     StudyGroup,
     StudyGroupInvite,
     Subject,
+    SubjectFact,
     SuccessStory,
     TeamGoal,
     TeamGoalMember,
@@ -5238,3 +5241,165 @@ def create_study_group(request):
     else:
         form = StudyGroupForm()
     return render(request, "web/study/create_group.html", {"form": form})
+
+
+# infographics
+def infographics(request):
+    """Display interesting facts about different subjects."""
+    subjects = Subject.objects.all().order_by("order", "name")
+
+    context = {
+        "subjects": subjects,
+    }
+
+    return render(request, "infographics/infographics.html", context)
+
+
+def api_get_subjects(request):
+    """API endpoint to get all subject names."""
+    try:
+        subjects = Subject.objects.all().order_by("order", "name").values("id", "name")
+        return JsonResponse({"subjects": list(subjects)})
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+def api_get_subject_fact(request, subject_id):
+    """API endpoint to get a fact for a specific subject."""
+    try:
+        subject = Subject.objects.get(id=subject_id)
+        force_new = request.GET.get("new", "false").lower() == "true"
+
+        # if not forcing new, try to get an unused fact from the database first
+        if not force_new:
+            # take existing facts for this subject that haven't been shown recently
+            recent_facts_ids = request.session.get(f"recent_facts_{subject_id}", [])
+            unused_fact = (
+                SubjectFact.objects.filter(subject=subject).exclude(id__in=recent_facts_ids).order_by("?").first()
+            )
+
+            if unused_fact:
+                recent_facts = request.session.get(f"recent_facts_{subject_id}", [])
+                recent_facts.append(unused_fact.id)
+                # keeping only the most recent 5 facts in history to eventually allow reuse of older facts
+                request.session[f"recent_facts_{subject_id}"] = recent_facts[-5:]
+                request.session.modified = True
+
+                return JsonResponse({"fact": unused_fact.fact_text})
+
+        # new fact generated
+        fact = generate_fact_for_subject(subject.name)
+
+        try:
+            new_fact = SubjectFact.objects.create(subject=subject, fact_text=fact)
+            recent_facts = request.session.get(f"recent_facts_{subject_id}", [])
+            recent_facts.append(new_fact.id)
+            request.session[f"recent_facts_{subject_id}"] = recent_facts[-5:]  # keep only last 5
+            request.session.modified = True
+
+        except Exception as e:
+            print(f"Error saving fact: {str(e)}")
+
+        return JsonResponse({"fact": fact})
+    except Subject.DoesNotExist:
+        return JsonResponse({"error": "Subject not found"}, status=404)
+    except Exception as e:
+        print(f"Error generating fact with Gemini: {str(e)}")
+        return JsonResponse({"fact": get_fallback_fact(subject.name)})
+
+
+def generate_fact_for_subject(subject_name):
+    """Generate a fact for a subject using Google's Gemini API."""
+    try:
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            return get_fallback_fact(subject_name)
+
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+
+        # take existing facts for this subject to explicitly avoid them
+        existing_facts = SubjectFact.objects.filter(subject__name=subject_name).values_list("fact_text", flat=True)
+        existing_facts_text = "\n".join(existing_facts[:10])  # limit to 10 most recent to keep prompt size reasonable
+        prompt = f"""Generate ONE fascinating and educational fact about {subject_name}.
+
+        AVOID repeating these existing facts:
+        {existing_facts_text}
+
+        The fact should be:
+        - Completely unique and different from the examples above
+        - Surprising or not commonly known
+        - Educational and thought-provoking
+        - Appropriate for all ages
+        - Scientifically accurate (if applicable)
+        - 22 words or less
+        - Include one relevant emoji
+
+        Respond with ONLY the fact, no prefixes like "Did you know:" or similar."""
+        response = model.generate_content(prompt, generation_config={"temperature": 0.9})
+        return response.text.strip()
+
+    except Exception as e:
+        print(f"Error generating fact with Gemini: {str(e)}")
+        return get_fallback_fact(subject_name)
+
+
+def get_fallback_fact(subject_name):
+    """Return a fallback fact if the API call fails."""
+    # defaults
+    subject_facts = {
+        "Mathematics": [
+            "The concept of zero as a number didn't appear in Europe until the 12th century.",
+            "There are more ways to arrange a deck of 52 cards than there are atoms on Earth.",
+            "The symbol for division (÷) is called an obelus.",
+            "If you write out pi to two decimal places, backwards it spells 'pie'.",
+            "The Fibonacci sequence appears throughout nature, from pinecones to galaxies.",
+        ],
+        "Physics": [
+            "If you could fold a piece of paper 42 times, it would reach the moon.",
+            "Lightning strikes the Earth about 8.6 million times per day.",
+            "Time passes faster at your face than at your feet due to gravitational time dilation.",
+            "Neutron stars are so dense that a teaspoon would weigh about 10 million tons.",
+            "Black holes aren't actually black - they emit radiation called Hawking radiation.",
+        ],
+        "Chemistry": [
+            "If you remove all empty space from atoms, the entire human race would fit in the volume of a sugar cube.",
+            "The only letter not on the periodic table is the letter J.",
+            "Helium is the only element discovered in space before being found on Earth.",
+            "Gold is so malleable that a single ounce can be beaten into a sheet covering 100 square feet.",
+            "Water can exist in three states at once - the triple point.",
+        ],
+        "Biology": [
+            "Humans share about 50% of their DNA with bananas.",
+            "There are more bacteria in your mouth than there are people on Earth.",
+            "Octopuses have three hearts, nine brains, and blue blood.",
+            "The human body contains enough fat to make 7 bars of soap.",
+            "A single red blood cell can complete one circuit of your body in just 20 seconds.",
+        ],
+        "Computer Science": [
+            "The first computer bug was an actual bug - a moth trapped in a Harvard Mark II computer in 1947.",
+            "The first computer programmer was a woman, Ada Lovelace, in the 1840s.",
+            "The average person types about 7,000 keystrokes per hour.",
+            "The first computer mouse was made of wood.",
+            "All modern encryption is based on mathematical problems that are easy to state but hard to solve.",
+        ],
+    }
+
+    # defaults
+    default_facts = [
+        f"{subject_name} has been studied for hundreds of years across many different cultures.",
+        f"The field of {subject_name} continues to evolve with new discoveries every year.",
+        f"Students of {subject_name} develop critical thinking and problem-solving skills.",
+        f"Many career opportunities are available for those who study {subject_name}.",
+        f"Interdisciplinary research connecting {subject_name} with other fields is expanding rapidly.",
+    ]
+
+    # get facts for the subject or use default facts if subject not in dictionary
+    subject_name_lower = subject_name.lower()
+    for key in subject_facts:
+        if key.lower() in subject_name_lower:
+            facts = subject_facts[key]
+            return random.choice(facts)
+
+    # return a random default fact
+    return random.choice(default_facts)
