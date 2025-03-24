@@ -168,18 +168,13 @@ class WebRequestMiddlewareTests(TestCase):
         """Test handling of requests with invalid course slugs"""
         # Visit course detail with invalid slug
         course_url = reverse("course_detail", kwargs={"slug": "invalid-slug"})
-        print("\nTesting invalid course slug:", course_url)
-        print("Before request - WebRequest count:", WebRequest.objects.count())
 
         # Try the request without GlobalExceptionMiddleware
         response = self.client.get(course_url, HTTP_USER_AGENT="Test Agent", REMOTE_ADDR="1.2.3.4")
-        print("Response status code:", response.status_code)
-        print("After request - WebRequest count:", WebRequest.objects.count())
         self.assertEqual(response.status_code, 404)
 
         # WebRequest should still be created but without course association
         web_request = WebRequest.objects.first()
-        print("WebRequest object:", web_request)
         if web_request:
             print(
                 "WebRequest details:",

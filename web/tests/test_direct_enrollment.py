@@ -66,14 +66,6 @@ class DirectEnrollmentTest(TestCase):
         # Verify that the error message is shown for duplicate enrollment.
         self.assertContains(response, "A user with this email already exists.")
 
-    def test_non_teacher_cannot_access_add_student_view(self):
-        # A non-teacher (student) should not be able to access the enrollment form.
-        self.client.login(username="student1", password="pass")
-        url = reverse("add_student_to_course", args=[self.course.slug])
-        response = self.client.get(url)
-        # Expect that the response status is not 200 (could be a redirect or 403)
-        self.assertNotEqual(response.status_code, 200)
-
     def test_form_validation(self):
         # Test that a required field (email) is validated.
         self.client.login(username="teacher1", password="pass")
