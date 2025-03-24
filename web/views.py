@@ -4484,57 +4484,6 @@ def upload_educational_video(request):
         form = EducationalVideoForm()
 
     return render(request, "videos/upload.html", {"form": form})
-    """
-    View for listing video requests with optional category filtering and tabbed interface.
-    Handles both uploaded videos and requested videos display.
-    """
-    # Get active tab from query params (uploads or requests)
-    active_tab = request.GET.get("tab", "uploads")
-
-    # Get category filter from query params
-    selected_category = request.GET.get("category")
-
-    # Base queryset for video requests
-    video_requests = VideoRequest.objects.select_related("requester", "category").order_by("-requested_at")
-
-    # Apply category filter if provided
-    if selected_category:
-        video_requests = video_requests.filter(category__slug=selected_category)
-        selected_category_obj = get_object_or_404(Subject, slug=selected_category)
-        selected_category_display = selected_category_obj.name
-    else:
-        selected_category_display = None
-
-    # Get category counts for sidebar
-    category_counts = dict(
-        VideoRequest.objects.values("category__name", "category__slug")
-        .annotate(count=Count("id"))
-        .values_list("category__slug", "count")
-    )
-
-    # Get all subjects for the dropdown/sidebar
-    subjects = Subject.objects.all().order_by("order", "name")
-
-    # Paginate results
-    paginator = Paginator(video_requests, 12)  # 12 requests per page
-    page_number = request.GET.get("page", 1)
-    page_obj = paginator.get_page(page_number)
-
-    context = {
-        "video_requests": page_obj,  # Requested videos
-        "is_paginated": paginator.num_pages > 1,
-        "page_obj": page_obj,
-        "subjects": subjects,
-        "selected_category": selected_category,
-        "selected_category_display": selected_category_display,
-        "category_counts": category_counts,
-        "active_tab": active_tab,  # For tabbed interface
-        # Note: Add "videos" key if you have an UploadedVideo model
-    }
-
-    print(context)
-
-    return render(request, "videos/list.html", context)
 
 
 @login_required
