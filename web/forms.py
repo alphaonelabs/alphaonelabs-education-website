@@ -88,6 +88,7 @@ __all__ = [
     "TakeQuizForm",
     "GradeableLinkForm",
     "LinkGradeForm",
+    "AwardAchievementForm",
 ]
 
 
@@ -243,46 +244,38 @@ class UserRegistrationForm(SignupForm):
         return user
 
 
-# start Award achievement..............
-
-
 class AwardAchievementForm(forms.Form):
     student = forms.ModelChoiceField(
         queryset=User.objects.none(),
         empty_label="Select a student",
-        widget=forms.Select(attrs={"class": "form-select"}),
+        widget=TailwindSelect(),
     )
 
-    achievement_type = forms.ChoiceField(choices=Achievement.TYPES, widget=forms.Select(attrs={"class": "form-select"}))
+    achievement_type = forms.ChoiceField(choices=Achievement.TYPES, widget=TailwindSelect())
 
     course = forms.ModelChoiceField(
         queryset=Course.objects.all(),
         empty_label="Select a course (optional)",
         required=False,
-        widget=forms.Select(attrs={"class": "form-select"}),
+        widget=TailwindSelect(),
     )
 
-    title = forms.CharField(max_length=100, widget=forms.TextInput(attrs={"class": "form-control"}))
+    title = forms.CharField(max_length=100, widget=TailwindInput())
 
-    description = forms.CharField(widget=forms.Textarea(attrs={"class": "form-control", "rows": 3}), required=False)
+    description = forms.CharField(
+        widget=TailwindTextarea(attrs={"rows": 3}),
+        required=False,
+    )
 
     badge_icon = forms.ChoiceField(
-        choices=[
-            ("fas fa-trophy", "Trophy"),
-            ("fas fa-medal", "Medal"),
-            ("fas fa-award", "Award"),
-            ("fas fa-star", "Star"),
-            ("fas fa-certificate", "Certificate"),
-            ("fas fa-graduation-cap", "Graduation Cap"),
-        ],
-        widget=forms.Select(attrs={"class": "form-select"}),
+        choices=Achievement.BADGE_ICONS,
+        widget=TailwindSelect(),
     )
 
     def __init__(self, *args, **kwargs):
         teacher = kwargs.pop("teacher", None)
         super().__init__(*args, **kwargs)
 
-        # If teacher is provided, filter students to only those in the teacher's courses
         if teacher:
             teacher_courses = Course.objects.filter(teacher=teacher)
             student_ids = []
@@ -292,8 +285,11 @@ class AwardAchievementForm(forms.Form):
             self.fields["student"].queryset = User.objects.filter(id__in=student_ids)
             self.fields["course"].queryset = teacher_courses
 
-
-# end award achievement..................
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.fields["student"].queryset.count() == 0:
+            raise forms.ValidationError("You don't have any students in your courses who can receive achievements.")
+        return cleaned_data
 
 
 class ProfileForm(forms.ModelForm):

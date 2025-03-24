@@ -1009,12 +1009,8 @@ def mark_session_completed(request, session_id):
     return redirect("course_detail", slug=session.course.slug)
 
 
-# start award achievement
-
-
 @login_required
 def award_achievement(request):
-    # Check if user is a teacher
     try:
         profile = request.user.profile
         if not profile.is_teacher:
@@ -1027,7 +1023,6 @@ def award_achievement(request):
     if request.method == "POST":
         form = AwardAchievementForm(request.POST, teacher=request.user)
         if form.is_valid():
-            # Create the achievement
             Achievement.objects.create(
                 student=form.cleaned_data["student"],
                 course=form.cleaned_data["course"],
@@ -1036,19 +1031,17 @@ def award_achievement(request):
                 description=form.cleaned_data["description"],
                 badge_icon=form.cleaned_data["badge_icon"],
             )
-
             messages.success(
                 request,
-                f'Achievement "{form.cleaned_data["title"]}" awarded to {form.cleaned_data["student"].username}',
+                f'Achievement "{form.cleaned_data["title"]}" awarded to {form.cleaned_data["student"].username}.',
             )
             return redirect("teacher_dashboard")
+        else:
+            # Show an error message if the form is invalid
+            messages.error(request, "There was an error in the form submission. Please check the form and try again.")
     else:
         form = AwardAchievementForm(teacher=request.user)
-
     return render(request, "award_achievement.html", {"form": form})
-
-
-# end award achievement
 
 
 @login_required
