@@ -199,7 +199,7 @@ pre-commit install
 poetry run pre-commit run --hook-stage commit
 
 # Run all checks on all files
-poetry run pre-commit run --all-files
+git a
 ```
 
 See [PRE-COMMIT-README.md](PRE-COMMIT-README.md) for detailed information about our pre-commit workflow and configuration.
