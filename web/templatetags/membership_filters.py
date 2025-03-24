@@ -1,44 +1,29 @@
 from django import template
 
+from web.templatetags.math_utils import safe_divide, safe_multiply, safe_percentage_off, safe_subtract
+
 register = template.Library()
 
 
 @register.filter
 def multiply(value, arg):
     """Multiplies the value by the argument"""
-    try:
-        return float(value) * float(arg)
-    except (ValueError, TypeError):
-        return value
+    return safe_multiply(value, arg, default=value)
 
 
 @register.filter
 def divide(value, arg):
     """Divides the value by the argument"""
-    try:
-        return float(value) / float(arg)
-    except (ValueError, TypeError, ZeroDivisionError):
-        return value
+    return safe_divide(value, arg, default=value)
 
 
 @register.filter
 def subtract(value, arg):
     """Subtracts the argument from the value"""
-    try:
-        return float(value) - float(arg)
-    except (ValueError, TypeError):
-        return value
+    return safe_subtract(value, arg, default=value)
 
 
 @register.filter
 def percentage_off(monthly_price, yearly_price):
     """Calculates the percentage discount of yearly vs monthly billing"""
-    try:
-        monthly = float(monthly_price)
-        yearly = float(yearly_price)
-        monthly_total = monthly * 12
-        savings = monthly_total - yearly
-        percentage = (savings / monthly_total) * 100
-        return int(percentage)
-    except (ValueError, TypeError, ZeroDivisionError):
-        return 0
+    return safe_percentage_off(monthly_price, yearly_price, default=0)

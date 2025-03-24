@@ -1,30 +1,23 @@
 from django import template
 
+from web.templatetags.math_utils import safe_divide, safe_multiply, safe_subtract
+
 register = template.Library()
 
 
 @register.filter
 def multiply(value, arg):
     """Multiplies the value by the argument"""
-    try:
-        return float(value) * float(arg)
-    except (ValueError, TypeError):
-        return value
+    return safe_multiply(value, arg, default=value)
 
 
 @register.filter
 def divide(value, arg):
     """Divides the value by the argument"""
-    try:
-        return float(value) / float(arg)
-    except (ValueError, TypeError, ZeroDivisionError):
-        return value
+    return safe_divide(value, arg, default=value)
 
 
 @register.filter
 def subtract(value, arg):
     """Subtracts the argument from the value"""
-    try:
-        return float(value) - float(arg)
-    except (ValueError, TypeError):
-        return value
+    return safe_subtract(value, arg, default=value)

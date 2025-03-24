@@ -160,10 +160,8 @@
                     <div class="text-right">
                       <p class="font-bold text-gray-900 dark:text-white">${{ price }}</p>
                       <p class="text-gray-500 dark:text-gray-400 text-sm">
-                        {% if billing_period == 'monthly' %}
-                          Billed monthly
-                        {% else %}
-                          Billed annually
+                        {% if billing_period == 'yearly' %}
+                          Includes savings of ${{ yearly_savings_amount }} ({{ yearly_savings_percent }}% off)
                         {% endif %}
                       </p>
                     </div>
@@ -175,7 +173,7 @@
                     </div>
                     <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">
                       {% if billing_period == 'yearly' %}
-                        Includes savings of ${{ price|multiply:0.2|floatformat:2 }} (20% off)
+                        Includes savings of ${{ yearly_savings_amount }} ({{ yearly_savings_percent }}% off)
                       {% endif %}
                     </p>
                   </div>
@@ -270,8 +268,8 @@
                 </div>
                 {% if billing_period == 'yearly' %}
                   <div class="flex justify-between mb-1 text-sm">
-                    <span class="text-green-600">Annual discount (20%)</span>
-                    <span class="text-green-600">-${{ price|multiply:0.2|floatformat:2 }}</span>
+                    <span class="text-green-600">Annual discount ({{ yearly_savings_percent }}%)</span>
+                    <span class="text-green-600">-${{ yearly_savings_amount }}</span>
                   </div>
                 {% endif %}
                 <div class="flex justify-between font-bold text-lg mt-4">
@@ -282,7 +280,7 @@
                   {% if billing_period == 'monthly' %}
                     Billed monthly
                   {% else %}
-                    Billed annually (save 20%)
+                    Billed annually (save {{ yearly_savings_percent }}%)
                   {% endif %}
                 </div>
               </div>
@@ -323,12 +321,6 @@
       const initializeStripe = async () => {
           try {
               setLoading(true, 'initializingPayment');
-
-              // Debug info
-              console.log("Initializing payment for:");
-              console.log(`Plan: ${planSlug}`);
-              console.log(`Billing Period: ${billingPeriod}`);
-              console.log(`Stripe Key: {{ stripe_public_key }}`);
 
               // Create subscription on the server
               const createSubscriptionResponse = await fetch("{% url 'create_membership_subscription' %}", {
