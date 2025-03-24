@@ -53,8 +53,18 @@ def safe_percentage_off(monthly_price, yearly_price, default=0):
         monthly = float(monthly_price)
         yearly = float(yearly_price)
         monthly_total = monthly * 12
+
+        # Add a minimum threshold check to avoid unrealistic discounts
+        MIN_THRESHOLD = 0.01  # $0.01 minimum meaningful price
+        if monthly_total < MIN_THRESHOLD:
+            return default
+
         savings = monthly_total - yearly
         percentage = (savings / monthly_total) * 100
+
+        # Cap the percentage to a reasonable range (0-100%)
+        percentage = max(0, min(100, percentage))
+
         return int(percentage)
     except (ValueError, TypeError, ZeroDivisionError):
         return default
