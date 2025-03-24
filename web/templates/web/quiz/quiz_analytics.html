@@ -12,7 +12,7 @@
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <!-- Breadcrumbs -->
-    <nav class="text-sm mb-6">
+    <nav class="text-sm mb-6 flex flex-col md:flex-row">
       <a href="{% url 'index' %}" class="text-blue-600 hover:text-blue-800">Home</a>
       <span class="mx-2">/</span>
       <a href="{% url 'quiz_list' %}"
@@ -21,6 +21,7 @@
       <a href="{% url 'quiz_detail' quiz.id %}"
          class="text-blue-600 hover:text-blue-800">{{ quiz.title }}</a>
       <span class="mx-2">/</span>
+
       <span class="text-gray-600">Analytics</span>
     </nav>
     <!-- Analytics Header -->

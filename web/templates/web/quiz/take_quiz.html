@@ -90,7 +90,8 @@
 {% endblock extra_head %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
-    <!-- Breadcrumbs -->
+    <div class="container mx-auto px-4 py-8 flex flex-col md:flex-row">
+
     <nav class="text-sm mb-6">
       <a href="{% url 'index' %}" class="text-blue-600 hover:text-blue-800">Home</a>
       <span class="mx-2">/</span>
