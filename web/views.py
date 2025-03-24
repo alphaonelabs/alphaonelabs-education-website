@@ -2916,9 +2916,9 @@ def current_weekly_challenge(request):
     )
 
 
-def challenge_detail(request, week_number):
+def challenge_detail(request, challenge_id):
     try:
-        challenge = get_object_or_404(Challenge, week_number=week_number)
+        challenge = get_object_or_404(Challenge, id=challenge_id)
         submissions = ChallengeSubmission.objects.filter(challenge=challenge)
         # Check if the current user has submitted this challenge
         user_submission = None
@@ -2931,19 +2931,19 @@ def challenge_detail(request, week_number):
             {"challenge": challenge, "submissions": submissions, "user_submission": user_submission},
         )
     except Http404:
-        # Redirect to weekly challenges list if specific weekly challenge not found
-        messages.info(request, "Weekly challenge #" + str(week_number) + " not found. Returning to challenges list.")
+        # Redirect to weekly challenges list if specific challenge not found
+        messages.info(request, "Challenge not found. Returning to challenges list.")
         return redirect("current_weekly_challenge")
 
 
 @login_required
-def challenge_submit(request, week_number):
-    challenge = get_object_or_404(Challenge, week_number=week_number)
+def challenge_submit(request, challenge_id):
+    challenge = get_object_or_404(Challenge, id=challenge_id)
     # Check if the user has already submitted this challenge
     existing_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
 
     if existing_submission:
-        return redirect("challenge_detail", week_number=week_number)
+        return redirect("challenge_detail", challenge_id=challenge_id)
 
     if request.method == "POST":
         form = ChallengeSubmissionForm(request.POST)
@@ -2953,7 +2953,7 @@ def challenge_submit(request, week_number):
             submission.challenge = challenge
             submission.save()
             messages.success(request, "Your submission has been recorded!")
-            return redirect("challenge_detail", week_number=week_number)
+            return redirect("challenge_detail", challenge_id=challenge_id)
     else:
         form = ChallengeSubmissionForm()
 
