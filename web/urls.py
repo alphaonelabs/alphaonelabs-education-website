@@ -187,8 +187,9 @@ urlpatterns += i18n_patterns(
     path("peers/messages/<int:user_id>/", views.peer_messages, name="peer_messages"),
     # Study Groups URLs
     path("courses/<int:course_id>/groups/", views.study_groups, name="study_groups"),
+    path('courses/<slug:slug>/reviews/<int:review_id>/edit/', views.edit_review, name='edit_review'),
+    path('courses/<slug:slug>/reviews/<int:review_id>/delete/', views.delete_review, name='delete_review'),
     path("groups/<int:group_id>/", views.study_group_detail, name="study_group_detail"),
-    path("reviews/<int:review_id>/edit/", views.edit_review, name="edit_review"),
     path("sessions/<int:session_id>/", views.session_detail, name="session_detail"),
     path("sitemap/", views.sitemap, name="sitemap"),
     path("groups/<int:group_id>/invite/", views.invite_to_study_group, name="invite_to_study_group"),

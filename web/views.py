@@ -443,25 +443,48 @@ def create_course(request):
 
 
 @login_required
-def edit_review(request, review_id):
+def edit_review(request, slug, review_id):
+    course = get_object_or_404(Course, slug=slug)
     review = get_object_or_404(Review, id=review_id)
     
-    # Ensure user can only edit their own reviews
-    if request.user != review.student:
-        messages.error(request, "You can only edit your own reviews!")
-        return redirect("course_detail", slug=review.course.slug)
+    # Security check - only allow editing own reviews
+    if request.user.id != review.student.id:
+        messages.error(request, "You can only edit your own reviews.")
+        return redirect('course_detail', slug=slug)
     
-    if request.method == "POST":
+    if request.method == 'POST':
         form = ReviewForm(request.POST, instance=review)
         if form.is_valid():
             form.save()
-            messages.success(request, "Review updated successfully!")
-            return redirect("course_detail", slug=review.course.slug)
+            messages.success(request, "Your review has been updated.")
+            # return redirect('course_detail', slug=slug)
+            url = reverse('course_detail', kwargs={'slug': slug})
+            return redirect(f"{url}#course_reviews")
     else:
         form = ReviewForm(instance=review)
     
-    return render(request, "courses/edit_review.html", {"form": form, "course": review.course})
+    context = {
+        'form': form,
+        'course': course,
+        'review': review,
+    }
+    return render(request, 'courses/edit_review.html', context)
 
+@login_required
+def delete_review(request, slug, review_id):
+    course = get_object_or_404(Course, slug=slug)
+    review = get_object_or_404(Review, id=review_id)
+    
+    # Security check - only allow deleting own reviews
+    if request.user.id != review.student.id:
+        messages.error(request, "You can only delete your own reviews.")
+    else:
+        review.delete()
+        messages.success(request, "Your review has been deleted.")
+    
+    url = reverse('course_detail', kwargs={'slug': slug})
+    return redirect(f"{url}#course_reviews")
+    # return redirect('course_detail', slug=slug)
 
 
 def course_detail(request, slug):
