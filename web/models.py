@@ -818,6 +818,7 @@ class StudyGroup(models.Model):
             self.members.add(user)
             return True
         return False
+
     def is_full(self):
         return self.members.count() >= self.max_members
 
