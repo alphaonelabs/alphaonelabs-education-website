@@ -51,6 +51,8 @@ urlpatterns += i18n_patterns(
     path("blog/create/", views.create_blog_post, name="create_blog_post"),
     path("blog/tag/<str:tag>/", views.blog_tag, name="blog_tag"),
     path("blog/<slug:slug>/", views.blog_detail, name="blog_detail"),
+    # Leaderboard URLs
+    path("leaderboards/", views.all_leaderboards, name="leaderboards"),
     # Success Stories URLs
     path("success-stories/", views.success_story_list, name="success_story_list"),
     path("success-stories/create/", views.create_success_story, name="create_success_story"),
