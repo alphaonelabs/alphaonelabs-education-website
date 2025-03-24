@@ -1285,6 +1285,7 @@ class SearchLog(models.Model):
 
 
 class Challenge(models.Model):
+    # defining two types of models
     CHALLENGE_TYPE_CHOICES = [
         ("weekly", "Weekly Challenge"),
         ("one_time", "One-time Challenge"),
