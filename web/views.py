@@ -2,6 +2,7 @@ import calendar
 import html
 import ipaddress
 import json
+import logging
 import os
 import re
 import shutil
@@ -150,7 +151,14 @@ from .notifications import (
 )
 from .referrals import send_referral_reward_email
 from .social import get_social_stats
-from .utils import get_or_create_cart
+from .utils import (
+    create_leaderboard_context,
+    get_cached_challenge_entries,
+    get_cached_leaderboard_data,
+    get_leaderboard,
+    get_or_create_cart,
+    get_user_points,
+)
 
 GOOGLE_CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "google_credentials.json")
 
@@ -168,31 +176,28 @@ def index(request):
 
     # Store referral code in session if present in URL
     ref_code = request.GET.get("ref")
+
     if ref_code:
         request.session["referral_code"] = ref_code
 
+    # Get top referrers
+    top_referrers = Profile.objects.annotate(
+        total_signups=models.Count("referrals"),
+        total_enrollments=models.Count(
+            "referrals__user__enrollments", filter=models.Q(referrals__user__enrollments__status="approved")
+        ),
+        total_clicks=models.Count(
+            "referrals__user",
+            filter=models.Q(
+                referrals__user__username__in=WebRequest.objects.filter(path__contains="ref=").values_list(
+                    "user", flat=True
+                )
+            ),
+        ),
+    ).order_by("-total_signups", "-total_enrollments")[:3]
+
     # Get current user's profile if authenticated
     profile = request.user.profile if request.user.is_authenticated else None
-
-    # Get top referrers
-    top_referrers = (
-        Profile.objects.annotate(
-            total_signups=Count("referrals"),
-            total_enrollments=Count(
-                "referrals__user__enrollments", filter=Q(referrals__user__enrollments__status="approved")
-            ),
-            total_clicks=Count(
-                "referrals__user",
-                filter=Q(
-                    referrals__user__username__in=WebRequest.objects.filter(path__contains="ref=").values_list(
-                        "user", flat=True
-                    )
-                ),
-            ),
-        )
-        .filter(total_signups__gt=0)
-        .order_by("-total_signups")[:5]
-    )
 
     # Get featured courses
     featured_courses = Course.objects.filter(status="published", is_featured=True).order_by("-created_at")[:3]
@@ -206,6 +211,14 @@ def index(request):
     # Get latest success story
     latest_success_story = SuccessStory.objects.filter(status="published").order_by("-published_at").first()
 
+    # Get top latest 3 leaderboard users
+    try:
+        top_leaderboard_users, user_rank = get_leaderboard(request.user, period=None, limit=3)
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error getting leaderboard data: {e}")
+        top_leaderboard_users = []
+
     # Get signup form if needed
     form = None
     if not request.user.is_authenticated or not request.user.profile.is_teacher:
@@ -213,11 +226,12 @@ def index(request):
 
     context = {
         "profile": profile,
-        "top_referrers": top_referrers,
         "featured_courses": featured_courses,
         "current_challenge": current_challenge,
         "latest_post": latest_post,
         "latest_success_story": latest_success_story,
+        "top_referrers": top_referrers,
+        "top_leaderboard_users": top_leaderboard_users,
         "form": form,
         "is_debug": settings.DEBUG,
     }
@@ -286,6 +300,55 @@ def signup_view(request):
             "login_url": reverse("account_login"),
         },
     )
+
+
+@login_required
+def all_leaderboards(request):
+    """
+    Display all leaderboard types on a single page.
+    """
+    # Get cached leaderboard data or fetch fresh data
+    global_entries, global_rank = get_cached_leaderboard_data(request.user, None, 10, "global_leaderboard", 60 * 60)
+    weekly_entries, weekly_rank = get_cached_leaderboard_data(request.user, "weekly", 10, "weekly_leaderboard", 60 * 15)
+    monthly_entries, monthly_rank = get_cached_leaderboard_data(
+        request.user, "monthly", 10, "monthly_leaderboard", 60 * 30
+    )
+
+    # Get user points and challenge entries if authenticated non-teacher
+    challenge_entries = []
+    user_points = None
+
+    if request.user.is_authenticated and not request.user.profile.is_teacher:
+        user_points = get_user_points(request.user)
+        challenge_entries = get_cached_challenge_entries()
+
+        context = create_leaderboard_context(
+            global_entries,
+            weekly_entries,
+            monthly_entries,
+            challenge_entries,
+            global_rank,
+            weekly_rank,
+            monthly_rank,
+            user_points["total"],
+            user_points["weekly"],
+            user_points["monthly"],
+        )
+        return render(request, "leaderboards/leaderboards.html", context)
+    else:
+        context = create_leaderboard_context(
+            global_entries,
+            weekly_entries,
+            monthly_entries,
+            [],
+            global_rank,
+            weekly_rank,
+            monthly_rank,
+            None,
+            None,
+            None,
+        )
+        return render(request, "leaderboards/leaderboards.html", context)
 
 
 @login_required
@@ -656,8 +719,9 @@ def learn(request):
                 )
                 messages.success(request, "Thank you for your interest! We'll be in touch soon.")
                 return redirect("index")
-            except Exception as e:
-                print(f"Error sending email: {e}")
+            except Exception:
+                logger = logging.getLogger(__name__)
+                logger.exception("Error sending email")
                 messages.error(request, "Sorry, there was an error sending your inquiry. Please try again later.")
     else:
         initial_data = {}
