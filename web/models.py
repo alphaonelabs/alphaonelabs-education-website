@@ -810,7 +810,7 @@ class StudyGroup(models.Model):
     def __str__(self):
         return self.name
 
-    def can_add_memeber(self):
+    def can_add_member(self):
         return self.members.count() < self.max_members
 
     def add_member(self, user):
