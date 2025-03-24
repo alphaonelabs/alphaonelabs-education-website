@@ -10,7 +10,7 @@ import web.models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("web", "0041_challenge_challenge_type_alter_challenge_week_number_and_more"),
+        ("web", "0042_profile_avatar_accessories_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
