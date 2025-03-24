@@ -12,6 +12,7 @@ from markdownx.fields import MarkdownxFormField
 
 from .models import (
     Achievement,
+    Avatar,
     BlogPost,
     ChallengeSubmission,
     Course,
@@ -88,6 +89,7 @@ __all__ = [
     "QuizQuestionForm",
     "QuizOptionFormSet",
     "TakeQuizForm",
+    "AvatarForm",
     "GradeableLinkForm",
     "LinkGradeForm",
     "AwardAchievementForm",
@@ -1009,6 +1011,43 @@ class ForumTopicForm(forms.Form):
             }
         ),
     )
+
+
+class AvatarForm(forms.ModelForm):
+    """Form for customizing user avatars."""
+
+    class Meta:
+        model = Avatar
+        fields = [
+            "style",
+            "background_color",
+            "top",
+            "eyebrows",
+            "eyes",
+            "nose",
+            "mouth",
+            "facial_hair",
+            "skin_color",
+            "hair_color",
+            "accessory",
+            "clothing",
+            "clothing_color",
+        ]
+        widgets = {
+            "style": TailwindSelect(),
+            "background_color": TailwindInput(attrs={"type": "color"}),
+            "top": TailwindSelect(),
+            "eyebrows": TailwindSelect(),
+            "eyes": TailwindSelect(),
+            "nose": TailwindSelect(),
+            "mouth": TailwindSelect(),
+            "facial_hair": TailwindSelect(),
+            "skin_color": TailwindSelect(),
+            "hair_color": TailwindInput(attrs={"type": "color"}),
+            "accessory": TailwindSelect(),
+            "clothing": TailwindSelect(),
+            "clothing_color": TailwindInput(attrs={"type": "color"}),
+        }
 
 
 class BlogPostForm(forms.ModelForm):

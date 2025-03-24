@@ -52,7 +52,11 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(max_length=500, blank=True)
     expertise = models.CharField(max_length=200, blank=True)
-    avatar = models.ImageField(upload_to="avatars/", blank=True, default="")
+    # Avatar fields
+    avatar = models.ImageField(upload_to="avatars", blank=True, default="")
+    custom_avatar = models.OneToOneField(
+        "Avatar", on_delete=models.SET_NULL, null=True, blank=True, related_name="profile"
+    )
     is_teacher = models.BooleanField(default=False)
     referral_code = models.CharField(max_length=20, unique=True, blank=True)
     referred_by = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="referrals")
@@ -91,20 +95,7 @@ class Profile(models.Model):
     def save(self, *args, **kwargs):
         if not self.referral_code:
             self.referral_code = self.generate_referral_code()
-        if self.avatar:
-            img = Image.open(self.avatar)
-            if img.mode != "RGB":
-                img = img.convert("RGB")
-            # Resize to a square avatar
-            size = (200, 200)
-            img = img.resize(size, Image.Resampling.LANCZOS)
-            # Save the resized image
-            buffer = BytesIO()
-            img.save(buffer, format="JPEG", quality=90)
-            # Update the ImageField
-            file_name = self.avatar.name
-            self.avatar.delete(save=False)  # Delete old image
-            self.avatar.save(file_name, ContentFile(buffer.getvalue()), save=False)
+        # Skip image processing for SVG files
         super().save(*args, **kwargs)
 
     def generate_referral_code(self):
@@ -136,6 +127,66 @@ class Profile(models.Model):
     @property
     def can_receive_payments(self):
         return self.is_teacher and self.stripe_account_id and self.stripe_account_status == "verified"
+
+
+class Avatar(models.Model):
+    style = models.CharField(max_length=50, default="circle")
+    background_color = models.CharField(max_length=7, default="#FFFFFF")
+    top = models.CharField(max_length=50, default="short_flat")
+    eyebrows = models.CharField(max_length=50, default="default")
+    eyes = models.CharField(max_length=50, default="default")
+    nose = models.CharField(max_length=50, default="default")
+    mouth = models.CharField(max_length=50, default="default")
+    facial_hair = models.CharField(max_length=50, default="none")
+    skin_color = models.CharField(max_length=50, default="light")
+    hair_color = models.CharField(max_length=7, default="#000000")
+    accessory = models.CharField(max_length=50, default="none")
+    clothing = models.CharField(max_length=50, default="hoodie")
+    clothing_color = models.CharField(max_length=7, default="#0000FF")
+    svg = models.TextField(blank=True, help_text="Stored SVG string of the custom avatar")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Avatar for {self.profile.user.username if hasattr(self, 'profile') and self.profile else 'No Profile'}"
+
+    def save(self, *args, **kwargs):
+        from python_avatars import (
+            AccessoryType,
+        )
+        from python_avatars import Avatar as PythonAvatar
+        from python_avatars import (
+            AvatarStyle,
+            ClothingType,
+            EyebrowType,
+            EyeType,
+            FacialHairType,
+            HairType,
+            MouthType,
+            NoseType,
+            SkinColor,
+        )
+
+        # Create avatar using python_avatars
+        avatar = PythonAvatar(
+            style=getattr(AvatarStyle, self.style.upper(), AvatarStyle.CIRCLE),
+            background_color=self.background_color,
+            top=getattr(HairType, self.top.upper(), HairType.SHORT_FLAT),
+            eyebrows=getattr(EyebrowType, self.eyebrows.upper(), EyebrowType.DEFAULT),
+            eyes=getattr(EyeType, self.eyes.upper(), EyeType.DEFAULT),
+            nose=getattr(NoseType, self.nose.upper(), NoseType.DEFAULT),
+            mouth=getattr(MouthType, self.mouth.upper(), MouthType.DEFAULT),
+            facial_hair=getattr(FacialHairType, self.facial_hair.upper(), FacialHairType.NONE),
+            skin_color=getattr(SkinColor, self.skin_color.upper(), SkinColor.LIGHT),
+            hair_color=self.hair_color,
+            accessory=getattr(AccessoryType, self.accessory.upper(), AccessoryType.NONE),
+            clothing=getattr(ClothingType, self.clothing.upper(), ClothingType.HOODIE),
+            clothing_color=self.clothing_color,
+        )
+
+        # Save SVG string
+        self.svg = avatar.render()
+        super().save(*args, **kwargs)
 
 
 class Subject(models.Model):
