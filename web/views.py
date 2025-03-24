@@ -2,6 +2,7 @@ import calendar
 import html
 import ipaddress
 import json
+import logging
 import os
 import re
 import shutil
@@ -55,6 +56,7 @@ from django.views.generic import (
 from .calendar_sync import generate_google_calendar_link, generate_ical_feed, generate_outlook_calendar_link
 from .decorators import teacher_required
 from .forms import (
+    AwardAchievementForm,
     BlogPostForm,
     ChallengeSubmissionForm,
     CourseForm,
@@ -77,6 +79,7 @@ from .forms import (
     SessionForm,
     StorefrontForm,
     StudentEnrollmentForm,
+    StudyGroupForm,
     SuccessStoryForm,
     TeacherSignupForm,
     TeachForm,
@@ -116,6 +119,7 @@ from .models import (
     LinkGrade,
     Meme,
     NoteHistory,
+    Notification,
     NotificationPreference,
     Order,
     OrderItem,
@@ -130,6 +134,7 @@ from .models import (
     SessionEnrollment,
     Storefront,
     StudyGroup,
+    StudyGroupInvite,
     Subject,
     SuccessStory,
     TeamGoal,
@@ -149,7 +154,14 @@ from .notifications import (
 )
 from .referrals import send_referral_reward_email
 from .social import get_social_stats
-from .utils import get_or_create_cart
+from .utils import (
+    create_leaderboard_context,
+    get_cached_challenge_entries,
+    get_cached_leaderboard_data,
+    get_leaderboard,
+    get_or_create_cart,
+    get_user_points,
+)
 
 GOOGLE_CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "google_credentials.json")
 
@@ -167,43 +179,51 @@ def index(request):
 
     # Store referral code in session if present in URL
     ref_code = request.GET.get("ref")
+
     if ref_code:
         request.session["referral_code"] = ref_code
 
+    # Get top referrers
+    top_referrers = Profile.objects.annotate(
+        total_signups=models.Count("referrals"),
+        total_enrollments=models.Count(
+            "referrals__user__enrollments", filter=models.Q(referrals__user__enrollments__status="approved")
+        ),
+        total_clicks=models.Count(
+            "referrals__user",
+            filter=models.Q(
+                referrals__user__username__in=WebRequest.objects.filter(path__contains="ref=").values_list(
+                    "user", flat=True
+                )
+            ),
+        ),
+    ).order_by("-total_signups", "-total_enrollments")[:3]
+
     # Get current user's profile if authenticated
     profile = request.user.profile if request.user.is_authenticated else None
-
-    # Get top referrers
-    top_referrers = (
-        Profile.objects.annotate(
-            total_signups=Count("referrals"),
-            total_enrollments=Count(
-                "referrals__user__enrollments", filter=Q(referrals__user__enrollments__status="approved")
-            ),
-            total_clicks=Count(
-                "referrals__user",
-                filter=Q(
-                    referrals__user__username__in=WebRequest.objects.filter(path__contains="ref=").values_list(
-                        "user", flat=True
-                    )
-                ),
-            ),
-        )
-        .filter(total_signups__gt=0)
-        .order_by("-total_signups")[:5]
-    )
 
     # Get featured courses
     featured_courses = Course.objects.filter(status="published", is_featured=True).order_by("-created_at")[:3]
 
     # Get current challenge
-    current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
+    current_challenge_obj = Challenge.objects.filter(
+        start_date__lte=timezone.now(), end_date__gte=timezone.now()
+    ).first()
+    current_challenge = [current_challenge_obj] if current_challenge_obj else []
 
     # Get latest blog post
     latest_post = BlogPost.objects.filter(status="published").order_by("-published_at").first()
 
     # Get latest success story
     latest_success_story = SuccessStory.objects.filter(status="published").order_by("-published_at").first()
+
+    # Get top latest 3 leaderboard users
+    try:
+        top_leaderboard_users, user_rank = get_leaderboard(request.user, period=None, limit=3)
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error getting leaderboard data: {e}")
+        top_leaderboard_users = []
 
     # Get signup form if needed
     form = None
@@ -212,11 +232,12 @@ def index(request):
 
     context = {
         "profile": profile,
-        "top_referrers": top_referrers,
         "featured_courses": featured_courses,
         "current_challenge": current_challenge,
         "latest_post": latest_post,
         "latest_success_story": latest_success_story,
+        "top_referrers": top_referrers,
+        "top_leaderboard_users": top_leaderboard_users,
         "form": form,
         "is_debug": settings.DEBUG,
     }
@@ -260,9 +281,7 @@ def index(request):
 def signup_view(request):
     """Custom signup view that properly handles referral codes."""
     if request.method == "POST":
-        # Initialize the registration form with POST data and request context
         form = UserRegistrationForm(request.POST, request=request)
-        # Validate the form data before saving the new user
         if form.is_valid():
             form.save(request)
             return redirect("account_email_verification_sent")
@@ -285,6 +304,55 @@ def signup_view(request):
             "login_url": reverse("account_login"),
         },
     )
+
+
+@login_required
+def all_leaderboards(request):
+    """
+    Display all leaderboard types on a single page.
+    """
+    # Get cached leaderboard data or fetch fresh data
+    global_entries, global_rank = get_cached_leaderboard_data(request.user, None, 10, "global_leaderboard", 60 * 60)
+    weekly_entries, weekly_rank = get_cached_leaderboard_data(request.user, "weekly", 10, "weekly_leaderboard", 60 * 15)
+    monthly_entries, monthly_rank = get_cached_leaderboard_data(
+        request.user, "monthly", 10, "monthly_leaderboard", 60 * 30
+    )
+
+    # Get user points and challenge entries if authenticated non-teacher
+    challenge_entries = []
+    user_points = None
+
+    if request.user.is_authenticated and not request.user.profile.is_teacher:
+        user_points = get_user_points(request.user)
+        challenge_entries = get_cached_challenge_entries()
+
+        context = create_leaderboard_context(
+            global_entries,
+            weekly_entries,
+            monthly_entries,
+            challenge_entries,
+            global_rank,
+            weekly_rank,
+            monthly_rank,
+            user_points["total"],
+            user_points["weekly"],
+            user_points["monthly"],
+        )
+        return render(request, "leaderboards/leaderboards.html", context)
+    else:
+        context = create_leaderboard_context(
+            global_entries,
+            weekly_entries,
+            monthly_entries,
+            [],
+            global_rank,
+            weekly_rank,
+            monthly_rank,
+            None,
+            None,
+            None,
+        )
+        return render(request, "leaderboards/leaderboards.html", context)
 
 
 @login_required
@@ -655,8 +723,9 @@ def learn(request):
                 )
                 messages.success(request, "Thank you for your interest! We'll be in touch soon.")
                 return redirect("index")
-            except Exception as e:
-                print(f"Error sending email: {e}")
+            except Exception:
+                logger = logging.getLogger(__name__)
+                logger.exception("Error sending email")
                 messages.error(request, "Sorry, there was an error sending your inquiry. Please try again later.")
     else:
         initial_data = {}
@@ -1006,6 +1075,41 @@ def mark_session_completed(request, session_id):
 
     messages.success(request, "Session marked as completed!")
     return redirect("course_detail", slug=session.course.slug)
+
+
+@login_required
+def award_achievement(request):
+    try:
+        profile = request.user.profile
+        if not profile.is_teacher:
+            messages.error(request, "You do not have permission to award achievements.")
+            return redirect("teacher_dashboard")
+    except Profile.DoesNotExist:
+        messages.error(request, "Profile not found.")
+        return redirect("teacher_dashboard")
+
+    if request.method == "POST":
+        form = AwardAchievementForm(request.POST, teacher=request.user)
+        if form.is_valid():
+            Achievement.objects.create(
+                student=form.cleaned_data["student"],
+                course=form.cleaned_data["course"],
+                achievement_type=form.cleaned_data["achievement_type"],
+                title=form.cleaned_data["title"],
+                description=form.cleaned_data["description"],
+                badge_icon=form.cleaned_data["badge_icon"],
+            )
+            messages.success(
+                request,
+                f'Achievement "{form.cleaned_data["title"]}" awarded to {form.cleaned_data["student"].username}.',
+            )
+            return redirect("teacher_dashboard")
+        else:
+            # Show an error message if the form is invalid
+            messages.error(request, "There was an error in the form submission. Please check the form and try again.")
+    else:
+        form = AwardAchievementForm(teacher=request.user)
+    return render(request, "award_achievement.html", {"form": form})
 
 
 @login_required
@@ -2784,25 +2888,43 @@ def content_dashboard(request):
 
 
 def current_weekly_challenge(request):
-    current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
-    # Check if the user has submitted the current challenge
-    user_submission = None
-    if request.user.is_authenticated and current_challenge:
-        user_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=current_challenge).first()
+    current_time = timezone.now()
+    weekly_challenge = Challenge.objects.filter(
+        challenge_type="weekly", start_date__lte=current_time, end_date__gte=current_time
+    ).first()
+
+    one_time_challenges = Challenge.objects.filter(
+        challenge_type="one_time", start_date__lte=current_time, end_date__gte=current_time
+    )
+    user_submissions = {}
+    if request.user.is_authenticated:
+        # Get all active challenges
+        all_challenges = []
+        if weekly_challenge:
+            all_challenges.append(weekly_challenge)
+            all_challenges.extend(list(one_time_challenges))
+
+        # Get all submissions for active challenges
+        if all_challenges:
+            submissions = ChallengeSubmission.objects.filter(user=request.user, challenge__in=all_challenges)
+            # Create a dictionary mapping challenge IDs to submissions
+            for submission in submissions:
+                user_submissions[submission.challenge_id] = submission
 
     return render(
         request,
         "web/current_weekly_challenge.html",
         {
-            "current_challenge": current_challenge,
-            "user_submission": user_submission,  # Pass the user's submission to the template
+            "current_challenge": weekly_challenge,
+            "one_time_challenges": one_time_challenges,
+            "user_submissions": user_submissions if request.user.is_authenticated else {},
         },
     )
 
 
-def challenge_detail(request, week_number):
+def challenge_detail(request, challenge_id):
     try:
-        challenge = get_object_or_404(Challenge, week_number=week_number)
+        challenge = get_object_or_404(Challenge, id=challenge_id)
         submissions = ChallengeSubmission.objects.filter(challenge=challenge)
         # Check if the current user has submitted this challenge
         user_submission = None
@@ -2815,19 +2937,19 @@ def challenge_detail(request, week_number):
             {"challenge": challenge, "submissions": submissions, "user_submission": user_submission},
         )
     except Http404:
-        # Redirect to weekly challenges list if specific weekly challenge not found
-        messages.info(request, "Weekly challenge #" + str(week_number) + " not found. Returning to challenges list.")
+        # Redirect to weekly challenges list if specific challenge not found
+        messages.info(request, "Challenge not found. Returning to challenges list.")
         return redirect("current_weekly_challenge")
 
 
 @login_required
-def challenge_submit(request, week_number):
-    challenge = get_object_or_404(Challenge, week_number=week_number)
+def challenge_submit(request, challenge_id):
+    challenge = get_object_or_404(Challenge, id=challenge_id)
     # Check if the user has already submitted this challenge
     existing_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=challenge).first()
 
     if existing_submission:
-        return redirect("challenge_detail", week_number=week_number)
+        return redirect("challenge_detail", challenge_id=challenge_id)
 
     if request.method == "POST":
         form = ChallengeSubmissionForm(request.POST)
@@ -2837,7 +2959,7 @@ def challenge_submit(request, week_number):
             submission.challenge = challenge
             submission.save()
             messages.success(request, "Your submission has been recorded!")
-            return redirect("challenge_detail", week_number=week_number)
+            return redirect("challenge_detail", challenge_id=challenge_id)
     else:
         form = ChallengeSubmissionForm()
 
@@ -5010,3 +5132,109 @@ def notification_preferences(request):
         form = NotificationPreferencesForm(instance=preference)
 
     return render(request, "account/notification_preferences.html", {"form": form})
+
+
+@login_required
+def invite_to_study_group(request, group_id):
+    """Invite a user to a study group."""
+    group = get_object_or_404(StudyGroup, id=group_id)
+
+    # Only allow invitations from current group members.
+    if request.user not in group.members.all():
+        messages.error(request, "You must be a member of the group to invite others.")
+        return redirect("study_group_detail", group_id=group.id)
+
+    if request.method == "POST":
+        email_or_username = request.POST.get("email_or_username")
+        # Search by email or username.
+        recipient = User.objects.filter(Q(email=email_or_username) | Q(username=email_or_username)).first()
+        if not recipient:
+            messages.error(request, f"No user found with email or username: {email_or_username}")
+            return redirect("study_group_detail", group_id=group.id)
+
+        # Prevent duplicate invitations or inviting existing members.
+        if recipient in group.members.all():
+            messages.warning(request, f"{recipient.username} is already a member of this group.")
+            return redirect("study_group_detail", group_id=group.id)
+
+        if StudyGroupInvite.objects.filter(group=group, recipient=recipient, status="pending").exists():
+            messages.warning(request, f"An invitation has already been sent to {recipient.username}.")
+            return redirect("study_group_detail", group_id=group.id)
+
+        if group.is_full():
+            messages.error(request, "The study group is full. No new members can be added.")
+            return redirect("study_group_detail", group_id=group.id)
+
+        # Create a notification for the recipient.
+        notification_url = request.build_absolute_uri(reverse("user_invitations"))
+        notification_text = (
+            f"{request.user.username} has invited you to join the study group: {group.name}. "
+            f"View invitations here: {notification_url}"
+        )
+        Notification.objects.create(
+            user=recipient, title="Study Group Invitation", message=notification_text, notification_type="info"
+        )
+
+        messages.success(request, f"Invitation sent to {recipient.username}.")
+        return redirect("study_group_detail", group_id=group.id)
+
+    return redirect("study_group_detail", group_id=group.id)
+
+
+@login_required
+def user_invitations(request):
+    """Display pending study group invitations for the user."""
+    invitations = StudyGroupInvite.objects.filter(recipient=request.user, status="pending").select_related(
+        "group", "sender"
+    )
+    return render(request, "web/study/invitations.html", {"invitations": invitations})
+
+
+@login_required
+def respond_to_invitation(request, invite_id):
+    """Accept or decline a study group invitation."""
+    invite = get_object_or_404(StudyGroupInvite, id=invite_id, recipient=request.user)
+    if request.method == "POST":
+        response = request.POST.get("response")
+        if response == "accept":
+            if invite.group.is_full():
+                messages.error(request, "The study group is full. Cannot join.")
+                return redirect("user_invitations")
+            invite.accept()
+            study_group_url = request.build_absolute_uri(reverse("study_group_detail", args=[invite.group.id]))
+            notification_text = f"{request.user.username} has accepted your invitation to join {invite.group.name}.\
+                 View group details here: {study_group_url}"
+            Notification.objects.create(
+                user=invite.sender, title="Invitation Accepted", message=notification_text, notification_type="success"
+            )
+            messages.success(request, f"You have joined {invite.group.name}.")
+            return redirect("user_invitations")
+        elif response == "decline":
+            invite.decline()
+            study_group_url = request.build_absolute_uri(reverse("study_group_detail", args=[invite.group.id]))
+            notification_text = f"{request.user.username} has declined your invitation to join {invite.group.name}.\
+                 View group details here: {study_group_url}"
+            Notification.objects.create(
+                user=invite.sender, title="Invitation Declined", message=notification_text, notification_type="warning"
+            )
+            messages.info(request, f"You have declined the invitation to {invite.group.name}.")
+            return redirect("user_invitations")
+
+    return redirect("user_invitations")
+
+
+@login_required
+def create_study_group(request):
+    if request.method == "POST":
+        form = StudyGroupForm(request.POST)
+        if form.is_valid():
+            study_group = form.save(commit=False)
+            study_group.creator = request.user
+            study_group.save()
+            # Automatically add the creator as a member
+            study_group.members.add(request.user)
+            messages.success(request, "Study group created successfully!")
+            return redirect("study_group_detail", group_id=study_group.id)
+    else:
+        form = StudyGroupForm()
+    return render(request, "web/study/create_group.html", {"form": form})

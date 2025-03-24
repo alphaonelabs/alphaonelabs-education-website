@@ -11,6 +11,8 @@ from django.utils.text import slugify
 from markdownx.fields import MarkdownxFormField
 
 from .models import (
+    Achievement,
+    Avatar,
     BlogPost,
     ChallengeSubmission,
     Course,
@@ -33,6 +35,7 @@ from .models import (
     Review,
     Session,
     Storefront,
+    StudyGroup,
     Subject,
     SuccessStory,
     TeamGoal,
@@ -85,8 +88,10 @@ __all__ = [
     "QuizQuestionForm",
     "QuizOptionFormSet",
     "TakeQuizForm",
+    "AvatarForm",
     "GradeableLinkForm",
     "LinkGradeForm",
+    "AwardAchievementForm",
 ]
 
 
@@ -247,6 +252,54 @@ class UserRegistrationForm(SignupForm):
             email_address.send_confirmation(request)
 
         return user
+
+
+class AwardAchievementForm(forms.Form):
+    student = forms.ModelChoiceField(
+        queryset=User.objects.none(),
+        empty_label="Select a student",
+        widget=TailwindSelect(),
+    )
+
+    achievement_type = forms.ChoiceField(choices=Achievement.TYPES, widget=TailwindSelect())
+
+    course = forms.ModelChoiceField(
+        queryset=Course.objects.all(),
+        empty_label="Select a course (optional)",
+        required=False,
+        widget=TailwindSelect(),
+    )
+
+    title = forms.CharField(max_length=100, widget=TailwindInput())
+
+    description = forms.CharField(
+        widget=TailwindTextarea(attrs={"rows": 3}),
+        required=False,
+    )
+
+    badge_icon = forms.ChoiceField(
+        choices=Achievement.BADGE_ICONS,
+        widget=TailwindSelect(),
+    )
+
+    def __init__(self, *args, **kwargs):
+        teacher = kwargs.pop("teacher", None)
+        super().__init__(*args, **kwargs)
+
+        if teacher:
+            teacher_courses = Course.objects.filter(teacher=teacher)
+            student_ids = []
+            for course in teacher_courses:
+                student_ids.extend(course.students.values_list("id", flat=True))
+
+            self.fields["student"].queryset = User.objects.filter(id__in=student_ids)
+            self.fields["course"].queryset = teacher_courses
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if self.fields["student"].queryset.count() == 0:
+            raise forms.ValidationError("You don't have any students in your courses who can receive achievements.")
+        return cleaned_data
 
 
 class ProfileForm(forms.ModelForm):
@@ -966,6 +1019,43 @@ class ForumTopicForm(forms.Form):
     )
 
 
+class AvatarForm(forms.ModelForm):
+    """Form for customizing user avatars."""
+
+    class Meta:
+        model = Avatar
+        fields = [
+            "style",
+            "background_color",
+            "top",
+            "eyebrows",
+            "eyes",
+            "nose",
+            "mouth",
+            "facial_hair",
+            "skin_color",
+            "hair_color",
+            "accessory",
+            "clothing",
+            "clothing_color",
+        ]
+        widgets = {
+            "style": TailwindSelect(),
+            "background_color": TailwindInput(attrs={"type": "color"}),
+            "top": TailwindSelect(),
+            "eyebrows": TailwindSelect(),
+            "eyes": TailwindSelect(),
+            "nose": TailwindSelect(),
+            "mouth": TailwindSelect(),
+            "facial_hair": TailwindSelect(),
+            "skin_color": TailwindSelect(),
+            "hair_color": TailwindInput(attrs={"type": "color"}),
+            "accessory": TailwindSelect(),
+            "clothing": TailwindSelect(),
+            "clothing_color": TailwindInput(attrs={"type": "color"}),
+        }
+
+
 class BlogPostForm(forms.ModelForm):
     """Form for creating and editing blog posts."""
 
@@ -1540,3 +1630,10 @@ class NotificationPreferencesForm(forms.ModelForm):
             "reminder_days_before": forms.NumberInput(attrs={"min": 1, "max": 14}),
             "reminder_hours_before": forms.NumberInput(attrs={"min": 1, "max": 72}),
         }
+
+
+class StudyGroupForm(forms.ModelForm):
+    class Meta:
+        model = StudyGroup
+        # You might exclude fields that are set automatically.
+        fields = ["name", "description", "course", "max_members", "is_private"]

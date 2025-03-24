@@ -53,16 +53,16 @@
                     <img src="{{ course.image.url }}"
                          alt="{{ course.title }}"
                          class="w-full h-full object-cover"
-                         height=""
-                         width="" />
+                         height="300"
+                         width="300" />
                   </a>
                 {% else %}
                   <a href="{% url 'course_detail' course.slug %}">
                     <img src="{% static 'images/default-course.jpg' %}"
                          alt="{{ course.title }}"
                          class="w-full h-full object-cover"
-                         height=""
-                         width="" />
+                         height="300"
+                         width="300" />
                   </a>
                 {% endif %}
               </div>
@@ -287,16 +287,16 @@
                     <img src="{{ product.image.url }}"
                          alt="{{ product.name }}"
                          class="w-full h-full object-cover"
-                         height=""
-                         width="" />
+                         height="250"
+                         width="250" />
                   </a>
                 {% else %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
                     <img src="{% static 'images/placeholder.png' %}"
                          alt="{{ product.name }}"
                          class="w-full h-full object-cover"
-                         height=""
-                         width="" />
+                         height="250"
+                         width="250" />
                   </a>
                 {% endif %}
               </div>
@@ -359,8 +359,8 @@
                      alt="Google Summer of Code"
                      class="h-16 w-16 object-contain"
                      onerror="this.src='https://summerofcode.withgoogle.com/assets/media/gsoc-2024-badge.svg'"
-                     height=""
-                     width="" />
+                     height="64"
+                     width="64" />
               </div>
               <div>
                 <h3 class="text-xl font-bold mb-2">Join us for Google Summer of Code 2025! 🚀</h3>
@@ -644,32 +644,90 @@
             {% endif %}
           </div>
         {% endif %}
-        <!-- Weekly Challenge -->
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800">
-          <h2 class="text-xl font-semibold mb-4 flex items-center">
-            <span class="mr-2">🏆</span> Weekly Challenge
+        <!-- Leaderboard -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <h2 class="text-lg font-semibold mb-4 flex items-center">
+            <i class="fa-solid fa-trophy text-yellow-600 dark:text-yellow-400 mr-2"></i>
+            Leaderboard Champions
           </h2>
-          {% if current_challenge %}
-            <div class="text-left">
-              <p class="text-lg font-semibold mb-2">Challenge Name:</p>
-              <p class="text-gray-700 dark:text-gray-300 mb-4">{{ current_challenge.title }}</p>
-              <p class="text-lg font-semibold mb-2">Details:</p>
-              <p class="text-gray-700 dark:text-gray-300 mb-4">{{ current_challenge.description }}</p>
-              <p class="text-lg font-semibold mb-2">Duration:</p>
-              <p class="text-gray-600 dark:text-gray-400 mb-6">
-                {{ current_challenge.start_date }} to {{ current_challenge.end_date }}
+          <div class="space-y-3">
+            <p class="text-gray-600 dark:text-gray-400 mb-6">Global leaderboard</p>
+            {% for entry in top_leaderboard_users %}
+              <div class="flex items-center p-2 {% if forloop.counter == 1 %}bg-yellow-50 dark:bg-yellow-900/30{% elif forloop.counter == 2 %}bg-gray-50 dark:bg-gray-700/50{% elif forloop.counter == 3 %}bg-amber-50 dark:bg-amber-900/30{% endif %} rounded-lg">
+                <div class="flex-shrink-0 mr-3 relative">
+                  {% if entry.user.profile.avatar %}
+                    <img src="{{ entry.user.profile.avatar.url }}"
+                         alt="{{ entry.user.username }}"
+                         class="w-10 h-10 rounded-full"
+                         width="40"
+                         height="40" />
+                  {% else %}
+                    <div class="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-white">
+                      {{ entry.user.username|make_list|first|upper }}
+                    </div>
+                  {% endif %}
+                  <div class="absolute -top-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white {% if forloop.counter == 1 %}bg-yellow-500{% elif forloop.counter == 2 %}bg-gray-500{% elif forloop.counter == 3 %}bg-amber-600{% endif %}">
+                    {{ forloop.counter }}
+                  </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  {% if entry.user.id == user.id %}
+                    <p class="text-sm font-medium truncate">
+                      You
+                      <span class="bg-blue-200 px-3 py-1 rounded-full text-sm">Excellent Work</span>
+                    </p>
+                  {% else %}
+                    <p class="text-sm font-medium truncate">{{ entry.user.username }}</p>
+                  {% endif %}
+                  <div class="flex mt-2 text-xs text-gray-500 dark:text-gray-400 space-x-2">
+                    <span title="Points"><i class="fas fa-star text-yellow-500 mr-1"></i>{{ entry.points }}</span>
+                    <span title="Challenges Completed"><i class="fas fa-check-circle text-green-500 mr-1"></i>{{ entry.challenge_count }}</span>
+                    <span title="Streak"><i class="fas fa-fire text-orange-500 mr-1"></i>{{ entry.current_streak }}</span>
+                  </div>
+                </div>
+              </div>
+            {% empty %}
+              <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
+                No entries yet. Complete challenges to earn your spot!
               </p>
-              {% if user.is_authenticated %}
-                <a href="{% url 'challenge_submit' current_challenge.week_number %}"
-                   class="inline-block bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 transition-shadow shadow-md">
-                  Complete My Challenge
-                </a>
-              {% else %}
-                <p class="text-red-600 dark:text-red-400 mt-4">Please log in to submit your result.</p>
-              {% endif %}
+            {% endfor %}
+          </div>
+          <!-- Leaderboard Navigation Buttons -->
+          <div class="mt-4 space-y-2">
+            <a href="{% url 'leaderboards' %}"
+               class="block text-center bg-orange-500 hover:bg-orange-600 text-white font-medium px-4 py-2 rounded-lg transition-colors">
+              <i class="fas fa-list-ol mr-2"></i>Full Leaderboard
+            </a>
+          </div>
+        </div>
+        <!-- Weekly Challenge -->
+        <div class="container mx-auto px-4 py-8">
+          <h1 class="text-3xl font-bold mb-6 text-center">🏆 Weekly Challenges</h1>
+          {% if current_challenge %}
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800">
+              <!-- Only display the first challenge (current week) -->
+              <div class="challenge-item">
+                <!-- Challenge Title -->
+                <h2 class="text-xl font-semibold mb-4">{{ current_challenge.0.title }}</h2>
+                <!-- Challenge Description -->
+                <p class="text-gray-700 dark:text-gray-300 mb-4">{{ current_challenge.0.description }}</p>
+                <!-- Challenge Duration -->
+                <p class="text-gray-600 dark:text-gray-400 mb-4">
+                  <strong>Duration:</strong> {{ current_challenge.0.start_date }} to {{ current_challenge.0.end_date }}
+                </p>
+                <!-- Submission Button -->
+                {% if user.is_authenticated %}
+                  <a href="{% url 'challenge_submit' current_challenge.0.id %}"
+                     class="inline-block bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 transition-shadow shadow-md">
+                    Complete My Challenge
+                  </a>
+                {% else %}
+                  <p class="text-red-600 dark:text-red-400 mt-4">Please log in to submit your result.</p>
+                {% endif %}
+              </div>
             </div>
           {% else %}
-            <p class="text-left text-gray-500 dark:text-gray-400">No challenge available for this week.</p>
+            <p class="text-center text-gray-500 dark:text-gray-400">No challenges available at this time.</p>
           {% endif %}
         </div>
         <!-- Educational Videos -->
@@ -830,15 +888,23 @@
     <script>
         // Top Contributors
         function fetchTopContributors() {
-            fetch('https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=closed&per_page=100')
-                .then(response => response.json())
-                .then(pulls => {
+            // Create a helper function to fetch paginated data
+            async function fetchPage(page) {
+                const response = await fetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=closed&per_page=100&page=${page}`);
+                return response.json();
+            }
+
+            // Fetch 2 pages of data
+            Promise.all([fetchPage(1), fetchPage(2)])
+                .then(results => {
+                    // Combine the results from both pages
+                    const pulls = [...results[0], ...results[1]];
                     const contributors = {};
                     pulls.forEach(pull => {
                         const username = pull.user.login;
 
-                        //skipping bots
-                        if (username.includes('[bot]') || username.includes('dependabot')) {
+                        //skipping bots and specific users
+                        if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
                             return;
                         }
 
@@ -886,6 +952,8 @@
                     topContributors.forEach(contributor => {
                         contributor.prs.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
                         contributor.most_recent_pr = contributor.prs[0];
+                        // Add the GSoC-style PRs URL
+                        contributor.prs_url = `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${contributor.username}+is:merged`;
                     });
 
                     const container = document.getElementById('top-contributors-section');
@@ -930,14 +998,14 @@
 
                         div.innerHTML = `
                             <div class="relative">
-                                <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-10 h-10 rounded-full" loading="lazy" />
+                                <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-10 h-10 rounded-full" loading="lazy" width="40" height="40" />
                                 <div class="absolute -bottom-1 -left-1 w-5 h-5 ${rankBadgeClass} text-white text-xs font-bold flex items-center justify-center rounded-full border-2 border-white dark:border-gray-800">
                                     ${rankBadgeInner}
                                 </div>
                             </div>
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center justify-between">
-                                    <a href="${contributor.profile_url}" target="_blank" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400">
+                                    <a href="${contributor.prs_url}" target="_blank" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400">
                                         ${contributor.username}
                                     </a>
                                     <span class="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 text-xs px-2 py-1 rounded-full">
@@ -966,17 +1034,25 @@
 
         // New Contributors
         function fetchNewContributors() {
-            fetch('https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100')
-                .then(response => response.json())
-                .then(pulls => {
+            // Create a helper function to fetch paginated data
+            async function fetchPage(page) {
+                const response = await fetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=${page}`);
+                return response.json();
+            }
+
+            // Fetch 2 pages of data
+            Promise.all([fetchPage(1), fetchPage(2)])
+                .then(results => {
+                    // Combine the results from both pages
+                    const pulls = [...results[0], ...results[1]];
                     const userPrs = {};
                     const firstMergedPrDetails = {};
 
                     pulls.forEach(pull => {
                         const username = pull.user.login;
 
-                        //bots ignored
-                        if (username.includes('[bot]') || username.includes('dependabot')) {
+                        //bots and specific users ignored
+                        if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
                             return;
                         }
 
@@ -1017,7 +1093,9 @@
                                 created_at: firstPr.created_at,
                                 profile_url: firstPr.profile_url,
                                 merged_at: firstPr.merged_at,
-                                state: firstPr.state
+                                state: firstPr.state,
+                                // Add the GSoC-style PRs URL
+                                prs_url: `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${username}+is:merged`
                             };
                         }
                     });
@@ -1050,10 +1128,10 @@
                             `<span class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 text-xs px-2 py-0.5 rounded-full ml-2">New</span>` : '';
 
                         div.innerHTML = `
-                            <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-10 h-10 rounded-full" loading="lazy" />
+                            <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-10 h-10 rounded-full" loading="lazy" width="40" height="40" />
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center">
-                                    <a href="${contributor.profile_url}" target="_blank" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400">
+                                    <a href="${contributor.prs_url}" target="_blank" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400">
                                         ${contributor.username}
                                     </a>
                                     ${newBadge}
@@ -1083,13 +1161,22 @@
 
         // Recent Contributors
         function fetchRecentContributions() {
-            fetch('https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100')
-                .then(response => response.json())
-                .then(pulls => {
+            // Create a helper function to fetch paginated data
+            async function fetchPage(page) {
+                const response = await fetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=${page}`);
+                return response.json();
+            }
+
+            // Fetch 2 pages of data
+            Promise.all([fetchPage(1), fetchPage(2)])
+                .then(results => {
+                    // Combine the results from both pages
+                    const pulls = [...results[0], ...results[1]];
                     const filteredPulls = pulls.filter(pull => {
                             const username = pull.user.login;
                             return !username.includes('[bot]') &&
                                 !username.includes('dependabot') &&
+                                username !== 'A1L13N' &&
                                 pull.merged_at !== null;
                         })
                         .sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at))
@@ -1112,8 +1199,11 @@
                         const div = document.createElement('div');
                         div.className = 'flex items-center space-x-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
 
+                        // Create the GSoC-style PRs URL for this user
+                        const prs_url = `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${pull.user.login}+is:merged`;
+
                         div.innerHTML = `
-                            <img src="${pull.user.avatar_url}" alt="${pull.user.login}" class="w-10 h-10 rounded-full" loading="lazy" />
+                            <img src="${pull.user.avatar_url}" alt="${pull.user.login}" class="w-10 h-10 rounded-full" loading="lazy" width="40" height="40" />
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center justify-between">
                                     <a href="${pull.html_url}" target="_blank" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 truncate block">
@@ -1122,7 +1212,7 @@
                                     <span class="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 text-xs px-2 py-0.5 rounded-full">Merged</span>
                                 </div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                                    <a href="${pull.user.html_url}" target="_blank" class="font-medium hover:underline">${pull.user.login}</a> · PR #${pull.number} · Merged on ${mergedDate}
+                                    <a href="${prs_url}" target="_blank" class="font-medium hover:underline">${pull.user.login}</a> · PR #${pull.number} · Merged on ${mergedDate}
                                 </p>
                             </div>
                         `;
