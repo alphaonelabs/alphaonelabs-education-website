@@ -2476,7 +2476,7 @@ class SubjectFact(models.Model):
     """Model to store generated facts about subjects."""
 
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name="facts")
-    fact_text = models.TextField()
+    fact_text = models.CharField(max_length=500)  # Changed from TextField
     generated_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
