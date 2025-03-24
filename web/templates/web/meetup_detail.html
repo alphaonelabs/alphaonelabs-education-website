@@ -9,7 +9,7 @@
     <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
       <p class="text-gray-600 dark:text-gray-400 mb-4">{{ meetup.description }}</p>
       <p class="text-gray-600 dark:text-gray-400 mb-4">Date: {{ meetup.date }}</p>
-      <p class="text-gray-600 dark:text-gray-400">Type: {{ meetup.get_type_display }}</p>
+      <p class="text-gray-600 dark:text-gray-400">Type: {{ meetup.get_event_type_display }}</p>
       <!-- Added type -->
       {% if meetup.event_type == 'in_person' %}
         <p class="text-gray-600 dark:text-gray-400 mb-4">Location: {{ meetup.location }}</p>
