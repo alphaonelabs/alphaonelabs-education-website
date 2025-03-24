@@ -4738,7 +4738,10 @@ def update_student_attendance(request):
     except User.DoesNotExist:
         return JsonResponse({"success": False, "message": "Student not found"}, status=404)
     except Exception as e:
-        return JsonResponse({"success": False, "message": f"Error: {str(e)}"}, status=500)
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error("Error updating student attendance", exc_info=True)
+        return JsonResponse({"success": False, "message": "An internal error has occurred."}, status=500)
 
 
 @login_required
