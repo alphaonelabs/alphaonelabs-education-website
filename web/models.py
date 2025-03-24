@@ -607,6 +607,24 @@ class EducationalVideo(models.Model):
         return self.title
 
 
+class VideoRequest(models.Model):
+    """Model for users to request educational videos."""
+
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    category = models.ForeignKey(Subject, on_delete=models.PROTECT, related_name="video_requests")
+    requester = models.ForeignKey(User, on_delete=models.CASCADE, related_name="video_requests")
+    requested_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Video Request"
+        verbose_name_plural = "Video Requests"
+        ordering = ["-requested_at"]
+
+    def __str__(self):
+        return self.title
+
+
 class Achievement(models.Model):
     TYPES = [
         ("attendance", "Perfect Attendance"),
