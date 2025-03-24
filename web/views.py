@@ -5263,7 +5263,6 @@ def api_get_subjects(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-
 def api_get_subject_fact(request, subject_id):
     """API endpoint to get a fact for a specific subject."""
     try:
@@ -5298,7 +5297,9 @@ def api_get_subject_fact(request, subject_id):
             request.session.modified = True
 
         except Exception as e:
-            print(f"Error saving fact: {str(e)}")
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error saving fact: {str(e)}")
+            # Still return the generated fact even if we couldn't save it
 
         return JsonResponse({"fact": fact})
     except Subject.DoesNotExist:
