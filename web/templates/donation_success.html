@@ -2,20 +2,23 @@
 
 {% load i18n %}
 {% load static %}
-{% block seo_title %}About Alpha One Labs - Our Journey and Mission{% endblock seo_title %}
-{% block seo_description %}Learn about Alpha One Labs, our journey from a small hackerspace to a dynamic STEM education platform fostering creativity and innovation since 2009.{% endblock seo_description %}
-{% block seo_keywords %}Alpha One Labs, education, STEM learning, hackerspace, tech education, science, engineering{% endblock seo_keywords %}
 
-{% block og_title %}About Alpha One Labs - STEM Education Platform{% endblock og_title %}
-{% block og_description %}From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.{% endblock og_description %}
-{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/about-banner.jpg' %}{% endblock og_image %}
-
-{% block twitter_title %}About Alpha One Labs - STEM Education Platform{% endblock twitter_title %}
-{% block twitter_description %}From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.{% endblock twitter_description %}
-
-{% block title %}
-  {% trans "Donation Successful" %} | {{ block.super }}
-{% endblock title %}
+{% block seo_title %}Support Alpha One Labs - Donate Today{% endblock %}
+{% block seo_description %}
+  Your donations empower us to deliver high-quality STEM education and expand access to learners everywhere.
+{% endblock %}
+{% block seo_keywords %}donate, support education, STEM funding, Alpha One Labs{% endblock %}
+{% block og_title %}Donate to Alpha One Labs - Make an Impact{% endblock %}
+{% block og_description %}
+  Your contribution fuels innovation and accessibility in STEM learning for all ages.
+{% endblock %}
+{% block og_image %}
+  {{ request.scheme }}://{{ request.get_host }}{% static 'images/donate-banner.jpg' %}
+{% endblock %}
+{% block twitter_title %}Support STEM Education - Donate to Alpha One Labs{% endblock %}
+{% block twitter_description %}
+  Make a difference in students lives by contributing to Alpha One Labs today.
+{% endblock %}
 {% block content %}
   <div class="container mx-auto px-4 py-16">
     <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8">

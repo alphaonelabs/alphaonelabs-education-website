@@ -1,19 +1,23 @@
 {% extends "base.html" %}
+
 {% load static %}
-{% block seo_title %}About Alpha One Labs - Our Journey and Mission{% endblock seo_title %}
-{% block seo_description %}Learn about Alpha One Labs, our journey from a small hackerspace to a dynamic STEM education platform fostering creativity and innovation since 2009.{% endblock seo_description %}
-{% block seo_keywords %}Alpha One Labs, education, STEM learning, hackerspace, tech education, science, engineering{% endblock seo_keywords %}
 
-{% block og_title %}About Alpha One Labs - STEM Education Platform{% endblock og_title %}
-{% block og_description %}From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.{% endblock og_description %}
-{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/about-banner.jpg' %}{% endblock og_image %}
-
-{% block twitter_title %}About Alpha One Labs - STEM Education Platform{% endblock twitter_title %}
-{% block twitter_description %}From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.{% endblock twitter_description %}
-
-{% block title %}
-  Add Educational Meme
-{% endblock title %}
+{% block seo_title %}Add Educational Meme - Contribute to Fun Learning{% endblock %}
+{% block seo_description %}
+  Submit your own educational meme to Alpha One Labs and help us make learning engaging and fun for all ages.
+{% endblock %}
+{% block seo_keywords %}submit meme, educational content, Alpha One Labs, fun learning{% endblock %}
+{% block og_title %}Add a Meme - Alpha One Labs{% endblock %}
+{% block og_description %}
+  Help shape our learning community by contributing your creative educational memes.
+{% endblock %}
+{% block og_image %}
+  {{ request.scheme }}://{{ request.get_host }}{% static 'images/add-meme-banner.jpg' %}
+{% endblock %}
+{% block twitter_title %}Contribute Your Meme - Alpha One Labs{% endblock %}
+{% block twitter_description %}
+  Submit your educational memes and be part of our mission to make learning fun.
+{% endblock %}
 {% block content %}
   <div class="container mx-auto mt-8 px-4 max-w-2xl">
     <h1 class="text-2xl font-bold mb-6">Add a New Educational Meme</h1>

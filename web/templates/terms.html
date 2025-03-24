@@ -1,17 +1,31 @@
 {% extends "base.html" %}
+
 {% load static %}
 
-{% block seo_title %}About Alpha One Labs - Our Journey and Mission{% endblock seo_title %}
-{% block seo_description %}Learn about Alpha One Labs, our journey from a small hackerspace to a dynamic STEM education platform fostering creativity and innovation since 2009.{% endblock seo_description %}
-{% block seo_keywords %}Alpha One Labs, education, STEM learning, hackerspace, tech education, science, engineering{% endblock seo_keywords %}
-
-{% block og_title %}About Alpha One Labs - STEM Education Platform{% endblock og_title %}
-{% block og_description %}From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.{% endblock og_description %}
-{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/about-banner.jpg' %}{% endblock og_image %}
-
-{% block twitter_title %}About Alpha One Labs - STEM Education Platform{% endblock twitter_title %}
-{% block twitter_description %}From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.{% endblock twitter_description %}
-
+{% block seo_title %}
+  About Alpha One Labs - Our Journey and Mission
+{% endblock seo_title %}
+{% block seo_description %}
+  Learn about Alpha One Labs, our journey from a small hackerspace to a dynamic STEM education platform fostering creativity and innovation since 2009.
+{% endblock seo_description %}
+{% block seo_keywords %}
+  Alpha One Labs, education, STEM learning, hackerspace, tech education, science, engineering
+{% endblock seo_keywords %}
+{% block og_title %}
+  About Alpha One Labs - STEM Education Platform
+{% endblock og_title %}
+{% block og_description %}
+  From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.
+{% endblock og_description %}
+{% block og_image %}
+  {{ request.scheme }}://{{ request.get_host }}{% static 'images/about-banner.jpg' %}
+{% endblock og_image %}
+{% block twitter_title %}
+  About Alpha One Labs - STEM Education Platform
+{% endblock twitter_title %}
+{% block twitter_description %}
+  From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.
+{% endblock twitter_description %}
 {% block title %}Terms of Service - Alpha One Labs{% endblock %}
 {% block content %}
   <div class="max-w-4xl mx-auto px-4 py-8">

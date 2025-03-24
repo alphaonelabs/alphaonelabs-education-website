@@ -1,20 +1,31 @@
 {% extends "base.html" %}
+
 {% load static %}
 
-{% block seo_title %}About Alpha One Labs - Our Journey and Mission{% endblock seo_title %}
-{% block seo_description %}Learn about Alpha One Labs, our journey from a small hackerspace to a dynamic STEM education platform fostering creativity and innovation since 2009.{% endblock seo_description %}
-{% block seo_keywords %}Alpha One Labs, education, STEM learning, hackerspace, tech education, science, engineering{% endblock seo_keywords %}
-
-{% block og_title %}About Alpha One Labs - STEM Education Platform{% endblock og_title %}
-{% block og_description %}From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.{% endblock og_description %}
-{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/about-banner.jpg' %}{% endblock og_image %}
-
-{% block twitter_title %}About Alpha One Labs - STEM Education Platform{% endblock twitter_title %}
-{% block twitter_description %}From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.{% endblock twitter_description %}
-
-{% block title %}
-  Advanced Whiteboard
-{% endblock title %}
+{% block seo_title %}
+  Advanced Whiteboard - Interactive Learning Tool | Alpha One Labs
+{% endblock seo_title %}
+{% block seo_description %}
+  Use our advanced whiteboard tool for interactive learning, drawing, and collaboration. Create, save, and share your diagrams and educational content.
+{% endblock seo_description %}
+{% block seo_keywords %}
+  advanced whiteboard, digital whiteboard, online drawing tool, educational tools, interactive learning, collaborative whiteboard, Alpha One Labs
+{% endblock seo_keywords %}
+{% block og_title %}
+  Interactive Whiteboard - Alpha One Labs
+{% endblock og_title %}
+{% block og_description %}
+  Collaborate, draw, and teach in real time with our online whiteboard tool.
+{% endblock og_description %}
+{% block og_image %}
+  {{ request.scheme }}://{{ request.get_host }}{% static 'images/whiteboard-preview.jpg' %}
+{% endblock og_image %}
+{% block twitter_title %}
+  Online Whiteboard Tool - Alpha One Labs
+{% endblock twitter_title %}
+{% block twitter_description %}
+  Experience collaborative learning with our advanced whiteboard feature.
+{% endblock twitter_description %}
 {% block content %}
   <div class="container mx-auto p-4">
     <h1 class="text-2xl font-bold mb-4">Advanced Whiteboard</h1>

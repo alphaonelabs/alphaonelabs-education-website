@@ -1,17 +1,31 @@
 {% extends "base.html" %}
+
 {% load static %}
 
-{% block seo_title %}About Alpha One Labs - Our Journey and Mission{% endblock seo_title %}
-{% block seo_description %}Learn about Alpha One Labs, our journey from a small hackerspace to a dynamic STEM education platform fostering creativity and innovation since 2009.{% endblock seo_description %}
-{% block seo_keywords %}Alpha One Labs, education, STEM learning, hackerspace, tech education, science, engineering{% endblock seo_keywords %}
-
-{% block og_title %}About Alpha One Labs - STEM Education Platform{% endblock og_title %}
-{% block og_description %}From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.{% endblock og_description %}
-{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/about-banner.jpg' %}{% endblock og_image %}
-
-{% block twitter_title %}About Alpha One Labs - STEM Education Platform{% endblock twitter_title %}
-{% block twitter_description %}From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.{% endblock twitter_description %}
-
+{% block seo_title %}
+  Google Summer of Code @ Alpha One Labs
+{% endblock seo_title %}
+{% block seo_description %}
+  Explore how Alpha One Labs is contributing to open source through Google Summer of Code. View past projects and learn how to get involved.
+{% endblock seo_description %}
+{% block seo_keywords %}
+  Google Summer of Code, GSoC, open source, STEM, student projects, Alpha One Labs
+{% endblock seo_keywords %}
+{% block og_title %}
+  Google Summer of Code - Alpha One Labs
+{% endblock og_title %}
+{% block og_description %}
+  Contribute to open source and STEM innovation with Alpha One Labs and GSoC.
+{% endblock og_description %}
+{% block og_image %}
+  {{ request.scheme }}://{{ request.get_host }}{% static 'images/gsoc-banner.jpg' %}
+{% endblock og_image %}
+{% block twitter_title %}
+  Join GSoC @ Alpha One Labs
+{% endblock twitter_title %}
+{% block twitter_description %}
+  Shape the future of open source with Alpha One Labs through Google Summer of Code.
+{% endblock twitter_description %}
 {% block content %}
   <!-- Hero Section -->
   <section class="relative w-full bg-gradient-to-r from-teal-600 to-orange-500 text-white py-16 text-center">

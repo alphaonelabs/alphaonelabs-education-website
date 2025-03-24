@@ -2,18 +2,30 @@
 
 {% load static %}
 
-
-{% block seo_title %}About Alpha One Labs - Our Journey and Mission{% endblock seo_title %}
-{% block seo_description %}Learn about Alpha One Labs, our journey from a small hackerspace to a dynamic STEM education platform fostering creativity and innovation since 2009.{% endblock seo_description %}
-{% block seo_keywords %}Alpha One Labs, education, STEM learning, hackerspace, tech education, science, engineering{% endblock seo_keywords %}
-
-{% block og_title %}About Alpha One Labs - STEM Education Platform{% endblock og_title %}
-{% block og_description %}From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.{% endblock og_description %}
-{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/about-banner.jpg' %}{% endblock og_image %}
-
-{% block twitter_title %}About Alpha One Labs - STEM Education Platform{% endblock twitter_title %}
-{% block twitter_description %}From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.{% endblock twitter_description %}
-
+{% block seo_title %}
+  Teach at Alpha One Labs - Share Knowledge
+{% endblock seo_title %}
+{% block seo_description %}
+  Join as a teacher or mentor. Share your expertise and help others grow in STEM through our platform.
+{% endblock seo_description %}
+{% block seo_keywords %}
+  teach STEM, become a mentor, Alpha One Labs teacher, online instructor
+{% endblock seo_keywords %}
+{% block og_title %}
+  Become a STEM Instructor - Alpha One Labs
+{% endblock og_title %}
+{% block og_description %}
+  Inspire learners by becoming a teacher or mentor with Alpha One Labs.
+{% endblock og_description %}
+{% block og_image %}
+  {{ request.scheme }}://{{ request.get_host }}{% static 'images/teach-banner.jpg' %}
+{% endblock og_image %}
+{% block twitter_title %}
+  Teach STEM - Join Alpha One Labs
+{% endblock twitter_title %}
+{% block twitter_description %}
+  Apply to teach or mentor on Alpha One Labs and shape future innovators.
+{% endblock twitter_description %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold text-center mb-4">

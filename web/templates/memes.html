@@ -1,19 +1,31 @@
 {% extends "base.html" %}
+
 {% load static %}
 
-{% block seo_title %}About Alpha One Labs - Our Journey and Mission{% endblock seo_title %}
-{% block seo_description %}Learn about Alpha One Labs, our journey from a small hackerspace to a dynamic STEM education platform fostering creativity and innovation since 2009.{% endblock seo_description %}
-{% block seo_keywords %}Alpha One Labs, education, STEM learning, hackerspace, tech education, science, engineering{% endblock seo_keywords %}
-
-{% block og_title %}About Alpha One Labs - STEM Education Platform{% endblock og_title %}
-{% block og_description %}From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.{% endblock og_description %}
-{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/about-banner.jpg' %}{% endblock og_image %}
-
-{% block twitter_title %}About Alpha One Labs - STEM Education Platform{% endblock twitter_title %}
-{% block twitter_description %}From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.{% endblock twitter_description %}
-{% block title %}
-  Educational Memes
-{% endblock title %}
+{% block seo_title %}
+  Educational Memes - Learning Made Fun | Alpha One Labs
+{% endblock seo_title %}
+{% block seo_description %}
+  Browse a collection of memes that blend humor with educational insights to make learning more engaging.
+{% endblock seo_description %}
+{% block seo_keywords %}
+  educational memes, fun learning, STEM humor, learning through laughter
+{% endblock seo_keywords %}
+{% block og_title %}
+  Explore Fun Educational Memes
+{% endblock og_title %}
+{% block og_description %}
+  Discover memes that entertain and educate on Alpha One Labs.
+{% endblock og_description %}
+{% block og_image %}
+  {{ request.scheme }}://{{ request.get_host }}{% static 'images/memes-preview.jpg' %}
+{% endblock og_image %}
+{% block twitter_title %}
+  Learning with Laughter - Educational Memes
+{% endblock twitter_title %}
+{% block twitter_description %}
+  Make learning fun with memes that teach and amuse on Alpha One Labs.
+{% endblock twitter_description %}
 {% block content %}
   <div class="container mx-auto mt-8 px-4">
     <div class="flex justify-between items-center mb-6">
