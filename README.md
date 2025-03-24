@@ -158,6 +158,28 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 
 Copy `.env.sample` to `.env` and configure the variables.
 
+### Stripe Configuration
+
+For membership functionality, you need to set up the following Stripe-related environment variables:
+
+- `STRIPE_PUBLISHABLE_KEY`: Your Stripe publishable key
+- `STRIPE_SECRET_KEY`: Your Stripe secret key
+- `STRIPE_WEBHOOK_SECRET`: Your Stripe webhook secret for handling general payment events
+- `STRIPE_MEMBERSHIP_WEBHOOK_SECRET`: Your Stripe webhook secret specifically for membership events (if not set, falls back to STRIPE_WEBHOOK_SECRET)
+
+#### Membership Plan Price IDs
+
+Each membership plan requires Stripe price IDs for monthly and yearly billing:
+
+- `STRIPE_BASIC_MONTHLY_PRICE_ID`: Stripe price ID for Basic monthly plan
+- `STRIPE_BASIC_YEARLY_PRICE_ID`: Stripe price ID for Basic yearly plan
+- `STRIPE_PRO_MONTHLY_PRICE_ID`: Stripe price ID for Pro monthly plan
+- `STRIPE_PRO_YEARLY_PRICE_ID`: Stripe price ID for Pro yearly plan
+- `STRIPE_PREMIUM_MONTHLY_PRICE_ID`: Stripe price ID for Premium monthly plan
+- `STRIPE_PREMIUM_YEARLY_PRICE_ID`: Stripe price ID for Premium yearly plan
+
+These IDs must be created in your Stripe dashboard and are environment-specific (development, staging, production).
+
 ## Development Guidelines
 
 ### Code Style

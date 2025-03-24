@@ -271,132 +271,125 @@
             <!-- Billing preference -->
             <div class="pt-6 section-fade-in">
               <h2 class="text-2xl font-semibold mb-8 text-gray-900 dark:text-white text-center">Choose your billing preference</h2>
-              {% with yearly_price=plan.price_yearly|floatformat:2 %}
-                {% with monthly_price=plan.price_monthly|floatformat:2 %}
-                  {% with yearly_total=monthly_price|multiply:12 %}
-                    {% with yearly_savings=yearly_total|subtract:yearly_price %}
-                      {% with savings_percent=yearly_savings|divide:yearly_total|multiply:100|floatformat:0 %}
-                        <!-- Pricing Cards -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 section-fade-in">
-                          <a href="{% url 'checkout_membership' plan.slug 'monthly' %}"
-                             class="pricing-card bg-white dark:bg-gray-700 border-2 {% if billing_period == 'monthly' %}border-blue-600 dark:border-blue-500 shadow-xl{% else %}border-gray-200 dark:border-gray-600{% endif %} rounded-xl hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg">
-                            <div class="p-8 flex flex-col h-full relative pricing-highlight">
-                              <!-- Badge if selected -->
-                              {% if billing_period == 'monthly' %}
-                                <div class="absolute top-4 right-4">
-                                  <span class="bg-blue-600 text-white text-xs font-bold py-1.5 px-3 rounded-full shadow-md animate-pulse">Selected</span>
-                                </div>
-                              {% endif %}
-                              <div class="mb-5">
-                                <span class="inline-block px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full font-medium">Monthly Billing</span>
-                              </div>
-                              <div class="flex-grow">
-                                <div class="flex items-baseline mb-3">
-                                  <span class="text-4xl font-bold text-gray-900 dark:text-white">${{ plan.price_monthly }}</span>
-                                  <span class="text-base text-gray-600 dark:text-gray-300 ml-2">/month</span>
-                                </div>
-                                <p class="text-gray-700 dark:text-gray-200 mb-6">Flexible month-to-month billing with no long-term commitment</p>
-                                <ul class="space-y-3 mb-6 feature-list">
-                                  <li class="flex items-center text-gray-700 dark:text-gray-200">
-                                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 feature-icon"
-                                         fill="none"
-                                         stroke="currentColor"
-                                         viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    Cancel anytime
-                                  </li>
-                                  <li class="flex items-center text-gray-700 dark:text-gray-200">
-                                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 feature-icon"
-                                         fill="none"
-                                         stroke="currentColor"
-                                         viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    All plan features included
-                                  </li>
-                                  <li class="flex items-center text-gray-700 dark:text-gray-200">
-                                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 feature-icon"
-                                         fill="none"
-                                         stroke="currentColor"
-                                         viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    Pay as you go
-                                  </li>
-                                </ul>
-                              </div>
-                              <button class="mt-6 py-5 px-8 w-full rounded-lg shadow-md cta-button text-lg {% if billing_period == 'monthly' %}bg-blue-600 text-white hover:bg-blue-700 ring-4 ring-blue-100 dark:ring-blue-900/30{% else %}bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 border-2 border-blue-600 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-gray-600{% endif %} transition duration-300 font-medium">
-                                Continue with Monthly
-                              </button>
-                            </div>
-                          </a>
-                          <a href="{% url 'checkout_membership' plan.slug 'yearly' %}"
-                             class="pricing-card bg-white dark:bg-gray-700 border-2 {% if billing_period == 'yearly' %}border-blue-600 dark:border-blue-500 shadow-xl{% else %}border-gray-200 dark:border-gray-600{% endif %} rounded-xl hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg relative">
-                            <!-- Savings Badge - Improved alignment -->
-                            <div class="absolute -top-3 -right-3 save-badge">
-                              <div class="bg-green-600 text-white text-sm font-bold px-4 py-2 rounded-md shadow-lg">SAVE {{ savings_percent }}%</div>
-                            </div>
-                            <div class="p-8 flex flex-col h-full relative pricing-highlight">
-                              <!-- Badge if selected -->
-                              {% if billing_period == 'yearly' %}
-                                <div class="absolute top-4 right-4">
-                                  <span class="bg-blue-600 text-white text-xs font-bold py-1.5 px-3 rounded-full shadow-md animate-pulse">Selected</span>
-                                </div>
-                              {% endif %}
-                              <div class="mb-5">
-                                <span class="inline-block px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full font-medium">Annual Billing</span>
-                              </div>
-                              <div class="flex-grow">
-                                <div class="flex items-baseline mb-3">
-                                  <span class="text-4xl font-bold text-gray-900 dark:text-white">${{ plan.price_yearly }}</span>
-                                  <span class="text-base text-gray-600 dark:text-gray-300 ml-2">/year</span>
-                                </div>
-                                <p class="text-gray-700 dark:text-gray-200 mb-2">Best value — save ${{ yearly_savings|floatformat:2 }} per year</p>
-                                <div class="text-sm text-gray-600 dark:text-gray-300 mb-6 bg-gray-100 dark:bg-gray-600 p-2 rounded-lg flex items-center justify-center">
-                                  That's only ${{ plan.price_yearly|divide:12|floatformat:2 }}/month
-                                </div>
-                                <ul class="space-y-3 mb-6 feature-list">
-                                  <li class="flex items-center text-gray-700 dark:text-gray-200">
-                                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 feature-icon"
-                                         fill="none"
-                                         stroke="currentColor"
-                                         viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    {{ savings_percent }}% discount
-                                  </li>
-                                  <li class="flex items-center text-gray-700 dark:text-gray-200">
-                                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 feature-icon"
-                                         fill="none"
-                                         stroke="currentColor"
-                                         viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    All plan features included
-                                  </li>
-                                  <li class="flex items-center text-gray-700 dark:text-gray-200">
-                                    <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 feature-icon"
-                                         fill="none"
-                                         stroke="currentColor"
-                                         viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                    </svg>
-                                    Priority support
-                                  </li>
-                                </ul>
-                              </div>
-                              <button class="mt-6 py-5 px-8 w-full rounded-lg shadow-lg cta-button text-lg {% if billing_period == 'yearly' %}bg-blue-600 text-white hover:bg-blue-700 ring-4 ring-blue-100 dark:ring-blue-900/30{% else %}bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800{% endif %} transition duration-300 font-medium">
-                                Continue with Yearly
-                              </button>
-                            </div>
-                          </a>
-                        </div>
-                      {% endwith %}
-                    {% endwith %}
-                  {% endwith %}
-                {% endwith %}
-              {% endwith %}
+              {% calculate_yearly_savings plan.price_monthly plan.price_yearly as yearly_savings %}
+              {% calculate_savings_percent plan.price_monthly plan.price_yearly as savings_percent %}
+              {% calculate_monthly_equivalent plan.price_yearly as monthly_equivalent %}
+              <!-- Pricing Cards -->
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-8 section-fade-in">
+                <a href="{% url 'checkout_membership' plan.slug 'monthly' %}"
+                   class="pricing-card bg-white dark:bg-gray-700 border-2 {% if billing_period == 'monthly' %}border-blue-600 dark:border-blue-500 shadow-xl{% else %}border-gray-200 dark:border-gray-600{% endif %} rounded-xl hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg">
+                  <div class="p-8 flex flex-col h-full relative pricing-highlight">
+                    <!-- Badge if selected -->
+                    {% if billing_period == 'monthly' %}
+                      <div class="absolute top-4 right-4">
+                        <span class="bg-blue-600 text-white text-xs font-bold py-1.5 px-3 rounded-full shadow-md animate-pulse">Selected</span>
+                      </div>
+                    {% endif %}
+                    <div class="mb-5">
+                      <span class="inline-block px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full font-medium">Monthly Billing</span>
+                    </div>
+                    <div class="flex-grow">
+                      <div class="flex items-baseline mb-3">
+                        <span class="text-4xl font-bold text-gray-900 dark:text-white">${{ plan.price_monthly }}</span>
+                        <span class="text-base text-gray-600 dark:text-gray-300 ml-2">/month</span>
+                      </div>
+                      <p class="text-gray-700 dark:text-gray-200 mb-6">Flexible month-to-month billing with no long-term commitment</p>
+                      <ul class="space-y-3 mb-6 feature-list">
+                        <li class="flex items-center text-gray-700 dark:text-gray-200">
+                          <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 feature-icon"
+                               fill="none"
+                               stroke="currentColor"
+                               viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                          </svg>
+                          Cancel anytime
+                        </li>
+                        <li class="flex items-center text-gray-700 dark:text-gray-200">
+                          <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 feature-icon"
+                               fill="none"
+                               stroke="currentColor"
+                               viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                          </svg>
+                          All plan features included
+                        </li>
+                        <li class="flex items-center text-gray-700 dark:text-gray-200">
+                          <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 feature-icon"
+                               fill="none"
+                               stroke="currentColor"
+                               viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                          </svg>
+                          Pay as you go
+                        </li>
+                      </ul>
+                    </div>
+                    <button class="mt-6 py-5 px-8 w-full rounded-lg shadow-md cta-button text-lg {% if billing_period == 'monthly' %}bg-blue-600 text-white hover:bg-blue-700 ring-4 ring-blue-100 dark:ring-blue-900/30{% else %}bg-white dark:bg-gray-700 text-blue-700 dark:text-blue-300 border-2 border-blue-600 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-gray-600{% endif %} transition duration-300 font-medium">
+                      Continue with Monthly
+                    </button>
+                  </div>
+                </a>
+                <a href="{% url 'checkout_membership' plan.slug 'yearly' %}"
+                   class="pricing-card bg-white dark:bg-gray-700 border-2 {% if billing_period == 'yearly' %}border-blue-600 dark:border-blue-500 shadow-xl{% else %}border-gray-200 dark:border-gray-600{% endif %} rounded-xl hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg relative">
+                  <!-- Savings Badge - Improved alignment -->
+                  <div class="absolute -top-3 -right-3 save-badge">
+                    <div class="bg-green-600 text-white text-sm font-bold px-4 py-2 rounded-md shadow-lg">SAVE {{ savings_percent }}%</div>
+                  </div>
+                  <div class="p-8 flex flex-col h-full relative pricing-highlight">
+                    <!-- Badge if selected -->
+                    {% if billing_period == 'yearly' %}
+                      <div class="absolute top-4 right-4">
+                        <span class="bg-blue-600 text-white text-xs font-bold py-1.5 px-3 rounded-full shadow-md animate-pulse">Selected</span>
+                      </div>
+                    {% endif %}
+                    <div class="mb-5">
+                      <span class="inline-block px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-full font-medium">Annual Billing</span>
+                    </div>
+                    <div class="flex-grow">
+                      <div class="flex items-baseline mb-3">
+                        <span class="text-4xl font-bold text-gray-900 dark:text-white">${{ plan.price_yearly }}</span>
+                        <span class="text-base text-gray-600 dark:text-gray-300 ml-2">/year</span>
+                      </div>
+                      <p class="text-gray-700 dark:text-gray-200 mb-2">Best value — save ${{ yearly_savings }} per year</p>
+                      <div class="text-sm text-gray-600 dark:text-gray-300 mb-6 bg-gray-100 dark:bg-gray-600 p-2 rounded-lg flex items-center justify-center">
+                        That's only ${{ monthly_equivalent|floatformat:2 }}/month
+                      </div>
+                      <ul class="space-y-3 mb-6 feature-list">
+                        <li class="flex items-center text-gray-700 dark:text-gray-200">
+                          <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 feature-icon"
+                               fill="none"
+                               stroke="currentColor"
+                               viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                          </svg>
+                          {{ savings_percent }}% discount
+                        </li>
+                        <li class="flex items-center text-gray-700 dark:text-gray-200">
+                          <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 feature-icon"
+                               fill="none"
+                               stroke="currentColor"
+                               viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                          </svg>
+                          All plan features included
+                        </li>
+                        <li class="flex items-center text-gray-700 dark:text-gray-200">
+                          <svg class="w-5 h-5 text-blue-600 dark:text-blue-400 mr-3 feature-icon"
+                               fill="none"
+                               stroke="currentColor"
+                               viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                          </svg>
+                          Priority support
+                        </li>
+                      </ul>
+                    </div>
+                    <button class="mt-6 py-5 px-8 w-full rounded-lg shadow-lg cta-button text-lg {% if billing_period == 'yearly' %}bg-blue-600 text-white hover:bg-blue-700 ring-4 ring-blue-100 dark:ring-blue-900/30{% else %}bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800{% endif %} transition duration-300 font-medium">
+                      Continue with Yearly
+                    </button>
+                  </div>
+                </a>
+              </div>
             </div>
             <!-- Terms info -->
             <div class="mt-8 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl text-center text-base text-gray-600 dark:text-gray-300 max-w-xl mx-auto section-fade-in">

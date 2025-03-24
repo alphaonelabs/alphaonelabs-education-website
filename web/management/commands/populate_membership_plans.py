@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from web.models import MembershipPlan
@@ -42,8 +43,13 @@ class Command(BaseCommand):
                     "Monthly learning webinars",
                     "Access to learning path guides",
                 ]
-                basic.stripe_monthly_price_id = "price_1OaXkRLkswLmMQQZlkVYMVqM"
-                basic.stripe_yearly_price_id = "price_1OaXkRLkswLmMQQZ1sWBB0TJ"
+                # Use values from settings with fallbacks to development placeholders
+                basic.stripe_monthly_price_id = getattr(
+                    settings, "STRIPE_BASIC_MONTHLY_PRICE_ID", "price_1OaXkRLkswLmMQQZlkVYMVqM"
+                )
+                basic.stripe_yearly_price_id = getattr(
+                    settings, "STRIPE_BASIC_YEARLY_PRICE_ID", "price_1OaXkRLkswLmMQQZ1sWBB0TJ"
+                )
                 basic.save()
                 self.stdout.write("Created Basic plan")
             except Exception as e:
@@ -76,8 +82,13 @@ class Command(BaseCommand):
                     "Project reviews and feedback",
                     "Assignment grading and feedback",
                 ]
-                pro.stripe_monthly_price_id = "price_1OaXlDLkswLmMQQZVqS8KJPM"
-                pro.stripe_yearly_price_id = "price_1OaXlDLkswLmMQQZJdjMCQz7"
+                # Use values from settings with fallbacks to development placeholders
+                pro.stripe_monthly_price_id = getattr(
+                    settings, "STRIPE_PRO_MONTHLY_PRICE_ID", "price_1OaXlDLkswLmMQQZVqS8KJPM"
+                )
+                pro.stripe_yearly_price_id = getattr(
+                    settings, "STRIPE_PRO_YEARLY_PRICE_ID", "price_1OaXlDLkswLmMQQZJdjMCQz7"
+                )
                 pro.save()
                 self.stdout.write("Created Pro plan")
             except Exception as e:
@@ -112,8 +123,13 @@ class Command(BaseCommand):
                     "Early access to new courses",
                     "Unlimited project submissions",
                 ]
-                premium.stripe_monthly_price_id = "price_1OaXmSLkswLmMQQZhC5ftxe0"
-                premium.stripe_yearly_price_id = "price_1OaXmSLkswLmMQQZXcSPXVfq"
+                # Use values from settings with fallbacks to development placeholders
+                premium.stripe_monthly_price_id = getattr(
+                    settings, "STRIPE_PREMIUM_MONTHLY_PRICE_ID", "price_1OaXmSLkswLmMQQZhC5ftxe0"
+                )
+                premium.stripe_yearly_price_id = getattr(
+                    settings, "STRIPE_PREMIUM_YEARLY_PRICE_ID", "price_1OaXmSLkswLmMQQZXcSPXVfq"
+                )
                 premium.save()
                 self.stdout.write("Created Premium plan")
             except Exception as e:

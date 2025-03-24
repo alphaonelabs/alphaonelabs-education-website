@@ -8,7 +8,7 @@ from .models import MembershipPlan, MembershipSubscriptionEvent, UserMembership
 class MembershipPlanAdmin(admin.ModelAdmin):
     list_display = (
         "name",
-        "price",
+        "display_price",
         "display_billing_period",
         "is_popular",
         "is_active",
@@ -17,7 +17,7 @@ class MembershipPlanAdmin(admin.ModelAdmin):
     )
     list_filter = ("is_active", "is_popular", "billing_period")
     search_fields = ("name", "description")
-    ordering = ("order", "price")
+    ordering = ("order", "price_monthly")
     readonly_fields = ("created_at", "updated_at")
 
     fieldsets = (
@@ -27,9 +27,8 @@ class MembershipPlanAdmin(admin.ModelAdmin):
             {
                 "fields": (
                     "billing_period",
-                    "monthly_price",
-                    "yearly_price",
-                    "price",
+                    "price_monthly",
+                    "price_yearly",
                 ),
             },
         ),
@@ -59,19 +58,39 @@ class MembershipPlanAdmin(admin.ModelAdmin):
 
     display_billing_period.short_description = "Billing Period"
 
+    def display_price(self, obj):
+        if obj.billing_period == "monthly":
+            return f"${obj.price_monthly}/month"
+        elif obj.billing_period == "yearly":
+            return f"${obj.price_yearly}/year"
+        else:
+            return f"${obj.price_monthly}/month, ${obj.price_yearly}/year"
+
+    display_price.short_description = "Price"
+
 
 class MembershipPlanInline(admin.TabularInline):
     model = MembershipPlan
     extra = 0
     show_change_link = True
-    fields = ("name", "price", "display_billing_period", "is_active")
-    readonly_fields = ("name", "price", "display_billing_period", "is_active")
+    fields = ("name", "display_price", "display_billing_period", "is_active")
+    readonly_fields = ("name", "display_price", "display_billing_period", "is_active")
     can_delete = False
 
     def display_billing_period(self, obj):
         return obj.get_billing_period_display()
 
     display_billing_period.short_description = "Billing Period"
+
+    def display_price(self, obj):
+        if obj.billing_period == "monthly":
+            return f"${obj.price_monthly}/month"
+        elif obj.billing_period == "yearly":
+            return f"${obj.price_yearly}/year"
+        else:
+            return f"${obj.price_monthly}/month, ${obj.price_yearly}/year"
+
+    display_price.short_description = "Price"
 
     def has_add_permission(self, request, obj=None):
         return False

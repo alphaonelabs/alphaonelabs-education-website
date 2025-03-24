@@ -59,7 +59,7 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         {% if membership.cancel_at_period_end %}
           <!-- Reactivate Button (Only show if canceled) -->
-          <button onclick="reactivateSubscription()"
+          <button onclick="reactivateSubscription(event)"
                   class="inline-flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
             <svg class="w-5 h-5 mr-2"
                  fill="none"
@@ -133,7 +133,7 @@
                 class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white font-medium rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
           Keep Membership
         </button>
-        <button onclick="cancelMembership()"
+        <button onclick="cancelMembership(event)"
                 class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
           Yes, Cancel
         </button>
@@ -190,10 +190,10 @@
           }
       }
 
-      async function cancelMembership() {
+      async function cancelMembership(e) {
           if (isProcessing) return;
 
-          const button = event.target;
+          const button = e.target;
           if (button.disabled) return;
 
           isProcessing = true;
@@ -241,10 +241,10 @@
           }
       }
 
-      async function reactivateSubscription() {
+      async function reactivateSubscription(e) {
           if (isProcessing) return;
 
-          const button = event.target.closest('button');
+          const button = e.target.closest('button');
           if (!button || button.disabled) return;
 
           isProcessing = true;

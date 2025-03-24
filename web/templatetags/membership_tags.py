@@ -33,11 +33,8 @@ def has_active_membership(context):
     if not request or not request.user or not request.user.is_authenticated:
         return False
 
-    try:
-        membership = UserMembership.objects.get(user=request.user)
-        return membership.is_active
-    except UserMembership.DoesNotExist:
-        return False
+    membership = get_user_membership(context)
+    return membership.is_active if membership else False
 
 
 @register.filter
@@ -65,6 +62,10 @@ def get_membership_badge(membership, css_class=""):
         return mark_safe(f'<span class="badge badge-secondary {css_class}">No Membership</span>')
 
     status = membership.status
+    # Ensure status is a valid, expected value
+    allowed_statuses = ["active", "trialing", "past_due", "canceled", "incomplete", "incomplete_expired", "unpaid"]
+    status = status if status in allowed_statuses else "unknown"
+
     badge_classes = {
         "active": "badge-success",
         "trialing": "badge-info",
@@ -73,7 +74,55 @@ def get_membership_badge(membership, css_class=""):
         "incomplete": "badge-secondary",
         "incomplete_expired": "badge-secondary",
         "unpaid": "badge-warning",
+        "unknown": "badge-secondary",
     }
 
     badge_class = badge_classes.get(status, "badge-secondary")
     return mark_safe(f'<span class="badge {badge_class} {css_class}">{status.title()}</span>')
+
+
+@register.simple_tag
+def calculate_yearly_savings(monthly_price, yearly_price):
+    """
+    Calculates the savings when paying yearly vs monthly.
+    Usage: {% calculate_yearly_savings plan.price_monthly plan.price_yearly as yearly_savings %}
+    """
+    try:
+        monthly = float(monthly_price)
+        yearly = float(yearly_price)
+        yearly_total_if_monthly = monthly * 12
+        savings = yearly_total_if_monthly - yearly
+        return round(savings, 2)
+    except (ValueError, TypeError):
+        return 0
+
+
+@register.simple_tag
+def calculate_savings_percent(monthly_price, yearly_price):
+    """
+    Calculates the percentage savings when paying yearly vs monthly.
+    Usage: {% calculate_savings_percent plan.price_monthly plan.price_yearly as savings_percent %}
+    """
+    try:
+        monthly = float(monthly_price)
+        yearly = float(yearly_price)
+        yearly_total_if_monthly = monthly * 12
+        savings = yearly_total_if_monthly - yearly
+        percentage = (savings / yearly_total_if_monthly) * 100
+        return int(percentage)
+    except (ValueError, TypeError, ZeroDivisionError):
+        return 0
+
+
+@register.simple_tag
+def calculate_monthly_equivalent(yearly_price):
+    """
+    Calculates the monthly equivalent of a yearly price.
+    Usage: {% calculate_monthly_equivalent plan.price_yearly as monthly_equivalent %}
+    """
+    try:
+        yearly = float(yearly_price)
+        monthly_equivalent = yearly / 12
+        return round(monthly_equivalent, 2)
+    except (ValueError, TypeError, ZeroDivisionError):
+        return 0
