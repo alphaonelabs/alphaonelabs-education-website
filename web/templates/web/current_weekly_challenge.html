@@ -1,18 +1,77 @@
 {% extends "base.html" %}
 
++
+{% load challenge_extras %}
+
 {% block content %}
   <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-4 text-center">Weekly Challenge</h1>
+    <h1 class="text-3xl font-bold mb-4 text-center">Challenges</h1>
     {% if current_challenge %}
-      <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
+      <h2 class="text-2xl font-bold mb-4">Weekly Challenge</h2>
+      <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mb-8">
         <h2 class="text-2xl font-semibold mb-2">{{ current_challenge.title }}</h2>
         <p class="text-lg mb-4">{{ current_challenge.description }}</p>
         <p class="text-sm text-gray-600 dark:text-gray-400">
-          <strong>Challenge Period:</strong> {{ current_challenge.start_date }} to {{ current_challenge.end_date }}
+          <strong>Challenge Period:</strong> {{ current_challenge.start_date }} to
+          {{ current_challenge.end_date }}
         </p>
+        {% if user.is_authenticated %}
+          {% with
+            submission=user_submissions|get_item:current_challenge.id %}
+            {% if
+              submission %}
+              <div class="bg-green-100 border border-green-200 text-green-800 px-4 py-3 rounded my-4">
+                You've already submitted this challenge!
+              </div>
+            {% else %}
+              <div class="mt-4">
+                <a href="{% url 'challenge_submit' current_challenge.id %}"
+                   class="inline-block bg-teal-600 text-white px-5 py-2 rounded-lg hover:bg-teal-700 transition">
+                  Submit Your Solution
+                </a>
+              </div>
+            {% endif %}
+          {% endwith %}
+        {% else %}
+          <p class="text-red-600 dark:text-red-400 mt-4">Please log in to submit your solution.</p>
+        {% endif %}
       </div>
-    {% else %}
-      <p class="text-center text-gray-500 dark:text-gray-400">No challenge available for this week.</p>
+    {% endif %}
+    {% if one_time_challenges %}
+      <h2 class="text-2xl font-bold mb-4">One-time Challenges</h2>
+      {% for challenge in one_time_challenges %}
+        <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 mb-4">
+          <h2 class="text-2xl font-semibold mb-2">{{ challenge.title }}</h2>
+          <p class="text-lg mb-4">{{ challenge.description }}</p>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            <strong>Challenge Period:</strong> {{ challenge.start_date }} to {{
+            challenge.end_date }}
+          </p>
+          {% if user.is_authenticated %}
+            {% with
+              submission=user_submissions|get_item:challenge.id %}
+              {% if submission %}
+                <div class="bg-green-100 border border-green-200 text-green-800 px-4 py-3 rounded my-4">
+                  You've already submitted this challenge!
+                </div>
+              {% else %}
+                <div class="mt-4">
+                  <a href="{% url 'challenge_submit' challenge.id %}"
+                     class="inline-block bg-teal-600 text-white px-5 py-2 rounded-lg hover:bg-teal-700 transition">
+                    Submit Your Solution
+                  </a>
+                </div>
+              {% endif %}
+            {% endwith %}
+          {% else %}
+            <p class="text-red-600 dark:text-red-400 mt-4">Please log in to submit your solution.</p>
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% endif %}
+    {% if not current_challenge and not
+      one_time_challenges %}
+      <p class="text-center text-gray-500 dark:text-gray-400">No challenges available at this time.</p>
     {% endif %}
   </div>
 {% endblock %}

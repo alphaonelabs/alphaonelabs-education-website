@@ -1182,14 +1182,36 @@ class SearchLog(models.Model):
 
 
 class Challenge(models.Model):
+    CHALLENGE_TYPE_CHOICES = [
+        ("weekly", "Weekly Challenge"),
+        ("one_time", "One-time Challenge"),
+    ]
+
     title = models.CharField(max_length=200)
     description = models.TextField()
-    week_number = models.PositiveIntegerField(unique=True)
+    challenge_type = models.CharField(max_length=10, choices=CHALLENGE_TYPE_CHOICES, default="weekly")
+    week_number = models.PositiveIntegerField(null=True, blank=True)
     start_date = models.DateField()
     end_date = models.DateField()
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["week_number"],
+                condition=models.Q(challenge_type="weekly"),
+                name="unique_week_number_for_weekly_challenges",
+            )
+        ]
+
     def __str__(self):
-        return f"Week {self.week_number}: {self.title}"
+        if self.challenge_type == "weekly":
+            return f"Week {self.week_number}: {self.title}"
+        return f"One-time: {self.title}"
+
+    def clean(self):
+        super().clean()
+        if self.challenge_type == "weekly" and not self.week_number:
+            raise ValidationError({"week_number": "Week number is required for weekly challenges."})
 
 
 class ChallengeSubmission(models.Model):
@@ -1203,7 +1225,9 @@ class ChallengeSubmission(models.Model):
         unique_together = ["user", "challenge"]
 
     def __str__(self):
-        return f"{self.user.username}'s submission for Week {self.challenge.week_number}"
+        if self.challenge.challenge_type == "weekly":
+            return f"{self.user.username}'s submission for Week {self.challenge.week_number}"
+        return f"{self.user.username}'s submission for {self.challenge.title}"
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None

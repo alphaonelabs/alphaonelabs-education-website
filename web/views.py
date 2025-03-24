@@ -275,9 +275,7 @@ def index(request):
 def signup_view(request):
     """Custom signup view that properly handles referral codes."""
     if request.method == "POST":
-        # Initialize the registration form with POST data and request context
         form = UserRegistrationForm(request.POST, request=request)
-        # Validate the form data before saving the new user
         if form.is_valid():
             form.save(request)
             return redirect("account_email_verification_sent")
@@ -2884,18 +2882,36 @@ def content_dashboard(request):
 
 
 def current_weekly_challenge(request):
-    current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
-    # Check if the user has submitted the current challenge
-    user_submission = None
-    if request.user.is_authenticated and current_challenge:
-        user_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=current_challenge).first()
+    current_time = timezone.now()
+    weekly_challenge = Challenge.objects.filter(
+        challenge_type="weekly", start_date__lte=current_time, end_date__gte=current_time
+    ).first()
+
+    one_time_challenges = Challenge.objects.filter(
+        challenge_type="one_time", start_date__lte=current_time, end_date__gte=current_time
+    )
+    user_submissions = {}
+    if request.user.is_authenticated:
+        # Get all active challenges
+        all_challenges = []
+        if weekly_challenge:
+            all_challenges.append(weekly_challenge)
+            all_challenges.extend(list(one_time_challenges))
+
+        # Get all submissions for active challenges
+        if all_challenges:
+            submissions = ChallengeSubmission.objects.filter(user=request.user, challenge__in=all_challenges)
+            # Create a dictionary mapping challenge IDs to submissions
+            for submission in submissions:
+                user_submissions[submission.challenge_id] = submission
 
     return render(
         request,
         "web/current_weekly_challenge.html",
         {
-            "current_challenge": current_challenge,
-            "user_submission": user_submission,  # Pass the user's submission to the template
+            "current_challenge": weekly_challenge,
+            "one_time_challenges": one_time_challenges,
+            "user_submissions": user_submissions if request.user.is_authenticated else {},
         },
     )
 
