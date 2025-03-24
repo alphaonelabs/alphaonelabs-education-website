@@ -442,6 +442,28 @@ def create_course(request):
     return render(request, "courses/create.html", {"form": form})
 
 
+@login_required
+def edit_review(request, review_id):
+    review = get_object_or_404(Review, id=review_id)
+    
+    # Ensure user can only edit their own reviews
+    if request.user != review.student:
+        messages.error(request, "You can only edit your own reviews!")
+        return redirect("course_detail", slug=review.course.slug)
+    
+    if request.method == "POST":
+        form = ReviewForm(request.POST, instance=review)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Review updated successfully!")
+            return redirect("course_detail", slug=review.course.slug)
+    else:
+        form = ReviewForm(instance=review)
+    
+    return render(request, "courses/edit_review.html", {"form": form, "course": review.course})
+
+
+
 def course_detail(request, slug):
     course = get_object_or_404(Course, slug=slug)
     sessions = course.sessions.all().order_by("start_time")
@@ -538,9 +560,6 @@ def course_detail(request, slug):
         2: reviews.filter(rating=2).count(),
         1: reviews.filter(rating=1).count(),
     }
-
-    print("!!!!!!!!!!!!!!!!!!!!!",reviews ,user_review,rating_distribution)
-
 
     context = {
         "course": course,

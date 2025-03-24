@@ -1150,18 +1150,13 @@
                         <div class="flex items-center space-x-2">
                           <div class="w-12 text-sm text-right">{{ i }} star{{ i|pluralize }}</div>
                           <div class="flex-grow h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
-                            {% with rating_count=rating_distribution|get_item:i %}
-
+                            {% with rating_count=rating_distribution|get_item:i|floatformat:"0" %}
                               {% if reviews.count > 0 %}
-                                <div class="h-full bg-yellow-400" style="width: {% widthratio rating_count reviews.count 100 %}"></div>
+                                <div class="h-full bg-yellow-400" style="width: {% widthratio rating_count reviews.count 100 %}%"></div>
                               {% else %}
                                 <div class="h-full bg-yellow-400" style="width: 0%"></div>
                               {% endif %}
                             {% endwith %}
-                          </div>
-                          <div>Test: {{rating_distribution.i}}</div>
-                          <div class="w-12 text-sm">
-                            {{ rating_distribution|get_item:i }}
                           </div>
                           <div class="w-12 text-sm">
                             {{ rating_distribution|get_item:i }}
@@ -1176,41 +1171,65 @@
               <!-- Review List -->
               {% if reviews %}
                 <div class="space-y-4">
-                  {% for review in reviews %}
-                    <div class="bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm">
-                      <div class="flex justify-between items-start">
-                        <div class="flex items-start space-x-3">
-                          {% if review.student.profile.avatar %}
-                            <img src="{{ review.student.profile.avatar.url }}" alt="{{ review.student.username }}" 
-                                class="w-10 h-10 rounded-full object-cover" width="40" height="40">
+                {% for review in reviews %}
+                  <div class="bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm">
+                    <div class="flex justify-between items-start">
+                      <div class="flex items-start space-x-3">
+                        {% if review.student.profile.avatar %}
+                          <img src="{{ review.student.profile.avatar.url }}" alt="{{ review.student.username }}" 
+                              class="w-10 h-10 rounded-full object-cover" width="40" height="40">
+                        {% else %}
+                          <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                            <i class="fas fa-user text-gray-400"></i>
+                          </div>
+                        {% endif %}
+                        <div>
+                          {% if request.user.id == review.student.id %}
+                          <div class="font-medium text-gray-800 dark:text-white">You</div>
                           {% else %}
-                            <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                              <i class="fas fa-user text-gray-400"></i>
-                            </div>
-                          {% endif %}
-                          <div>
                             <div class="font-medium text-gray-800 dark:text-white">{{ review.student.username }}</div>
-                            <div class="flex items-center mt-1">
-                              {% for i in "12345" %}
-                                {% if forloop.counter <= review.rating %}
-                                  <i class="fas fa-star text-yellow-400 text-sm"></i>
-                                {% else %}
-                                  <i class="far fa-star text-yellow-400 text-sm"></i>
-                                {% endif %}
-                              {% endfor %}
-                            </div>
+                          {% endif %}
+                          <div class="flex items-center mt-1">
+                            {% for i in "12345" %}
+                              {% if forloop.counter <= review.rating %}
+                                <i class="fas fa-star text-yellow-400 text-sm"></i>
+                              {% else %}
+                                <i class="far fa-star text-yellow-400 text-sm"></i>
+                              {% endif %}
+                            {% endfor %}
                           </div>
                         </div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                      </div>
+                      <div class="flex items-center">
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mr-3">
                           {{ review.created_at|date:"M d, Y" }}
                         </div>
-                      </div>
-                      <div class="mt-3 text-gray-700 dark:text-gray-300">
-                        {{ review.comment }}
+                      
                       </div>
                     </div>
-                  {% endfor %}
+                    <div class="mt-3 text-gray-700 dark:text-gray-300">
+                      {{ review.comment }}
+                    </div>
+
+                    <!-- Edit/Delete buttons for user's own reviews -->
+                    {% if request.user.is_authenticated and request.user.id == review.student.id %}
+                    <div class="flex mt-1 clearfix justify-end">
+                      <div class="flex space-x-2 float-right">
+                        <a href="{% url 'edit_review' course.slug, review.id %}" class="inline-flex items-center px-3 py-1.5 text-sm bg-teal-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
+                          <i class="fas fa-edit mr-2"></i>
+                          Edit
+                        </a>
+                        <button class="inline-flex items-center px-3 py-1.5 text-sm bg-red-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
+                          <i class="fas fa-trash-alt mr-2"></i>
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                    {% endif %}
+                  </div>
+                {% endfor %}
                 </div>
+
               {% else %}
                 <div class="text-center py-8 bg-white dark:bg-gray-700 rounded-lg">
                   <div class="text-gray-500 dark:text-gray-400">No reviews yet</div>
@@ -1230,6 +1249,14 @@
     <span class="notification-message">This is a notification</span>
   </div>
   <script>
+      function confirmDelete(deleteUrl) {
+    document.getElementById('deleteLink').href = deleteUrl;
+    document.getElementById('deleteModal').classList.remove('hidden');
+  }
+  
+  function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.add('hidden');
+  }
       function loadCalendar(year, month) {
           fetch(`/courses/{{ course.slug }}/calendar/?year=${year}&month=${month}`)
               .then(response => response.json())
