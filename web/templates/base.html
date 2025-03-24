@@ -10,14 +10,33 @@
           content="Alpha One Labs - Open Source Education Platform" />
     <meta name="keywords"
           content="education, open source, courses, learning, Alpha One Labs" />
+    <!-- SEO  -->
+          <title>
+            {% block seo_title %}Alpha One Labs - Open Source Education Platform{% endblock seo_title %}
+          </title>
+          <meta name="description" content="{% block seo_description %}Alpha One Labs - Open Source Education Platform{% endblock seo_description %}" />
+          <meta name="keywords" content="{% block seo_keywords %}education, open source, courses, learning, Alpha One Labs{% endblock seo_keywords %}" />
+          
+          <!-- Canonical URL -->
+          <link rel="canonical" href="{% block canonical_url %}{{ request.build_absolute_uri }}{% endblock canonical_url %}" />
+          
+          <!-- Open Graph / Facebook -->
+          <meta property="og:type" content="{% block og_type %}website{% endblock og_type %}" />
+          <meta property="og:url" content="{% block og_url %}{{ request.build_absolute_uri }}{% endblock og_url %}" />
+          <meta property="og:title" content="{% block og_title %}Alpha One Labs - Open Source Education Platform{% endblock og_title %}" />
+          <meta property="og:description" content="{% block og_description %}Alpha One Labs - Open Source Education Platform{% endblock og_description %}" />
+          <meta property="og:image" content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/logo.png' %}{% endblock og_image %}" />
+          
+          <!-- Twitter -->
+          <meta name="twitter:card" content="{% block twitter_card %}summary_large_image{% endblock twitter_card %}" />
+          <meta name="twitter:url" content="{% block twitter_url %}{{ request.build_absolute_uri }}{% endblock twitter_url %}" />
+          <meta name="twitter:title" content="{% block twitter_title %}Alpha One Labs - Open Source Education Platform{% endblock twitter_title %}" />
+          <meta name="twitter:description" content="{% block twitter_description %}Alpha One Labs - Open Source Education Platform{% endblock twitter_description %}" />
+          <meta name="twitter:image" content="{% block twitter_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/logo.png' %}{% endblock twitter_image %}" />
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{% static 'images/logo.png' %}" />
     <link rel="apple-touch-icon" href="{% static 'images/logo.png' %}" />
-    <title>
-      {% block title %}
-        Alpha One Labs - Open Source Education Platform
-      {% endblock title %}
-    </title>
+   
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://js-de.sentry-cdn.com/ca8bad7e1a5a3012bccae7d9bd4f6d3d.min.js"

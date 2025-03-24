@@ -1,7 +1,20 @@
 {% extends "base.html" %}
-
+{% load static %}
 {% block title %}Graphing Calculator{% endblock %}
+
+{% block seo_title %}About Alpha One Labs - Our Journey and Mission{% endblock seo_title %}
+{% block seo_description %}Learn about Alpha One Labs, our journey from a small hackerspace to a dynamic STEM education platform fostering creativity and innovation since 2009.{% endblock seo_description %}
+{% block seo_keywords %}Alpha One Labs, education, STEM learning, hackerspace, tech education, science, engineering{% endblock seo_keywords %}
+
+{% block og_title %}About Alpha One Labs - STEM Education Platform{% endblock og_title %}
+{% block og_description %}From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.{% endblock og_description %}
+{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/about-banner.jpg' %}{% endblock og_image %}
+
+{% block twitter_title %}About Alpha One Labs - STEM Education Platform{% endblock twitter_title %}
+{% block twitter_description %}From our founding in 2009 as a small hackerspace to our evolution as a comprehensive education platform, discover our journey and mission.{% endblock twitter_description %}
+
 {% block content %}
+
   <div class="flex flex-col md:flex-row h-screen bg-gray-100 dark:bg-gray-900">
     <!-- Sidebar -->
     <div class="w-full md:w-80 bg-white dark:bg-gray-800 shadow-lg p-4 overflow-y-auto">
