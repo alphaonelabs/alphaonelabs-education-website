@@ -41,7 +41,7 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 - 🎨 Customizable UI
 - 🏆 "Get a Grade" system with academic grading scale
 
-## Stack
+## Tech Stack
 
 ### Backend
 
@@ -199,7 +199,7 @@ pre-commit install
 poetry run pre-commit run --hook-stage commit
 
 # Run all checks on all files
-git a
+poetry run pre-commit run --all-files
 ```
 
 See [PRE-COMMIT-README.md](PRE-COMMIT-README.md) for detailed information about our pre-commit workflow and configuration.
