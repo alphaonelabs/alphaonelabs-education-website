@@ -20,11 +20,6 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddField(
             model_name="membershipplan",
-            name="slug",
-            field=models.SlugField(blank=True, max_length=100, default="", unique=True),
-        ),
-        migrations.AddField(
-            model_name="membershipplan",
             name="billing_period",
             field=models.CharField(
                 choices=[("monthly", "Monthly"), ("yearly", "Yearly"), ("both", "Both")],
