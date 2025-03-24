@@ -372,8 +372,14 @@
             <!-- User Avatar and Dropdown -->
             <div class="relative">
               <button onclick="toggleUserDropdown()"
-                      class="flex items-center space-x-2 bg-teal-700 hover:bg-teal-800 px-3 py-1.5 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-400 transition-colors">
-                {% if user.profile.avatar %}
+                      class="flex items-center space-x-2 focus:outline-none">
+                {% if user.profile.custom_avatar %}
+                  <div class="w-12 h-12 p-1.5 transform hover:scale-105 transition-transform duration-200">
+                    <div class="w-full h-full overflow-hidden rounded-full flex items-center justify-center">
+                      {{ user.profile.custom_avatar.svg|safe }}
+                    </div>
+                  </div>
+                {% elif user.profile.avatar %}
                   <img src="{{ user.profile.avatar.url }}"
                        alt="User Avatar"
                        class="h-8 w-8 rounded-full object-cover border-2 border-white"

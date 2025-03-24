@@ -203,7 +203,10 @@ def index(request):
     featured_courses = Course.objects.filter(status="published", is_featured=True).order_by("-created_at")[:3]
 
     # Get current challenge
-    current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
+    current_challenge_obj = Challenge.objects.filter(
+        start_date__lte=timezone.now(), end_date__gte=timezone.now()
+    ).first()
+    current_challenge = [current_challenge_obj] if current_challenge_obj else []
 
     # Get latest blog post
     latest_post = BlogPost.objects.filter(status="published").order_by("-published_at").first()
