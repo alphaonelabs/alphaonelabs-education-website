@@ -27,6 +27,8 @@ from .models import (
     ForumTopic,
     Goods,
     LearningStreak,
+    MembershipPlan,
+    MembershipSubscriptionEvent,
     Notification,
     Order,
     OrderItem,
@@ -47,6 +49,7 @@ from .models import (
     Subject,
     SuccessStory,
     UserBadge,
+    UserMembership,
     WebRequest,
 )
 
@@ -460,11 +463,6 @@ class ChallengeSubmissionAdmin(admin.ModelAdmin):
     list_display = ("user", "challenge", "submitted_at")
 
 
-# Unregister the default User admin and register our custom one
-admin.site.unregister(User)
-admin.site.register(User, CustomUserAdmin)
-
-
 @admin.register(Storefront)
 class StorefrontAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "teacher", "is_active", "created_at")
@@ -582,11 +580,6 @@ class OrderItemAdmin(admin.ModelAdmin):
     price_display.short_description = "Price"
 
 
-# Unregister the default User admin and register our custom one
-admin.site.unregister(User)
-admin.site.register(User, CustomUserAdmin)
-
-
 @admin.register(ProgressTracker)
 class ProgressTrackerAdmin(admin.ModelAdmin):
     list_display = ("title", "user", "current_value", "target_value", "percentage", "public", "updated_at")
@@ -698,3 +691,56 @@ class QuizOptionAdmin(admin.ModelAdmin):
     list_filter = ("is_correct",)
     search_fields = ("text", "question__text")
     autocomplete_fields = ["question"]
+
+
+@admin.register(MembershipPlan)
+class MembershipPlanAdmin(admin.ModelAdmin):
+    list_display = ("name", "price_monthly", "price_yearly", "is_active", "order")
+    search_fields = ("name", "description")
+    prepopulated_fields = {"slug": ("name",)}
+    list_filter = ("is_active",)
+    list_editable = ("is_active", "order")
+
+
+@admin.register(UserMembership)
+class UserMembershipAdmin(admin.ModelAdmin):
+    list_display = ("user", "plan", "status", "billing_period", "start_date", "end_date", "cancel_at_period_end")
+    search_fields = ("user__username", "user__email", "plan__name")
+    list_filter = ("status", "billing_period", "cancel_at_period_end")
+    date_hierarchy = "start_date"
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (None, {"fields": ("user", "plan", "stripe_subscription_id")}),
+        ("Status", {"fields": ("status", "billing_period", "cancel_at_period_end")}),
+        ("Dates", {"fields": ("start_date", "end_date", "created_at", "updated_at")}),
+    )
+
+
+@admin.register(MembershipSubscriptionEvent)
+class MembershipSubscriptionEventAdmin(admin.ModelAdmin):
+    list_display = ("event_type", "user", "created_at", "stripe_event_id")
+    list_filter = ("event_type", "created_at")
+    search_fields = ("user__username", "user__email", "stripe_event_id")
+    readonly_fields = ("created_at",)
+    raw_id_fields = ("user", "membership")
+
+    fieldsets = (
+        ("Event Information", {"fields": ("event_type", "user", "membership", "created_at")}),
+        (
+            "Stripe Information",
+            {
+                "fields": ("stripe_event_id",),
+            },
+        ),
+        (
+            "Event Data",
+            {
+                "fields": ("data",),
+            },
+        ),
+    )
+
+
+# Unregister the default User admin and register our custom one
+admin.site.unregister(User)
+admin.site.register(User, CustomUserAdmin)

@@ -1,0 +1,576 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Membership Plans{% endblock %}
+
+{% block extra_head %}
+<style>
+    .plan-card {
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    
+    .plan-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    .popular-badge {
+        position: absolute;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+        padding: 6px 16px;
+        border-radius: 20px;
+        color: white;
+        font-weight: 600;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        z-index: 1;
+        animation: badge-bounce 2s ease-in-out infinite;
+        white-space: nowrap;
+        width: auto;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+    
+    @keyframes badge-bounce {
+        0%, 100% { transform: translateX(-50%) translateY(0); }
+        50% { transform: translateX(-50%) translateY(-5px); }
+    }
+    
+    .highlight-pulse {
+        animation: highlight-pulse 2s infinite;
+    }
+    
+    @keyframes highlight-pulse {
+        0% {
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
+        }
+        70% {
+            box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
+        }
+        100% {
+            box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+        }
+    }
+    
+    .pricing-toggle {
+        position: relative;
+        background-color: #f3f4f6;
+        border-radius: 9999px;
+        display: inline-flex;
+        padding: 4px;
+    }
+    
+    .pricing-toggle-slider {
+        position: absolute;
+        height: calc(100% - 8px);
+        z-index: 0;
+        left: 4px;
+        top: 4px;
+        bottom: 4px;
+        transition: transform 0.3s ease;
+        width: calc(50% - 4px);
+        border-radius: 9999px;
+        background-color: #ffffff;
+        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+    }
+    
+    .dark .pricing-toggle {
+        background-color: #374151;
+    }
+    
+    .dark .pricing-toggle-slider {
+        background-color: #1f2937;
+    }
+    
+    .pricing-toggle-monthly.active, .pricing-toggle-yearly.active {
+        color: #1e40af;
+    }
+    
+    .dark .pricing-toggle-monthly.active, .dark .pricing-toggle-yearly.active {
+        color: #3b82f6;
+    }
+    
+    .benefit-icon {
+        transition: all 0.2s ease;
+    }
+    
+    .benefit-card {
+        transition: all 0.3s ease;
+    }
+    
+    .benefit-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .benefit-card:hover .benefit-icon {
+        transform: scale(1.1) rotate(10deg);
+    }
+    
+    /* Animations */
+    @keyframes float {
+        0% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+        100% { transform: translateY(0px); }
+    }
+    
+    .popular-plan {
+        animation: float 6s ease-in-out infinite;
+    }
+    
+    .features-list li {
+        opacity: 0;
+        transform: translateY(10px);
+        animation: fadeIn 0.5s ease forwards;
+        line-height: 1.5;
+        padding: 4px 0;
+        display: flex;
+        align-items: flex-start;
+    }
+    
+    @keyframes fadeIn {
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .features-list li:nth-child(1) { animation-delay: 0.1s; }
+    .features-list li:nth-child(2) { animation-delay: 0.2s; }
+    .features-list li:nth-child(3) { animation-delay: 0.3s; }
+    .features-list li:nth-child(4) { animation-delay: 0.4s; }
+    .features-list li:nth-child(5) { animation-delay: 0.5s; }
+    .features-list li:nth-child(6) { animation-delay: 0.6s; }
+    .features-list li:nth-child(7) { animation-delay: 0.7s; }
+    .features-list li:nth-child(8) { animation-delay: 0.8s; }
+    
+    /* Button animations */
+    .cta-button {
+        position: relative;
+        overflow: hidden;
+        transition: all 0.2s ease;
+    }
+    
+    .cta-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+        transition: 0.5s;
+    }
+    
+    .cta-button:hover::before {
+        left: 100%;
+    }
+    
+    .cta-button:hover {
+        transform: translateY(-2px);
+    }
+    
+    /* FAQ animations */
+    .faq-item {
+        transition: all 0.3s ease;
+    }
+    
+    .faq-item:hover {
+        transform: translateX(5px);
+    }
+    
+    .faq-icon {
+        transition: transform 0.3s ease;
+    }
+    
+    /* Section animations */
+    .section-fade-in {
+        opacity: 0;
+        transform: translateY(20px);
+        transition: all 0.8s ease;
+    }
+    
+    .section-fade-in.active {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    
+    /* Tick animations */
+    @keyframes tick-bounce {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.2); }
+    }
+    
+    .tick-icon {
+        transform-origin: center;
+    }
+    
+    .plan-card:hover .tick-icon {
+        animation: tick-bounce 0.5s ease;
+    }
+
+    .popular-button {
+        animation: subtle-pulse 3s infinite;
+    }
+    
+    @keyframes subtle-pulse {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.03);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen">
+    <div class="container mx-auto px-4 py-16">
+        <div class="text-center mb-16 section-fade-in">
+            <div class="inline-block px-4 py-1 bg-blue-100 dark:bg-blue-900/50 rounded-full text-blue-800 dark:text-blue-200 font-medium text-sm mb-4">Membership Plans</div>
+            <h1 class="text-5xl font-bold text-gray-900 dark:text-white mb-6">Accelerate Your Learning Journey</h1>
+            <p class="text-xl text-gray-700 dark:text-gray-200 max-w-3xl mx-auto">Choose the plan that best fits your goals and unlock premium features to enhance your learning experience.</p>
+            {% if not user.is_authenticated %}
+            <div class="mt-6 bg-yellow-50 text-yellow-800 p-4 rounded-lg max-w-2xl mx-auto border border-yellow-200">
+                <strong>Note:</strong> You need to <a href="{% url 'account_login' %}?next={{ request.path }}" class="text-blue-600 underline hover:text-blue-800">log in</a> or <a href="{% url 'account_signup' %}" class="text-blue-600 underline hover:text-blue-800">sign up</a> to subscribe to a membership plan.
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Billing Period Toggle -->
+        <div class="flex justify-center mb-16 section-fade-in">
+            <div class="relative bg-gray-100 dark:bg-gray-700 p-1.5 rounded-full inline-flex shadow-md hover:shadow-lg transition-all duration-200 min-w-[360px]">
+                <div id="toggle-slider" class="absolute top-1.5 bottom-1.5 left-1.5 w-[calc(50%-3px)] bg-white dark:bg-gray-800 rounded-full shadow-sm transition-transform duration-300 ease-in-out"></div>
+                <button id="monthlyBtn" onclick="toggleBilling('monthly')" class="toggle-btn relative z-10 py-2 px-6 text-base font-medium rounded-full transition-colors duration-200 flex items-center justify-center w-1/2">
+                    Monthly
+                </button>
+                <button id="yearlyBtn" onclick="toggleBilling('yearly')" class="toggle-btn relative z-10 py-2 px-6 text-base font-medium rounded-full transition-colors duration-200 flex items-center justify-center w-1/2">
+                    <span>Yearly</span>
+                    <span class="ml-2 inline-flex items-center bg-green-500 text-white px-2 py-0.5 rounded-full text-xs font-bold shadow-sm">Save 20%</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Plans Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-10 max-w-7xl mx-auto relative z-10 section-fade-in">
+            {% for plan in plans %}
+            <div class="plan-card {% if plan.is_popular %}popular-plan{% endif %} relative {% if plan.is_popular %}transform md:-translate-y-4{% endif %} bg-white dark:bg-gray-800 rounded-2xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-lg hover:shadow-xl transition-all duration-300">
+                {% if plan.is_popular %}
+                <div class="popular-badge opacity-90 text-center">Most Popular</div>
+                {% endif %}
+                
+                <!-- Card Header -->
+                <div class="p-8 {% if plan.is_popular %}pt-12{% endif %} bg-gradient-to-r {% if plan.is_popular %}from-blue-600 to-blue-700 text-white{% else %}from-gray-50 to-white dark:from-gray-800 dark:to-gray-700 text-gray-900 dark:text-white{% endif %}">
+                    <h3 class="text-2xl font-bold mb-2 {% if plan.is_popular %}text-white{% endif %}">{{ plan.name }}</h3>
+                    <p class="{% if plan.is_popular %}text-blue-100{% else %}text-gray-600 dark:text-gray-300{% endif %} mb-6">{{ plan.description }}</p>
+                    
+                    <!-- Price -->
+                    <div class="pricing-monthly price-container" {% if billing_period != 'monthly' %}style="display: none;"{% endif %}>
+                        <div class="flex items-baseline">
+                            <span class="text-5xl font-bold {% if plan.is_popular %}text-white{% else %}text-gray-900 dark:text-white{% endif %}">
+                                ${{ plan.price_monthly }}
+                            </span>
+                            <span class="text-xl ml-2 {% if plan.is_popular %}text-blue-100{% else %}text-gray-500 dark:text-gray-400{% endif %} self-baseline">
+                                /mo
+                            </span>
+                        </div>
+                        <div class="mt-1 {% if plan.is_popular %}text-blue-100{% else %}text-gray-500 dark:text-gray-400{% endif %} text-sm">
+                            Billed monthly
+                        </div>
+                    </div>
+                    
+                    <div class="pricing-yearly price-container" {% if billing_period == 'monthly' %}style="display: none;"{% endif %}>
+                        <div class="flex items-baseline">
+                            <span class="text-5xl font-bold {% if plan.is_popular %}text-white{% else %}text-gray-900 dark:text-white{% endif %}">
+                                ${{ plan.price_yearly }}
+                            </span>
+                            <span class="text-xl ml-2 {% if plan.is_popular %}text-blue-100{% else %}text-gray-500 dark:text-gray-400{% endif %} self-baseline">
+                                /yr
+                            </span>
+                        </div>
+                        <div class="mt-1 {% if plan.is_popular %}text-blue-100{% else %}text-gray-500 dark:text-gray-400{% endif %} text-sm">
+                            Billed yearly (save 20%)
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Features List -->
+                <div class="p-8 flex flex-col h-full">
+                    <div class="flex-grow">
+                        <ul class="space-y-3 mb-8 features-list">
+                            {% for feature in plan.features %}
+                            <li class="flex items-start">
+                                <svg class="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-1 tick-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                                <span class="text-gray-700 dark:text-gray-200">{{ feature }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    
+                    <!-- CTA Button -->
+                    <div class="mt-auto">
+                        {% if user.is_authenticated %}
+                        <a href="{% url 'subscribe_membership' plan.slug %}" 
+                            class="cta-button block w-full text-center font-medium py-4 px-6 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 text-lg shadow-md {% if plan.is_popular %}bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white focus:ring-blue-500 font-semibold py-5 px-8 text-xl popular-button{% else %}bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white focus:ring-gray-500 border border-transparent hover:border-gray-300 dark:hover:border-gray-500{% endif %} hover:shadow-lg">
+                            {% if plan.is_popular %}
+                            <span class="flex items-center justify-center">
+                                Get Started
+                                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                                </svg>
+                            </span>
+                            {% else %}
+                            Get Started
+                            {% endif %}
+                        </a>
+                        {% else %}
+                        <a href="{% url 'account_login' %}?next={% url 'subscribe_membership' plan.slug %}" 
+                            class="cta-button block w-full text-center font-medium py-4 px-6 rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 text-lg shadow-md {% if plan.is_popular %}bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white focus:ring-blue-500 font-semibold py-5 px-8 text-xl popular-button{% else %}bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white focus:ring-gray-500 border border-transparent hover:border-gray-300 dark:hover:border-gray-500{% endif %} hover:shadow-lg">
+                            {% if plan.is_popular %}
+                            <span class="flex items-center justify-center">
+                                Log In to Get Started
+                                <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                                </svg>
+                            </span>
+                            {% else %}
+                            Log In to Get Started
+                            {% endif %}
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Background decoration -->
+        <div class="absolute top-40 left-0 w-64 h-64 bg-blue-400 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob"></div>
+        <div class="absolute top-80 right-20 w-72 h-72 bg-purple-400 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-2000"></div>
+        <div class="absolute bottom-40 left-20 w-80 h-80 bg-green-400 rounded-full mix-blend-multiply filter blur-3xl opacity-10 animate-blob animation-delay-4000"></div>
+
+        <!-- Benefits Section -->
+        <div class="mt-24 max-w-5xl mx-auto bg-white dark:bg-gray-800 rounded-2xl p-10 shadow-xl border border-gray-100 dark:border-gray-700 section-fade-in">
+            <div class="text-center mb-10">
+                <h2 class="text-3xl font-bold text-gray-900 dark:text-white mb-4">Membership Benefits</h2>
+                <p class="text-xl text-gray-700 dark:text-gray-200">Unlock these premium features and more with your membership</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+                <div class="benefit-card flex flex-col items-center p-6 bg-blue-50 dark:bg-blue-900/20 rounded-xl transition duration-200 hover:shadow-lg">
+                    <div class="rounded-full bg-blue-100 dark:bg-blue-800 p-4 mb-5 benefit-icon">
+                        <svg class="w-8 h-8 text-blue-600 dark:text-blue-300" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-xl text-center text-gray-900 dark:text-white mb-2">Premium Courses</h3>
+                    <p class="text-gray-700 dark:text-gray-200 text-center">Access our entire library of premium courses and tutorials</p>
+                </div>
+                
+                <div class="benefit-card flex flex-col items-center p-6 bg-teal-50 dark:bg-teal-900/20 rounded-xl transition duration-200 hover:shadow-lg">
+                    <div class="rounded-full bg-teal-100 dark:bg-teal-800 p-4 mb-5 benefit-icon">
+                        <svg class="w-8 h-8 text-teal-600 dark:text-teal-300" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-6-3a2 2 0 11-4 0 2 2 0 014 0zm-2 4a5 5 0 00-4.546 2.916A5.986 5.986 0 0010 16a5.986 5.986 0 004.546-2.084A5 5 0 0010 11z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-xl text-center text-gray-900 dark:text-white mb-2">Priority Support</h3>
+                    <p class="text-gray-700 dark:text-gray-200 text-center">Get faster responses and dedicated assistance</p>
+                </div>
+                
+                <div class="benefit-card flex flex-col items-center p-6 bg-purple-50 dark:bg-purple-900/20 rounded-xl transition duration-200 hover:shadow-lg">
+                    <div class="rounded-full bg-purple-100 dark:bg-purple-800 p-4 mb-5 benefit-icon">
+                        <svg class="w-8 h-8 text-purple-600 dark:text-purple-300" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-xl text-center text-gray-900 dark:text-white mb-2">Exclusive Features</h3>
+                    <p class="text-gray-700 dark:text-gray-200 text-center">Unlock special tools and learning resources</p>
+                </div>
+            </div>
+            
+            <div class="text-center">
+                <a href="{% url 'membership_benefits' %}" 
+                   class="cta-button inline-flex items-center px-8 py-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition shadow-md text-lg">
+                    View All Benefits
+                    <svg class="w-5 h-5 ml-2 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+                    </svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- FAQ Section -->
+        <div class="mt-24 max-w-4xl mx-auto section-fade-in">
+            <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-10">Frequently Asked Questions</h2>
+            <div class="space-y-6">
+                <div class="faq-item bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-lg transition duration-200 border border-gray-100 dark:border-gray-700">
+                    <button onclick="toggleFAQ(this)" class="w-full flex justify-between items-center focus:outline-none">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white text-left">What payment methods do you accept?</h3>
+                        <svg class="w-6 h-6 text-gray-500 transform transition-transform duration-200 faq-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="mt-4 text-gray-700 dark:text-gray-200 hidden faq-content text-lg">
+                        We accept all major credit cards, PayPal, and bank transfers for annual plans.
+                    </div>
+                </div>
+                <div class="faq-item bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-lg transition duration-200 border border-gray-100 dark:border-gray-700">
+                    <button onclick="toggleFAQ(this)" class="w-full flex justify-between items-center focus:outline-none">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white text-left">Can I cancel my subscription?</h3>
+                        <svg class="w-6 h-6 text-gray-500 transform transition-transform duration-200 faq-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="mt-4 text-gray-700 dark:text-gray-200 hidden faq-content text-lg">
+                        Yes, you can cancel your subscription at any time. You'll continue to have access until the end of your billing period.
+                    </div>
+                </div>
+                <div class="faq-item bg-white dark:bg-gray-800 rounded-xl shadow-md p-6 hover:shadow-lg transition duration-200 border border-gray-100 dark:border-gray-700">
+                    <button onclick="toggleFAQ(this)" class="w-full flex justify-between items-center focus:outline-none">
+                        <h3 class="text-xl font-semibold text-gray-900 dark:text-white text-left">What happens after my subscription ends?</h3>
+                        <svg class="w-6 h-6 text-gray-500 transform transition-transform duration-200 faq-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                        </svg>
+                    </button>
+                    <div class="mt-4 text-gray-700 dark:text-gray-200 hidden faq-content text-lg">
+                        You'll lose access to premium features and content. You can resubscribe at any time to regain access.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Call to Action -->
+        <div class="mt-24 bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-12 max-w-6xl mx-auto shadow-xl section-fade-in">
+            <div class="text-center text-white">
+                <h2 class="text-3xl font-bold mb-4">Ready to Level Up Your Learning?</h2>
+                <p class="text-xl text-blue-100 mb-8 max-w-3xl mx-auto">Join thousands of satisfied members who have accelerated their learning journey with our premium features.</p>
+                <a href="{% url 'membership_plans' %}" class="cta-button inline-block bg-white text-blue-700 font-medium px-8 py-4 rounded-lg text-lg shadow-md hover:bg-blue-50 transition duration-200 hover:shadow-lg transform hover:-translate-y-1">
+                    Choose Your Plan
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize the billing toggle on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        // Set initial state based on URL parameter or default to monthly
+        const urlParams = new URLSearchParams(window.location.search);
+        const billingParam = urlParams.get('billing');
+        const billingPeriod = billingParam === 'yearly' ? 'yearly' : 'monthly';
+        
+        // Update UI to match initial billing period
+        toggleBilling(billingPeriod);
+        
+        // Initialize FAQ items
+        const faqContents = document.querySelectorAll('.faq-content');
+        faqContents.forEach(content => {
+            content.style.overflow = 'hidden';
+            content.style.transition = 'max-height 0.3s ease-out';
+            content.style.maxHeight = '0';
+        });
+        
+        // Smooth scroll to sections
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                const targetId = this.getAttribute('href');
+                if (targetId === "#") return;
+                
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        // Animate sections on scroll
+        const observerOptions = {
+            root: null,
+            rootMargin: '0px',
+            threshold: 0.15
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, observerOptions);
+        
+        document.querySelectorAll('.section-fade-in').forEach(section => {
+            observer.observe(section);
+        });
+    });
+
+    function toggleBilling(period) {
+        const monthlyBtn = document.getElementById('monthlyBtn');
+        const yearlyBtn = document.getElementById('yearlyBtn');
+        const toggleSlider = document.getElementById('toggle-slider');
+        
+        if (!monthlyBtn || !yearlyBtn || !toggleSlider) return;
+        
+        if (period === 'monthly') {
+            toggleSlider.style.transform = 'translateX(0)';
+            monthlyBtn.classList.add('text-blue-700', 'dark:text-blue-300', 'font-semibold');
+            yearlyBtn.classList.remove('text-blue-700', 'dark:text-blue-300', 'font-semibold');
+            
+            // Show monthly prices, hide yearly prices
+            document.querySelectorAll('.pricing-monthly').forEach(el => el.style.display = 'block');
+            document.querySelectorAll('.pricing-yearly').forEach(el => el.style.display = 'none');
+        } else {
+            toggleSlider.style.transform = 'translateX(100%)';
+            yearlyBtn.classList.add('text-blue-700', 'dark:text-blue-300', 'font-semibold');
+            monthlyBtn.classList.remove('text-blue-700', 'dark:text-blue-300', 'font-semibold');
+            
+            // Show yearly prices, hide monthly prices
+            document.querySelectorAll('.pricing-yearly').forEach(el => el.style.display = 'block');
+            document.querySelectorAll('.pricing-monthly').forEach(el => el.style.display = 'none');
+        }
+        
+        // Update URL parameter
+        const url = new URL(window.location);
+        url.searchParams.set('billing', period);
+        window.history.replaceState({}, '', url);
+    }
+
+    function toggleFAQ(button) {
+        const content = button.nextElementSibling;
+        const icon = button.querySelector('svg');
+        
+        if (!content || !icon) return;
+        
+        if (content.classList.contains('hidden')) {
+            content.classList.remove('hidden');
+            icon.classList.add('rotate-180');
+            setTimeout(() => {
+                content.style.maxHeight = content.scrollHeight + 'px';
+            }, 10); // Small delay for the transition to work properly
+        } else {
+            content.style.maxHeight = '0';
+            // Wait for transition to complete before hiding
+            setTimeout(() => {
+                content.classList.add('hidden');
+                icon.classList.remove('rotate-180');
+            }, 300);
+        }
+    }
+</script>
+{% endblock %} 

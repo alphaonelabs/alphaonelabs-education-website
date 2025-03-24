@@ -65,6 +65,23 @@ urlpatterns += i18n_patterns(
     path("account/notification-preferences/", notification_preferences, name="notification_preferences"),
     path("profile/", views.profile, name="profile"),
     path("accounts/profile/", views.profile, name="accounts_profile"),
+    # Membership URLs
+    path("membership/", views.membership_plans, name="membership_plans"),
+    path("membership/benefits/", views.membership_benefits, name="membership_benefits"),
+    path("membership/subscribe/<slug:plan_slug>/", views.subscribe_membership, name="subscribe_membership"),
+    path(
+        "membership/subscribe/<slug:plan_slug>/<str:billing_period>/",
+        views.checkout_membership,
+        name="checkout_membership",
+    ),
+    path("membership/success/", views.membership_success, name="membership_success"),
+    path("membership/cancel/", views.membership_cancel, name="membership_cancel"),
+    path("membership/manage/", views.manage_membership, name="manage_membership"),
+    path("membership/change-plan/", views.change_membership_plan, name="change_membership_plan"),
+    path("membership/payment-method/", views.update_payment_method, name="update_payment_method"),
+    path("membership/cancel-subscription/", views.cancel_subscription, name="cancel_subscription"),
+    path("membership/reactivate/", views.reactivate_subscription, name="reactivate_subscription"),
+    path("membership/webhook/", views.membership_webhook, name="membership_webhook"),
     # Dashboard URLs
     path("dashboard/student/", views.student_dashboard, name="student_dashboard"),
     path("dashboard/teacher/", views.teacher_dashboard, name="teacher_dashboard"),

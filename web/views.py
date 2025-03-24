@@ -117,6 +117,7 @@ from .models import (
     GradeableLink,
     LearningStreak,
     LinkGrade,
+    MembershipPlan,
     Meme,
     NoteHistory,
     Notification,
@@ -142,6 +143,7 @@ from .models import (
     TeamInvite,
     TimeSlot,
     UserBadge,
+    UserMembership,
     WebRequest,
 )
 from .notifications import (
@@ -5238,3 +5240,386 @@ def create_study_group(request):
     else:
         form = StudyGroupForm()
     return render(request, "web/study/create_group.html", {"form": form})
+
+
+# Membership Views
+@login_required
+def membership_plans(request):
+    """Display available membership plans"""
+    plans = MembershipPlan.objects.filter(is_active=True).order_by("order", "price_monthly")
+    billing_period = request.GET.get("billing", "monthly")
+
+    # Check if user has an active membership
+    user_membership = None
+    try:
+        user_membership = request.user.membership
+    except UserMembership.DoesNotExist:
+        pass
+
+    # Load any flash messages
+    messages = request.session.pop("membership_messages", [])
+    for msg in messages:
+        level = msg.get("level", "info")
+        text = msg.get("text", "")
+        if level == "error":
+            messages.error(request, text)
+        elif level == "success":
+            messages.success(request, text)
+        else:
+            messages.info(request, text)
+
+    return render(
+        request,
+        "membership/plans.html",
+        {"plans": plans, "user_membership": user_membership, "billing_period": billing_period},
+    )
+
+
+@login_required
+def subscribe_membership(request, plan_slug):
+    """Choose billing period for the selected plan"""
+    plan = get_object_or_404(MembershipPlan, slug=plan_slug, is_active=True)
+
+    # Check if user already has a membership
+    try:
+        user_membership = request.user.membership
+        if user_membership.is_active:
+            return redirect("change_membership_plan")
+    except UserMembership.DoesNotExist:
+        pass
+
+    # Get the billing period from query string, default to monthly
+    billing_period = request.GET.get("billing", "monthly")
+    if billing_period not in ["monthly", "yearly"]:
+        billing_period = "monthly"
+
+    return render(request, "membership/subscribe.html", {"plan": plan, "billing_period": billing_period})
+
+
+@login_required
+def checkout_membership(request, plan_slug, billing_period):
+    """Checkout page for membership subscription"""
+    plan = get_object_or_404(MembershipPlan, slug=plan_slug, is_active=True)
+
+    if billing_period not in ["monthly", "yearly"]:
+        return redirect("subscribe_membership", plan_slug=plan_slug)
+
+    price = plan.price_monthly if billing_period == "monthly" else plan.price_yearly
+    price_id = plan.stripe_monthly_price_id if billing_period == "monthly" else plan.stripe_yearly_price_id
+
+    # Debug print statements
+    print(f"Plan: {plan.name}, Slug: {plan.slug}")
+    print(f"Billing Period: {billing_period}")
+    print(f"Price: {price}")
+    print(f"Price ID: {price_id}")
+    print(f"Stripe Public Key: {settings.STRIPE_PUBLISHABLE_KEY}")
+
+    # Initialize Stripe if needed
+    if not settings.STRIPE_SECRET_KEY or not settings.STRIPE_PUBLISHABLE_KEY:
+        messages.error(request, "Payment system is not properly configured. Please contact support.")
+        return redirect("membership_plans")
+
+    # Validate that we have a price ID
+    if not price_id:
+        messages.error(request, "This plan does not have a valid price configured. Please contact support.")
+        return redirect("membership_plans")
+
+    return render(
+        request,
+        "membership/checkout.html",
+        {
+            "plan": plan,
+            "billing_period": billing_period,
+            "price": price,
+            "price_id": price_id,
+            "stripe_public_key": settings.STRIPE_PUBLISHABLE_KEY,
+        },
+    )
+
+
+@login_required
+def manage_membership(request):
+    """Manage current membership"""
+    try:
+        user_membership = request.user.membership
+
+        # If the subscription is in Stripe, get the latest details
+        if user_membership.stripe_subscription_id:
+            subscription = stripe.Subscription.retrieve(user_membership.stripe_subscription_id)
+            # Update local status based on Stripe status
+            user_membership.status = subscription.status
+            user_membership.save()
+
+        return render(
+            request,
+            "membership/manage.html",
+            {"membership": user_membership, "plans": MembershipPlan.objects.filter(is_active=True)},
+        )
+    except UserMembership.DoesNotExist:
+        # User doesn't have a membership
+        messages.info(request, "You don't have an active membership plan.")
+        return redirect("membership_plans")
+
+
+@login_required
+def change_membership_plan(request):
+    """Change membership plan"""
+    if request.method != "POST":
+        return redirect("membership_plans")
+
+    # Implementation for changing plans
+    return redirect("membership_plans")
+
+
+@login_required
+def update_payment_method(request):
+    """Update payment method for subscription"""
+    # Implementation for updating payment method
+    return redirect("manage_membership")
+
+
+@login_required
+def membership_cancel(request):
+    """Cancel confirmation page"""
+    return render(request, "membership/cancel.html")
+
+
+@login_required
+def create_membership_subscription(request):
+    """Create a Stripe subscription for membership"""
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request"}, status=400)
+
+    data = json.loads(request.body)
+    plan_slug = data.get("plan_slug")
+    billing_period = data.get("billing_period", "monthly")
+
+    plan = get_object_or_404(MembershipPlan, slug=plan_slug, is_active=True)
+    price_id = plan.stripe_monthly_price_id if billing_period == "monthly" else plan.stripe_yearly_price_id
+
+    # Debug print statements
+    print(f"Creating subscription for plan: {plan.name}, slug: {plan.slug}")
+    print(f"Billing period: {billing_period}")
+    print(f"Price ID: {price_id}")
+
+    try:
+        # Get or create a customer
+        customer_id = None
+        if hasattr(request.user, "profile") and request.user.profile.stripe_customer_id:
+            customer_id = request.user.profile.stripe_customer_id
+
+        if customer_id:
+            customer = stripe.Customer.retrieve(customer_id)
+        else:
+            customer = stripe.Customer.create(
+                email=request.user.email,
+                name=request.user.get_full_name() or request.user.username,
+            )
+            # Save the customer ID to the user's profile
+            if hasattr(request.user, "profile"):
+                request.user.profile.stripe_customer_id = customer.id
+                request.user.profile.save()
+
+        # Create the subscription
+        subscription = stripe.Subscription.create(
+            customer=customer.id,
+            items=[{"price": price_id}],
+            payment_behavior="default_incomplete",
+            expand=["latest_invoice.payment_intent"],
+        )
+
+        return JsonResponse(
+            {
+                "subscription_id": subscription.id,
+                "client_secret": subscription.latest_invoice.payment_intent.client_secret,
+            }
+        )
+
+    except stripe.error.StripeError as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+
+@login_required
+def membership_success(request):
+    """Handle successful membership subscription"""
+    subscription_id = request.GET.get("subscription_id")
+    if not subscription_id:
+        return redirect("membership_plans")
+
+    try:
+        # Verify the subscription
+        subscription = stripe.Subscription.retrieve(subscription_id)
+
+        if subscription.status not in ["active", "trialing"]:
+            messages.error(request, "Subscription activation failed. Please try again.")
+            return redirect("membership_plans")
+
+        # Get the plan details from the subscription
+        stripe_price_id = subscription.items.data[0].price.id
+        plan = None
+        billing_period = "monthly"
+
+        # Find the corresponding plan in our database
+        plans = MembershipPlan.objects.filter(is_active=True)
+        for p in plans:
+            if p.stripe_monthly_price_id == stripe_price_id:
+                plan = p
+                billing_period = "monthly"
+                break
+            elif p.stripe_yearly_price_id == stripe_price_id:
+                plan = p
+                billing_period = "yearly"
+                break
+
+        if not plan:
+            messages.error(request, "Could not match subscription to a plan. Please contact support.")
+            return redirect("membership_plans")
+
+        # Create or update the user's membership
+        try:
+            user_membership = request.user.membership
+            user_membership.plan = plan
+            user_membership.stripe_subscription_id = subscription_id
+            user_membership.status = subscription.status
+            user_membership.billing_period = billing_period
+            user_membership.start_date = timezone.now()
+            user_membership.end_date = timezone.datetime.fromtimestamp(subscription.current_period_end, tz=timezone.utc)
+            user_membership.cancel_at_period_end = subscription.cancel_at_period_end
+            user_membership.save()
+        except UserMembership.DoesNotExist:
+            # Create new membership
+            UserMembership.objects.create(
+                user=request.user,
+                plan=plan,
+                stripe_subscription_id=subscription_id,
+                status=subscription.status,
+                billing_period=billing_period,
+                start_date=timezone.now(),
+                end_date=timezone.datetime.fromtimestamp(subscription.current_period_end, tz=timezone.utc),
+                cancel_at_period_end=subscription.cancel_at_period_end,
+            )
+
+        messages.success(request, f"You have successfully subscribed to the {plan.name} plan!")
+        return render(request, "membership/success.html", {"plan": plan, "billing_period": billing_period})
+
+    except stripe.error.StripeError as e:
+        messages.error(request, f"Error verifying subscription: {str(e)}")
+        return redirect("membership_plans")
+
+
+@login_required
+def cancel_subscription(request):
+    """Cancel the user's membership subscription"""
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request"}, status=400)
+
+    try:
+        user_membership = request.user.membership
+
+        # Cancel at period end rather than immediately
+        stripe.Subscription.modify(user_membership.stripe_subscription_id, cancel_at_period_end=True)
+
+        # Update local record
+        user_membership.cancel_at_period_end = True
+        user_membership.save()
+
+        return JsonResponse({"success": True})
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+
+@login_required
+def reactivate_subscription(request):
+    """Reactivate a canceled subscription that hasn't expired yet"""
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request"}, status=400)
+
+    try:
+        user_membership = request.user.membership
+
+        if not user_membership.cancel_at_period_end:
+            return JsonResponse({"error": "Subscription is not scheduled for cancellation"}, status=400)
+
+        # Remove the cancellation
+        stripe.Subscription.modify(user_membership.stripe_subscription_id, cancel_at_period_end=False)
+
+        # Update local record
+        user_membership.cancel_at_period_end = False
+        user_membership.save()
+
+        return JsonResponse({"success": True})
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+
+@csrf_exempt
+def membership_webhook(request):
+    """Webhook for Stripe subscription events"""
+    payload = request.body
+    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
+
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_MEMBERSHIP_WEBHOOK_SECRET)
+    except ValueError:
+        return HttpResponse(status=400)
+    except stripe.error.SignatureVerificationError:
+        return HttpResponse(status=400)
+
+    # Handle subscription events
+    if event.type == "customer.subscription.updated":
+        subscription = event.data.object
+        handle_subscription_updated(subscription)
+    elif event.type == "customer.subscription.deleted":
+        subscription = event.data.object
+        handle_subscription_deleted(subscription)
+    elif event.type == "invoice.payment_succeeded":
+        invoice = event.data.object
+        handle_invoice_payment_succeeded(invoice)
+    elif event.type == "invoice.payment_failed":
+        invoice = event.data.object
+        handle_invoice_payment_failed(invoice)
+
+    return HttpResponse(status=200)
+
+
+def handle_invoice_payment_succeeded(invoice):
+    """Handle successful invoice payment"""
+    if invoice.subscription:
+        try:
+            user_membership = UserMembership.objects.get(stripe_subscription_id=invoice.subscription)
+            user_membership.status = "active"
+            subscription = stripe.Subscription.retrieve(invoice.subscription)
+            user_membership.end_date = timezone.datetime.fromtimestamp(subscription.current_period_end, tz=timezone.utc)
+            user_membership.save()
+        except UserMembership.DoesNotExist:
+            pass
+
+
+def handle_invoice_payment_failed(invoice):
+    """Handle failed invoice payment"""
+    if invoice.subscription:
+        try:
+            user_membership = UserMembership.objects.get(stripe_subscription_id=invoice.subscription)
+            user_membership.status = "past_due"
+            user_membership.save()
+        except UserMembership.DoesNotExist:
+            pass
+
+
+def handle_subscription_deleted(subscription):
+    """Handle subscription deletion"""
+    try:
+        user_membership = UserMembership.objects.get(stripe_subscription_id=subscription.id)
+        user_membership.status = "canceled"
+        user_membership.save()
+    except UserMembership.DoesNotExist:
+        pass  # No user membership found with this subscription ID
+
+
+def membership_benefits(request):
+    """
+    Display the membership benefits page
+    """
+    return render(request, "membership/benefits.html")

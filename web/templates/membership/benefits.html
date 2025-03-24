@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+
+{% block title %}Membership Benefits{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-12">
+    <!-- Hero Section -->
+    <div class="text-center mb-16">
+        <h1 class="text-5xl font-bold text-gray-900 dark:text-white mb-6">Membership Benefits</h1>
+        <p class="text-xl text-gray-700 dark:text-gray-200 max-w-3xl mx-auto">
+            Unlock a world of premium features and exclusive content with our membership plans
+        </p>
+    </div>
+
+    <!-- Benefits Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 max-w-7xl mx-auto mb-20">
+        <!-- Premium Courses -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 transform hover:scale-105 transition-transform duration-200 border border-gray-100 dark:border-gray-700">
+            <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-xl flex items-center justify-center mb-6">
+                <svg class="w-8 h-8 text-blue-700 dark:text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                </svg>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Premium Courses</h3>
+            <p class="text-lg text-gray-700 dark:text-gray-200">Access our entire library of premium courses and tutorials, including exclusive content not available to free users.</p>
+        </div>
+
+        <!-- Priority Support -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 transform hover:scale-105 transition-transform duration-200 border border-gray-100 dark:border-gray-700">
+            <div class="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-xl flex items-center justify-center mb-6">
+                <svg class="w-8 h-8 text-green-700 dark:text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Priority Support</h3>
+            <p class="text-lg text-gray-700 dark:text-gray-200">Get faster responses and dedicated assistance from our support team when you need help.</p>
+        </div>
+
+        <!-- Downloadable Resources -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 transform hover:scale-105 transition-transform duration-200 border border-gray-100 dark:border-gray-700">
+            <div class="w-16 h-16 bg-purple-100 dark:bg-purple-900 rounded-xl flex items-center justify-center mb-6">
+                <svg class="w-8 h-8 text-purple-700 dark:text-purple-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Downloadable Resources</h3>
+            <p class="text-lg text-gray-700 dark:text-gray-200">Access and download course materials, worksheets, and other learning resources for offline use.</p>
+        </div>
+
+        <!-- Exclusive Community -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 transform hover:scale-105 transition-transform duration-200 border border-gray-100 dark:border-gray-700">
+            <div class="w-16 h-16 bg-yellow-100 dark:bg-yellow-900 rounded-xl flex items-center justify-center mb-6">
+                <svg class="w-8 h-8 text-yellow-700 dark:text-yellow-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Exclusive Community</h3>
+            <p class="text-lg text-gray-700 dark:text-gray-200">Join our members-only community to connect with other learners and share experiences.</p>
+        </div>
+
+        <!-- Early Access -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 transform hover:scale-105 transition-transform duration-200 border border-gray-100 dark:border-gray-700">
+            <div class="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-xl flex items-center justify-center mb-6">
+                <svg class="w-8 h-8 text-red-700 dark:text-red-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Early Access</h3>
+            <p class="text-lg text-gray-700 dark:text-gray-200">Be the first to access new courses and features before they're available to the general public.</p>
+        </div>
+
+        <!-- Ad-Free Experience -->
+        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 transform hover:scale-105 transition-transform duration-200 border border-gray-100 dark:border-gray-700">
+            <div class="w-16 h-16 bg-indigo-100 dark:bg-indigo-900 rounded-xl flex items-center justify-center mb-6">
+                <svg class="w-8 h-8 text-indigo-700 dark:text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                </svg>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Ad-Free Experience</h3>
+            <p class="text-lg text-gray-700 dark:text-gray-200">Enjoy a clean, distraction-free learning environment without any advertisements.</p>
+        </div>
+    </div>
+
+    <!-- Testimonials -->
+    <div class="max-w-5xl mx-auto mb-20">
+        <h2 class="text-3xl font-bold text-center text-gray-900 dark:text-white mb-10">What Our Members Say</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 border border-gray-100 dark:border-gray-700">
+                <div class="flex items-center mb-6">
+                    <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                        <span class="text-2xl font-bold text-blue-700 dark:text-blue-300">JD</span>
+                    </div>
+                    <div class="ml-5">
+                        <h4 class="text-xl font-semibold text-gray-900 dark:text-white">John Doe</h4>
+                        <p class="text-base text-gray-600 dark:text-gray-400">Premium Member</p>
+                    </div>
+                </div>
+                <p class="text-lg text-gray-700 dark:text-gray-200">"The premium courses have helped me advance my career significantly. The quality of content is outstanding!"</p>
+            </div>
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 border border-gray-100 dark:border-gray-700">
+                <div class="flex items-center mb-6">
+                    <div class="w-16 h-16 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
+                        <span class="text-2xl font-bold text-purple-700 dark:text-purple-300">AS</span>
+                    </div>
+                    <div class="ml-5">
+                        <h4 class="text-xl font-semibold text-gray-900 dark:text-white">Alice Smith</h4>
+                        <p class="text-base text-gray-600 dark:text-gray-400">Premium Member</p>
+                    </div>
+                </div>
+                <p class="text-lg text-gray-700 dark:text-gray-200">"The priority support is amazing. I always get quick responses when I need help with my courses."</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-xl p-10 text-center">
+        <h2 class="text-4xl font-bold text-white mb-6">Ready to Get Started?</h2>
+        <p class="text-xl text-blue-100 mb-10 max-w-2xl mx-auto">
+            Join thousands of satisfied members who are already enjoying our premium features and exclusive content.
+        </p>
+        <a href="{% url 'membership_plans' %}" 
+           class="inline-flex items-center px-8 py-4 bg-white text-blue-700 font-semibold text-lg rounded-lg hover:bg-blue-50 transition duration-200 shadow-lg">
+            View Membership Plans
+            <svg class="w-6 h-6 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path>
+            </svg>
+        </a>
+    </div>
+</div>
+{% endblock %} 

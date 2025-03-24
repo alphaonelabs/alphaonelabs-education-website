@@ -2470,3 +2470,122 @@ class NotificationPreference(models.Model):
 
     def __str__(self):
         return f"Notification preferences for {self.user.username}"
+
+
+class MembershipPlan(models.Model):
+    """User's subscription to a membership plan"""
+
+    BILLING_PERIOD_CHOICES = [
+        ("monthly", "Monthly"),
+        ("yearly", "Yearly"),
+        ("both", "Both"),
+    ]
+
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100, unique=True, null=True, blank=True)
+    description = models.TextField()
+    # Legacy price field removed - only in models.py definition
+    price_monthly = models.DecimalField(max_digits=10, decimal_places=2)
+    price_yearly = models.DecimalField(max_digits=10, decimal_places=2)
+    billing_period = models.CharField(max_length=10, choices=BILLING_PERIOD_CHOICES, default="monthly")
+    features = models.JSONField(default=list, blank=True)
+    is_active = models.BooleanField(default=True)
+    is_popular = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0, help_text="Order in which to display the plan")
+
+    # Stripe IDs for the price objects
+    stripe_monthly_price_id = models.CharField(max_length=100, blank=True, default="")
+    stripe_yearly_price_id = models.CharField(max_length=100, blank=True, default="")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["order", "price_monthly"]
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        # Generate slug if it doesn't exist
+        if not self.slug:
+            from django.utils.text import slugify
+
+            self.slug = slugify(self.name)
+
+        super().save(*args, **kwargs)
+
+
+class UserMembership(models.Model):
+    """User's subscription to a membership plan"""
+
+    STATUS_CHOICES = [
+        ("active", "Active"),
+        ("past_due", "Past Due"),
+        ("canceled", "Canceled"),
+        ("trialing", "Trialing"),
+        ("incomplete", "Incomplete"),
+        ("incomplete_expired", "Incomplete Expired"),
+        ("unpaid", "Unpaid"),
+    ]
+
+    BILLING_PERIOD_CHOICES = [
+        ("monthly", "Monthly"),
+        ("yearly", "Yearly"),
+    ]
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="membership")
+    plan = models.ForeignKey(MembershipPlan, on_delete=models.PROTECT, related_name="subscriptions")
+    stripe_subscription_id = models.CharField(max_length=100)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
+    billing_period = models.CharField(max_length=10, choices=BILLING_PERIOD_CHOICES, default="monthly")
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField(null=True, blank=True)
+    cancel_at_period_end = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username}'s {self.plan.name} Membership"
+
+    @property
+    def is_active(self):
+        return self.status == "active" and (self.end_date is None or self.end_date > timezone.now())
+
+    @property
+    def days_remaining(self):
+        if not self.end_date:
+            return None
+        return (self.end_date - timezone.now()).days
+
+
+class MembershipSubscriptionEvent(models.Model):
+    """
+    Model to track membership subscription events.
+    """
+
+    EVENT_TYPES = (
+        ("created", "Created"),
+        ("updated", "Updated"),
+        ("canceled", "Canceled"),
+        ("reactivated", "Reactivated"),
+        ("payment_succeeded", "Payment Succeeded"),
+        ("payment_failed", "Payment Failed"),
+        ("past_due", "Past Due"),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="membership_events")
+    membership = models.ForeignKey(
+        UserMembership, on_delete=models.CASCADE, related_name="events", null=True, blank=True
+    )
+    event_type = models.CharField(max_length=20, choices=EVENT_TYPES)
+    stripe_event_id = models.CharField(max_length=100, blank=True, default="")
+    data = models.JSONField(default=dict, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.event_type} event for {self.user.username}"

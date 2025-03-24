@@ -280,6 +280,31 @@
                 </div>
               </div>
             </div>
+            <!-- MEMBERSHIP Dropdown -->
+            <div class="relative group">
+              <button class="flex items-center space-x-1 text-white hover:text-teal-100 focus:outline-none py-2">
+                <span class="font-medium">MEMBERSHIP</span>
+                <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-hover:rotate-180"></i>
+              </button>
+              <div class="absolute left-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 transform origin-top-left">
+                <div class="py-2 px-1">
+                  <a href="{% url 'membership_plans' %}"
+                     class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
+                    <i class="fas fa-crown mr-2 text-teal-500"></i>Plans
+                  </a>
+                  {% if user.is_authenticated and user.usermembership %}
+                    <a href="{% url 'manage_membership' %}"
+                       class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
+                      <i class="fas fa-cog mr-2 text-teal-500"></i>Manage Membership
+                    </a>
+                  {% endif %}
+                  <a href="{% url 'membership_benefits' %}"
+                     class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
+                    <i class="fas fa-gift mr-2 text-teal-500"></i>Benefits
+                  </a>
+                </div>
+              </div>
+            </div>
             <!-- ABOUT Dropdown -->
             <div class="relative group">
               <button class="flex items-center space-x-1 text-white hover:text-teal-100 focus:outline-none py-2">
@@ -610,6 +635,34 @@
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-code mr-2 text-teal-500"></i>
                       <span>GSOC'25</span>
+                    </a>
+                  </div>
+                </div>
+                <!-- MEMBERSHIP Section -->
+                <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
+                  <div class="flex items-center justify-between py-2 cursor-pointer"
+                       onclick="toggleAccordion('membership-accordion')">
+                    <span class="text-gray-800 dark:text-gray-200 font-semibold">MEMBERSHIP</span>
+                    <i id="membership-accordion-icon"
+                       class="fas fa-chevron-down text-gray-500 dark:text-gray-400 transition-transform duration-200"></i>
+                  </div>
+                  <div id="membership-accordion" class="hidden mt-2 ml-2 space-y-2">
+                    <a href="{% url 'membership_plans' %}"
+                       class="flex items-center py-1 text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400">
+                      <i class="fas fa-crown w-5 text-teal-500"></i>
+                      <span>Plans</span>
+                    </a>
+                    {% if user.is_authenticated and user.usermembership %}
+                      <a href="{% url 'manage_membership' %}"
+                         class="flex items-center py-1 text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400">
+                        <i class="fas fa-cog w-5 text-teal-500"></i>
+                        <span>Manage Membership</span>
+                      </a>
+                    {% endif %}
+                    <a href="{% url 'membership_benefits' %}"
+                       class="flex items-center py-1 text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400">
+                      <i class="fas fa-gift w-5 text-teal-500"></i>
+                      <span>Benefits</span>
                     </a>
                   </div>
                 </div>
@@ -960,7 +1013,7 @@
             }
 
             // Close other accordions
-            const allAccordions = ['learn-accordion', 'community-accordion', 'resources-accordion', 'about-accordion'];
+            const allAccordions = ['learn-accordion', 'community-accordion', 'resources-accordion', 'about-accordion', 'membership-accordion'];
             allAccordions.forEach(id => {
                 if (id !== accordionId) {
                     const otherAccordion = document.getElementById(id);
