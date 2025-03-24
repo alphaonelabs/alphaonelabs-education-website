@@ -40,6 +40,7 @@ from .models import (
     SuccessStory,
     TeamGoal,
     TeamInvite,
+    VideoRequest,
 )
 from .referrals import handle_referral
 from .widgets import (
@@ -92,6 +93,7 @@ __all__ = [
     "GradeableLinkForm",
     "LinkGradeForm",
     "AwardAchievementForm",
+    "VideoRequestForm",
 ]
 
 
@@ -748,6 +750,33 @@ class EducationalVideoForm(forms.ModelForm):
             if not (re.match(youtube_pattern, url) or re.match(vimeo_pattern, url)):
                 raise forms.ValidationError("Please enter a valid YouTube or Vimeo URL")
         return url
+
+
+class VideoRequestForm(forms.ModelForm):
+    """
+    Form for requesting educational videos.
+    """
+
+    class Meta:
+        model = VideoRequest
+        fields = ["title", "description", "category"]
+        widgets = {
+            "title": TailwindInput(attrs={"placeholder": "Video request title"}),
+            "description": TailwindTextarea(
+                attrs={
+                    "rows": 4,
+                    "placeholder": "Describe the educational video you would like to request",
+                }
+            ),
+            "category": TailwindSelect(
+                attrs={
+                    "class": (
+                        "w-full px-4 py-2 border border-gray-300 dark:border-gray-600"
+                        " rounded-lg focus:ring-2 focus:ring-blue-500"
+                    )
+                }
+            ),
+        }
 
 
 class SuccessStoryForm(forms.ModelForm):
