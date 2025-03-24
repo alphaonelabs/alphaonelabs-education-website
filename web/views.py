@@ -5254,39 +5254,33 @@ def classes_map(request):
 
     sessions = (
         Session.objects.filter(Q(start_time__gte=now) | Q(Q(start_time__lte=now) & Q(end_time__gte=now)))
-        .filter(
-            Q(is_virtual=False)
-            & Q(location__isnull=False)
-            & ~Q(location="")
-            & Q(latitude__isnull=False, longitude__isnull=False)
-        )
+        .filter(is_virtual=False, location__isnull=False)
+        .exclude(location="")
         .order_by("start_time")
         .select_related("course", "course__teacher")
     )
 
     # Get filter parameters
     course_id = request.GET.get("course")
-    age_group = request.GET.get("age_group")
     teaching_style = request.GET.get("teaching_style")  # "true" (Online) or "false" (In-Person)
-    print(sessions)
+
     # Apply filters
     if course_id:
         sessions = sessions.filter(course_id=course_id)
-    if age_group:
-        sessions = sessions.filter(course__level=age_group)
-    if teaching_style in ["true", "false"]:  # Ensure valid boolean input
-        sessions = sessions.filter(is_virtual=(teaching_style == "true"))
+    # Filter value for teaching style (e.g., "lecture", "workshop", etc.)
+    if teaching_style:
+        sessions = sessions.filter(teaching_style=teaching_style)
 
     # Fetch course and age group choices
     courses = Course.objects.only("id", "title").order_by("title")
     age_groups = Course._meta.get_field("level").choices
     teaching_styles = list(set(Session.objects.values_list("teaching_style", flat=True)))
-    print(teaching_styles)
 
     context = {"sessions": sessions, "courses": courses, "age_groups": age_groups, "teaching_style": teaching_styles}
     return render(request, "web/classes_map.html", context)
 
 
+@login_required
 def map_data_api(request):
     """API to return all live and ongoing class data in JSON format."""
     now = timezone.now()

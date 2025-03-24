@@ -414,35 +414,43 @@ def create_leaderboard_context(
     }
 
 
-# Create a utils.py file to help with geocoding addresses
-
-
 def geocode_address(address):
     """
     Convert a text address to latitude and longitude coordinates.
     Returns a tuple of (latitude, longitude) or None if geocoding fails.
-
-    You'll need to add a GEOCODING_API_KEY to your settings.py
+    You'll need to add a OPENCAGE_API_KEY to your settings.py
     and sign up for a service like Google Maps, Mapbox, or OpenCage.
     """
     if not address:
+        logger.debug("Empty address provided to geocode_address")
         return None
-
+    # Check cache first
+    cache_key = f"geocode:{address}"
+    cached_result = cache.get(cache_key)
+    if cached_result:
+        logger.debug(f"Using cached geocoding result for: {address}")
+        return cached_result
     # Example using OpenCage Geocoder
     api_key = getattr(settings, "OPENCAGE_API_KEY", "")
     if not api_key:
+        logger.error("OPENCAGE_API_KEY not configured in settings")
         return None
-
     url = f"https://api.opencagedata.com/geocode/v1/json?q={address}&key={api_key}"
-
     try:
         response = requests.get(url)
+        response.raise_for_status()  # Raise exception for 4XX/5XX status codes
         data = response.json()
-
         if data["total_results"] > 0:
             location = data["results"][0]["geometry"]
-            return (location["lat"], location["lng"])
+            result = (location["lat"], location["lng"])
+            # Cache the result for 24 hours
+            cache.set(cache_key, result, 60 * 60 * 24)
+            return result
+        logger.warning(f"No geocoding results found for address: {address}")
+        return None
+    except requests.exceptions.RequestException as e:
+        logger.error(f"Request error during geocoding: {e}")
         return None
     except Exception as e:
-        print(f"Geocoding error: {e}")
+        logger.error(f"Geocoding error: {e}")
         return None

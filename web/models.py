@@ -362,10 +362,20 @@ class Session(models.Model):
         default=False, help_text="Whether the teacher has confirmed the rolled over dates"
     )
     latitude = models.DecimalField(
-        max_digits=9, decimal_places=6, null=True, blank=True, help_text="Latitude coordinate for mapping"
+        blank=True,
+        decimal_places=6,
+        help_text="Latitude coordinate for mapping",
+        max_digits=9,
+        null=True,
+        validators=[MinValueValidator(-90), MaxValueValidator(90)],
     )
     longitude = models.DecimalField(
-        max_digits=9, decimal_places=6, null=True, blank=True, help_text="Longitude coordinate for mapping"
+        blank=True,
+        decimal_places=6,
+        help_text="Longitude coordinate for mapping",
+        max_digits=9,
+        null=True,
+        validators=[MinValueValidator(-180), MaxValueValidator(180)],
     )
     teaching_style = models.CharField(
         max_length=20,
@@ -373,11 +383,11 @@ class Session(models.Model):
             ("lecture", "Lecture Based"),
             ("student-centered", "Student Centered"),
             ("hybrid", "Hybrid Learning"),
-            ("Practical", "Practical Learning"),
+            ("practical", "Practical Learning"),
         ],
         default="hybrid",
         blank=True,
-        help_text="What is the teachng style of session ",
+        help_text="What is the teachng style of session",
     )
 
     class Meta:
@@ -466,7 +476,7 @@ class Session(models.Model):
         coordinates = geocode_address(self.location)
         if coordinates:
             self.latitude, self.longitude = coordinates
-            print("loacation store:", self.latitude, self.longitude)
+            print("location store:", self.latitude, self.longitude)
         else:
             print(
                 f"Skipping session {self.id} due to invalid coordinates:",

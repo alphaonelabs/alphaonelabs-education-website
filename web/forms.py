@@ -427,6 +427,7 @@ class SessionForm(forms.ModelForm):
             "price",
             "enable_rollover",
             "rollover_pattern",
+            "teaching_style",
         ]
         widgets = {
             "title": TailwindInput(),
