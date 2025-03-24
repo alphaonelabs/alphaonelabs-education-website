@@ -690,7 +690,7 @@
                       {{ entry.user.username|make_list|first|upper }}
                     </div>
                   {% endif %}
-                  <div class="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white {% if forloop.counter == 1 %}bg-yellow-500{% elif forloop.counter == 2 %}bg-gray-500{% elif forloop.counter == 3 %}bg-amber-600{% endif %}">
+                  <div class="absolute -top-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white {% if forloop.counter == 1 %}bg-yellow-500{% elif forloop.counter == 2 %}bg-gray-500{% elif forloop.counter == 3 %}bg-amber-600{% endif %}">
                     {{ forloop.counter }}
                   </div>
                 </div>
@@ -927,8 +927,8 @@
                     pulls.forEach(pull => {
                         const username = pull.user.login;
 
-                        //skipping bots
-                        if (username.includes('[bot]') || username.includes('dependabot')) {
+                        //skipping bots and specific users
+                        if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
                             return;
                         }
 
@@ -1075,8 +1075,8 @@
                     pulls.forEach(pull => {
                         const username = pull.user.login;
 
-                        //bots ignored
-                        if (username.includes('[bot]') || username.includes('dependabot')) {
+                        //bots and specific users ignored
+                        if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
                             return;
                         }
 
@@ -1200,6 +1200,7 @@
                             const username = pull.user.login;
                             return !username.includes('[bot]') &&
                                 !username.includes('dependabot') &&
+                                username !== 'A1L13N' &&
                                 pull.merged_at !== null;
                         })
                         .sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at))
