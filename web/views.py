@@ -18,6 +18,7 @@ import requests
 import stripe
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -5238,3 +5239,271 @@ def create_study_group(request):
     else:
         form = StudyGroupForm()
     return render(request, "web/study/create_group.html", {"form": form})
+
+
+GITHUB_REPO = "alphaonelabs/alphaonelabs-education-website"
+GITHUB_API_BASE = "https://api.github.com"
+
+
+@staff_member_required
+def all_contributors_view(request):
+    token = os.environ.get("GITHUB_TOKEN")  # Retrieve token from environment variable
+    headers = {"Authorization": f"token {token}"} if token else {}
+
+    merged_prs_map = {}
+    page = 1
+    pulls = []
+
+    try:
+        # Paginate through closed PRs
+        while True:
+            pulls_url = f"{GITHUB_API_BASE}/repos/{GITHUB_REPO}/pulls?state=closed&per_page=100&page={page}"
+            response = requests.get(pulls_url, headers=headers)
+
+            if response.status_code != 200:
+                print(f"Error fetching page {page}: {response.status_code}")
+                break
+
+            data = response.json()
+            if not data:
+                break
+
+            pulls.extend(data)
+            page += 1
+
+        # Aggregate merged PRs per user
+        for pr in pulls:
+            if pr.get("merged_at"):
+                user_login = pr["user"]["login"].lower()
+                # Filter out bots
+                if user_login == "a1l13n" or "bot" in user_login or "automation" in user_login:
+                    continue
+
+                if user_login not in merged_prs_map:
+                    merged_prs_map[user_login] = {
+                        "login": pr["user"]["login"],
+                        "avatar_url": pr["user"]["avatar_url"],
+                        "merged_prs": 0,
+                    }
+                merged_prs_map[user_login]["merged_prs"] += 1
+
+        # Convert map to sorted list (highest merged PRs first)
+        contributors = sorted(merged_prs_map.values(), key=lambda c: c["merged_prs"], reverse=True)
+    except Exception as e:
+        print(f"Error in all_contributors_view: {e}")
+        contributors = []
+
+    top_contributor = contributors[0] if contributors else None
+
+    return render(
+        request,
+        "web/all_contributors.html",
+        {
+            "contributors": contributors,
+            "top_contributor": top_contributor,
+        },
+    )
+
+
+# Configure logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.ERROR)
+
+
+@staff_member_required
+def contributor_detail_view(request, username):
+    """
+    View to display detailed information about a specific GitHub contributor.
+    Only accessible to staff members.
+    """
+    # Retrieve GitHub token from environment variable
+    token = os.environ.get("GITHUB_TOKEN")
+    headers = {"Authorization": f"token {token}"} if token else {}
+
+    # Initialize variables to store contributor data
+    user_data = {}
+    prs_created = 0
+    prs_merged = 0
+    issues_created = 0
+    pr_reviews = 0
+    pr_comments = 0
+    issue_comments = 0
+    lines_added = 0
+    lines_deleted = 0
+    first_contribution_date = "N/A"
+    issue_assignments = 0
+
+    try:
+        # Fetch user profile data
+        user_response = requests.get(f"{GITHUB_API_BASE}/users/{username}", headers=headers)
+        if user_response.status_code == 200:
+            user_data = user_response.json()
+        else:
+            logger.error(f"Failed to fetch user profile: {user_response.status_code} - {user_response.text}")
+
+        # Fetch number of pull requests created
+        prs_created_response = requests.get(
+            f"{GITHUB_API_BASE}/search/issues",
+            params={"q": f"author:{username} type:pr repo:{GITHUB_REPO}"},
+            headers=headers,
+        )
+        if prs_created_response.status_code == 200:
+            prs_created = prs_created_response.json().get("total_count", 0)
+        else:
+            logger.error(
+                f"Failed to fetch PRs created: {prs_created_response.status_code} - {prs_created_response.text}"
+            )
+
+        # Fetch number of merged pull requests
+        prs_merged_response = requests.get(
+            f"{GITHUB_API_BASE}/search/issues",
+            params={"q": f"author:{username} type:pr repo:{GITHUB_REPO} is:merged"},
+            headers=headers,
+        )
+        if prs_merged_response.status_code == 200:
+            prs_merged = prs_merged_response.json().get("total_count", 0)
+        else:
+            logger.error(f"Failed to fetch PRs merged: {prs_merged_response.status_code} - {prs_merged_response.text}")
+
+        # Fetch number of issues created
+        issues_response = requests.get(
+            f"{GITHUB_API_BASE}/search/issues",
+            params={"q": f"author:{username} type:issue repo:{GITHUB_REPO}"},
+            headers=headers,
+        )
+        if issues_response.status_code == 200:
+            issues_created = issues_response.json().get("total_count", 0)
+        else:
+            logger.error(f"Failed to fetch issues created: {issues_response.status_code} - {issues_response.text}")
+
+        # Fetch number of pull request reviews
+        reviews_response = requests.get(
+            f"{GITHUB_API_BASE}/search/issues",
+            params={"q": f"reviewer:{username} type:pr repo:{GITHUB_REPO}"},
+            headers=headers,
+        )
+        if reviews_response.status_code == 200:
+            pr_reviews = reviews_response.json().get("total_count", 0)
+        else:
+            logger.error(f"Failed to fetch PR reviews: {reviews_response.status_code} - {reviews_response.text}")
+
+        # Fetch number of pull requests with comments
+        pr_comments_response = requests.get(
+            f"{GITHUB_API_BASE}/search/issues",
+            params={"q": f"commenter:{username} type:pr repo:{GITHUB_REPO}"},
+            headers=headers,
+        )
+        if pr_comments_response.status_code == 200:
+            pr_comments = pr_comments_response.json().get("total_count", 0)
+        else:
+            logger.error(
+                f"Failed to fetch PR comments: {pr_comments_response.status_code} - {pr_comments_response.text}"
+            )
+
+        # Fetch number of issues with comments
+        issue_comments_response = requests.get(
+            f"{GITHUB_API_BASE}/search/issues",
+            params={"q": f"commenter:{username} type:issue repo:{GITHUB_REPO}"},
+            headers=headers,
+        )
+        if issue_comments_response.status_code == 200:
+            issue_comments = issue_comments_response.json().get("total_count", 0)
+        else:
+            logger.error(
+                (
+                    f"Failed to fetch issue comments: {issue_comments_response.status_code} - "
+                    f"{issue_comments_response.text}"
+                )
+            )
+
+        # Fetch creation date of the oldest PR created by the user
+        prs_response = requests.get(
+            f"{GITHUB_API_BASE}/search/issues",
+            params={
+                "q": f"author:{username} type:pr repo:{GITHUB_REPO}",
+                "sort": "created",
+                "order": "asc",
+                "per_page": 1,
+            },
+            headers=headers,
+        )
+        if prs_response.status_code == 200 and prs_response.json()["total_count"] > 0:
+            first_contribution_date = prs_response.json()["items"][0]["created_at"]
+        else:
+            first_contribution_date = "N/A"
+
+        # Fetch number of issue assignments
+        issue_assignments_response = requests.get(
+            f"{GITHUB_API_BASE}/search/issues",
+            params={"q": f"assignee:{username} type:issue repo:{GITHUB_REPO}"},
+            headers=headers,
+        )
+        if issue_assignments_response.status_code == 200:
+            issue_assignments = issue_assignments_response.json().get("total_count", 0)
+        else:
+            logger.error(
+                (
+                    f"Failed to fetch issue assignments: {issue_assignments_response.status_code} - "
+                    f"{issue_assignments_response.text}"
+                )
+            )
+
+        # Calculate lines added and deleted from merged pull requests
+        page = 1
+        while True:
+            prs_response = requests.get(
+                f"{GITHUB_API_BASE}/repos/{GITHUB_REPO}/pulls",
+                params={"state": "closed", "per_page": 100, "page": page},
+                headers=headers,
+            )
+            if prs_response.status_code != 200:
+                logger.error(f"Failed to fetch PRs page {page}: {prs_response.status_code} - {prs_response.text}")
+                break
+            prs = prs_response.json()
+            if not prs:
+                break
+            for pr in prs:
+                if pr["user"]["login"].lower() == username.lower() and pr["merged_at"]:
+                    pr_detail_response = requests.get(pr["url"], headers=headers)
+                    if pr_detail_response.status_code == 200:
+                        pr_detail = pr_detail_response.json()
+                        lines_added += pr_detail.get("additions", 0)
+                        lines_deleted += pr_detail.get("deletions", 0)
+                    else:
+                        logger.error(
+                            (
+                                f"Failed to fetch PR details for {pr['number']}: "
+                                f"{pr_detail_response.status_code} - {pr_detail_response.text}"
+                            )
+                        )
+            page += 1
+
+        # Update user_data with additional metrics
+        user_data.update(
+            {
+                "reactions_received": user_data.get("reactions_received", 0),
+                "mentorship_score": user_data.get("mentorship_score", 0),
+                "collaboration_score": user_data.get("collaboration_score", 0),
+                "issue_assignments": issue_assignments,
+            }
+        )
+
+    except requests.RequestException as e:
+        logger.error(f"Request error occurred: {e}")
+
+    # Prepare context for the template
+    context = {
+        "user": user_data,
+        "prs_created": prs_created,
+        "prs_merged": prs_merged,
+        "pr_reviews": pr_reviews,
+        "issues_created": issues_created,
+        "issue_comments": issue_comments,
+        "pr_comments": pr_comments,
+        "lines_added": lines_added,
+        "lines_deleted": lines_deleted,
+        "first_contribution_date": first_contribution_date,
+    }
+
+    # Render the template with the contributor's data
+    return render(request, "web/contributor_detail.html", context)
