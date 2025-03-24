@@ -17,98 +17,39 @@
           console.log('Alpine.js initialized, version:', window.Alpine.version);
       });
   </script>
-  <!-- Initialize open student modal function -->
-  <script>
-      // Global variable to track pending modal requests
-      window.pendingStudentModal = null;
-
-      // Initialize a simple modal opener that doesn't rely on Alpine.js
-      window.openStudentModal = function(name, id) {
-          console.log("openStudentModal called for student:", name, "id:", id);
-          // Store the request info to be processed when DOM is ready
-          window.pendingStudentModal = {
-              name,
-              id
-          };
-
-          // Try to trigger the modal directly if the page is already loaded
-          document.addEventListener('DOMContentLoaded', function() {
-              const event = new CustomEvent('open-student-modal', {
-                  detail: {
-                      name: name,
-                      id: id
-                  }
-              });
-              document.dispatchEvent(event);
-          });
-
-          // Also dispatch the event now in case DOM is already loaded
-          if (document.readyState === 'complete' || document.readyState === 'interactive') {
-              const event = new CustomEvent('open-student-modal', {
-                  detail: {
-                      name: name,
-                      id: id
-                  }
-              });
-              document.dispatchEvent(event);
-          }
-
-          return false; // Prevent default link behavior
-      };
-
-      // Define the Alpine.js component data
-      window.studentManagementData = function() {
-          return {
-              open: false,
-              activeTab: 'attendance',
-              studentName: '',
-              enrollmentId: null,
-              setStudent(name, id) {
-                  this.studentName = name;
-                  this.enrollmentId = id;
-                  this.open = true;
-              },
-              init() {
-                  console.log("Alpine component initialized for student management modal");
-
-                  // Listen for custom event
-                  document.addEventListener('open-student-modal', (event) => {
-                      this.setStudent(event.detail.name, event.detail.id);
-                  });
-
-                  // Check for pending modal request
-                  if (window.pendingStudentModal) {
-                      console.log("Found pending student modal data, processing it");
-                      this.setStudent(
-                          window.pendingStudentModal.name,
-                          window.pendingStudentModal.id
-                      );
-                      window.pendingStudentModal = null;
-                  }
-              }
-          };
-      };
-  </script>
   <style>
-      /* Notification system styles */
       .notification {
           position: fixed;
-          top: 1rem;
-          right: 1rem;
-          z-index: 100;
-          transition: all 0.3s ease-in-out;
-          transform: translateX(100%);
+          bottom: 20px;
+          right: 20px;
+          z-index: 1000;
+          max-width: 350px;
+          transform: translateY(30px);
           opacity: 0;
+          transition: transform 0.3s, opacity 0.3s;
       }
 
       .notification.show {
-          transform: translateX(0);
+          transform: translateY(0);
           opacity: 1;
+      }
+
+      /* Hide scrollbar but keep functionality */
+      .scrollbar-hide {
+          -ms-overflow-style: none;
+          /* IE and Edge */
+          scrollbar-width: none;
+          /* Firefox */
+      }
+
+      .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+          /* Chrome, Safari and Opera */
       }
   </style>
 {% endblock extra_head %}
 {% block content %}
-  <div class="container mx-auto px-4 py-8">
+  <div class="container mx-auto px-4 py-6">
     <!-- Breadcrumbs -->
     <nav class="flex items-center text-sm bg-white dark:bg-gray-800 p-3 rounded-lg shadow-sm mb-6">
       <a href="{% url 'index' %}"
@@ -238,82 +179,6 @@
                 {% endif %}
               {% endif %}
             </div>
-            <!-- Enrolled Students List -->
-            {% if is_teacher or is_enrolled %}
-              <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-                <div class="flex items-center justify-between mb-3">
-                  <h3 class="font-semibold text-lg text-gray-800 dark:text-gray-200 flex items-center">
-                    <i class="fas fa-users text-teal-500 dark:text-teal-400 mr-2"></i>
-                    Enrolled Students
-                  </h3>
-                  <span class="text-sm text-gray-500 dark:text-gray-400">{{ course.enrollments.count }} / {{ course.max_students }}</span>
-                </div>
-                {% if course.enrollments.exists %}
-                  <div class="max-h-40 overflow-y-auto pr-1 space-y-2">
-                    {% for enrollment in course.enrollments.all %}
-                      <div class="flex items-center space-x-2 p-2 {% cycle 'bg-gray-50' 'bg-white' %} dark:{% cycle 'bg-gray-700' 'bg-gray-800' %} rounded-lg">
-                        {% if enrollment.student.profile.avatar %}
-                          <img src="{{ enrollment.student.profile.avatar.url }}"
-                               alt="{{ enrollment.student.username }}"
-                               class="w-8 h-8 rounded-full object-cover"
-                               width="32"
-                               height="32" />
-                        {% else %}
-                          <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                            <i class="fas fa-user text-gray-400 dark:text-gray-400"></i>
-                          </div>
-                        {% endif %}
-                        <div class="flex-grow">
-                          <div class="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            {{ enrollment.student.get_full_name|default:enrollment.student.username }}
-                            {% if enrollment.student.get_full_name %}
-                              <span class="text-xs text-gray-500 dark:text-gray-400">({{ enrollment.student.username }})</span>
-                            {% endif %}
-                          </div>
-                          <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                            <span>Enrolled: {{ enrollment.enrollment_date|date:"M d, Y" }}</span>
-                            {% if student_attendance and student_attendance|get_item:enrollment.student.id %}
-                              <span class="ml-2 px-2 py-0.5 rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                                <i class="fas fa-calendar-check text-teal-500 dark:text-teal-400 mr-1"></i>
-                                {{ student_attendance|get_item:enrollment.student.id|get_item:'attended' }}/{{ student_attendance|get_item:enrollment.student.id|get_item:'total' }}
-                              </span>
-                            {% endif %}
-                          </div>
-                          <div class="flex items-center space-x-2">
-                            <!-- Public Profile Link -->
-                            <a href="{% url 'public_profile' enrollment.student.username %}"
-                               class="p-1.5 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 rounded-full hover:bg-blue-50 dark:hover:bg-blue-900 transition-colors"
-                               title="View public profile">
-                              <i class="fas fa-user-circle"></i>
-                            </a>
-                            <!-- Teacher View (only for course teacher) -->
-                            {% if user == course.teacher %}
-                              <a href="#"
-                                 class="p-1.5 text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 rounded-full hover:bg-indigo-50 dark:hover:bg-indigo-900 transition-colors"
-                                 title="Teacher view - Manage progress, badges & attendance"
-                                 onclick="try { return openStudentModal('{{ enrollment.student.username }}', {{ enrollment.id }}); } catch(e) { console.error('Error opening modal:', e); return false; }">
-                                <i class="fas fa-chalkboard-teacher"></i>
-                              </a>
-                            {% endif %}
-                          </div>
-                        </div>
-                        {% if enrollment.status == 'completed' %}
-                          <span class="flex-shrink-0 px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                            <i class="fas fa-check-circle mr-1"></i>Completed
-                          </span>
-                        {% elif enrollment.status == 'in_progress' %}
-                          <span class="flex-shrink-0 px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                            <i class="fas fa-spinner mr-1"></i>In Progress
-                          </span>
-                        {% endif %}
-                      </div>
-                    {% endfor %}
-                  </div>
-                {% else %}
-                  <p class="text-sm text-gray-500 dark:text-gray-400 italic">No students enrolled yet.</p>
-                {% endif %}
-              </div>
-            {% endif %}
             <!-- Course Creator Info -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
               <h3 class="font-semibold text-lg mb-4 text-gray-800 dark:text-gray-200 flex items-center">
@@ -508,12 +373,12 @@
                 <div class="flex items-center justify-between mb-3">
                   <h3 class="text-sm font-semibold">Session Calendar</h3>
                   <div class="flex items-center space-x-4">
-                    <button onclick="loadCalendar({{ prev_month.year }}, {{ prev_month.month }})"
+                    <button id="prev-month-btn"
                             class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">
                       <i class="fas fa-chevron-left"></i>
                     </button>
                     <span class="text-sm font-medium" id="current-month">{{ current_month|date:"F Y" }}</span>
-                    <button onclick="loadCalendar({{ next_month.year }}, {{ next_month.month }})"
+                    <button id="next-month-btn"
                             class="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200">
                       <i class="fas fa-chevron-right"></i>
                     </button>
@@ -686,186 +551,552 @@
                 </div>
               {% endif %}
             </div>
-            <!-- Course Description -->
-            <div class="markdown-content space-y-6 text-gray-800 dark:text-gray-200">
-              <div class="space-y-2">
-                <!-- Course Progress -->
-                {% if is_enrolled and enrollment %}
-                  <div x-data="{ showAllSessions: false, activeSession: null }">
-                    <h2 class="text-xl font-bold mb-4 flex items-center">
-                      <i class="fas fa-chart-line text-teal-500 dark:text-teal-400 mr-2"></i>
-                      Your Progress
-                    </h2>
-                    <div class="md:min-h-screen dark:from-gray-800 dark:to-gray-900 rounded-lg shadow-md p-3 border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-all duration-300">
-                      <!-- Top section with Progress and Materials side by side -->
-                      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Left Column with Progress + Session stacked -->
-                        <div>
-                          <!-- Progress Tracker (Compact) -->
-                          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3 mb-4">
-                            <!-- Progress Header (Simplified) -->
-                            <div class="relative mb-2">
-                              <div class="flex justify-between items-center">
-                                <h3 class="font-semibold text-lg bg-clip-text text-transparent from-teal-600 to-blue-600 dark:from-teal-400 dark:to-blue-400">
-                                  {{ course.title }}
-                                </h3>
-                                <div class="text-xl font-bold bg-clip-text text-transparent from-green-600 to-green-400 dark:from-green-500 dark:to-green-300">
-                                  {{ enrollment.progress.completion_percentage }}%
-                                </div>
-                              </div>
-                              <!-- Green Gradient Progress Bar -->
-                              <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full my-1 overflow-hidden shadow-inner">
-                                <div class="h-full rounded-full bg-gradient-to-r from-green-400 to-teal-500 dark:from-green-500 dark:to-teal-400 relative overflow-hidden transition-all duration-500 ease-out"
-                                     style="width: {{ enrollment.progress.completion_percentage }}%"></div>
-                              </div>
-                            </div>
-                            <!-- Compact Stats -->
-                            <div class="flex flex-wrap items-center justify-between bg-gray-50 dark:bg-slate-700 rounded-lg px-2 py-1 text-xs">
-                              <div class="flex items-center space-x-1">
-                                <i class="fas fa-check-circle text-indigo-500 dark:text-indigo-400"></i>
-                                <span class="text-gray-500 dark:text-gray-400">Completed:</span>
-                                <span class="font-bold text-indigo-600 dark:text-indigo-400">{{ enrollment.progress.completed_sessions.count }}</span>
-                              </div>
-                              <div class="flex items-center space-x-1">
-                                <i class="fas fa-hourglass-half text-orange-500 dark:text-orange-400"></i>
-                                <span class="text-gray-500 dark:text-gray-400">Remaining:</span>
-                                <span class="font-bold text-orange-600 dark:text-orange-400"
-                                      id="remaining-count"
-                                      data-total-sessions="{{ course.sessions.count|default:0 }}"
-                                      data-completed-sessions="{% if enrollment and enrollment.progress %}{{ enrollment.progress.completed_sessions.count }}{% else %}0{% endif %}">
-                                  <!-- Will be filled by JavaScript -->
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                          <!-- Session Completion (Directly below Progress Tracker) -->
-                          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-3">
-                            <div class="flex justify-between items-center mb-2">
-                              <h4 class="font-medium">Session Completion</h4>
-                              <span class="text-xs text-gray-600 dark:text-gray-400">
-                                <i class="fas fa-check-circle text-green-500 dark:text-green-400"></i>
-                                <span class="ml-1">
-                                  <span class="font-semibold">{{ enrollment.progress.completed_sessions.count }}</span> of
-                                  <span class="font-semibold">{{ course.sessions.count }}</span> completed
-                                </span>
-                              </span>
-                            </div>
-                            <div class="h-64 relative overflow-y-auto pr-2 space-y-1">
-                              <!-- Fade effect at bottom -->
-                              <div class="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white dark:from-gray-800 to-transparent pointer-events-none">
-                              </div>
-                              {% for session in course.sessions.all %}
-                                <div class="flex items-center justify-between p-2 {% if session in enrollment.progress.completed_sessions.all %}bg-green-50 dark:bg-green-900/20{% else %}bg-gray-50 dark:bg-gray-700/50{% endif %} rounded-lg border border-gray-100 dark:border-gray-700">
-                                  <div class="flex items-center space-x-2">
-                                    {% if session in enrollment.progress.completed_sessions.all %}
-                                      <i class="fas fa-check-circle text-green-500 dark:text-green-400"></i>
-                                    {% elif session.end_time < now %}
-                                      <i class="fas fa-circle text-red-500 dark:text-red-400"></i>
-                                    {% else %}
-                                      <i class="far fa-circle text-gray-400 dark:text-gray-500"></i>
-                                    {% endif %}
-                                    <span class="font-medium">{{ session.title }}</span>
-                                  </div>
-                                  <div class="text-sm text-gray-600 dark:text-gray-400">
-                                    {{ session.start_time|date:"M d, Y g:i A e" }}
-                                    {% if session in enrollment.progress.completed_sessions.all %}
-                                      <span class="ml-2 text-green-600 dark:text-green-400">Completed</span>
-                                    {% elif session.end_time < now %}
-                                      <span class="ml-2 text-red-600 dark:text-red-400">Missed</span>
-                                    {% else %}
-                                      <span class="ml-2 text-blue-600 dark:text-blue-400">Upcoming</span>
-                                    {% endif %}
-                                  </div>
-                                </div>
+            <!-- Tabbed Interface for Course Information -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+              <!-- Tab Buttons -->
+              <div class="flex border-b border-gray-200 dark:border-gray-700">
+                {% if is_teacher or is_enrolled %}
+                  <button class="px-6 py-3 text-sm font-medium border-b-2 border-teal-300 dark:border-teal-500 text-gray-800 dark:text-white bg-white dark:bg-gray-800 active-tab"
+                          data-tab="students"
+                          id="tab-students"
+                          role="tab"
+                          aria-selected="true"
+                          aria-controls="content-students">
+                    <i class="fas fa-users mr-2 text-teal-300 dark:text-teal-400"></i>
+                    Students
+                  </button>
+                {% endif %}
+                <button class="px-6 py-3 text-sm font-medium border-b-2 {% if not is_teacher and not is_enrolled %}border-teal-300 dark:border-teal-500 text-gray-800 dark:text-white{% else %}border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-600{% endif %} bg-white dark:bg-gray-800 {% if not is_teacher and not is_enrolled %}active-tab{% endif %}"
+                        data-tab="description"
+                        id="tab-description"
+                        role="tab"
+                        aria-selected="{% if not is_teacher and not is_enrolled %}true{% else %}false{% endif %}"
+                        aria-controls="content-description">
+                  <i class="fas fa-book-open mr-2 text-teal-300 dark:text-teal-400"></i>
+                  Course Details
+                </button>
+                <button class="px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800"
+                        data-tab="materials"
+                        id="tab-materials"
+                        role="tab"
+                        aria-selected="false"
+                        aria-controls="content-materials">
+                  <i class="fas fa-file-alt mr-2 text-teal-300 dark:text-teal-400"></i>
+                  Materials
+                </button>
+                {% if is_enrolled %}
+                  <button class="px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800"
+                          data-tab="progress"
+                          id="tab-progress"
+                          role="tab"
+                          aria-selected="false"
+                          aria-controls="content-progress">
+                    <i class="fas fa-chart-line mr-2 text-teal-300 dark:text-teal-400"></i>
+                    My Progress
+                  </button>
+                {% endif %}
+              </div>
+              <!-- Tab Content -->
+              <div class="p-6">
+                <!-- Students Tab -->
+                {% if is_teacher or is_enrolled %}
+                  <div id="content-students"
+                       class="tab-content active"
+                       role="tabpanel"
+                       aria-labelledby="tab-students">
+                    <!-- Summary Stats -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 text-center">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Enrolled Students</div>
+                        <div class="text-2xl font-bold text-teal-600 dark:text-teal-400 flex items-center justify-center mt-1">
+                          <i class="fas fa-users mr-2 text-xl"></i>
+                          {{ course.enrollments.count }} / {{ course.max_students }}
+                        </div>
+                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ course.enrollments.count|floatformat:0 }}% Capacity</div>
+                      </div>
+                      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 text-center">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Completion Rate</div>
+                        <div class="text-2xl font-bold text-green-600 dark:text-green-400 flex items-center justify-center mt-1">
+                          <i class="fas fa-graduation-cap mr-2 text-xl"></i>
+                          {{ completed_enrollment_count }}/{{ course.enrollments.count }}
+                        </div>
+                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          {{ completed_enrollment_count|floatformat:0 }}% Completed
+                        </div>
+                      </div>
+                      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 text-center">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Average Attendance</div>
+                        <div class="text-2xl font-bold text-blue-600 dark:text-blue-400 flex items-center justify-center mt-1">
+                          <i class="fas fa-calendar-check mr-2 text-xl"></i>
+                          {% if student_attendance %}
+                            {% with total_attended=0 total_sessions=0 %}
+                              {% for student_id, data in student_attendance.items %}
+                                {% with attended=data.attended|default:0 total=data.total|default:0 %}
+                                  {% with total_attended=total_attended|add:attended total_sessions=total_sessions|add:total %}{% endwith %}
+                                {% endwith %}
                               {% endfor %}
+                              {% if total_sessions > 0 %}
+                                {{ total_attended|floatformat:0 }}%
+                              {% else %}
+                                N/A
+                              {% endif %}
+                            {% endwith %}
+                          {% else %}
+                            N/A
+                          {% endif %}
+                        </div>
+                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">Session Attendance</div>
+                      </div>
+                      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 text-center">
+                        <div class="text-sm text-gray-500 dark:text-gray-400">Active Students</div>
+                        <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 flex items-center justify-center mt-1">
+                          <i class="fas fa-user-check mr-2 text-xl"></i>
+                          {{ in_progress_enrollment_count }}/{{ course.enrollments.count }}
+                        </div>
+                        <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">Currently Active</div>
+                      </div>
+                    </div>
+                    <!-- Students Table -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                      <div class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+                        <h3 class="font-semibold text-lg text-gray-800 dark:text-gray-200">
+                          <i class="fas fa-users text-teal-500 dark:text-teal-400 mr-2"></i>
+                          Student Details
+                        </h3>
+                        {% if user == course.teacher %}
+                          <a href="{% url 'add_student_to_course' course.slug %}"
+                             class="inline-flex items-center px-3 py-1.5 text-sm bg-teal-300 hover:bg-teal-400 text-white rounded-lg transition duration-200">
+                            <i class="fas fa-user-plus mr-2"></i>
+                            Add Students
+                          </a>
+                        {% endif %}
+                      </div>
+                      {% if course.enrollments.exists %}
+                        <div class="relative overflow-hidden">
+                          <div class="overflow-x-auto scrollbar-hide">
+                            <table class="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
+                              <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                  <th scope="col"
+                                      class="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Student
+                                  </th>
+                                  <th scope="col"
+                                      class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Enrollment Date
+                                  </th>
+                                  <th scope="col"
+                                      class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Progress
+                                  </th>
+                                  <th scope="col"
+                                      class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Attendance
+                                  </th>
+                                  <th scope="col"
+                                      class="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Status
+                                  </th>
+                                  <th scope="col"
+                                      class="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                    Actions
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                {% for enrollment in course.enrollments.all %}
+                                  <tr class="{% cycle 'bg-white' 'bg-gray-50' %} dark:{% cycle 'bg-gray-800' 'bg-gray-750' %}">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                      <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                          {% if enrollment.student.profile.avatar %}
+                                            <img src="{{ enrollment.student.profile.avatar.url }}"
+                                                 alt="{{ enrollment.student.username }}"
+                                                 class="h-10 w-10 rounded-full object-cover"
+                                                 width="40"
+                                                 height="40" />
+                                          {% else %}
+                                            <div class="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                                              <i class="fas fa-user text-gray-400 dark:text-gray-400"></i>
+                                            </div>
+                                          {% endif %}
+                                        </div>
+                                        <div class="ml-4 overflow-hidden">
+                                          <div class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                            {{ enrollment.student.get_full_name|default:enrollment.student.username }}
+                                          </div>
+                                          <div class="text-sm text-gray-500 dark:text-gray-400 truncate">{{ enrollment.student.username }}</div>
+                                          {% if enrollment.student.profile.expertise %}
+                                            <div class="text-xs text-gray-500 dark:text-gray-500 italic truncate">
+                                              {{ enrollment.student.profile.expertise|truncatechars:30 }}
+                                            </div>
+                                          {% endif %}
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                      <div class="text-sm text-gray-900 dark:text-white">{{ enrollment.enrollment_date|date:"M d, Y" }}</div>
+                                      <div class="text-xs text-gray-500 dark:text-gray-400">{{ enrollment.enrollment_date|timesince }} ago</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                      {% if enrollment.progress %}
+                                        <div class="flex items-center">
+                                          <div class="w-20 h-2 bg-gray-200 dark:bg-gray-700 rounded-full mr-2 overflow-hidden">
+                                            <div class="h-full bg-teal-500 dark:bg-teal-400 progress-bar"
+                                                 data-progress="{{ enrollment.progress.completion_percentage }}"></div>
+                                          </div>
+                                          <span class="text-sm text-gray-600 dark:text-gray-400">{{ enrollment.progress.completion_percentage }}%</span>
+                                        </div>
+                                      {% else %}
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">No progress data</span>
+                                      {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                      {% if student_attendance and student_attendance|get_item:enrollment.student.id %}
+                                        <div class="text-sm">
+                                          <span class="px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium">
+                                            <i class="fas fa-calendar-check text-blue-600 dark:text-blue-400 mr-1"></i>
+                                            {{ student_attendance|get_item:enrollment.student.id|get_item:'attended' }}/{{ student_attendance|get_item:enrollment.student.id|get_item:'total' }}
+                                          </span>
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                          {% with attendance_rate=student_attendance|get_item:enrollment.student.id|get_item:'attended'|floatformat:0 %}
+                                            {{ attendance_rate }}% attendance rate
+                                          {% endwith %}
+                                        </div>
+                                      {% else %}
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">No data</span>
+                                      {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                      {% if enrollment.status == 'completed' %}
+                                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                          <i class="fas fa-check-circle mr-1"></i>Completed
+                                        </span>
+                                      {% elif enrollment.status == 'in_progress' %}
+                                        <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                          <i class="fas fa-spinner mr-1"></i>In Progress
+                                        </span>
+                                      {% else %}
+                                        <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                          {{ enrollment.status|title|default:"Unknown" }}
+                                        </span>
+                                      {% endif %}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                      <div class="flex space-x-2">
+                                        <a href="{% url 'public_profile' enrollment.student.username %}"
+                                           class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                           title="View profile">
+                                          <i class="fas fa-user-circle"></i>
+                                        </a>
+                                        {% if user == course.teacher %}
+                                          <a href="{% url 'student_management' course.slug enrollment.student.id %}"
+                                             class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                                             title="Manage student">
+                                            <i class="fas fa-cog"></i>
+                                          </a>
+                                          <a href="{% url 'message_students' course.slug %}?student={{ enrollment.student.id }}"
+                                             class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                                             title="Message student">
+                                            <i class="fas fa-envelope"></i>
+                                          </a>
+                                        {% endif %}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                {% endfor %}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      {% else %}
+                        <div class="p-8 text-center">
+                          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
+                            <i class="fas fa-users text-gray-400 dark:text-gray-500 text-2xl"></i>
+                          </div>
+                          <p class="text-gray-500 dark:text-gray-400">No students have enrolled in this course yet.</p>
+                          {% if user == course.teacher %}
+                            <a href="{% url 'add_student_to_course' course.slug %}"
+                               class="inline-flex items-center px-4 py-2 mt-4 bg-teal-300 hover:bg-teal-400 text-white rounded-lg transition duration-200">
+                              <i class="fas fa-user-plus mr-2"></i>
+                              Add Students
+                            </a>
+                          {% endif %}
+                        </div>
+                      {% endif %}
+                    </div>
+                    <!-- Additional Stats -->
+                    {% if user == course.teacher and course.enrollments.exists %}
+                      <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Completion Statistics -->
+                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                          <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-4">
+                            <i class="fas fa-chart-pie text-teal-500 dark:text-teal-400 mr-2"></i>
+                            Completion Statistics
+                          </h4>
+                          <div class="flex items-center justify-center">
+                            <div class="w-32 h-32 rounded-full flex items-center justify-center border-8 border-teal-100 dark:border-teal-900 relative">
+                              <div class="text-center">
+                                <span class="block text-2xl font-bold text-teal-600 dark:text-teal-400">
+                                  {{ completed_enrollment_count|floatformat:0 }}%
+                                </span>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">Completion</span>
+                              </div>
+                              <!-- CSS-based progress circle would go here -->
                             </div>
-                            <div class="mt-3">
-                              <a href="{% url 'student_progress' enrollment.id %}"
-                                 class="inline-flex items-center px-3 py-1 text-sm bg-teal-300 hover:bg-teal-400 font-medium rounded-lg transition duration-200">
-                                <i class="fas fa-chart-bar mr-1"></i>
-                                Detailed Report
-                              </a>
+                            <div class="ml-6 space-y-2">
+                              <div>
+                                <div class="flex items-center">
+                                  <div class="w-3 h-3 bg-teal-500 rounded-full mr-2"></div>
+                                  <span class="text-sm text-gray-600 dark:text-gray-300">Completed</span>
+                                </div>
+                                <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ completed_enrollment_count }}</div>
+                              </div>
+                              <div>
+                                <div class="flex items-center">
+                                  <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                                  <span class="text-sm text-gray-600 dark:text-gray-300">In Progress</span>
+                                </div>
+                                <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ in_progress_enrollment_count }}</div>
+                              </div>
+                              <div>
+                                <div class="flex items-center">
+                                  <div class="w-3 h-3 bg-gray-300 dark:bg-gray-600 rounded-full mr-2"></div>
+                                  <span class="text-sm text-gray-600 dark:text-gray-300">Total</span>
+                                </div>
+                                <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ course.enrollments.count }}</div>
+                              </div>
                             </div>
                           </div>
                         </div>
-                        <!-- Right Column: Course Materials -->
+                        <!-- Attendance Overview -->
                         <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                          <div class="flex justify-between items-center mb-2">
-                            <h2 class="text-xl font-bold">Course Materials</h2>
-                            {% if user == course.teacher %}
-                              <a href="{% url 'upload_material' course.slug %}"
-                                 class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg transition duration-200 text-sm">
-                                <i class="fas fa-plus mr-1"></i>Add Material
-                              </a>
-                            {% endif %}
-                          </div>
-                          {% if course.materials.exists %}
-                            <div class="max-h-96 overflow-y-auto pr-2">
-                              <div class="space-y-3">
-                                {% for material in course.materials.all %}
-                                  <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 shadow-sm">
-                                    <div class="flex justify-between items-start">
-                                      <div>
-                                        <h3 class="font-semibold text-sm">
-                                          {% if is_enrolled or not material.requires_enrollment or is_teacher %}
-                                            {% if material.external_url %}
-                                              <a href="{{ material.external_url }}"
-                                                 target="_blank"
-                                                 class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                                {{ material.title }}
-                                                <i class="fas fa-external-link-alt ml-1 text-xs"></i>
-                                              </a>
-                                            {% else %}
-                                              <a href="{% url 'download_material' course.slug material.id %}"
-                                                 class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                                {{ material.title }}
-                                                <i class="fas fa-download ml-1 text-xs"></i>
-                                              </a>
-                                            {% endif %}
-                                          {% else %}
-                                            {{ material.preview_content }}
-                                            <span class="ml-2 text-xs text-gray-500">(Enroll to access)</span>
-                                          {% endif %}
-                                        </h3>
-                                        {% if material.description %}
-                                          <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">{{ material.description|truncatechars:50 }}</p>
-                                        {% endif %}
-                                      </div>
-                                      {% if user == course.teacher %}
-                                        <a href="{% url 'delete_material' course.slug material.id %}"
-                                           class="text-red-600 hover:text-red-800 dark:text-red-400 text-sm">
-                                          <i class="fas fa-trash"></i>
-                                        </a>
+                          <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-4">
+                            <i class="fas fa-calendar-check text-teal-500 dark:text-teal-400 mr-2"></i>
+                            Attendance Overview
+                          </h4>
+                          <div class="space-y-3">
+                            {% if student_attendance %}
+                              {% for student_id, data in student_attendance.items %}
+                                {% with student=data.student attended=data.attended|default:0 total=data.total|default:0 %}
+                                  <div class="flex items-center">
+                                    <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex-shrink-0 mr-2 overflow-hidden">
+                                      {% if student.profile.avatar %}
+                                        <img src="{{ student.profile.avatar.url }}"
+                                             alt="{{ student.username }}"
+                                             class="w-full h-full object-cover"
+                                             width="32"
+                                             height="32" />
+                                      {% else %}
+                                        <div class="w-full h-full flex items-center justify-center">
+                                          <i class="fas fa-user text-gray-400 dark:text-gray-500"></i>
+                                        </div>
                                       {% endif %}
                                     </div>
+                                    <div class="flex-grow">
+                                      <div class="flex justify-between items-center mb-1">
+                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ student.username }}</span>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400">{{ attended }}/{{ total }}</span>
+                                      </div>
+                                      <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                        <div class="h-full bg-teal-500 dark:bg-teal-400"
+                                             style="width: {% if total > 0 %}{{ attended|floatformat:0 }}%{% else %}0%{% endif %}">
+                                        </div>
+                                      </div>
+                                    </div>
                                   </div>
-                                {% endfor %}
+                                {% endwith %}
+                              {% endfor %}
+                            {% else %}
+                              <div class="text-center py-4">
+                                <p class="text-gray-500 dark:text-gray-400">No attendance data available</p>
+                              </div>
+                            {% endif %}
+                          </div>
+                        </div>
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endif %}
+                <!-- Course Description Tab -->
+                <div id="content-description"
+                     class="tab-content {% if not is_teacher and not is_enrolled %}active{% else %}hidden{% endif %}"
+                     role="tabpanel"
+                     aria-labelledby="tab-description">
+                  <div class="markdown-content space-y-6 text-gray-800 dark:text-gray-200">
+                    <div class="space-y-2">
+                      <!-- Schedule -->
+                      <div>
+                        <h2 class="text-xl font-bold mb-2">Schedule</h2>
+                        {{ course.description|markdown }}
+                      </div>
+                      <!-- Learning Objectives -->
+                      <div class="mt-8">
+                        <h2 class="text-xl font-bold mb-2">Learning Objectives</h2>
+                        {{ course.learning_objectives|markdown }}
+                      </div>
+                      <!-- Prerequisites -->
+                      {% if course.prerequisites %}
+                        <div class="mt-8">
+                          <h2 class="text-xl font-bold mb-2">Prerequisites</h2>
+                          {{ course.prerequisites|markdown }}
+                        </div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+                <!-- Materials Tab -->
+                <div id="content-materials"
+                     class="tab-content hidden"
+                     role="tabpanel"
+                     aria-labelledby="tab-materials">
+                  <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-4">
+                      <h2 class="text-xl font-bold">Course Materials</h2>
+                      {% if user == course.teacher %}
+                        <a href="{% url 'upload_material' course.slug %}"
+                           class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg transition duration-200 text-sm">
+                          <i class="fas fa-plus mr-1"></i>Add Material
+                        </a>
+                      {% endif %}
+                    </div>
+                    {% if course.materials.exists %}
+                      <div class="max-h-96 overflow-y-auto pr-2">
+                        <div class="space-y-3">
+                          {% for material in course.materials.all %}
+                            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 shadow-sm">
+                              <div class="flex justify-between items-start">
+                                <div>
+                                  <h3 class="font-semibold text-sm">
+                                    {% if is_enrolled or not material.requires_enrollment or is_teacher %}
+                                      {% if material.external_url %}
+                                        <a href="{{ material.external_url }}"
+                                           target="_blank"
+                                           class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                          {{ material.title }}
+                                          <i class="fas fa-external-link-alt ml-1 text-xs"></i>
+                                        </a>
+                                      {% else %}
+                                        <a href="{% url 'download_material' course.slug material.id %}"
+                                           class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                          {{ material.title }}
+                                          <i class="fas fa-download ml-1 text-xs"></i>
+                                        </a>
+                                      {% endif %}
+                                    {% else %}
+                                      {{ material.preview_content }}
+                                      <span class="ml-2 text-xs text-gray-500">(Enroll to access)</span>
+                                    {% endif %}
+                                  </h3>
+                                  {% if material.description %}
+                                    <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">{{ material.description|truncatechars:50 }}</p>
+                                  {% endif %}
+                                </div>
+                                {% if user == course.teacher %}
+                                  <a href="{% url 'delete_material' course.slug material.id %}"
+                                     class="text-red-600 hover:text-red-800 dark:text-red-400 text-sm">
+                                    <i class="fas fa-trash"></i>
+                                  </a>
+                                {% endif %}
                               </div>
                             </div>
-                          {% else %}
-                            <p class="text-gray-500 dark:text-gray-400 text-sm italic">No materials available for this course yet.</p>
-                          {% endif %}
+                          {% endfor %}
+                        </div>
+                      </div>
+                    {% else %}
+                      <p class="text-gray-500 dark:text-gray-400 text-sm italic">No materials available for this course yet.</p>
+                    {% endif %}
+                  </div>
+                </div>
+                <!-- Progress Tab -->
+                {% if is_enrolled and enrollment %}
+                  <div id="content-progress"
+                       class="tab-content hidden"
+                       role="tabpanel"
+                       aria-labelledby="tab-progress">
+                    <div class="space-y-6">
+                      <!-- Progress Tracker -->
+                      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                        <!-- Progress Header -->
+                        <div class="relative mb-4">
+                          <div class="flex justify-between items-center mb-2">
+                            <h3 class="font-semibold text-lg">Your Progress</h3>
+                            <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+                              {{ enrollment.progress.completion_percentage }}%
+                            </div>
+                          </div>
+                          <!-- Green Gradient Progress Bar -->
+                          <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                            <div class="h-full bg-teal-500 dark:bg-teal-400"
+                                 style="width: {% if total > 0 %}{{ attended|floatformat:0 }}%{% else %}0%{% endif %}">
+                            </div>
+                          </div>
+                        </div>
+                        <!-- Stats -->
+                        <div class="grid grid-cols-2 gap-4 text-center">
+                          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Completed Sessions</div>
+                            <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                              {{ enrollment.progress.completed_sessions.count }}
+                            </div>
+                          </div>
+                          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                            <div class="text-sm text-gray-500 dark:text-gray-400">Remaining Sessions</div>
+                            <div class="text-2xl font-bold text-orange-600 dark:text-orange-400"
+                                 id="remaining-count-tab"
+                                 data-total-sessions="{{ course.sessions.count|default:0 }}"
+                                 data-completed-sessions="{{ enrollment.progress.completed_sessions.count|default:0 }}">
+                              <!-- Will be filled by JavaScript -->
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Session Completion List -->
+                      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                        <h4 class="font-medium mb-4">Session Completion</h4>
+                        <div class="max-h-96 overflow-y-auto pr-2 space-y-2">
+                          {% for session in course.sessions.all %}
+                            <div class="flex items-center justify-between p-3 {% if session in enrollment.progress.completed_sessions.all %}bg-green-50 dark:bg-green-900/20{% else %}bg-gray-50 dark:bg-gray-700/50{% endif %} rounded-lg border border-gray-100 dark:border-gray-700">
+                              <div class="flex items-center space-x-3">
+                                {% if session in enrollment.progress.completed_sessions.all %}
+                                  <i class="fas fa-check-circle text-green-500 dark:text-green-400 text-lg"></i>
+                                {% elif session.end_time < now %}
+                                  <i class="fas fa-circle text-red-500 dark:text-red-400 text-lg"></i>
+                                {% else %}
+                                  <i class="far fa-circle text-gray-400 dark:text-gray-500 text-lg"></i>
+                                {% endif %}
+                                <div>
+                                  <div class="font-medium">{{ session.title }}</div>
+                                  <div class="text-sm text-gray-600 dark:text-gray-400">{{ session.start_time|date:"M d, Y g:i A e" }}</div>
+                                </div>
+                              </div>
+                              <div>
+                                {% if session in enrollment.progress.completed_sessions.all %}
+                                  <span class="px-3 py-1 text-sm rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                    Completed
+                                  </span>
+                                {% elif session.end_time < now %}
+                                  <form method="post"
+                                        action="{% url 'mark_session_completed' session.id %}"
+                                        class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                            class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-full">
+                                      Complete
+                                    </button>
+                                  </form>
+                                {% else %}
+                                  <span class="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                    Upcoming
+                                  </span>
+                                {% endif %}
+                              </div>
+                            </div>
+                          {% endfor %}
                         </div>
                       </div>
                     </div>
-                  </div>
-                {% endif %}
-                <!-- Course Materials -->
-                <!-- Schedule -->
-                <div>
-                  <h2 class="text-xl font-bold mb-2">Schedule</h2>
-                  {{ course.description|markdown }}
-                </div>
-                <!-- Learning Objectives -->
-                <div class="mt-8">
-                  <h2 class="text-xl font-bold mb-2">Learning Objectives</h2>
-                  {{ course.learning_objectives|markdown }}
-                </div>
-                <!-- Prerequisites -->
-                {% if course.prerequisites %}
-                  <div class="mt-8">
-                    <h2 class="text-xl font-bold mb-2">Prerequisites</h2>
-                    {{ course.prerequisites|markdown }}
                   </div>
                 {% endif %}
               </div>
@@ -916,425 +1147,141 @@
                   grid.innerHTML = html;
 
                   // Update navigation buttons
-                  const prevButton = grid.parentElement.previousElementSibling.querySelector('button:first-child');
-                  const nextButton = grid.parentElement.previousElementSibling.querySelector('button:last-child');
-                  prevButton.onclick = () => loadCalendar(data.prev_month.year, data.prev_month.month);
-                  nextButton.onclick = () => loadCalendar(data.next_month.year, data.next_month.month);
+                  document.getElementById('prev-month-btn').setAttribute('onclick', `loadCalendar(${data.prev_month.year}, ${data.prev_month.month})`);
+                  document.getElementById('next-month-btn').setAttribute('onclick', `loadCalendar(${data.next_month.year}, ${data.next_month.month})`);
               })
-              .catch(error => console.error('Error loading calendar:', error));
+              .catch(error => {
+                  console.error('Error loading calendar:', error);
+              });
       }
-  </script>
-  <script>
-      document.addEventListener('DOMContentLoaded', function() {
-          // Get session counts from data attributes rather than template variables
-          const remainingCountElement = document.getElementById('remaining-count');
-          // Check if the element exists before trying to access its properties
-          if (remainingCountElement) {
-              const total = parseInt(remainingCountElement.dataset.totalSessions) || 0;
-              const completed = parseInt(remainingCountElement.dataset.completedSessions) || 0;
-              const remaining = Math.max(0, total - completed);
-              remainingCountElement.textContent = remaining;
+
+      function showNotification(message, type = 'info') {
+          const notification = document.getElementById('notification');
+          const iconEl = notification.querySelector('.notification-icon');
+          const messageEl = notification.querySelector('.notification-message');
+
+          // Set icon based on notification type
+          let icon = 'fa-info-circle';
+          let bgColor = 'bg-blue-500';
+
+          if (type === 'success') {
+              icon = 'fa-check-circle';
+              bgColor = 'bg-green-500';
+          } else if (type === 'error') {
+              icon = 'fa-exclamation-circle';
+              bgColor = 'bg-red-500';
+          } else if (type === 'warning') {
+              icon = 'fa-exclamation-triangle';
+              bgColor = 'bg-yellow-500';
           }
+
+          // Update notification content
+          iconEl.className = `fas ${icon} notification-icon mr-2`;
+          notification.className = `notification ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center`;
+          messageEl.textContent = message;
+
+          // Show notification
+          notification.classList.add('show');
+
+          // Hide after 3 seconds
+          setTimeout(() => {
+              notification.classList.remove('show');
+          }, 3000);
+      }
+
+      // Calculate remaining sessions when the page loads
+      document.addEventListener('DOMContentLoaded', function() {
+          const remainingElement = document.getElementById('remaining-count');
+          if (remainingElement) {
+              const totalSessions = parseInt(remainingElement.dataset.totalSessions, 10) || 0;
+              const completedSessions = parseInt(remainingElement.dataset.completedSessions, 10) || 0;
+              const remainingSessions = totalSessions - completedSessions;
+              remainingElement.textContent = remainingSessions;
+          }
+
+          // Tab functionality
+          const tabButtons = document.querySelectorAll('[data-tab]');
+          const tabContents = document.querySelectorAll('.tab-content');
+
+          function setActiveTab(tabId) {
+              // Hide all tab contents
+              tabContents.forEach(content => {
+                  content.classList.add('hidden');
+                  content.classList.remove('active');
+              });
+
+              // Remove active state from all tab buttons
+              tabButtons.forEach(button => {
+                  button.classList.remove('active-tab');
+                  button.classList.remove('border-teal-300', 'dark:border-teal-500', 'text-gray-800', 'dark:text-white');
+                  button.classList.add('border-transparent', 'text-gray-600', 'dark:text-gray-400');
+                  button.setAttribute('aria-selected', 'false');
+              });
+
+              // Show the selected tab content
+              const selectedContent = document.getElementById(`content-${tabId}`);
+              if (selectedContent) {
+                  selectedContent.classList.remove('hidden');
+                  selectedContent.classList.add('active');
+              }
+
+              // Set active state for selected tab button
+              const selectedButton = document.getElementById(`tab-${tabId}`);
+              if (selectedButton) {
+                  selectedButton.classList.add('active-tab');
+                  selectedButton.classList.remove('border-transparent', 'text-gray-600', 'dark:text-gray-400');
+                  selectedButton.classList.add('border-teal-300', 'dark:border-teal-500', 'text-gray-800', 'dark:text-white');
+                  selectedButton.setAttribute('aria-selected', 'true');
+              }
+          }
+
+          // Add click event listeners to tab buttons
+          tabButtons.forEach(button => {
+              button.addEventListener('click', function() {
+                  const tabId = this.getAttribute('data-tab');
+                  setActiveTab(tabId);
+              });
+          });
+
+          // Calculate remaining sessions when the page loads
+          const tabRemainingElement = document.getElementById('remaining-count-tab');
+          if (tabRemainingElement) {
+              const totalSessions = parseInt(tabRemainingElement.dataset.totalSessions, 10) || 0;
+              const completedSessions = parseInt(tabRemainingElement.dataset.completedSessions, 10) || 0;
+              const remainingSessions = totalSessions - completedSessions;
+              tabRemainingElement.textContent = remainingSessions;
+          }
+
+          // Initialize progress bars
+          document.addEventListener('DOMContentLoaded', function() {
+              // Calculate remaining sessions
+              const mainRemainingElement = document.getElementById('remaining-count-main');
+              const tabRemainingElement = document.getElementById('remaining-count-tab');
+
+              // Main page remaining count
+              if (mainRemainingElement) {
+                  const totalSessions = parseInt(mainRemainingElement.getAttribute('data-total-sessions') || '0');
+                  const completedSessions = parseInt(mainRemainingElement.getAttribute('data-completed-sessions') || '0');
+                  const remainingSessions = Math.max(0, totalSessions - completedSessions);
+                  mainRemainingElement.textContent = remainingSessions;
+              }
+
+              // Tab remaining count
+              if (tabRemainingElement) {
+                  const totalSessions = parseInt(tabRemainingElement.getAttribute('data-total-sessions') || '0');
+                  const completedSessions = parseInt(tabRemainingElement.getAttribute('data-completed-sessions') || '0');
+                  const remainingSessions = Math.max(0, totalSessions - completedSessions);
+                  tabRemainingElement.textContent = remainingSessions;
+              }
+
+              // Set width for progress bars based on data-progress attribute
+              document.querySelectorAll('.progress-bar').forEach(function(bar) {
+                  const progress = bar.getAttribute('data-progress');
+                  if (progress) {
+                      bar.style.width = progress + '%';
+                  }
+              });
+          });
       });
   </script>
-  <!-- Student Management Modal -->
-  {% if user == course.teacher %}
-    <div x-data="{ open: false, activeTab: 'attendance', studentName: '', enrollmentId: null, setStudent(name, id) { this.studentName = name; this.enrollmentId = id; this.open = true; }, init() { console.log('Student modal component initialized'); document.addEventListener('open-student-modal', (e) => { this.setStudent(e.detail.name, e.detail.id); });  if (window.pendingStudentModal) { this.setStudent( window.pendingStudentModal.name, window.pendingStudentModal.id ); window.pendingStudentModal = null; } } }"
-         x-cloak
-         id="studentManagementModal"
-         class="fixed inset-0 z-50 overflow-y-auto"
-         x-show="open"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0">
-      <!-- Modal backdrop -->
-      <div class="fixed inset-0 bg-black bg-opacity-50"
-           x-show="open"
-           @click="open = false"></div>
-      <!-- Modal content -->
-      <div class="relative min-h-screen flex items-center justify-center p-4">
-        <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-4xl mx-auto"
-             @click.away="open = false"
-             x-show="open"
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 transform scale-95"
-             x-transition:enter-end="opacity-100 transform scale-100"
-             x-transition:leave="transition ease-in duration-200"
-             x-transition:leave-start="opacity-100 transform scale-100"
-             x-transition:leave-end="opacity-0 transform scale-95">
-          <!-- Modal header -->
-          <div class="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-            <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-200">
-              <i class="fas fa-user-graduate text-teal-500 dark:text-teal-400 mr-2"></i>
-              Managing: <span x-text="studentName" class="font-bold"></span>
-            </h3>
-            <button @click="open = false"
-                    class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-              <i class="fas fa-times text-xl"></i>
-            </button>
-          </div>
-          <!-- Tabs navigation -->
-          <div class="border-b border-gray-200 dark:border-gray-700">
-            <nav class="flex -mb-px">
-              <button @click="activeTab = 'attendance'"
-                      :class="{'border-teal-500 dark:border-teal-400 text-teal-600 dark:text-teal-400': activeTab === 'attendance', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'attendance'}"
-                      class="py-3 px-6 border-b-2 font-medium text-sm focus:outline-none flex items-center">
-                <i class="fas fa-clipboard-check mr-2"></i> Attendance
-              </button>
-              <button @click="activeTab = 'badges'"
-                      :class="{'border-teal-500 dark:border-teal-400 text-teal-600 dark:text-teal-400': activeTab === 'badges', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'badges'}"
-                      class="py-3 px-6 border-b-2 font-medium text-sm focus:outline-none flex items-center">
-                <i class="fas fa-award mr-2"></i> Badges & Achievements
-              </button>
-              <button @click="activeTab = 'progress'"
-                      :class="{'border-teal-500 dark:border-teal-400 text-teal-600 dark:text-teal-400': activeTab === 'progress', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'progress'}"
-                      class="py-3 px-6 border-b-2 font-medium text-sm focus:outline-none flex items-center">
-                <i class="fas fa-chart-line mr-2"></i> Progress Tracking
-              </button>
-              <button @click="activeTab = 'notes'"
-                      :class="{'border-teal-500 dark:border-teal-400 text-teal-600 dark:text-teal-400': activeTab === 'notes', 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300': activeTab !== 'notes'}"
-                      class="py-3 px-6 border-b-2 font-medium text-sm focus:outline-none flex items-center">
-                <i class="fas fa-sticky-note mr-2"></i> Teacher Notes
-              </button>
-            </nav>
-          </div>
-          <!-- Tab contents -->
-          <div class="p-4 max-h-[70vh] overflow-y-auto">
-            <!-- Attendance Tab -->
-            <div x-show="activeTab === 'attendance'" class="space-y-4">
-              <div class="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-400 dark:border-blue-600 p-4 rounded-md mb-4">
-                <div class="flex items-center text-blue-700 dark:text-blue-300">
-                  <i class="fas fa-info-circle mr-2"></i>
-                  <p>Mark attendance for each session. You can also set the status and add notes.</p>
-                </div>
-              </div>
-              <form method="post" action="#" id="attendanceForm" onsubmit="return false;">
-                {% csrf_token %}
-                <input type="hidden" name="student_id" :value="enrollmentId" />
-                <div class="space-y-3">
-                  {% for session in course.sessions.all %}
-                    <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
-                      <div class="flex items-center justify-between">
-                        <div>
-                          <h4 class="font-medium text-gray-800 dark:text-gray-200">{{ session.title }}</h4>
-                          <p class="text-sm text-gray-500 dark:text-gray-400">
-                            {{ session.start_time|date:"M d, Y" }} at {{ session.start_time|time:"g:i A" }}
-                          </p>
-                        </div>
-                        <div class="flex items-center space-x-3">
-                          <select name="status_{{ session.id }}"
-                                  class="rounded-lg border border-gray-300 dark:border-gray-600 text-sm py-1 px-2 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                            <option value="present">Present</option>
-                            <option value="absent">Absent</option>
-                            <option value="excused">Excused</option>
-                            <option value="late">Late</option>
-                          </select>
-                          <button type="button"
-                                  onclick="updateAttendance({{ session.id }})"
-                                  class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg text-sm">
-                            Save
-                          </button>
-                        </div>
-                      </div>
-                      <div class="mt-2">
-                        <textarea name="notes_{{ session.id }}"
-                                  placeholder="Add attendance notes (optional)"
-                                  class="w-full rounded-lg border border-gray-300 dark:border-gray-600 text-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"></textarea>
-                      </div>
-                    </div>
-                  {% endfor %}
-                </div>
-              </form>
-            </div>
-            <!-- Badges Tab -->
-            <div x-show="activeTab === 'badges'" class="space-y-4">
-              <div class="bg-purple-50 dark:bg-purple-900/30 border-l-4 border-purple-400 dark:border-purple-600 p-4 rounded-md mb-4">
-                <div class="flex items-start text-purple-700 dark:text-purple-300">
-                  <i class="fas fa-trophy mt-1 mr-2"></i>
-                  <div>
-                    <p class="font-medium">Recognize student achievements</p>
-                    <p class="text-sm mt-1">Award badges to acknowledge student accomplishments and motivate continued progress.</p>
-                  </div>
-                </div>
-              </div>
-              <!-- Available Badges -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Badge 1 -->
-                <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                      <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center text-yellow-600 dark:text-yellow-400">
-                        <i class="fas fa-star text-xl"></i>
-                      </div>
-                      <div class="ml-3">
-                        <h5 class="font-medium text-gray-800 dark:text-gray-200">Perfect Attendance</h5>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">For attending all sessions without absence</p>
-                      </div>
-                    </div>
-                    <button class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-lg text-sm"
-                            onclick="showNotification('Perfect Attendance badge awarded!', 'success')">Award</button>
-                  </div>
-                </div>
-                <!-- Badge 2 -->
-                <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                      <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400">
-                        <i class="fas fa-brain text-xl"></i>
-                      </div>
-                      <div class="ml-3">
-                        <h5 class="font-medium text-gray-800 dark:text-gray-200">Quick Learner</h5>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">For exceptional progress in course material</p>
-                      </div>
-                    </div>
-                    <button class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-lg text-sm"
-                            onclick="showNotification('Quick Learner badge awarded!', 'success')">Award</button>
-                  </div>
-                </div>
-                <!-- Badge 3 -->
-                <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                      <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center text-green-600 dark:text-green-400">
-                        <i class="fas fa-hands-helping text-xl"></i>
-                      </div>
-                      <div class="ml-3">
-                        <h5 class="font-medium text-gray-800 dark:text-gray-200">Helpful Peer</h5>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">For assisting fellow students in understanding</p>
-                      </div>
-                    </div>
-                    <button class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-lg text-sm"
-                            onclick="showNotification('Helpful Peer badge awarded!', 'success')">Award</button>
-                  </div>
-                </div>
-                <!-- Badge 4 -->
-                <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md transition-shadow duration-200">
-                  <div class="flex items-center justify-between">
-                    <div class="flex items-center">
-                      <div class="w-12 h-12 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center text-red-600 dark:text-red-400">
-                        <i class="fas fa-fire text-xl"></i>
-                      </div>
-                      <div class="ml-3">
-                        <h5 class="font-medium text-gray-800 dark:text-gray-200">Top Performer</h5>
-                        <p class="text-xs text-gray-500 dark:text-gray-400">For exceptional results in course assignments</p>
-                      </div>
-                    </div>
-                    <button class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 rounded-lg text-sm"
-                            onclick="showNotification('Top Performer badge awarded!', 'success')">Award</button>
-                  </div>
-                </div>
-              </div>
-              <!-- Custom Achievement -->
-              <div class="mt-6 bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                <h5 class="font-medium text-gray-800 dark:text-gray-200 mb-3">Create Custom Achievement</h5>
-                <form class="space-y-3">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Achievement Title</label>
-                    <input type="text"
-                           class="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2 px-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200" />
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description</label>
-                    <textarea class="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2 px-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                              rows="2"></textarea>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Icon</label>
-                    <select class="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2 px-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                      <option value="star">⭐ Star</option>
-                      <option value="trophy">🏆 Trophy</option>
-                      <option value="medal">🥇 Medal</option>
-                      <option value="lightbulb">💡 Lightbulb</option>
-                      <option value="rocket">🚀 Rocket</option>
-                    </select>
-                  </div>
-                  <button type="button"
-                          class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
-                          onclick="const title = this.closest('form').querySelector('input').value; showNotification(`Custom achievement '${title}' created and awarded!`, 'success');">
-                    Create & Award Achievement
-                  </button>
-                </form>
-              </div>
-            </div>
-            <!-- Progress Tab -->
-            <div x-show="activeTab === 'progress'" class="space-y-4">
-              <div class="bg-green-50 dark:bg-green-900/30 border-l-4 border-green-400 dark:border-green-600 p-4 rounded-md mb-4">
-                <div class="flex items-center text-green-700 dark:text-green-300">
-                  <i class="fas fa-chart-line mr-2"></i>
-                  <p>Track and update student's course progress.</p>
-                </div>
-              </div>
-              <!-- Progress Overview -->
-              <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-2">Progress Overview</h4>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                  <div class="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg">
-                    <div class="text-sm text-blue-600 dark:text-blue-400">Completion Rate</div>
-                    <div class="text-xl font-bold text-blue-700 dark:text-blue-300">75%</div>
-                  </div>
-                  <div class="bg-teal-50 dark:bg-teal-900/30 p-3 rounded-lg">
-                    <div class="text-sm text-teal-600 dark:text-teal-400">Attendance Rate</div>
-                    <div class="text-xl font-bold text-teal-700 dark:text-teal-300">90%</div>
-                  </div>
-                  <div class="bg-purple-50 dark:bg-purple-900/30 p-3 rounded-lg">
-                    <div class="text-sm text-purple-600 dark:text-purple-400">Average Performance</div>
-                    <div class="text-xl font-bold text-purple-700 dark:text-purple-300">B+</div>
-                  </div>
-                </div>
-                <!-- Progress Chart -->
-                <div class="h-64 bg-gray-50 dark:bg-gray-700 rounded-lg p-3 flex items-center justify-center">
-                  <p class="text-gray-500 dark:text-gray-400">Progress chart will be displayed here</p>
-                </div>
-              </div>
-              <!-- Update Progress -->
-              <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-2">Update Progress</h4>
-                <form class="space-y-3">
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Overall Performance Grade</label>
-                    <select class="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2 px-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                      <option value="A+">A+</option>
-                      <option value="A">A</option>
-                      <option value="A-">A-</option>
-                      <option value="B+">B+</option>
-                      <option value="B">B</option>
-                      <option value="B-">B-</option>
-                      <option value="C+">C+</option>
-                      <option value="C">C</option>
-                      <option value="C-">C-</option>
-                      <option value="D">D</option>
-                      <option value="F">F</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Completion Status</label>
-                    <select class="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2 px-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                      <option value="in_progress">In Progress</option>
-                      <option value="completed">Completed</option>
-                      <option value="on_hold">On Hold</option>
-                      <option value="withdrawn">Withdrawn</option>
-                    </select>
-                  </div>
-                  <button type="button"
-                          class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
-                          onclick="const grade = this.closest('form').querySelector('select').value; showNotification(`Student progress updated! New grade: ${grade}`, 'success');">
-                    Update Progress
-                  </button>
-                </form>
-              </div>
-            </div>
-            <!-- Notes Tab -->
-            <div x-show="activeTab === 'notes'" class="space-y-4">
-              <div class="bg-orange-50 dark:bg-orange-900/30 border-l-4 border-orange-400 dark:border-orange-600 p-4 rounded-md mb-4">
-                <div class="flex items-center text-orange-700 dark:text-orange-300">
-                  <i class="fas fa-sticky-note mr-2"></i>
-                  <p>Keep private notes about this student for your reference.</p>
-                </div>
-              </div>
-              <!-- Teacher Notes Form -->
-              <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-2">Teacher Notes</h4>
-                <form class="space-y-3">
-                  <textarea class="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2 px-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
-                            rows="6"
-                            placeholder="Add your private notes about this student here..."></textarea>
-                  <div class="flex justify-between items-center">
-                    <div class="text-xs text-gray-500 dark:text-gray-400">
-                      <i class="fas fa-lock mr-1"></i> Private to you
-                    </div>
-                    <button type="button"
-                            class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg"
-                            onclick="showNotification('Teacher notes saved successfully!', 'success')">
-                      Save Notes
-                    </button>
-                  </div>
-                </form>
-              </div>
-              <!-- Previous Notes History -->
-              <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-                <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-2">Notes History</h4>
-                <div class="space-y-3 max-h-64 overflow-y-auto">
-                  <div class="border-b border-gray-200 dark:border-gray-700 pb-3">
-                    <div class="flex justify-between items-start">
-                      <p class="text-sm text-gray-800 dark:text-gray-200">
-                        Student has shown exceptional progress in the last two sessions. Asking great questions and helping peers.
-                      </p>
-                      <span class="text-xs text-gray-500 dark:text-gray-400">May 15, 2023</span>
-                    </div>
-                  </div>
-                  <div class="border-b border-gray-200 dark:border-gray-700 pb-3">
-                    <div class="flex justify-between items-start">
-                      <p class="text-sm text-gray-800 dark:text-gray-200">
-                        Needs more support with the advanced topics. Consider additional resources or one-on-one time.
-                      </p>
-                      <span class="text-xs text-gray-500 dark:text-gray-400">Apr 28, 2023</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- Modal footer -->
-          <div class="flex items-center justify-end p-4 border-t border-gray-200 dark:border-gray-700">
-            <a :href="'/student-progress/' + enrollmentId + '/'"
-               class="bg-blue-500 hover:bg-blue-600 text-white font-medium px-4 py-2 rounded-lg mr-2">
-              Go to Full Student View
-            </a>
-            <button @click="open = false"
-                    class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-medium px-4 py-2 rounded-lg">
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <script>
-        // Function to handle attendance updates
-        function updateAttendance(sessionId) {
-            showNotification('Attendance saved for session #' + sessionId, 'success');
-        }
-
-        // Function to show notifications
-        function showNotification(message, type = 'info') {
-            const notification = document.getElementById('notification');
-            const iconEl = notification.querySelector('.notification-icon');
-            const messageEl = notification.querySelector('.notification-message');
-
-            // Set icon based on notification type
-            let icon = 'fa-info-circle';
-            let bgColor = 'bg-blue-500';
-
-            if (type === 'success') {
-                icon = 'fa-check-circle';
-                bgColor = 'bg-green-500';
-            } else if (type === 'error') {
-                icon = 'fa-exclamation-circle';
-                bgColor = 'bg-red-500';
-            } else if (type === 'warning') {
-                icon = 'fa-exclamation-triangle';
-                bgColor = 'bg-yellow-500';
-            }
-
-            // Update notification content
-            iconEl.className = `fas ${icon} notification-icon mr-2`;
-            notification.className = `notification ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center`;
-            messageEl.textContent = message;
-
-            // Show notification
-            notification.classList.add('show');
-
-            // Hide after 3 seconds
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 3000);
-        }
-
-        // Ensure these functions are available globally
-        window.updateAttendance = updateAttendance;
-        window.showNotification = showNotification;
-    </script>
-  {% endif %}
 {% endblock content %}

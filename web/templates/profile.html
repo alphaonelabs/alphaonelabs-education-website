@@ -57,58 +57,68 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Profile Information -->
       <div class="lg:col-span-1">
-        <form method="post" enctype="multipart/form-data" class="space-y-4">
-          {% csrf_token %}
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-            <!-- Header Section -->
-            <div class="px-6 py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white">
-              <div class="flex items-center justify-between">
-                <h2 class="text-xl font-bold">Your Profile</h2>
-                {% if user.profile.is_teacher %}
-                  <span class="bg-white bg-opacity-20 text-white text-sm font-medium px-3 py-1 rounded-full">Teacher</span>
-                {% endif %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold">Profile</h2>
+            {% if user.profile.is_teacher %}
+              <span class="bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200 text-sm font-medium px-3 py-1 rounded-full">Teacher</span>
+            {% endif %}
+          </div>
+          <!-- Profile Picture -->
+          <div class="mb-6 flex flex-col items-center">
+            {% if user.profile.custom_avatar %}
+              <div class="w-full h-full p-1.5 transform hover:scale-105 transition-transform duration-200">
+                <div class="w-full h-full overflow-hidden rounded-full flex items-center justify-center">
+                  {{ user.profile.custom_avatar.svg|safe }}
+                </div>
               </div>
-            </div>
-            <!-- Content Area -->
+            {% elif user.profile.avatar %}
+              <img src="{{ user.profile.avatar.url }}"
+                   alt="{{ user.username }}'s avatar"
+                   class="w-32 h-32 rounded-full object-cover mb-4"
+                   height="128"
+                   width="128" />
+            {% else %}
+              {% if user.profile.is_teacher %}
+                <img src="{% static 'images/default_teacher.png' %}"
+                     alt="{{ user.username }}'s avatar"
+                     class="w-32 h-32 rounded-full object-cover mb-4"
+                     height="128"
+                     width="128" />
+              {% else %}
+                <div class="w-32 h-32 rounded-full bg-orange-500 flex items-center justify-center text-white text-4xl mb-4">
+                  {{ user.first_name|first|default:user.username|first|upper }}
+                </div>
+              {% endif %}
+            {% endif %}
+            <form method="post"
+                  enctype="multipart/form-data"
+                  class="w-full flex flex-col items-center">
+              {% csrf_token %}
+              <label for="avatar-upload"
+                     class="cursor-pointer mb-4 text-sm text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300">
+                <span class="flex items-center">
+                  <i class="fas fa-camera mr-2"></i>
+                  Change Avatar
+                </span>
+                <input type="file"
+                       id="avatar-upload"
+                       name="avatar"
+                       accept="image/*"
+                       class="hidden"
+                       onchange="this.form.submit()" />
+              </label>
+            </form>
+            <h3 class="text-lg font-medium">{{ user.username }}</h3>
+            {% if user.get_full_name %}<p class="text-sm text-gray-500 dark:text-gray-400">{{ user.get_full_name }}</p>{% endif %}
+          </div>
+          <!-- Main Profile Form -->
+          <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            <!-- Add hidden avatar field for form processing -->
+            {{ form.avatar.as_hidden }}
             <div class="p-5">
-              <!-- Avatar Upload Section -->
-              <div class="flex items-start mb-6">
-                <!-- Current Avatar Display -->
-                <div class="flex-shrink-0 mr-5">
-                  {% if user.profile.avatar %}
-                    <img src="{{ user.profile.avatar.url }}"
-                         alt="{{ user.username }}'s avatar"
-                         class="w-24 h-24 rounded-full object-cover border-2 border-teal-300 dark:border-teal-500"
-                         height="96"
-                         width="96" />
-                  {% else %}
-                    {% if user.profile.is_teacher %}
-                      <img src="{% static 'images/default_teacher.png' %}"
-                           alt="{{ user.username }}'s avatar"
-                           class="w-24 h-24 rounded-full object-cover border-2 border-teal-300 dark:border-teal-500"
-                           height="96"
-                           width="96" />
-                    {% else %}
-                      <div class="w-24 h-24 rounded-full bg-orange-500 flex items-center justify-center text-white text-3xl border-2 border-teal-300 dark:border-teal-500">
-                        {{ user.first_name|first|default:user.username|first|upper }}
-                      </div>
-                    {% endif %}
-                  {% endif %}
-                </div>
-                <!-- Avatar Upload Controls -->
-                <div class="flex-grow">
-                  <label for="{{ form.avatar.id_for_label }}"
-                         class="block text-sm font-medium mb-1">Change profile picture</label>
-                  {{ form.avatar }}
-                  {% if form.avatar.help_text %}
-                    <small class="text-xs text-gray-500 dark:text-gray-400 block">{{ form.avatar.help_text }}</small>
-                  {% endif %}
-                  {% if form.avatar.errors %}
-                    <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.avatar.errors }}</div>
-                  {% endif %}
-                </div>
-              </div>
-              <!-- Profile Visibility Section - Compact Version -->
+              <!-- Profile Visibility Section -->
               <div class="mb-5 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
                 <div class="flex items-center mb-2">
                   <i class="fas fa-shield-alt text-teal-600 dark:text-teal-400 mr-2"></i>
@@ -223,7 +233,7 @@
                 <i class="fas fa-save mr-2"></i> Update Profile
               </button>
             </div>
-          </div>
+          </form>
           <!-- Add Notification Preferences Button -->
           <div class="mt-2">
             <a href="{% url 'notification_preferences' %}"
@@ -231,7 +241,43 @@
               <i class="fas fa-bell mr-2"></i> Edit Notification Preferences
             </a>
           </div>
-        </form>
+        </div>
+        <!-- Avatar Customization Card -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mt-4">
+          <h2 class="text-lg font-bold mb-3">Your Avatar</h2>
+          <div class="flex flex-col items-center space-y-4">
+            <div class="w-24 h-24 rounded-full border-2 border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 overflow-hidden flex items-center justify-center">
+              {% if user.profile.custom_avatar %}
+                <div class="w-full h-full p-1.5 transform hover:scale-105 transition-transform duration-200">
+                  <div class="w-full h-full overflow-hidden rounded-full flex items-center justify-center">
+                    {{ user.profile.custom_avatar.svg|safe }}
+                  </div>
+                </div>
+              {% else %}
+                <div class="w-full h-full flex items-center justify-center">
+                  <span class="text-gray-500 dark:text-gray-400 text-sm">No Avatar</span>
+                </div>
+              {% endif %}
+            </div>
+            <div class="flex flex-col sm:flex-row gap-2 w-full justify-center">
+              <a href="{% url 'customize_avatar' %}"
+                 class="inline-flex font-bold items-center justify-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md gap-2 text-sm">
+                <i class="fas fa-user-edit"></i>
+                Customize
+              </a>
+              <form method="post"
+                    action="{% url 'set_avatar_as_profile_pic' %}"
+                    class="inline">
+                {% csrf_token %}
+                <button type="submit"
+                        class="w-full font-bold inline-flex items-center justify-center px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md gap-2 text-sm">
+                  <i class="fas fa-image"></i>
+                  Set as Profile
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
         <!-- Additional Panels -->
         {% if user.profile.is_teacher %}
           <!-- Stripe Connect Information -->

@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
-from . import admin_views, peer_challenge_views, quiz_views, views
+from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
 from .views import (
     GoodsListingView,
     GradeableLinkCreateView,
@@ -51,6 +51,8 @@ urlpatterns += i18n_patterns(
     path("blog/create/", views.create_blog_post, name="create_blog_post"),
     path("blog/tag/<str:tag>/", views.blog_tag, name="blog_tag"),
     path("blog/<slug:slug>/", views.blog_detail, name="blog_detail"),
+    # Leaderboard URLs
+    path("leaderboards/", views.all_leaderboards, name="leaderboards"),
     # Success Stories URLs
     path("success-stories/", views.success_story_list, name="success_story_list"),
     path("success-stories/create/", views.create_success_story, name="create_success_story"),
@@ -82,6 +84,11 @@ urlpatterns += i18n_patterns(
     path("courses/<slug:slug>/confirm-rolled-sessions/", views.confirm_rolled_sessions, name="confirm_rolled_sessions"),
     path("courses/<slug:slug>/message-students/", views.message_enrolled_students, name="message_students"),
     path("courses/<slug:slug>/add-student/", views.add_student_to_course, name="add_student_to_course"),
+    path(
+        "courses/<slug:course_slug>/manage-student/<int:student_id>/",
+        views.student_management,
+        name="student_management",
+    ),
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
     path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session"),
     # Payment URLs
@@ -91,6 +98,10 @@ urlpatterns += i18n_patterns(
         name="create_payment_intent",
     ),
     path("stripe-webhook/", views.stripe_webhook, name="stripe_webhook"),
+    # Avatar customization
+    path("avatar/customize/", views_avatar.customize_avatar, name="customize_avatar"),
+    path("avatar/set-as-profile/", views_avatar.set_avatar_as_profile_pic, name="set_avatar_as_profile_pic"),
+    path("avatar/preview/", views_avatar.preview_avatar, name="preview_avatar"),
     # Admin and Utilities
     path("github_update/", views.github_update, name="github_update"),
     path(f"{settings.ADMIN_URL}/dashboard/", admin_views.admin_dashboard, name="admin_dashboard"),
@@ -202,8 +213,8 @@ urlpatterns += i18n_patterns(
     path("calendar/<str:share_token>/data", views.get_calendar_data, name="get_calendar_data"),
     path("status/", views.system_status, name="system_status"),
     # Challenge URLs
-    path("challenges/<int:week_number>/", views.challenge_detail, name="challenge_detail"),
-    path("challenges/<int:week_number>/submit/", views.challenge_submit, name="challenge_submit"),
+    path("challenges/<int:challenge_id>/", views.challenge_detail, name="challenge_detail"),
+    path("challenges/<int:challenge_id>/submit/", views.challenge_submit, name="challenge_submit"),
     path("current-weekly-challenge/", views.current_weekly_challenge, name="current_weekly_challenge"),
     # Educational Videos URLs
     path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),
@@ -233,6 +244,7 @@ urlpatterns += i18n_patterns(
         name="store_order_management",
     ),
     path("orders/item/<int:item_id>/update-status/", views.update_order_status, name="update_order_status"),
+    path("award-achievement/", views.award_achievement, name="award_achievement"),
     # Analytics
     path(
         "store/<slug:store_slug>/analytics/",
@@ -325,6 +337,33 @@ urlpatterns += i18n_patterns(
         peer_challenge_views.submit_to_leaderboard,
         name="submit_to_leaderboard",
     ),
+    path(
+        "mark_session_completed/<int:session_id>/",
+        views.mark_session_completed,
+        name="mark_session_completed",
+    ),
+    path(
+        "update_student_attendance/",
+        views.update_student_attendance,
+        name="update_student_attendance",
+    ),
+    path(
+        "get_student_attendance/",
+        views.get_student_attendance,
+        name="get_student_attendance",
+    ),
+    # Student Management URLs
+    path(
+        "enrollment/<int:enrollment_id>/update-progress/",
+        views.update_student_progress,
+        name="update_student_progress",
+    ),
+    path(
+        "enrollment/<int:enrollment_id>/update-notes/",
+        views.update_teacher_notes,
+        name="update_teacher_notes",
+    ),
+    path("award-badge/", views.award_badge, name="award_badge"),
     prefix_default_language=True,
 )
 
