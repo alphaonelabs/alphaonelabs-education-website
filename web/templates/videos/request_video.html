@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}Request Educational Video{% endblock %}
+{% block content %}
+  <main class="flex-1 w-full max-w-3xl mx-auto mt-6 px-4 md:px-6">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-orange-100 dark:bg-orange-900/30 rounded-full mb-4">
+          <i class="fas fa-video text-orange-600 dark:text-orange-400 text-2xl"></i>
+        </div>
+        <h1 class="text-2xl font-bold mb-2">Request Educational Video</h1>
+        <p class="text-gray-600 dark:text-gray-300">Request an educational video by providing the details below.</p>
+      </div>
+      <form method="post" class="space-y-6">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+          <div class="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-md p-4 mb-6">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <i class="fas fa-exclamation-circle text-red-600 dark:text-red-400"></i>
+              </div>
+              <div class="ml-3">
+                <h3 class="text-sm font-medium text-red-800 dark:text-red-300">There were errors with your submission</h3>
+                <div class="mt-2 text-sm text-red-700 dark:text-red-300">
+                  <ul class="list-disc pl-5 space-y-1">
+                    {% for error in form.non_field_errors %}<li>{{ error }}</li>{% endfor %}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+        <!-- Video Request Title -->
+        <div>
+          <label for="{{ form.title.id_for_label }}"
+                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Title <span class="text-red-500">*</span>
+          </label>
+          <div>
+            {{ form.title }}
+            {% if form.title.errors %}
+              <div class="text-red-600 dark:text-red-400 text-sm mt-1">
+                {% for error in form.title.errors %}<p>{{ error }}</p>{% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Video Request Description -->
+        <div>
+          <label for="{{ form.description.id_for_label }}"
+                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Description <span class="text-red-500">*</span>
+          </label>
+          <div>
+            {{ form.description }}
+            {% if form.description.errors %}
+              <div class="text-red-600 dark:text-red-400 text-sm mt-1">
+                {% for error in form.description.errors %}<p>{{ error }}</p>{% endfor %}
+              </div>
+            {% endif %}
+            <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">Describe the educational video you would like to request</div>
+          </div>
+        </div>
+        <!-- Video Request Category -->
+        <div>
+          <label for="{{ form.category.id_for_label }}"
+                 class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Category <span class="text-red-500">*</span>
+          </label>
+          <div>
+            {{ form.category }}
+            {% if form.category.errors %}
+              <div class="text-red-600 dark:text-red-400 text-sm mt-1">
+                {% for error in form.category.errors %}<p>{{ error }}</p>{% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        <!-- Submit Button -->
+        <div class="pt-4">
+          <button type="submit"
+                  class="w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg transition-colors">
+            Request Video
+          </button>
+        </div>
+      </form>
+    </div>
+  </main>
+{% endblock %}

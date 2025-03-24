@@ -31,10 +31,14 @@
             {% endfor %}
           </ul>
           {% if user.is_authenticated %}
-            <div class="mt-6">
+            <div class="mt-6 space-y-4">
               <a href="{% url 'upload_educational_video' %}"
                  class="block w-full bg-orange-500 hover:bg-orange-600 text-white font-medium py-2 px-4 rounded-lg text-center transition-colors">
                 <i class="fas fa-upload mr-2"></i> Upload Video
+              </a>
+              <a href="{% url 'request_video' %}"
+                 class="block w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg text-center transition-colors">
+                <i class="fas fa-video mr-2"></i> Request Video
               </a>
             </div>
           {% endif %}
@@ -57,6 +61,25 @@
             </a>
           {% endif %}
         </div>
+
+        <!-- Toggle Between Uploaded & Requested Videos -->
+        <div class="flex space-x-4 border-b pb-2 mb-6">
+          <button type="button" 
+                  id="tab-uploaded" 
+                  class="tab-button px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border-b-2 {% if not active_tab or active_tab == 'uploads' %}border-orange-500 text-orange-600 dark:text-orange-500{% else %}border-transparent hover:border-gray-300{% endif %}"
+                  data-tab="uploads">
+            Uploaded Videos
+          </button>
+          <button type="button" 
+                  id="tab-requested" 
+                  class="tab-button px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 border-b-2 {% if active_tab == 'requests' %}border-orange-500 text-orange-600 dark:text-orange-500{% else %}border-transparent hover:border-gray-300{% endif %}"
+                  data-tab="requests">
+            Requested Videos
+          </button>
+        </div>
+
+        <!-- Uploaded Videos -->
+        <div id="uploads" class="tab-content {% if active_tab == 'requests' %}hidden{% endif %}">
         {% if videos %}
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {% for video in videos %}
@@ -172,7 +195,66 @@
             {% endif %}
           </div>
         {% endif %}
+        </div>
+
+        <!-- Requested Videos Section -->
+        <div id="requests" class="tab-content {% if active_tab != 'requests' %}hidden{% endif %}">
+          {% if video_requests %}
+            <div class="space-y-4">
+              {% for request in video_requests %}
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+                  <h3 class="text-lg font-semibold mb-2">{{ request.title }}</h3>
+                  <p class="text-gray-600 dark:text-gray-300 text-sm mb-2">{{ request.description }}</p>
+                  <div class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                    <span class="mr-2">Requested by {{ request.requester.get_full_name|default:request.requester.username }}</span>
+                    <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">{{ request.category.name }}</span>
+                  </div>
+                  <div class="text-xs text-gray-500 dark:text-gray-400 mt-2">Requested on {{ request.requested_at|date:"F j, Y" }}</div>
+                </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-8">
+              <i class="fas fa-video text-gray-400 dark:text-gray-500 text-4xl mb-4"></i>
+              <h3 class="text-lg font-medium mb-2">No video requests</h3>
+              <p class="text-gray-500 dark:text-gray-400">No video requests have been made yet.</p>
+            </div>
+          {% endif %}
+        </div>
       </div>
     </div>
   </main>
+
+  <!-- Tab Switching Script -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const tabButtons = document.querySelectorAll('.tab-button');
+      const tabContents = document.querySelectorAll('.tab-content');
+
+      tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+          const tabId = button.getAttribute('data-tab');
+
+          // Update active tab button
+          tabButtons.forEach(btn => {
+            btn.classList.remove('border-orange-500', 'text-orange-600', 'dark:text-orange-500');
+            btn.classList.add('border-transparent', 'hover:border-gray-300');
+          });
+          button.classList.remove('border-transparent', 'hover:border-gray-300');
+          button.classList.add('border-orange-500', 'text-orange-600', 'dark:text-orange-500');
+
+          // Show selected tab content
+          tabContents.forEach(content => content.classList.add('hidden'));
+          document.getElementById(tabId).classList.remove('hidden');
+        });
+      });
+
+      // Check URL parameter on page load (optional)
+      const urlParams = new URLSearchParams(window.location.search);
+      const activeTab = urlParams.get('tab');
+      if (activeTab === 'requests') {
+        document.querySelector('[data-tab="requests"]').click();
+      }
+    });
+  </script>
 {% endblock %}
