@@ -79,6 +79,7 @@ from .forms import (
     SessionForm,
     StorefrontForm,
     StudentEnrollmentForm,
+    StudyGroupForm,
     SuccessStoryForm,
     TeacherSignupForm,
     TeachForm,
@@ -118,6 +119,7 @@ from .models import (
     LinkGrade,
     Meme,
     NoteHistory,
+    Notification,
     NotificationPreference,
     Order,
     OrderItem,
@@ -132,6 +134,7 @@ from .models import (
     SessionEnrollment,
     Storefront,
     StudyGroup,
+    StudyGroupInvite,
     Subject,
     SuccessStory,
     TeamGoal,
@@ -5129,3 +5132,109 @@ def notification_preferences(request):
         form = NotificationPreferencesForm(instance=preference)
 
     return render(request, "account/notification_preferences.html", {"form": form})
+
+
+@login_required
+def invite_to_study_group(request, group_id):
+    """Invite a user to a study group."""
+    group = get_object_or_404(StudyGroup, id=group_id)
+
+    # Only allow invitations from current group members.
+    if request.user not in group.members.all():
+        messages.error(request, "You must be a member of the group to invite others.")
+        return redirect("study_group_detail", group_id=group.id)
+
+    if request.method == "POST":
+        email_or_username = request.POST.get("email_or_username")
+        # Search by email or username.
+        recipient = User.objects.filter(Q(email=email_or_username) | Q(username=email_or_username)).first()
+        if not recipient:
+            messages.error(request, f"No user found with email or username: {email_or_username}")
+            return redirect("study_group_detail", group_id=group.id)
+
+        # Prevent duplicate invitations or inviting existing members.
+        if recipient in group.members.all():
+            messages.warning(request, f"{recipient.username} is already a member of this group.")
+            return redirect("study_group_detail", group_id=group.id)
+
+        if StudyGroupInvite.objects.filter(group=group, recipient=recipient, status="pending").exists():
+            messages.warning(request, f"An invitation has already been sent to {recipient.username}.")
+            return redirect("study_group_detail", group_id=group.id)
+
+        if group.is_full():
+            messages.error(request, "The study group is full. No new members can be added.")
+            return redirect("study_group_detail", group_id=group.id)
+
+        # Create a notification for the recipient.
+        notification_url = request.build_absolute_uri(reverse("user_invitations"))
+        notification_text = (
+            f"{request.user.username} has invited you to join the study group: {group.name}. "
+            f"View invitations here: {notification_url}"
+        )
+        Notification.objects.create(
+            user=recipient, title="Study Group Invitation", message=notification_text, notification_type="info"
+        )
+
+        messages.success(request, f"Invitation sent to {recipient.username}.")
+        return redirect("study_group_detail", group_id=group.id)
+
+    return redirect("study_group_detail", group_id=group.id)
+
+
+@login_required
+def user_invitations(request):
+    """Display pending study group invitations for the user."""
+    invitations = StudyGroupInvite.objects.filter(recipient=request.user, status="pending").select_related(
+        "group", "sender"
+    )
+    return render(request, "web/study/invitations.html", {"invitations": invitations})
+
+
+@login_required
+def respond_to_invitation(request, invite_id):
+    """Accept or decline a study group invitation."""
+    invite = get_object_or_404(StudyGroupInvite, id=invite_id, recipient=request.user)
+    if request.method == "POST":
+        response = request.POST.get("response")
+        if response == "accept":
+            if invite.group.is_full():
+                messages.error(request, "The study group is full. Cannot join.")
+                return redirect("user_invitations")
+            invite.accept()
+            study_group_url = request.build_absolute_uri(reverse("study_group_detail", args=[invite.group.id]))
+            notification_text = f"{request.user.username} has accepted your invitation to join {invite.group.name}.\
+                 View group details here: {study_group_url}"
+            Notification.objects.create(
+                user=invite.sender, title="Invitation Accepted", message=notification_text, notification_type="success"
+            )
+            messages.success(request, f"You have joined {invite.group.name}.")
+            return redirect("user_invitations")
+        elif response == "decline":
+            invite.decline()
+            study_group_url = request.build_absolute_uri(reverse("study_group_detail", args=[invite.group.id]))
+            notification_text = f"{request.user.username} has declined your invitation to join {invite.group.name}.\
+                 View group details here: {study_group_url}"
+            Notification.objects.create(
+                user=invite.sender, title="Invitation Declined", message=notification_text, notification_type="warning"
+            )
+            messages.info(request, f"You have declined the invitation to {invite.group.name}.")
+            return redirect("user_invitations")
+
+    return redirect("user_invitations")
+
+
+@login_required
+def create_study_group(request):
+    if request.method == "POST":
+        form = StudyGroupForm(request.POST)
+        if form.is_valid():
+            study_group = form.save(commit=False)
+            study_group.creator = request.user
+            study_group.save()
+            # Automatically add the creator as a member
+            study_group.members.add(request.user)
+            messages.success(request, "Study group created successfully!")
+            return redirect("study_group_detail", group_id=study_group.id)
+    else:
+        form = StudyGroupForm()
+    return render(request, "web/study/create_group.html", {"form": form})

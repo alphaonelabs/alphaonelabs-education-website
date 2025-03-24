@@ -371,6 +371,16 @@
                 </span>
               {% endif %}
             </a>
+            <!-- New Notification Button for Invitations -->
+            <a href="{% url 'user_invitations' %}"
+               class="relative hover:underline flex items-center p-2 hover:bg-teal-700 rounded-lg">
+              <i class="fas fa-bell"></i>
+              {% if pending_invites_count %}
+                <span class="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-600 flex items-center justify-center text-white text-xs">
+                  {{ pending_invites_count }}
+                </span>
+              {% endif %}
+            </a>
             <div class="relative">
               <button class="focus:outline-none hover:underline flex items-center p-2 hover:bg-teal-700 rounded-lg"
                       onclick="toggleLanguageDropdown()">
