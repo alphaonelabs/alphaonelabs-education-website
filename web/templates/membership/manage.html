@@ -1,190 +1,205 @@
 {% extends "base.html" %}
+
 {% load static %}
 
 {% block title %}Manage Membership{% endblock %}
-
 {% block content %}
-<div class="container mx-auto px-4 py-8">
+  <div class="container mx-auto px-4 py-8">
     <div class="max-w-4xl mx-auto">
-        <!-- Membership Status Card -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
-            <div class="flex items-center justify-between mb-6">
-                <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Your Membership</h1>
-                <span class="px-3 py-1 rounded-full text-sm font-medium
-                    {% if membership.status == 'active' %}
-                        bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
-                    {% elif membership.status == 'past_due' %}
-                        bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
-                    {% else %}
-                        bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
-                    {% endif %}">
-                    {{ membership.status|title }}
-                </span>
-            </div>
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Current Plan</h2>
-                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ membership.plan.name }}</p>
-                    <p class="text-gray-600 dark:text-gray-400">${{ membership.plan.price }}/{{ membership.plan.billing_period }}</p>
-                </div>
-                <div>
-                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Billing Period</h2>
-                    <p class="text-gray-600 dark:text-gray-300">Next payment: {{ membership.end_date|date:"F j, Y" }}</p>
-                    {% if membership.cancel_at_period_end %}
-                        <div class="mt-2 flex items-center text-yellow-600 dark:text-yellow-400">
-                            <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                            </svg>
-                            <span>Subscription will cancel at the end of the period</span>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
+      <!-- Membership Status Card -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+        <div class="flex items-center justify-between mb-6">
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Your Membership</h1>
+          <span class="px-3 py-1 rounded-full text-sm font-medium {% if membership.status == 'active' %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% elif membership.status == 'past_due' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% else %} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 {% endif %}">
+            {{ membership.status|title }}
+          </span>
         </div>
-
-        <!-- Plan Features -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
-            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Plan Features</h2>
-            <ul class="space-y-3">
-                {% for feature in membership.plan.features %}
-                <li class="flex items-center text-gray-600 dark:text-gray-300">
-                    <svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                    </svg>
-                    {{ feature }}
-                </li>
-                {% endfor %}
-            </ul>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Current Plan</h2>
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ membership.plan.name }}</p>
+            <p class="text-gray-600 dark:text-gray-400">${{ membership.plan.price }}/{{ membership.plan.billing_period }}</p>
+          </div>
+          <div>
+            <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-2">Billing Period</h2>
+            <p class="text-gray-600 dark:text-gray-300">Next payment: {{ membership.end_date|date:"F j, Y" }}</p>
             {% if membership.cancel_at_period_end %}
-                <!-- Reactivate Button (Only show if canceled) -->
-                <button onclick="reactivateSubscription()"
-                        class="inline-flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                    </svg>
-                    Reactivate Membership
-                </button>
-            {% else %}
-                <a href="{% url 'membership_plans' %}" 
-                   class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
-                    </svg>
-                    Change Plan
-                </a>
-            {% endif %}
-            <a href="{% url 'update_payment_method' %}" 
-               class="inline-flex items-center justify-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+              <div class="mt-2 flex items-center text-yellow-600 dark:text-yellow-400">
+                <svg class="w-5 h-5 mr-1"
+                     fill="none"
+                     stroke="currentColor"
+                     viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+                  </path>
                 </svg>
-                Update Payment
-            </a>
-            {% if not membership.cancel_at_period_end %}
-                <button onclick="showCancelModal()"
-                        class="inline-flex items-center justify-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                    Cancel Membership
-                </button>
+                <span>Subscription will cancel at the end of the period</span>
+              </div>
             {% endif %}
+          </div>
         </div>
+      </div>
+      <!-- Plan Features -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 mb-8">
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Plan Features</h2>
+        <ul class="space-y-3">
+          {% for feature in membership.plan.features %}
+            <li class="flex items-center text-gray-600 dark:text-gray-300">
+              <svg class="w-5 h-5 text-green-500 mr-2"
+                   fill="none"
+                   stroke="currentColor"
+                   viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+              {{ feature }}
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+      <!-- Action Buttons -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {% if membership.cancel_at_period_end %}
+          <!-- Reactivate Button (Only show if canceled) -->
+          <button onclick="reactivateSubscription()"
+                  class="inline-flex items-center justify-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+            <svg class="w-5 h-5 mr-2"
+                 fill="none"
+                 stroke="currentColor"
+                 viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+              </path>
+            </svg>
+            Reactivate Membership
+          </button>
+        {% else %}
+          <a href="{% url 'membership_plans' %}"
+             class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+            <svg class="w-5 h-5 mr-2"
+                 fill="none"
+                 stroke="currentColor"
+                 viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4">
+              </path>
+            </svg>
+            Change Plan
+          </a>
+        {% endif %}
+        <a href="{% url 'update_payment_method' %}"
+           class="inline-flex items-center justify-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+          <svg class="w-5 h-5 mr-2"
+               fill="none"
+               stroke="currentColor"
+               viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z">
+            </path>
+          </svg>
+          Update Payment
+        </a>
+        {% if not membership.cancel_at_period_end %}
+          <button onclick="showCancelModal()"
+                  class="inline-flex items-center justify-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+            <svg class="w-5 h-5 mr-2"
+                 fill="none"
+                 stroke="currentColor"
+                 viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            Cancel Membership
+          </button>
+        {% endif %}
+      </div>
     </div>
-</div>
-
-<!-- Cancel Modal -->
-<div id="cancelModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+  </div>
+  <!-- Cancel Modal -->
+  <div id="cancelModal"
+       class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full mx-4 transform transition-all">
-        <div class="flex items-center mb-4">
-            <div class="flex-shrink-0">
-                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                </svg>
-            </div>
-            <h3 class="ml-3 text-xl font-bold text-gray-900 dark:text-white">Cancel Membership</h3>
+      <div class="flex items-center mb-4">
+        <div class="flex-shrink-0">
+          <svg class="h-6 w-6 text-red-600"
+               fill="none"
+               stroke="currentColor"
+               viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+            </path>
+          </svg>
         </div>
-        <p class="text-gray-600 dark:text-gray-300 mb-6">
-            Are you sure you want to cancel your membership? You'll continue to have access until the end of your current billing period.
-        </p>
-        <div class="flex justify-end space-x-4">
-            <button onclick="hideCancelModal()"
-                    class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white font-medium rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
-                Keep Membership
-            </button>
-            <button onclick="cancelMembership()"
-                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
-                Yes, Cancel
-            </button>
-        </div>
+        <h3 class="ml-3 text-xl font-bold text-gray-900 dark:text-white">Cancel Membership</h3>
+      </div>
+      <p class="text-gray-600 dark:text-gray-300 mb-6">
+        Are you sure you want to cancel your membership? You'll continue to have access until the end of your current billing period.
+      </p>
+      <div class="flex justify-end space-x-4">
+        <button onclick="hideCancelModal()"
+                class="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white font-medium rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
+          Keep Membership
+        </button>
+        <button onclick="cancelMembership()"
+                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+          Yes, Cancel
+        </button>
+      </div>
     </div>
-</div>
+  </div>
+  <script>
+      let isModalOpen = false;
+      let isProcessing = false;
+      let savedFocusElement = null;
 
-<script>
-    let isModalOpen = false;
-    let isProcessing = false;
-    let savedFocusElement = null;
+      function showCancelModal() {
+          if (isModalOpen || isProcessing) return;
 
-    function showCancelModal() {
-        if (isModalOpen || isProcessing) return;
-        
-        const modal = document.getElementById('cancelModal');
-        if (!modal) {
-            console.error('Cancel modal not found');
-            return;
-        }
-        
-        // Save the element that had focus
-        savedFocusElement = document.activeElement;
-        
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        document.body.style.overflow = 'hidden';
-        isModalOpen = true;
-        
-        // Focus the first button in the modal
-        const firstButton = modal.querySelector('button');
-        if (firstButton) {
-            setTimeout(() => firstButton.focus(), 50);
-        }
-    }
+          const modal = document.getElementById('cancelModal');
+          if (!modal) {
+              console.error('Cancel modal not found');
+              return;
+          }
 
-    function hideCancelModal() {
-        if (!isModalOpen || isProcessing) return;
-        
-        const modal = document.getElementById('cancelModal');
-        if (!modal) {
-            console.error('Cancel modal not found');
-            return;
-        }
-        
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
-        document.body.style.overflow = 'auto';
-        isModalOpen = false;
-        
-        // Restore focus to the element that had it before
-        if (savedFocusElement) {
-            savedFocusElement.focus();
-            savedFocusElement = null;
-        }
-    }
+          // Save the element that had focus
+          savedFocusElement = document.activeElement;
 
-    async function cancelMembership() {
-        if (isProcessing) return;
-        
-        const button = event.target;
-        if (button.disabled) return;
-        
-        isProcessing = true;
-        button.disabled = true;
-        const originalContent = button.innerHTML;
-        button.innerHTML = `
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+          document.body.style.overflow = 'hidden';
+          isModalOpen = true;
+
+          // Focus the first button in the modal
+          const firstButton = modal.querySelector('button');
+          if (firstButton) {
+              setTimeout(() => firstButton.focus(), 50);
+          }
+      }
+
+      function hideCancelModal() {
+          if (!isModalOpen || isProcessing) return;
+
+          const modal = document.getElementById('cancelModal');
+          if (!modal) {
+              console.error('Cancel modal not found');
+              return;
+          }
+
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+          document.body.style.overflow = 'auto';
+          isModalOpen = false;
+
+          // Restore focus to the element that had it before
+          if (savedFocusElement) {
+              savedFocusElement.focus();
+              savedFocusElement = null;
+          }
+      }
+
+      async function cancelMembership() {
+          if (isProcessing) return;
+
+          const button = event.target;
+          if (button.disabled) return;
+
+          isProcessing = true;
+          button.disabled = true;
+          const originalContent = button.innerHTML;
+          button.innerHTML = `
             <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -192,50 +207,50 @@
             Cancelling...
         `;
 
-        try {
-            const response = await fetch('{% url "cancel_subscription" %}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json',
-                },
-            });
+          try {
+              const response = await fetch('{% url "cancel_subscription" %}', {
+                  method: 'POST',
+                  headers: {
+                      'X-CSRFToken': '{{ csrf_token }}',
+                      'Content-Type': 'application/json',
+                  },
+              });
 
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
+              if (!response.ok) {
+                  throw new Error('Network response was not ok');
+              }
 
-            const data = await response.json();
-            
-            if (data.success) {
-                showNotification('Membership canceled successfully', 'success');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            } else {
-                throw new Error(data.message || 'Failed to cancel membership');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            button.disabled = false;
-            button.innerHTML = originalContent;
-            
-            showNotification(error.message || 'Failed to cancel membership. Please try again.', 'error');
-        } finally {
-            isProcessing = false;
-        }
-    }
-    
-    async function reactivateSubscription() {
-        if (isProcessing) return;
-        
-        const button = event.target.closest('button');
-        if (!button || button.disabled) return;
-        
-        isProcessing = true;
-        button.disabled = true;
-        const originalContent = button.innerHTML;
-        button.innerHTML = `
+              const data = await response.json();
+
+              if (data.success) {
+                  showNotification('Membership canceled successfully', 'success');
+                  setTimeout(() => {
+                      window.location.reload();
+                  }, 1500);
+              } else {
+                  throw new Error(data.message || 'Failed to cancel membership');
+              }
+          } catch (error) {
+              console.error('Error:', error);
+              button.disabled = false;
+              button.innerHTML = originalContent;
+
+              showNotification(error.message || 'Failed to cancel membership. Please try again.', 'error');
+          } finally {
+              isProcessing = false;
+          }
+      }
+
+      async function reactivateSubscription() {
+          if (isProcessing) return;
+
+          const button = event.target.closest('button');
+          if (!button || button.disabled) return;
+
+          isProcessing = true;
+          button.disabled = true;
+          const originalContent = button.innerHTML;
+          button.innerHTML = `
             <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
@@ -243,70 +258,70 @@
             Reactivating...
         `;
 
-        try {
-            const response = await fetch('{% url "reactivate_subscription" %}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': '{{ csrf_token }}',
-                    'Content-Type': 'application/json',
-                },
-            });
+          try {
+              const response = await fetch('{% url "reactivate_subscription" %}', {
+                  method: 'POST',
+                  headers: {
+                      'X-CSRFToken': '{{ csrf_token }}',
+                      'Content-Type': 'application/json',
+                  },
+              });
 
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
+              if (!response.ok) {
+                  throw new Error('Network response was not ok');
+              }
 
-            const data = await response.json();
-            
-            if (data.success) {
-                showNotification('Membership reactivated successfully', 'success');
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
-            } else {
-                throw new Error(data.message || 'Failed to reactivate membership');
-            }
-        } catch (error) {
-            console.error('Error:', error);
-            button.disabled = false;
-            button.innerHTML = originalContent;
-            
-            showNotification(error.message || 'Failed to reactivate membership. Please try again.', 'error');
-        } finally {
-            isProcessing = false;
-        }
-    }
-    
-    function showNotification(message, type = 'info') {
-        // Remove any existing notifications
-        const existingNotifications = document.querySelectorAll('.notification-toast');
-        existingNotifications.forEach(notification => {
-            notification.remove();
-        });
-        
-        // Create new notification
-        const notification = document.createElement('div');
-        notification.className = `notification-toast fixed bottom-4 right-4 px-4 py-3 rounded shadow-lg z-50 transform transition-all duration-300 translate-y-0 opacity-100`;
-        
-        let bgColor, textColor, iconPath;
-        
-        if (type === 'success') {
-            bgColor = 'bg-green-100 dark:bg-green-800';
-            textColor = 'text-green-800 dark:text-green-100';
-            iconPath = 'M5 13l4 4L19 7';
-        } else if (type === 'error') {
-            bgColor = 'bg-red-100 dark:bg-red-800';
-            textColor = 'text-red-800 dark:text-red-100';
-            iconPath = 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z';
-        } else {
-            bgColor = 'bg-blue-100 dark:bg-blue-800';
-            textColor = 'text-blue-800 dark:text-blue-100';
-            iconPath = 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
-        }
-        
-        notification.classList.add(bgColor, textColor);
-        
-        notification.innerHTML = `
+              const data = await response.json();
+
+              if (data.success) {
+                  showNotification('Membership reactivated successfully', 'success');
+                  setTimeout(() => {
+                      window.location.reload();
+                  }, 1500);
+              } else {
+                  throw new Error(data.message || 'Failed to reactivate membership');
+              }
+          } catch (error) {
+              console.error('Error:', error);
+              button.disabled = false;
+              button.innerHTML = originalContent;
+
+              showNotification(error.message || 'Failed to reactivate membership. Please try again.', 'error');
+          } finally {
+              isProcessing = false;
+          }
+      }
+
+      function showNotification(message, type = 'info') {
+          // Remove any existing notifications
+          const existingNotifications = document.querySelectorAll('.notification-toast');
+          existingNotifications.forEach(notification => {
+              notification.remove();
+          });
+
+          // Create new notification
+          const notification = document.createElement('div');
+          notification.className = `notification-toast fixed bottom-4 right-4 px-4 py-3 rounded shadow-lg z-50 transform transition-all duration-300 translate-y-0 opacity-100`;
+
+          let bgColor, textColor, iconPath;
+
+          if (type === 'success') {
+              bgColor = 'bg-green-100 dark:bg-green-800';
+              textColor = 'text-green-800 dark:text-green-100';
+              iconPath = 'M5 13l4 4L19 7';
+          } else if (type === 'error') {
+              bgColor = 'bg-red-100 dark:bg-red-800';
+              textColor = 'text-red-800 dark:text-red-100';
+              iconPath = 'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z';
+          } else {
+              bgColor = 'bg-blue-100 dark:bg-blue-800';
+              textColor = 'text-blue-800 dark:text-blue-100';
+              iconPath = 'M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
+          }
+
+          notification.classList.add(bgColor, textColor);
+
+          notification.innerHTML = `
             <div class="flex items-center">
                 <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"></path>
@@ -319,61 +334,61 @@
                 </button>
             </div>
         `;
-        
-        document.body.appendChild(notification);
-        
-        // Auto-remove after 5 seconds
-        setTimeout(() => {
-            if (document.body.contains(notification)) {
-                notification.classList.replace('translate-y-0', 'translate-y-2');
-                notification.classList.replace('opacity-100', 'opacity-0');
-                setTimeout(() => {
-                    if (document.body.contains(notification)) {
-                        notification.remove();
-                    }
-                }, 300);
-            }
-        }, 5000);
-    }
 
-    // Close modal when clicking outside
-    document.getElementById('cancelModal').addEventListener('click', function(e) {
-        if (e.target === this && !isProcessing) {
-            hideCancelModal();
-        }
-    });
+          document.body.appendChild(notification);
 
-    // Close modal with Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && isModalOpen && !isProcessing) {
-            hideCancelModal();
-        }
-    });
+          // Auto-remove after 5 seconds
+          setTimeout(() => {
+              if (document.body.contains(notification)) {
+                  notification.classList.replace('translate-y-0', 'translate-y-2');
+                  notification.classList.replace('opacity-100', 'opacity-0');
+                  setTimeout(() => {
+                      if (document.body.contains(notification)) {
+                          notification.remove();
+                      }
+                  }, 300);
+              }
+          }, 5000);
+      }
 
-    // Trap focus within modal when open
-    document.addEventListener('keydown', function(e) {
-        if (!isModalOpen) return;
+      // Close modal when clicking outside
+      document.getElementById('cancelModal').addEventListener('click', function(e) {
+          if (e.target === this && !isProcessing) {
+              hideCancelModal();
+          }
+      });
 
-        const modal = document.getElementById('cancelModal');
-        const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-        if (focusableElements.length === 0) return;
-        
-        const firstFocusable = focusableElements[0];
-        const lastFocusable = focusableElements[focusableElements.length - 1];
+      // Close modal with Escape key
+      document.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && isModalOpen && !isProcessing) {
+              hideCancelModal();
+          }
+      });
 
-        if (e.key === 'Tab') {
-            if (e.shiftKey) {
-                if (document.activeElement === firstFocusable) {
-                    e.preventDefault();
-                    lastFocusable.focus();
-                }
-            } else {
-                if (document.activeElement === lastFocusable) {
-                    e.preventDefault();
-                    firstFocusable.focus();
-                }
-            }
-        }
-    });
-</script>
-{% endblock %} 
+      // Trap focus within modal when open
+      document.addEventListener('keydown', function(e) {
+          if (!isModalOpen) return;
+
+          const modal = document.getElementById('cancelModal');
+          const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+          if (focusableElements.length === 0) return;
+
+          const firstFocusable = focusableElements[0];
+          const lastFocusable = focusableElements[focusableElements.length - 1];
+
+          if (e.key === 'Tab') {
+              if (e.shiftKey) {
+                  if (document.activeElement === firstFocusable) {
+                      e.preventDefault();
+                      lastFocusable.focus();
+                  }
+              } else {
+                  if (document.activeElement === lastFocusable) {
+                      e.preventDefault();
+                      firstFocusable.focus();
+                  }
+              }
+          }
+      });
+  </script>
+{% endblock %}

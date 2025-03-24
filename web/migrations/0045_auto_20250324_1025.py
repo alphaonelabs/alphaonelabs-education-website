@@ -5,7 +5,7 @@ from django.utils.text import slugify
 
 
 def generate_slugs(apps, schema_editor):
-    MembershipPlan = apps.get_model('web', 'MembershipPlan')
+    MembershipPlan = apps.get_model("web", "MembershipPlan")
     for plan in MembershipPlan.objects.all():
         plan.slug = slugify(plan.name)
         plan.save()
@@ -19,33 +19,37 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.AddField(
-            model_name='membershipplan',
-            name='slug',
-            field=models.SlugField(blank=True, max_length=100, null=True, unique=True),
+            model_name="membershipplan",
+            name="slug",
+            field=models.SlugField(blank=True, max_length=100, default="", unique=True),
         ),
         migrations.AddField(
-            model_name='membershipplan',
-            name='billing_period',
-            field=models.CharField(choices=[('monthly', 'Monthly'), ('yearly', 'Yearly'), ('both', 'Both')], default='monthly', max_length=10),
+            model_name="membershipplan",
+            name="billing_period",
+            field=models.CharField(
+                choices=[("monthly", "Monthly"), ("yearly", "Yearly"), ("both", "Both")],
+                default="monthly",
+                max_length=10,
+            ),
         ),
         migrations.AddField(
-            model_name='membershipplan',
-            name='is_popular',
+            model_name="membershipplan",
+            name="is_popular",
             field=models.BooleanField(default=False),
         ),
         migrations.AlterField(
-            model_name='membershipplan',
-            name='stripe_monthly_price_id',
-            field=models.CharField(blank=True, max_length=100, null=True),
+            model_name="membershipplan",
+            name="stripe_monthly_price_id",
+            field=models.CharField(blank=True, max_length=100, default=""),
         ),
         migrations.AlterField(
-            model_name='membershipplan',
-            name='stripe_yearly_price_id',
-            field=models.CharField(blank=True, max_length=100, null=True),
+            model_name="membershipplan",
+            name="stripe_yearly_price_id",
+            field=models.CharField(blank=True, max_length=100, default=""),
         ),
         migrations.AlterField(
-            model_name='membershipplan',
-            name='features',
+            model_name="membershipplan",
+            name="features",
             field=models.JSONField(blank=True, default=list),
         ),
         migrations.RunPython(generate_slugs),

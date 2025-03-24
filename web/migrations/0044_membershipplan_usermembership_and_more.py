@@ -103,7 +103,7 @@ class Migration(migrations.Migration):
                         max_length=20,
                     ),
                 ),
-                ("stripe_event_id", models.CharField(blank=True, max_length=100, null=True)),
+                ("stripe_event_id", models.CharField(blank=True, max_length=100, default="")),
                 ("data", models.JSONField(blank=True, default=dict)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 (

@@ -1,7 +1,7 @@
 from django import template
-from decimal import Decimal
 
 register = template.Library()
+
 
 @register.filter
 def multiply(value, arg):
@@ -11,6 +11,7 @@ def multiply(value, arg):
     except (ValueError, TypeError):
         return None
 
+
 @register.filter
 def divide(value, arg):
     """Divides the value by the argument"""
@@ -18,6 +19,7 @@ def divide(value, arg):
         return float(value) / float(arg)
     except (ValueError, TypeError, ZeroDivisionError):
         return None
+
 
 @register.filter
 def subtract(value, arg):
@@ -27,6 +29,7 @@ def subtract(value, arg):
     except (ValueError, TypeError):
         return None
 
+
 @register.filter
 def add(value, arg):
     """Adds the argument to the value"""
@@ -34,6 +37,7 @@ def add(value, arg):
         return float(value) + float(arg)
     except (ValueError, TypeError):
         return None
+
 
 @register.filter
 def percentage(value, arg=100):
@@ -43,6 +47,7 @@ def percentage(value, arg=100):
     except (ValueError, TypeError):
         return None
 
+
 @register.filter
 def format_currency(value, decimal_places=2):
     """Formats a number as currency with dollar sign"""
@@ -50,4 +55,4 @@ def format_currency(value, decimal_places=2):
         formatted = "${:.{}f}".format(float(value), decimal_places)
         return formatted
     except (ValueError, TypeError):
-        return None 
+        return None

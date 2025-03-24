@@ -1,445 +1,478 @@
 {% extends "base.html" %}
+
 {% load static %}
 
 {% block title %}Complete Your {{ plan.name }} Membership{% endblock %}
-
 {% block extra_head %}
-<script src="https://js.stripe.com/v3/"></script>
-<style>
-    .checkout-container {
-        background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%);
-    }
-    
-    .dark .checkout-container {
-        background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-    }
-    
-    .bg-pattern {
-        background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
-    }
-    
-    .StripeElement {
-        box-sizing: border-box;
-        height: 50px;
-        padding: 12px 16px;
-        border: 1px solid #e2e8f0;
-        border-radius: 8px;
-        background-color: white;
-        transition: all 150ms ease;
-    }
-    
-    .dark .StripeElement {
-        background-color: #1f2937;
-        border-color: #374151;
-        color: white;
-    }
+  <script src="https://js.stripe.com/v3/"></script>
+  <style>
+      .checkout-container {
+          background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 100%);
+      }
 
-    .StripeElement--focus {
-        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-        border-color: #3b82f6;
-    }
+      .dark .checkout-container {
+          background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+      }
 
-    .StripeElement--invalid {
-        border-color: #ef4444;
-    }
+      .bg-pattern {
+          background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      }
 
-    .StripeElement--webkit-autofill {
-        background-color: #fefde5 !important;
-    }
-    
-    .dark .StripeElement--webkit-autofill {
-        background-color: #323842 !important;
-    }
-    
-    .security-badge {
-        animation: subtle-bounce 2s infinite;
-    }
-    
-    @keyframes subtle-bounce {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-3px); }
-    }
-    
-    #payment-message {
-        color: #ef4444;
-        font-size: 14px;
-        margin-top: 12px;
-        transition: all 0.3s ease;
-    }
-    
-    /* Loading animation */
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
-    }
-    .animate-pulse {
-        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-    
-    .checkout-card {
-        transition: all 0.3s ease;
-    }
-    
-    .checkout-steps {
-        counter-reset: step;
-    }
-    
-    .checkout-step {
-        position: relative;
-        padding-left: 2.5rem;
-    }
-    
-    .checkout-step::before {
-        counter-increment: step;
-        content: counter(step);
-        position: absolute;
-        left: 0;
-        top: 0;
-        height: 1.5rem;
-        width: 1.5rem;
-        border-radius: 9999px;
-        background-color: #3b82f6;
-        color: white;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-</style>
+      .StripeElement {
+          box-sizing: border-box;
+          height: 50px;
+          padding: 12px 16px;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          background-color: white;
+          transition: all 150ms ease;
+      }
+
+      .dark .StripeElement {
+          background-color: #1f2937;
+          border-color: #374151;
+          color: white;
+      }
+
+      .StripeElement--focus {
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+          border-color: #3b82f6;
+      }
+
+      .StripeElement--invalid {
+          border-color: #ef4444;
+      }
+
+      .StripeElement--webkit-autofill {
+          background-color: #fefde5 !important;
+      }
+
+      .dark .StripeElement--webkit-autofill {
+          background-color: #323842 !important;
+      }
+
+      .security-badge {
+          animation: subtle-bounce 2s infinite;
+      }
+
+      @keyframes subtle-bounce {
+
+          0%,
+          100% {
+              transform: translateY(0);
+          }
+
+          50% {
+              transform: translateY(-3px);
+          }
+      }
+
+      #payment-message {
+          color: #ef4444;
+          font-size: 14px;
+          margin-top: 12px;
+          transition: all 0.3s ease;
+      }
+
+      /* Loading animation */
+      @keyframes pulse {
+
+          0%,
+          100% {
+              opacity: 1;
+          }
+
+          50% {
+              opacity: 0.5;
+          }
+      }
+
+      .animate-pulse {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+
+      .checkout-card {
+          transition: all 0.3s ease;
+      }
+
+      .checkout-steps {
+          counter-reset: step;
+      }
+
+      .checkout-step {
+          position: relative;
+          padding-left: 2.5rem;
+      }
+
+      .checkout-step::before {
+          counter-increment: step;
+          content: counter(step);
+          position: absolute;
+          left: 0;
+          top: 0;
+          height: 1.5rem;
+          width: 1.5rem;
+          border-radius: 9999px;
+          background-color: #3b82f6;
+          color: white;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          font-size: 0.75rem;
+          font-weight: 600;
+      }
+  </style>
 {% endblock %}
-
 {% block content %}
-<div class="checkout-container min-h-screen bg-pattern py-10 px-4">
+  <div class="checkout-container min-h-screen bg-pattern py-10 px-4">
     <div class="container mx-auto max-w-5xl">
-        <div class="flex flex-col lg:flex-row gap-8">
-            <!-- Checkout Form -->
-            <div class="checkout-card bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700 lg:flex-grow">
-                <div class="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
-                    <div class="flex items-center justify-between">
-                        <a href="{% url 'subscribe_membership' plan.slug %}?billing={{ billing_period }}" class="flex items-center text-white/90 hover:text-white font-medium transition-all duration-300 group">
-                            <svg class="w-5 h-5 mr-2 transform group-hover:translate-x-[-4px] transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-                            </svg>
-                            <span>Back</span>
-                        </a>
-                        <div class="py-1 px-3 bg-white/20 rounded-lg text-sm font-medium">
-                            Step 2 of 2
-                        </div>
-                    </div>
-                    <h1 class="text-3xl font-bold mt-4">Complete Your Order</h1>
-                    <p class="text-blue-100 mt-1">Enter your payment details to activate your {{ plan.name }} membership</p>
-                </div>
-                
-                <div class="p-8">
-                    <div class="checkout-steps space-y-8">
-                        <!-- Step 1: Review Order -->
-                        <div class="checkout-step">
-                            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Review Your Order</h2>
-                            <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
-                                <div class="flex justify-between items-center mb-4">
-                                    <div>
-                                        <h3 class="font-medium text-gray-900 dark:text-white">{{ plan.name }} Membership</h3>
-                                        <p class="text-gray-600 dark:text-gray-300 text-sm">
-                                            {{ billing_period|title }} subscription
-                                        </p>
-                                    </div>
-                                    <div class="text-right">
-                                        <p class="font-bold text-gray-900 dark:text-white">${{ price }}</p>
-                                        <p class="text-gray-500 dark:text-gray-400 text-sm">
-                                            {% if billing_period == 'monthly' %}Billed monthly{% else %}Billed annually{% endif %}
-                                        </p>
-                                    </div>
-                                </div>
-                                
-                                <div class="border-t border-gray-200 dark:border-gray-600 pt-4 mt-4">
-                                    <div class="flex justify-between text-gray-900 dark:text-white font-bold">
-                                        <span>Total</span>
-                                        <span>${{ price }}</span>
-                                    </div>
-                                    <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">
-                                        {% if billing_period == 'yearly' %}
-                                        Includes savings of ${{ price|multiply:0.2|floatformat:2 }} (20% off)
-                                        {% endif %}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <!-- Step 2: Payment -->
-                        <div class="checkout-step">
-                            <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Payment Information</h2>
-                            
-                            <form id="payment-form" class="space-y-6">
-                                <div>
-                                    <label for="payment-element" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                                        Payment details
-                                    </label>
-                                    <div id="payment-element" class="mb-6">
-                                        <!-- Stripe Elements will be inserted here -->
-                                    </div>
-                                    
-                                    <!-- Display form errors -->
-                                    <div id="payment-message" class="hidden bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-4 rounded-lg text-sm"></div>
-                                </div>
-                                
-                                <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg flex items-start">
-                                    <svg class="w-5 h-5 text-blue-700 dark:text-blue-300 mt-0.5 mr-3 security-badge" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-                                    </svg>
-                                    <div class="text-blue-800 dark:text-blue-200 text-sm">
-                                        <p class="font-medium">Secure payment processing</p>
-                                        <p class="mt-1">Your payment information is encrypted and securely processed. We do not store your card details.</p>
-                                    </div>
-                                </div>
-                                
-                                <button id="submit-button" type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg transition flex justify-center items-center text-lg font-medium shadow-md hover:shadow-lg">
-                                    <span id="button-text">Complete Subscription</span>
-                                    <div id="spinner" class="hidden ml-3">
-                                        <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                    </div>
-                                </button>
-                                
-                                <div class="text-center text-gray-500 dark:text-gray-400 text-sm">
-                                    By clicking "Complete Subscription", you agree to our
-                                    <a href="{% url 'terms' %}" class="text-blue-600 dark:text-blue-400 hover:underline">Terms of Service</a>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+      <div class="flex flex-col lg:flex-row gap-8">
+        <!-- Checkout Form -->
+        <div class="checkout-card bg-white dark:bg-gray-800 rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-700 lg:flex-grow">
+          <div class="bg-gradient-to-r from-blue-600 to-blue-700 p-6 text-white">
+            <div class="flex items-center justify-between">
+              <a href="{% url 'subscribe_membership' plan.slug %}?billing={{ billing_period }}"
+                 class="flex items-center text-white/90 hover:text-white font-medium transition-all duration-300 group">
+                <svg class="w-5 h-5 mr-2 transform group-hover:translate-x-[-4px] transition-transform duration-300"
+                     fill="none"
+                     stroke="currentColor"
+                     viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                </svg>
+                <span>Back</span>
+              </a>
+              <div class="py-1 px-3 bg-white/20 rounded-lg text-sm font-medium">Step 2 of 2</div>
             </div>
-            
-            <!-- Order Summary Sidebar -->
-            <div class="lg:w-80 lg:flex-shrink-0">
-                <div class="checkout-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border border-gray-100 dark:border-gray-700 sticky top-6">
-                    <div class="p-6 bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600">
-                        <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ plan.name }} Plan</h2>
-                        <div class="text-gray-500 dark:text-gray-300 text-sm">{{ billing_period|title }} subscription</div>
+            <h1 class="text-3xl font-bold mt-4">Complete Your Order</h1>
+            <p class="text-blue-100 mt-1">Enter your payment details to activate your {{ plan.name }} membership</p>
+          </div>
+          <div class="p-8">
+            <div class="checkout-steps space-y-8">
+              <!-- Step 1: Review Order -->
+              <div class="checkout-step">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Review Your Order</h2>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-4">
+                  <div class="flex justify-between items-center mb-4">
+                    <div>
+                      <h3 class="font-medium text-gray-900 dark:text-white">{{ plan.name }} Membership</h3>
+                      <p class="text-gray-600 dark:text-gray-300 text-sm">{{ billing_period|title }} subscription</p>
                     </div>
-                    
-                    <div class="p-6">
-                        <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Plan Features:</h3>
-                        <ul class="space-y-2 mb-6">
-                            {% for feature in plan.features|slice:":5" %}
-                            <li class="flex items-start text-gray-700 dark:text-gray-200 text-sm">
-                                <svg class="w-4 h-4 text-green-600 dark:text-green-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                </svg>
-                                {{ feature }}
-                            </li>
-                            {% endfor %}
-                            {% if plan.features|length > 5 %}
-                            <li class="text-gray-700 dark:text-gray-200 text-sm text-center">
-                                + {{ plan.features|length|add:"-5" }} more features
-                            </li>
-                            {% endif %}
-                        </ul>
-                        
-                        <div class="border-t border-gray-100 dark:border-gray-600 pt-6 mt-6">
-                            <div class="flex justify-between mb-1">
-                                <span class="text-gray-700 dark:text-gray-300">{{ plan.name }} Plan</span>
-                                <span class="text-gray-900 dark:text-white">${{ price }}</span>
-                            </div>
-                            {% if billing_period == 'yearly' %}
-                            <div class="flex justify-between mb-1 text-sm">
-                                <span class="text-green-600">Annual discount (20%)</span>
-                                <span class="text-green-600">-${{ price|multiply:0.2|floatformat:2 }}</span>
-                            </div>
-                            {% endif %}
-                            <div class="flex justify-between font-bold text-lg mt-4">
-                                <span class="text-gray-900 dark:text-white">Total</span>
-                                <span class="text-gray-900 dark:text-white">${{ price }}</span>
-                            </div>
-                            <div class="text-gray-500 dark:text-gray-400 text-sm text-right mt-1">
-                                {% if billing_period == 'monthly' %}
-                                Billed monthly
-                                {% else %}
-                                Billed annually (save 20%)
-                                {% endif %}
-                            </div>
-                        </div>
-                        
-                        <div class="mt-6 flex justify-center">
-                            <div class="flex items-center space-x-2">
-                                <div class="flex -space-x-1">
-                                    <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                    </svg>
-                                    <svg class="w-6 h-6 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-                                    </svg>
-                                </div>
-                                <span class="text-gray-700 dark:text-gray-300 text-sm">30-day satisfaction guarantee</span>
-                            </div>
-                        </div>
+                    <div class="text-right">
+                      <p class="font-bold text-gray-900 dark:text-white">${{ price }}</p>
+                      <p class="text-gray-500 dark:text-gray-400 text-sm">
+                        {% if billing_period == 'monthly' %}
+                          Billed monthly
+                        {% else %}
+                          Billed annually
+                        {% endif %}
+                      </p>
                     </div>
+                  </div>
+                  <div class="border-t border-gray-200 dark:border-gray-600 pt-4 mt-4">
+                    <div class="flex justify-between text-gray-900 dark:text-white font-bold">
+                      <span>Total</span>
+                      <span>${{ price }}</span>
+                    </div>
+                    <p class="text-gray-500 dark:text-gray-400 text-sm mt-1">
+                      {% if billing_period == 'yearly' %}
+                        Includes savings of ${{ price|multiply:0.2|floatformat:2 }} (20% off)
+                      {% endif %}
+                    </p>
+                  </div>
                 </div>
+              </div>
+              <!-- Step 2: Payment -->
+              <div class="checkout-step">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">Payment Information</h2>
+                <form id="payment-form" class="space-y-6">
+                  <div>
+                    <label for="payment-element"
+                           class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Payment details
+                    </label>
+                    <div id="payment-element" class="mb-6">
+                      <!-- Stripe Elements will be inserted here -->
+                    </div>
+                    <!-- Display form errors -->
+                    <div id="payment-message"
+                         class="hidden bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-4 rounded-lg text-sm">
+                    </div>
+                  </div>
+                  <div class="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg flex items-start">
+                    <svg class="w-5 h-5 text-blue-700 dark:text-blue-300 mt-0.5 mr-3 security-badge"
+                         fill="none"
+                         stroke="currentColor"
+                         viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z">
+                      </path>
+                    </svg>
+                    <div class="text-blue-800 dark:text-blue-200 text-sm">
+                      <p class="font-medium">Secure payment processing</p>
+                      <p class="mt-1">Your payment information is encrypted and securely processed. We do not store your card details.</p>
+                    </div>
+                  </div>
+                  <button id="submit-button"
+                          type="submit"
+                          class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg transition flex justify-center items-center text-lg font-medium shadow-md hover:shadow-lg">
+                    <span id="button-text">Complete Subscription</span>
+                    <div id="spinner" class="hidden ml-3">
+                      <svg class="animate-spin h-5 w-5 text-white"
+                           xmlns="http://www.w3.org/2000/svg"
+                           fill="none"
+                           viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                      </svg>
+                    </div>
+                  </button>
+                  <div class="text-center text-gray-500 dark:text-gray-400 text-sm">
+                    By clicking "Complete Subscription", you agree to our
+                    <a href="{% url 'terms' %}"
+                       class="text-blue-600 dark:text-blue-400 hover:underline">Terms of Service</a>
+                  </div>
+                </form>
+              </div>
             </div>
+          </div>
         </div>
+        <!-- Order Summary Sidebar -->
+        <div class="lg:w-80 lg:flex-shrink-0">
+          <div class="checkout-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden border border-gray-100 dark:border-gray-700 sticky top-6">
+            <div class="p-6 bg-gray-50 dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600">
+              <h2 class="text-xl font-semibold text-gray-900 dark:text-white">{{ plan.name }} Plan</h2>
+              <div class="text-gray-500 dark:text-gray-300 text-sm">{{ billing_period|title }} subscription</div>
+            </div>
+            <div class="p-6">
+              <h3 class="font-semibold text-gray-900 dark:text-white mb-3">Plan Features:</h3>
+              <ul class="space-y-2 mb-6">
+                {% for feature in plan.features|slice:":5" %}
+                  <li class="flex items-start text-gray-700 dark:text-gray-200 text-sm">
+                    <svg class="w-4 h-4 text-green-600 dark:text-green-400 mr-2 mt-0.5"
+                         fill="none"
+                         stroke="currentColor"
+                         viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    {{ feature }}
+                  </li>
+                {% endfor %}
+                {% if plan.features|length > 5 %}
+                  <li class="text-gray-700 dark:text-gray-200 text-sm text-center">
+                    + {{ plan.features|length|add:"-5" }} more features
+                  </li>
+                {% endif %}
+              </ul>
+              <div class="border-t border-gray-100 dark:border-gray-600 pt-6 mt-6">
+                <div class="flex justify-between mb-1">
+                  <span class="text-gray-700 dark:text-gray-300">{{ plan.name }} Plan</span>
+                  <span class="text-gray-900 dark:text-white">${{ price }}</span>
+                </div>
+                {% if billing_period == 'yearly' %}
+                  <div class="flex justify-between mb-1 text-sm">
+                    <span class="text-green-600">Annual discount (20%)</span>
+                    <span class="text-green-600">-${{ price|multiply:0.2|floatformat:2 }}</span>
+                  </div>
+                {% endif %}
+                <div class="flex justify-between font-bold text-lg mt-4">
+                  <span class="text-gray-900 dark:text-white">Total</span>
+                  <span class="text-gray-900 dark:text-white">${{ price }}</span>
+                </div>
+                <div class="text-gray-500 dark:text-gray-400 text-sm text-right mt-1">
+                  {% if billing_period == 'monthly' %}
+                    Billed monthly
+                  {% else %}
+                    Billed annually (save 20%)
+                  {% endif %}
+                </div>
+              </div>
+              <div class="mt-6 flex justify-center">
+                <div class="flex items-center space-x-2">
+                  <div class="flex -space-x-1">
+                    <svg class="w-6 h-6 text-blue-600 dark:text-blue-400"
+                         fill="currentColor"
+                         viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd">
+                      </path>
+                    </svg>
+                    <svg class="w-6 h-6 text-blue-600 dark:text-blue-400"
+                         fill="currentColor"
+                         viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd">
+                      </path>
+                    </svg>
+                  </div>
+                  <span class="text-gray-700 dark:text-gray-300 text-sm">30-day satisfaction guarantee</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
+  <script>
+      let stripe = Stripe("{{ stripe_public_key }}");
+      let elements;
+      let paymentElement;
+      let emailAddress = "{{ request.user.email }}";
+      let planSlug = "{{ plan.slug }}";
+      let billingPeriod = "{{ billing_period }}";
 
-<script>
-    let stripe = Stripe("{{ stripe_public_key }}");
-    let elements;
-    let paymentElement;
-    let emailAddress = "{{ request.user.email }}";
-    let planSlug = "{{ plan.slug }}";
-    let billingPeriod = "{{ billing_period }}";
-    
-    // Initialize Stripe Elements
-    const initializeStripe = async () => {
-        try {
-            setLoading(true, 'initializingPayment');
-            
-            // Debug info
-            console.log("Initializing payment for:");
-            console.log(`Plan: ${planSlug}`);
-            console.log(`Billing Period: ${billingPeriod}`);
-            console.log(`Stripe Key: {{ stripe_public_key }}`);
-            
-            // Create subscription on the server
-            const createSubscriptionResponse = await fetch("{% url 'create_membership_subscription' %}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": "{{ csrf_token }}"
-                },
-                body: JSON.stringify({
-                    plan_slug: planSlug,
-                    billing_period: billingPeriod
-                })
-            });
-            
-            const subscriptionData = await createSubscriptionResponse.json();
-            
-            if (subscriptionData.error) {
-                showMessage(subscriptionData.error);
-                setLoading(false);
-                return;
-            }
-            
-            const { client_secret, subscription_id } = subscriptionData;
-            
-            const appearance = {
-                theme: document.documentElement.classList.contains('dark') ? 'night' : 'stripe',
-                variables: {
-                    colorPrimary: '#3b82f6',
-                    colorBackground: document.documentElement.classList.contains('dark') ? '#1f2937' : '#f9fafb',
-                    colorText: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937',
-                    colorDanger: '#ef4444',
-                    fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
-                    borderRadius: '8px',
-                    fontSizeBase: '16px',
-                    spacingUnit: '4px',
-                },
-                rules: {
-                    '.Input': {
-                        borderWidth: '1px',
-                        padding: '12px 16px',
-                    },
-                    '.Label': {
-                        marginBottom: '8px',
-                    }
-                }
-            };
-            
-            elements = stripe.elements({
-                clientSecret: client_secret,
-                appearance
-            });
-            
-            paymentElement = elements.create("payment", {
-                layout: {
-                    type: 'tabs',
-                    defaultCollapsed: false,
-                }
-            });
-            
-            paymentElement.mount("#payment-element");
-            
-            document.querySelector("form").dataset.subscriptionId = subscription_id;
-            
-            document.querySelector("#payment-form").addEventListener("submit", handleSubmit);
-            
-            setLoading(false);
-        } catch (error) {
-            showMessage("An error occurred while setting up the payment form. Please refresh the page and try again.");
-            console.error("Error initializing Stripe:", error);
-            setLoading(false);
-        }
-    };
-    
-    async function handleSubmit(e) {
-        e.preventDefault();
-        
-        setLoading(true, 'processingPayment');
-        
-        const subscriptionId = e.target.dataset.subscriptionId;
-        
-        const { error } = await stripe.confirmPayment({
-            elements,
-            confirmParams: {
-                return_url: `{% url 'membership_success' %}?subscription_id=${subscriptionId}`
-            }
-        });
-        
-        if (error) {
-            showMessage(error.message);
-        }
-        
-        setLoading(false);
-    }
-    
-    function showMessage(messageText) {
-        const messageElement = document.getElementById("payment-message");
-        messageElement.textContent = messageText;
-        messageElement.classList.remove("hidden");
-        
-        // Auto-hide message after 10 seconds
-        setTimeout(() => {
-            if (!messageElement.classList.contains("hidden")) {
-                messageElement.classList.add("opacity-0");
-                setTimeout(() => {
-                    messageElement.classList.add("hidden");
-                    messageElement.classList.remove("opacity-0");
-                    messageElement.textContent = "";
-                }, 300);
-            }
-        }, 10000);
-    }
-    
-    function setLoading(isLoading, state) {
-        const button = document.getElementById("submit-button");
-        const spinner = document.getElementById("spinner");
-        const buttonText = document.getElementById("button-text");
-        
-        if (isLoading) {
-            button.disabled = true;
-            spinner.classList.remove("hidden");
-            
-            if (state === 'initializingPayment') {
-                // Payment is initializing
-                buttonText.textContent = "Setting up payment...";
-                buttonText.classList.add("opacity-70");
-            } else if (state === 'processingPayment') {
-                // Payment is processing
-                buttonText.textContent = "Processing payment...";
-                buttonText.classList.add("opacity-70");
-            }
-        } else {
-            button.disabled = false;
-            spinner.classList.add("hidden");
-            buttonText.textContent = "Complete Subscription";
-            buttonText.classList.remove("opacity-70");
-        }
-    }
-    
-    // Initialize on document load
-    document.addEventListener("DOMContentLoaded", initializeStripe);
-</script>
-{% endblock %} 
+      // Initialize Stripe Elements
+      const initializeStripe = async () => {
+          try {
+              setLoading(true, 'initializingPayment');
+
+              // Debug info
+              console.log("Initializing payment for:");
+              console.log(`Plan: ${planSlug}`);
+              console.log(`Billing Period: ${billingPeriod}`);
+              console.log(`Stripe Key: {{ stripe_public_key }}`);
+
+              // Create subscription on the server
+              const createSubscriptionResponse = await fetch("{% url 'create_membership_subscription' %}", {
+                  method: "POST",
+                  headers: {
+                      "Content-Type": "application/json",
+                      "X-CSRFToken": "{{ csrf_token }}"
+                  },
+                  body: JSON.stringify({
+                      plan_slug: planSlug,
+                      billing_period: billingPeriod
+                  })
+              });
+
+              const subscriptionData = await createSubscriptionResponse.json();
+
+              if (subscriptionData.error) {
+                  showMessage(subscriptionData.error);
+                  setLoading(false);
+                  return;
+              }
+
+              const {
+                  client_secret,
+                  subscription_id
+              } = subscriptionData;
+
+              const appearance = {
+                  theme: document.documentElement.classList.contains('dark') ? 'night' : 'stripe',
+                  variables: {
+                      colorPrimary: '#3b82f6',
+                      colorBackground: document.documentElement.classList.contains('dark') ? '#1f2937' : '#f9fafb',
+                      colorText: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937',
+                      colorDanger: '#ef4444',
+                      fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+                      borderRadius: '8px',
+                      fontSizeBase: '16px',
+                      spacingUnit: '4px',
+                  },
+                  rules: {
+                      '.Input': {
+                          borderWidth: '1px',
+                          padding: '12px 16px',
+                      },
+                      '.Label': {
+                          marginBottom: '8px',
+                      }
+                  }
+              };
+
+              elements = stripe.elements({
+                  clientSecret: client_secret,
+                  appearance
+              });
+
+              paymentElement = elements.create("payment", {
+                  layout: {
+                      type: 'tabs',
+                      defaultCollapsed: false,
+                  }
+              });
+
+              paymentElement.mount("#payment-element");
+
+              document.querySelector("form").dataset.subscriptionId = subscription_id;
+
+              document.querySelector("#payment-form").addEventListener("submit", handleSubmit);
+
+              setLoading(false);
+          } catch (error) {
+              showMessage("An error occurred while setting up the payment form. Please refresh the page and try again.");
+              console.error("Error initializing Stripe:", error);
+              setLoading(false);
+          }
+      };
+
+      async function handleSubmit(e) {
+          e.preventDefault();
+
+          setLoading(true, 'processingPayment');
+
+          const subscriptionId = e.target.dataset.subscriptionId;
+
+          const {
+              error
+          } = await stripe.confirmPayment({
+              elements,
+              confirmParams: {
+                  return_url: `{% url 'membership_success' %}?subscription_id=${subscriptionId}`
+              }
+          });
+
+          if (error) {
+              showMessage(error.message);
+          }
+
+          setLoading(false);
+      }
+
+      function showMessage(messageText) {
+          const messageElement = document.getElementById("payment-message");
+          messageElement.textContent = messageText;
+          messageElement.classList.remove("hidden");
+
+          // Auto-hide message after 10 seconds
+          setTimeout(() => {
+              if (!messageElement.classList.contains("hidden")) {
+                  messageElement.classList.add("opacity-0");
+                  setTimeout(() => {
+                      messageElement.classList.add("hidden");
+                      messageElement.classList.remove("opacity-0");
+                      messageElement.textContent = "";
+                  }, 300);
+              }
+          }, 10000);
+      }
+
+      function setLoading(isLoading, state) {
+          const button = document.getElementById("submit-button");
+          const spinner = document.getElementById("spinner");
+          const buttonText = document.getElementById("button-text");
+
+          if (isLoading) {
+              button.disabled = true;
+              spinner.classList.remove("hidden");
+
+              if (state === 'initializingPayment') {
+                  // Payment is initializing
+                  buttonText.textContent = "Setting up payment...";
+                  buttonText.classList.add("opacity-70");
+              } else if (state === 'processingPayment') {
+                  // Payment is processing
+                  buttonText.textContent = "Processing payment...";
+                  buttonText.classList.add("opacity-70");
+              }
+          } else {
+              button.disabled = false;
+              spinner.classList.add("hidden");
+              buttonText.textContent = "Complete Subscription";
+              buttonText.classList.remove("opacity-70");
+          }
+      }
+
+      // Initialize on document load
+      document.addEventListener("DOMContentLoaded", initializeStripe);
+  </script>
+{% endblock %}
