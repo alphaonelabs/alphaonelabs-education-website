@@ -1111,8 +1111,112 @@
                 {% endif %}
               </div>
             </div>
-            <section id="course_reviews" class=" from-teal-50 to-blue-50 dark:from-gray-750 dark:to-gray-800 rounded-xl shadow-md p-6 border border-gray-100 dark:border-gray-700">
-              <h2 class="text-xl font-bold mb-2">course reviews </h2>
+            <section id="course_reviews" class="bg-gradient-to-r from-teal-50 to-blue-50 dark:from-gray-750 dark:to-gray-800 rounded-xl shadow-md p-6 border border-gray-100 dark:border-gray-700 mb-6">
+              <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-white">Course Reviews</h2>
+                {% if is_enrolled and not user_review %}
+                  <a href="{% url 'add_review' course.slug %}" class="bg-teal-500 hover:bg-teal-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center">
+                    <i class="fas fa-star mr-2"></i>Write a Review
+                  </a>
+                {% endif %}
+              </div>
+              
+              <!-- Course Average Rating -->
+              <div class="mb-8 bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm">
+                <div class="flex flex-col md:flex-row items-center gap-6">
+                  <div class="text-center">
+                    <div class="text-4xl font-bold text-teal-600 dark:text-teal-400">
+                      {{ course.average_rating|default:"0"|floatformat:1 }}
+                    </div>
+                    <div class="flex mt-1">
+                      {% for i in "12345" %}
+                        {% if forloop.counter <= course.average_rating|default:0|floatformat:"0" %}
+                          <i class="fas fa-star text-yellow-400"></i>
+                        {% elif forloop.counter <= course.average_rating|default:0|add:"0.5"|floatformat:"0" %}
+                          <i class="fas fa-star-half-alt text-yellow-400"></i>
+                        {% else %}
+                          <i class="far fa-star text-yellow-400"></i>
+                        {% endif %}
+                      {% endfor %}
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      {{ reviews.count }} review{{ reviews.count|pluralize }}
+                    </div>
+                  </div>
+                  
+                  <div class="flex-grow">
+                    <div class="space-y-2">
+                      {% for i in "54321" %}
+                        <div class="flex items-center space-x-2">
+                          <div class="w-12 text-sm text-right">{{ i }} star{{ i|pluralize }}</div>
+                          <div class="flex-grow h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                            {% with rating_count=rating_distribution|get_item:i %}
+
+                              {% if reviews.count > 0 %}
+                                <div class="h-full bg-yellow-400" style="width: {% widthratio rating_count reviews.count 100 %}"></div>
+                              {% else %}
+                                <div class="h-full bg-yellow-400" style="width: 0%"></div>
+                              {% endif %}
+                            {% endwith %}
+                          </div>
+                          <div>Test: {{rating_distribution.i}}</div>
+                          <div class="w-12 text-sm">
+                            {{ rating_distribution|get_item:i }}
+                          </div>
+                          <div class="w-12 text-sm">
+                            {{ rating_distribution|get_item:i }}
+                          </div>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Review List -->
+              {% if reviews %}
+                <div class="space-y-4">
+                  {% for review in reviews %}
+                    <div class="bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm">
+                      <div class="flex justify-between items-start">
+                        <div class="flex items-start space-x-3">
+                          {% if review.student.profile.avatar %}
+                            <img src="{{ review.student.profile.avatar.url }}" alt="{{ review.student.username }}" 
+                                class="w-10 h-10 rounded-full object-cover" width="40" height="40">
+                          {% else %}
+                            <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                              <i class="fas fa-user text-gray-400"></i>
+                            </div>
+                          {% endif %}
+                          <div>
+                            <div class="font-medium text-gray-800 dark:text-white">{{ review.student.username }}</div>
+                            <div class="flex items-center mt-1">
+                              {% for i in "12345" %}
+                                {% if forloop.counter <= review.rating %}
+                                  <i class="fas fa-star text-yellow-400 text-sm"></i>
+                                {% else %}
+                                  <i class="far fa-star text-yellow-400 text-sm"></i>
+                                {% endif %}
+                              {% endfor %}
+                            </div>
+                          </div>
+                        </div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">
+                          {{ review.created_at|date:"M d, Y" }}
+                        </div>
+                      </div>
+                      <div class="mt-3 text-gray-700 dark:text-gray-300">
+                        {{ review.comment }}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <div class="text-center py-8 bg-white dark:bg-gray-700 rounded-lg">
+                  <div class="text-gray-500 dark:text-gray-400">No reviews yet</div>
+                  <div class="text-sm text-gray-400 dark:text-gray-500 mt-1">Be the first to review this course!</div>
+                </div>
+              {% endif %}
             </section>
           </div>
         </div>

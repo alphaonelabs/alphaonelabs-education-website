@@ -315,6 +315,7 @@ class Command(BaseCommand):
             courses.append(course)
             self.stdout.write(f"Created course: {course.title}")
 
+
         # Create sessions
         sessions = []
         now = timezone.now()
@@ -391,6 +392,8 @@ class Command(BaseCommand):
             enrolled_courses = set(Enrollment.objects.filter(student=student).values_list("course_id", flat=True))
             reviewed_courses = set(Review.objects.filter(student=student).values_list("course_id", flat=True))
             available_courses = [c for c in courses if c.id in enrolled_courses and c.id not in reviewed_courses]
+
+            print("//////////", enrolled_courses, reviewed_courses, available_courses)
 
             # Create reviews for random courses
             for _ in range(min(random.randint(1, 3), len(available_courses))):
@@ -538,3 +541,28 @@ class Command(BaseCommand):
             self.stdout.write(f"Created images for product: {product.name}")
 
         self.stdout.write(self.style.SUCCESS("Successfully created test data"))
+
+# Sample review comments based on rating
+positive_comments = [
+    "Excellent course! The instructor was knowledgeable and engaging.",
+    "I learned so much from this course. Highly recommended!",
+    "This course exceeded my expectations. Great content and structure.",
+    "Very practical and informative. I can apply these skills right away.",
+    "The best course I've taken. Clear explanations and helpful examples."
+]
+
+neutral_comments = [
+    "Decent course overall. Some sections could be improved.",
+    "Good information but the pacing was a bit off at times.",
+    "Solid content but could use more practical examples.",
+    "Informative course. Wished there were more interactive elements.",
+    "Okay course. Learned what I needed, but nothing extra special."
+]
+
+negative_comments = [
+    "Course was too basic for my level.",
+    "Content was outdated and not very practical.",
+    "Expected more in-depth information.",
+    "Instructor moved too quickly through important topics.",
+    "Materials could be better organized."
+]

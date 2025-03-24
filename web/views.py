@@ -143,6 +143,7 @@ from .models import (
     TimeSlot,
     UserBadge,
     WebRequest,
+    Review
 )
 from .notifications import (
     notify_session_reminder,
@@ -521,6 +522,26 @@ def course_detail(request, slug):
                 calendar_week.append({"date": date, "in_month": True, "has_session": date in session_dates})
         calendar_weeks.append(calendar_week)
 
+     # Get all reviews for this course
+    reviews = course.reviews.all().order_by('-created_at')
+    
+    # Check if the current user has already reviewed this course
+    user_review = None
+    if request.user.is_authenticated:
+        user_review = Review.objects.filter(student=request.user, course=course).first()
+    
+    # Calculate rating distribution for visualization
+    rating_distribution = {
+        5: reviews.filter(rating=5).count(),
+        4: reviews.filter(rating=4).count(),
+        3: reviews.filter(rating=3).count(),
+        2: reviews.filter(rating=2).count(),
+        1: reviews.filter(rating=1).count(),
+    }
+
+    print("!!!!!!!!!!!!!!!!!!!!!",reviews ,user_review,rating_distribution)
+
+
     context = {
         "course": course,
         "sessions": sessions,
@@ -537,6 +558,9 @@ def course_detail(request, slug):
         "student_attendance": student_attendance,
         "completed_enrollment_count": course.enrollments.filter(status="completed").count(),
         "in_progress_enrollment_count": course.enrollments.filter(status="in_progress").count(),
+        'reviews': reviews,
+        'user_review': user_review,
+        'rating_distribution': rating_distribution,
     }
 
     return render(request, "courses/detail.html", context)
