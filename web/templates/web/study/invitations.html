@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Study Group Invitations
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-3xl font-bold mb-4">Study Group Invitations</h1>
+      <p class="text-gray-600">Manage your study group invitations</p>
+      <div class="bg-white shadow rounded p-6 mt-4">
+        {% if invitations %}
+          {% for invite in invitations %}
+            <div class="border-b border-gray-200 py-4">
+              <div class="flex justify-between items-center">
+                <div>
+                  <h2 class="text-xl font-semibold">{{ invite.group.name }}</h2>
+                  <p class="text-gray-600">{{ invite.group.description }}</p>
+                  <p class="text-sm text-gray-500">Invited by {{ invite.sender.username }} – {{ invite.created_at|timesince }} ago</p>
+                </div>
+                <div class="flex space-x-2">
+                  <form method="post" action="{% url 'respond_to_invitation' invite.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="response" value="accept" />
+                    <button type="submit"
+                            onclick="return confirm('Are you sure you want to accept this invitation?');"
+                            class="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded">Accept</button>
+                  </form>
+                  <form method="post" action="{% url 'respond_to_invitation' invite.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="response" value="decline" />
+                    <button type="submit"
+                            onclick="return confirm('Are you sure you want to decline this invitation?');"
+                            class="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded">Decline</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <p class="text-gray-500">You don't have any pending invitations.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+{% endblock content %}

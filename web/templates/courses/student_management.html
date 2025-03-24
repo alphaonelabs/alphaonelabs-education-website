@@ -1,0 +1,1306 @@
+{% extends "base.html" %}
+
+{% load dict_filters %}
+
+{% block title %}
+  Manage Student - {{ student.username }} - {{ course.title }}
+{% endblock title %}
+{% block extra_head %}
+  <!-- Include HTMX for quick updates -->
+  <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+  <style>
+      .attendance-btn {
+          @apply px-3 py-1.5 text-sm rounded-md transition-all duration-200 shadow-sm border border-transparent focus:outline-none focus:ring-2 focus:ring-offset-1 transform hover:-translate-y-0.5 cursor-pointer flex items-center justify-center min-w-[90px] font-medium;
+          position: relative;
+      }
+
+      .attendance-btn:not(.selected) {
+          @apply shadow-sm hover:shadow-md;
+      }
+
+      .attendance-btn.selected {
+          @apply font-bold ring-2 ring-offset-1 shadow-inner transform-none border-2;
+      }
+
+      /* Status button styles - Unselected */
+      .btn-present {
+          @apply bg-green-50 text-green-700 dark:bg-green-900/40 dark:text-green-300 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-800/60;
+      }
+
+      .btn-present.selected {
+          @apply bg-green-500 text-white dark:bg-green-600 ring-green-400 border-green-500 dark:border-green-600 shadow-green-200/50 dark:shadow-green-900/50 border-green-600 dark:border-green-400;
+      }
+
+      .btn-absent {
+          @apply bg-red-50 text-red-700 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800 hover:bg-red-100 dark:hover:bg-red-800/60;
+      }
+
+      .btn-absent.selected {
+          @apply bg-red-500 text-white dark:bg-red-600 ring-red-400 border-red-500 dark:border-red-600 shadow-red-200/50 dark:shadow-red-900/50 border-red-600 dark:border-red-400;
+      }
+
+      .btn-excused {
+          @apply bg-yellow-50 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800 hover:bg-yellow-100 dark:hover:bg-yellow-800/60;
+      }
+
+      .btn-excused.selected {
+          @apply bg-yellow-500 text-white dark:bg-yellow-600 ring-yellow-400 border-yellow-500 dark:border-yellow-600 shadow-yellow-200/50 dark:shadow-yellow-900/50 border-yellow-600 dark:border-yellow-400;
+      }
+
+      .btn-late {
+          @apply bg-orange-50 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300 border-orange-200 dark:border-orange-800 hover:bg-orange-100 dark:hover:bg-orange-800/60;
+      }
+
+      .btn-late.selected {
+          @apply bg-orange-500 text-white dark:bg-orange-600 ring-orange-400 border-orange-500 dark:border-orange-600 shadow-orange-200/50 dark:shadow-orange-900/50 border-orange-600 dark:border-orange-400;
+      }
+
+      /* Add indicator for unselected buttons to suggest they are clickable */
+      .attendance-btn:not(.selected)::after {
+          content: '\f067';
+          /* FontAwesome plus icon */
+          font-family: 'Font Awesome 5 Free';
+          font-weight: 900;
+          @apply ml-1 text-opacity-50 text-xs opacity-70;
+          transition: opacity 0.2s ease;
+      }
+
+      /* Hide the plus indicator on hover for a cleaner look */
+      .attendance-btn:not(.selected):hover::after {
+          opacity: 0;
+      }
+
+      .htmx-indicator {
+          @apply inline-flex items-center bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-1 rounded-md border border-blue-200 dark:border-blue-800 shadow-sm;
+          opacity: 0;
+          transition: opacity 200ms ease-in;
+      }
+
+      .htmx-request .htmx-indicator {
+          opacity: 1;
+          animation: pulse 1.5s infinite;
+      }
+
+      .htmx-request.htmx-indicator {
+          opacity: 1;
+          animation: pulse 1.5s infinite;
+      }
+
+      @keyframes pulse {
+          0% {
+              opacity: 1;
+          }
+
+          50% {
+              opacity: 0.6;
+          }
+
+          100% {
+              opacity: 1;
+          }
+      }
+
+      /* Add tooltip to indicate buttons are clickable */
+      .attendance-btn {
+          position: relative;
+      }
+
+      .attendance-btn:not(.selected):hover::before {
+          content: 'Click to select';
+          position: absolute;
+          bottom: 110%;
+          left: 50%;
+          transform: translateX(-50%);
+          margin-bottom: 5px;
+          white-space: nowrap;
+          @apply bg-gray-800 text-white text-xs rounded py-1 px-2 shadow-lg z-10;
+          opacity: 0;
+          animation: fadeIn 0.3s ease forwards;
+      }
+
+      .attendance-btn:not(.selected):hover::after {
+          opacity: 0;
+      }
+
+      @keyframes fadeIn {
+          from {
+              opacity: 0;
+          }
+
+          to {
+              opacity: 0.9;
+          }
+      }
+
+      /* Pulse animations for success and error states */
+      @keyframes pulseSuccess {
+          0% {
+              box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+          }
+
+          70% {
+              box-shadow: 0 0 0 10px rgba(16, 185, 129, 0);
+          }
+
+          100% {
+              box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+          }
+      }
+
+      @keyframes pulseError {
+          0% {
+              box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+          }
+
+          70% {
+              box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+          }
+
+          100% {
+              box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+          }
+      }
+
+      /* Badge pop animation */
+      @keyframes badgePop {
+          0% {
+              transform: scale(0.9);
+              opacity: 0.8;
+          }
+
+          50% {
+              transform: scale(1.1);
+          }
+
+          100% {
+              transform: scale(1);
+              opacity: 1;
+          }
+      }
+
+      .pulse-success {
+          animation: pulseSuccess 1.5s ease-in-out;
+      }
+
+      .pulse-error {
+          animation: pulseError 1.5s ease-in-out;
+      }
+
+      .pulse-badge {
+          animation: badgePop 0.5s ease-in-out;
+      }
+
+      /* Improved notes area */
+      .session-notes-area {
+          @apply mt-2 flex items-stretch gap-2 transition-all duration-200;
+      }
+
+      .session-notes-textarea {
+          @apply flex-grow rounded-lg border border-gray-300 dark:border-gray-600 text-sm py-2 px-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 shadow-sm focus:ring-2 focus:ring-teal-300 focus:border-transparent transition-all duration-200;
+      }
+
+      /* Status indicator badges */
+      .status-badge {
+          @apply inline-flex items-center text-xs px-2 py-1 rounded-full font-medium shadow-sm;
+      }
+  </style>
+{% endblock extra_head %}
+{% block content %}
+  <div class="container mx-auto px-4 py-6">
+    <!-- Breadcrumb -->
+    <div class="mb-6">
+      <nav class="flex" aria-label="Breadcrumb">
+        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+          <li class="inline-flex items-center">
+            <a href="{% url 'index' %}"
+               class="inline-flex items-center text-sm font-medium text-gray-700 hover:text-teal-600 dark:text-gray-400 dark:hover:text-white">
+              <i class="fas fa-home mr-2"></i> Home
+            </a>
+          </li>
+          <li>
+            <div class="flex items-center">
+              <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+              <a href="{% url 'course_detail' course.slug %}"
+                 class="ml-1 text-sm font-medium text-gray-700 hover:text-teal-600 dark:text-gray-400 dark:hover:text-white">
+                {{ course.title }}
+              </a>
+            </div>
+          </li>
+          <li aria-current="page">
+            <div class="flex items-center">
+              <i class="fas fa-chevron-right text-gray-400 mx-2"></i>
+              <span class="ml-1 text-sm font-medium text-gray-500 dark:text-gray-400">Manage Student: {{ student.username }}</span>
+            </div>
+          </li>
+        </ol>
+      </nav>
+    </div>
+    <!-- Student Management Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden mb-6">
+      <div class="px-6 py-4 bg-gradient-to-r from-teal-500 to-teal-600 text-white">
+        <div class="flex items-center justify-between">
+          <h1 class="text-2xl font-bold">
+            <i class="fas fa-user-graduate mr-2"></i>
+            Managing: {{ student.get_full_name|default:student.username }}
+          </h1>
+          <a href="{% url 'course_detail' course.slug %}"
+             class="bg-white bg-opacity-20 hover:bg-opacity-30 text-white px-4 py-2 rounded-lg transition duration-200">
+            <i class="fas fa-arrow-left mr-2"></i> Back to Course
+          </a>
+        </div>
+      </div>
+      <!-- Student Info Overview -->
+      <div class="px-6 py-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 bg-gray-50 dark:bg-gray-750 border-b border-gray-200 dark:border-gray-700">
+        <!-- Student Profile -->
+        <div class="flex items-center space-x-4">
+          {% if student.profile_image %}
+            <img src="{{ student.profile_image.url }}"
+                 alt="{{ student.get_full_name|default:student.username }}"
+                 class="w-16 h-16 rounded-full object-cover border-2 border-teal-500"
+                 width="64"
+                 height="64" />
+          {% else %}
+            <div class="w-16 h-16 rounded-full bg-teal-100 dark:bg-teal-900 border-2 border-teal-500 flex items-center justify-center text-teal-600 dark:text-teal-400">
+              <i class="fas fa-user text-2xl"></i>
+            </div>
+          {% endif %}
+          <div>
+            <h3 class="font-medium text-gray-800 dark:text-gray-200">{{ student.get_full_name|default:student.username }}</h3>
+          </div>
+        </div>
+        <!-- Enrollment Status -->
+        <div class="flex flex-col justify-center">
+          <h4 class="text-xs uppercase text-gray-500 dark:text-gray-400 font-medium mb-1">Enrollment Status</h4>
+          {% if enrollment.status == 'approved' %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+              <i class="fas fa-check-circle mr-1.5"></i> Active
+            </span>
+          {% elif enrollment.status == 'completed' %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+              <i class="fas fa-trophy mr-1.5"></i> Completed
+            </span>
+          {% elif enrollment.status == 'on_hold' %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+              <i class="fas fa-pause-circle mr-1.5"></i> On Hold
+            </span>
+          {% elif enrollment.status == 'withdrawn' %}
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+              <i class="fas fa-times-circle mr-1.5"></i> Withdrawn
+            </span>
+          {% endif %}
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Enrolled: {{ enrollment.enrollment_date|date:"M d, Y" }}</p>
+        </div>
+        <!-- Grade Overview -->
+        <div class="flex flex-col justify-center">
+          <h4 class="text-xs uppercase text-gray-500 dark:text-gray-400 font-medium mb-1">Current Grade</h4>
+          {% if enrollment.grade %}
+            <div class="text-lg font-bold text-gray-800 dark:text-gray-200">{{ enrollment.grade }}</div>
+          {% else %}
+            <span class="text-sm text-gray-500 dark:text-gray-400">Not graded yet</span>
+          {% endif %}
+        </div>
+        <!-- Attendance Overview -->
+        <div class="flex flex-col justify-center">
+          <h4 class="text-xs uppercase text-gray-500 dark:text-gray-400 font-medium mb-1">Attendance Rate</h4>
+          <div class="flex items-center">
+            <div class="w-16 h-16 relative">
+              <svg viewBox="0 0 36 36" class="w-full h-full">
+                <path class="stroke-current text-gray-200 dark:text-gray-700" stroke-width="4" fill="none" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <path class="stroke-current text-teal-500" stroke-width="4" fill="none" stroke-dasharray="{{ attendance_rate }}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                <text x="18" y="20.35" class="fill-current text-gray-800 dark:text-gray-200 text-xs font-medium" text-anchor="middle">{{ attendance_rate }}%</text>
+              </svg>
+            </div>
+            <div class="ml-4 text-sm text-gray-600 dark:text-gray-300">
+              Attended {{ attended_sessions }} of {{ total_sessions }} sessions
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Section Header -->
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
+          <i class="fas fa-user-graduate mr-2 text-teal-500 dark:text-teal-400"></i>
+          Student Management Dashboard
+        </h2>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+          Manage all aspects of this student's course experience in one place.
+        </p>
+      </div>
+    </div>
+    <!-- Content Panels -->
+    <div class="space-y-8">
+      <!-- Progress and Attendance (Side by Side) -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Progress Tracking Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 class="text-xl font-bold mb-4 flex items-center text-gray-800 dark:text-gray-200">
+            <i class="fas fa-chart-line mr-2 text-green-500 dark:text-green-400"></i> Progress Tracking
+          </h2>
+          <!-- Progress Stats Summary -->
+          <div class="flex flex-wrap gap-4 mb-4">
+            <!-- Current Grade -->
+            <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center">
+              <div class="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center mr-3">
+                <i class="fas fa-graduation-cap text-teal-600 dark:text-teal-400"></i>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Current Grade</p>
+                <p class="font-bold text-gray-800 dark:text-gray-200">{{ enrollment.grade }}</p>
+              </div>
+            </div>
+            <!-- Attendance Rate -->
+            <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-3 flex items-center">
+              <div class="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center mr-3">
+                <i class="fas fa-clipboard-check text-blue-600 dark:text-blue-400"></i>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Attendance</p>
+                <p class="font-bold text-gray-800 dark:text-gray-200">
+                  {{ attendance_rate }}% ({{ attended_sessions }}/{{ total_sessions }})
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="bg-green-50 dark:bg-green-900/30 border-l-4 border-green-400 dark:border-green-600 p-4 rounded-md mb-4">
+            <div class="flex items-center text-green-700 dark:text-green-300">
+              <i class="fas fa-chart-line mr-2"></i>
+              <p>Track student progress and update completion status and grades.</p>
+            </div>
+          </div>
+          <!-- Progress Overview -->
+          <div class="mb-4">
+            <div class="grid grid-cols-1 gap-3">
+              <!-- Course Completion -->
+              <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                <div class="flex items-center justify-between mb-1">
+                  <h4 class="text-xs uppercase font-medium text-gray-500 dark:text-gray-400">Course Completion</h4>
+                  <span class="text-xs font-semibold inline-block py-1 px-2 uppercase rounded-full text-teal-600 bg-teal-200 dark:text-teal-400 dark:bg-teal-900">
+                    {{ progress.completion_percentage|default:0 }}%
+                  </span>
+                </div>
+                <div class="overflow-hidden h-2 mb-1 text-xs flex rounded bg-teal-200 dark:bg-teal-900">
+                  <div style="width:{{ progress.completion_percentage|default:0 }}%"
+                       class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-teal-500 dark:bg-teal-600">
+                  </div>
+                </div>
+                <p class="text-xs text-gray-600 dark:text-gray-400">
+                  {% if progress.completed_sessions.count %}
+                    <span class="font-medium">{{ progress.completed_sessions.count }}</span> of <span class="font-medium">{{ sessions|length }}</span> sessions completed
+                  {% else %}
+                    No sessions completed yet
+                  {% endif %}
+                </p>
+              </div>
+              <!-- Grade and Status Updates -->
+              <form method="post"
+                    action="{% url 'update_student_progress' enrollment.id %}"
+                    id="progressForm"
+                    class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
+                {% csrf_token %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Current Grade</label>
+                    <select name="grade"
+                            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-1 px-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                      <option value="" {% if not enrollment.grade %}selected{% endif %}>Not Graded</option>
+                      <option value="A+" {% if enrollment.grade == 'A+' %}selected{% endif %}>A+</option>
+                      <option value="A" {% if enrollment.grade == 'A' %}selected{% endif %}>A</option>
+                      <option value="A-" {% if enrollment.grade == 'A-' %}selected{% endif %}>A-</option>
+                      <option value="B+" {% if enrollment.grade == 'B+' %}selected{% endif %}>B+</option>
+                      <option value="B" {% if enrollment.grade == 'B' %}selected{% endif %}>B</option>
+                      <option value="B-" {% if enrollment.grade == 'B-' %}selected{% endif %}>B-</option>
+                      <option value="C+" {% if enrollment.grade == 'C+' %}selected{% endif %}>C+</option>
+                      <option value="C" {% if enrollment.grade == 'C' %}selected{% endif %}>C</option>
+                      <option value="C-" {% if enrollment.grade == 'C-' %}selected{% endif %}>C-</option>
+                      <option value="D" {% if enrollment.grade == 'D' %}selected{% endif %}>D</option>
+                      <option value="F" {% if enrollment.grade == 'F' %}selected{% endif %}>F</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                    <select name="status"
+                            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-1 px-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                      <option value="approved"
+                              {% if enrollment.status == 'approved' %}selected{% endif %}>In Progress</option>
+                      <option value="completed"
+                              {% if enrollment.status == 'completed' %}selected{% endif %}>Completed</option>
+                      <option value="on_hold"
+                              {% if enrollment.status == 'on_hold' %}selected{% endif %}>On Hold</option>
+                      <option value="withdrawn"
+                              {% if enrollment.status == 'withdrawn' %}selected{% endif %}>Withdrawn</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="mt-2">
+                  <label class="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">Progress Comments</label>
+                  <textarea name="comments"
+                            rows="2"
+                            class="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-1 px-2 text-sm bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                            placeholder="Add comments about student's progress...">{{ enrollment.notes|default:'' }}</textarea>
+                </div>
+                <div class="mt-2 flex justify-end">
+                  <button type="submit"
+                          class="bg-teal-500 hover:bg-teal-600 text-white px-2 py-1 rounded-lg text-xs transition duration-150 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-chart-line mr-1"></i> Update Progress
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+        <!-- Attendance Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+          <h2 class="text-xl font-bold mb-2 flex items-center justify-between text-gray-800 dark:text-gray-200">
+            <div>
+              <i class="fas fa-clipboard-check mr-2 text-teal-500 dark:text-teal-400"></i> Attendance Tracking
+            </div>
+            <button onclick="resetButtonStates()"
+                    class="text-xs bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-md transition-colors duration-200">
+              <i class="fas fa-sync-alt mr-1"></i> Reset Buttons
+            </button>
+          </h2>
+          <div class="bg-blue-50 dark:bg-blue-900/30 border-l-4 border-blue-400 dark:border-blue-600 p-3 rounded-md mb-3">
+            <div class="flex items-center text-blue-700 dark:text-blue-300">
+              <i class="fas fa-info-circle mr-2"></i>
+              <p class="text-sm">Mark attendance for each session with instant updates.</p>
+            </div>
+          </div>
+          <div id="attendanceForm" class="space-y-4 max-h-96 overflow-y-auto pr-2">
+            {% csrf_token %}
+            {% for session in sessions %}
+              <div id="session-{{ session.id }}"
+                   class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4 shadow-sm hover:shadow transition-shadow duration-200">
+                <div class="flex justify-between items-center mb-2">
+                  <div>
+                    <h4 class="text-sm font-medium text-gray-800 dark:text-gray-200 flex items-center">
+                      <i class="fas fa-calendar-day text-teal-500 dark:text-teal-400 mr-2"></i>
+                      {{ session.title }}
+                    </h4>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <i class="far fa-clock mr-1"></i>
+                      {{ session.start_time|date:"M d, Y" }} at {{ session.start_time|time:"g:i A" }}
+                    </p>
+                  </div>
+                  <!-- Current status badge -->
+                  {% if attendance_data and attendance_data|get_item:session.id and attendance_data|get_item:session.id|get_item:'status' %}
+                    <div class="status-badge ml-auto {% if attendance_data|get_item:session.id|get_item:'status' == 'present' %} bg-green-100 text-green-800 dark:bg-green-900/60 dark:text-green-300 border border-green-300 dark:border-green-700 {% elif attendance_data|get_item:session.id|get_item:'status' == 'absent' %} bg-red-100 text-red-800 dark:bg-red-900/60 dark:text-red-300 border border-red-300 dark:border-red-700 {% elif attendance_data|get_item:session.id|get_item:'status' == 'excused' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900/60 dark:text-yellow-300 border border-yellow-300 dark:border-yellow-700 {% else %} bg-orange-100 text-orange-800 dark:bg-orange-900/60 dark:text-orange-300 border border-orange-300 dark:border-orange-700 {% endif %}">
+                      <i class="fas {% if attendance_data|get_item:session.id|get_item:'status' == 'present' %} fa-check-circle {% elif attendance_data|get_item:session.id|get_item:'status' == 'absent' %} fa-times-circle {% elif attendance_data|get_item:session.id|get_item:'status' == 'excused' %} fa-calendar-minus {% else %} fa-clock {% endif %} mr-1"></i>
+                      {{ attendance_data|get_item:session.id|get_item:'status'|title }}
+                    </div>
+                  {% endif %}
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                  <!-- Attendance Status Buttons -->
+                  <button type="button"
+                          class="attendance-btn btn-present {% if attendance_data and attendance_data|get_item:session.id and attendance_data|get_item:session.id|get_item:'status' == 'present' %}selected{% endif %}"
+                          onclick="updateAttendance(this, '{{ session.id }}', 'present')">
+                    <i class="fas fa-check-circle mr-1"></i> Present
+                  </button>
+                  <button type="button"
+                          class="attendance-btn btn-absent {% if attendance_data and attendance_data|get_item:session.id and attendance_data|get_item:session.id|get_item:'status' == 'absent' %}selected{% endif %}"
+                          onclick="updateAttendance(this, '{{ session.id }}', 'absent')">
+                    <i class="fas fa-times-circle mr-1"></i> Absent
+                  </button>
+                  <button type="button"
+                          class="attendance-btn btn-excused {% if attendance_data and attendance_data|get_item:session.id and attendance_data|get_item:session.id|get_item:'status' == 'excused' %}selected{% endif %}"
+                          onclick="updateAttendance(this, '{{ session.id }}', 'excused')">
+                    <i class="fas fa-calendar-minus mr-1"></i> Excused
+                  </button>
+                  <button type="button"
+                          class="attendance-btn btn-late {% if attendance_data and attendance_data|get_item:session.id and attendance_data|get_item:session.id|get_item:'status' == 'late' %}selected{% endif %}"
+                          onclick="updateAttendance(this, '{{ session.id }}', 'late')">
+                    <i class="fas fa-clock mr-1"></i> Late
+                  </button>
+                  <!-- Loading indicator -->
+                  <span id="indicator-{{ session.id }}" class="htmx-indicator text-xs">
+                    <i class="fas fa-spinner fa-spin mr-1"></i> Updating status...
+                  </span>
+                </div>
+                <div class="session-notes-area">
+                  <textarea id="notes_{{ session.id }}"
+                            name="notes_{{ session.id }}"
+                            placeholder="Add notes about this student's attendance or participation..."
+                            class="session-notes-textarea"
+                            rows="2">{% if attendance_data and attendance_data|get_item:session.id %}{{ attendance_data|get_item:session.id|get_item:'notes'|default:'' }}{% endif %}</textarea>
+                  <button type="button"
+                          class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1.5 rounded-lg text-sm transition-all duration-200 shadow-sm border border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                          onclick="saveNotes('{{ session.id }}')">
+                    <i class="fas fa-save mr-1"></i> Save Notes
+                  </button>
+                </div>
+              </div>
+            {% empty %}
+              <div class="text-center py-4">
+                <div class="text-gray-400 dark:text-gray-500 mb-2">
+                  <i class="fas fa-calendar-times text-2xl"></i>
+                </div>
+                <p class="text-sm text-gray-600 dark:text-gray-300">No sessions have been created for this course yet.</p>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      <!-- Badges & Achievements Section -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h2 class="text-xl font-bold mb-4 flex items-center text-gray-800 dark:text-gray-200">
+          <i class="fas fa-award mr-2 text-purple-500 dark:text-purple-400"></i> Badges & Achievements
+        </h2>
+        <div class="bg-purple-50 dark:bg-purple-900/30 border-l-4 border-purple-400 dark:border-purple-600 p-4 rounded-md mb-4">
+          <div class="flex items-start text-purple-700 dark:text-purple-300">
+            <i class="fas fa-trophy mt-1 mr-2"></i>
+            <div>
+              <p class="font-medium">Recognize student achievements</p>
+              <p class="text-sm mt-1">Award badges to acknowledge student accomplishments and motivate continued progress.</p>
+            </div>
+          </div>
+        </div>
+        <!-- Currently Earned Badges -->
+        <div class="mb-6">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Earned Badges</h3>
+          {% if badges %}
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {% for badge in badges %}
+                <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex flex-col items-center text-center">
+                  <img src="{{ badge.image.url }}"
+                       alt="{{ badge.name }}"
+                       class="w-16 h-16 object-contain mb-2"
+                       height="64"
+                       width="64" />
+                  <h4 class="font-medium text-gray-800 dark:text-gray-200">{{ badge.name }}</h4>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ badge.description|truncatechars:60 }}</p>
+                  <span class="inline-block mt-2 px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 text-xs rounded-full">
+                    <i class="fas fa-check-circle mr-1"></i> Earned
+                  </span>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="text-center py-6 bg-gray-50 dark:bg-gray-750 rounded-lg border border-gray-200 dark:border-gray-700">
+              <div class="text-gray-400 dark:text-gray-500 mb-3">
+                <i class="fas fa-award text-3xl"></i>
+              </div>
+              <p class="text-gray-600 dark:text-gray-300">This student hasn't earned any badges yet.</p>
+            </div>
+          {% endif %}
+        </div>
+        <!-- Award New Badge -->
+        <div>
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Award a Badge</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            <!-- Perfect Attendance Badge -->
+            <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div class="flex flex-col items-center text-center">
+                <div class="w-16 h-16 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center mb-2">
+                  <i class="fas fa-calendar-check text-yellow-600 dark:text-yellow-400 text-2xl"></i>
+                </div>
+                <h5 class="font-medium text-gray-800 dark:text-gray-200">Perfect Attendance</h5>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-3">For students who attend all sessions</p>
+                <button type="button"
+                        class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg text-sm transition duration-150 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onclick="awardBadge('perfect_attendance', 'Perfect Attendance')">
+                  <span class="inline-flex items-center">
+                    <i class="fas fa-award mr-1"></i> Award
+                  </span>
+                </button>
+              </div>
+            </div>
+            <!-- Outstanding Participation Badge -->
+            <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div class="flex flex-col items-center text-center">
+                <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-2">
+                  <i class="fas fa-hand-paper text-blue-600 dark:text-blue-400 text-2xl"></i>
+                </div>
+                <h5 class="font-medium text-gray-800 dark:text-gray-200">Outstanding Participation</h5>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-3">For students who actively participate in discussions</p>
+                <button type="button"
+                        class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg text-sm transition duration-150 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onclick="awardBadge('participation', 'Outstanding Participation')">
+                  <span class="inline-flex items-center">
+                    <i class="fas fa-award mr-1"></i> Award
+                  </span>
+                </button>
+              </div>
+            </div>
+            <!-- Course Completion Badge -->
+            <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <div class="flex flex-col items-center text-center">
+                <div class="w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-2">
+                  <i class="fas fa-graduation-cap text-green-600 dark:text-green-400 text-2xl"></i>
+                </div>
+                <h5 class="font-medium text-gray-800 dark:text-gray-200">Course Completion</h5>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-3">For students who complete the entire course</p>
+                <button type="button"
+                        class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg text-sm transition duration-150 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                        onclick="awardBadge('completion', 'Course Completion')">
+                  <span class="inline-flex items-center">
+                    <i class="fas fa-award mr-1"></i> Award
+                  </span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Teacher Notes Section -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h2 class="text-xl font-bold mb-4 flex items-center text-gray-800 dark:text-gray-200">
+          <i class="fas fa-sticky-note mr-2 text-orange-500 dark:text-orange-400"></i> Teacher Notes
+        </h2>
+        <div class="bg-orange-50 dark:bg-orange-900/30 border-l-4 border-orange-400 dark:border-orange-600 p-4 rounded-md mb-4">
+          <div class="flex items-center text-orange-700 dark:text-orange-300">
+            <i class="fas fa-sticky-note mr-2"></i>
+            <p>Keep private notes about this student for your reference.</p>
+          </div>
+        </div>
+        <!-- Teacher Notes Form -->
+        <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6">
+          <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-2">Teacher Notes</h4>
+          <form method="post"
+                action="{% url 'update_teacher_notes' enrollment.id %}"
+                id="teacherNotesForm"
+                class="space-y-3">
+            {% csrf_token %}
+            <textarea name="teacher_notes"
+                      class="w-full rounded-lg border border-gray-300 dark:border-gray-600 py-2 px-3 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200"
+                      rows="6"
+                      placeholder="Add your private notes about this student here...">{{ enrollment.teacher_notes|default:'' }}</textarea>
+            <div class="flex justify-between items-center">
+              <div class="text-xs text-gray-500 dark:text-gray-400">
+                <i class="fas fa-lock mr-1"></i> Private to you
+              </div>
+              <button type="submit"
+                      class="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-lg transition duration-150 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-opacity-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                <span class="inline-flex items-center">
+                  <i class="fas fa-save mr-2"></i> Save Notes
+                </span>
+              </button>
+            </div>
+          </form>
+        </div>
+        <!-- Previous Notes History -->
+        {% if enrollment.notes_history.all %}
+          <div class="bg-white dark:bg-gray-750 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+            <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-2">Notes History</h4>
+            <div class="space-y-3 max-h-64 overflow-y-auto">
+              {% for note in enrollment.notes_history.all %}
+                <div class="border-b border-gray-200 dark:border-gray-700 pb-3">
+                  <div class="flex justify-between items-start">
+                    <p class="text-sm text-gray-800 dark:text-gray-200">{{ note.content }}</p>
+                    <span class="text-xs text-gray-500 dark:text-gray-400">{{ note.created_at|date:"M d, Y" }}</span>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  <!-- Notification Container -->
+  <div id="notificationContainer" class="fixed top-4 right-4 z-50 max-w-md"></div>
+  <script>
+      // Setup tabs functionality
+      let activeTab = null;
+
+      // Add a failsafe to ensure buttons are clickable
+      document.addEventListener('DOMContentLoaded', function() {
+          // Set an interval to periodically check and ensure buttons are enabled
+          setInterval(function() {
+              document.querySelectorAll('.attendance-btn').forEach(btn => {
+                  if (btn.disabled || btn.style.pointerEvents === 'none') {
+                      console.log('Fixing disabled button:', btn);
+                      btn.disabled = false;
+                      btn.removeAttribute('disabled');
+                      btn.style.pointerEvents = 'auto';
+                      btn.classList.remove('opacity-75');
+                  }
+              });
+          }, 10000); // Check every 10 seconds
+
+          // Add click event listeners to all buttons to force enable them
+          document.querySelectorAll('.attendance-btn').forEach(btn => {
+              btn.addEventListener('mouseenter', function() {
+                  // Make sure button is enabled on hover
+                  this.disabled = false;
+                  this.removeAttribute('disabled');
+                  this.style.pointerEvents = 'auto';
+                  this.classList.remove('opacity-75');
+              });
+          });
+      });
+
+      // Award badge function
+      function awardBadge(badgeType, badgeName) {
+          const csrfToken = document.querySelector('input[name="csrfmiddlewaretoken"]').value;
+          const studentId = new URLSearchParams(window.location.search).get('student_id') || "{{ student.id }}";
+          const courseId = "{{ course.id }}";
+
+          // Disable all award buttons temporarily
+          const awardButtons = document.querySelectorAll('button[onclick^="awardBadge"]');
+          awardButtons.forEach(btn => {
+              btn.disabled = true;
+              btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Awarding...';
+          });
+
+          // Send AJAX request
+          fetch('{% url "award_badge" %}', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/x-www-form-urlencoded',
+                      'X-CSRFToken': csrfToken
+                  },
+                  body: `badge_type=${badgeType}&student_id=${studentId}&course_id=${courseId}`
+              })
+              .then(response => response.json())
+              .then(data => {
+                  // Re-enable all buttons
+                  awardButtons.forEach(btn => {
+                      btn.disabled = false;
+                      btn.innerHTML = '<i class="fas fa-award mr-1"></i> Award';
+                  });
+
+                  if (data.success) {
+                      showNotification(`${badgeName} badge awarded successfully!`, 'success');
+                      // Reload the page after a short delay to show the new badge
+                      setTimeout(() => {
+                          window.location.reload();
+                      }, 1500);
+                  } else {
+                      showNotification(data.message || 'Failed to award badge', 'error');
+                  }
+              })
+              .catch(error => {
+                  console.error('Error:', error);
+
+                  // Re-enable all buttons
+                  awardButtons.forEach(btn => {
+                      btn.disabled = false;
+                      btn.innerHTML = '<i class="fas fa-award mr-1"></i> Award';
+                  });
+
+                  showNotification('Failed to award badge. Please try again.', 'error');
+              });
+      }
+
+      // Add event listener for notes form submission
+      document.getElementById('teacherNotesForm').addEventListener('submit', function(e) {
+          e.preventDefault();
+
+          const form = e.target;
+          const formData = new FormData(form);
+          const submitButton = form.querySelector('button[type="submit"]');
+
+          // Update button state
+          submitButton.disabled = true;
+          submitButton.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Saving...';
+
+          // Send AJAX request
+          fetch(form.action, {
+                  method: 'POST',
+                  body: formData,
+                  headers: {
+                      'X-Requested-With': 'XMLHttpRequest'
+                  }
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      showNotification('Notes saved successfully!', 'success');
+
+                      // Reload the page after a short delay to show the updated notes history
+                      setTimeout(() => {
+                          window.location.reload();
+                      }, 1500);
+                  } else {
+                      showNotification(data.message || 'Failed to save notes. Please try again.', 'error');
+                  }
+              })
+              .catch(error => {
+                  console.error('Error:', error);
+                  showNotification('An error occurred while saving notes.', 'error');
+              })
+              .finally(() => {
+                  // Re-enable the button and restore text
+                  submitButton.disabled = false;
+                  submitButton.innerHTML = '<i class="fas fa-save mr-2"></i> Save Notes';
+              });
+      });
+
+      // Function to handle attendance update with proper form data
+      function updateAttendance(button, sessionId, status) {
+          // Get all buttons in this session group
+          const buttons = button.closest('.grid').querySelectorAll('.attendance-btn');
+          const buttonContainer = button.closest('.grid');
+
+          // Temporarily disable all buttons during the update
+          buttons.forEach(btn => {
+              btn.disabled = true;
+              btn.classList.add('opacity-75');
+              // Make buttons temporarily unclickable
+              btn.style.pointerEvents = 'none';
+          });
+
+          // Add a pulsing animation to the button container
+          buttonContainer.classList.add('opacity-75');
+
+          // Select the button visually
+          selectAttendanceButton(button, sessionId, status);
+
+          // Get the notes for this session
+          const notes = document.getElementById(`notes_${sessionId}`).value;
+          const studentId = "{{ student.id }}"; // Ensure we're getting the student ID from the template
+
+          // Show loading indicator
+          const indicator = document.getElementById(`indicator-${sessionId}`);
+          if (indicator) indicator.style.opacity = '1';
+
+          // Debug check - make sure student ID is present
+          if (!studentId) {
+              console.error('Student ID is missing!');
+              showNotification('Error: Student ID is missing', 'error');
+              resetButtonStates();
+              return;
+          }
+
+          // Create form data
+          const formData = new FormData();
+          formData.append('session_id', sessionId);
+          formData.append('student_id', studentId);
+          formData.append('status', status);
+          formData.append('notes', notes || ''); // Ensure notes is at least an empty string
+
+          // Debug the FormData values
+          console.log('FormData contents:');
+          for (let pair of formData.entries()) {
+              console.log(pair[0] + ': ' + pair[1]);
+          }
+
+          fetch('{% url "update_student_attendance" %}', {
+                  method: 'POST',
+                  body: formData,
+                  headers: {
+                      'X-Requested-With': 'XMLHttpRequest',
+                      'X-CSRFToken': '{{ csrf_token }}'
+                  }
+              })
+              .then(response => {
+                  // Check if the response is OK before trying to parse JSON
+                  if (!response.ok) {
+                      console.error('Response not OK:', response.status, response.statusText);
+                      // Try to get detailed error info
+                      return response.text().then(text => {
+                          console.error('Error response text:', text);
+
+                          try {
+                              const errorData = JSON.parse(text);
+                              console.error('Parsed error data:', errorData);
+                              throw new Error(errorData.message || 'Server returned ' + response.status);
+                          } catch (e) {
+                              console.error('Error parsing error response:', e);
+                              throw new Error('Server returned ' + response.status + ': ' + response.statusText);
+                          }
+                      });
+                  }
+                  return response.json();
+              })
+              .then(data => {
+                  console.log('Success response:', data);
+                  if (data.success) {
+                      // Show a success animation
+                      button.classList.add('pulse-success');
+                      setTimeout(() => {
+                          button.classList.remove('pulse-success');
+                      }, 1000);
+                      showNotification(`Attendance marked as "${status.charAt(0).toUpperCase() + status.slice(1)}"`, 'success');
+                  } else {
+                      // Show an error animation and reset selection
+                      button.classList.add('pulse-error');
+                      setTimeout(() => {
+                          button.classList.remove('pulse-error');
+                          // Clear selection if failed
+                          buttons.forEach(btn => btn.classList.remove('selected'));
+                      }, 1000);
+                      showNotification(data.message || 'Failed to update attendance', 'error');
+                  }
+              })
+              .catch(error => {
+                  console.error('Error updating attendance:', error);
+                  // Show an error animation and reset selection
+                  button.classList.add('pulse-error');
+                  setTimeout(() => {
+                      button.classList.remove('pulse-error');
+                      // Clear selection if failed
+                      buttons.forEach(btn => btn.classList.remove('selected'));
+                  }, 1000);
+                  showNotification('Error updating attendance: ' + error.message, 'error');
+              })
+              .finally(() => {
+                  // Make sure to re-enable all buttons regardless of success/failure
+                  console.log('Re-enabling attendance buttons...');
+                  resetButtonStates();
+                  // Hide loading indicator
+                  if (indicator) indicator.style.opacity = '0';
+              });
+      }
+
+      // Function to save notes with enhanced visual feedback
+      function saveNotes(sessionId) {
+          const button = document.querySelector(`button[onclick="saveNotes('${sessionId}')"]`);
+          const notes = document.getElementById(`notes_${sessionId}`).value;
+          const status = getCurrentStatus(sessionId);
+          const studentId = "{{ student.id }}"; // Ensure we're getting the student ID from the template
+          const notesField = document.getElementById(`notes_${sessionId}`);
+
+          // Add visual feedback for the notes field
+          notesField.classList.add('ring-2', 'ring-teal-300');
+
+          // Update button to show saving state
+          const originalButtonText = button.innerHTML;
+          button.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-1"></i> Saving...';
+          button.disabled = true;
+          button.classList.add('opacity-75');
+
+          // Show loading indicator
+          const indicator = document.getElementById(`indicator-${sessionId}`);
+          if (indicator) indicator.style.opacity = '1';
+
+          // Debug check - make sure student ID is present
+          if (!studentId) {
+              console.error('Student ID is missing!');
+              showNotification('Error: Student ID is missing', 'error');
+              if (indicator) indicator.style.opacity = '0';
+              resetSaveButton(button, originalButtonText);
+              return;
+          }
+
+          // Create form data
+          const formData = new FormData();
+          formData.append('session_id', sessionId);
+          formData.append('student_id', studentId);
+          formData.append('status', status);
+          formData.append('notes', notes || ''); // Ensure notes is at least an empty string
+
+          // Debug the FormData values
+          console.log('FormData contents:');
+          for (let pair of formData.entries()) {
+              console.log(pair[0] + ': ' + pair[1]);
+          }
+
+          fetch('{% url "update_student_attendance" %}', {
+                  method: 'POST',
+                  body: formData,
+                  headers: {
+                      'X-Requested-With': 'XMLHttpRequest',
+                      'X-CSRFToken': '{{ csrf_token }}'
+                  }
+              })
+              .then(response => {
+                  // Check if the response is OK before trying to parse JSON
+                  if (!response.ok) {
+                      console.error('Response not OK:', response.status, response.statusText);
+                      // Try to get detailed error info
+                      return response.text().then(text => {
+                          console.error('Error response text:', text);
+
+                          try {
+                              const errorData = JSON.parse(text);
+                              console.error('Parsed error data:', errorData);
+                              throw new Error(errorData.message || 'Server returned ' + response.status);
+                          } catch (e) {
+                              console.error('Error parsing error response:', e);
+                              throw new Error('Server returned ' + response.status + ': ' + response.statusText);
+                          }
+                      });
+                  }
+                  return response.json();
+              })
+              .then(data => {
+                  console.log('Success response:', data);
+                  if (data.success) {
+                      notesField.classList.remove('ring-2', 'ring-teal-300');
+                      notesField.classList.add('ring-2', 'ring-green-500');
+                      setTimeout(() => {
+                          notesField.classList.remove('ring-2', 'ring-green-500');
+                      }, 1000);
+                      showNotification('Notes saved successfully', 'success');
+                  } else {
+                      notesField.classList.remove('ring-2', 'ring-teal-300');
+                      notesField.classList.add('ring-2', 'ring-red-500');
+                      setTimeout(() => {
+                          notesField.classList.remove('ring-2', 'ring-red-500');
+                      }, 1000);
+                      showNotification(data.message || 'Failed to save notes', 'error');
+                  }
+              })
+              .catch(error => {
+                  console.error('Error saving notes:', error);
+                  notesField.classList.remove('ring-2', 'ring-teal-300');
+                  notesField.classList.add('ring-2', 'ring-red-500');
+                  setTimeout(() => {
+                      notesField.classList.remove('ring-2', 'ring-red-500');
+                  }, 1000);
+                  showNotification('Error saving notes: ' + error.message, 'error');
+              })
+              .finally(() => {
+                  // Hide loading indicator
+                  if (indicator) indicator.style.opacity = '0';
+                  // Reset button state
+                  resetSaveButton(button, originalButtonText);
+                  // Also make sure attendance buttons are enabled
+                  resetButtonStates();
+              });
+      }
+
+      // Helper function to reset save button state
+      function resetSaveButton(button, originalText) {
+          if (button) {
+              button.innerHTML = originalText || '<i class="fas fa-save mr-1"></i> Save Notes';
+              button.disabled = false;
+              button.removeAttribute('disabled');
+              button.classList.remove('opacity-75');
+              button.style.pointerEvents = 'auto';
+          }
+      }
+
+      // Function to select attendance button with animation
+      function selectAttendanceButton(button, sessionId, status) {
+          // Get all buttons in this session group
+          const buttons = button.closest('.grid').querySelectorAll('.attendance-btn');
+          const sessionContainer = document.getElementById(`session-${sessionId}`);
+          const flexContainer = sessionContainer.querySelector('.flex');
+          let currentStatusBadge = flexContainer.querySelector('.status-badge');
+
+          // Remove selected class from all buttons
+          buttons.forEach(btn => {
+              btn.classList.remove('selected');
+              // Reset any animations or styles
+              btn.style.transform = '';
+              // Ensure buttons aren't disabled
+              btn.disabled = false;
+              btn.removeAttribute('disabled');
+              btn.style.pointerEvents = 'auto';
+          });
+
+          // Add selected class to clicked button with animation
+          button.classList.add('selected');
+
+          // Add subtle animation for feedback
+          button.style.transform = 'scale(1.05)';
+          setTimeout(() => {
+              if (button.classList.contains('selected')) {
+                  button.style.transform = '';
+              }
+          }, 200);
+
+          // Create or update status badge based on the selected status
+          if (!currentStatusBadge) {
+              // Create new status badge if it doesn't exist
+              currentStatusBadge = document.createElement('div');
+              currentStatusBadge.classList.add('status-badge', 'ml-auto');
+              flexContainer.appendChild(currentStatusBadge);
+          }
+
+          // Update status badge style and content based on selected status
+          currentStatusBadge.className = 'status-badge ml-auto shadow-sm border'; // Reset classes
+
+          // Add status-specific classes
+          if (status === 'present') {
+              currentStatusBadge.classList.add('bg-green-100', 'text-green-800', 'dark:bg-green-900/60', 'dark:text-green-300', 'border-green-300', 'dark:border-green-700');
+              currentStatusBadge.innerHTML = '<i class="fas fa-check-circle mr-1"></i> Present';
+          } else if (status === 'absent') {
+              currentStatusBadge.classList.add('bg-red-100', 'text-red-800', 'dark:bg-red-900/60', 'dark:text-red-300', 'border-red-300', 'dark:border-red-700');
+              currentStatusBadge.innerHTML = '<i class="fas fa-times-circle mr-1"></i> Absent';
+          } else if (status === 'excused') {
+              currentStatusBadge.classList.add('bg-yellow-100', 'text-yellow-800', 'dark:bg-yellow-900/60', 'dark:text-yellow-300', 'border-yellow-300', 'dark:border-yellow-700');
+              currentStatusBadge.innerHTML = '<i class="fas fa-calendar-minus mr-1"></i> Excused';
+          } else if (status === 'late') {
+              currentStatusBadge.classList.add('bg-orange-100', 'text-orange-800', 'dark:bg-orange-900/60', 'dark:text-orange-300', 'border-orange-300', 'dark:border-orange-700');
+              currentStatusBadge.innerHTML = '<i class="fas fa-clock mr-1"></i> Late';
+          }
+
+          // Add a subtle pop animation to the badge
+          currentStatusBadge.style.animation = 'none';
+          setTimeout(() => {
+              currentStatusBadge.style.animation = '';
+              currentStatusBadge.classList.add('pulse-badge');
+              setTimeout(() => {
+                  currentStatusBadge.classList.remove('pulse-badge');
+              }, 500);
+          }, 10);
+
+          // Flash the indicator briefly to show something happened
+          const indicator = document.getElementById(`indicator-${sessionId}`);
+          if (indicator) {
+              indicator.style.opacity = '1';
+              setTimeout(() => {
+                  indicator.style.opacity = '0';
+              }, 300);
+          }
+      }
+
+      // Function to get the current status for a session
+      function getCurrentStatus(sessionId) {
+          try {
+              const sessionContainer = document.getElementById(`session-${sessionId}`);
+              if (!sessionContainer) {
+                  console.error(`Could not find session container for session ${sessionId}`);
+                  return 'present'; // Default if element not found
+              }
+
+              const buttonsContainer = sessionContainer.querySelector('.grid');
+              if (!buttonsContainer) {
+                  console.error(`Could not find buttons container for session ${sessionId}`);
+                  return 'present'; // Default if buttons container not found
+              }
+
+              const selectedButton = buttonsContainer.querySelector('.attendance-btn.selected');
+              if (!selectedButton) {
+                  // No status selected, return default
+                  return 'present';
+              }
+
+              // Extract status from class name (e.g., btn-present -> present)
+              for (const className of selectedButton.classList) {
+                  if (className.startsWith('btn-')) {
+                      return className.replace('btn-', '');
+                  }
+              }
+
+              return 'present'; // Default if no status found
+          } catch (error) {
+              console.error('Error getting current status:', error);
+              return 'present'; // Default in case of error
+          }
+      }
+
+      // Function to reset button states after an update
+      function resetButtonStates() {
+          // Find all button containers
+          const buttonContainers = document.querySelectorAll('.grid');
+
+          buttonContainers.forEach(container => {
+              // Re-enable all buttons
+              const buttons = container.querySelectorAll('.attendance-btn');
+              buttons.forEach(btn => {
+                  // Ensure buttons are explicitly enabled using multiple approaches
+                  btn.disabled = false;
+                  btn.removeAttribute('disabled');
+                  btn.classList.remove('opacity-75');
+                  // Make buttons clickable again
+                  btn.style.pointerEvents = 'auto';
+              });
+
+              // Remove opacity from container
+              container.classList.remove('opacity-75');
+          });
+
+          console.log('All attendance buttons have been re-enabled.');
+      }
+
+      // Function to show notification
+      function showNotification(message, type = 'success') {
+          const notification = document.createElement('div');
+          notification.className = `fixed bottom-4 right-4 p-4 rounded-lg shadow-lg z-50 transform transition-transform duration-300 ease-in-out translate-y-10 opacity-0
+                                      ${type === 'success' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' :
+                                       type === 'error' ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' :
+                                       'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'}`;
+          notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="mr-2 ${type === 'success' ? 'fas fa-check-circle' : type === 'error' ? 'fas fa-exclamation-circle' : 'fas fa-info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+          document.body.appendChild(notification);
+
+          // Show the notification
+          setTimeout(() => {
+              notification.classList.remove('translate-y-10', 'opacity-0');
+          }, 10);
+
+          // Hide and remove after 3 seconds
+          setTimeout(() => {
+              notification.classList.add('translate-y-10', 'opacity-0');
+              setTimeout(() => {
+                  notification.remove();
+              }, 300);
+          }, 3000);
+      }
+
+      // Function to show enhanced notification with icon and progress bar
+      function showNotification(message, type = 'success') {
+          // Create notification container if it doesn't exist
+          let container = document.getElementById('notificationContainer');
+          if (!container) {
+              container = document.createElement('div');
+              container.id = 'notificationContainer';
+              container.className = 'fixed top-4 right-4 z-50 max-w-md space-y-2';
+              document.body.appendChild(container);
+          }
+
+          // Create notification element
+          const notification = document.createElement('div');
+          notification.className = `flex items-start p-4 rounded-lg shadow-lg transform transition-all duration-300 ease-in-out translate-x-full opacity-0
+                ${type === 'success' ? 'bg-white dark:bg-gray-800 border-l-4 border-green-500 dark:border-green-600' :
+                 type === 'error' ? 'bg-white dark:bg-gray-800 border-l-4 border-red-500 dark:border-red-600' :
+                 'bg-white dark:bg-gray-800 border-l-4 border-blue-500 dark:border-blue-600'}`;
+
+          // Set icon based on notification type
+          const iconClass = type === 'success' ? 'text-green-500 dark:text-green-400 fas fa-check-circle' :
+              type === 'error' ? 'text-red-500 dark:text-red-400 fas fa-exclamation-circle' :
+              'text-blue-500 dark:text-blue-400 fas fa-info-circle';
+
+          // Create notification content
+          notification.innerHTML = `
+                <div class="flex-shrink-0 mr-3">
+                    <i class="${iconClass} text-xl"></i>
+                </div>
+                <div class="flex-grow">
+                    <h4 class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                        ${type === 'success' ? 'Success' : type === 'error' ? 'Error' : 'Information'}
+                    </h4>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${message}</p>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 h-1 mt-2 rounded overflow-hidden">
+                        <div class="progress-bar h-full ${ type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500' }"></div>
+                    </div>
+                </div>
+                <button class="ml-4 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+
+          // Add close button functionality
+          const closeButton = notification.querySelector('button');
+          closeButton.addEventListener('click', () => {
+              notification.classList.add('translate-x-full', 'opacity-0');
+              setTimeout(() => notification.remove(), 300);
+          });
+
+          // Add to container
+          container.appendChild(notification);
+
+          // Show notification with animation
+          setTimeout(() => {
+              notification.classList.remove('translate-x-full', 'opacity-0');
+              const progressBar = notification.querySelector('.progress-bar');
+              progressBar.style.transition = 'width 3s linear';
+              progressBar.style.width = '100%';
+
+              // Start with full width
+              progressBar.style.width = '100%';
+
+              // Animate to 0 width over 3 seconds
+              setTimeout(() => {
+                  progressBar.style.width = '0';
+              }, 50);
+          }, 10);
+
+          // Auto dismiss after 3 seconds
+          setTimeout(() => {
+              notification.classList.add('translate-x-full', 'opacity-0');
+              setTimeout(() => {
+                  notification.remove();
+              }, 3000);
+          }, 3000);
+      }
+  </script>
+{% endblock content %}
