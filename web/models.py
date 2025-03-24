@@ -846,8 +846,15 @@ class StudyGroupInvite(models.Model):
         self.status = "accepted"
         self.responded_at = timezone.now()
         self.save()
-        self.group.add_member(self.recipient)
-
+        member_added = self.group.add_member(self.recipient)
+        if not member_added:
+            # Group is full, create notification or handle this case
+            Notification.objects.create(
+                user=self.recipient,
+                title="Group Full",
+                message=f"Could not join {self.group.name} as it's already full",
+                notification_type="warning",
+            )
     def decline(self):
         """Decline the invitation."""
         self.status = "declined"
