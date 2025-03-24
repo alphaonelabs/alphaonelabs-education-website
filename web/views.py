@@ -4737,8 +4737,9 @@ def update_student_attendance(request):
         return JsonResponse({"success": False, "message": "Session not found"}, status=404)
     except User.DoesNotExist:
         return JsonResponse({"success": False, "message": "Student not found"}, status=404)
-    except Exception as e:
+    except Exception:
         import logging
+
         logger = logging.getLogger(__name__)
         logger.error("Error updating student attendance", exc_info=True)
         return JsonResponse({"success": False, "message": "An internal error has occurred."}, status=500)
@@ -4787,8 +4788,8 @@ def get_student_attendance(request):
         return JsonResponse({"success": False, "message": "Course not found"}, status=404)
     except User.DoesNotExist:
         return JsonResponse({"success": False, "message": "Student not found"}, status=404)
-    except Exception as e:
-        return JsonResponse({"success": False, "message": f"Error: {str(e)}"}, status=500)
+    except Exception:
+        return JsonResponse({"success": False, "message": "Error: get_student_attendance"}, status=500)
 
 
 @login_required
@@ -4982,8 +4983,9 @@ def award_badge(request):
         return JsonResponse({"success": False, "message": "Student not found"}, status=404)
     except Course.DoesNotExist:
         return JsonResponse({"success": False, "message": "Course not found"}, status=404)
-    except Exception as e:
-        return JsonResponse({"success": False, "message": f"Error: {str(e)}"}, status=500)
+    except Exception:
+        return JsonResponse({"success": False, "message": "Error: award_badge"}, status=500)
+
 
 def notification_preferences(request):
     """
@@ -5005,4 +5007,3 @@ def notification_preferences(request):
         form = NotificationPreferencesForm(instance=preference)
 
     return render(request, "account/notification_preferences.html", {"form": form})
-

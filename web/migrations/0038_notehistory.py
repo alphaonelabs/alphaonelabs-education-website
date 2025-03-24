@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("web", "0037_profile_how_did_you_hear_about_us"),
+        ("web", "0038_coursematerial_due_date_and_more"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

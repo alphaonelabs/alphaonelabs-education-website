@@ -2206,7 +2206,6 @@ class PeerChallengeInvitation(models.Model):
         )
 
 
-
 class NoteHistory(models.Model):
     """Model for tracking changes to teacher notes on enrollments."""
 
@@ -2222,6 +2221,7 @@ class NoteHistory(models.Model):
     def __str__(self):
         return f"{self.created_by.username} updated notes for {self.enrollment.student.username}"
 
+
 class NotificationPreference(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="notification_preferences")
     reminder_days_before = models.IntegerField(default=3, help_text="Days before deadline to send first reminder")
@@ -2231,4 +2231,3 @@ class NotificationPreference(models.Model):
 
     def __str__(self):
         return f"Notification preferences for {self.user.username}"
-
