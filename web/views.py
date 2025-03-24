@@ -468,6 +468,7 @@ def course_detail(request, slug):
         "next_month": next_month,
         "student_attendance": student_attendance,
         "completed_enrollment_count": course.enrollments.filter(status="completed").count(),
+        "in_progress_enrollment_count": course.enrollments.filter(status="in_progress").count(),
     }
 
     return render(request, "courses/detail.html", context)
