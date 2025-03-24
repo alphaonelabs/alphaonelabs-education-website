@@ -56,6 +56,7 @@ from django.views.generic import (
 from .calendar_sync import generate_google_calendar_link, generate_ical_feed, generate_outlook_calendar_link
 from .decorators import teacher_required
 from .forms import (
+    AwardAchievementForm,
     BlogPostForm,
     ChallengeSubmissionForm,
     CourseForm,
@@ -274,9 +275,7 @@ def index(request):
 def signup_view(request):
     """Custom signup view that properly handles referral codes."""
     if request.method == "POST":
-        # Initialize the registration form with POST data and request context
         form = UserRegistrationForm(request.POST, request=request)
-        # Validate the form data before saving the new user
         if form.is_valid():
             form.save(request)
             return redirect("account_email_verification_sent")
@@ -1070,6 +1069,41 @@ def mark_session_completed(request, session_id):
 
     messages.success(request, "Session marked as completed!")
     return redirect("course_detail", slug=session.course.slug)
+
+
+@login_required
+def award_achievement(request):
+    try:
+        profile = request.user.profile
+        if not profile.is_teacher:
+            messages.error(request, "You do not have permission to award achievements.")
+            return redirect("teacher_dashboard")
+    except Profile.DoesNotExist:
+        messages.error(request, "Profile not found.")
+        return redirect("teacher_dashboard")
+
+    if request.method == "POST":
+        form = AwardAchievementForm(request.POST, teacher=request.user)
+        if form.is_valid():
+            Achievement.objects.create(
+                student=form.cleaned_data["student"],
+                course=form.cleaned_data["course"],
+                achievement_type=form.cleaned_data["achievement_type"],
+                title=form.cleaned_data["title"],
+                description=form.cleaned_data["description"],
+                badge_icon=form.cleaned_data["badge_icon"],
+            )
+            messages.success(
+                request,
+                f'Achievement "{form.cleaned_data["title"]}" awarded to {form.cleaned_data["student"].username}.',
+            )
+            return redirect("teacher_dashboard")
+        else:
+            # Show an error message if the form is invalid
+            messages.error(request, "There was an error in the form submission. Please check the form and try again.")
+    else:
+        form = AwardAchievementForm(teacher=request.user)
+    return render(request, "award_achievement.html", {"form": form})
 
 
 @login_required
@@ -2848,18 +2882,36 @@ def content_dashboard(request):
 
 
 def current_weekly_challenge(request):
-    current_challenge = Challenge.objects.filter(start_date__lte=timezone.now(), end_date__gte=timezone.now()).first()
-    # Check if the user has submitted the current challenge
-    user_submission = None
-    if request.user.is_authenticated and current_challenge:
-        user_submission = ChallengeSubmission.objects.filter(user=request.user, challenge=current_challenge).first()
+    current_time = timezone.now()
+    weekly_challenge = Challenge.objects.filter(
+        challenge_type="weekly", start_date__lte=current_time, end_date__gte=current_time
+    ).first()
+
+    one_time_challenges = Challenge.objects.filter(
+        challenge_type="one_time", start_date__lte=current_time, end_date__gte=current_time
+    )
+    user_submissions = {}
+    if request.user.is_authenticated:
+        # Get all active challenges
+        all_challenges = []
+        if weekly_challenge:
+            all_challenges.append(weekly_challenge)
+            all_challenges.extend(list(one_time_challenges))
+
+        # Get all submissions for active challenges
+        if all_challenges:
+            submissions = ChallengeSubmission.objects.filter(user=request.user, challenge__in=all_challenges)
+            # Create a dictionary mapping challenge IDs to submissions
+            for submission in submissions:
+                user_submissions[submission.challenge_id] = submission
 
     return render(
         request,
         "web/current_weekly_challenge.html",
         {
-            "current_challenge": current_challenge,
-            "user_submission": user_submission,  # Pass the user's submission to the template
+            "current_challenge": weekly_challenge,
+            "one_time_challenges": one_time_challenges,
+            "user_submissions": user_submissions if request.user.is_authenticated else {},
         },
     )
 

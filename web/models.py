@@ -566,18 +566,24 @@ class Achievement(models.Model):
         ("streak", "Daily Learning Streak"),
     ]
 
+    BADGE_ICONS = [
+        ("fas fa-trophy", "Trophy"),
+        ("fas fa-medal", "Medal"),
+        ("fas fa-award", "Award"),
+        ("fas fa-star", "Star"),
+        ("fas fa-certificate", "Certificate"),
+        ("fas fa-graduation-cap", "Graduation Cap"),
+    ]
+
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="achievements")
-    # Making Course optional for streak badges and quiz
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="achievements", null=True, blank=True)
     achievement_type = models.CharField(max_length=20, choices=TYPES)
     title = models.CharField(max_length=200)
     description = models.TextField()
     awarded_at = models.DateTimeField(auto_now_add=True)
-    # Fields for icon-Based badges:
     badge_icon = models.CharField(
         max_length=100, blank=True, help_text="Icon class for the badge (e.g., 'fas fa-trophy')"
     )
-    # Fields for criteria-based badges:(100% for course completion, 90 for quiz, 7 or 30 for streak)
     criteria_threshold = models.PositiveIntegerField(
         null=True, blank=True, help_text="Optional threshold required to earn this badge"
     )
@@ -1176,14 +1182,36 @@ class SearchLog(models.Model):
 
 
 class Challenge(models.Model):
+    CHALLENGE_TYPE_CHOICES = [
+        ("weekly", "Weekly Challenge"),
+        ("one_time", "One-time Challenge"),
+    ]
+
     title = models.CharField(max_length=200)
     description = models.TextField()
-    week_number = models.PositiveIntegerField(unique=True)
+    challenge_type = models.CharField(max_length=10, choices=CHALLENGE_TYPE_CHOICES, default="weekly")
+    week_number = models.PositiveIntegerField(null=True, blank=True)
     start_date = models.DateField()
     end_date = models.DateField()
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["week_number"],
+                condition=models.Q(challenge_type="weekly"),
+                name="unique_week_number_for_weekly_challenges",
+            )
+        ]
+
     def __str__(self):
-        return f"Week {self.week_number}: {self.title}"
+        if self.challenge_type == "weekly":
+            return f"Week {self.week_number}: {self.title}"
+        return f"One-time: {self.title}"
+
+    def clean(self):
+        super().clean()
+        if self.challenge_type == "weekly" and not self.week_number:
+            raise ValidationError({"week_number": "Week number is required for weekly challenges."})
 
 
 class ChallengeSubmission(models.Model):
@@ -1197,7 +1225,9 @@ class ChallengeSubmission(models.Model):
         unique_together = ["user", "challenge"]
 
     def __str__(self):
-        return f"{self.user.username}'s submission for Week {self.challenge.week_number}"
+        if self.challenge.challenge_type == "weekly":
+            return f"{self.user.username}'s submission for Week {self.challenge.week_number}"
+        return f"{self.user.username}'s submission for {self.challenge.title}"
 
     def save(self, *args, **kwargs):
         is_new = self.pk is None

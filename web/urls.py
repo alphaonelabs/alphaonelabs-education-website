@@ -209,8 +209,8 @@ urlpatterns += i18n_patterns(
     path("calendar/<str:share_token>/data", views.get_calendar_data, name="get_calendar_data"),
     path("status/", views.system_status, name="system_status"),
     # Challenge URLs
-    path("challenges/<int:week_number>/", views.challenge_detail, name="challenge_detail"),
-    path("challenges/<int:week_number>/submit/", views.challenge_submit, name="challenge_submit"),
+    path("challenges/<int:challenge_id>/", views.challenge_detail, name="challenge_detail"),
+    path("challenges/<int:challenge_id>/submit/", views.challenge_submit, name="challenge_submit"),
     path("current-weekly-challenge/", views.current_weekly_challenge, name="current_weekly_challenge"),
     # Educational Videos URLs
     path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),
@@ -240,6 +240,7 @@ urlpatterns += i18n_patterns(
         name="store_order_management",
     ),
     path("orders/item/<int:item_id>/update-status/", views.update_order_status, name="update_order_status"),
+    path("award-achievement/", views.award_achievement, name="award_achievement"),
     # Analytics
     path(
         "store/<slug:store_slug>/analytics/",
