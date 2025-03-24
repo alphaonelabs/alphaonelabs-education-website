@@ -2,101 +2,77 @@
 {% extends "base.html" %}
 
 {% block title %}Award Achievement{% endblock %}
-
 {% block content %}
-<div class="container py-5">
+  <div class="container py-5">
     <div class="row">
-        <div class="col-md-8 mx-auto">
-            <div class="card shadow">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="card-title mb-0">Award Achievement to Student</h4>
+      <div class="col-md-8 mx-auto">
+        <div class="card shadow">
+          <div class="card-header bg-primary text-white">
+            <h4 class="card-title mb-0">Award Achievement to Student</h4>
+          </div>
+          <div class="card-body">
+            <form method="post">
+              {% csrf_token %}
+              <div class="mb-3">
+                <label for="{{ form.student.id_for_label }}" class="form-label">Student</label>
+                {{ form.student }}
+                {% if form.student.errors %}<div class="text-danger mt-1">{{ form.student.errors }}</div>{% endif %}
+              </div>
+              <div class="mb-3">
+                <label for="{{ form.achievement_type.id_for_label }}" class="form-label">Achievement Type</label>
+                {{ form.achievement_type }}
+                {% if form.achievement_type.errors %}<div class="text-danger mt-1">{{ form.achievement_type.errors }}</div>{% endif %}
+              </div>
+              <div class="mb-3">
+                <label for="{{ form.course.id_for_label }}" class="form-label">Course (Optional)</label>
+                {{ form.course }}
+                {% if form.course.errors %}<div class="text-danger mt-1">{{ form.course.errors }}</div>{% endif %}
+              </div>
+              <div class="mb-3">
+                <label for="{{ form.title.id_for_label }}" class="form-label">Achievement Title</label>
+                {{ form.title }}
+                {% if form.title.errors %}<div class="text-danger mt-1">{{ form.title.errors }}</div>{% endif %}
+              </div>
+              <div class="mb-3">
+                <label for="{{ form.description.id_for_label }}" class="form-label">Description (Optional)</label>
+                {{ form.description }}
+                {% if form.description.errors %}<div class="text-danger mt-1">{{ form.description.errors }}</div>{% endif %}
+              </div>
+              <div class="mb-3">
+                <label for="{{ form.badge_icon.id_for_label }}" class="form-label">Badge Icon</label>
+                <div class="d-flex align-items-center">
+                  {{ form.badge_icon }}
+                  <div class="ms-3 badge-preview">
+                    <i id="icon-preview" class="fas fa-trophy fa-2x"></i>
+                  </div>
                 </div>
-                <div class="card-body">
-                    <form method="post">
-                        {% csrf_token %}
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.student.id_for_label }}" class="form-label">Student</label>
-                            {{ form.student }}
-                            {% if form.student.errors %}
-                                <div class="text-danger mt-1">{{ form.student.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.achievement_type.id_for_label }}" class="form-label">Achievement Type</label>
-                            {{ form.achievement_type }}
-                            {% if form.achievement_type.errors %}
-                                <div class="text-danger mt-1">{{ form.achievement_type.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.course.id_for_label }}" class="form-label">Course (Optional)</label>
-                            {{ form.course }}
-                            {% if form.course.errors %}
-                                <div class="text-danger mt-1">{{ form.course.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.title.id_for_label }}" class="form-label">Achievement Title</label>
-                            {{ form.title }}
-                            {% if form.title.errors %}
-                                <div class="text-danger mt-1">{{ form.title.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.description.id_for_label }}" class="form-label">Description (Optional)</label>
-                            {{ form.description }}
-                            {% if form.description.errors %}
-                                <div class="text-danger mt-1">{{ form.description.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="{{ form.badge_icon.id_for_label }}" class="form-label">Badge Icon</label>
-                            <div class="d-flex align-items-center">
-                                {{ form.badge_icon }}
-                                <div class="ms-3 badge-preview">
-                                    <i id="icon-preview" class="fas fa-trophy fa-2x"></i>
-                                </div>
-                            </div>
-                            {% if form.badge_icon.errors %}
-                                <div class="text-danger mt-1">{{ form.badge_icon.errors }}</div>
-                            {% endif %}
-                        </div>
-                        
-                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                            <a href="{% url 'teacher_dashboard' %}" class="btn btn-secondary">Cancel</a>
-                            <button type="submit" class="btn btn-primary">Award Achievement</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
+                {% if form.badge_icon.errors %}<div class="text-danger mt-1">{{ form.badge_icon.errors }}</div>{% endif %}
+              </div>
+              <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                <a href="{% url 'teacher_dashboard' %}" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Award Achievement</button>
+              </div>
+            </form>
+          </div>
         </div>
+      </div>
     </div>
-</div>
+  </div>
+  <script>
+      function initBadgePreview() {
+          const badgeIconSelect = document.getElementById('id_badge_icon');
+          const iconPreview = document.getElementById('icon-preview');
 
-<script>
+          if (badgeIconSelect && iconPreview) {
+              badgeIconSelect.addEventListener('change', function() {
+                  iconPreview.className = badgeIconSelect.value + ' fa-2x';
+              });
 
-function initBadgePreview() {
-    const badgeIconSelect = document.getElementById('id_badge_icon');
-    const iconPreview = document.getElementById('icon-preview');
+              // Initialize with the current value
+              iconPreview.className = badgeIconSelect.value + ' fa-2x';
+          }
+      }
 
-    if (badgeIconSelect && iconPreview) {
-        badgeIconSelect.addEventListener('change', function() {
-            iconPreview.className = badgeIconSelect.value + ' fa-2x';
-        });
-
-        // Initialize with the current value
-        iconPreview.className = badgeIconSelect.value + ' fa-2x';
-    }
-}
-
-document.addEventListener('DOMContentLoaded', initBadgePreview);
-</script>
-
-
+      document.addEventListener('DOMContentLoaded', initBadgePreview);
+  </script>
 {% endblock %}
