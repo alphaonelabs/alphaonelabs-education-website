@@ -855,6 +855,7 @@ class StudyGroupInvite(models.Model):
                 message=f"Could not join {self.group.name} as it's already full",
                 notification_type="warning",
             )
+
     def decline(self):
         """Decline the invitation."""
         self.status = "declined"
