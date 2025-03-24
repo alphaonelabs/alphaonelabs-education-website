@@ -35,6 +35,7 @@ from .models import (
     Review,
     Session,
     Storefront,
+    StudyGroup,
     Subject,
     SuccessStory,
     TeamGoal,
@@ -1622,3 +1623,10 @@ class NotificationPreferencesForm(forms.ModelForm):
             "reminder_days_before": forms.NumberInput(attrs={"min": 1, "max": 14}),
             "reminder_hours_before": forms.NumberInput(attrs={"min": 1, "max": 72}),
         }
+
+
+class StudyGroupForm(forms.ModelForm):
+    class Meta:
+        model = StudyGroup
+        # You might exclude fields that are set automatically.
+        fields = ["name", "description", "course", "max_members", "is_private"]
