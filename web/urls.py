@@ -82,6 +82,7 @@ urlpatterns += i18n_patterns(
     path("membership/cancel-subscription/", views.cancel_subscription, name="cancel_subscription"),
     path("membership/reactivate/", views.reactivate_subscription, name="reactivate_subscription"),
     path("membership/webhook/", views.membership_webhook, name="membership_webhook"),
+    path("api/membership/link-payment-method/", views.api_link_payment_method, name="api_link_payment_method"),
     # Dashboard URLs
     path("dashboard/student/", views.student_dashboard, name="student_dashboard"),
     path("dashboard/teacher/", views.teacher_dashboard, name="teacher_dashboard"),

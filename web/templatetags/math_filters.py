@@ -43,6 +43,6 @@ def percentage(value, arg=100):
 
 
 @register.filter
-def format_currency(value, decimal_places=2):
-    """Formats a number as currency with dollar sign"""
-    return safe_format_currency(value, decimal_places, default=value)
+def format_currency(value, decimal_places=2, currency_symbol="$"):
+    """Formats a number as currency with customizable symbol"""
+    return safe_format_currency(value, decimal_places, currency_symbol, default=value)

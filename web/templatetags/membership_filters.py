@@ -24,6 +24,8 @@ def subtract(value, arg):
 
 
 @register.filter
-def percentage_off(monthly_price, yearly_price):
+def percentage_off(monthly_price, yearly_price, min_percentage=0, max_percentage=100):
     """Calculates the percentage discount of yearly vs monthly billing"""
-    return safe_percentage_off(monthly_price, yearly_price, default=0)
+    return safe_percentage_off(
+        monthly_price, yearly_price, default=0, min_percentage=min_percentage, max_percentage=max_percentage
+    )

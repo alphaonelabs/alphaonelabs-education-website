@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Update Payment Method - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container mx-auto max-w-4xl px-4 py-8">
+  <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">
+    <div class="p-6">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Update Payment Method</h1>
+      
+      <p class="text-gray-600 dark:text-gray-300 mb-8">
+        Please provide your new payment information below. Your subscription will be updated with the new payment method.
+      </p>
+      
+      <div id="payment-form" class="space-y-6">
+        <div id="payment-element" class="border border-gray-300 dark:border-gray-600 p-4 rounded-md">
+          <!-- Stripe Elements will be inserted here -->
+        </div>
+        
+        <div id="error-message" class="text-red-600 dark:text-red-400 text-sm hidden"></div>
+        
+        <div class="flex justify-between items-center">
+          <button 
+            id="submit-button" 
+            class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-md transition duration-200"
+          >
+            Update Payment Method
+          </button>
+          
+          <a href="{% url 'manage_membership' %}" class="text-gray-600 dark:text-gray-400 hover:underline">
+            Cancel
+          </a>
+        </div>
+      </div>
+      
+      <div id="loading" class="mt-4 text-center hidden">
+        <div class="inline-block animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-600"></div>
+        <p class="text-gray-600 dark:text-gray-400 mt-2">Processing your request...</p>
+      </div>
+      
+      <div id="success-message" class="mt-6 p-4 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-md hidden">
+        <p>Your payment method has been successfully updated! Redirecting to your membership page...</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const stripe = Stripe('{{ stripe_public_key }}');
+    const clientSecret = '{{ client_secret }}';
+    const subscriptionId = '{{ subscription_id }}';
+    
+    const elements = stripe.elements({
+      clientSecret: clientSecret,
+      appearance: {
+        theme: 'stripe',
+        variables: {
+          colorPrimary: '#3B82F6',
+        },
+      },
+    });
+    
+    const paymentElement = elements.create('payment');
+    paymentElement.mount('#payment-element');
+    
+    const form = document.getElementById('payment-form');
+    const submitButton = document.getElementById('submit-button');
+    const errorMessage = document.getElementById('error-message');
+    const loadingElement = document.getElementById('loading');
+    const successMessage = document.getElementById('success-message');
+    
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      
+      // Show loading state
+      submitButton.disabled = true;
+      loadingElement.classList.remove('hidden');
+      errorMessage.classList.add('hidden');
+      
+      const {error, setupIntent} = await stripe.confirmSetup({
+        elements,
+        confirmParams: {
+          return_url: window.location.origin + '{% url "manage_membership" %}',
+        },
+        redirect: 'if_required',
+      });
+      
+      if (error) {
+        // Show error message
+        errorMessage.textContent = error.message;
+        errorMessage.classList.remove('hidden');
+        loadingElement.classList.add('hidden');
+        submitButton.disabled = false;
+      } else {
+        // Link the payment method to the subscription
+        try {
+          await fetch("{% url 'api_link_payment_method' %}", {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+              setup_intent_id: setupIntent.id,
+              subscription_id: subscriptionId
+            })
+          });
+          
+          // Show success and redirect
+          successMessage.classList.remove('hidden');
+          setTimeout(() => {
+            window.location.href = "{% url 'manage_membership' %}";
+          }, 2000);
+        } catch (fetchError) {
+          errorMessage.textContent = 'Network error. Please try again.';
+          errorMessage.classList.remove('hidden');
+          loadingElement.classList.add('hidden');
+          submitButton.disabled = false;
+        }
+      }
+    });
+    
+    // Add submit event handler to the form button
+    submitButton.addEventListener('click', (e) => {
+      e.preventDefault();
+      form.dispatchEvent(new Event('submit'));
+    });
+  });
+</script>
+{% endblock %} 

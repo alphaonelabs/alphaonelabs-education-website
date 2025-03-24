@@ -118,6 +118,7 @@ from .models import (
     LearningStreak,
     LinkGrade,
     MembershipPlan,
+    MembershipSubscriptionEvent,
     Meme,
     NoteHistory,
     Notification,
@@ -5367,14 +5368,119 @@ def change_membership_plan(request):
     if request.method != "POST":
         return redirect("membership_plans")
 
-    # Implementation for changing plans
-    return redirect("membership_plans")
+    # Get the new plan from the request
+    plan_slug = request.POST.get("plan_slug")
+    if not plan_slug:
+        messages.error(request, "No plan selected.")
+        return redirect("membership_plans")
+
+    # Get the billing period
+    billing_period = request.POST.get("billing_period", "monthly")
+
+    # Get current membership
+    try:
+        user_membership = request.user.membership
+
+        # Get new plan
+        new_plan = get_object_or_404(MembershipPlan, slug=plan_slug, is_active=True)
+
+        # Skip if plan is the same
+        if user_membership.plan.id == new_plan.id and user_membership.billing_period == billing_period:
+            messages.info(request, "You are already subscribed to this plan.")
+            return redirect("manage_membership")
+
+        # Determine the new price ID
+        new_price_id = (
+            new_plan.stripe_monthly_price_id if billing_period == "monthly" else new_plan.stripe_yearly_price_id
+        )
+
+        try:
+            # Retrieve the Stripe subscription
+            subscription = stripe.Subscription.retrieve(user_membership.stripe_subscription_id)
+
+            # Get the subscription item ID
+            item_id = subscription["items"]["data"][0].id
+
+            # Update the subscription with the new price
+            updated_subscription = stripe.Subscription.modify(
+                user_membership.stripe_subscription_id,
+                items=[
+                    {
+                        "id": item_id,
+                        "price": new_price_id,
+                    }
+                ],
+                proration_behavior="always_invoice",  # Create an invoice immediately for the difference
+            )
+
+            # Update local membership
+            user_membership.plan = new_plan
+            user_membership.billing_period = billing_period
+            user_membership.end_date = timezone.datetime.fromtimestamp(
+                updated_subscription.current_period_end, tz=timezone.utc
+            )
+            user_membership.save()
+
+            # Record the event
+            MembershipSubscriptionEvent.objects.create(
+                user=request.user,
+                membership=user_membership,
+                event_type="updated",
+                stripe_event_id="",
+                data={"plan_id": new_plan.id, "billing_period": billing_period},
+            )
+
+            messages.success(request, f"Your membership has been updated to {new_plan.name} ({billing_period}).")
+
+        except stripe.error.StripeError as e:
+            messages.error(request, f"Error updating subscription: {str(e)}")
+
+    except UserMembership.DoesNotExist:
+        messages.error(request, "You don't have an active membership.")
+    except Exception as e:
+        messages.error(request, f"Error updating membership: {str(e)}")
+
+    return redirect("manage_membership")
 
 
 @login_required
 def update_payment_method(request):
     """Update payment method for subscription"""
-    # Implementation for updating payment method
+    if request.method != "POST":
+        return redirect("manage_membership")
+
+    try:
+        # Get the current membership
+        user_membership = request.user.membership
+
+        # We need to create a setup intent for updating the payment method
+        setup_intent = stripe.SetupIntent.create(
+            customer=request.user.profile.stripe_customer_id,
+            payment_method_types=["card"],
+            metadata={
+                "subscription_id": user_membership.stripe_subscription_id,
+                "user_id": request.user.id,
+            },
+        )
+
+        # Return a page with the client secret for the setup intent
+        return render(
+            request,
+            "membership/update_payment.html",
+            {
+                "client_secret": setup_intent.client_secret,
+                "stripe_public_key": settings.STRIPE_PUBLISHABLE_KEY,
+                "subscription_id": user_membership.stripe_subscription_id,
+            },
+        )
+
+    except UserMembership.DoesNotExist:
+        messages.error(request, "You don't have an active membership.")
+    except stripe.error.StripeError as e:
+        messages.error(request, f"Error creating setup intent: {str(e)}")
+    except Exception as e:
+        messages.error(request, f"Error updating payment method: {str(e)}")
+
     return redirect("manage_membership")
 
 
@@ -5623,3 +5729,50 @@ def membership_benefits(request):
     Display the membership benefits page
     """
     return render(request, "membership/benefits.html")
+
+
+@login_required
+@require_POST
+def api_link_payment_method(request):
+    """API endpoint to link a payment method to a subscription"""
+    try:
+        data = json.loads(request.body)
+        setup_intent_id = data.get("setup_intent_id")
+        subscription_id = data.get("subscription_id")
+
+        if not setup_intent_id or not subscription_id:
+            return JsonResponse({"error": "Missing required parameters"}, status=400)
+
+        # Verify the user owns this subscription
+        try:
+            user_membership = UserMembership.objects.get(user=request.user, stripe_subscription_id=subscription_id)
+        except UserMembership.DoesNotExist:
+            return JsonResponse({"error": "Subscription not found"}, status=404)
+
+        # Get the setup intent to retrieve the payment method
+        setup_intent = stripe.SetupIntent.retrieve(setup_intent_id)
+        payment_method_id = setup_intent.payment_method
+
+        if not payment_method_id:
+            return JsonResponse({"error": "No payment method found"}, status=400)
+
+        # Update the subscription's default payment method
+        stripe.Subscription.modify(subscription_id, default_payment_method=payment_method_id)
+
+        # Record the event
+        MembershipSubscriptionEvent.objects.create(
+            user=request.user,
+            membership=user_membership,
+            event_type="updated",
+            stripe_event_id="",
+            data={"payment_method_updated": True},
+        )
+
+        return JsonResponse({"success": True})
+
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+    except stripe.error.StripeError as e:
+        return JsonResponse({"error": str(e)}, status=400)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
