@@ -18,6 +18,9 @@
       });
   </script>
   <style>
+    html {
+      scroll-behavior: smooth;
+    }
       .notification {
           position: fixed;
           bottom: 20px;
@@ -119,30 +122,37 @@
                   <span class="text-blue-600 dark:text-blue-400 font-bold">{{ course.enrollments.count }}</span> / {{ course.max_students }}
                 </span>
               </div>
-              <div class="flex items-center justify-between py-2 border-t dark:border-gray-700 pt-2">
-                <span class="text-gray-600 dark:text-gray-300 font-medium flex items-center">
-                  <i class="fas fa-star text-yellow-500 dark:text-yellow-400 mr-2"></i>
-                  Rating
-                </span>
-                <span class="font-medium flex items-center">
-                  {% if course.average_rating %}
-                    <span class="flex items-center">
-                      {% for i in "12345" %}
-                        {% if forloop.counter <= course.average_rating|floatformat:"0" %}
-                          <i class="fas fa-star text-yellow-400 mr-0.5"></i>
-                        {% elif forloop.counter <= course.average_rating|add:"0.5"|floatformat:"0" %}
-                          <i class="fas fa-star-half-alt text-yellow-400 mr-0.5"></i>
-                        {% else %}
-                          <i class="far fa-star text-yellow-400 mr-0.5"></i>
-                        {% endif %}
-                      {% endfor %}
-                      <span class="ml-1 text-gray-700 dark:text-gray-300">{{ course.average_rating }}</span>
-                    </span>
-                  {% else %}
-                    <span class="text-gray-500 dark:text-gray-400">No ratings yet</span>
-                  {% endif %}
-                </span>
+              <div>
+                <div class="flex items-center justify-between py-2 border-t dark:border-gray-700 pt-2">
+                  <span class="text-gray-600 dark:text-gray-300 font-medium flex items-center">
+                    <i class="fas fa-star text-yellow-500 dark:text-yellow-400 mr-2"></i>
+                    Rating
+                  </span>
+                  <span class="font-medium flex items-center">
+                    {% if course.average_rating %}
+                      <span class="flex items-center">
+                        {% for i in "12345" %}
+                          {% if forloop.counter <= course.average_rating|floatformat:"0" %}
+                            <i class="fas fa-star text-yellow-400 mr-0.5"></i>
+                          {% elif forloop.counter <= course.average_rating|add:"0.5"|floatformat:"0" %}
+                            <i class="fas fa-star-half-alt text-yellow-400 mr-0.5"></i>
+                          {% else %}
+                            <i class="far fa-star text-yellow-400 mr-0.5"></i>
+                          {% endif %}
+                        {% endfor %}
+                        <span class="ml-1 text-gray-700 dark:text-gray-300">{{ course.average_rating }}</span>
+                      </span>
+                    {% else %}
+                      <span class="text-gray-500 dark:text-gray-400">No ratings yet</span>
+                    {% endif %}
+                  </span>
+
+                </div>
+                <div>
+                  <a href="#course_reviews" class="w-full bg-teal-500 hover:bg-teal-700 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center transition duration-200">Course reviews</a>
+                </div>
               </div>
+
               {% if not is_enrolled %}
                 {% if course.invite_only %}
                   <div class="flex items-center justify-between text-indigo-600 dark:text-indigo-400 mt-3 py-2 border-t dark:border-gray-700">
@@ -1101,6 +1111,9 @@
                 {% endif %}
               </div>
             </div>
+            <section id="course_reviews" class=" from-teal-50 to-blue-50 dark:from-gray-750 dark:to-gray-800 rounded-xl shadow-md p-6 border border-gray-100 dark:border-gray-700">
+              <h2 class="text-xl font-bold mb-2">course reviews </h2>
+            </section>
           </div>
         </div>
       </div>
@@ -1108,7 +1121,7 @@
   </div>
   <!-- Notification -->
   <div id="notification"
-       class="notification bg-blue-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center">
+    class="notification bg-blue-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center">
     <i class="fas fa-info-circle notification-icon mr-2"></i>
     <span class="notification-message">This is a notification</span>
   </div>
