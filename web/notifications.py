@@ -148,6 +148,58 @@ def send_weekly_progress_updates():
         )
 
 
+def notify_waiting_room_fulfilled(waiting_room, course):
+    """
+    Notify all participants in a waiting room that a course has been created.
+
+    Args:
+        waiting_room (WaitingRoom): The waiting room that was fulfilled
+        course (Course): The course that was created from the waiting room
+    """
+    subject = f"New Course Created: {course.title}"
+
+    # Notify all participants
+    for participant in waiting_room.participants.all():
+        notification_data = {
+            "title": subject,
+            "message": f"A new course has been created based on a waiting room you joined: '{waiting_room.title}'. "
+            f"The course '{course.title}' is now available for enrollment.",
+            "notification_type": "success",
+        }
+
+        # Send notification
+        send_notification(participant, notification_data)
+
+        # Send email with more details
+        html_message = render_to_string(
+            "emails/waiting_room_fulfilled.html",
+            {
+                "user": participant,
+                "waiting_room": waiting_room,
+                "course": course,
+                "site_url": settings.SITE_URL,
+            },
+        )
+
+        send_mail(
+            subject,
+            "",  # Plain text version - we're only sending HTML
+            settings.DEFAULT_FROM_EMAIL,
+            [participant.email],
+            html_message=html_message,
+        )
+
+    # Also notify the creator if they're not already a participant
+    if waiting_room.creator not in waiting_room.participants.all():
+        notification_data = {
+            "title": subject,
+            "message": f"A new course has been created based on your waiting room: '{waiting_room.title}'. "
+            f"The course '{course.title}' is now available.",
+            "notification_type": "success",
+        }
+        send_notification(waiting_room.creator, notification_data)
+
+
 def send_email(subject, message, recipient_list):
     """
     Send an email to the specified recipients and notify Slack.

@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  Progress Visualization
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Your Learning Progress</h1>
+    <!-- Overview Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Total Courses Enrolled</p>
+        <h3 class="text-2xl font-bold">{{ total_courses }}</h3>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Courses Completed</p>
+        <h3 class="text-2xl font-bold">{{ courses_completed }}</h3>
+        <p class="text-xs text-gray-500 mt-1">{{ courses_completed_percentage }}% completion rate</p>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Topics Mastered</p>
+        <h3 class="text-2xl font-bold">{{ topics_mastered }}</h3>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Average Attendance</p>
+        <h3 class="text-2xl font-bold">{{ average_attendance }}%</h3>
+      </div>
+    </div>
+    <!-- Learning Activity Summary -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+      <h2 class="text-xl font-semibold mb-4">Your Learning Activity</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h3 class="text-lg font-medium mb-2">Activity Summary</h3>
+          <div class="flex flex-col space-y-2">
+            <div class="flex justify-between">
+              <span>Most active day:</span>
+              <span class="font-medium">{{ most_active_day }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Last session completed:</span>
+              <span class="font-medium">{{ last_session_date }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Current streak:</span>
+              <span class="font-medium">{{ current_streak }} days</span>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-lg font-medium mb-2">Learning Stats</h3>
+          <div class="flex flex-col space-y-2">
+            <div class="flex justify-between">
+              <span>Total learning time:</span>
+              <span class="font-medium">{{ total_learning_hours }} hours</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Avg. sessions per week:</span>
+              <span class="font-medium">{{ avg_sessions_per_week }}</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Completion pace:</span>
+              <span class="font-medium">{{ completion_pace }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Line Chart for Progress Over Time -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+      <h2 class="text-xl font-semibold mb-4">Progress Over Time</h2>
+      <canvas id="progressChart"></canvas>
+    </div>
+    <!-- Course Progress List -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
+      <h2 class="text-xl font-semibold mb-4">Course Progress</h2>
+      {% for course in courses %}
+        <div class="mb-6">
+          <div class="flex justify-between mb-1">
+            <p class="text-lg font-medium">{{ course.title }}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">{{ course.progress }}% completed</p>
+          </div>
+          <div class="relative w-full h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div class="absolute top-0 left-0 h-full rounded-full transition-all duration-500 ease-out"
+                 style="width: {{ course.progress }}%;
+                        background-color: rgba({{ course.color }}, 1)"></div>
+          </div>
+          <div class="mt-2 text-xs text-gray-500 dark:text-gray-400 flex justify-between">
+            <span>Sessions completed: {{ course.sessions_completed }}/{{ course.total_sessions }}</span>
+            <span>Last active: {{ course.last_active }}</span>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+    <!-- Download and Share Options -->
+    <div class="flex flex-wrap gap-4 mt-6">
+      <button id="shareProgress"
+              class="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2">
+        <i class="fas fa-file-pdf mr-2"></i> Download PDF Report
+      </button>
+      <button id="shareImage"
+              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+        <i class="fas fa-image mr-2"></i> Share as Image
+      </button>
+    </div>
+  </div>
+  <!-- Required Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+      const progressDates = '{{ progress_dates|escapejs }}';
+      const sessionsCompleted = '{{ sessions_completed|escapejs }}';
+      const coursesJson = '{{ courses_json|escapejs }}';
+      const totalCoursesCount = '{{ total_courses|escapejs }}';
+      const coursesCompletedCount = '{{ courses_completed|escapejs }}';
+      const topicsMasteredCount = '{{ topics_mastered|escapejs }}';
+      const averageAttendancePercentage = '{{ average_attendance|escapejs }}';
+  </script>
+  <script src="{% static 'js/progress_visualization.js' %}?v=1.1"></script>
+{% endblock content %}
