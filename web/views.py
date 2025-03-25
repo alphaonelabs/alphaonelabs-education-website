@@ -4863,6 +4863,62 @@ def toggle_course_status(request, slug):
     return redirect("course_detail", slug=slug)
 
 
+# NFT badge views
+
+
+@login_required
+@teacher_required
+def send_nft_badge(request, achievement_id):
+    """Send an NFT badge to a student for a specific achievement"""
+    achievement = get_object_or_404(Achievement, id=achievement_id)
+
+    # Check if the teacher has permission (teaches the course)
+    if achievement.course and achievement.course.teacher != request.user:
+        messages.error(request, "You don't have permission to send NFT badges for this achievement!")
+        return redirect("dashboard")
+
+    if request.method == "POST":
+        wallet_address = request.POST.get("wallet_address")
+        if not wallet_address:
+            messages.error(request, "Wallet address is required to mint NFT badge!")
+            return redirect("achievement_detail", achievement_id=achievement_id)
+
+        # Check if NFT badge already exists
+        if hasattr(achievement, "nft_badge"):
+            messages.warning(request, "NFT badge already minted for this achievement!")
+            return redirect("achievement_detail", achievement_id=achievement_id)
+
+        try:
+            from web.services.nft_service import send_nft_badge
+
+            nft_badge = send_nft_badge(achievement_id, wallet_address)
+
+            if nft_badge:
+                messages.success(request, f"NFT badge successfully minted and sent to {wallet_address}!")
+            else:
+                messages.error(request, "Failed to mint NFT badge. Please try again later.")
+
+        except Exception as e:
+            messages.error(request, f"Error minting NFT badge: {str(e)}")
+
+        return redirect("achievement_detail", achievement_id=achievement_id)
+
+    return render(request, "achievements/send_nft_badge.html", {"achievement": achievement})
+
+
+@login_required
+def achievement_detail(request, achievement_id):
+    """Detail view for an achievement"""
+    achievement = get_object_or_404(Achievement, id=achievement_id)
+
+    # Check if the user is the student who earned the achievement or the teacher
+    if request.user != achievement.student and (achievement.course and request.user != achievement.course.teacher):
+        messages.error(request, "You don't have permission to view this achievement!")
+        return redirect("dashboard")
+
+    return render(request, "achievements/achievement_detail.html", {"achievement": achievement})
+
+
 def public_profile(request, username):
     user = get_object_or_404(User, username=username)
 
