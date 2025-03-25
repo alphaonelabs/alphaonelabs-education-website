@@ -363,6 +363,5 @@ BLOCKFROST_BASE_ENDPOINT = "https://ipfs.blockfrost.io/api/v0"
 BLOCKFROST_API_KEY = env.str("BLOCKFROST_API_KEY", default="")
 WEB3_PROVIDER_URL = env.str("WEB3_PROVIDER_URL", default="")
 NFT_CONTRACT_ADDRESS = env.str("NFT_CONTRACT_ADDRESS", default="")
-DEFAULT_BADGE_URL = f"https://{SITE_DOMAIN}/static/images/gsoc-logo.png"
 ADMIN_WALLET_PRIVATE_ADDRESS = env.str("ADMIN_WALLET_PRIVATE_ADDRESS", default="")
 # note that the wallet address should match the owner wallet address of NFT contract
