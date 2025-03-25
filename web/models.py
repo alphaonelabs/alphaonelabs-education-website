@@ -473,16 +473,21 @@ class Session(models.Model):
 
         if not self.location:
             return
+        try:
+            coordinates = geocode_address(self.location)
+            if coordinates:
+                self.latitude, self.longitude = coordinates
+                print("location store:", self.latitude, self.longitude)
+            else:
+                print(
+                    f"Skipping session {self.id} due to invalid coordinates:",
+                    f"lat={self.latitude}, \n lng={self.longitude}",
+                )
+        except Exception as e:
+            import logging
 
-        coordinates = geocode_address(self.location)
-        if coordinates:
-            self.latitude, self.longitude = coordinates
-            print("location store:", self.latitude, self.longitude)
-        else:
-            print(
-                f"Skipping session {self.id} due to invalid coordinates:",
-                f"lat={self.latitude}, \n lng={self.longitude}",
-            )
+            logger = logging.getLogger(__name__)
+            logger.error("Error geocoding session %s location '%s': %s", self.id, self.location, str(e))
 
     def is_live(self):
         """Returns True if the session is live right now."""

@@ -5664,7 +5664,7 @@ def classes_map(request):
     now = timezone.now()
 
     sessions = (
-        Session.objects.filter(Q(start_time__gte=now) | Q(Q(start_time__lte=now) & Q(end_time__gte=now)))
+        Session.objects.filter(Q(start_time__gte=now) | Q(start_time__lte=now, end_time__gte=now))
         .filter(is_virtual=False, location__isnull=False)
         .exclude(location="")
         .order_by("start_time")
