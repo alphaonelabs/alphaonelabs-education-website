@@ -4864,26 +4864,26 @@ def toggle_course_status(request, slug):
     return redirect("course_detail", slug=slug)
 
 
-# NFT badge views
 @login_required
 @teacher_required
 def send_nft_badge(request, achievement_id):
     """Send an NFT badge to a student for a specific achievement"""
     achievement = get_object_or_404(Achievement, id=achievement_id)
 
-    # Check if the achievement is marked as an NFT badge
-    # Make sure this field name matches exactly what's in your model
-    if achievement.badge_type != "nft":  # Changed from BADGE_TYPE_CHOICES to badge_type
+    # Ensure it's an NFT badge
+    if achievement.badge_type != "nft":
         messages.error(request, "This achievement is not marked as an NFT badge!")
         return redirect("achievement_detail", achievement_id=achievement_id)
 
-    # Check if teacher has permission (awarded the badge or teaches the course)
+    # Check teacher permission
     if achievement.teacher != request.user and (achievement.course and achievement.course.teacher != request.user):
         messages.error(request, "You don't have permission to mint this NFT badge!")
         return redirect("dashboard")
 
     if request.method == "POST":
         wallet_address = request.POST.get("wallet_address")
+        icon_url = request.POST.get("icon_url")  # Retrieve icon URL from form
+
         if not wallet_address:
             messages.error(request, "Wallet address is required to mint NFT badge!")
             return redirect("achievement_detail", achievement_id=achievement_id)
@@ -4896,9 +4896,13 @@ def send_nft_badge(request, achievement_id):
         try:
             from web.services.nft_service import send_nft_badge as mint_nft_badge
 
-            # Renamed import to avoid name conflict with the view
+            # Append icon_url to the achievement
+            achievement.icon = icon_url
+            achievement.save()
+
+            # Pass achievement ID, wallet address, and icon URL to NFT minting service
             nft_badge = mint_nft_badge(achievement_id, wallet_address)
-            print(nft_badge)
+
             if nft_badge:
                 messages.success(request, f"NFT badge successfully minted and sent to {wallet_address}!")
                 return redirect("achievement_detail", achievement_id=achievement_id)
@@ -4907,10 +4911,8 @@ def send_nft_badge(request, achievement_id):
         except Exception as e:
             messages.error(request, f"Error minting NFT badge: {str(e)}")
 
-        # If we get here, there was an error, so stay on the same page
         return render(request, "achievements/send_nft_badge.html", {"achievement": achievement})
 
-    # GET request - show the form
     return render(request, "achievements/send_nft_badge.html", {"achievement": achievement})
 
 
