@@ -9,7 +9,7 @@ import shutil
 import socket
 import subprocess
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import timedelta
 from decimal import Decimal
 from urllib.parse import urlparse
@@ -22,6 +22,7 @@ from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.core.mail import send_mail
 from django.core.management import call_command
 from django.core.paginator import Paginator
@@ -919,7 +920,14 @@ def course_search(request):
         )
 
     if subject:
-        courses = courses.filter(subject=subject)
+        # Handle subject filtering based on whether it's an ID (number) or a string (slug/name)
+        try:
+            # Check if subject is an integer ID
+            subject_id = int(subject)
+            courses = courses.filter(subject_id=subject_id)
+        except ValueError:
+            # If not an integer, treat as a slug or name
+            courses = courses.filter(Q(subject__slug=subject) | Q(subject__name__iexact=subject))
 
     if level:
         courses = courses.filter(level=level)
@@ -5606,3 +5614,436 @@ def feature_vote_count(request):
         logger = logging.getLogger(__name__)
         logger.error(f"Error getting vote counts: {str(e)}", exc_info=True)
         return JsonResponse({"status": "error", "message": f"Error getting vote counts: {str(e)}"}, status=500)
+
+@login_required
+def progress_visualization(request):
+    """Generate and render progress visualization statistics for a student's enrolled courses."""
+    user = request.user
+    if request.user.profile.is_teacher:
+        messages.error(request, "This Progress Chart is for students only.")
+        return redirect("profile")
+
+    # Create a unique cache key based on user ID
+    cache_key = f"user_progress_{user.id}"
+    context = cache.get(cache_key)
+
+    if not context:
+        # Cache miss - calculate all data
+        enrollments = Enrollment.objects.filter(student=user)
+        course_stats = calculate_course_stats(enrollments)
+        attendance_stats = calculate_attendance_stats(user, enrollments)
+        learning_activity = calculate_learning_activity(user, enrollments)
+        completion_pace = calculate_completion_pace(enrollments)
+        chart_data = prepare_chart_data(enrollments)
+
+        # Combine all stats into a single context dictionary
+        context = {**course_stats, **attendance_stats, **learning_activity, **completion_pace, **chart_data}
+        # Cache the results (no expiration, we'll invalidate manually via signals)
+        cache.set(cache_key, context, timeout=None)  # None means no expiration
+
+    return render(request, "courses/progress_visualization.html", context)
+
+
+def calculate_course_stats(enrollments):
+    """Calculate statistics on the user's course progress."""
+    total_courses = enrollments.count()
+    courses_completed = enrollments.filter(status="completed").count()
+    topics_mastered = sum(e.progress.completed_sessions.count() for e in enrollments if hasattr(e, "progress"))
+
+    return {
+        "total_courses": total_courses,
+        "courses_completed": courses_completed,
+        "courses_completed_percentage": round((courses_completed / total_courses) * 100) if total_courses else 0,
+        "topics_mastered": topics_mastered,
+    }
+
+
+def calculate_attendance_stats(user, enrollments):
+    """Calculate the user's attendance statistics."""
+    all_attendances = SessionAttendance.objects.filter(
+        student=user, session__course__in=[e.course for e in enrollments]
+    )
+    total_attendance_count = all_attendances.count()
+    present_attendance_count = all_attendances.filter(status__in=["present", "late"]).count()
+
+    return {
+        "average_attendance": (
+            round((present_attendance_count / total_attendance_count) * 100) if total_attendance_count else 0
+        )
+    }
+
+
+def calculate_learning_activity(user, enrollments):
+    """Calculate learning activity metrics like active days, streaks, and learning hours."""
+    all_completed_sessions = [
+        s for s in get_all_completed_sessions(enrollments) if s.start_time and s.end_time and s.end_time > s.start_time
+    ]
+    now = timezone.now()
+
+    # Find the most active day of the week
+    most_active_day = Counter(session.start_time.strftime("%A") for session in all_completed_sessions).most_common(1)
+    # Find the most recent session date
+    last_session_date = (
+        max(all_completed_sessions, key=lambda s: s.start_time).start_time.strftime("%b %d, %Y")
+        if all_completed_sessions
+        else "N/A"
+    )
+
+    streak, _ = LearningStreak.objects.get_or_create(user=user)
+    current_streak = streak.current_streak
+
+    total_learning_hours = round(
+        sum((s.end_time - s.start_time).total_seconds() / 3600 for s in all_completed_sessions), 1
+    )
+
+    # Calculate the number of weeks since the first session, minimum 1 week
+    weeks_since_first_session = (
+        max(1, (now - min(all_completed_sessions, key=lambda s: s.start_time).start_time).days / 7)
+        if all_completed_sessions
+        else 1
+    )
+    avg_sessions_per_week = round(len(all_completed_sessions) / weeks_since_first_session, 1)
+
+    return {
+        # Extract the day name from the most common day tuple, or default to "N/A"
+        "most_active_day": most_active_day[0][0] if most_active_day else "N/A",
+        "last_session_date": last_session_date,
+        "current_streak": current_streak,
+        "total_learning_hours": total_learning_hours,
+        "avg_sessions_per_week": avg_sessions_per_week,
+    }
+
+
+def calculate_completion_pace(enrollments):
+    """Calculate the average completion pace for completed courses."""
+    completed_enrollments = enrollments.filter(status="completed")
+    if not completed_enrollments.exists():
+        return {"completion_pace": "N/A"}
+
+    total_days = sum(
+        (e.completion_date - e.enrollment_date).days
+        for e in completed_enrollments
+        if e.completion_date and e.enrollment_date
+    )
+    avg_days_to_complete = total_days / completed_enrollments.count() if completed_enrollments.count() > 0 else 0
+
+    return {"completion_pace": f"{avg_days_to_complete:.0f} days/course"}
+
+
+def get_all_completed_sessions(enrollments):
+    """Retrieve all completed sessions for a user's enrollments."""
+    return [s for e in enrollments if hasattr(e, "progress") for s in e.progress.completed_sessions.all()]
+
+
+def prepare_chart_data(enrollments):
+    """Prepare data for visualizing user progress in charts."""
+    colors = ["255,99,132", "54,162,235", "255,206,86", "75,192,192", "153,102,255"]
+
+    courses = []
+    progress_dates, sessions_completed = [], []
+
+    for i, e in enumerate(enrollments):
+        color = colors[i % len(colors)]
+        # Basic course data with progress information
+        course_data = {
+            "title": e.course.title,
+            "color": color,
+            "progress": getattr(e.progress, "completion_percentage", 0),
+            "sessions_completed": e.progress.completed_sessions.count() if hasattr(e, "progress") else 0,
+            "total_sessions": e.course.sessions.count(),
+        }
+
+        # Add time series data for courses with completed sessions
+        if hasattr(e, "progress") and e.progress.completed_sessions.exists():
+            # Find the most recent active session date
+            last_session = max(e.progress.completed_sessions.all(), key=lambda s: s.start_time)
+            course_data["last_active"] = last_session.start_time.strftime("%b %d, %Y")
+            # Generate time series data for progress visualization
+            time_data = prepare_time_series_data(e, course_data["total_sessions"])
+            course_data.update(time_data)
+            progress_dates.append(time_data["dates"])
+            sessions_completed.append(time_data["sessions_points"])
+        else:
+            # Default values for courses without progress
+            course_data.update({"last_active": "Not started", "progress_over_time": []})
+            progress_dates.append([])
+            sessions_completed.append([])
+
+        courses.append(course_data)
+
+    return {
+        "courses": courses,
+        # Create a sorted list of all unique dates by flattening and deduplicating
+        "progress_dates": json.dumps(sorted(set(date for dates in progress_dates for date in dates))),
+        "sessions_completed": json.dumps(sessions_completed),
+        "courses_json": json.dumps(courses),
+    }
+
+
+def prepare_time_series_data(enrollment, total_sessions):
+    """Generate time series data for progress visualization."""
+    completed_sessions = (
+        sorted(enrollment.progress.completed_sessions.all(), key=lambda s: s.start_time)
+        if hasattr(enrollment, "progress")
+        else []
+    )
+
+    return {
+        # Calculate progress percentage for each completed session
+        "progress_over_time": [
+            round(((idx + 1) / total_sessions) * 100, 1) if total_sessions else 0
+            for idx, _ in enumerate(completed_sessions)
+        ],
+        # Create sequential session numbers
+        "sessions_points": list(range(1, len(completed_sessions) + 1)),
+        # Format session dates consistently
+        "dates": [s.start_time.strftime("%Y-%m-%d") for s in completed_sessions],
+    }
+
+
+GITHUB_REPO = "alphaonelabs/alphaonelabs-education-website"
+GITHUB_API_BASE = "https://api.github.com"
+
+logger = logging.getLogger(__name__)
+
+
+def github_api_request(endpoint, params=None, headers=None):
+    """
+    Make a GitHub API request with consistent error handling and timeout.
+    Returns JSON response on success, empty dict on failure.
+    """
+    try:
+        response = requests.get(endpoint, params=params, headers=headers, timeout=10)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            logger.error(f"Failed API request to {endpoint}: {response.status_code} - {response.text}")
+            return {}
+    except requests.RequestException as e:
+        logger.error(f"Request error for {endpoint}: {e}")
+        return {}
+
+
+def get_user_contribution_metrics(username, token):
+    """
+    Use the GitHub GraphQL API to fetch all of the user's merged PRs (across all repos),
+    then filter by the target repo, implementing pagination to ensure complete data.
+    """
+    graphql_endpoint = "https://api.github.com/graphql"
+    headers = {"Authorization": f"Bearer {token}"}
+
+    query = """
+    query($username: String!, $after: String) {
+      user(login: $username) {
+        pullRequests(
+          first: 100
+          after: $after
+          states: MERGED
+          orderBy: { field: CREATED_AT, direction: DESC }
+        ) {
+          totalCount
+          pageInfo {
+            endCursor
+            hasNextPage
+          }
+          nodes {
+            additions
+            deletions
+            createdAt
+            repository {
+              nameWithOwner
+            }
+          }
+        }
+      }
+    }
+    """
+
+    all_filtered_prs = []
+    after_cursor = None
+
+    while True:
+        variables = {"username": username, "after": after_cursor}
+        try:
+            response = requests.post(
+                graphql_endpoint, json={"query": query, "variables": variables}, headers=headers, timeout=15
+            )
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("data") and data["data"].get("user"):
+                    pr_data = data["data"]["user"]["pullRequests"]
+                    prs = pr_data["nodes"]
+
+                    # Filter PRs to the target repository (case insensitive)
+                    target_repo = GITHUB_REPO.lower()
+                    filtered_prs = [pr for pr in prs if pr["repository"]["nameWithOwner"].lower() == target_repo]
+                    all_filtered_prs.extend(filtered_prs)
+
+                    # Check if there are more pages
+                    if pr_data["pageInfo"]["hasNextPage"]:
+                        after_cursor = pr_data["pageInfo"]["endCursor"]
+                    else:
+                        break
+                else:
+                    logger.error("No user or PR data found in GraphQL response.")
+                    break
+            else:
+                logger.error(f"GraphQL error: {response.status_code} - {response.text}")
+                break
+        except Exception as e:
+            logger.error(f"GraphQL request error: {e}")
+            break
+
+    # Prepare final result structure
+    final_result = {
+        "data": {"user": {"pullRequests": {"totalCount": len(all_filtered_prs), "nodes": all_filtered_prs}}}
+    }
+    return final_result
+
+
+def contributor_detail_view(request, username):
+    """
+    View to display detailed information about a specific GitHub contributor.
+    Only accessible to staff members.
+    """
+    cache_key = f"github_contributor_{username}"
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        return render(request, "web/contributor_detail.html", cached_data)
+
+    token = os.environ.get("GITHUB_TOKEN")
+    headers = {"Authorization": f"token {token}"} if token else {}
+
+    # Initialize variables to store contributor data
+    user_data = {}
+    prs_created = 0
+    prs_merged = 0
+    issues_created = 0
+    pr_reviews = 0
+    pr_comments = 0
+    issue_comments = 0
+    lines_added = 0
+    lines_deleted = 0
+    first_contribution_date = "N/A"
+    issue_assignments = 0
+
+    user_endpoint = f"{GITHUB_API_BASE}/users/{username}"
+    user_data = github_api_request(user_endpoint, headers=headers)
+    if not user_data:
+        logger.error("User profile data could not be retrieved.")
+
+    # Pull requests created
+    prs_created_json = github_api_request(
+        f"{GITHUB_API_BASE}/search/issues",
+        params={"q": f"author:{username} type:pr repo:{GITHUB_REPO}"},
+        headers=headers,
+    )
+    prs_created = prs_created_json.get("total_count", 0)
+
+    # Pull requests merged
+    prs_merged_json = github_api_request(
+        f"{GITHUB_API_BASE}/search/issues",
+        params={"q": f"author:{username} type:pr repo:{GITHUB_REPO} is:merged"},
+        headers=headers,
+    )
+    prs_merged = prs_merged_json.get("total_count", 0)
+
+    # Issues created
+    issues_json = github_api_request(
+        f"{GITHUB_API_BASE}/search/issues",
+        params={"q": f"author:{username} type:issue repo:{GITHUB_REPO}"},
+        headers=headers,
+    )
+    issues_created = issues_json.get("total_count", 0)
+
+    # Pull request reviews
+    reviews_json = github_api_request(
+        f"{GITHUB_API_BASE}/search/issues",
+        params={"q": f"reviewer:{username} type:pr repo:{GITHUB_REPO}"},
+        headers=headers,
+    )
+    pr_reviews = reviews_json.get("total_count", 0)
+
+    # Pull requests with comments
+    pr_comments_json = github_api_request(
+        f"{GITHUB_API_BASE}/search/issues",
+        params={"q": f"commenter:{username} type:pr repo:{GITHUB_REPO}"},
+        headers=headers,
+    )
+    pr_comments = pr_comments_json.get("total_count", 0)
+
+    # Issues with comments
+    issue_comments_json = github_api_request(
+        f"{GITHUB_API_BASE}/search/issues",
+        params={"q": f"commenter:{username} type:issue repo:{GITHUB_REPO}"},
+        headers=headers,
+    )
+    issue_comments = issue_comments_json.get("total_count", 0)
+
+    # Oldest PR creation date
+    prs_oldest = github_api_request(
+        f"{GITHUB_API_BASE}/search/issues",
+        params={
+            "q": f"author:{username} type:pr repo:{GITHUB_REPO}",
+            "sort": "created",
+            "order": "asc",
+            "per_page": 1,
+        },
+        headers=headers,
+    )
+    if prs_oldest.get("total_count", 0) > 0:
+        first_contribution_date = prs_oldest["items"][0].get("created_at", "N/A")
+
+    # Issue assignments
+    issue_assignments_json = github_api_request(
+        f"{GITHUB_API_BASE}/search/issues",
+        params={"q": f"assignee:{username} type:issue repo:{GITHUB_REPO}"},
+        headers=headers,
+    )
+    issue_assignments = issue_assignments_json.get("total_count", 0)
+    metrics = get_user_contribution_metrics(username, token)
+    pr_data = metrics.get("data", {}).get("user", {}).get("pullRequests", {}).get("nodes", [])
+    for pr in pr_data:
+        lines_added += pr.get("additions", 0)
+        lines_deleted += pr.get("deletions", 0)
+
+    # Update user_data with additional metrics
+    user_data.update(
+        {
+            "reactions_received": user_data.get("reactions_received", 0),
+            "mentorship_score": user_data.get("mentorship_score", 0),
+            "collaboration_score": user_data.get("collaboration_score", 0),
+            "issue_assignments": issue_assignments,
+        }
+    )
+
+    # Prepare context for the template
+    context = {
+        "user": user_data,
+        "prs_created": prs_created,
+        "prs_merged": prs_merged,
+        "pr_reviews": pr_reviews,
+        "issues_created": issues_created,
+        "issue_comments": issue_comments,
+        "pr_comments": pr_comments,
+        "lines_added": lines_added,
+        "lines_deleted": lines_deleted,
+        "first_contribution_date": first_contribution_date,
+        "chart_data": {
+            "prs_created": prs_created,
+            "prs_merged": prs_merged,
+            "pr_reviews": pr_reviews,
+            "issues_created": issues_created,
+            "issue_assignments": issue_assignments,
+            "pr_comments": pr_comments,
+            "issue_comments": issue_comments,
+            "lines_added": lines_added,
+            "lines_deleted": lines_deleted,
+            "first_contribution_date": (first_contribution_date if first_contribution_date != "N/A" else "N/A"),
+        },
+    }
+
+    # Cache for 1 hour
+    cache.set(cache_key, context, 3600)
+    return render(request, "web/contributor_detail.html", context)
+

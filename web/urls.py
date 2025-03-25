@@ -174,6 +174,8 @@ urlpatterns += i18n_patterns(
         views.create_course_from_waiting_room,
         name="create_course_from_waiting_room",
     ),
+    # Progress Visualization
+    path("dashboard/progress/", views.progress_visualization, name="progress_visualization"),
     # Forum URLs
     path("forum/", views.forum_categories, name="forum_categories"),
     path("forum/category/create/", views.create_forum_category, name="create_forum_category"),
@@ -382,10 +384,13 @@ urlpatterns += i18n_patterns(
         name="update_teacher_notes",
     ),
     path("award-badge/", views.award_badge, name="award_badge"),
+
     # Features page
     path("features/", features_page, name="features"),
     path("features/vote/", feature_vote, name="feature_vote"),
     path("features/vote-count/", feature_vote_count, name="feature_vote_count"),
+    path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
+
     prefix_default_language=True,
 )
 
