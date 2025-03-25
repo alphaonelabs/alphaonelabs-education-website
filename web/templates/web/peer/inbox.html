@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Inbox
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <h2 class="text-2xl font-bold mb-4">Your Inbox</h2>
+    {% if messages %}
+      <ul class="space-y-4">
+        {% for msg in messages %}
+          <li class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+            <div class="text-sm text-gray-600 mb-1">From: {{ msg.sender }}</div>
+            <p class="text-lg text-gray-900 dark:text-gray-100">{{ msg.content }}</p>
+            <div class="text-xs text-gray-500 mt-1">Sent at: {{ msg.sent_at }}</div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>No messages yet. Start a conversation!</p>
+    {% endif %}
+  </div>
+{% endblock content %}

@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Messaging Dashboard
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <h1 class="text-3xl font-bold mb-6">Messaging Dashboard</h1>
+    <p>
+      You have <strong>{{ unread_count }}</strong> new message
+      {% if unread_count != 1 %}s{% endif %}
+      .
+    </p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Inbox Button -->
+      <a href="{% url 'inbox' %}"
+         class="block p-6 bg-white dark:bg-gray-800 rounded-lg shadow hover:bg-gray-100 dark:hover:bg-gray-700">
+        <h2 class="text-xl font-semibold mb-2">Inbox</h2>
+        <p class="text-gray-600 dark:text-gray-400">You have {{ inbox_count }} messages in your inbox.</p>
+      </a>
+      <!-- Compose Message Button -->
+      <a href="{% url 'compose_message' %}"
+         class="block p-6 bg-white dark:bg-gray-800 rounded-lg shadow hover:bg-gray-100 dark:hover:bg-gray-700">
+        <h2 class="text-xl font-semibold mb-2">Compose Message</h2>
+        <p class="text-gray-600 dark:text-gray-400">Send a new message to a peer or teacher.</p>
+      </a>
+    </div>
+  </div>
+{% endblock content %}

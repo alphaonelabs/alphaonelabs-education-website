@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Compose Message
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <h2 class="text-2xl font-bold mb-4">Compose New Message</h2>
+    <form id="composeMessageForm"
+          method="post"
+          action="{% url 'compose_message' %}"
+          class="space-y-6">
+      {% csrf_token %}
+      <div>
+        <label for="recipient" class="block text-sm font-medium text-gray-700">Recipient</label>
+        <input type="text"
+               id="recipient"
+               name="recipient"
+               placeholder="Enter recipient username"
+               class="w-full px-4 py-2 border rounded-lg"
+               required />
+      </div>
+      <div>
+        <label for="message" class="block text-sm font-medium text-gray-700">Message</label>
+        <textarea id="message"
+                  name="message"
+                  rows="5"
+                  placeholder="Type your message here"
+                  class="w-full px-4 py-2 border rounded-lg"
+                  required></textarea>
+      </div>
+      <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg">Send Message</button>
+    </form>
+  </div>
+{% endblock content %}
