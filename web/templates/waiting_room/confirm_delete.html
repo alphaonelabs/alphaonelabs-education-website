@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Delete Waiting Room - {{ waiting_room.title }}{% endblock %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="mb-6">
+      <a href="{% url 'waiting_room_detail' waiting_room.id %}"
+         class="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors duration-200 font-medium">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             class="h-5 w-5 mr-2"
+             viewBox="0 0 20 20"
+             fill="currentColor">
+          <path fill-rule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+        </svg>
+        Back to Waiting Room
+      </a>
+    </div>
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 mb-8">
+      <div class="p-8">
+        <div class="text-center mb-8">
+          <svg class="w-16 h-16 text-red-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+          </svg>
+          <h2 class="text-2xl font-bold text-gray-900 mb-2">Confirm Deletion</h2>
+          <p class="text-gray-600 max-w-md mx-auto">
+            Are you sure you want to delete the waiting room "{{ waiting_room.title }}"? This action cannot be undone.
+          </p>
+        </div>
+        <div class="flex justify-center space-x-4">
+          <a href="{% url 'waiting_room_detail' waiting_room.id %}" 
+             class="px-6 py-3 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg font-medium transition-colors duration-200">
+            Cancel
+          </a>
+          <form method="post">
+            {% csrf_token %}
+            <button type="submit" 
+                    class="px-6 py-3 bg-red-600 text-white hover:bg-red-700 rounded-lg font-medium transition-colors duration-200 shadow-sm">
+              Delete Permanently
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
