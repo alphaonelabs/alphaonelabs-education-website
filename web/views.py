@@ -5680,21 +5680,26 @@ def github_api_request(endpoint, params=None, headers=None):
 
 def get_user_contribution_metrics(username, token):
     """
-    Use the GitHub GraphQL API to fetch the user's merged PRs (across all repos),
-    then filter by the target repo.
+    Use the GitHub GraphQL API to fetch all of the user's merged PRs (across all repos),
+    then filter by the target repo, implementing pagination to ensure complete data.
     """
     graphql_endpoint = "https://api.github.com/graphql"
     headers = {"Authorization": f"Bearer {token}"}
 
     query = """
-    query($username: String!) {
+    query($username: String!, $after: String) {
       user(login: $username) {
         pullRequests(
           first: 100
+          after: $after
           states: MERGED
           orderBy: { field: CREATED_AT, direction: DESC }
         ) {
           totalCount
+          pageInfo {
+            endCursor
+            hasNextPage
+          }
           nodes {
             additions
             deletions
@@ -5708,39 +5713,46 @@ def get_user_contribution_metrics(username, token):
     }
     """
 
-    variables = {"username": username}
+    all_filtered_prs = []
+    after_cursor = None
 
-    try:
-        response = requests.post(
-            graphql_endpoint, json={"query": query, "variables": variables}, headers=headers, timeout=15
-        )
-        if response.status_code == 200:
-            data = response.json()
-            # Filter PRs to the target repository
-            if data.get("data") and data["data"].get("user"):
-                all_prs = data["data"]["user"]["pullRequests"]["nodes"]
-                filtered_prs = []
+    while True:
+        variables = {"username": username, "after": after_cursor}
+        try:
+            response = requests.post(
+                graphql_endpoint, json={"query": query, "variables": variables}, headers=headers, timeout=15
+            )
+            if response.status_code == 200:
+                data = response.json()
+                if data.get("data") and data["data"].get("user"):
+                    pr_data = data["data"]["user"]["pullRequests"]
+                    prs = pr_data["nodes"]
 
-                # e.g. "alphaonelabs/alphaonelabs-education-website"
-                target_repo = GITHUB_REPO.lower()
+                    # Filter PRs to the target repository (case insensitive)
+                    target_repo = GITHUB_REPO.lower()
+                    filtered_prs = [pr for pr in prs if pr["repository"]["nameWithOwner"].lower() == target_repo]
+                    all_filtered_prs.extend(filtered_prs)
 
-                for pr in all_prs:
-                    repo_name = pr["repository"]["nameWithOwner"].lower()
-                    if repo_name == target_repo:
-                        filtered_prs.append(pr)
-
-                # Overwrite the nodes with only PRs from your target repo
-                data["data"]["user"]["pullRequests"]["nodes"] = filtered_prs
-
+                    # Check if there are more pages
+                    if pr_data["pageInfo"]["hasNextPage"]:
+                        after_cursor = pr_data["pageInfo"]["endCursor"]
+                    else:
+                        break
+                else:
+                    logger.error("No user or PR data found in GraphQL response.")
+                    break
             else:
-                logger.error("No user or PR data found in GraphQL response.")
-            return data
-        else:
-            logger.error(f"GraphQL error: {response.status_code} - {response.text}")
-            return {}
-    except Exception as e:
-        logger.error(f"GraphQL request error: {e}")
-        return {}
+                logger.error(f"GraphQL error: {response.status_code} - {response.text}")
+                break
+        except Exception as e:
+            logger.error(f"GraphQL request error: {e}")
+            break
+
+    # Prepare final result structure
+    final_result = {
+        "data": {"user": {"pullRequests": {"totalCount": len(all_filtered_prs), "nodes": all_filtered_prs}}}
+    }
+    return final_result
 
 
 def contributor_detail_view(request, username):
