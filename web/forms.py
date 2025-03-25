@@ -245,6 +245,13 @@ class UserRegistrationForm(SignupForm):
         if referral_code:
             handle_referral(user, referral_code)
 
+        # Ensure email verification is sent
+        from allauth.account.models import EmailAddress
+
+        email_address = EmailAddress.objects.get_for_user(user, user.email)
+        if not email_address.verified:
+            email_address.send_confirmation(request)
+
         return user
 
 
