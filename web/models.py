@@ -629,12 +629,15 @@ class Achievement(models.Model):
         ("fas fa-graduation-cap", "Graduation Cap"),
     ]
 
+    badge_type = models.CharField(max_length=20, choices=BADGE_TYPE_CHOICES, default="regular")
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="achievements")
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="achievements", null=True, blank=True)
     achievement_type = models.CharField(max_length=20, choices=TYPES)
     title = models.CharField(max_length=200)
     description = models.TextField()
     awarded_at = models.DateTimeField(auto_now_add=True)
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name="awarded_by", null=True)
+    # Fields for icon-Based badges:
     badge_icon = models.CharField(
         max_length=100, blank=True, help_text="Icon class for the badge (e.g., 'fas fa-trophy')"
     )

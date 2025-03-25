@@ -4865,9 +4865,6 @@ def toggle_course_status(request, slug):
 
 
 # NFT badge views
-
-
-# Modified send_nft_badge view in web/views.py
 @login_required
 @teacher_required
 def send_nft_badge(request, achievement_id):
@@ -4875,12 +4872,13 @@ def send_nft_badge(request, achievement_id):
     achievement = get_object_or_404(Achievement, id=achievement_id)
 
     # Check if the achievement is marked as an NFT badge
-    if achievement.BADGE_TYPE_CHOICES != "nft":
+    # Make sure this field name matches exactly what's in your model
+    if achievement.badge_type != "nft":  # Changed from BADGE_TYPE_CHOICES to badge_type
         messages.error(request, "This achievement is not marked as an NFT badge!")
         return redirect("achievement_detail", achievement_id=achievement_id)
 
     # Check if teacher has permission (awarded the badge or teaches the course)
-    if achievement.awarded_by != request.user and (achievement.course and achievement.course.teacher != request.user):
+    if achievement.teacher != request.user and (achievement.course and achievement.course.teacher != request.user):
         messages.error(request, "You don't have permission to mint this NFT badge!")
         return redirect("dashboard")
 
@@ -4896,20 +4894,23 @@ def send_nft_badge(request, achievement_id):
             return redirect("achievement_detail", achievement_id=achievement_id)
 
         try:
-            from web.services.nft_service import send_nft_badge
+            from web.services.nft_service import send_nft_badge as mint_nft_badge
 
-            nft_badge = send_nft_badge(achievement_id, wallet_address)
-
+            # Renamed import to avoid name conflict with the view
+            nft_badge = mint_nft_badge(achievement_id, wallet_address)
+            print(nft_badge)
             if nft_badge:
                 messages.success(request, f"NFT badge successfully minted and sent to {wallet_address}!")
+                return redirect("achievement_detail", achievement_id=achievement_id)
             else:
                 messages.error(request, "Failed to mint NFT badge. Please try again later.")
-
         except Exception as e:
             messages.error(request, f"Error minting NFT badge: {str(e)}")
 
-        return redirect("send_nft_batch", achievement_id=achievement_id)
+        # If we get here, there was an error, so stay on the same page
+        return render(request, "achievements/send_nft_badge.html", {"achievement": achievement})
 
+    # GET request - show the form
     return render(request, "achievements/send_nft_badge.html", {"achievement": achievement})
 
 
@@ -4918,10 +4919,18 @@ def achievement_detail(request, achievement_id):
     """Detail view for an achievement"""
     achievement = get_object_or_404(Achievement, id=achievement_id)
 
-    # Check if the user is the student who earned the achievement or the teacher
-    if request.user != achievement.student and (achievement.course and request.user != achievement.course.teacher):
+    # Modified permission check - student can see their own achievements,
+    # teacher can see achievements they awarded or from their courses
+    is_owner = request.user == achievement.student
+    is_awarding_teacher = request.user == achievement.teacher
+    is_course_teacher = achievement.course and request.user == achievement.course.teacher
+
+    if not (is_owner or is_awarding_teacher or is_course_teacher):
         messages.error(request, "You don't have permission to view this achievement!")
-        return redirect("teacher_dashboard")
+        if request.user.is_staff:
+            return redirect("teacher_dashboard")
+        else:
+            return redirect("student_dashboard")
 
     return render(request, "achievements/achievement_detail.html", {"achievement": achievement})
 
@@ -4930,28 +4939,29 @@ def achievement_detail(request, achievement_id):
 @teacher_required
 def award_nft_badge(request, student_id=None):
     """Award an NFT badge to any student on the platform"""
-    # If student_id is provided, get that student
     student = get_object_or_404(User, id=student_id) if student_id else None
 
     if request.method == "POST":
         form = NFTBadgeForm(request.POST)
         if form.is_valid():
             achievement = form.save(commit=False)
-            # If student not specified in URL, get from form
             achievement.student = student or get_object_or_404(User, id=request.POST.get("student_id"))
-            achievement.awarded_by = request.user
-            achievement.BADGE_TYPE_CHOICES = "nft"
+            achievement.teacher = request.user
+            achievement.badge_type = "nft"
             achievement.save()
+            print("achievement saved", achievement.id)
             messages.success(request, f"NFT badge created for {achievement.student.get_full_name()}!")
             return redirect("send_nft_badge", achievement_id=achievement.id)
     else:
         form = NFTBadgeForm()
 
-    # If no student provided, show student selector
-    all_students = User.objects.filter(is_staff=False)
+    # Fetch student USERS instead of Profile
+    all_students = User.objects.filter(profile__is_teacher=False).only("id", "first_name", "last_name", "email")
 
     return render(
-        request, "achievements/award_nft_badge.html", {"form": form, "student": student, "all_students": all_students}
+        request,
+        "achievements/award_nft_badge.html",
+        {"form": form, "student": student, "all_students": all_students},
     )
 
 
