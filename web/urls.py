@@ -314,8 +314,8 @@ urlpatterns += i18n_patterns(
     ),
     path("quizzes/<int:quiz_id>/analytics/", quiz_views.quiz_analytics, name="quiz_analytics"),
     # Nft badge urls
-    # Add to web/urls.py
-    path("achievements/<int:achievement_id>/", views.achievement_detail, name="achievement_detail"),
+    path("students/<int:student_id>/award-nft-badge/", views.award_nft_badge, name="award_nft_badge"),
+    path("award-nft-badge/", views.award_nft_badge, name="award_nft_badge_search"),
     path("achievements/<int:achievement_id>/send-nft-badge/", views.send_nft_badge, name="send_nft_badge"),
     # Grade-a-Link URLs
     path("grade-links/", GradeableLinkListView.as_view(), name="gradeable_link_list"),

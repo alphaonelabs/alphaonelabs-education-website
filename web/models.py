@@ -616,7 +616,10 @@ class Achievement(models.Model):
         ("quiz", "High Quiz Score"),
         ("streak", "Daily Learning Streak"),
     ]
-
+    BADGE_TYPE_CHOICES = (
+        ("traditional", "Traditional Badge"),
+        ("nft", "NFT Badge"),
+    )
     BADGE_ICONS = [
         ("fas fa-trophy", "Trophy"),
         ("fas fa-medal", "Medal"),

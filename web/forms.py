@@ -1654,3 +1654,18 @@ class StudyGroupForm(forms.ModelForm):
         model = StudyGroup
         # You might exclude fields that are set automatically.
         fields = ["name", "description", "course", "max_members", "is_private"]
+
+
+class NFTBadgeForm(forms.ModelForm):
+    class Meta:
+        model = Achievement
+        fields = ["title", "description", "achievement_type", "badge_icon", "course"]
+        widgets = {
+            "course": forms.Select(attrs={"class": "form-select"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Make course optional for NFT badges
+        self.fields["course"].required = False
+        self.fields["course"].help_text = "Optional: Associate this NFT badge with a course"
