@@ -5682,6 +5682,7 @@ def prepare_time_series_data(enrollment, total_sessions):
         "dates": [s.start_time.strftime("%Y-%m-%d") for s in completed_sessions],
     }
 
+
 # map views
 def classes_map(request):
     """View for displaying classes near the user."""
@@ -5800,6 +5801,7 @@ def map_data_api(request):
 
     logger.info(f"Found {len(map_data)} sessions with valid coordinates")
     return JsonResponse({"sessions": map_data})
+
 
 GITHUB_REPO = "alphaonelabs/alphaonelabs-education-website"
 GITHUB_API_BASE = "https://api.github.com"
@@ -6046,4 +6048,3 @@ def contributor_detail_view(request, username):
     # Cache for 1 hour
     cache.set(cache_key, context, 3600)
     return render(request, "web/contributor_detail.html", context)
-

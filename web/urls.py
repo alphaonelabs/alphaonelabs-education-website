@@ -387,7 +387,6 @@ urlpatterns += i18n_patterns(
     path("api/map-data/", views.map_data_api, name="map_data_api"),
     # Contributor urls
     path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
- 
     prefix_default_language=True,
 )
 

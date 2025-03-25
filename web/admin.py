@@ -309,7 +309,7 @@ class SessionAdmin(admin.ModelAdmin):
             },
         ),
     )
-    list_display = ("title", "course", "start_time", "end_time", "is_virtual")
+    list_display = ("title", "course", "start_time", "end_time", "is_virtual", "teaching_style")
     list_filter = ("is_virtual", "start_time")
     search_fields = ("title", "description", "course__title")
 
