@@ -1,0 +1,27 @@
+{% load dict_filters %}
+
+<div class="p-6">
+  <div class="flex justify-between items-start">
+    <h3 class="text-xl font-semibold text-gray-800 mb-2">{{ room.title }}</h3>
+    {% if room.creator == user %}
+      <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">Created by you</span>
+    {% endif %}
+  </div>
+  <p class="text-gray-600 mb-4">{{ room.description|truncatechars:100 }}</p>
+  <div class="mb-4">
+    <span class="font-medium text-gray-700">Subject:</span> {{ room.subject }}
+  </div>
+  <div class="mb-4">
+    <span class="font-medium text-gray-700">Topics:</span>
+    <div class="flex flex-wrap gap-2 mt-1">
+      {% for topic in room_topics|get_item:room.id %}
+        <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">{{ topic }}</span>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="flex justify-between items-center">
+    <span class="text-sm text-gray-500">{{ room.participants.count }} participant{{ room.participants.count|pluralize }}</span>
+    <a href="{% url 'waiting_room_detail' room.id %}"
+       class="text-blue-600 hover:text-blue-800 font-medium">View Details</a>
+  </div>
+</div>
