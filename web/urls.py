@@ -317,6 +317,7 @@ urlpatterns += i18n_patterns(
     path("students/<int:student_id>/award-nft-badge/", views.award_nft_badge, name="award_nft_badge"),
     path("award-nft-badge/", views.award_nft_badge, name="award_nft_badge_search"),
     path("achievements/<int:achievement_id>/send-nft-badge/", views.send_nft_badge, name="send_nft_badge"),
+    path("achievements/<int:achievement_id>/", views.achievement_detail, name="achievement_detail"),
     # Grade-a-Link URLs
     path("grade-links/", GradeableLinkListView.as_view(), name="gradeable_link_list"),
     path("grade-links/submit/", GradeableLinkCreateView.as_view(), name="gradeable_link_create"),
