@@ -47,6 +47,7 @@ from .models import (
     Subject,
     SuccessStory,
     UserBadge,
+    WaitingRoom,
     WebRequest,
 )
 
@@ -83,6 +84,16 @@ class EmailAddressInline(admin.TabularInline):
     can_delete = True
     verbose_name_plural = "Email Addresses"
     extra = 1
+
+
+@admin.register(WaitingRoom)
+class WaitingRoomAdmin(admin.ModelAdmin):
+    list_display = ("title", "subject", "creator", "status", "created_at")
+    list_filter = ("status", "subject")
+    search_fields = ("title", "description", "subject", "topics")
+    date_hierarchy = "created_at"
+    raw_id_fields = ("creator", "participants", "fulfilled_course")
+    readonly_fields = ("created_at", "updated_at")
 
 
 @admin.register(Profile)
