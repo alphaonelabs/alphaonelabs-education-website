@@ -391,24 +391,28 @@ class Command(BaseCommand):
             enrolled_courses = set(Enrollment.objects.filter(student=student).values_list("course_id", flat=True))
             reviewed_courses = set(Review.objects.filter(student=student).values_list("course_id", flat=True))
             available_courses = [c for c in courses if c.id in enrolled_courses and c.id not in reviewed_courses]
-            random_data = random_date_between(two_weeks_ago, now)
             # Date range for random dates (from 2 weeks ago to now)
             now = timezone.now()
             two_weeks_ago = now - timedelta(days=14)
 
             # Create reviews for random courses
             for _ in range(min(random.randint(1, 3), len(available_courses))):
+                random_date = random_date_between(two_weeks_ago, now)
                 course = random.choice(available_courses)
                 available_courses.remove(course)  # Remove to avoid selecting again
 
-                Review.objects.create(
+                boolean = random.choice([True, False])
+
+                test = Review.objects.create(
                     student=student,
                     course=course,
                     rating=random.randint(3, 5),
                     comment="Great course!",
-                    created_at=random_data,
+                    is_featured=boolean,
+                    created_at=random_date,
                 )
-                self.stdout.write(f"Created review, student: {student}, course, {course}")
+                self.stdout.write(f"Created review, student: {student}, course, {course}, - {boolean} - {random_date}")
+                # self.stdout.write(f"Created review, student>>>: {test}")
 
         # Create forum categories and topics
         categories = []

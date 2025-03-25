@@ -1119,7 +1119,7 @@
                   </a>
                 {% endif %}
               </div>
-              
+
               <!-- Course Average Rating -->
               <div class="mb-8 bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm">
                 <div class="flex flex-col md:flex-row items-center gap-6">
@@ -1139,7 +1139,7 @@
                       {% endfor %}
                     </div>
                     <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                      {{ reviews.count }} review{{ reviews.count|pluralize }}
+                      {{ reviews_num }} review{{ reviews.count|pluralize }}
                     </div>
                   </div>
                   
@@ -1149,13 +1149,11 @@
                         <div class="flex items-center space-x-2">
                           <div class="w-12 text-sm text-right">{{ i }} star{{ i|pluralize }}</div>
                           <div class="flex-grow h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
-                            {% with rating_count=rating_distribution|get_item:i|floatformat:"0" %}
-                              {% if reviews.count > 0 %}
-                                <div class="h-full bg-yellow-400" style="width: {% widthratio rating_count reviews.count 100 %}%"></div>
-                              {% else %}
+                              {% if rating_distribution|get_item:i > 0 %}
+                                <div class="h-full bg-yellow-400" id="KKKKK" data-rating="{{ rating_distribution|get_item:i }}"></div>
+                                {% else %}
                                 <div class="h-full bg-yellow-400" style="width: 0%"></div>
-                              {% endif %}
-                            {% endwith %}
+                                {% endif %}
                           </div>
                           <div class="w-12 text-sm">
                             {{ rating_distribution|get_item:i }}
@@ -1166,10 +1164,71 @@
                   </div>
                 </div>
               </div>
-              
-              <!-- Review List -->
-              {% if reviews %}
+
+              {% if reviews or featured_review %}
+              <!-- featured reviews List -->
                 <div class="space-y-4">
+                {% for review in featured_review %}
+                  <div class="relative bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm">
+                    <span class="absolute top-0 left-0 p-1.5 px-2.5 rounded-lg inline-block mb-4 bg-yellow-400">Featured</span>
+                    <div class="flex justify-between mt-9 items-start">
+                      <div class="flex items-start space-x-3">
+                        {% if review.student.profile.avatar %}
+                          <img src="{{ review.student.profile.avatar.url }}" alt="{{ review.student.username }}" 
+                              class="w-10 h-10 rounded-full object-cover" width="40" height="40">
+                        {% else %}
+                          <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center ring-2 ring-yellow-400 ring-opacity-50">
+                            <i class="fas fa-user text-gray-400"></i>
+                          </div>
+                        {% endif %}
+                        <div>
+                          {% if request.user.id == review.student.id %}
+                          <div class="font-medium text-gray-800 dark:text-white">You</div>
+                          {% else %}
+                            <div class="font-medium text-gray-800 dark:text-white">{{ review.student.username }}</div>
+                          {% endif %}
+                          <div class="flex items-center mt-1">
+                            {% for i in "12345" %}
+                              {% if forloop.counter <= review.rating %}
+                                <i class="fas fa-star text-yellow-400 text-sm"></i>
+                              {% else %}
+                                <i class="far fa-star text-yellow-400 text-sm"></i>
+                              {% endif %}
+                            {% endfor %}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="flex items-center">
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mr-3">
+                          {{ review.created_at|date:"M d, Y" }}
+                        </div>
+                      
+                      </div>
+                    </div>
+                    <div class="mt-3 text-gray-700 dark:text-gray-300">
+                      {{ review.comment }}
+                    </div>
+
+                    <!-- Edit/Delete buttons for user's own reviews -->
+                    {% if request.user.is_authenticated and request.user.id == review.student.id %}
+                    <div class="flex mt-1 clearfix justify-end">
+                      <div class="flex space-x-2 float-right">
+                        <a href="{% url 'edit_review' course.slug review.id  %}" class="inline-flex items-center px-3 py-1.5 text-sm bg-teal-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
+                          <i class="fas fa-edit mr-2"></i>
+                          Edit
+                        </a>
+                        <button onclick="confirmDelete('{% url 'delete_review' course.slug review.id %}')" class="inline-flex items-center px-3 py-1.5 text-sm bg-red-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
+                          <i class="fas fa-trash-alt mr-2"></i>
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                    {% endif %}
+
+                  </div>
+                {% endfor %}
+
+              <!-- Normal reviews List -->
                 {% for review in reviews %}
                   <div class="bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm">
                     <div class="flex justify-between items-start">
@@ -1246,7 +1305,6 @@
                   </div>
                 </div>
 
-
               {% else %}
                 <div class="text-center py-8 bg-white dark:bg-gray-700 rounded-lg">
                   <div class="text-gray-500 dark:text-gray-400">No reviews yet</div>
@@ -1266,94 +1324,113 @@
     <span class="notification-message">This is a notification</span>
   </div>
   <script>
+    function getCharWidth() {
+      // Parse the widths data from the template
+      const reviewsNum = {{ reviews_num }};
+
+      // Function to set width based on rating
+      function setWidth(element, StartNum) {
+          const width = 100 * (StartNum / reviewsNum) // Default to 0 if rating not found
+          element.style.width = `${width}%`;
+      }
+
+      // Apply widths to all elements
+      document.querySelectorAll('#KKKKK').forEach(element => {
+          const StartNum = element.getAttribute('data-rating');
+          setWidth(element, StartNum);
+      });
+    }
+    getCharWidth()
+
     document.getElementById("average_starts").innerText = parseFloat({{ course.average_rating }}).toFixed(1);
 
-  function confirmDelete(deleteUrl) {
-    document.getElementById('deleteLink').href = deleteUrl;
-    document.getElementById('deleteModal').classList.remove('hidden');
-  }
-  
-  function closeDeleteModal() {
-    document.getElementById('deleteModal').classList.add('hidden');
-  }
-      function loadCalendar(year, month) {
-          fetch(`/courses/{{ course.slug }}/calendar/?year=${year}&month=${month}`)
-              .then(response => response.json())
-              .then(data => {
-                  // Update month display
-                  document.getElementById('current-month').textContent = data.current_month;
+    function confirmDelete(deleteUrl) {
+      document.getElementById('deleteLink').href = deleteUrl;
+      document.getElementById('deleteModal').classList.remove('hidden');
+    }
+    
+    function closeDeleteModal() {
+      document.getElementById('deleteModal').classList.add('hidden');
+    }
 
-                  // Update calendar grid
-                  const grid = document.getElementById('calendar-grid');
-                  let html = '';
+    function loadCalendar(year, month) {
+        fetch(`/courses/{{ course.slug }}/calendar/?year=${year}&month=${month}`)
+            .then(response => response.json())
+            .then(data => {
+                // Update month display
+                document.getElementById('current-month').textContent = data.current_month;
 
-                  data.calendar_weeks.forEach(week => {
-                      week.forEach(day => {
-                          const today = day.is_today ? 'bg-gray-100 dark:bg-gray-700' : '';
-                          html += `
-              <div class="p-2 border-b border-r dark:border-gray-700 ${today}">
-                ${day.date ? `
-                  <div class="relative">
-                    <span class="${day.has_session ? 'font-bold text-teal-600 dark:text-teal-400' : ''}">
-                      ${new Date(day.date).getDate()}
-                    </span>
-                    ${day.has_session ? `
-                      <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-teal-500 dark:bg-teal-400 rounded-full"></div>
-                    ` : ''}
-                  </div>
-                ` : ''}
-              </div>
-            `;
-                      });
-                  });
+                // Update calendar grid
+                const grid = document.getElementById('calendar-grid');
+                let html = '';
 
-                  grid.innerHTML = html;
+                data.calendar_weeks.forEach(week => {
+                    week.forEach(day => {
+                        const today = day.is_today ? 'bg-gray-100 dark:bg-gray-700' : '';
+                        html += `
+            <div class="p-2 border-b border-r dark:border-gray-700 ${today}">
+              ${day.date ? `
+                <div class="relative">
+                  <span class="${day.has_session ? 'font-bold text-teal-600 dark:text-teal-400' : ''}">
+                    ${new Date(day.date).getDate()}
+                  </span>
+                  ${day.has_session ? `
+                    <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-teal-500 dark:bg-teal-400 rounded-full"></div>
+                  ` : ''}
+                </div>
+              ` : ''}
+            </div>
+          `;
+                    });
+                });
 
-                  // Update navigation buttons
-                  document.getElementById('prev-month-btn').setAttribute('onclick', `loadCalendar(${data.prev_month.year}, ${data.prev_month.month})`);
-                  document.getElementById('next-month-btn').setAttribute('onclick', `loadCalendar(${data.next_month.year}, ${data.next_month.month})`);
-              })
-              .catch(error => {
-                  console.error('Error loading calendar:', error);
-              });
-      }
+                grid.innerHTML = html;
 
-      function showNotification(message, type = 'info') {
-          const notification = document.getElementById('notification');
-          const iconEl = notification.querySelector('.notification-icon');
-          const messageEl = notification.querySelector('.notification-message');
+                // Update navigation buttons
+                document.getElementById('prev-month-btn').setAttribute('onclick', `loadCalendar(${data.prev_month.year}, ${data.prev_month.month})`);
+                document.getElementById('next-month-btn').setAttribute('onclick', `loadCalendar(${data.next_month.year}, ${data.next_month.month})`);
+            })
+            .catch(error => {
+                console.error('Error loading calendar:', error);
+            });
+    }
 
-          // Set icon based on notification type
-          let icon = 'fa-info-circle';
-          let bgColor = 'bg-blue-500';
+    function showNotification(message, type = 'info') {
+        const notification = document.getElementById('notification');
+        const iconEl = notification.querySelector('.notification-icon');
+        const messageEl = notification.querySelector('.notification-message');
 
-          if (type === 'success') {
-              icon = 'fa-check-circle';
-              bgColor = 'bg-green-500';
-          } else if (type === 'error') {
-              icon = 'fa-exclamation-circle';
-              bgColor = 'bg-red-500';
-          } else if (type === 'warning') {
-              icon = 'fa-exclamation-triangle';
-              bgColor = 'bg-yellow-500';
-          }
+        // Set icon based on notification type
+        let icon = 'fa-info-circle';
+        let bgColor = 'bg-blue-500';
 
-          // Update notification content
-          iconEl.className = `fas ${icon} notification-icon mr-2`;
-          notification.className = `notification ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center`;
-          messageEl.textContent = message;
+        if (type === 'success') {
+            icon = 'fa-check-circle';
+            bgColor = 'bg-green-500';
+        } else if (type === 'error') {
+            icon = 'fa-exclamation-circle';
+            bgColor = 'bg-red-500';
+        } else if (type === 'warning') {
+            icon = 'fa-exclamation-triangle';
+            bgColor = 'bg-yellow-500';
+        }
 
-          // Show notification
-          notification.classList.add('show');
+        // Update notification content
+        iconEl.className = `fas ${icon} notification-icon mr-2`;
+        notification.className = `notification ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center`;
+        messageEl.textContent = message;
 
-          // Hide after 3 seconds
-          setTimeout(() => {
-              notification.classList.remove('show');
-          }, 3000);
-      }
+        // Show notification
+        notification.classList.add('show');
 
-      // Calculate remaining sessions when the page loads
-      document.addEventListener('DOMContentLoaded', function() {
+        // Hide after 3 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 3000);
+    }
+
+    // Calculate remaining sessions when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
           const remainingElement = document.getElementById('remaining-count');
           if (remainingElement) {
               const totalSessions = parseInt(remainingElement.dataset.totalSessions, 10) || 0;
