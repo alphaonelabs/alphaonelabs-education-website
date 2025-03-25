@@ -144,6 +144,7 @@ from .models import (
     TimeSlot,
     UserBadge,
     VideoRequest,
+    WaitingRoom,
     WebRequest,
 )
 from .notifications import (
@@ -434,13 +435,59 @@ def create_course(request):
         if form.is_valid():
             course = form.save(commit=False)
             course.teacher = request.user
+            course.status = "published"  # Set status to published
             course.save()
             form.save_m2m()  # Save many-to-many relationships
+
+            # Handle waiting room if course was created from one
+            if "waiting_room_data" in request.session:
+                waiting_room = get_object_or_404(WaitingRoom, id=request.session["waiting_room_data"]["id"])
+
+                # Update waiting room status and link to course
+                waiting_room.status = "fulfilled"
+                waiting_room.fulfilled_course = course
+                waiting_room.save(update_fields=["status", "fulfilled_course"])
+
+                # Send notifications to all participants
+                for participant in waiting_room.participants.all():
+                    messages.success(
+                        request,
+                        f"A new course matching your request has been created: {course.title}",
+                        extra_tags=f"course_{course.slug}",
+                    )
+
+                # Clear waiting room data from session
+                del request.session["waiting_room_data"]
+
+                # Redirect back to waiting room to show the update
+                return redirect("waiting_room_detail", waiting_room_id=waiting_room.id)
+
             return redirect("course_detail", slug=course.slug)
     else:
         form = CourseForm()
 
     return render(request, "courses/create.html", {"form": form})
+
+
+@login_required
+@teacher_required
+def create_course_from_waiting_room(request, waiting_room_id):
+    waiting_room = get_object_or_404(WaitingRoom, id=waiting_room_id)
+
+    # Ensure waiting room is open
+    if waiting_room.status != "open":
+        messages.error(request, "This waiting room is no longer open.")
+        return redirect("waiting_room_detail", waiting_room_id=waiting_room_id)
+
+    # Store waiting room data in session for validation
+    request.session["waiting_room_data"] = {
+        "id": waiting_room.id,
+        "subject": waiting_room.subject.strip().lower(),
+        "topics": [t.strip().lower() for t in waiting_room.topics.split(",") if t.strip()],
+    }
+
+    # Redirect to regular course creation form
+    return redirect(reverse("create_course"))
 
 
 def course_detail(request, slug):
@@ -694,22 +741,82 @@ def about(request):
     return render(request, "about.html")
 
 
+def waiting_rooms(request):
+    # Get open waiting rooms
+    open_rooms = WaitingRoom.objects.filter(status="open").order_by("-created_at")
+
+    # Get fulfilled waiting rooms (ones that have associated courses)
+    fulfilled_rooms = WaitingRoom.objects.filter(status="fulfilled").order_by("-created_at")
+
+    # Get rooms created by the user
+    user_created_rooms = (
+        WaitingRoom.objects.filter(creator=request.user).order_by("-created_at")
+        if request.user.is_authenticated
+        else []
+    )
+
+    # Get rooms the user has joined
+    user_joined_rooms = (
+        WaitingRoom.objects.filter(participants=request.user).order_by("-created_at")
+        if request.user.is_authenticated
+        else []
+    )
+
+    # Get topics for each room
+    room_topics = {}
+    all_rooms = list(open_rooms) + list(fulfilled_rooms) + list(user_created_rooms) + list(user_joined_rooms)
+    for room in all_rooms:
+        # Split topics string into a list
+        room_topics[room.id] = [t.strip() for t in room.topics.split(",")] if room.topics else []
+
+    context = {
+        "open_rooms": open_rooms,
+        "fulfilled_rooms": fulfilled_rooms,
+        "user_created_rooms": user_created_rooms,
+        "user_joined_rooms": user_joined_rooms,
+        "room_topics": room_topics,
+    }
+
+    return render(request, "waiting_rooms.html", context)
+
+
 def learn(request):
     if request.method == "POST":
         form = LearnForm(request.POST)
         if form.is_valid():
+            # Create waiting room
+            waiting_room = form.save(commit=False)
+            waiting_room.status = "open"  # Set initial status
+            waiting_room.creator = request.user  # Set the creator
+
+            # Get topics from form and save as comma-separated string
+            topics = form.cleaned_data.get("topics", "")
+            if isinstance(topics, list):
+                topics = ", ".join(topics)
+            waiting_room.topics = topics
+
+            waiting_room.save()
+
+            # Redirect to waiting rooms page
+            return redirect("waiting_rooms")
+
+            # Get form data
+            title = form.cleaned_data["title"]
+            description = form.cleaned_data["description"]
             subject = form.cleaned_data["subject"]
-            email = form.cleaned_data["email"]
-            message = form.cleaned_data["message"]
+            topics = form.cleaned_data["topics"]
 
             # Prepare email content
-            email_subject = f"Learning Interest: {subject}"
+            email_subject = f"New Learning Request: {title}"
             email_body = render_to_string(
                 "emails/learn_interest.html",
                 {
+                    "title": title,
+                    "description": description,
                     "subject": subject,
-                    "email": email,
-                    "message": message,
+                    "topics": topics,
+                    "user": request.user.username,
+                    "waiting_room_id": waiting_room.id,
                 },
             )
 
@@ -723,8 +830,11 @@ def learn(request):
                     html_message=email_body,
                     fail_silently=False,
                 )
-                messages.success(request, "Thank you for your interest! We'll be in touch soon.")
-                return redirect("index")
+                messages.success(
+                    request,
+                    "Thank you for your learning request!",
+                )
+                return redirect("waiting_rooms")
             except Exception:
                 logger = logging.getLogger(__name__)
                 logger.exception("Error sending email")
@@ -732,7 +842,11 @@ def learn(request):
     else:
         initial_data = {}
         if request.GET.get("subject"):
-            initial_data["subject"] = request.GET.get("subject")
+            try:
+                subject = Subject.objects.get(name=request.GET.get("subject"))
+                initial_data["subject"] = subject.id
+            except Subject.DoesNotExist:
+                pass
         form = LearnForm(initial=initial_data)
 
     return render(request, "learn.html", {"form": form})
@@ -4606,6 +4720,120 @@ def streak_detail(request):
         return redirect("account_login")
     streak, created = LearningStreak.objects.get_or_create(user=request.user)
     return render(request, "streak_detail.html", {"streak": streak})
+
+
+@login_required
+def waiting_room_list(request):
+    """View for displaying waiting rooms categorized by status."""
+    # Get waiting rooms by status
+    open_rooms = WaitingRoom.objects.filter(status="open")
+    fulfilled_rooms = WaitingRoom.objects.filter(status="fulfilled")
+    closed_rooms = WaitingRoom.objects.filter(status="closed")
+
+    # Get waiting rooms created by the user
+    user_created_rooms = WaitingRoom.objects.filter(creator=request.user)
+
+    # Get waiting rooms joined by the user
+    user_joined_rooms = request.user.joined_waiting_rooms.all()
+
+    # Process topics for all waiting rooms
+    all_rooms = (
+        list(open_rooms)
+        + list(fulfilled_rooms)
+        + list(closed_rooms)
+        + list(user_created_rooms)
+        + list(user_joined_rooms)
+    )
+    room_topics = {}
+    for room in all_rooms:
+        room_topics[room.id] = [topic.strip() for topic in room.topics.split(",") if topic.strip()]
+
+    context = {
+        "open_rooms": open_rooms,
+        "fulfilled_rooms": fulfilled_rooms,
+        "closed_rooms": closed_rooms,
+        "user_created_rooms": user_created_rooms,
+        "user_joined_rooms": user_joined_rooms,
+        "room_topics": room_topics,
+    }
+    return render(request, "waiting_room/list.html", context)
+
+
+def find_matching_courses(waiting_room):
+    """Find courses that match the waiting room's subject and topics."""
+    # Get courses with matching subject name (case-insensitive)
+    matching_courses = Course.objects.filter(subject__iexact=waiting_room.subject, status="published")
+
+    # Filter courses that have all required topics
+    required_topics = {t.strip().lower() for t in waiting_room.topics.split(",") if t.strip()}
+
+    # Further filter courses by checking if their topics contain all required topics
+    final_matches = []
+    for course in matching_courses:
+        course_topics = {t.strip().lower() for t in course.topics.split(",") if t.strip()}
+        if course_topics.issuperset(required_topics):
+            final_matches.append(course)
+
+    return final_matches
+
+
+def waiting_room_detail(request, waiting_room_id):
+    """View for displaying details of a waiting room."""
+    waiting_room = get_object_or_404(WaitingRoom, id=waiting_room_id)
+
+    # Check if the user is a participant
+    is_participant = request.user.is_authenticated and request.user in waiting_room.participants.all()
+
+    # Check if the user is the creator
+    is_creator = request.user.is_authenticated and request.user == waiting_room.creator
+
+    # Check if the user is a teacher
+    is_teacher = request.user.is_authenticated and hasattr(request.user, "profile") and request.user.profile.is_teacher
+
+    context = {
+        "waiting_room": waiting_room,
+        "is_participant": is_participant,
+        "is_creator": is_creator,
+        "is_teacher": is_teacher,
+        "participant_count": waiting_room.participants.count(),
+        "topic_list": [topic.strip() for topic in waiting_room.topics.split(",") if topic.strip()],
+    }
+    return render(request, "waiting_room/detail.html", context)
+
+
+@login_required
+def join_waiting_room(request, waiting_room_id):
+    """View for joining a waiting room."""
+    waiting_room = get_object_or_404(WaitingRoom, id=waiting_room_id)
+
+    # Check if the waiting room is open
+    if waiting_room.status != "open":
+        messages.error(request, "This waiting room is no longer open for joining.")
+        return redirect("waiting_room_list")
+
+    # Add the user as a participant if not already
+    if request.user not in waiting_room.participants.all():
+        waiting_room.participants.add(request.user)
+        messages.success(request, f"You have joined the waiting room: {waiting_room.title}")
+    else:
+        messages.info(request, "You are already a participant in this waiting room.")
+
+    return redirect("waiting_room_detail", waiting_room_id=waiting_room.id)
+
+
+@login_required
+def leave_waiting_room(request, waiting_room_id):
+    """View for leaving a waiting room."""
+    waiting_room = get_object_or_404(WaitingRoom, id=waiting_room_id)
+
+    # Remove the user from participants
+    if request.user in waiting_room.participants.all():
+        waiting_room.participants.remove(request.user)
+        messages.success(request, f"You have left the waiting room: {waiting_room.title}")
+    else:
+        messages.info(request, "You are not a participant in this waiting room.")
+
+    return redirect("waiting_room_list")
 
 
 def is_superuser(user):
