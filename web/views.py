@@ -128,6 +128,7 @@ from .models import (
     ProductImage,
     Profile,
     ProgressTracker,
+    Review,
     SearchLog,
     Session,
     SessionAttendance,
@@ -144,7 +145,6 @@ from .models import (
     UserBadge,
     WaitingRoom,
     WebRequest,
-    Review
 )
 from .notifications import (
     notify_session_reminder,
@@ -493,43 +493,43 @@ def create_course_from_waiting_room(request, waiting_room_id):
 def edit_review(request, slug, review_id):
     course = get_object_or_404(Course, slug=slug)
     review = get_object_or_404(Review, id=review_id)
-    
+
     # Security check - only allow editing own reviews
     if request.user.id != review.student.id:
         messages.error(request, "You can only edit your own reviews.")
-        return redirect('course_detail', slug=slug)
-    
-    if request.method == 'POST':
+        return redirect("course_detail", slug=slug)
+
+    if request.method == "POST":
         form = ReviewForm(request.POST, instance=review)
         if form.is_valid():
             form.save()
             messages.success(request, "Your review has been updated.")
             # return redirect('course_detail', slug=slug)
-            url = reverse('course_detail', kwargs={'slug': slug})
+            url = reverse("course_detail", kwargs={"slug": slug})
             return redirect(f"{url}#course_reviews")
     else:
         form = ReviewForm(instance=review)
-    
+
     context = {
-        'form': form,
-        'course': course,
-        'review': review,
+        "form": form,
+        "course": course,
+        "review": review,
     }
-    return render(request, 'courses/edit_review.html', context)
+    return render(request, "courses/edit_review.html", context)
+
 
 @login_required
 def delete_review(request, slug, review_id):
-    course = get_object_or_404(Course, slug=slug)
     review = get_object_or_404(Review, id=review_id)
-    
+
     # Security check - only allow deleting own reviews
     if request.user.id != review.student.id:
         messages.error(request, "You can only delete your own reviews.")
     else:
         review.delete()
         messages.success(request, "Your review has been deleted.")
-    
-    url = reverse('course_detail', kwargs={'slug': slug})
+
+    url = reverse("course_detail", kwargs={"slug": slug})
     return redirect(f"{url}#course_reviews")
     # return redirect('course_detail', slug=slug)
 
@@ -614,14 +614,14 @@ def course_detail(request, slug):
                 calendar_week.append({"date": date, "in_month": True, "has_session": date in session_dates})
         calendar_weeks.append(calendar_week)
 
-     # Get all reviews for this course
-    reviews = course.reviews.all().order_by('-created_at')
-    
+    # Get all reviews for this course
+    reviews = course.reviews.all().order_by("-created_at")
+
     # Check if the current user has already reviewed this course
     user_review = None
     if request.user.is_authenticated:
         user_review = Review.objects.filter(student=request.user, course=course).first()
-    
+
     # Calculate rating distribution for visualization
     rating_distribution = {
         5: reviews.filter(rating=5).count(),
@@ -647,9 +647,9 @@ def course_detail(request, slug):
         "student_attendance": student_attendance,
         "completed_enrollment_count": course.enrollments.filter(status="completed").count(),
         "in_progress_enrollment_count": course.enrollments.filter(status="in_progress").count(),
-        'reviews': reviews,
-        'user_review': user_review,
-        'rating_distribution': rating_distribution,
+        "reviews": reviews,
+        "user_review": user_review,
+        "rating_distribution": rating_distribution,
     }
 
     return render(request, "courses/detail.html", context)

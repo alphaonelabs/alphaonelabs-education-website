@@ -395,7 +395,6 @@ class Command(BaseCommand):
             # Date range for random dates (from 2 weeks ago to now)
             now = timezone.now()
             two_weeks_ago = now - timedelta(days=14)
-            print("user review %%%%%%%", student)
 
             # Create reviews for random courses
             for _ in range(min(random.randint(1, 3), len(available_courses))):
@@ -403,7 +402,11 @@ class Command(BaseCommand):
                 available_courses.remove(course)  # Remove to avoid selecting again
 
                 Review.objects.create(
-                    student=student, course=course, rating=random.randint(3, 5), comment="Great course!", created_at=random_data
+                    student=student,
+                    course=course,
+                    rating=random.randint(3, 5),
+                    comment="Great course!",
+                    created_at=random_data,
                 )
                 self.stdout.write(f"Created review, student: {student}, course, {course}")
 

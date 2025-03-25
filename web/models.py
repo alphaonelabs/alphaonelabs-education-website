@@ -648,6 +648,7 @@ class Review(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="reviews")
     rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     comment = models.TextField()
+    is_featured = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
