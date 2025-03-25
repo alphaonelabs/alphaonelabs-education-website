@@ -18,7 +18,6 @@ import requests
 import stripe
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -5744,63 +5743,6 @@ def get_user_contribution_metrics(username, token):
         return {}
 
 
-@staff_member_required
-def all_contributors_view(request):
-    cache_key = "github_contributors"
-    cached_data = cache.get(cache_key)
-    if cached_data:
-        return render(request, "web/all_contributors.html", cached_data)
-
-    token = os.environ.get("GITHUB_TOKEN")
-    headers = {"Authorization": f"token {token}"} if token else {}
-
-    merged_prs_map = {}
-    page = 1
-    pulls = []
-
-    try:
-        # Paginate through closed PRs using the helper (with timeout)
-        while True:
-            pulls_url = f"{GITHUB_API_BASE}/repos/{GITHUB_REPO}/pulls"
-            params = {"state": "closed", "per_page": 100, "page": page}
-            data = github_api_request(pulls_url, params=params, headers=headers)
-            if not data:
-                break
-            pulls.extend(data)
-            page += 1
-
-        # Aggregate merged PRs per user
-        for pr in pulls:
-            if pr.get("merged_at"):
-                user_login = pr["user"]["login"].lower()
-                # Filter out bots
-                if user_login == "a1l13n" or "bot" in user_login or "automation" in user_login:
-                    continue
-                if user_login not in merged_prs_map:
-                    merged_prs_map[user_login] = {
-                        "login": pr["user"]["login"],
-                        "avatar_url": pr["user"]["avatar_url"],
-                        "merged_prs": 0,
-                    }
-                merged_prs_map[user_login]["merged_prs"] += 1
-
-        contributors = sorted(merged_prs_map.values(), key=lambda c: c["merged_prs"], reverse=True)
-    except Exception as e:
-        logger.error(f"Error in all_contributors_view: {e}")
-        contributors = []
-
-    top_contributor = contributors[0] if contributors else None
-
-    cache_data = {
-        "contributors": contributors,
-        "top_contributor": top_contributor,
-    }
-    cache.set(cache_key, cache_data, 3600)  # Cache for 1 hour
-
-    return render(request, "web/all_contributors.html", cache_data)
-
-
-@staff_member_required
 def contributor_detail_view(request, username):
     """
     View to display detailed information about a specific GitHub contributor.
