@@ -224,7 +224,7 @@ urlpatterns += i18n_patterns(
     path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),
     path("videos/", views.educational_videos_list, name="educational_videos_list"),
     path("videos/upload/", login_required(views.upload_educational_video), name="upload_educational_video"),
-    path("videos/request/", login_required(views.request_video), name="request_video"),
+    path("videos/request/", login_required(views.request_video), name="request_video "),
     # Storefront Management
     path("store/create/", login_required(views.StorefrontCreateView.as_view()), name="storefront_create"),
     path(

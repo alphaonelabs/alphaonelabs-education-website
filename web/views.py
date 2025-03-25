@@ -143,8 +143,8 @@ from .models import (
     TeamInvite,
     TimeSlot,
     UserBadge,
-    WebRequest,
     VideoRequest,
+    WebRequest,
 )
 from .notifications import (
     notify_session_reminder,
@@ -4377,7 +4377,7 @@ def uploaded_videos_list(request):
     # Get all subjects for the dropdown
     subjects = Subject.objects.all().order_by("order", "name")
 
-    # Paginate results
+    # Paginating results
     paginator = Paginator(videos, 12)  # 12 videos per page
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
@@ -4419,7 +4419,7 @@ def requested_videos_list(request):
     # Get all subjects for the sidebar
     subjects = Subject.objects.all().order_by("order", "name")
 
-    # Paginate results
+    # Paginating results
     paginator = Paginator(video_requests, 12)  # 12 requests per page
     page_number = request.GET.get("page_requests", 1)
     page_obj = paginator.get_page(page_number)
@@ -4447,9 +4447,9 @@ def educational_videos_list(request):
     # Merge category counts (combine counts from both sources)
     combined_category_counts = {}
     for slug in set(uploaded_context["category_counts"].keys()) | set(requested_context["category_counts"].keys()):
-        combined_category_counts[slug] = (
-            uploaded_context["category_counts"].get(slug, 0) + requested_context["category_counts"].get(slug, 0)
-        )
+        combined_category_counts[slug] = uploaded_context["category_counts"].get(slug, 0) + requested_context[
+            "category_counts"
+        ].get(slug, 0)
 
     # Combine contexts, prioritizing consistency
     context = {

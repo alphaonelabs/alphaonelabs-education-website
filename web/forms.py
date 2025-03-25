@@ -761,7 +761,7 @@ class VideoRequestForm(forms.ModelForm):
         model = VideoRequest
         fields = ["title", "description", "category"]
         widgets = {
-            "title": TailwindInput(attrs={"placeholder": "Video request title"}),
+            "title": TailwindInput(attrs={"placeholder": "Video Request Title"}),
             "description": TailwindTextarea(
                 attrs={
                     "rows": 4,
