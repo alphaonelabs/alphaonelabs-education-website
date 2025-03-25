@@ -73,13 +73,15 @@
           <div class="space-y-4">
             <div class="aspect-square w-full relative overflow-hidden rounded-lg shadow-md">
               {% if course.image %}
-                <img loading="lazy" src="{{ course.image.url }}"
+                <img loading="lazy"
+                     src="{{ course.image.url }}"
                      alt="{{ course.title }}"
                      class="w-full h-full object-cover"
                      width="500"
                      height="500" />
               {% else %}
-                <img loading="lazy" src="{% static 'images/default-course.jpg' %}"
+                <img loading="lazy"
+                     src="{% static 'images/default-course.jpg' %}"
                      alt="{{ course.title }}"
                      class="w-full h-full object-cover"
                      width="500"
@@ -188,13 +190,15 @@
               <div class="flex items-start space-x-4">
                 <div class="flex-shrink-0">
                   {% if course.teacher.profile.avatar %}
-                    <img loading="lazy" src="{{ course.teacher.profile.avatar.url }}"
+                    <img loading="lazy"
+                         src="{{ course.teacher.profile.avatar.url }}"
                          alt="{{ course.teacher.username }}"
                          class="w-16 h-16 rounded-full object-cover border-2 border-teal-300 dark:border-teal-600"
                          width="64"
                          height="64" />
                   {% else %}
-                    <img loading="lazy" src="{% static 'images/default_teacher.png' %}"
+                    <img loading="lazy"
+                         src="{% static 'images/default_teacher.png' %}"
                          alt="{{ course.teacher.username }}"
                          class="w-16 h-16 rounded-full object-cover border-2 border-teal-300 dark:border-teal-600"
                          width="64"
@@ -710,7 +714,8 @@
                                       <div class="flex items-center">
                                         <div class="flex-shrink-0 h-10 w-10">
                                           {% if enrollment.student.profile.avatar %}
-                                            <img loading="lazy" src="{{ enrollment.student.profile.avatar.url }}"
+                                            <img loading="lazy"
+                                                 src="{{ enrollment.student.profile.avatar.url }}"
                                                  alt="{{ enrollment.student.username }}"
                                                  class="h-10 w-10 rounded-full object-cover"
                                                  width="40"
@@ -883,7 +888,8 @@
                                   <div class="flex items-center">
                                     <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex-shrink-0 mr-2 overflow-hidden">
                                       {% if student.profile.avatar %}
-                                        <img loading="lazy" src="{{ student.profile.avatar.url }}"
+                                        <img loading="lazy"
+                                             src="{{ student.profile.avatar.url }}"
                                              alt="{{ student.username }}"
                                              class="w-full h-full object-cover"
                                              width="32"

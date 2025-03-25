@@ -20,20 +20,20 @@ document.addEventListener('DOMContentLoaded', function() {
         const languageDropdown = document.getElementById('language-dropdown');
         const userDropdown = document.getElementById('user-dropdown');
         const menu = document.getElementById('mobile-menu');
-        
+
         const languageButton = event.target.closest('[onclick="toggleLanguageDropdown()"]');
         const userButton = event.target.closest('[onclick="toggleUserDropdown()"]');
         const menuButton = event.target.closest('[onclick="toggleMobileMenu()"]');
         const menuContent = event.target.closest('.mobile-menu-content');
-        
+
         if (languageDropdown && !languageButton && !languageDropdown.contains(event.target)) {
             languageDropdown.classList.add('hidden');
         }
-        
+
         if (userDropdown && !userButton && !userDropdown.contains(event.target)) {
             userDropdown.classList.add('hidden');
         }
-        
+
         if (menu && !menu.classList.contains('hidden') && !menuButton && !menuContent) {
             toggleMobileMenu();
         }

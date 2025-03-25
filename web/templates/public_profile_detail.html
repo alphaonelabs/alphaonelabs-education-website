@@ -12,7 +12,8 @@
         <!-- Profile Picture Section -->
         <div class="md:w-1/3 bg-teal-600 text-white flex items-center justify-center p-6">
           {% if profile.avatar %}
-            <img loading="lazy" src="{{ profile.avatar.url }}"
+            <img loading="lazy"
+                 src="{{ profile.avatar.url }}"
                  alt="{{ profile.user.username }}'s avatar"
                  class="rounded-full w-32 h-32 object-cover border-4 border-white"
                  width="128"

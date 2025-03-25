@@ -50,7 +50,8 @@
               <div class="aspect-square w-full relative overflow-hidden rounded-lg mb-3">
                 {% if course.image %}
                   <a href="{% url 'course_detail' course.slug %}">
-                    <img loading="lazy" src="{{ course.image.url }}"
+                    <img loading="lazy"
+                         src="{{ course.image.url }}"
                          alt="{{ course.title }}"
                          class="w-full h-full object-cover"
                          height="300"
@@ -58,7 +59,8 @@
                   </a>
                 {% else %}
                   <a href="{% url 'course_detail' course.slug %}">
-                    <img loading="lazy" src="{% static 'images/default-course.jpg' %}"
+                    <img loading="lazy"
+                         src="{% static 'images/default-course.jpg' %}"
                          alt="{{ course.title }}"
                          class="w-full h-full object-cover"
                          height="300"
@@ -125,13 +127,15 @@
               <!-- Teacher Info -->
               <div class="flex items-center mb-3">
                 {% if course.teacher.profile.avatar %}
-                  <img loading="lazy" src="{{ course.teacher.profile.avatar.url }}"
+                  <img loading="lazy"
+                       src="{{ course.teacher.profile.avatar.url }}"
                        alt="{{ course.teacher.username }}"
                        class="h-12 w-12 rounded-full mr-3"
                        width="48"
                        height="48" />
                 {% else %}
-                  <img loading="lazy" src="{% static 'images/default_teacher.png' %}"
+                  <img loading="lazy"
+                       src="{% static 'images/default_teacher.png' %}"
                        alt="{{ course.teacher.username }}"
                        class="h-12 w-12 rounded-full mr-3"
                        width="48"
@@ -284,7 +288,8 @@
               <div class="aspect-square w-full relative overflow-hidden rounded-lg mb-3">
                 {% if product.image %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
-                    <img loading="lazy" src="{{ product.image.url }}"
+                    <img loading="lazy"
+                         src="{{ product.image.url }}"
                          alt="{{ product.name }}"
                          class="w-full h-full object-cover"
                          height="250"
@@ -292,7 +297,8 @@
                   </a>
                 {% else %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
-                    <img loading="lazy" src="{% static 'images/placeholder.png' %}"
+                    <img loading="lazy"
+                         src="{% static 'images/placeholder.png' %}"
                          alt="{{ product.name }}"
                          class="w-full h-full object-cover"
                          height="250"
@@ -355,7 +361,8 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
               <div class="hidden sm:block">
-                <img loading="lazy" src="{% static 'images/gsoc-logo.png' %}"
+                <img loading="lazy"
+                     src="{% static 'images/gsoc-logo.png' %}"
                      alt="Google Summer of Code"
                      class="h-16 w-16 object-contain"
                      onerror="this.src='https://summerofcode.withgoogle.com/assets/media/gsoc-2024-badge.svg'"
@@ -656,7 +663,8 @@
               <div class="flex items-center p-2 {% if forloop.counter == 1 %}bg-yellow-50 dark:bg-yellow-900/30{% elif forloop.counter == 2 %}bg-gray-50 dark:bg-gray-700/50{% elif forloop.counter == 3 %}bg-amber-50 dark:bg-amber-900/30{% endif %} rounded-lg">
                 <div class="flex-shrink-0 mr-3 relative">
                   {% if entry.user.profile.avatar %}
-                    <img loading="lazy" src="{{ entry.user.profile.avatar.url }}"
+                    <img loading="lazy"
+                         src="{{ entry.user.profile.avatar.url }}"
                          alt="{{ entry.user.username }}"
                          class="w-10 h-10 rounded-full"
                          width="40"

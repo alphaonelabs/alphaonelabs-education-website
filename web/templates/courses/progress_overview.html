@@ -118,13 +118,15 @@
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex items-center">
                       {% if data.enrollment.student.profile.avatar %}
-                        <img loading="lazy" src="{{ data.enrollment.student.profile.avatar.url }}"
+                        <img loading="lazy"
+                             src="{{ data.enrollment.student.profile.avatar.url }}"
                              alt="{{ data.enrollment.student.get_full_name }}"
                              class="h-8 w-8 rounded-full mr-3"
                              width="32"
                              height="32" />
                       {% else %}
-                        <img loading="lazy" src="{% static 'images/default_teacher.png' %}"
+                        <img loading="lazy"
+                             src="{% static 'images/default_teacher.png' %}"
                              alt="{{ data.enrollment.student.get_full_name }}"
                              class="h-8 w-8 rounded-full mr-3"
                              width="32"

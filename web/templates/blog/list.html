@@ -26,7 +26,8 @@
             {% for post in blog_posts %}
               <article class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
                 {% if post.featured_image %}
-                  <img loading="lazy" src="{{ post.featured_image.url }}"
+                  <img loading="lazy"
+                       src="{{ post.featured_image.url }}"
                        alt="{{ post.title }}"
                        class="w-full h-48 object-cover"
                        width="800"

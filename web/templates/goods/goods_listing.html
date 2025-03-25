@@ -71,7 +71,8 @@
           <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 border border-gray-200 dark:border-gray-700">
             <a href="{% url 'goods_detail' pk=product.id %}"
                class="block overflow-hidden rounded-md">
-              <img loading="lazy" src="{% if product.image %}{{ product.image.url }}{% else %}/static/images/placeholder.png{% endif %}"
+              <img loading="lazy"
+                   src="{% if product.image %}{{ product.image.url }}{% else %}/static/images/placeholder.png{% endif %}"
                    alt="{{ product.name }}"
                    class="w-full h-56 object-cover rounded-md" />
             </a>

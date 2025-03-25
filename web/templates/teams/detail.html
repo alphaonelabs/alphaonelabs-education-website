@@ -75,7 +75,8 @@
                 <div class="flex items-center justify-between group">
                   <div class="flex items-center">
                     {% if member.user.profile.avatar %}
-                      <img loading="lazy" src="{{ member.user.profile.avatar.url }}"
+                      <img loading="lazy"
+                           src="{{ member.user.profile.avatar.url }}"
                            alt="{{ member.user.username }}"
                            class="w-8 h-8 rounded-full mr-3 object-cover border-2 border-purple-200 dark:border-purple-700" />
                     {% endif %}
