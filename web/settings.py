@@ -38,8 +38,7 @@ TWITTER_USERNAME = "alphaonelabs"
 
 # Production settings
 if not DEBUG:
-   # turn on debug = True if this is an issue
-    SECURE_SSL_REDIRECT = True
+    SECURE_SSL_REDIRECT = False
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
