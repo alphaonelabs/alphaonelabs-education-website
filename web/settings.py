@@ -38,7 +38,7 @@ TWITTER_USERNAME = "alphaonelabs"
 
 # Production settings
 if not DEBUG:
-    SECURE_SSL_REDIRECT =  False
+    SECURE_SSL_REDIRECT = False
     # Only disable SSL redirect in development
     # This allows local testing and CI linting to pass without HTTPS
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
