@@ -10,6 +10,7 @@ class CalendarTests(TestCase):
         self.user = get_user_model().objects.create_user(
             username="testuser", email="testuser@example.com", password="testpass123"
         )
+
         self.client = Client()
 
     def test_calendar_creation_and_sharing_flow(self):
