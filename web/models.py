@@ -1700,10 +1700,13 @@ class Meetup(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def get_default_user():
-        return User.objects.filter(is_superuser=True).first().id
+        user = User.objects.filter(is_superuser=True).first()
+        if user:
+            return user.id
+        # Return None if no superuser exists - Django will require a creator to be provided explicitly
+        return None
 
     creator = models.ForeignKey(User, on_delete=models.CASCADE, default=get_default_user)  # Creator field
-
     def clean(self):
         super().clean()
 
