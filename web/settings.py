@@ -170,7 +170,6 @@ SITE_NAME = "AlphaOne Labs"
 SITE_DOMAIN = "alphaonelabs.com"
 
 # Allauth settings
-# TODO:revert the changes
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False  # Since we're using email authentication
 ACCOUNT_EMAIL_VERIFICATION = "mandatory"  # Require email verification

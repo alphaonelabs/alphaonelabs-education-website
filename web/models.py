@@ -629,7 +629,7 @@ class Achievement(models.Model):
         ("fas fa-graduation-cap", "Graduation Cap"),
     ]
 
-    badge_type = models.CharField(max_length=20, choices=BADGE_TYPE_CHOICES, default="regular")
+    badge_type = models.CharField(max_length=20, choices=BADGE_TYPE_CHOICES, default="traditional")
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="achievements")
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="achievements", null=True, blank=True)
     achievement_type = models.CharField(max_length=20, choices=TYPES)
