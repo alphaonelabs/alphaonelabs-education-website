@@ -5467,6 +5467,8 @@ def create_study_group(request):
     else:
         form = StudyGroupForm()
     return render(request, "web/study/create_group.html", {"form": form})
+
+
 @login_required
 def progress_visualization(request):
     """Generate and render progress visualization statistics for a student's enrolled courses."""
