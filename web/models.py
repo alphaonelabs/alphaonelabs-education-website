@@ -649,7 +649,7 @@ class Review(models.Model):
     rating = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(5)])
     comment = models.TextField()
     is_featured = models.BooleanField(default=False)
-    created_at = models.DateTimeField()
+    created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

@@ -201,7 +201,18 @@ urlpatterns += i18n_patterns(
     # Study Groups URLs
     path("courses/<int:course_id>/groups/", views.study_groups, name="study_groups"),
     path("courses/<slug:slug>/reviews/<int:review_id>/edit/", views.edit_review, name="edit_review"),
+    path("courses/<slug:slug>/reviews/<int:review_id>/add/", views.edit_review, name="add_review"),
     path("courses/<slug:slug>/reviews/<int:review_id>/delete/", views.delete_review, name="delete_review"),
+    path(
+        "courses/<slug:slug>/reviews/<int:review_id>/add-featured-review/",
+        views.addFeatured_review,
+        name="addFeatured_review",
+    ),
+    path(
+        "courses/<slug:slug>/reviews/<int:review_id>/remove-featured-review/",
+        views.removeFeatured_review,
+        name="removeFeatured_review",
+    ),
     path("groups/<int:group_id>/", views.study_group_detail, name="study_group_detail"),
     path("sessions/<int:session_id>/", views.session_detail, name="session_detail"),
     path("sitemap/", views.sitemap, name="sitemap"),

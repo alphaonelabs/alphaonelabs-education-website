@@ -403,7 +403,7 @@ class Command(BaseCommand):
 
                 boolean = random.choice([True, False])
 
-                test = Review.objects.create(
+                Review.objects.create(
                     student=student,
                     course=course,
                     rating=random.randint(3, 5),
@@ -411,8 +411,7 @@ class Command(BaseCommand):
                     is_featured=boolean,
                     created_at=random_date,
                 )
-                self.stdout.write(f"Created review, student: {student}, course, {course}, - {boolean} - {random_date}")
-                # self.stdout.write(f"Created review, student>>>: {test}")
+                self.stdout.write(f"Created review, student: {student}, course: {course}, review: Great course!")
 
         # Create forum categories and topics
         categories = []
