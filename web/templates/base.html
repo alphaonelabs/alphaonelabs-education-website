@@ -946,7 +946,6 @@
             menu.classList.toggle('hidden');
             document.body.classList.toggle('overflow-hidden');
         }
-
         // Close mobile menu when clicking outside
         document.addEventListener('click', function(event) {
             const menu = document.getElementById('mobile-menu');
@@ -972,7 +971,6 @@
             } else {
                 icon.classList.add('rotate-180');
             }
-
             // Close other accordions
             const allAccordions = ['learn-accordion', 'community-accordion', 'resources-accordion', 'about-accordion'];
             allAccordions.forEach(id => {
