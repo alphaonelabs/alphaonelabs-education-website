@@ -12,6 +12,9 @@ from .views import (
     GradeableLinkDetailView,
     GradeableLinkListView,
     add_goods_to_cart,
+    feature_vote,
+    feature_vote_count,
+    features_page,
     grade_link,
     notification_preferences,
     sales_analytics,
@@ -379,6 +382,10 @@ urlpatterns += i18n_patterns(
         name="update_teacher_notes",
     ),
     path("award-badge/", views.award_badge, name="award_badge"),
+    # Features page
+    path("features/", features_page, name="features"),
+    path("features/vote/", feature_vote, name="feature_vote"),
+    path("features/vote-count/", feature_vote_count, name="feature_vote_count"),
     prefix_default_language=True,
 )
 

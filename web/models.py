@@ -2510,3 +2510,31 @@ class NotificationPreference(models.Model):
 
     def __str__(self):
         return f"Notification preferences for {self.user.username}"
+
+
+class FeatureVote(models.Model):
+    VOTE_CHOICES = (
+        ("up", "Thumbs Up"),
+        ("down", "Thumbs Down"),
+    )
+
+    feature_id = models.CharField(max_length=100)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    vote = models.CharField(max_length=4, choices=VOTE_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["feature_id", "user"], condition=models.Q(user__isnull=False), name="unique_user_feature_vote"
+            ),
+            models.UniqueConstraint(
+                fields=["feature_id", "ip_address"],
+                condition=models.Q(user__isnull=True, ip_address__isnull=False),
+                name="unique_ip_feature_vote",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.get_vote_display()} for {self.feature_id}"

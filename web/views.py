@@ -43,7 +43,7 @@ from django.utils.crypto import get_random_string
 from django.utils.html import strip_tags
 from django.views import generic
 from django.views.decorators.clickjacking import xframe_options_exempt
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import (
     CreateView,
@@ -110,6 +110,7 @@ from .models import (
     EducationalVideo,
     Enrollment,
     EventCalendar,
+    FeatureVote,
     ForumCategory,
     ForumReply,
     ForumTopic,
@@ -5466,3 +5467,142 @@ def create_study_group(request):
     else:
         form = StudyGroupForm()
     return render(request, "web/study/create_group.html", {"form": form})
+
+
+def features_page(request):
+    """View to display the features page."""
+    return render(request, "features.html")
+
+
+@require_POST
+@csrf_protect
+def feature_vote(request):
+    """API endpoint to handle feature voting."""
+    feature_id = request.POST.get("feature_id")
+    vote_type = request.POST.get("vote")
+
+    if not feature_id or vote_type not in ["up", "down"]:
+        return JsonResponse({"status": "error", "message": "Invalid parameters"}, status=400)
+
+    # Store IP for anonymous users
+    ip_address = None
+    if not request.user.is_authenticated:
+        ip_address = (
+            request.META.get("REMOTE_ADDR") or request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+        )
+        if not ip_address:
+            return JsonResponse({"status": "error", "message": "Could not identify user"}, status=400)
+
+    # Process the vote
+    try:
+        # Check for existing vote
+        existing_vote = None
+        if request.user.is_authenticated:
+            existing_vote = FeatureVote.objects.filter(feature_id=feature_id, user=request.user).first()
+        elif ip_address:
+            existing_vote = FeatureVote.objects.filter(
+                feature_id=feature_id, ip_address=ip_address, user__isnull=True
+            ).first()
+
+        # Handle the vote logic
+        status_message = "Vote recorded"
+        if existing_vote:
+            if existing_vote.vote == vote_type:
+                status_message = "You've already cast this vote"
+            else:
+                # Change vote type if user changed their mind
+                existing_vote.vote = vote_type
+                existing_vote.save()
+                status_message = "Vote changed"
+        else:
+            # Create new vote
+            new_vote = FeatureVote(feature_id=feature_id, vote=vote_type)
+
+            if request.user.is_authenticated:
+                new_vote.user = request.user
+            else:
+                new_vote.ip_address = ip_address
+
+            new_vote.save()
+
+        # Get updated counts
+        up_count = FeatureVote.objects.filter(feature_id=feature_id, vote="up").count()
+        down_count = FeatureVote.objects.filter(feature_id=feature_id, vote="down").count()
+
+        # Calculate percentage for visualization
+        total_votes = up_count + down_count
+        up_percentage = round((up_count / total_votes) * 100) if total_votes > 0 else 0
+        down_percentage = round((down_count / total_votes) * 100) if total_votes > 0 else 0
+
+        return JsonResponse(
+            {
+                "status": "success",
+                "message": status_message,
+                "up_count": up_count,
+                "down_count": down_count,
+                "total_votes": total_votes,
+                "up_percentage": up_percentage,
+                "down_percentage": down_percentage,
+            }
+        )
+
+    except Exception as e:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error processing vote: {str(e)}", exc_info=True)
+        return JsonResponse({"status": "error", "message": f"Error processing vote: {str(e)}"}, status=500)
+
+
+@require_GET
+def feature_vote_count(request):
+    """API endpoint to get current vote counts for a feature."""
+    feature_id = request.GET.get("feature_id")
+
+    if not feature_id:
+        return JsonResponse({"status": "error", "message": "Feature ID is required"}, status=400)
+
+    try:
+        up_count = FeatureVote.objects.filter(feature_id=feature_id, vote="up").count()
+        down_count = FeatureVote.objects.filter(feature_id=feature_id, vote="down").count()
+
+        # Calculate percentage for visualization
+        total_votes = up_count + down_count
+        up_percentage = round((up_count / total_votes) * 100) if total_votes > 0 else 0
+        down_percentage = round((down_count / total_votes) * 100) if total_votes > 0 else 0
+
+        # Check if the current user has voted
+        user_vote = None
+        if request.user.is_authenticated:
+            vote = FeatureVote.objects.filter(feature_id=feature_id, user=request.user).first()
+            if vote:
+                user_vote = vote.vote
+        else:
+            ip_address = (
+                request.META.get("REMOTE_ADDR") or request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+            )
+            if ip_address:
+                vote = FeatureVote.objects.filter(
+                    feature_id=feature_id, ip_address=ip_address, user__isnull=True
+                ).first()
+                if vote:
+                    user_vote = vote.vote
+
+        return JsonResponse(
+            {
+                "status": "success",
+                "up_count": up_count,
+                "down_count": down_count,
+                "total_votes": total_votes,
+                "up_percentage": up_percentage,
+                "down_percentage": down_percentage,
+                "user_vote": user_vote,  # Will be 'up', 'down', or None
+            }
+        )
+
+    except Exception as e:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error getting vote counts: {str(e)}", exc_info=True)
+        return JsonResponse({"status": "error", "message": f"Error getting vote counts: {str(e)}"}, status=500)
