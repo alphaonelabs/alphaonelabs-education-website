@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
+import argparse
 import json
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 
 
 def main():
     print("Initiating process...")
+
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(description="Manage GitHub issue assignments")
+    parser.add_argument("--no-unassign", action="store_true", help="Skip unassigning inactive issues")
+    args = parser.parse_args()
 
     # Get GitHub
     github_token = os.environ.get("GITHUB_TOKEN")
@@ -245,75 +251,114 @@ def main():
                 print(f"Failed to assign issue #{issue_number}: {str(e)}")
 
     # Review inactive assignments
-    print("Reviewing inactive assignments...")
-    current_time = datetime.now()
+    if not args.no_unassign:
+        print("Reviewing inactive assignments...")
+        current_time = datetime.now(timezone.utc)  # Use UTC for consistent timestamp comparison
 
-    try:
-        # Get repository events
-        events_url = f"https://api.github.com/repos/{owner}/{repo}/issues/events"
-        print(f"Fetching repository events from {events_url}")
-        events_response = requests.get(events_url, headers=headers, params={"per_page": 100})
-        print(f"Events response status: {events_response.status_code}")
-        events = events_response.json()
-        print(f"Fetched {len(events)} events.")
+        try:
+            # Get all open issues directly
+            issues_url = f"https://api.github.com/repos/{owner}/{repo}/issues"
+            params = {"state": "open", "labels": "assigned", "per_page": 100}
+            print(f"Fetching open assigned issues from {issues_url}")
 
-        # Filter for assignment events
-        assigned_events = [e for e in events if e.get("event") == "assigned"]
-        print(f"Found {len(assigned_events)} assignment events.")
+            all_assigned_issues = []
+            page = 1
 
-        for event in assigned_events:
-            issue_url = event.get("issue", {}).get("url")
-            if not issue_url:
-                print("Skipping event with missing issue URL.")
-                continue
+            while True:
+                params["page"] = page
+                issues_response = requests.get(issues_url, headers=headers, params=params)
+                print(f"Issues response status: {issues_response.status_code} for page {page}")
 
-            print(f"Reviewing issue from event: {issue_url}")
-            # Get issue details
-            issue_response = requests.get(issue_url, headers=headers)
-            print(f"Issue details response status: {issue_response.status_code}")
-            issue_data = issue_response.json()
+                if issues_response.status_code != 200:
+                    print(f"Error fetching issues: {issues_response.status_code} - {issues_response.text}")
+                    break
 
-            if issue_data.get("assignee") and issue_data.get("state") == "open":
-                # Calculate days since last update
-                updated_at = datetime.strptime(issue_data.get("updated_at"), "%Y-%m-%dT%H:%M:%SZ")
-                days_since_update = (current_time - updated_at).total_seconds() / 86400  # seconds in a day
-                print(f"Issue #{issue_data.get('number')} last updated {days_since_update:.2f} days ago.")
+                issues_page = issues_response.json()
+                if not issues_page:
+                    break  # No more issues
 
-                if days_since_update > 1:
+                all_assigned_issues.extend(issues_page)
+                page += 1
+
+                # GitHub API best practice - check if we've reached the last page
+                if "Link" not in issues_response.headers or 'rel="next"' not in issues_response.headers["Link"]:
+                    break
+
+            print(f"Found {len(all_assigned_issues)} open issues with 'assigned' label")
+
+            for issue_data in all_assigned_issues:
+                if issue_data.get("assignee"):
+                    # Calculate time since last update in UTC
+                    updated_at = datetime.strptime(issue_data.get("updated_at"), "%Y-%m-%dT%H:%M:%SZ")
+                    updated_at = updated_at.replace(tzinfo=timezone.utc)
+                    days_since_update = (current_time - updated_at).total_seconds() / 86400  # seconds in a day
                     issue_number = issue_data.get("number")
-                    print(f"Revoking assignment of issue #{issue_number} due to 1 day of inactivity")
+                    print(f"Issue #{issue_number} last updated {days_since_update:.2f} days ago.")
 
-                    # Check if issue has "assigned" label
-                    has_assigned_label = any(label.get("name") == "assigned" for label in issue_data.get("labels", []))
-                    print(f"Assigned label present: {has_assigned_label}")
+                    if days_since_update > 1:  # More than 24 hours of inactivity
+                        print(f"Revoking assignment of issue #{issue_number} due to 1 day of inactivity")
 
-                    if has_assigned_label:
-                        # Remove assignee
+                        issue_url = issue_data.get("url")
+
+                        # Get assignee login
                         assignee_login = issue_data.get("assignee", {}).get("login")
+                        if not assignee_login:
+                            print(f"Issue #{issue_number} has no assignee, skipping.")
+                            continue
+
+                        # Remove assignee
                         assignees_url = f"{issue_url}/assignees"
                         print(f"Removing assignee {assignee_login} via {assignees_url}")
-                        requests.delete(assignees_url, headers=headers, json={"assignees": [assignee_login]})
-                        print("Assignee removed.")
+                        unassign_response = requests.delete(
+                            assignees_url, headers=headers, json={"assignees": [assignee_login]}
+                        )
+
+                        if unassign_response.status_code >= 400:
+                            print(
+                                f"Error removing assignee: "
+                                f"{unassign_response.status_code} - {unassign_response.text}"
+                            )
+                            continue
+                        else:
+                            print(f"Assignee {assignee_login} removed from issue #{issue_number}")
 
                         # Remove "assigned" label
                         label_url = f"{issue_url}/labels/assigned"
                         print(f"Removing 'assigned' label via {label_url}")
-                        requests.delete(label_url, headers=headers)
-                        print("'assigned' label removed.")
+                        label_response = requests.delete(label_url, headers=headers)
+
+                        # 404 is ok if label doesn't exist
+                        if label_response.status_code >= 400 and label_response.status_code != 404:
+                            print(f"Error removing label: " f"{label_response.status_code} - {label_response.text}")
+                        else:
+                            print(f"'assigned' label removed from issue #{issue_number}")
 
                         # Add unassign comment
                         comments_url = f"{issue_url}/comments"
+                        unassign_msg = (
+                            f"⏳ Task unassigned from @{assignee_login} due to inactivity "
+                            f"(no updates within 24 hours). Available for reassignment."
+                        )
                         print(f"Posting unassign comment to {comments_url}")
-                        requests.post(
+                        comment_response = requests.post(
                             comments_url,
                             headers=headers,
-                            json={"body": "⏳ Task unassigned due to inactivity. Available for reassignment."},
+                            json={"body": unassign_msg},
                         )
-                        print("Unassign comment posted.")
-                    else:
-                        print(f"Issue #{issue_number} lacks 'assigned' label, skipping revocation.")
-    except Exception as e:
-        print(f"Failed to process inactive assignments: {str(e)}")
+
+                        if comment_response.status_code >= 400:
+                            print(f"Error posting comment: {comment_response.status_code} - {comment_response.text}")
+                        else:
+                            print(f"Unassign comment posted to issue #{issue_number}")
+                else:
+                    print(f"Issue #{issue_data.get('number')} has 'assigned' label but no assignee. Removing label.")
+                    # Remove "assigned" label if issue somehow has no assignee
+                    label_url = f"{issue_data.get('url')}/labels/assigned"
+                    requests.delete(label_url, headers=headers)
+        except Exception as e:
+            print(f"Failed to process inactive assignments: {str(e)}")
+    else:
+        print("Skipping inactive assignment check due to --no-unassign flag")
 
 
 if __name__ == "__main__":
