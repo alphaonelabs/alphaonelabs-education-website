@@ -5659,9 +5659,16 @@ def prepare_time_series_data(enrollment, total_sessions):
 GITHUB_REPO = "alphaonelabs/alphaonelabs-education-website"
 GITHUB_API_BASE = "https://api.github.com"
 
+logger = logging.getLogger(__name__)
+
 
 @staff_member_required
 def all_contributors_view(request):
+    cache_key = "github_contributors"
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        return render(request, "web/all_contributors.html", cached_data)
+
     token = os.environ.get("GITHUB_TOKEN")  # Retrieve token from environment variable
     headers = {"Authorization": f"token {token}"} if token else {}
 
@@ -5670,13 +5677,12 @@ def all_contributors_view(request):
     pulls = []
 
     try:
-        # Paginate through closed PRs
+        # Paginate through closed PRs with a timeout added to each request
         while True:
             pulls_url = f"{GITHUB_API_BASE}/repos/{GITHUB_REPO}/pulls?state=closed&per_page=100&page={page}"
-            response = requests.get(pulls_url, headers=headers)
-
+            response = requests.get(pulls_url, headers=headers, timeout=10)
             if response.status_code != 200:
-                print(f"Error fetching page {page}: {response.status_code}")
+                logger.error(f"Error fetching page {page}: {response.status_code}")
                 break
 
             data = response.json()
@@ -5705,24 +5711,22 @@ def all_contributors_view(request):
         # Convert map to sorted list (highest merged PRs first)
         contributors = sorted(merged_prs_map.values(), key=lambda c: c["merged_prs"], reverse=True)
     except Exception as e:
-        print(f"Error in all_contributors_view: {e}")
+        logger.error(f"Error in all_contributors_view: {e}")
         contributors = []
 
     top_contributor = contributors[0] if contributors else None
 
+    cache_data = {
+        "contributors": contributors,
+        "top_contributor": top_contributor,
+    }
+    cache.set(cache_key, cache_data, 3600)  # Cache for 1 hour
+
     return render(
         request,
         "web/all_contributors.html",
-        {
-            "contributors": contributors,
-            "top_contributor": top_contributor,
-        },
+        cache_data,
     )
-
-
-# Configure logger
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.ERROR)
 
 
 @staff_member_required
@@ -5731,7 +5735,11 @@ def contributor_detail_view(request, username):
     View to display detailed information about a specific GitHub contributor.
     Only accessible to staff members.
     """
-    # Retrieve GitHub token from environment variable
+    cache_key = f"github_contributor_{username}"
+    cached_data = cache.get(cache_key)
+    if cached_data:
+        return render(request, "web/contributor_detail.html", cached_data)
+
     token = os.environ.get("GITHUB_TOKEN")
     headers = {"Authorization": f"token {token}"} if token else {}
 
@@ -5750,7 +5758,7 @@ def contributor_detail_view(request, username):
 
     try:
         # Fetch user profile data
-        user_response = requests.get(f"{GITHUB_API_BASE}/users/{username}", headers=headers)
+        user_response = requests.get(f"{GITHUB_API_BASE}/users/{username}", headers=headers, timeout=10)
         if user_response.status_code == 200:
             user_data = user_response.json()
         else:
@@ -5761,6 +5769,7 @@ def contributor_detail_view(request, username):
             f"{GITHUB_API_BASE}/search/issues",
             params={"q": f"author:{username} type:pr repo:{GITHUB_REPO}"},
             headers=headers,
+            timeout=10,
         )
         if prs_created_response.status_code == 200:
             prs_created = prs_created_response.json().get("total_count", 0)
@@ -5774,6 +5783,7 @@ def contributor_detail_view(request, username):
             f"{GITHUB_API_BASE}/search/issues",
             params={"q": f"author:{username} type:pr repo:{GITHUB_REPO} is:merged"},
             headers=headers,
+            timeout=10,
         )
         if prs_merged_response.status_code == 200:
             prs_merged = prs_merged_response.json().get("total_count", 0)
@@ -5785,6 +5795,7 @@ def contributor_detail_view(request, username):
             f"{GITHUB_API_BASE}/search/issues",
             params={"q": f"author:{username} type:issue repo:{GITHUB_REPO}"},
             headers=headers,
+            timeout=10,
         )
         if issues_response.status_code == 200:
             issues_created = issues_response.json().get("total_count", 0)
@@ -5796,6 +5807,7 @@ def contributor_detail_view(request, username):
             f"{GITHUB_API_BASE}/search/issues",
             params={"q": f"reviewer:{username} type:pr repo:{GITHUB_REPO}"},
             headers=headers,
+            timeout=10,
         )
         if reviews_response.status_code == 200:
             pr_reviews = reviews_response.json().get("total_count", 0)
@@ -5807,6 +5819,7 @@ def contributor_detail_view(request, username):
             f"{GITHUB_API_BASE}/search/issues",
             params={"q": f"commenter:{username} type:pr repo:{GITHUB_REPO}"},
             headers=headers,
+            timeout=10,
         )
         if pr_comments_response.status_code == 200:
             pr_comments = pr_comments_response.json().get("total_count", 0)
@@ -5820,6 +5833,7 @@ def contributor_detail_view(request, username):
             f"{GITHUB_API_BASE}/search/issues",
             params={"q": f"commenter:{username} type:issue repo:{GITHUB_REPO}"},
             headers=headers,
+            timeout=10,
         )
         if issue_comments_response.status_code == 200:
             issue_comments = issue_comments_response.json().get("total_count", 0)
@@ -5841,8 +5855,9 @@ def contributor_detail_view(request, username):
                 "per_page": 1,
             },
             headers=headers,
+            timeout=10,
         )
-        if prs_response.status_code == 200 and prs_response.json()["total_count"] > 0:
+        if prs_response.status_code == 200 and prs_response.json().get("total_count", 0) > 0:
             first_contribution_date = prs_response.json()["items"][0]["created_at"]
         else:
             first_contribution_date = "N/A"
@@ -5852,6 +5867,7 @@ def contributor_detail_view(request, username):
             f"{GITHUB_API_BASE}/search/issues",
             params={"q": f"assignee:{username} type:issue repo:{GITHUB_REPO}"},
             headers=headers,
+            timeout=10,
         )
         if issue_assignments_response.status_code == 200:
             issue_assignments = issue_assignments_response.json().get("total_count", 0)
@@ -5866,20 +5882,23 @@ def contributor_detail_view(request, username):
         # Calculate lines added and deleted from merged pull requests
         page = 1
         while True:
-            prs_response = requests.get(
+            prs_page_response = requests.get(
                 f"{GITHUB_API_BASE}/repos/{GITHUB_REPO}/pulls",
                 params={"state": "closed", "per_page": 100, "page": page},
                 headers=headers,
+                timeout=10,
             )
-            if prs_response.status_code != 200:
-                logger.error(f"Failed to fetch PRs page {page}: {prs_response.status_code} - {prs_response.text}")
+            if prs_page_response.status_code != 200:
+                logger.error(
+                    f"Failed to fetch PRs page {page}: {prs_page_response.status_code} - {prs_page_response.text}"
+                )
                 break
-            prs = prs_response.json()
+            prs = prs_page_response.json()
             if not prs:
                 break
             for pr in prs:
-                if pr["user"]["login"].lower() == username.lower() and pr["merged_at"]:
-                    pr_detail_response = requests.get(pr["url"], headers=headers)
+                if pr["user"]["login"].lower() == username.lower() and pr.get("merged_at"):
+                    pr_detail_response = requests.get(pr["url"], headers=headers, timeout=10)
                     if pr_detail_response.status_code == 200:
                         pr_detail = pr_detail_response.json()
                         lines_added += pr_detail.get("additions", 0)
@@ -5918,22 +5937,19 @@ def contributor_detail_view(request, username):
         "lines_added": lines_added,
         "lines_deleted": lines_deleted,
         "first_contribution_date": first_contribution_date,
+        "chart_data": {
+            "prs_created": prs_created,
+            "prs_merged": prs_merged,
+            "pr_reviews": pr_reviews,
+            "issues_created": issues_created,
+            "issue_assignments": issue_assignments,
+            "pr_comments": pr_comments,
+            "issue_comments": issue_comments,
+            "lines_added": lines_added,
+            "lines_deleted": lines_deleted,
+            "first_contribution_date": first_contribution_date if first_contribution_date != "N/A" else "N/A",
+        },
     }
-    context.update(
-        {
-            "chart_data": {
-                "prs_created": prs_created,
-                "prs_merged": prs_merged,
-                "pr_reviews": pr_reviews,
-                "issues_created": issues_created,
-                "issue_assignments": issue_assignments,
-                "pr_comments": pr_comments,
-                "issue_comments": issue_comments,
-                "lines_added": lines_added,
-                "lines_deleted": lines_deleted,
-                "first_contribution_date": first_contribution_date if first_contribution_date != "N/A" else "N/A",
-            }
-        }
-    )
-    # Render the template with the contributor's data
+
+    cache.set(cache_key, context, 3600)  # Cache for 1 hour
     return render(request, "web/contributor_detail.html", context)
