@@ -801,7 +801,7 @@ class StudyGroup(models.Model):
     description = models.TextField()
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="study_groups")
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_groups")
-    members = models.ManyToManyField(User, related_name="joined_groups")
+    members = models.ManyToManyField(User, related_name="joined_groups", blank=True)
     max_members = models.IntegerField(default=10)
     is_private = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -809,6 +809,58 @@ class StudyGroup(models.Model):
 
     def __str__(self):
         return self.name
+
+    def can_add_member(self):
+        return self.members.count() < self.max_members
+
+    def add_member(self, user):
+        if self.can_add_member():
+            self.members.add(user)
+            return True
+        return False
+
+    def is_full(self):
+        return self.members.count() >= self.max_members
+
+
+class StudyGroupInvite(models.Model):
+    """Invitations to join study groups."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, related_name="invites")
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_group_invites")
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_group_invites")
+    created_at = models.DateTimeField(auto_now_add=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
+    STATUS_CHOICES = [("pending", "Pending"), ("accepted", "Accepted"), ("declined", "Declined")]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+
+    class Meta:
+        unique_together = ["group", "recipient"]
+
+    def __str__(self):
+        return f"Invitation to {self.group.name} for {self.recipient.username}"
+
+    def accept(self):
+        """Accept the invitation and add the recipient to the study group."""
+        self.status = "accepted"
+        self.responded_at = timezone.now()
+        self.save()
+        member_added = self.group.add_member(self.recipient)
+        if not member_added:
+            # Group is full, create notification or handle this case
+            Notification.objects.create(
+                user=self.recipient,
+                title="Group Full",
+                message=f"Could not join {self.group.name} as it's already full",
+                notification_type="warning",
+            )
+
+    def decline(self):
+        """Decline the invitation."""
+        self.status = "declined"
+        self.responded_at = timezone.now()
+        self.save()
 
 
 @receiver(post_save, sender=User)
@@ -2144,6 +2196,28 @@ class UserQuiz(models.Model):
         return self.start_time
 
 
+class WaitingRoom(models.Model):
+    """Model for storing waiting room requests for courses on specific subjects."""
+
+    STATUS_CHOICES = [("open", "Open"), ("closed", "Closed"), ("fulfilled", "Fulfilled")]
+
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    subject = models.CharField(max_length=100)
+    topics = models.TextField(help_text="Comma-separated list of topics")
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_waiting_rooms")
+    participants = models.ManyToManyField(User, related_name="joined_waiting_rooms", blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="open")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    fulfilled_course = models.ForeignKey(
+        "Course", on_delete=models.SET_NULL, null=True, blank=True, related_name="fulfilled_waiting_rooms"
+    )
+
+    def __str__(self):
+        return self.title
+
+
 class GradeableLink(models.Model):
     """Model for storing links that users want to get grades on."""
 
@@ -2168,6 +2242,24 @@ class GradeableLink(models.Model):
 
     def __str__(self):
         return self.title
+
+    def participant_count(self):
+        """Return the number of participants in the waiting room."""
+        return self.participants.count()
+
+    def topic_list(self):
+        """Return the list of topics as a list."""
+        return [topic.strip() for topic in self.topics.split(",") if topic.strip()]
+
+    def mark_as_fulfilled(self, course=None):
+        """Mark the waiting room as fulfilled and notify participants."""
+        self.status = "fulfilled"
+        self.save()
+
+        if course:
+            from .notifications import notify_waiting_room_fulfilled
+
+            notify_waiting_room_fulfilled(self, course)
 
     def get_absolute_url(self):
         return reverse("gradeable_link_detail", kwargs={"pk": self.pk})

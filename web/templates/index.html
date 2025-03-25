@@ -666,7 +666,7 @@
                       {{ entry.user.username|make_list|first|upper }}
                     </div>
                   {% endif %}
-                  <div class="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white {% if forloop.counter == 1 %}bg-yellow-500{% elif forloop.counter == 2 %}bg-gray-500{% elif forloop.counter == 3 %}bg-amber-600{% endif %}">
+                  <div class="absolute -top-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold text-white {% if forloop.counter == 1 %}bg-yellow-500{% elif forloop.counter == 2 %}bg-gray-500{% elif forloop.counter == 3 %}bg-amber-600{% endif %}">
                     {{ forloop.counter }}
                   </div>
                 </div>
@@ -913,15 +913,23 @@
     <script>
         // Top Contributors
         function fetchTopContributors() {
-            fetch('https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=closed&per_page=100')
-                .then(response => response.json())
-                .then(pulls => {
+            // Create a helper function to fetch paginated data
+            async function fetchPage(page) {
+                const response = await fetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=closed&per_page=100&page=${page}`);
+                return response.json();
+            }
+
+            // Fetch 2 pages of data
+            Promise.all([fetchPage(1), fetchPage(2)])
+                .then(results => {
+                    // Combine the results from both pages
+                    const pulls = [...results[0], ...results[1]];
                     const contributors = {};
                     pulls.forEach(pull => {
                         const username = pull.user.login;
 
-                        //skipping bots
-                        if (username.includes('[bot]') || username.includes('dependabot')) {
+                        //skipping bots and specific users
+                        if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
                             return;
                         }
 
@@ -969,6 +977,8 @@
                     topContributors.forEach(contributor => {
                         contributor.prs.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
                         contributor.most_recent_pr = contributor.prs[0];
+                        // Add the GSoC-style PRs URL
+                        contributor.prs_url = `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${contributor.username}+is:merged`;
                     });
 
                     const container = document.getElementById('top-contributors-section');
@@ -1020,7 +1030,7 @@
                             </div>
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center justify-between">
-                                    <a href="${contributor.profile_url}" target="_blank" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400">
+                                    <a href="${contributor.prs_url}" target="_blank" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400">
                                         ${contributor.username}
                                     </a>
                                     <span class="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 text-xs px-2 py-1 rounded-full">
@@ -1049,17 +1059,25 @@
 
         // New Contributors
         function fetchNewContributors() {
-            fetch('https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100')
-                .then(response => response.json())
-                .then(pulls => {
+            // Create a helper function to fetch paginated data
+            async function fetchPage(page) {
+                const response = await fetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=${page}`);
+                return response.json();
+            }
+
+            // Fetch 2 pages of data
+            Promise.all([fetchPage(1), fetchPage(2)])
+                .then(results => {
+                    // Combine the results from both pages
+                    const pulls = [...results[0], ...results[1]];
                     const userPrs = {};
                     const firstMergedPrDetails = {};
 
                     pulls.forEach(pull => {
                         const username = pull.user.login;
 
-                        //bots ignored
-                        if (username.includes('[bot]') || username.includes('dependabot')) {
+                        //bots and specific users ignored
+                        if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
                             return;
                         }
 
@@ -1100,7 +1118,9 @@
                                 created_at: firstPr.created_at,
                                 profile_url: firstPr.profile_url,
                                 merged_at: firstPr.merged_at,
-                                state: firstPr.state
+                                state: firstPr.state,
+                                // Add the GSoC-style PRs URL
+                                prs_url: `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${username}+is:merged`
                             };
                         }
                     });
@@ -1136,7 +1156,7 @@
                             <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-10 h-10 rounded-full" loading="lazy" width="40" height="40" />
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center">
-                                    <a href="${contributor.profile_url}" target="_blank" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400">
+                                    <a href="${contributor.prs_url}" target="_blank" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400">
                                         ${contributor.username}
                                     </a>
                                     ${newBadge}
@@ -1166,13 +1186,22 @@
 
         // Recent Contributors
         function fetchRecentContributions() {
-            fetch('https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100')
-                .then(response => response.json())
-                .then(pulls => {
+            // Create a helper function to fetch paginated data
+            async function fetchPage(page) {
+                const response = await fetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=${page}`);
+                return response.json();
+            }
+
+            // Fetch 2 pages of data
+            Promise.all([fetchPage(1), fetchPage(2)])
+                .then(results => {
+                    // Combine the results from both pages
+                    const pulls = [...results[0], ...results[1]];
                     const filteredPulls = pulls.filter(pull => {
                             const username = pull.user.login;
                             return !username.includes('[bot]') &&
                                 !username.includes('dependabot') &&
+                                username !== 'A1L13N' &&
                                 pull.merged_at !== null;
                         })
                         .sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at))
@@ -1195,6 +1224,9 @@
                         const div = document.createElement('div');
                         div.className = 'flex items-center space-x-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
 
+                        // Create the GSoC-style PRs URL for this user
+                        const prs_url = `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${pull.user.login}+is:merged`;
+
                         div.innerHTML = `
                             <img src="${pull.user.avatar_url}" alt="${pull.user.login}" class="w-10 h-10 rounded-full" loading="lazy" width="40" height="40" />
                             <div class="flex-1 min-w-0">
@@ -1205,7 +1237,7 @@
                                     <span class="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 text-xs px-2 py-0.5 rounded-full">Merged</span>
                                 </div>
                                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                                    <a href="${pull.user.html_url}" target="_blank" class="font-medium hover:underline">${pull.user.login}</a> · PR #${pull.number} · Merged on ${mergedDate}
+                                    <a href="${prs_url}" target="_blank" class="font-medium hover:underline">${pull.user.login}</a> · PR #${pull.number} · Merged on ${mergedDate}
                                 </p>
                             </div>
                         `;

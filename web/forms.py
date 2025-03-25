@@ -36,10 +36,12 @@ from .models import (
     Review,
     Session,
     Storefront,
+    StudyGroup,
     Subject,
     SuccessStory,
     TeamGoal,
     TeamInvite,
+    WaitingRoom,
 )
 from .referrals import handle_referral
 from .widgets import (
@@ -245,6 +247,13 @@ class UserRegistrationForm(SignupForm):
         if referral_code:
             handle_referral(user, referral_code)
 
+        # Ensure email verification is sent
+        from allauth.account.models import EmailAddress
+
+        email_address = EmailAddress.objects.get_for_user(user, user.email)
+        if not email_address.verified:
+            email_address.send_confirmation(request)
+
         return user
 
 
@@ -350,6 +359,22 @@ class CourseCreationForm(forms.ModelForm):
             msg = "Maximum number of students must be greater than zero"
             raise forms.ValidationError(msg)
         return max_students
+
+    def clean_title(self):
+        title = self.cleaned_data.get("title")
+        if not title:
+            raise forms.ValidationError("Title is required")
+
+        # Check if title contains valid characters for slugification
+        if not re.match(r"^[\w\s-]+$", title):
+            raise forms.ValidationError("Title can only contain letters, numbers, spaces, and hyphens")
+
+        # Check if a course with this slug already exists
+        slug = slugify(title)
+        if Course.objects.filter(slug=slug).exists():
+            raise forms.ValidationError("A course with a similar title already exists.")
+
+        return title
 
 
 class CourseForm(forms.ModelForm):
@@ -771,39 +796,39 @@ class SuccessStoryForm(forms.ModelForm):
         }
 
 
-class LearnForm(forms.Form):
-    subject = forms.CharField(
-        max_length=100,
-        widget=TailwindInput(
-            attrs={
-                "placeholder": "What would you like to learn?",
-                "class": "block w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-orange-500",
-            }
-        ),
-    )
-    email = forms.EmailField(
-        widget=TailwindEmailInput(
-            attrs={
-                "placeholder": "Your email address",
-                "class": "block w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-orange-500",
-            }
-        )
-    )
-    message = forms.CharField(
-        widget=TailwindTextarea(
-            attrs={
-                "placeholder": "Tell us more about what you want to learn...",
-                "rows": 4,
-                "class": "block w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-orange-500",
-            }
-        ),
-        required=False,
-    )
-    captcha = CaptchaField(
-        widget=TailwindCaptchaTextInput(
-            attrs={"class": "block w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-orange-500"}
-        )
-    )
+class LearnForm(forms.ModelForm):
+    """Form for creating and editing waiting rooms."""
+
+    class Meta:
+        model = WaitingRoom
+        fields = ["title", "description", "subject", "topics"]
+
+        widgets = {
+            "title": TailwindInput(attrs={"placeholder": "What would you like to learn?"}),
+            "description": TailwindTextarea(attrs={"rows": 4, "placeholder": "Describe what you want to learn"}),
+            "subject": TailwindInput(attrs={"placeholder": "Main subject (e.g., Mathematics, Programming)"}),
+            "topics": TailwindInput(
+                attrs={"placeholder": "e.g., Python, Machine Learning, Data Science", "class": "tag-input"}
+            ),
+        }
+        help_texts = {
+            "title": "Give your waiting room a descriptive title",
+            "subject": "The main subject area for this waiting room",
+            "topics": "Enter topics separated by commas",
+        }
+
+    def clean_topics(self):
+        """Validate and clean the topics field."""
+        topics = self.cleaned_data.get("topics")
+        if not topics:
+            raise forms.ValidationError("Please enter at least one topic.")
+
+        # Ensure we have at least one non-empty topic after splitting
+        topic_list = [t.strip() for t in topics.split(",") if t.strip()]
+        if not topic_list:
+            raise forms.ValidationError("Please enter at least one valid topic.")
+
+        return topics
 
 
 class TeachForm(forms.Form):
@@ -1655,3 +1680,10 @@ class NotificationPreferencesForm(forms.ModelForm):
             "reminder_days_before": forms.NumberInput(attrs={"min": 1, "max": 14}),
             "reminder_hours_before": forms.NumberInput(attrs={"min": 1, "max": 72}),
         }
+
+
+class StudyGroupForm(forms.ModelForm):
+    class Meta:
+        model = StudyGroup
+        # You might exclude fields that are set automatically.
+        fields = ["name", "description", "course", "max_members", "is_private"]

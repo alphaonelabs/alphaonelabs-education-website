@@ -41,6 +41,7 @@ urlpatterns += i18n_patterns(
     path("", views.index, name="index"),
     path("create-test-data/", views.run_create_test_data, name="create_test_data"),
     path("learn/", views.learn, name="learn"),
+    path("waiting-rooms/", views.waiting_rooms, name="waiting_rooms"),
     path("teach/", views.teach, name="teach"),
     path("about/", views.about, name="about"),
     path("profile/<str:username>/", views.public_profile, name="public_profile"),
@@ -166,6 +167,16 @@ urlpatterns += i18n_patterns(
         name="calendar_links",
     ),
     path("streak/", streak_detail, name="streak_detail"),
+    # Waiting Room URLs
+    path("waiting-rooms/", views.waiting_room_list, name="waiting_room_list"),
+    path("waiting-rooms/<int:waiting_room_id>/", views.waiting_room_detail, name="waiting_room_detail"),
+    path("waiting-rooms/<int:waiting_room_id>/join/", views.join_waiting_room, name="join_waiting_room"),
+    path("waiting-rooms/<int:waiting_room_id>/leave/", views.leave_waiting_room, name="leave_waiting_room"),
+    path(
+        "waiting-rooms/<int:waiting_room_id>/create-course/",
+        views.create_course_from_waiting_room,
+        name="create_course_from_waiting_room",
+    ),
     # Forum URLs
     path("forum/", views.forum_categories, name="forum_categories"),
     path("forum/category/create/", views.create_forum_category, name="create_forum_category"),
@@ -196,6 +207,10 @@ urlpatterns += i18n_patterns(
     path("groups/<int:group_id>/", views.study_group_detail, name="study_group_detail"),
     path("sessions/<int:session_id>/", views.session_detail, name="session_detail"),
     path("sitemap/", views.sitemap, name="sitemap"),
+    path("groups/<int:group_id>/invite/", views.invite_to_study_group, name="invite_to_study_group"),
+    path("invitations/", views.user_invitations, name="user_invitations"),
+    path("invitations/<uuid:invite_id>/respond/", views.respond_to_invitation, name="respond_to_invitation"),
+    path("groups/create/", views.create_study_group, name="create_study_group"),
     # Cart URLs
     path("cart/", views.cart_view, name="cart_view"),
     path("cart/add/course/<int:course_id>/", views.add_course_to_cart, name="add_course_to_cart"),
