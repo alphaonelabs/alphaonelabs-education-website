@@ -18,6 +18,7 @@ import requests
 import stripe
 from django.conf import settings
 from django.contrib import messages
+from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -5469,187 +5470,285 @@ def create_study_group(request):
     return render(request, "web/study/create_group.html", {"form": form})
 
 
-@login_required
-def progress_visualization(request):
-    """Generate and render progress visualization statistics for a student's enrolled courses."""
-    user = request.user
-    if request.user.profile.is_teacher:
-        messages.error(request, "This Progress Chart is for students only.")
-        return redirect("profile")
 
-    # Create a unique cache key based on user ID
-    cache_key = f"user_progress_{user.id}"
-    context = cache.get(cache_key)
-
-    if not context:
-        # Cache miss - calculate all data
-        enrollments = Enrollment.objects.filter(student=user)
-        course_stats = calculate_course_stats(enrollments)
-        attendance_stats = calculate_attendance_stats(user, enrollments)
-        learning_activity = calculate_learning_activity(user, enrollments)
-        completion_pace = calculate_completion_pace(enrollments)
-        chart_data = prepare_chart_data(enrollments)
-
-        # Combine all stats into a single context dictionary
-        context = {**course_stats, **attendance_stats, **learning_activity, **completion_pace, **chart_data}
-        # Cache the results (no expiration, we'll invalidate manually via signals)
-        cache.set(cache_key, context, timeout=None)  # None means no expiration
-
-    return render(request, "courses/progress_visualization.html", context)
+GITHUB_REPO = "alphaonelabs/alphaonelabs-education-website"
+GITHUB_API_BASE = "https://api.github.com"
 
 
-def calculate_course_stats(enrollments):
-    """Calculate statistics on the user's course progress."""
-    total_courses = enrollments.count()
-    courses_completed = enrollments.filter(status="completed").count()
-    topics_mastered = sum(e.progress.completed_sessions.count() for e in enrollments if hasattr(e, "progress"))
+@staff_member_required
+def all_contributors_view(request):
+    token = os.environ.get("GITHUB_TOKEN")  # Retrieve token from environment variable
+    headers = {"Authorization": f"token {token}"} if token else {}
 
-    return {
-        "total_courses": total_courses,
-        "courses_completed": courses_completed,
-        "courses_completed_percentage": round((courses_completed / total_courses) * 100) if total_courses else 0,
-        "topics_mastered": topics_mastered,
-    }
+    merged_prs_map = {}
+    page = 1
+    pulls = []
 
+    try:
+        # Paginate through closed PRs
+        while True:
+            pulls_url = f"{GITHUB_API_BASE}/repos/{GITHUB_REPO}/pulls?state=closed&per_page=100&page={page}"
+            response = requests.get(pulls_url, headers=headers)
 
-def calculate_attendance_stats(user, enrollments):
-    """Calculate the user's attendance statistics."""
-    all_attendances = SessionAttendance.objects.filter(
-        student=user, session__course__in=[e.course for e in enrollments]
-    )
-    total_attendance_count = all_attendances.count()
-    present_attendance_count = all_attendances.filter(status__in=["present", "late"]).count()
+            if response.status_code != 200:
+                print(f"Error fetching page {page}: {response.status_code}")
+                break
 
-    return {
-        "average_attendance": (
-            round((present_attendance_count / total_attendance_count) * 100) if total_attendance_count else 0
-        )
-    }
+            data = response.json()
+            if not data:
+                break
 
+            pulls.extend(data)
+            page += 1
 
-def calculate_learning_activity(user, enrollments):
-    """Calculate learning activity metrics like active days, streaks, and learning hours."""
-    all_completed_sessions = [
-        s for s in get_all_completed_sessions(enrollments) if s.start_time and s.end_time and s.end_time > s.start_time
-    ]
-    now = timezone.now()
+        # Aggregate merged PRs per user
+        for pr in pulls:
+            if pr.get("merged_at"):
+                user_login = pr["user"]["login"].lower()
+                # Filter out bots
+                if user_login == "a1l13n" or "bot" in user_login or "automation" in user_login:
+                    continue
 
-    # Find the most active day of the week
-    most_active_day = Counter(session.start_time.strftime("%A") for session in all_completed_sessions).most_common(1)
-    # Find the most recent session date
-    last_session_date = (
-        max(all_completed_sessions, key=lambda s: s.start_time).start_time.strftime("%b %d, %Y")
-        if all_completed_sessions
-        else "N/A"
+                if user_login not in merged_prs_map:
+                    merged_prs_map[user_login] = {
+                        "login": pr["user"]["login"],
+                        "avatar_url": pr["user"]["avatar_url"],
+                        "merged_prs": 0,
+                    }
+                merged_prs_map[user_login]["merged_prs"] += 1
+
+        # Convert map to sorted list (highest merged PRs first)
+        contributors = sorted(merged_prs_map.values(), key=lambda c: c["merged_prs"], reverse=True)
+    except Exception as e:
+        print(f"Error in all_contributors_view: {e}")
+        contributors = []
+
+    top_contributor = contributors[0] if contributors else None
+
+    return render(
+        request,
+        "web/all_contributors.html",
+        {
+            "contributors": contributors,
+            "top_contributor": top_contributor,
+        },
     )
 
-    streak, _ = LearningStreak.objects.get_or_create(user=user)
-    current_streak = streak.current_streak
 
-    total_learning_hours = round(
-        sum((s.end_time - s.start_time).total_seconds() / 3600 for s in all_completed_sessions), 1
-    )
-
-    # Calculate the number of weeks since the first session, minimum 1 week
-    weeks_since_first_session = (
-        max(1, (now - min(all_completed_sessions, key=lambda s: s.start_time).start_time).days / 7)
-        if all_completed_sessions
-        else 1
-    )
-    avg_sessions_per_week = round(len(all_completed_sessions) / weeks_since_first_session, 1)
-
-    return {
-        # Extract the day name from the most common day tuple, or default to "N/A"
-        "most_active_day": most_active_day[0][0] if most_active_day else "N/A",
-        "last_session_date": last_session_date,
-        "current_streak": current_streak,
-        "total_learning_hours": total_learning_hours,
-        "avg_sessions_per_week": avg_sessions_per_week,
-    }
+# Configure logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.ERROR)
 
 
-def calculate_completion_pace(enrollments):
-    """Calculate the average completion pace for completed courses."""
-    completed_enrollments = enrollments.filter(status="completed")
-    if not completed_enrollments.exists():
-        return {"completion_pace": "N/A"}
+@staff_member_required
+def contributor_detail_view(request, username):
+    """
+    View to display detailed information about a specific GitHub contributor.
+    Only accessible to staff members.
+    """
+    # Retrieve GitHub token from environment variable
+    token = os.environ.get("GITHUB_TOKEN")
+    headers = {"Authorization": f"token {token}"} if token else {}
 
-    total_days = sum(
-        (e.completion_date - e.enrollment_date).days
-        for e in completed_enrollments
-        if e.completion_date and e.enrollment_date
-    )
-    avg_days_to_complete = total_days / completed_enrollments.count() if completed_enrollments.count() > 0 else 0
+    # Initialize variables to store contributor data
+    user_data = {}
+    prs_created = 0
+    prs_merged = 0
+    issues_created = 0
+    pr_reviews = 0
+    pr_comments = 0
+    issue_comments = 0
+    lines_added = 0
+    lines_deleted = 0
+    first_contribution_date = "N/A"
+    issue_assignments = 0
 
-    return {"completion_pace": f"{avg_days_to_complete:.0f} days/course"}
-
-
-def get_all_completed_sessions(enrollments):
-    """Retrieve all completed sessions for a user's enrollments."""
-    return [s for e in enrollments if hasattr(e, "progress") for s in e.progress.completed_sessions.all()]
-
-
-def prepare_chart_data(enrollments):
-    """Prepare data for visualizing user progress in charts."""
-    colors = ["255,99,132", "54,162,235", "255,206,86", "75,192,192", "153,102,255"]
-
-    courses = []
-    progress_dates, sessions_completed = [], []
-
-    for i, e in enumerate(enrollments):
-        color = colors[i % len(colors)]
-        # Basic course data with progress information
-        course_data = {
-            "title": e.course.title,
-            "color": color,
-            "progress": getattr(e.progress, "completion_percentage", 0),
-            "sessions_completed": e.progress.completed_sessions.count() if hasattr(e, "progress") else 0,
-            "total_sessions": e.course.sessions.count(),
-        }
-
-        # Add time series data for courses with completed sessions
-        if hasattr(e, "progress") and e.progress.completed_sessions.exists():
-            # Find the most recent active session date
-            last_session = max(e.progress.completed_sessions.all(), key=lambda s: s.start_time)
-            course_data["last_active"] = last_session.start_time.strftime("%b %d, %Y")
-            # Generate time series data for progress visualization
-            time_data = prepare_time_series_data(e, course_data["total_sessions"])
-            course_data.update(time_data)
-            progress_dates.append(time_data["dates"])
-            sessions_completed.append(time_data["sessions_points"])
+    try:
+        # Fetch user profile data
+        user_response = requests.get(f"{GITHUB_API_BASE}/users/{username}", headers=headers)
+        if user_response.status_code == 200:
+            user_data = user_response.json()
         else:
-            # Default values for courses without progress
-            course_data.update({"last_active": "Not started", "progress_over_time": []})
-            progress_dates.append([])
-            sessions_completed.append([])
+            logger.error(f"Failed to fetch user profile: {user_response.status_code} - {user_response.text}")
 
-        courses.append(course_data)
+        # Fetch number of pull requests created
+        prs_created_response = requests.get(
+            f"{GITHUB_API_BASE}/search/issues",
+            params={"q": f"author:{username} type:pr repo:{GITHUB_REPO}"},
+            headers=headers,
+        )
+        if prs_created_response.status_code == 200:
+            prs_created = prs_created_response.json().get("total_count", 0)
+        else:
+            logger.error(
+                f"Failed to fetch PRs created: {prs_created_response.status_code} - {prs_created_response.text}"
+            )
 
-    return {
-        "courses": courses,
-        # Create a sorted list of all unique dates by flattening and deduplicating
-        "progress_dates": json.dumps(sorted(set(date for dates in progress_dates for date in dates))),
-        "sessions_completed": json.dumps(sessions_completed),
-        "courses_json": json.dumps(courses),
+        # Fetch number of merged pull requests
+        prs_merged_response = requests.get(
+            f"{GITHUB_API_BASE}/search/issues",
+            params={"q": f"author:{username} type:pr repo:{GITHUB_REPO} is:merged"},
+            headers=headers,
+        )
+        if prs_merged_response.status_code == 200:
+            prs_merged = prs_merged_response.json().get("total_count", 0)
+        else:
+            logger.error(f"Failed to fetch PRs merged: {prs_merged_response.status_code} - {prs_merged_response.text}")
+
+        # Fetch number of issues created
+        issues_response = requests.get(
+            f"{GITHUB_API_BASE}/search/issues",
+            params={"q": f"author:{username} type:issue repo:{GITHUB_REPO}"},
+            headers=headers,
+        )
+        if issues_response.status_code == 200:
+            issues_created = issues_response.json().get("total_count", 0)
+        else:
+            logger.error(f"Failed to fetch issues created: {issues_response.status_code} - {issues_response.text}")
+
+        # Fetch number of pull request reviews
+        reviews_response = requests.get(
+            f"{GITHUB_API_BASE}/search/issues",
+            params={"q": f"reviewer:{username} type:pr repo:{GITHUB_REPO}"},
+            headers=headers,
+        )
+        if reviews_response.status_code == 200:
+            pr_reviews = reviews_response.json().get("total_count", 0)
+        else:
+            logger.error(f"Failed to fetch PR reviews: {reviews_response.status_code} - {reviews_response.text}")
+
+        # Fetch number of pull requests with comments
+        pr_comments_response = requests.get(
+            f"{GITHUB_API_BASE}/search/issues",
+            params={"q": f"commenter:{username} type:pr repo:{GITHUB_REPO}"},
+            headers=headers,
+        )
+        if pr_comments_response.status_code == 200:
+            pr_comments = pr_comments_response.json().get("total_count", 0)
+        else:
+            logger.error(
+                f"Failed to fetch PR comments: {pr_comments_response.status_code} - {pr_comments_response.text}"
+            )
+
+        # Fetch number of issues with comments
+        issue_comments_response = requests.get(
+            f"{GITHUB_API_BASE}/search/issues",
+            params={"q": f"commenter:{username} type:issue repo:{GITHUB_REPO}"},
+            headers=headers,
+        )
+        if issue_comments_response.status_code == 200:
+            issue_comments = issue_comments_response.json().get("total_count", 0)
+        else:
+            logger.error(
+                (
+                    f"Failed to fetch issue comments: {issue_comments_response.status_code} - "
+                    f"{issue_comments_response.text}"
+                )
+            )
+
+        # Fetch creation date of the oldest PR created by the user
+        prs_response = requests.get(
+            f"{GITHUB_API_BASE}/search/issues",
+            params={
+                "q": f"author:{username} type:pr repo:{GITHUB_REPO}",
+                "sort": "created",
+                "order": "asc",
+                "per_page": 1,
+            },
+            headers=headers,
+        )
+        if prs_response.status_code == 200 and prs_response.json()["total_count"] > 0:
+            first_contribution_date = prs_response.json()["items"][0]["created_at"]
+        else:
+            first_contribution_date = "N/A"
+
+        # Fetch number of issue assignments
+        issue_assignments_response = requests.get(
+            f"{GITHUB_API_BASE}/search/issues",
+            params={"q": f"assignee:{username} type:issue repo:{GITHUB_REPO}"},
+            headers=headers,
+        )
+        if issue_assignments_response.status_code == 200:
+            issue_assignments = issue_assignments_response.json().get("total_count", 0)
+        else:
+            logger.error(
+                (
+                    f"Failed to fetch issue assignments: {issue_assignments_response.status_code} - "
+                    f"{issue_assignments_response.text}"
+                )
+            )
+
+        # Calculate lines added and deleted from merged pull requests
+        page = 1
+        while True:
+            prs_response = requests.get(
+                f"{GITHUB_API_BASE}/repos/{GITHUB_REPO}/pulls",
+                params={"state": "closed", "per_page": 100, "page": page},
+                headers=headers,
+            )
+            if prs_response.status_code != 200:
+                logger.error(f"Failed to fetch PRs page {page}: {prs_response.status_code} - {prs_response.text}")
+                break
+            prs = prs_response.json()
+            if not prs:
+                break
+            for pr in prs:
+                if pr["user"]["login"].lower() == username.lower() and pr["merged_at"]:
+                    pr_detail_response = requests.get(pr["url"], headers=headers)
+                    if pr_detail_response.status_code == 200:
+                        pr_detail = pr_detail_response.json()
+                        lines_added += pr_detail.get("additions", 0)
+                        lines_deleted += pr_detail.get("deletions", 0)
+                    else:
+                        logger.error(
+                            (
+                                f"Failed to fetch PR details for {pr['number']}: "
+                                f"{pr_detail_response.status_code} - {pr_detail_response.text}"
+                            )
+                        )
+            page += 1
+
+        # Update user_data with additional metrics
+        user_data.update(
+            {
+                "reactions_received": user_data.get("reactions_received", 0),
+                "mentorship_score": user_data.get("mentorship_score", 0),
+                "collaboration_score": user_data.get("collaboration_score", 0),
+                "issue_assignments": issue_assignments,
+            }
+        )
+
+    except requests.RequestException as e:
+        logger.error(f"Request error occurred: {e}")
+
+    # Prepare context for the template
+    context = {
+        "user": user_data,
+        "prs_created": prs_created,
+        "prs_merged": prs_merged,
+        "pr_reviews": pr_reviews,
+        "issues_created": issues_created,
+        "issue_comments": issue_comments,
+        "pr_comments": pr_comments,
+        "lines_added": lines_added,
+        "lines_deleted": lines_deleted,
+        "first_contribution_date": first_contribution_date,
     }
-
-
-def prepare_time_series_data(enrollment, total_sessions):
-    """Generate time series data for progress visualization."""
-    completed_sessions = (
-        sorted(enrollment.progress.completed_sessions.all(), key=lambda s: s.start_time)
-        if hasattr(enrollment, "progress")
-        else []
+    context.update(
+        {
+            "chart_data": {
+                "prs_created": prs_created,
+                "prs_merged": prs_merged,
+                "pr_reviews": pr_reviews,
+                "issues_created": issues_created,
+                "issue_assignments": issue_assignments,
+                "pr_comments": pr_comments,
+                "issue_comments": issue_comments,
+                "lines_added": lines_added,
+                "lines_deleted": lines_deleted,
+                "first_contribution_date": first_contribution_date if first_contribution_date != "N/A" else "N/A",
+            }
+        }
     )
-
-    return {
-        # Calculate progress percentage for each completed session
-        "progress_over_time": [
-            round(((idx + 1) / total_sessions) * 100, 1) if total_sessions else 0
-            for idx, _ in enumerate(completed_sessions)
-        ],
-        # Create sequential session numbers
-        "sessions_points": list(range(1, len(completed_sessions) + 1)),
-        # Format session dates consistently
-        "dates": [s.start_time.strftime("%Y-%m-%d") for s in completed_sessions],
-    }
+    # Render the template with the contributor's data
+    return render(request, "web/contributor_detail.html", context)
