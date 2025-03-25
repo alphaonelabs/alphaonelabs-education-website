@@ -3,89 +3,82 @@
 {% load static %}
 
 {% block title %}Edit Meetup{% endblock %}
-
 {% block content %}
   <div class="flex justify-center items-center min-h-screen bg-gray-100 dark:bg-gray-900">
     <div class="w-full max-w-lg bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
       <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-6 text-center">Edit Meetup</h1>
-      
       <form method="post" class="space-y-4">
         {% csrf_token %}
         {{ form.non_field_errors }}
-
         <div>
-          <label for="id_title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
+          <label for="id_title"
+                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
           {{ form.title }}
           {% if form.title.errors %}
             <p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ form.title.errors }}</p>
           {% endif %}
         </div>
-
         <div>
-          <label for="id_description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+          <label for="id_description"
+                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
           {{ form.description }}
           {% if form.description.errors %}
             <p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ form.description.errors }}</p>
           {% endif %}
         </div>
-
         <div>
-          <label for="id_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
+          <label for="id_date"
+                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
           {{ form.date }}
-          {% if form.date.errors %}
-            <p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ form.date.errors }}</p>
-          {% endif %}
+          {% if form.date.errors %}<p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ form.date.errors }}</p>{% endif %}
         </div>
-
         <div>
-          <label for="id_link" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Link</label>
+          <label for="id_link"
+                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Link</label>
           {{ form.link }}
-          {% if form.link.errors %}
-            <p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ form.link.errors }}</p>
-          {% endif %}
+          {% if form.link.errors %}<p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ form.link.errors }}</p>{% endif %}
         </div>
-
         <div>
-          <label for="id_location" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Location</label>
+          <label for="id_location"
+                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Location</label>
           {{ form.location }}
           {% if form.location.errors %}
             <p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ form.location.errors }}</p>
           {% endif %}
         </div>
-
         <div>
-          <label for="id_event_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Event Type</label>
+          <label for="id_event_type"
+                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Event Type</label>
           {{ form.event_type }}
           {% if form.event_type.errors %}
             <p class="mt-2 text-sm text-red-600 dark:text-red-500">{{ form.event_type.errors }}</p>
           {% endif %}
         </div>
-
-        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition">
+        <button type="submit"
+                class="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded transition">
           Save
         </button>
       </form>
     </div>
   </div>
-
   <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      const formFields = document.querySelectorAll("input, select, textarea");
-      formFields.forEach(field => {
-        field.classList.add(
-          "shadow-sm",
-          "focus:ring-blue-500",
-          "focus:border-blue-500",
-          "block",
-          "w-full",
-          "sm:text-sm",
-          "border-gray-300",
-          "dark:border-gray-700",
-          "rounded-md",
-          "dark:bg-gray-700",
-          "dark:text-gray-300"
-        );
+      document.addEventListener("DOMContentLoaded", function() {
+          const formFields = document.querySelectorAll("input, select, textarea");
+          formFields.forEach(field => {
+              field.classList.add(
+                  "shadow-sm",
+                  "focus:ring-blue-500",
+                  "focus:border-blue-500",
+                  "block",
+                  "w-full",
+                  "sm:text-sm",
+                  "border-gray-300",
+                  "dark:border-gray-700",
+                  "rounded-md",
+                  "dark:bg-gray-700",
+                  "dark:text-gray-300"
+              );
+          });
       });
-    });
   </script>
 {% endblock %}
