@@ -310,6 +310,24 @@ def signup_view(request):
 
 
 @login_required
+def delete_waiting_room(request, waiting_room_id):
+    """View for deleting a waiting room."""
+    waiting_room = get_object_or_404(WaitingRoom, id=waiting_room_id)
+
+    # Only allow creator to delete
+    if request.user != waiting_room.creator:
+        messages.error(request, "You don't have permission to delete this waiting room.")
+        return redirect("waiting_room_detail", waiting_room_id=waiting_room_id)
+
+    if request.method == "POST":
+        waiting_room.delete()
+        messages.success(request, f"Waiting room '{waiting_room.title}' has been deleted.")
+        return redirect("waiting_room_list")
+
+    return render(request, "waiting_room/confirm_delete.html", {"waiting_room": waiting_room})
+
+
+@login_required
 def all_leaderboards(request):
     """
     Display all leaderboard types on a single page.
