@@ -919,7 +919,14 @@ def course_search(request):
         )
 
     if subject:
-        courses = courses.filter(subject=subject)
+        # Handle subject filtering based on whether it's an ID (number) or a string (slug/name)
+        try:
+            # Check if subject is an integer ID
+            subject_id = int(subject)
+            courses = courses.filter(subject_id=subject_id)
+        except ValueError:
+            # If not an integer, treat as a slug or name
+            courses = courses.filter(Q(subject__slug=subject) | Q(subject__name__iexact=subject))
 
     if level:
         courses = courses.filter(level=level)
