@@ -28,6 +28,12 @@
                 <div class="h-2 w-2 bg-green-600 rounded-full mr-2"></div>
                 <span class="text-green-700 font-medium text-sm">Open</span>
               </div>
+              {% if is_creator %}
+                <a href="{% url 'delete_waiting_room' waiting_room.id %}"
+                   class="px-6 py-3 bg-red-100 text-red-700 hover:bg-red-200 rounded-xl font-medium transition-colors duration-200">
+                  Delete Request
+                </a>
+              {% endif %}
             {% elif waiting_room.status == 'fulfilled' %}
               <div class="flex items-center bg-blue-50 px-4 py-2 rounded-full">
                 <div class="h-2 w-2 bg-blue-600 rounded-full mr-2"></div>
