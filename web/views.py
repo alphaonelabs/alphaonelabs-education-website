@@ -9,7 +9,7 @@ import shutil
 import socket
 import subprocess
 import time
-from collections import defaultdict
+from collections import Counter, defaultdict
 from datetime import timedelta
 from decimal import Decimal
 from urllib.parse import urlparse
@@ -22,6 +22,7 @@ from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.core.mail import send_mail
 from django.core.management import call_command
 from django.core.paginator import Paginator
@@ -142,6 +143,7 @@ from .models import (
     TeamInvite,
     TimeSlot,
     UserBadge,
+    WaitingRoom,
     WebRequest,
 )
 from .notifications import (
@@ -437,13 +439,59 @@ def create_course(request):
         if form.is_valid():
             course = form.save(commit=False)
             course.teacher = request.user
+            course.status = "published"  # Set status to published
             course.save()
             form.save_m2m()  # Save many-to-many relationships
+
+            # Handle waiting room if course was created from one
+            if "waiting_room_data" in request.session:
+                waiting_room = get_object_or_404(WaitingRoom, id=request.session["waiting_room_data"]["id"])
+
+                # Update waiting room status and link to course
+                waiting_room.status = "fulfilled"
+                waiting_room.fulfilled_course = course
+                waiting_room.save(update_fields=["status", "fulfilled_course"])
+
+                # Send notifications to all participants
+                for participant in waiting_room.participants.all():
+                    messages.success(
+                        request,
+                        f"A new course matching your request has been created: {course.title}",
+                        extra_tags=f"course_{course.slug}",
+                    )
+
+                # Clear waiting room data from session
+                del request.session["waiting_room_data"]
+
+                # Redirect back to waiting room to show the update
+                return redirect("waiting_room_detail", waiting_room_id=waiting_room.id)
+
             return redirect("course_detail", slug=course.slug)
     else:
         form = CourseForm()
 
     return render(request, "courses/create.html", {"form": form})
+
+
+@login_required
+@teacher_required
+def create_course_from_waiting_room(request, waiting_room_id):
+    waiting_room = get_object_or_404(WaitingRoom, id=waiting_room_id)
+
+    # Ensure waiting room is open
+    if waiting_room.status != "open":
+        messages.error(request, "This waiting room is no longer open.")
+        return redirect("waiting_room_detail", waiting_room_id=waiting_room_id)
+
+    # Store waiting room data in session for validation
+    request.session["waiting_room_data"] = {
+        "id": waiting_room.id,
+        "subject": waiting_room.subject.strip().lower(),
+        "topics": [t.strip().lower() for t in waiting_room.topics.split(",") if t.strip()],
+    }
+
+    # Redirect to regular course creation form
+    return redirect(reverse("create_course"))
 
 
 def course_detail(request, slug):
@@ -697,22 +745,82 @@ def about(request):
     return render(request, "about.html")
 
 
+def waiting_rooms(request):
+    # Get open waiting rooms
+    open_rooms = WaitingRoom.objects.filter(status="open").order_by("-created_at")
+
+    # Get fulfilled waiting rooms (ones that have associated courses)
+    fulfilled_rooms = WaitingRoom.objects.filter(status="fulfilled").order_by("-created_at")
+
+    # Get rooms created by the user
+    user_created_rooms = (
+        WaitingRoom.objects.filter(creator=request.user).order_by("-created_at")
+        if request.user.is_authenticated
+        else []
+    )
+
+    # Get rooms the user has joined
+    user_joined_rooms = (
+        WaitingRoom.objects.filter(participants=request.user).order_by("-created_at")
+        if request.user.is_authenticated
+        else []
+    )
+
+    # Get topics for each room
+    room_topics = {}
+    all_rooms = list(open_rooms) + list(fulfilled_rooms) + list(user_created_rooms) + list(user_joined_rooms)
+    for room in all_rooms:
+        # Split topics string into a list
+        room_topics[room.id] = [t.strip() for t in room.topics.split(",")] if room.topics else []
+
+    context = {
+        "open_rooms": open_rooms,
+        "fulfilled_rooms": fulfilled_rooms,
+        "user_created_rooms": user_created_rooms,
+        "user_joined_rooms": user_joined_rooms,
+        "room_topics": room_topics,
+    }
+
+    return render(request, "waiting_rooms.html", context)
+
+
 def learn(request):
     if request.method == "POST":
         form = LearnForm(request.POST)
         if form.is_valid():
+            # Create waiting room
+            waiting_room = form.save(commit=False)
+            waiting_room.status = "open"  # Set initial status
+            waiting_room.creator = request.user  # Set the creator
+
+            # Get topics from form and save as comma-separated string
+            topics = form.cleaned_data.get("topics", "")
+            if isinstance(topics, list):
+                topics = ", ".join(topics)
+            waiting_room.topics = topics
+
+            waiting_room.save()
+
+            # Redirect to waiting rooms page
+            return redirect("waiting_rooms")
+
+            # Get form data
+            title = form.cleaned_data["title"]
+            description = form.cleaned_data["description"]
             subject = form.cleaned_data["subject"]
-            email = form.cleaned_data["email"]
-            message = form.cleaned_data["message"]
+            topics = form.cleaned_data["topics"]
 
             # Prepare email content
-            email_subject = f"Learning Interest: {subject}"
+            email_subject = f"New Learning Request: {title}"
             email_body = render_to_string(
                 "emails/learn_interest.html",
                 {
+                    "title": title,
+                    "description": description,
                     "subject": subject,
-                    "email": email,
-                    "message": message,
+                    "topics": topics,
+                    "user": request.user.username,
+                    "waiting_room_id": waiting_room.id,
                 },
             )
 
@@ -726,8 +834,11 @@ def learn(request):
                     html_message=email_body,
                     fail_silently=False,
                 )
-                messages.success(request, "Thank you for your interest! We'll be in touch soon.")
-                return redirect("index")
+                messages.success(
+                    request,
+                    "Thank you for your learning request!",
+                )
+                return redirect("waiting_rooms")
             except Exception:
                 logger = logging.getLogger(__name__)
                 logger.exception("Error sending email")
@@ -735,7 +846,11 @@ def learn(request):
     else:
         initial_data = {}
         if request.GET.get("subject"):
-            initial_data["subject"] = request.GET.get("subject")
+            try:
+                subject = Subject.objects.get(name=request.GET.get("subject"))
+                initial_data["subject"] = subject.id
+            except Subject.DoesNotExist:
+                pass
         form = LearnForm(initial=initial_data)
 
     return render(request, "learn.html", {"form": form})
@@ -4520,6 +4635,120 @@ def streak_detail(request):
     return render(request, "streak_detail.html", {"streak": streak})
 
 
+@login_required
+def waiting_room_list(request):
+    """View for displaying waiting rooms categorized by status."""
+    # Get waiting rooms by status
+    open_rooms = WaitingRoom.objects.filter(status="open")
+    fulfilled_rooms = WaitingRoom.objects.filter(status="fulfilled")
+    closed_rooms = WaitingRoom.objects.filter(status="closed")
+
+    # Get waiting rooms created by the user
+    user_created_rooms = WaitingRoom.objects.filter(creator=request.user)
+
+    # Get waiting rooms joined by the user
+    user_joined_rooms = request.user.joined_waiting_rooms.all()
+
+    # Process topics for all waiting rooms
+    all_rooms = (
+        list(open_rooms)
+        + list(fulfilled_rooms)
+        + list(closed_rooms)
+        + list(user_created_rooms)
+        + list(user_joined_rooms)
+    )
+    room_topics = {}
+    for room in all_rooms:
+        room_topics[room.id] = [topic.strip() for topic in room.topics.split(",") if topic.strip()]
+
+    context = {
+        "open_rooms": open_rooms,
+        "fulfilled_rooms": fulfilled_rooms,
+        "closed_rooms": closed_rooms,
+        "user_created_rooms": user_created_rooms,
+        "user_joined_rooms": user_joined_rooms,
+        "room_topics": room_topics,
+    }
+    return render(request, "waiting_room/list.html", context)
+
+
+def find_matching_courses(waiting_room):
+    """Find courses that match the waiting room's subject and topics."""
+    # Get courses with matching subject name (case-insensitive)
+    matching_courses = Course.objects.filter(subject__iexact=waiting_room.subject, status="published")
+
+    # Filter courses that have all required topics
+    required_topics = {t.strip().lower() for t in waiting_room.topics.split(",") if t.strip()}
+
+    # Further filter courses by checking if their topics contain all required topics
+    final_matches = []
+    for course in matching_courses:
+        course_topics = {t.strip().lower() for t in course.topics.split(",") if t.strip()}
+        if course_topics.issuperset(required_topics):
+            final_matches.append(course)
+
+    return final_matches
+
+
+def waiting_room_detail(request, waiting_room_id):
+    """View for displaying details of a waiting room."""
+    waiting_room = get_object_or_404(WaitingRoom, id=waiting_room_id)
+
+    # Check if the user is a participant
+    is_participant = request.user.is_authenticated and request.user in waiting_room.participants.all()
+
+    # Check if the user is the creator
+    is_creator = request.user.is_authenticated and request.user == waiting_room.creator
+
+    # Check if the user is a teacher
+    is_teacher = request.user.is_authenticated and hasattr(request.user, "profile") and request.user.profile.is_teacher
+
+    context = {
+        "waiting_room": waiting_room,
+        "is_participant": is_participant,
+        "is_creator": is_creator,
+        "is_teacher": is_teacher,
+        "participant_count": waiting_room.participants.count(),
+        "topic_list": [topic.strip() for topic in waiting_room.topics.split(",") if topic.strip()],
+    }
+    return render(request, "waiting_room/detail.html", context)
+
+
+@login_required
+def join_waiting_room(request, waiting_room_id):
+    """View for joining a waiting room."""
+    waiting_room = get_object_or_404(WaitingRoom, id=waiting_room_id)
+
+    # Check if the waiting room is open
+    if waiting_room.status != "open":
+        messages.error(request, "This waiting room is no longer open for joining.")
+        return redirect("waiting_room_list")
+
+    # Add the user as a participant if not already
+    if request.user not in waiting_room.participants.all():
+        waiting_room.participants.add(request.user)
+        messages.success(request, f"You have joined the waiting room: {waiting_room.title}")
+    else:
+        messages.info(request, "You are already a participant in this waiting room.")
+
+    return redirect("waiting_room_detail", waiting_room_id=waiting_room.id)
+
+
+@login_required
+def leave_waiting_room(request, waiting_room_id):
+    """View for leaving a waiting room."""
+    waiting_room = get_object_or_404(WaitingRoom, id=waiting_room_id)
+
+    # Remove the user from participants
+    if request.user in waiting_room.participants.all():
+        waiting_room.participants.remove(request.user)
+        messages.success(request, f"You have left the waiting room: {waiting_room.title}")
+    else:
+        messages.info(request, "You are not a participant in this waiting room.")
+
+    return redirect("waiting_room_list")
+
+
 def is_superuser(user):
     return user.is_superuser
 
@@ -5244,7 +5473,6 @@ def create_study_group(request):
         form = StudyGroupForm()
     return render(request, "web/study/create_group.html", {"form": form})
 
-
 # map views
 
 
@@ -5365,3 +5593,188 @@ def map_data_api(request):
 
     logger.info(f"Found {len(map_data)} sessions with valid coordinates")
     return JsonResponse({"sessions": map_data})
+=======
+@login_required
+def progress_visualization(request):
+    """Generate and render progress visualization statistics for a student's enrolled courses."""
+    user = request.user
+    if request.user.profile.is_teacher:
+        messages.error(request, "This Progress Chart is for students only.")
+        return redirect("profile")
+
+    # Create a unique cache key based on user ID
+    cache_key = f"user_progress_{user.id}"
+    context = cache.get(cache_key)
+
+    if not context:
+        # Cache miss - calculate all data
+        enrollments = Enrollment.objects.filter(student=user)
+        course_stats = calculate_course_stats(enrollments)
+        attendance_stats = calculate_attendance_stats(user, enrollments)
+        learning_activity = calculate_learning_activity(user, enrollments)
+        completion_pace = calculate_completion_pace(enrollments)
+        chart_data = prepare_chart_data(enrollments)
+
+        # Combine all stats into a single context dictionary
+        context = {**course_stats, **attendance_stats, **learning_activity, **completion_pace, **chart_data}
+        # Cache the results (no expiration, we'll invalidate manually via signals)
+        cache.set(cache_key, context, timeout=None)  # None means no expiration
+
+    return render(request, "courses/progress_visualization.html", context)
+
+
+def calculate_course_stats(enrollments):
+    """Calculate statistics on the user's course progress."""
+    total_courses = enrollments.count()
+    courses_completed = enrollments.filter(status="completed").count()
+    topics_mastered = sum(e.progress.completed_sessions.count() for e in enrollments if hasattr(e, "progress"))
+
+    return {
+        "total_courses": total_courses,
+        "courses_completed": courses_completed,
+        "courses_completed_percentage": round((courses_completed / total_courses) * 100) if total_courses else 0,
+        "topics_mastered": topics_mastered,
+    }
+
+
+def calculate_attendance_stats(user, enrollments):
+    """Calculate the user's attendance statistics."""
+    all_attendances = SessionAttendance.objects.filter(
+        student=user, session__course__in=[e.course for e in enrollments]
+    )
+    total_attendance_count = all_attendances.count()
+    present_attendance_count = all_attendances.filter(status__in=["present", "late"]).count()
+
+    return {
+        "average_attendance": (
+            round((present_attendance_count / total_attendance_count) * 100) if total_attendance_count else 0
+        )
+    }
+
+
+def calculate_learning_activity(user, enrollments):
+    """Calculate learning activity metrics like active days, streaks, and learning hours."""
+    all_completed_sessions = [
+        s for s in get_all_completed_sessions(enrollments) if s.start_time and s.end_time and s.end_time > s.start_time
+    ]
+    now = timezone.now()
+
+    # Find the most active day of the week
+    most_active_day = Counter(session.start_time.strftime("%A") for session in all_completed_sessions).most_common(1)
+    # Find the most recent session date
+    last_session_date = (
+        max(all_completed_sessions, key=lambda s: s.start_time).start_time.strftime("%b %d, %Y")
+        if all_completed_sessions
+        else "N/A"
+    )
+
+    streak, _ = LearningStreak.objects.get_or_create(user=user)
+    current_streak = streak.current_streak
+
+    total_learning_hours = round(
+        sum((s.end_time - s.start_time).total_seconds() / 3600 for s in all_completed_sessions), 1
+    )
+
+    # Calculate the number of weeks since the first session, minimum 1 week
+    weeks_since_first_session = (
+        max(1, (now - min(all_completed_sessions, key=lambda s: s.start_time).start_time).days / 7)
+        if all_completed_sessions
+        else 1
+    )
+    avg_sessions_per_week = round(len(all_completed_sessions) / weeks_since_first_session, 1)
+
+    return {
+        # Extract the day name from the most common day tuple, or default to "N/A"
+        "most_active_day": most_active_day[0][0] if most_active_day else "N/A",
+        "last_session_date": last_session_date,
+        "current_streak": current_streak,
+        "total_learning_hours": total_learning_hours,
+        "avg_sessions_per_week": avg_sessions_per_week,
+    }
+
+
+def calculate_completion_pace(enrollments):
+    """Calculate the average completion pace for completed courses."""
+    completed_enrollments = enrollments.filter(status="completed")
+    if not completed_enrollments.exists():
+        return {"completion_pace": "N/A"}
+
+    total_days = sum(
+        (e.completion_date - e.enrollment_date).days
+        for e in completed_enrollments
+        if e.completion_date and e.enrollment_date
+    )
+    avg_days_to_complete = total_days / completed_enrollments.count() if completed_enrollments.count() > 0 else 0
+
+    return {"completion_pace": f"{avg_days_to_complete:.0f} days/course"}
+
+
+def get_all_completed_sessions(enrollments):
+    """Retrieve all completed sessions for a user's enrollments."""
+    return [s for e in enrollments if hasattr(e, "progress") for s in e.progress.completed_sessions.all()]
+
+
+def prepare_chart_data(enrollments):
+    """Prepare data for visualizing user progress in charts."""
+    colors = ["255,99,132", "54,162,235", "255,206,86", "75,192,192", "153,102,255"]
+
+    courses = []
+    progress_dates, sessions_completed = [], []
+
+    for i, e in enumerate(enrollments):
+        color = colors[i % len(colors)]
+        # Basic course data with progress information
+        course_data = {
+            "title": e.course.title,
+            "color": color,
+            "progress": getattr(e.progress, "completion_percentage", 0),
+            "sessions_completed": e.progress.completed_sessions.count() if hasattr(e, "progress") else 0,
+            "total_sessions": e.course.sessions.count(),
+        }
+
+        # Add time series data for courses with completed sessions
+        if hasattr(e, "progress") and e.progress.completed_sessions.exists():
+            # Find the most recent active session date
+            last_session = max(e.progress.completed_sessions.all(), key=lambda s: s.start_time)
+            course_data["last_active"] = last_session.start_time.strftime("%b %d, %Y")
+            # Generate time series data for progress visualization
+            time_data = prepare_time_series_data(e, course_data["total_sessions"])
+            course_data.update(time_data)
+            progress_dates.append(time_data["dates"])
+            sessions_completed.append(time_data["sessions_points"])
+        else:
+            # Default values for courses without progress
+            course_data.update({"last_active": "Not started", "progress_over_time": []})
+            progress_dates.append([])
+            sessions_completed.append([])
+
+        courses.append(course_data)
+
+    return {
+        "courses": courses,
+        # Create a sorted list of all unique dates by flattening and deduplicating
+        "progress_dates": json.dumps(sorted(set(date for dates in progress_dates for date in dates))),
+        "sessions_completed": json.dumps(sessions_completed),
+        "courses_json": json.dumps(courses),
+    }
+
+
+def prepare_time_series_data(enrollment, total_sessions):
+    """Generate time series data for progress visualization."""
+    completed_sessions = (
+        sorted(enrollment.progress.completed_sessions.all(), key=lambda s: s.start_time)
+        if hasattr(enrollment, "progress")
+        else []
+    )
+
+    return {
+        # Calculate progress percentage for each completed session
+        "progress_over_time": [
+            round(((idx + 1) / total_sessions) * 100, 1) if total_sessions else 0
+            for idx, _ in enumerate(completed_sessions)
+        ],
+        # Create sequential session numbers
+        "sessions_points": list(range(1, len(completed_sessions) + 1)),
+        # Format session dates consistently
+        "dates": [s.start_time.strftime("%Y-%m-%d") for s in completed_sessions],
+    }
