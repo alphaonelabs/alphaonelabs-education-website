@@ -108,7 +108,6 @@ urlpatterns += i18n_patterns(
     path(f"{settings.ADMIN_URL}/dashboard/", admin_views.admin_dashboard, name="admin_dashboard"),
     path(f"{settings.ADMIN_URL}/", admin.site.urls),
     path("subjects/", views.subjects, name="subjects"),
-    path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
     # Progress tracking URLs
     path(
         "sessions/<int:session_id>/attendance/",
@@ -382,6 +381,7 @@ urlpatterns += i18n_patterns(
         name="update_teacher_notes",
     ),
     path("award-badge/", views.award_badge, name="award_badge"),
+    path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
     prefix_default_language=True,
 )
 
