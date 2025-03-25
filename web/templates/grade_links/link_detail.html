@@ -139,7 +139,7 @@
                   <div class="flex flex-col md:flex-row md:justify-between md:items-start">
                     <div class="flex items-center mb-3 md:mb-0">
                       {% if grade.user.profile.avatar %}
-                        <img src="{{ grade.user.profile.avatar.url }}"
+                        <img loading="lazy" src="{{ grade.user.profile.avatar.url }}"
                              alt="{{ grade.user.username }}"
                              class="w-10 h-10 rounded-full mr-3" />
                       {% else %}

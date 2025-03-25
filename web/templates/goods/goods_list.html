@@ -20,7 +20,7 @@
       {% for product in products %}
         <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-5 transition-transform transform hover:scale-105 flex flex-col border border-gray-200">
           <div class="h-48 w-full overflow-hidden rounded-md">
-            <img src="{{ product.image.url }}"
+            <img loading="lazy" src="{{ product.image.url }}"
                  alt="{{ product.name|default:'Product Image' }}"
                  class="w-full h-full object-cover aspect-[4/3]" />
           </div>

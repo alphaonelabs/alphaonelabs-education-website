@@ -50,7 +50,7 @@
               <div class="aspect-square w-full relative overflow-hidden rounded-lg mb-3">
                 {% if course.image %}
                   <a href="{% url 'course_detail' course.slug %}">
-                    <img src="{{ course.image.url }}"
+                    <img loading="lazy" src="{{ course.image.url }}"
                          alt="{{ course.title }}"
                          class="w-full h-full object-cover"
                          height="300"
@@ -58,7 +58,7 @@
                   </a>
                 {% else %}
                   <a href="{% url 'course_detail' course.slug %}">
-                    <img src="{% static 'images/default-course.jpg' %}"
+                    <img loading="lazy" src="{% static 'images/default-course.jpg' %}"
                          alt="{{ course.title }}"
                          class="w-full h-full object-cover"
                          height="300"
@@ -125,13 +125,13 @@
               <!-- Teacher Info -->
               <div class="flex items-center mb-3">
                 {% if course.teacher.profile.avatar %}
-                  <img src="{{ course.teacher.profile.avatar.url }}"
+                  <img loading="lazy" src="{{ course.teacher.profile.avatar.url }}"
                        alt="{{ course.teacher.username }}"
                        class="h-12 w-12 rounded-full mr-3"
                        width="48"
                        height="48" />
                 {% else %}
-                  <img src="{% static 'images/default_teacher.png' %}"
+                  <img loading="lazy" src="{% static 'images/default_teacher.png' %}"
                        alt="{{ course.teacher.username }}"
                        class="h-12 w-12 rounded-full mr-3"
                        width="48"
@@ -284,7 +284,7 @@
               <div class="aspect-square w-full relative overflow-hidden rounded-lg mb-3">
                 {% if product.image %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
-                    <img src="{{ product.image.url }}"
+                    <img loading="lazy" src="{{ product.image.url }}"
                          alt="{{ product.name }}"
                          class="w-full h-full object-cover"
                          height="250"
@@ -292,7 +292,7 @@
                   </a>
                 {% else %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
-                    <img src="{% static 'images/placeholder.png' %}"
+                    <img loading="lazy" src="{% static 'images/placeholder.png' %}"
                          alt="{{ product.name }}"
                          class="w-full h-full object-cover"
                          height="250"
@@ -355,7 +355,7 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
               <div class="hidden sm:block">
-                <img src="{% static 'images/gsoc-logo.png' %}"
+                <img loading="lazy" src="{% static 'images/gsoc-logo.png' %}"
                      alt="Google Summer of Code"
                      class="h-16 w-16 object-contain"
                      onerror="this.src='https://summerofcode.withgoogle.com/assets/media/gsoc-2024-badge.svg'"
@@ -656,7 +656,7 @@
               <div class="flex items-center p-2 {% if forloop.counter == 1 %}bg-yellow-50 dark:bg-yellow-900/30{% elif forloop.counter == 2 %}bg-gray-50 dark:bg-gray-700/50{% elif forloop.counter == 3 %}bg-amber-50 dark:bg-amber-900/30{% endif %} rounded-lg">
                 <div class="flex-shrink-0 mr-3 relative">
                   {% if entry.user.profile.avatar %}
-                    <img src="{{ entry.user.profile.avatar.url }}"
+                    <img loading="lazy" src="{{ entry.user.profile.avatar.url }}"
                          alt="{{ entry.user.username }}"
                          class="w-10 h-10 rounded-full"
                          width="40"
@@ -998,7 +998,7 @@
 
                         div.innerHTML = `
                             <div class="relative">
-                                <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-10 h-10 rounded-full" loading="lazy" width="40" height="40" />
+                                <img loading="lazy" src="${contributor.avatar_url}" alt="${contributor.username}" class="w-10 h-10 rounded-full" loading="lazy" width="40" height="40" />
                                 <div class="absolute -bottom-1 -left-1 w-5 h-5 ${rankBadgeClass} text-white text-xs font-bold flex items-center justify-center rounded-full border-2 border-white dark:border-gray-800">
                                     ${rankBadgeInner}
                                 </div>
@@ -1128,7 +1128,7 @@
                             `<span class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 text-xs px-2 py-0.5 rounded-full ml-2">New</span>` : '';
 
                         div.innerHTML = `
-                            <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-10 h-10 rounded-full" loading="lazy" width="40" height="40" />
+                            <img loading="lazy" src="${contributor.avatar_url}" alt="${contributor.username}" class="w-10 h-10 rounded-full" loading="lazy" width="40" height="40" />
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center">
                                     <a href="${contributor.prs_url}" target="_blank" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400">
@@ -1203,7 +1203,7 @@
                         const prs_url = `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${pull.user.login}+is:merged`;
 
                         div.innerHTML = `
-                            <img src="${pull.user.avatar_url}" alt="${pull.user.login}" class="w-10 h-10 rounded-full" loading="lazy" width="40" height="40" />
+                            <img loading="lazy" src="${pull.user.avatar_url}" alt="${pull.user.login}" class="w-10 h-10 rounded-full" loading="lazy" width="40" height="40" />
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center justify-between">
                                     <a href="${pull.html_url}" target="_blank" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 truncate block">

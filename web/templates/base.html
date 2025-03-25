@@ -18,72 +18,69 @@
         Alpha One Labs - Open Source Education Platform
       {% endblock title %}
     </title>
+
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://code.jquery.com" crossorigin>
+    <link rel="preconnect" href="https://js-de.sentry-cdn.com" crossorigin>
+
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://js-de.sentry-cdn.com/ca8bad7e1a5a3012bccae7d9bd4f6d3d.min.js"
-            crossorigin="anonymous"></script>
-    <script>
-        // Configure Tailwind first
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {}
-            }
-        }
-
-        // Debug flag
-        const DEBUG = true;
-
-        // Logging helper
-        function log(message) {
-            if (DEBUG) {
-                console.log(`[DarkMode] ${message}`);
-            }
-        }
-
-        // Initialize dark mode from localStorage only
-        function initializeDarkMode() {
-            log('Initializing dark mode');
-            const darkModeEnabled = localStorage.getItem('darkMode') === 'true';
-            log(`Dark mode enabled in localStorage: ${darkModeEnabled}`);
-
-            if (darkModeEnabled) {
-                document.documentElement.classList.add('dark');
-                log('Added dark class to HTML element');
-            } else if (localStorage.getItem('darkMode') === null) {
-                // Set default to light mode if no preference is set
-                localStorage.setItem('darkMode', 'false');
-                log('No preference found, defaulting to light mode');
-            }
-            updateDarkModeIcon();
-        }
-
-        function toggleDarkMode() {
-            log('Toggle dark mode called');
-            const isDark = document.documentElement.classList.toggle('dark');
-            localStorage.setItem('darkMode', isDark.toString());
-            log(`Dark mode toggled to: ${isDark}`);
-            updateDarkModeIcon();
-        }
-
-        function updateDarkModeIcon() {
-            const isDark = document.documentElement.classList.contains('dark');
-            const icon = document.getElementById('darkModeIcon');
-            log(`Updating icon. Dark mode is: ${isDark}`);
-
-            if (icon) {
-                icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-                icon.title = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
-                log('Icon updated successfully');
-            } else {
-                log('Warning: Dark mode icon element not found');
-            }
-        }
-
-        // Initialize dark mode immediately and after DOM content loads
-        initializeDarkMode();
-        document.addEventListener('DOMContentLoaded', initializeDarkMode);
-    </script>
+    <script src="https://cdn.tailwindcss.com" defer></script>
+    <script src="https://js-de.sentry-cdn.com/ca8bad7e1a5a3012bccae7d9bd4f6d3d.min.js" 
+        crossorigin="anonymous" async></script>
+        <script>
+          // Set dark mode class immediately to prevent flash of incorrect theme
+          const darkModeEnabled = localStorage.getItem('darkMode') === 'true';
+          if (darkModeEnabled) {
+              document.documentElement.classList.add('dark');
+          }
+          
+          // Configure Tailwind when it loads
+          window.tailwindConfig = {
+              darkMode: 'class',
+              theme: {
+                  extend: {}
+              }
+          };
+          
+          // Defer the rest of dark mode functionality
+          document.addEventListener('DOMContentLoaded', function() {
+              const DEBUG = false;
+              
+              function log(message) {
+                  if (DEBUG) console.log(`[DarkMode] ${message}`);
+              }
+              
+              function updateDarkModeIcon() {
+                  const isDark = document.documentElement.classList.contains('dark');
+                  const icon = document.getElementById('darkModeIcon');
+                  const mobileIcon = document.getElementById('darkModeIconMobile');
+                  
+                  if (icon) {
+                      icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+                      icon.title = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+                  }
+                  
+                  if (mobileIcon) {
+                      mobileIcon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+                  }
+              }
+              
+              window.toggleDarkMode = function() {
+                  const isDark = document.documentElement.classList.toggle('dark');
+                  localStorage.setItem('darkMode', isDark.toString());
+                  updateDarkModeIcon();
+              };
+              
+              // Set default if none exists
+              if (localStorage.getItem('darkMode') === null) {
+                  localStorage.setItem('darkMode', 'false');
+              }
+              
+              updateDarkModeIcon();
+          });
+          </script>
     <!-- Font Awesome (Free CDN) -->
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
@@ -157,7 +154,7 @@
       <div class="max-w-[90rem] mx-auto px-4 md:px-6 flex items-center justify-between h-[70px] relative">
         <!-- Logo and Title -->
         <a href="{% url 'index' %}" class="flex items-center space-x-2">
-          <img src="{% static 'images/logo.png' %}"
+          <img loading="lazy" src="{% static 'images/logo.png' %}"
                alt="Alpha One Labs Logo"
                height="40"
                width="40"
@@ -390,7 +387,7 @@
                     </div>
                   </div>
                 {% elif user.profile.avatar %}
-                  <img src="{{ user.profile.avatar.url }}"
+                  <img loading="lazy" src="{{ user.profile.avatar.url }}"
                        alt="User Avatar"
                        class="h-8 w-8 rounded-full object-cover border-2 border-white"
                        height="32"
@@ -862,7 +859,7 @@
                  target="_blank"
                  rel="noopener"
                  class="flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
-                <img src="{% static 'images/x-logo.svg' %}"
+                <img loading="lazy" src="{% static 'images/x-logo.svg' %}"
                      alt="X (Twitter) Logo"
                      class="w-5 h-5"
                      width="20"
@@ -973,6 +970,7 @@
             });
         }
     </script>
+    <script src="{% static 'js/script.js' %}" defer></script>
     {% block extra_js %}
     {% endblock extra_js %}
   </body>

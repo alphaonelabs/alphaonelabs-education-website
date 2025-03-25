@@ -358,3 +358,23 @@ USE_X_FORWARDED_HOST = True
 # GitHub API Token for fetching contributor data
 # Use empty string as default to avoid errors when the token is not set
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+
+
+if not DEBUG:
+    # Cache settings for production
+    CACHE_MIDDLEWARE_ALIAS = 'default'
+    CACHE_MIDDLEWARE_SECONDS = 60 * 60 * 24  # 24 hours
+    CACHE_MIDDLEWARE_KEY_PREFIX = ''
+    
+    # Add cache middleware
+    MIDDLEWARE.insert(0, 'django.middleware.cache.UpdateCacheMiddleware')
+    MIDDLEWARE.append('django.middleware.cache.FetchFromCacheMiddleware')
+    
+    # WhiteNoise settings
+    WHITENOISE_MAX_AGE = 60 * 60 * 24 * 30  # 30 days
+
+# Add to your settings.py
+if DEBUG:
+    INSTALLED_APPS.append('debug_toolbar')
+    MIDDLEWARE.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
+    INTERNAL_IPS = ['127.0.0.1']
