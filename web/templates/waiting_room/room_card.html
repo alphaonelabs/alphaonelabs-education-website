@@ -1,27 +1,50 @@
 {% load dict_filters %}
 
-<div class="p-6">
-  <div class="flex justify-between items-start">
-    <h3 class="text-xl font-semibold text-gray-800 mb-2">{{ room.title }}</h3>
-    {% if room.creator == user %}
-      <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">Created by you</span>
-    {% endif %}
-  </div>
-  <p class="text-gray-600 mb-4">{{ room.description|truncatechars:100 }}</p>
-  <div class="mb-4">
-    <span class="font-medium text-gray-700">Subject:</span> {{ room.subject }}
-  </div>
-  <div class="mb-4">
-    <span class="font-medium text-gray-700">Topics:</span>
-    <div class="flex flex-wrap gap-2 mt-1">
-      {% for topic in room_topics|get_item:room.id %}
-        <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">{{ topic }}</span>
+<a href="{% url 'waiting_room_detail' room.id %}"
+   class="block bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+  <div class="p-6">
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <h3 class="font-bold text-lg text-gray-900 mb-1">{{ room.title }}</h3>
+        <div class="flex items-center text-sm text-gray-500">
+          <span>{{ room.subject }}</span>
+          <span class="mx-2">•</span>
+          <span>{{ room.participants.count }} interested</span>
+        </div>
+      </div>
+      <div>
+        {% if room.status == 'open' %}
+          <div class="flex items-center bg-green-50 px-3 py-1 rounded-full">
+            <div class="h-2 w-2 bg-green-600 rounded-full mr-2 animate-pulse"></div>
+            <span class="text-green-700 font-medium text-xs">Open</span>
+          </div>
+        {% elif room.status == 'fulfilled' %}
+          <div class="flex items-center bg-blue-50 px-3 py-1 rounded-full">
+            <div class="h-2 w-2 bg-blue-600 rounded-full mr-2"></div>
+            <span class="text-blue-700 font-medium text-xs">Fulfilled</span>
+          </div>
+        {% elif room.status == 'closed' %}
+          <div class="flex items-center bg-gray-100 px-3 py-1 rounded-full">
+            <div class="h-2 w-2 bg-gray-500 rounded-full mr-2"></div>
+            <span class="text-gray-700 font-medium text-xs">Closed</span>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    {% if room.description %}<p class="text-gray-600 text-sm line-clamp-2 mb-4">{{ room.description }}</p>{% endif %}
+    <div class="flex flex-wrap gap-2 mb-4">
+      {% for topic in room_topics %}
+        <span class="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">{{ topic }}</span>
       {% endfor %}
     </div>
+    <div class="flex justify-between items-center mt-4">
+      <div class="flex items-center">
+        <div class="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center mr-2">
+          <span class="text-purple-600 text-sm font-medium">{{ room.creator.username }}</span>
+        </div>
+        <span class="text-sm text-gray-600">{{ room.creator.username }}</span>
+      </div>
+      <span class="text-xs text-gray-500">{{ room.created_at|timesince }} ago</span>
+    </div>
   </div>
-  <div class="flex justify-between items-center">
-    <span class="text-sm text-gray-500">{{ room.participants.count }} participant{{ room.participants.count|pluralize }}</span>
-    <a href="{% url 'waiting_room_detail' room.id %}"
-       class="text-blue-600 hover:text-blue-800 font-medium">View Details</a>
-  </div>
-</div>
+</a>

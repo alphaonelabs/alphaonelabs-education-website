@@ -8,7 +8,7 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 
 ## Features
 
-### For Students!
+### For Students
 
 - 📚 Course enrollment and management
 - 👥 Peer-to-peer connections and messaging
@@ -184,7 +184,7 @@ Copy `.env.sample` to `.env` and configure the variables.
   python manage.py test
   ```
 
-### Pre-commit Hooks
+### Pre-commit Hooks (Important)
 
 We use pre-commit hooks to ensure code quality and automatically format code:
 
