@@ -391,9 +391,6 @@ class Command(BaseCommand):
             enrolled_courses = set(Enrollment.objects.filter(student=student).values_list("course_id", flat=True))
             reviewed_courses = set(Review.objects.filter(student=student).values_list("course_id", flat=True))
             available_courses = [c for c in courses if c.id in enrolled_courses and c.id not in reviewed_courses]
-            # Date range for random dates (from 2 weeks ago to now)
-            now = timezone.now()
-            two_weeks_ago = now - timedelta(days=14)
 
             # Create reviews for random courses
             for _ in range(min(random.randint(1, 3), len(available_courses))):
@@ -409,7 +406,6 @@ class Command(BaseCommand):
                     rating=random.randint(3, 5),
                     comment="Great course!",
                     is_featured=boolean,
-                    created_at=random_date,
                 )
                 self.stdout.write(f"Created review, student: {student}, course: {course}, review: Great course!")
 
