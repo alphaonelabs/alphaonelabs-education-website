@@ -5703,6 +5703,7 @@ def prepare_time_series_data(enrollment, total_sessions):
 # map views
 
 
+@login_required
 def classes_map(request):
     """View for displaying classes near the user."""
     now = timezone.now()
