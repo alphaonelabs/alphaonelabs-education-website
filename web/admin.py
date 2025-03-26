@@ -28,6 +28,8 @@ from .models import (
     Goods,
     GSoCProposal,
     LearningStreak,
+    MembershipPlan,
+    MembershipSubscriptionEvent,
     Notification,
     Order,
     OrderItem,
@@ -48,6 +50,7 @@ from .models import (
     Subject,
     SuccessStory,
     UserBadge,
+    UserMembership,
     WaitingRoom,
     WebRequest,
 )
@@ -738,3 +741,29 @@ class GSoCProposalAdmin(admin.ModelAdmin):
         ("Review Information", {"fields": ("status", "feedback", "reviewed_by", "reviewed_at")}),
         ("Timestamps", {"fields": ("submitted_at", "updated_at"), "classes": ("collapse",)}),
     )
+
+@admin.register(MembershipPlan)
+class MembershipPlanAdmin(admin.ModelAdmin):
+    list_display = ("name", "price_monthly", "price_yearly", "billing_period", "is_active", "is_popular", "order")
+    list_filter = ("is_active", "is_popular", "billing_period")
+    search_fields = ("name", "description")
+    prepopulated_fields = {"slug": ("name",)}
+    ordering = ("order", "name")
+
+
+@admin.register(UserMembership)
+class UserMembershipAdmin(admin.ModelAdmin):
+    list_display = ("user", "plan", "status", "billing_period", "start_date", "end_date", "is_active")
+    list_filter = ("status", "billing_period", "plan")
+    search_fields = ("user__email", "user__username", "stripe_customer_id", "stripe_subscription_id")
+    raw_id_fields = ("user", "plan")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(MembershipSubscriptionEvent)
+class MembershipSubscriptionEventAdmin(admin.ModelAdmin):
+    list_display = ("user", "event_type", "created_at")
+    list_filter = ("event_type", "created_at")
+    search_fields = ("user__email", "user__username", "stripe_event_id")
+    raw_id_fields = ("user", "membership")
+    readonly_fields = ("created_at",)
