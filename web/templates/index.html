@@ -1009,7 +1009,7 @@
                           rankBadgeClass = 'bg-blue-500 border-blue-600';
                       }
 
-                        div.innerHTML = `
+                      div.innerHTML = `
                             <div class="relative">
                                 <img loading="lazy" src="${contributor.avatar_url}" alt="${contributor.username}" class="w-10 h-10 rounded-full" loading="lazy" width="40" height="40" />
                                 <div class="absolute -bottom-1 -left-1 w-5 h-5 ${rankBadgeClass} text-white text-xs font-bold flex items-center justify-center rounded-full border-2 border-white dark:border-gray-800">
@@ -1030,21 +1030,21 @@
                                 </p>
                             </div>
                         `;
-                        container.appendChild(div);
-                    });
-                })
-                .catch(error => {
-                    const container = document.getElementById('top-contributors-section');
-                    container.innerHTML = `
+                      container.appendChild(div);
+                  });
+              })
+              .catch(error => {
+                  const container = document.getElementById('top-contributors-section');
+                  container.innerHTML = `
           <div class="text-sm text-gray-600 dark:text-gray-400 text-center py-4">
             <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
             Failed to load top contributors. Please try again later.
           </div>
         `;
-                    console.error('Error fetching top contributors:', error);
-                });
-        }
-                      div.innerHTML = `
+                  console.error('Error fetching top contributors:', error);
+              });
+      }
+      div.innerHTML = `
                           <div class="relative">
                               <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-8 h-8 rounded-full" loading="lazy" width="32" height="32" />
                               <div class="absolute -bottom-1 -left-1 w-4 h-4 ${rankBadgeClass} text-white text-xs font-bold flex items-center justify-center rounded-full border-2 border-white dark:border-gray-800">
@@ -1065,19 +1065,19 @@
                               </p>
                           </div>
                       `;
-                      container.appendChild(div);
-                  });
-              })
-              .catch(error => {
-                  const container = document.getElementById('top-contributors-section');
-                  container.innerHTML = `
+      container.appendChild(div);
+      });
+      })
+      .catch(error => {
+          const container = document.getElementById('top-contributors-section');
+          container.innerHTML = `
         <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
           <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
           Failed to load contributors.
         </div>
     `;
-                  console.error('Error fetching top contributors:', error);
-              });
+          console.error('Error fetching top contributors:', error);
+      });
       }
 
       // New Contributors
@@ -1177,7 +1177,7 @@
                       const div = document.createElement('div');
                       div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
 
-                        div.innerHTML = `
+                      div.innerHTML = `
                             <img loading="lazy" src="${contributor.avatar_url}" alt="${contributor.username}" class="w-10 h-10 rounded-full" loading="lazy" width="40" height="40" />
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center">
@@ -1194,24 +1194,24 @@
                                 </p>
                             </div>
                         `;
-                        container.appendChild(div);
-                    });
-                })
-                .catch(error => {
-                    const container = document.getElementById('new-contributors-section');
-                    container.innerHTML = `
+                      container.appendChild(div);
+                  });
+              })
+              .catch(error => {
+                  const container = document.getElementById('new-contributors-section');
+                  container.innerHTML = `
                         <div class="text-sm text-gray-600 dark:text-gray-400 text-center py-4">
                             <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
                             Failed to load new contributors. Please try again later.
                         </div>
                     `;
-                    console.error('Error processing new contributors:', error);
-                });
-        }
-                      const daysAgo = Math.floor((new Date() - new Date(contributor.merged_at)) / (1000 * 60 * 60 * 24));
-                      const timeLabel = daysAgo === 0 ? 'Today' : daysAgo === 1 ? 'Yesterday' : `${daysAgo} days ago`;
+                  console.error('Error processing new contributors:', error);
+              });
+      }
+      const daysAgo = Math.floor((new Date() - new Date(contributor.merged_at)) / (1000 * 60 * 60 * 24));
+      const timeLabel = daysAgo === 0 ? 'Today' : daysAgo === 1 ? 'Yesterday' : `${daysAgo} days ago`;
 
-                      div.innerHTML = `
+      div.innerHTML = `
                           <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-8 h-8 rounded-full" loading="lazy" width="32" height="32" />
                           <div class="flex-1 min-w-0">
                               <div class="flex items-center justify-between">
@@ -1227,19 +1227,19 @@
                               </p>
                           </div>
                       `;
-                      container.appendChild(div);
-                  });
-              })
-              .catch(error => {
-                  const container = document.getElementById('new-contributors-section');
-                  container.innerHTML = `
+      container.appendChild(div);
+      });
+      })
+      .catch(error => {
+          const container = document.getElementById('new-contributors-section');
+          container.innerHTML = `
                       <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
                           <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
                           Failed to load new contributors.
                       </div>
                   `;
-                  console.error('Error processing new contributors:', error);
-              });
+          console.error('Error processing new contributors:', error);
+      });
       }
 
       // Recent Contributors
@@ -1281,7 +1281,7 @@
                       const div = document.createElement('div');
                       div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
 
-                        div.innerHTML = `
+                      div.innerHTML = `
                             <img loading="lazy" src="${pull.user.avatar_url}" alt="${pull.user.login}" class="w-10 h-10 rounded-full" loading="lazy" width="40" height="40" />
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center justify-between">
@@ -1295,42 +1295,42 @@
                                 </p>
                             </div>
                         `;
-                        container.appendChild(div);
-                    });
-                })
-                .catch(error => {
-                    const container = document.getElementById('recent-contributors-section');
-                    container.innerHTML = `
+                      container.appendChild(div);
+                  });
+              })
+              .catch(error => {
+                  const container = document.getElementById('recent-contributors-section');
+                  container.innerHTML = `
                         <div class="text-sm text-gray-600 dark:text-gray-400 text-center py-4">
                             <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
                             Failed to load recent contributions. Please try again later.
                         </div>
                     `;
-                    console.error('Error fetching recent contributions:', error);
-                });
-        }
-                      // Create the GSoC-style PRs URL for this user
-                      const prs_url = `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${pull.user.login}+is:merged`;
+                  console.error('Error fetching recent contributions:', error);
+              });
+      }
+      // Create the GSoC-style PRs URL for this user
+      const prs_url = `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${pull.user.login}+is:merged`;
 
-                      // Calculate how long ago the PR was merged
-                      const mergedDate = new Date(pull.merged_at);
-                      const now = new Date();
-                      const diffTime = Math.abs(now - mergedDate);
-                      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                      const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      // Calculate how long ago the PR was merged
+      const mergedDate = new Date(pull.merged_at);
+      const now = new Date();
+      const diffTime = Math.abs(now - mergedDate);
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
 
-                      let timeAgo;
-                      if (diffDays > 0) {
-                          timeAgo = diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
-                      } else if (diffHours > 0) {
-                          timeAgo = diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
-                      } else {
-                          const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
-                          timeAgo = diffMinutes === 0 ? 'just now' :
-                              diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`;
-                      }
+      let timeAgo;
+      if (diffDays > 0) {
+          timeAgo = diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+      } else if (diffHours > 0) {
+          timeAgo = diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
+      } else {
+          const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+          timeAgo = diffMinutes === 0 ? 'just now' :
+              diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`;
+      }
 
-                      div.innerHTML = `
+      div.innerHTML = `
                           <img src="${pull.user.avatar_url}" alt="${pull.user.login}" class="w-8 h-8 rounded-full" loading="lazy" width="32" height="32" />
                           <div class="flex-1 min-w-0">
                               <div class="flex items-center justify-between">
@@ -1346,19 +1346,19 @@
                               </p>
                           </div>
                       `;
-                      container.appendChild(div);
-                  });
-              })
-              .catch(error => {
-                  const container = document.getElementById('recent-contributors-section');
-                  container.innerHTML = `
+      container.appendChild(div);
+      });
+      })
+      .catch(error => {
+          const container = document.getElementById('recent-contributors-section');
+          container.innerHTML = `
                       <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
                           <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
                           Failed to load contributions.
                       </div>
                   `;
-                  console.error('Error fetching recent contributions:', error);
-              });
+          console.error('Error fetching recent contributions:', error);
+      });
       }
 
       document.addEventListener('DOMContentLoaded', function() {

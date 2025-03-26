@@ -380,3 +380,17 @@ if DEBUG:
     INTERNAL_IPS = ["127.0.0.1"]
 
 TEST_RUNNER = "django.test.runner.DiscoverRunner"
+
+if "test" in sys.argv:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+        }
+    }
+    # Don't use cache middleware in tests
+    MIDDLEWARE = [
+        m
+        for m in MIDDLEWARE
+        if m
+        not in ["django.middleware.cache.UpdateCacheMiddleware", "django.middleware.cache.FetchFromCacheMiddleware"]
+    ]
