@@ -1,0 +1,168 @@
+<!DOCTYPE html> <html lang="en">
+<head>
+    <!-- Meta tags for character set and responsive design -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mass Class - Student Interface</title>
+    <!-- Internal CSS styles for layout and responsiveness -->
+    <style>
+        /* Reset margins and set box-sizing */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        /* Body styling */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        /* Header styling */
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        /* Flex container for video and chat panel */
+        .container {
+            display: flex;
+            flex-wrap: wrap; /* Allows stacking on smaller screens */
+            gap: 20px;
+        }
+        /* Video section styles */
+        .video {
+            flex: 2;
+            min-width: 300px;
+        }
+        .video iframe {
+            width: 100%;
+            height: 400px;
+            border: none;
+        }
+        /* Chat panel styles */
+        .chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 250px;
+            max-height: 400px;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        /* Container for chat messages - scrollable area */
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            padding: 5px;
+            border: 1px solid #ccc;
+            height: 300px;
+        }
+        /* Chat input area styling */
+        .chat-input {
+            display: flex;
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px 0 0 5px;
+        }
+        .chat-input button {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-left: none;
+            border-radius: 0 5px 5px 0;
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+        /* Responsive adjustments for smaller screens */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+            .video iframe {
+                height: 250px;
+            }
+            .chat {
+                max-height: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header section with context title -->
+    <header>
+        <h1>Mass Class - Student Interface</h1>
+    </header>
+    
+    <!-- Main container wrapping the video and chat panel -->
+    <div class="container">
+        <!-- Video section with YouTube live stream embedded -->
+        <div class="video">
+            <!-- iframe for YouTube live stream; replace CHANNEL_ID with the actual channel ID -->
+            <iframe 
+                src="https://www.youtube.com/embed/live_stream?channel=CHANNEL_ID&autoplay=1" 
+                allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen>
+            </iframe>
+        </div>
+        
+        <!-- Chat panel section for live text conversation -->
+        <div class="chat">
+            <!-- Scrollable container for displaying chat messages -->
+            <div class="chat-messages" id="chatMessages">
+                <!-- Chat messages will appear here -->
+            </div>
+            <!-- Input area for users to send messages -->
+            <div class="chat-input">
+                <input type="text" id="chatInput" placeholder="Type your message here..." />
+                <button id="sendBtn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for handling chat functionality -->
+    <script>
+        // Get DOM elements by ID
+        const chatMessages = document.getElementById('chatMessages');
+        const chatInput = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+
+        // Function to append a new message to the chat container
+        function appendMessage(message) {
+            // Create a new div element for the message
+            const messageDiv = document.createElement('div');
+            messageDiv.textContent = message;
+            // Append the new div to the chat messages container
+            chatMessages.appendChild(messageDiv);
+            // Auto-scroll to the bottom of the messages container
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Event listener for click event on Send button
+        sendBtn.addEventListener('click', function() {
+            const message = chatInput.value.trim(); // Trim whitespace from the input
+            if (message !== "") {
+                appendMessage(message); // Append message if it's not empty
+                chatInput.value = ""; // Clear the input field
+            }
+        });
+
+        // Event listener for 'Enter' key press in the chat input field
+        chatInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                const message = chatInput.value.trim();
+                if (message !== "") {
+                    appendMessage(message);
+                    chatInput.value = "";
+                }
+                e.preventDefault(); // Prevent default action to avoid form submission
+            }
+        });
+    </script>
+</body>
+</html>
