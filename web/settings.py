@@ -18,17 +18,6 @@ MESSAGE_ENCRYPTION_KEY = env.str("MESSAGE_ENCRYPTION_KEY", default=Fernet.genera
 SECURE_MESSAGE_KEY = MESSAGE_ENCRYPTION_KEY
 
 
-env = environ.Env()
-
-env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
-
-if os.path.exists(env_file):
-    print(f"Using env file: {env_file}")
-    environ.Env.read_env(env_file)
-else:
-    print("No .env file found.")
-
-
 if "test" in sys.argv:
     TESTING = True
 else:
