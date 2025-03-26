@@ -2525,9 +2525,14 @@ class GSoCProposal(models.Model):
 
     title = models.CharField(max_length=200, help_text="Title of your GSoC proposal")
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="gsoc_proposals")
+
+    def validate_gsoc_file_size(file):
+        if file.size > 10 * 1024 * 1024:  # 10MB
+            raise ValidationError("File size exceeds 10MB limit.")
+
     proposal_file = models.FileField(
         upload_to="gsoc_proposals/",
-        validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
+        validators=[FileExtensionValidator(allowed_extensions=["pdf"]), validate_gsoc_file_size],
         help_text="Upload your GSoC proposal in PDF format (max 10MB)",
     )
     organization = models.CharField(max_length=200, help_text="GSoC organization you're applying to")
