@@ -17,8 +17,8 @@
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <!-- Hidden inputs for JavaScript initialization -->
-    <input type="hidden" id="room-id" value="{{ room.id }}" />
-    <input type="hidden" id="user-id" value="{{ request.user.id }}" />
+    <input type="hidden" id="room-id" value="{{ room.id|escapejs }}" />
+    <input type="hidden" id="user-id" value="{{ request.user.id|escapejs }}" />
     <!-- Room header -->
     <div class="flex flex-col md:flex-row justify-between items-center mb-6">
       <div>
