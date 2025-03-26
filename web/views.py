@@ -3246,8 +3246,12 @@ class GoodsDetailView(LoginRequiredMixin, generic.DetailView):
     template_name = "goods/goods_detail.html"
     context_object_name = "product"
 
-    def get_object(self):
-        return get_object_or_404(Goods, pk=self.kwargs["pk"])
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["other_products"] = Goods.objects.exclude(pk=self.object.pk)[
+            :12
+        ]  # Show other products except the current one
+        return context
 
 
 class GoodsCreateView(LoginRequiredMixin, UserPassesTestMixin, generic.CreateView):
