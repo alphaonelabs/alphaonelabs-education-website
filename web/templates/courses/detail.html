@@ -741,9 +741,10 @@
                                     <td class="px-6 py-4 whitespace-nowrap">
                                       {% if enrollment.progress %}
                                         <div class="flex items-center">
-                                          <div class="w-20 h-2 bg-gray-200 dark:bg-gray-700 rounded-full mr-2 overflow-hidden">
+                                          <div class="min-w-[4.5rem] w-[4.5rem] h-2 bg-gray-200 dark:bg-gray-700 rounded-full mr-2 overflow-hidden">
                                             <div class="h-full bg-teal-500 dark:bg-teal-400 progress-bar"
-                                                 data-progress="{{ enrollment.progress.completion_percentage }}"></div>
+												style="width: {{enrollment.progress.completion_percentage}}%"
+												data-progress="{{ enrollment.progress.completion_percentage }}"></div>
                                           </div>
                                           <span class="text-sm text-gray-600 dark:text-gray-400">{{ enrollment.progress.completion_percentage }}%</span>
                                         </div>
@@ -1028,8 +1029,8 @@
                           </div>
                           <!-- Green Gradient Progress Bar -->
                           <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                            <div class="h-full bg-teal-500 dark:bg-teal-400"
-                                 style="width: {% if total > 0 %}{{ attended|floatformat:0 }}%{% else %}0%{% endif %}">
+                            <div id="progress_bar" data-progress="{{ enrollment.progress.completion_percentage }}" class="h-full bg-teal-500 dark:bg-teal-400" 
+                                 >
                             </div>
                           </div>
                         </div>
@@ -1113,158 +1114,166 @@
     <span class="notification-message">This is a notification</span>
   </div>
   <script>
-      function loadCalendar(year, month) {
-          fetch(`/courses/{{ course.slug }}/calendar/?year=${year}&month=${month}`)
-              .then(response => response.json())
-              .then(data => {
-                  // Update month display
-                  document.getElementById('current-month').textContent = data.current_month;
+		function progressBar() {
+			progressBar = document.querySelector("#progress_bar")
+			barValue = progressBar.getAttribute("data-progress")
+			progressBar.style.width = `${barValue}%`
+			console.log("................", barValue)
+		}
+		progressBar() 
 
-                  // Update calendar grid
-                  const grid = document.getElementById('calendar-grid');
-                  let html = '';
+	function loadCalendar(year, month) {
+		fetch(`/courses/{{ course.slug }}/calendar/?year=${year}&month=${month}`)
+			.then(response => response.json())
+			.then(data => {
+				// Update month display
+				document.getElementById('current-month').textContent = data.current_month;
 
-                  data.calendar_weeks.forEach(week => {
-                      week.forEach(day => {
-                          const today = day.is_today ? 'bg-gray-100 dark:bg-gray-700' : '';
-                          html += `
-              <div class="p-2 border-b border-r dark:border-gray-700 ${today}">
-                ${day.date ? `
-                  <div class="relative">
-                    <span class="${day.has_session ? 'font-bold text-teal-600 dark:text-teal-400' : ''}">
-                      ${new Date(day.date).getDate()}
-                    </span>
-                    ${day.has_session ? `
-                      <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-teal-500 dark:bg-teal-400 rounded-full"></div>
-                    ` : ''}
-                  </div>
-                ` : ''}
-              </div>
-            `;
-                      });
-                  });
+				// Update calendar grid
+				const grid = document.getElementById('calendar-grid');
+				let html = '';
 
-                  grid.innerHTML = html;
+				data.calendar_weeks.forEach(week => {
+					week.forEach(day => {
+						const today = day.is_today ? 'bg-gray-100 dark:bg-gray-700' : '';
+						html += `
+			<div class="p-2 border-b border-r dark:border-gray-700 ${today}">
+			${day.date ? `
+				<div class="relative">
+				<span class="${day.has_session ? 'font-bold text-teal-600 dark:text-teal-400' : ''}">
+					${new Date(day.date).getDate()}
+				</span>
+				${day.has_session ? `
+					<div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-teal-500 dark:bg-teal-400 rounded-full"></div>
+				` : ''}
+				</div>
+			` : ''}
+			</div>
+		`;
+					});
+				});
 
-                  // Update navigation buttons
-                  document.getElementById('prev-month-btn').setAttribute('onclick', `loadCalendar(${data.prev_month.year}, ${data.prev_month.month})`);
-                  document.getElementById('next-month-btn').setAttribute('onclick', `loadCalendar(${data.next_month.year}, ${data.next_month.month})`);
-              })
-              .catch(error => {
-                  console.error('Error loading calendar:', error);
-              });
-      }
+				grid.innerHTML = html;
 
-      function showNotification(message, type = 'info') {
-          const notification = document.getElementById('notification');
-          const iconEl = notification.querySelector('.notification-icon');
-          const messageEl = notification.querySelector('.notification-message');
+				// Update navigation buttons
+				document.getElementById('prev-month-btn').setAttribute('onclick', `loadCalendar(${data.prev_month.year}, ${data.prev_month.month})`);
+				document.getElementById('next-month-btn').setAttribute('onclick', `loadCalendar(${data.next_month.year}, ${data.next_month.month})`);
+			})
+			.catch(error => {
+				console.error('Error loading calendar:', error);
+			});
+	}
 
-          // Set icon based on notification type
-          let icon = 'fa-info-circle';
-          let bgColor = 'bg-blue-500';
+	function showNotification(message, type = 'info') {
+		const notification = document.getElementById('notification');
+		const iconEl = notification.querySelector('.notification-icon');
+		const messageEl = notification.querySelector('.notification-message');
 
-          if (type === 'success') {
-              icon = 'fa-check-circle';
-              bgColor = 'bg-green-500';
-          } else if (type === 'error') {
-              icon = 'fa-exclamation-circle';
-              bgColor = 'bg-red-500';
-          } else if (type === 'warning') {
-              icon = 'fa-exclamation-triangle';
-              bgColor = 'bg-yellow-500';
-          }
+		// Set icon based on notification type
+		let icon = 'fa-info-circle';
+		let bgColor = 'bg-blue-500';
 
-          // Update notification content
-          iconEl.className = `fas ${icon} notification-icon mr-2`;
-          notification.className = `notification ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center`;
-          messageEl.textContent = message;
+		if (type === 'success') {
+			icon = 'fa-check-circle';
+			bgColor = 'bg-green-500';
+		} else if (type === 'error') {
+			icon = 'fa-exclamation-circle';
+			bgColor = 'bg-red-500';
+		} else if (type === 'warning') {
+			icon = 'fa-exclamation-triangle';
+			bgColor = 'bg-yellow-500';
+		}
 
-          // Show notification
-          notification.classList.add('show');
+		// Update notification content
+		iconEl.className = `fas ${icon} notification-icon mr-2`;
+		notification.className = `notification ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center`;
+		messageEl.textContent = message;
 
-          // Hide after 3 seconds
-          setTimeout(() => {
-              notification.classList.remove('show');
-          }, 3000);
-      }
+		// Show notification
+		notification.classList.add('show');
 
-      // Calculate remaining sessions when the page loads
-      document.addEventListener('DOMContentLoaded', function() {
-          const remainingElement = document.getElementById('remaining-count');
-          if (remainingElement) {
-              const totalSessions = parseInt(remainingElement.dataset.totalSessions, 10) || 0;
-              const completedSessions = parseInt(remainingElement.dataset.completedSessions, 10) || 0;
-              const remainingSessions = totalSessions - completedSessions;
-              remainingElement.textContent = remainingSessions;
-          }
+		// Hide after 3 seconds
+		setTimeout(() => {
+			notification.classList.remove('show');
+		}, 3000);
+	}
 
-          // Tab functionality
-          const tabButtons = document.querySelectorAll('[data-tab]');
-          const tabContents = document.querySelectorAll('.tab-content');
+	// Calculate remaining sessions when the page loads
+	document.addEventListener('DOMContentLoaded', function() {
+		const remainingElement = document.getElementById('remaining-count');
+		if (remainingElement) {
+			const totalSessions = parseInt(remainingElement.dataset.totalSessions, 10) || 0;
+			const completedSessions = parseInt(remainingElement.dataset.completedSessions, 10) || 0;
+			const remainingSessions = totalSessions - completedSessions;
+			remainingElement.textContent = remainingSessions;
+		}
 
-          function setActiveTab(tabId) {
-              // Hide all tab contents
-              tabContents.forEach(content => {
-                  content.classList.add('hidden');
-                  content.classList.remove('active');
-              });
+		// Tab functionality
+		const tabButtons = document.querySelectorAll('[data-tab]');
+		const tabContents = document.querySelectorAll('.tab-content');
 
-              // Remove active state from all tab buttons
-              tabButtons.forEach(button => {
-                  button.classList.remove('active-tab');
-                  button.classList.remove('border-teal-300', 'dark:border-teal-500', 'text-gray-800', 'dark:text-white');
-                  button.classList.add('border-transparent', 'text-gray-600', 'dark:text-gray-400');
-                  button.setAttribute('aria-selected', 'false');
-              });
+		function setActiveTab(tabId) {
+			// Hide all tab contents
+			tabContents.forEach(content => {
+				content.classList.add('hidden');
+				content.classList.remove('active');
+			});
 
-              // Show the selected tab content
-              const selectedContent = document.getElementById(`content-${tabId}`);
-              if (selectedContent) {
-                  selectedContent.classList.remove('hidden');
-                  selectedContent.classList.add('active');
-              }
+			// Remove active state from all tab buttons
+			tabButtons.forEach(button => {
+				button.classList.remove('active-tab');
+				button.classList.remove('border-teal-300', 'dark:border-teal-500', 'text-gray-800', 'dark:text-white');
+				button.classList.add('border-transparent', 'text-gray-600', 'dark:text-gray-400');
+				button.setAttribute('aria-selected', 'false');
+			});
 
-              // Set active state for selected tab button
-              const selectedButton = document.getElementById(`tab-${tabId}`);
-              if (selectedButton) {
-                  selectedButton.classList.add('active-tab');
-                  selectedButton.classList.remove('border-transparent', 'text-gray-600', 'dark:text-gray-400');
-                  selectedButton.classList.add('border-teal-300', 'dark:border-teal-500', 'text-gray-800', 'dark:text-white');
-                  selectedButton.setAttribute('aria-selected', 'true');
-              }
-          }
+			// Show the selected tab content
+			const selectedContent = document.getElementById(`content-${tabId}`);
+			if (selectedContent) {
+				selectedContent.classList.remove('hidden');
+				selectedContent.classList.add('active');
+			}
 
-          // Add click event listeners to tab buttons
-          tabButtons.forEach(button => {
-              button.addEventListener('click', function() {
-                  const tabId = this.getAttribute('data-tab');
-                  setActiveTab(tabId);
-              });
-          });
+			// Set active state for selected tab button
+			const selectedButton = document.getElementById(`tab-${tabId}`);
+			if (selectedButton) {
+				selectedButton.classList.add('active-tab');
+				selectedButton.classList.remove('border-transparent', 'text-gray-600', 'dark:text-gray-400');
+				selectedButton.classList.add('border-teal-300', 'dark:border-teal-500', 'text-gray-800', 'dark:text-white');
+				selectedButton.setAttribute('aria-selected', 'true');
+			}
+		}
 
-          // Calculate remaining sessions when the page loads
-          const tabRemainingElement = document.getElementById('remaining-count-tab');
-          if (tabRemainingElement) {
-              const totalSessions = parseInt(tabRemainingElement.dataset.totalSessions, 10) || 0;
-              const completedSessions = parseInt(tabRemainingElement.dataset.completedSessions, 10) || 0;
-              const remainingSessions = totalSessions - completedSessions;
-              tabRemainingElement.textContent = remainingSessions;
-          }
+		// Add click event listeners to tab buttons
+		tabButtons.forEach(button => {
+			button.addEventListener('click', function() {
+				const tabId = this.getAttribute('data-tab');
+				setActiveTab(tabId);
+			});
+		});
 
-          // Initialize progress bars
-          document.addEventListener('DOMContentLoaded', function() {
-              // Calculate remaining sessions
-              const mainRemainingElement = document.getElementById('remaining-count-main');
-              const tabRemainingElement = document.getElementById('remaining-count-tab');
+		// Calculate remaining sessions when the page loads
+		const tabRemainingElement = document.getElementById('remaining-count-tab');
+		if (tabRemainingElement) {
+			const totalSessions = parseInt(tabRemainingElement.dataset.totalSessions, 10) || 0;
+			const completedSessions = parseInt(tabRemainingElement.dataset.completedSessions, 10) || 0;
+			const remainingSessions = totalSessions - completedSessions;
+			tabRemainingElement.textContent = remainingSessions;
+		}
 
-              // Main page remaining count
-              if (mainRemainingElement) {
-                  const totalSessions = parseInt(mainRemainingElement.getAttribute('data-total-sessions') || '0');
-                  const completedSessions = parseInt(mainRemainingElement.getAttribute('data-completed-sessions') || '0');
-                  const remainingSessions = Math.max(0, totalSessions - completedSessions);
-                  mainRemainingElement.textContent = remainingSessions;
-              }
+		// Initialize progress bars
+		document.addEventListener('DOMContentLoaded', function() {
+			// Calculate remaining sessions
+			const mainRemainingElement = document.getElementById('remaining-count-main');
+			const tabRemainingElement = document.getElementById('remaining-count-tab');
+
+			// Main page remaining count
+			if (mainRemainingElement) {
+				const totalSessions = parseInt(mainRemainingElement.getAttribute('data-total-sessions') || '0');
+				const completedSessions = parseInt(mainRemainingElement.getAttribute('data-completed-sessions') || '0');
+				const remainingSessions = Math.max(0, totalSessions - completedSessions);
+				mainRemainingElement.textContent = remainingSessions;
+			}
 
               // Tab remaining count
               if (tabRemainingElement) {
