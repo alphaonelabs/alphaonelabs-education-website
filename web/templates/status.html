@@ -1,5 +1,31 @@
 {% extends "base.html" %}
 
+{% load static %}
+
+{% block seo_title %}
+  Platform Status - Alpha One Labs
+{% endblock seo_title %}
+{% block seo_description %}
+  Check real-time updates about system performance, uptime, and known issues on the Alpha One Labs platform.
+{% endblock seo_description %}
+{% block seo_keywords %}
+  system status, uptime, performance, Alpha One Labs, availability
+{% endblock seo_keywords %}
+{% block og_title %}
+  Alpha One Labs - Platform Status
+{% endblock og_title %}
+{% block og_description %}
+  Get the latest on Alpha One Labs’ system performance and uptime.
+{% endblock og_description %}
+{% block og_image %}
+  {{ request.scheme }}://{{ request.get_host }}{% static 'images/status-preview.jpg' %}
+{% endblock og_image %}
+{% block twitter_title %}
+  Check Platform Status - Alpha One Labs
+{% endblock twitter_title %}
+{% block twitter_description %}
+  View real-time platform updates and uptime reports on Alpha One Labs.
+{% endblock twitter_description %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <div class="max-w-4xl mx-auto">

@@ -2,9 +2,43 @@
 
 {% load static %}
 
-{% block title %}
-  Profile - {{ user.username }}
-{% endblock title %}
+{% block seo_title %}
+  Your Profile - {{ user.username }} - Alpha One Labs
+{% endblock seo_title %}
+{% block seo_description %}
+  Manage your Alpha One Labs profile, track your course progress
+  {% if user.profile.is_teacher %}, manage your courses and students{% endif %}
+  , and update your personal information.
+{% endblock seo_description %}
+{% block seo_keywords %}
+  profile, account, settings, {{ user.username }},
+  {% if user.profile.expertise %}{{ user.profile.expertise }},{% endif %}
+  Alpha One Labs
+{% endblock seo_keywords %}
+{% block og_title %}
+  Profile Dashboard - {{ user.username }} - Alpha One Labs
+{% endblock og_title %}
+{% block og_description %}
+  Manage your Alpha One Labs account, track your progress
+  {% if user.profile.is_teacher %}, and administer your courses{% endif %}
+  .
+{% endblock og_description %}
+{% block og_image %}
+  {{ request.scheme }}://{{ request.get_host }}
+  {% if user.profile.avatar %}
+    {{ user.profile.avatar.url }}
+  {% else %}
+    {% static 'images/default-profile.jpg' %}
+  {% endif %}
+{% endblock og_image %}
+{% block twitter_title %}
+  Profile Dashboard - {{ user.username }} - Alpha One Labs
+{% endblock twitter_title %}
+{% block twitter_description %}
+  Manage your Alpha One Labs account, track your progress
+  {% if user.profile.is_teacher %}, and administer your courses{% endif %}
+  .
+{% endblock twitter_description %}
 {% block content %}
   <div class="container mx-auto px-4 py-6">
     <!-- Messages -->

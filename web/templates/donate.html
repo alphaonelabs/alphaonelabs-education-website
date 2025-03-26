@@ -1,10 +1,24 @@
 {% extends "base.html" %}
 
 {% load i18n %}
+{% load static %}
 
-{% block title %}
-  {% trans "Donate" %} | {{ block.super }}
-{% endblock title %}
+{% block seo_title %}Support Alpha One Labs - Donate Today{% endblock %}
+{% block seo_description %}
+  Your donations empower us to deliver high-quality STEM education and expand access to learners everywhere.
+{% endblock %}
+{% block seo_keywords %}donate, support education, STEM funding, Alpha One Labs{% endblock %}
+{% block og_title %}Donate to Alpha One Labs - Make an Impact{% endblock %}
+{% block og_description %}
+  Your contribution fuels innovation and accessibility in STEM learning for all ages.
+{% endblock %}
+{% block og_image %}
+  {{ request.scheme }}://{{ request.get_host }}{% static 'images/donate-banner.jpg' %}
+{% endblock %}
+{% block twitter_title %}Support STEM Education - Donate to Alpha One Labs{% endblock %}
+{% block twitter_description %}
+  Make a difference in students lives by contributing to Alpha One Labs today.
+{% endblock %}
 {% block content %}
   <div class="container mx-auto px-4 py-12">
     <div class="max-w-5xl mx-auto">

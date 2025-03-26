@@ -1,8 +1,31 @@
 {% extends "base.html" %}
 
-{% block title %}
-  Learning Streak Details
-{% endblock title %}
+{% load static %}
+
+{% block seo_title %}
+  Learning Streaks - Progress and Consistency
+{% endblock seo_title %}
+{% block seo_description %}
+  Track your learning streaks and stay motivated. See your progress and milestones achieved on Alpha One Labs.
+{% endblock seo_description %}
+{% block seo_keywords %}
+  learning streak, progress tracker, consistency, Alpha One Labs
+{% endblock seo_keywords %}
+{% block og_title %}
+  Track Your Learning Streaks - Alpha One Labs
+{% endblock og_title %}
+{% block og_description %}
+  Stay consistent and motivated by monitoring your learning streaks.
+{% endblock og_description %}
+{% block og_image %}
+  {{ request.scheme }}://{{ request.get_host }}{% static 'images/streak-preview.jpg' %}
+{% endblock og_image %}
+{% block twitter_title %}
+  Learning Progress Tracker - Alpha One Labs
+{% endblock twitter_title %}
+{% block twitter_description %}
+  Track your educational journey with streaks and milestones on Alpha One Labs.
+{% endblock twitter_description %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold mb-4">{{ request.user.username }}'s Learning Streak</h1>

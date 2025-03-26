@@ -2,6 +2,30 @@
 
 {% load static %}
 
+{% block seo_title %}
+  Subjects We Cover - Alpha One Labs
+{% endblock seo_title %}
+{% block seo_description %}
+  Explore all STEM subjects offered by Alpha One Labs. Courses, projects, and resources tailored for different areas of science and technology.
+{% endblock seo_description %}
+{% block seo_keywords %}
+  subjects, STEM, science, technology, engineering, math, Alpha One Labs
+{% endblock seo_keywords %}
+{% block og_title %}
+  Explore Subjects - Alpha One Labs
+{% endblock og_title %}
+{% block og_description %}
+  Find your favorite STEM subject and start learning with Alpha One Labs.
+{% endblock og_description %}
+{% block og_image %}
+  {{ request.scheme }}://{{ request.get_host }}{% static 'images/subjects-banner.jpg' %}
+{% endblock og_image %}
+{% block twitter_title %}
+  Subjects at Alpha One Labs
+{% endblock twitter_title %}
+{% block twitter_description %}
+  Explore STEM topics and subjects available at Alpha One Labs.
+{% endblock twitter_description %}
 {% block content %}
   <div class="max-w-7xl mx-auto px-4 py-8">
     <!-- Page Title -->

@@ -2,6 +2,30 @@
 
 {% load static %}
 
+{% block seo_title %}
+  Teach at Alpha One Labs - Share Knowledge
+{% endblock seo_title %}
+{% block seo_description %}
+  Join as a teacher or mentor. Share your expertise and help others grow in STEM through our platform.
+{% endblock seo_description %}
+{% block seo_keywords %}
+  teach STEM, become a mentor, Alpha One Labs teacher, online instructor
+{% endblock seo_keywords %}
+{% block og_title %}
+  Become a STEM Instructor - Alpha One Labs
+{% endblock og_title %}
+{% block og_description %}
+  Inspire learners by becoming a teacher or mentor with Alpha One Labs.
+{% endblock og_description %}
+{% block og_image %}
+  {{ request.scheme }}://{{ request.get_host }}{% static 'images/teach-banner.jpg' %}
+{% endblock og_image %}
+{% block twitter_title %}
+  Teach STEM - Join Alpha One Labs
+{% endblock twitter_title %}
+{% block twitter_description %}
+  Apply to teach or mentor on Alpha One Labs and shape future innovators.
+{% endblock twitter_description %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold text-center mb-4">

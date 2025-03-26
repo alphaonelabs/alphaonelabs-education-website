@@ -2,9 +2,49 @@
 
 {% load static %}
 
-{% block title %}
-  {{ profile.user.username }} - Public Profile
-{% endblock title %}
+{% block seo_title %}
+  {{ profile.user.username }}'s Profile - Alpha One Labs
+{% endblock seo_title %}
+{% block seo_description %}
+  {% if profile.bio %}
+    {{ profile.bio|truncatechars:160 }}
+  {% else %}
+    View {{ profile.user.username }}'s public profile on Alpha One Labs.
+  {% endif %}
+{% endblock seo_description %}
+{% block seo_keywords %}
+  {{ profile.user.username }}, profile,
+  {% if profile.expertise %}{{ profile.expertise }},{% endif %}
+  Alpha One Labs, education platform
+{% endblock seo_keywords %}
+{% block og_title %}
+  {{ profile.user.username }}'s Profile - Alpha One Labs
+{% endblock og_title %}
+{% block og_description %}
+  {% if profile.bio %}
+    {{ profile.bio|truncatechars:200 }}
+  {% else %}
+    View {{ profile.user.username }}'s public profile on Alpha One Labs.
+  {% endif %}
+{% endblock og_description %}
+{% block og_image %}
+  {{ request.scheme }}://{{ request.get_host }}
+  {% if profile.avatar %}
+    {{ profile.avatar.url }}
+  {% else %}
+    {% static 'images/default-profile.jpg' %}
+  {% endif %}
+{% endblock og_image %}
+{% block twitter_title %}
+  {{ profile.user.username }}'s Profile - Alpha One Labs
+{% endblock twitter_title %}
+{% block twitter_description %}
+  {% if profile.bio %}
+    {{ profile.bio|truncatechars:200 }}
+  {% else %}
+    View {{ profile.user.username }}'s public profile on Alpha One Labs.
+  {% endif %}
+{% endblock twitter_description %}
 {% block content %}
   <div class="container mx-auto py-10">
     <div class="max-w-4xl mx-auto bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden">

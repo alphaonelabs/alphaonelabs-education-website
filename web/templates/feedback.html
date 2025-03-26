@@ -1,6 +1,21 @@
 {% extends "base.html" %}
 
-{% block title %}Feedback - Alpha One Labs{% endblock %}
+{% load static %}
+
+{% block seo_title %}Share Feedback - Alpha One Labs{% endblock %}
+{% block seo_description %}
+  We value your input. Help us improve by submitting feedback, ideas, or concerns about the Alpha One Labs platform.
+{% endblock %}
+{% block seo_keywords %}feedback, suggestions, improvement, Alpha One Labs, education platform{% endblock %}
+{% block og_title %}Help Improve Alpha One Labs - Feedback Form{% endblock %}
+{% block og_description %}
+  Have suggestions or concerns? Fill out our feedback form to shape the future of our platform.
+{% endblock %}
+{% block og_image %}
+  {{ request.scheme }}://{{ request.get_host }}{% static 'images/feedback-banner.jpg' %}
+{% endblock %}
+{% block twitter_title %}Tell Us What You Think - Alpha One Labs{% endblock %}
+{% block twitter_description %}We’d love to hear your thoughts. Submit your feedback to help us grow.{% endblock %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <div class="max-w-2xl mx-auto">

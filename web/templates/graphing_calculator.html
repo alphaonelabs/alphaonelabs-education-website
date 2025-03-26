@@ -1,6 +1,31 @@
 {% extends "base.html" %}
 
-{% block title %}Graphing Calculator{% endblock %}
+{% load static %}
+
+{% block seo_title %}
+  Graphing Calculator - Visualize Math Functions
+{% endblock seo_title %}
+{% block seo_description %}
+  Use our interactive graphing calculator to plot and explore mathematical functions. Perfect for students, teachers, and math enthusiasts.
+{% endblock seo_description %}
+{% block seo_keywords %}
+  graphing calculator, math tool, function plotter, education, STEM, math learning
+{% endblock seo_keywords %}
+{% block og_title %}
+  Graphing Calculator - Visualize Math Functions
+{% endblock og_title %}
+{% block og_description %}
+  Plot equations and visualize math like never before with our interactive graphing tool.
+{% endblock og_description %}
+{% block og_image %}
+  {{ request.scheme }}://{{ request.get_host }}{% static 'images/graphing-preview.jpg' %}
+{% endblock og_image %}
+{% block twitter_title %}
+  Graphing Calculator - Visualize Math Functions
+{% endblock twitter_title %}
+{% block twitter_description %}
+  Use our interactive graphing calculator to explore math visually. Ideal for learning and teaching.
+{% endblock twitter_description %}
 {% block content %}
   <div class="flex flex-col md:flex-row h-screen bg-gray-100 dark:bg-gray-900">
     <!-- Sidebar -->
