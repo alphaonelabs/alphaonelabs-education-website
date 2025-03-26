@@ -4930,6 +4930,11 @@ def send_nft_badge(request, achievement_id):
             messages.error(request, "Wallet address is required to mint NFT badge!")
             return redirect("achievement_detail", achievement_id=achievement_id)
 
+        # Validate wallet address format (example for Ethereum/Polygon addresses)
+        if not wallet_address.startswith("0x") or len(wallet_address) != 42:
+            messages.error(request, "Invalid wallet address format!")
+            return redirect("achievement_detail", achievement_id=achievement_id)
+
         # Check if NFT badge already exists
         if hasattr(achievement, "nft_badge"):
             messages.warning(request, "NFT badge already minted for this achievement!")
