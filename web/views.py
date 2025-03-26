@@ -774,6 +774,9 @@ def add_review(request, slug):
     if request.method == "POST":
         form = ReviewForm(request.POST)
         if form.is_valid():
+            if Review.objects.filter(student=student, course=course).exists():
+                messages.error(request, "You have already reviewed this course.")
+                return redirect("course_detail", slug=slug)
             review = form.save(commit=False)
             review.student = student
             review.course = course
