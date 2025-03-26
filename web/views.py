@@ -6011,6 +6011,7 @@ def all_study_groups(request):
     )
 
 
+# GSOC proposal views
 @login_required
 def upload_gsoc_proposal(request):
     """View for students to upload their GSoC proposals."""
