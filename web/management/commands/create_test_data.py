@@ -408,7 +408,8 @@ class Command(BaseCommand):
                     is_featured=is_featured,
                 )
                 self.stdout.write(
-                    f"Created review, student: {student}, course: {course}, featured: {is_featured}, review: Great course!"
+                    f"Created review, student: {student}, course: {course},"
+                    "featured: {is_featured}, review: Great course!"
                 )
 
         # Create forum categories and topics

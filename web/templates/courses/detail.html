@@ -1336,10 +1336,11 @@
   </div>
   <script>
       document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-          closeDeleteModal();
-        }
+          if (event.key === 'Escape') {
+              closeDeleteModal();
+          }
       });
+
       function setRatingDistributionWidths() {
           // Parse the widths data from the template
           const reviewsNum = JSON.parse('{{ reviews_num|escapejs }}');
