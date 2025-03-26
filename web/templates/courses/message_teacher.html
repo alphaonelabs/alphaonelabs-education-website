@@ -7,8 +7,7 @@
         Message {{ teacher.get_full_name|default:teacher.username }}
       </h1>
       <form id="teacherMessageForm" method="post" class="space-y-6">
-      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">Message {{ teacher.username }}</h1>
-      <form method="post" class="space-y-6">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">Message {{ teacher.username }}</h1>
         {% csrf_token %}
         {% if not user.is_authenticated %}
           <div>
