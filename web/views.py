@@ -566,7 +566,7 @@ def edit_review(request, slug, review_id):
         if form.is_valid():
             review = form.save(commit=False)
             review.updated_at = timezone.now()
-            form.save()
+            review.save()
             messages.success(request, "Your review has been updated.")
             url = reverse("course_detail", kwargs={"slug": slug})
             return redirect(f"{url}#course_reviews")
