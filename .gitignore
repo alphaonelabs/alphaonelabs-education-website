@@ -1,5 +1,5 @@
 .env
-*.sqlite3
+.sqlite3
 *.pyc
 /staticfiles
 .vscode/settings.json
