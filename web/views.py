@@ -520,7 +520,7 @@ def add_featured_review(request, slug, review_id):
         messages.error(request, "Only the course teacher can manage featured reviews.")
         return redirect(reverse("course_detail", kwargs={"slug": slug}))
 
-    # Toggle the is_featured field
+    # Set the is_featured field to True
     review.is_featured = True
     review.save()
 
@@ -542,7 +542,7 @@ def remove_featured_review(request, slug, review_id):
         messages.error(request, "Only the course teacher can manage featured reviews.")
         return redirect(reverse("course_detail", kwargs={"slug": slug}))
 
-    # Toggle the is_featured field
+    # Set the is_featured field to False
     review.is_featured = False
     review.save()
 
