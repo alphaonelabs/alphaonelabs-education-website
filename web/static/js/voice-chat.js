@@ -8,6 +8,7 @@ class EncryptedVoiceChat {
         this.userId = userId;
         this.peers = {};
         this.localStream = null;
+        this.localStreamAcquiring = null;  // Add here - after localStream
         this.encryptionKeys = {};
         this.socket = null;
         this.audioContext = null;
@@ -203,68 +204,60 @@ class EncryptedVoiceChat {
         peerConnection.hasPendingOffer = false;
         peerConnection.hasAnsweredOffer = false;
 
-        // Add local stream to peer connection if it exists
-        if (this.localStream) {
-            this.localStream.getTracks().forEach(track => {
-                peerConnection.addTrack(track, this.localStream);
+        // Add local stream if it exists, otherwise acquire it
+        try {
+            const stream = await this.getLocalStream();
+            stream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, stream);
             });
-        } else {
-            console.warn(`Local stream not available yet for peer ${peerId}, tracks will be added later`);
+        } catch (error) {
+            console.error('Could not add local tracks:', error);
+            // Continue without local tracks - user can still receive audio
+        }
 
-            // Attempt to get media stream if not already available
-            try {
-                this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        return peerConnection;
+    }
 
-                // Now add tracks since we have a stream
-                this.localStream.getTracks().forEach(track => {
-                    peerConnection.addTrack(track, this.localStream);
+    // New method to handle stream acquisition with concurrency control
+    async getLocalStream() {
+        // If we already have a stream, return it
+        if (this.localStream) {
+            return this.localStream;
+        }
+
+        // If we're already acquiring the stream, wait for that to complete
+        if (this.localStreamAcquiring) {
+            return await this.localStreamAcquiring;
+        }
+
+        // Start new stream acquisition with lock
+        try {
+            this.localStreamAcquiring = (async () => {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: true,
+                    video: false
                 });
 
-                // If this is the first time getting the stream, setup audio visualization
+                // Store the stream
+                this.localStream = stream;
+
+                // Initialize audio context if needed
                 if (!this.audioContext) {
                     this.setupAudioVisualization();
                     this.setupUIControls();
                 }
-            } catch (error) {
-                console.error('Error accessing microphone:', error);
-                // Continue creating the connection without local tracks
-                // The user will be able to hear others but not send audio
-            }
+
+                return stream;
+            })();
+
+            const stream = await this.localStreamAcquiring;
+            return stream;
+        } catch (error) {
+            throw new Error(`Failed to acquire local stream: ${error.message}`);
+        } finally {
+            // Clear the lock after completion or error
+            this.localStreamAcquiring = null;
         }
-
-        // Handle ICE candidates
-        peerConnection.onicecandidate = (event) => {
-            if (event.candidate) {
-                this.sendSignalingMessage({
-                    type: 'ice-candidate',
-                    candidate: event.candidate,
-                    target: peerId,
-                    from: this.userId
-                });
-            }
-        };
-
-        // Log connection state changes
-        peerConnection.oniceconnectionstatechange = () => {
-            console.log(`ICE connection state with ${peerId} changed to: ${peerConnection.iceConnectionState}`);
-        };
-
-        peerConnection.onsignalingstatechange = () => {
-            console.log(`Signaling state with ${peerId} changed to: ${peerConnection.signalingState}`);
-        };
-
-        peerConnection.onconnectionstatechange = () => {
-            console.log(`Connection state with ${peerId} changed to: ${peerConnection.connectionState}`);
-        };
-
-        // Handle incoming tracks
-        peerConnection.ontrack = (event) => {
-            console.log(`Received track from ${peerId}`);
-            this.handleRemoteTrack(peerId, event.streams[0]);
-        };
-
-        this.peers[peerId] = peerConnection;
-        return peerConnection;
     }
 
     async handleSignaling(data) {
