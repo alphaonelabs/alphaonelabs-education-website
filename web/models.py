@@ -1699,14 +1699,8 @@ class Meetup(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def get_default_user():
-        user = User.objects.filter(is_superuser=True).first()
-        if user:
-            return user.id
-        # Return None if no superuser exists - Django will require a creator to be provided explicitly
-        return None
+    creator = models.ForeignKey(User, on_delete=models.CASCADE)  # Creator field
 
-    creator = models.ForeignKey(User, on_delete=models.CASCADE, default=get_default_user)  # Creator field
     def clean(self):
         super().clean()
 
@@ -1733,6 +1727,15 @@ class Meetup(models.Model):
     def can_edit(self, user):
         """Check if the given user can edit this meetup."""
         return user == self.creator or user.is_staff
+
+
+class MeetupRegistration(models.Model):
+    meetup = models.ForeignKey(Meetup, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    registered_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.user.username} registered for {self.meetup.title}"
 
 
 class Badge(models.Model):

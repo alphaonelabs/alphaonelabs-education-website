@@ -121,6 +121,7 @@ from .models import (
     LearningStreak,
     LinkGrade,
     Meetup,
+    MeetupRegistration,
     Meme,
     NoteHistory,
     Notification,
@@ -3556,11 +3557,6 @@ def meetup_list(request):
     return render(request, "web/meetup_list.html", {"page_obj": page_obj})
 
 
-def meetup_detail(request, slug):
-    meetup = get_object_or_404(Meetup, slug=slug)
-    return render(request, "web/meetup_detail.html", {"meetup": meetup})
-
-
 @login_required
 def create_meetup(request):
     if request.method == "POST":
@@ -3590,6 +3586,35 @@ def edit_meetup(request, slug):
     else:
         form = MeetupForm(instance=meetup)
     return render(request, "web/edit_meetup.html", {"form": form})
+
+
+@login_required
+def register_meetup(request, slug):
+    meetup = get_object_or_404(Meetup, slug=slug)
+    MeetupRegistration.objects.get_or_create(meetup=meetup, user=request.user)
+    return redirect("meetup_detail", slug=meetup.slug)
+
+
+@login_required
+def unregister_meetup(request, slug):
+    meetup = get_object_or_404(Meetup, slug=slug)
+    registration = MeetupRegistration.objects.filter(meetup=meetup, user=request.user)
+    if registration.exists():
+        registration.delete()
+    return redirect("meetup_detail", slug=meetup.slug)
+
+
+def meetup_detail(request, slug):
+    meetup = get_object_or_404(Meetup, slug=slug)
+    registrations = MeetupRegistration.objects.filter(meetup=meetup)
+    return render(
+        request,
+        "web/meetup_detail.html",
+        {
+            "meetup": meetup,
+            "registrations": registrations,
+        },
+    )
 
 
 def success_story_list(request):

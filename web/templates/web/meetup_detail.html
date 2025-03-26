@@ -29,6 +29,24 @@
         <a href="{% url 'edit_meetup' slug=meetup.slug %}"
            class="text-blue-600 dark:text-blue-400 ml-4">Edit Meetup</a>
       {% endif %}
+      <p class="text-gray-600 dark:text-gray-400 mb-4">Creator: {{ meetup.creator.username }}</p>
+      {% if user.is_authenticated %}
+        {% if user in registrations.values_list('user', flat=True) %}
+          <form method="post" action="{% url 'unregister_meetup' meetup.slug %}">
+            {% csrf_token %}
+            <button type="submit">Unregister</button>
+          </form>
+        {% else %}
+          <form method="post" action="{% url 'register_meetup' meetup.slug %}">
+            {% csrf_token %}
+            <button type="submit">Register</button>
+          </form>
+        {% endif %}
+      {% endif %}
+      <h2 class="text-2xl font-semibold mt-6">Attendees</h2>
+      <ul class="list-disc list-inside">
+        {% for registration in registrations %}<li>{{ registration.user.username }}</li>{% endfor %}
+      </ul>
     </div>
   </div>
 {% endblock %}
