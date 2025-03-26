@@ -1584,12 +1584,16 @@ def forum_category(request, slug):
     """Display topics in a specific category."""
     category = get_object_or_404(ForumCategory, slug=slug)
     topics = category.topics.all()
-    return render(request, "web/forum/category.html", {"category": category, "topics": topics})
+    categories = ForumCategory.objects.all()
+    return render(
+        request, "web/forum/category.html", {"category": category, "topics": topics, "categories": categories}
+    )
 
 
 def forum_topic(request, category_slug, topic_id):
     """Display a forum topic and its replies."""
     topic = get_object_or_404(ForumTopic, id=topic_id, category__slug=category_slug)
+    categories = ForumCategory.objects.all()
 
     # Get view count from WebRequest model
     view_count = (
@@ -1619,13 +1623,14 @@ def forum_topic(request, category_slug, topic_id):
             return redirect("forum_category", slug=category_slug)
 
     replies = topic.replies.select_related("author").order_by("created_at")
-    return render(request, "web/forum/topic.html", {"topic": topic, "replies": replies})
+    return render(request, "web/forum/topic.html", {"topic": topic, "replies": replies, "categories": categories})
 
 
 @login_required
 def create_topic(request, category_slug):
     """Create a new forum topic."""
     category = get_object_or_404(ForumCategory, slug=category_slug)
+    categories = ForumCategory.objects.all()
 
     if request.method == "POST":
         form = ForumTopicForm(request.POST)
@@ -1641,7 +1646,9 @@ def create_topic(request, category_slug):
     else:
         form = ForumTopicForm()
 
-    return render(request, "web/forum/create_topic.html", {"category": category, "form": form})
+    return render(
+        request, "web/forum/create_topic.html", {"category": category, "form": form, "categories": categories}
+    )
 
 
 @login_required
@@ -2629,29 +2636,39 @@ def create_forum_category(request):
 @login_required
 def edit_topic(request, topic_id):
     """Edit an existing forum topic."""
-    topic = get_object_or_404(ForumTopic, id=topic_id)
-
-    # Check if user is the author of the topic
-    if request.user != topic.author:
-        messages.error(request, "You don't have permission to edit this topic.")
-        return redirect("forum_topic", category_slug=topic.category.slug, topic_id=topic.id)
+    topic = get_object_or_404(ForumTopic, id=topic_id, author=request.user)
+    categories = ForumCategory.objects.all()
 
     if request.method == "POST":
-        form = ForumTopicForm(request.POST)
+        form = ForumTopicForm(request.POST, instance=topic)
         if form.is_valid():
-            topic.title = form.cleaned_data["title"]
-            topic.content = form.cleaned_data["content"]
-            topic.save()
+            form.save()
             messages.success(request, "Topic updated successfully!")
             return redirect("forum_topic", category_slug=topic.category.slug, topic_id=topic.id)
     else:
-        form = ForumTopicForm(initial={"title": topic.title, "content": topic.content})
+        form = ForumTopicForm(instance=topic)
 
-    return render(
-        request,
-        "web/forum/create_topic.html",
-        {"form": form, "category": topic.category, "is_edit": True, "topic": topic},
+    return render(request, "web/forum/edit_topic.html", {"topic": topic, "form": form, "categories": categories})
+
+
+@login_required
+def my_forum_topics(request):
+    """Display all forum topics created by the current user."""
+    topics = ForumTopic.objects.filter(author=request.user).order_by("-created_at")
+    categories = ForumCategory.objects.all()
+    return render(request, "web/forum/my_topics.html", {"topics": topics, "categories": categories})
+
+
+@login_required
+def my_forum_replies(request):
+    """Display all forum replies created by the current user."""
+    replies = (
+        ForumReply.objects.filter(author=request.user)
+        .select_related("topic", "topic__category")
+        .order_by("-created_at")
     )
+    categories = ForumCategory.objects.all()
+    return render(request, "web/forum/my_replies.html", {"replies": replies, "categories": categories})
 
 
 def get_course_calendar(request, slug):
