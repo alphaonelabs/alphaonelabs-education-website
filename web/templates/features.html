@@ -641,20 +641,7 @@
 
                       if (!response.ok) throw new Error(`Network response was not ok: ${response.status}`);
 
-                      // For testing - if endpoint is not available, use mock data
-                      let data;
-                      try {
-                          data = await response.json();
-                      } catch (parseError) {
-                          console.warn('Could not parse server response, using mock data');
-                          data = {
-                              message: 'Vote recorded (mock)',
-                              up_count: parseInt(featureCard.querySelector('.thumbs-up .count').textContent) + (isUpvote ? 1 : 0),
-                              down_count: parseInt(featureCard.querySelector('.thumbs-down .count').textContent) + (isUpvote ? 0 : 1),
-                              up_percentage: isUpvote ? 75 : 25,
-                              down_percentage: isUpvote ? 25 : 75
-                          };
-                      }
+                      const data = await response.json();
 
                       // Update UI with animation
                       showFeedbackMessage(featureCard, data.message || 'Thanks for your feedback!');
@@ -722,22 +709,7 @@
                   const response = await fetch(voteCountUrl);
                   if (!response.ok) throw new Error(`Network response was not ok: ${response.status}`);
 
-                  let data;
-                  try {
-                      data = await response.json();
-                  } catch (parseError) {
-                      console.warn('Could not parse vote count response, using mock data');
-                      // Generate mock data for testing
-                      data = {};
-                      featureIds.forEach(id => {
-                          data[id] = {
-                              up_count: Math.floor(Math.random() * 20),
-                              down_count: Math.floor(Math.random() * 10),
-                              up_percentage: 70,
-                              down_percentage: 30
-                          };
-                      });
-                  }
+                  const data = await response.json();
 
                   // Update UI for each feature
                   features.forEach(feature => {
@@ -769,27 +741,15 @@
               } catch (error) {
                   console.error('Error fetching vote counts:', error);
 
-                  // For demo/testing, initialize with random values if API fails
                   if (retryCount >= 2) {
-                      console.warn('Using random vote counts as fallback');
+                      console.warn('Failed to fetch vote counts after multiple attempts');
                       features.forEach(feature => {
-                          const upCount = Math.floor(Math.random() * 20);
-                          const downCount = Math.floor(Math.random() * 10);
-                          const total = upCount + downCount;
-                          const upPercentage = total > 0 ? Math.round((upCount / total) * 100) : 50;
-                          const downPercentage = total > 0 ? 100 - upPercentage : 50;
-
-                          const upCountElement = feature.querySelector('.thumbs-up .count');
-                          const downCountElement = feature.querySelector('.thumbs-down .count');
-
-                          if (upCountElement) upCountElement.textContent = upCount;
-                          if (downCountElement) downCountElement.textContent = downCount;
-
-                          updateVotePercentages(feature, upPercentage, downPercentage);
-
-                          // Update total votes display
-                          const totalVotesEl = feature.querySelector('.total-votes');
-                          if (totalVotesEl) totalVotesEl.textContent = total;
+                          const feedbackEl = feature.querySelector('.feedback-message');
+                          if (feedbackEl) {
+                              feedbackEl.textContent = "Unable to load vote counts. Please refresh.";
+                              feedbackEl.classList.remove('translate-y-24', 'opacity-0');
+                              feedbackEl.classList.add('translate-y-0', 'opacity-100');
+                          }
                       });
                   } else if (retryCount < 3) {
                       setTimeout(() => fetchVoteCounts(retryCount + 1), 1000 * (retryCount + 1));
