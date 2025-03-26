@@ -99,7 +99,6 @@ from .models import (
     Badge,
     BlogComment,
     BlogPost,
-    Cart,
     CartItem,
     Certificate,
     Challenge,
@@ -3241,7 +3240,7 @@ class GoodsListView(LoginRequiredMixin, generic.ListView):
         return Goods.objects.filter(storefront__teacher=self.request.user)
 
 
-class GoodsDetailView(LoginRequiredMixin, generic.DetailView):
+class GoodsDetailView(generic.DetailView):
     model = Goods
     template_name = "goods/goods_detail.html"
     context_object_name = "product"
@@ -3321,16 +3320,17 @@ class GoodsDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         return self.request.user == self.get_object().storefront.teacher
 
 
-@login_required
 def add_goods_to_cart(request, pk):
+    """Add a product (goods) to the cart."""
     product = get_object_or_404(Goods, pk=pk)
+
     # Prevent adding out-of-stock items
     if product.stock is None or product.stock <= 0:
         messages.error(request, f"{product.name} is out of stock and cannot be added to cart.")
         return redirect("goods_detail", pk=pk)  # Redirect back to product page
 
-    cart, created = Cart.objects.get_or_create(user=request.user)
-    cart_item, created = CartItem.objects.get_or_create(cart=cart, goods=product)
+    cart = get_or_create_cart(request)
+    cart_item, created = CartItem.objects.get_or_create(cart=cart, goods=product, defaults={"session": None})
 
     if created:
         messages.success(request, f"{product.name} added to cart.")
