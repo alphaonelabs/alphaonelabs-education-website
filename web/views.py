@@ -671,7 +671,7 @@ def add_session(request, slug):
 
 @login_required
 def add_review(request, slug):
-    course = Course.objects.get(slug=slug)
+    course = get_object_or_404(Course, slug=slug)
     if not request.user.enrollments.filter(course=course).exists():
         messages.error(request, "Only enrolled students can review the course!")
         return redirect("course_detail", slug=slug)
