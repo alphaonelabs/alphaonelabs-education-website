@@ -124,7 +124,8 @@
                 </span>
               </div>
               <div>
-                <div class="flex mb-2 items-center justify-between py-2 border-t dark:border-gray-700 pt-2">
+                <!-- Clickable Section -->
+                <div id="toggleRating" class="cursor-pointer flex mb-2 items-center justify-between py-2 border-t dark:border-gray-700 pt-2">
                   <span class="text-gray-600 dark:text-gray-300 font-medium flex items-center">
                     <i class="fas fa-star text-yellow-500 dark:text-yellow-400 mr-2"></i>
                     Rating
@@ -148,7 +149,8 @@
                     {% endif %}
                   </span>
                 </div>
-                <div>
+                <!-- Hidden Section (Toggles on Click) -->
+                <div id="ratingSection" class="hidden">
                   <a href="#course_reviews"
                      class="w-full bg-teal-500 hover:bg-teal-700 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center transition duration-200">Course reviews</a>
                 </div>
@@ -1150,7 +1152,7 @@
                           <div class="flex-grow h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                             {% if rating_distribution|get_item:i > 0 %}
                               <div class="h-full bg-yellow-400"
-                                   id="KKKKK"
+                                   id="rating-stars"
                                    data-rating="{{ rating_distribution|get_item:i }}"></div>
                             {% else %}
                               <div class="h-full bg-yellow-400" style="width: 0%"></div>
@@ -1225,7 +1227,7 @@
                       {% if is_teacher %}
                         <div class="flex mt-1 clearfix justify-end">
                           <div class="flex space-x-2 float-right">
-                            <button onclick="confirmAddOrDeleteFeatureReviews('{% url 'removeFeatured_review' course.slug review.id %}', 'Remove')"
+                            <button onclick="confirmAddOrDeleteFeatureReviews('{% url 'remove_featured_review' course.slug review.id %}', 'Remove')"
                                     data-content="Remove from features"
                                     class="inline-flex items-center px-3 py-1.5 text-sm bg-red-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
                               <i class="fas fa-trash-alt mr-2"></i>
@@ -1295,7 +1297,7 @@
                       {% if is_teacher %}
                         <div class="flex mt-1 clearfix justify-end">
                           <div class="flex space-x-2 float-right">
-                            <button onclick="confirmAddOrDeleteFeatureReviews('{% url 'addFeatured_review' course.slug review.id %}', 'add')"
+                            <button onclick="confirmAddOrDeleteFeatureReviews('{% url 'add_featured_review' course.slug review.id %}', 'add')"
                                     data-content="Add to features"
                                     class="inline-flex items-center px-3 py-1.5 text-sm bg-teal-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
                               <i class="fas fa-add mr-2"></i>
@@ -1311,9 +1313,9 @@
                 <div id="deleteModal"
                      class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
                   <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
-                    <h3 id="hhhhhh"
+                    <h3 id="confirmation_action_message"
                         class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Confirm Deletion</h3>
-                    <p id="rrrrrr" class="text-gray-700 dark:text-gray-300 mb-6">
+                    <p id="confirmation_message" class="text-gray-700 dark:text-gray-300 mb-6">
                       Are you sure you want to delete this review? This action cannot be undone.
                     </p>
                     <div class="flex justify-end space-x-3">
@@ -1346,6 +1348,12 @@
     <span class="notification-message">This is a notification</span>
   </div>
   <script>
+      // <!-- Handle Click Event on Course reviews button-->
+      document.getElementById("toggleRating").addEventListener("click", function() {
+          document.getElementById("ratingSection").classList.toggle("hidden");
+      });
+
+
       function getCharWidth() {
           // Parse the widths data from the template
           const reviewsNum = JSON.parse('{{ reviews_num|escapejs }}');
@@ -1357,7 +1365,7 @@
           }
 
           // Apply widths to all elements
-          document.querySelectorAll('#KKKKK').forEach(element => {
+          document.querySelectorAll('#rating-stars').forEach(element => {
               const StartNum = element.getAttribute('data-rating');
               setWidth(element, StartNum);
           });
@@ -1378,14 +1386,14 @@
 
       function confirmAddOrDeleteFeatureReviews(deleteUrl, action) {
           if (action == "add") {
-              document.getElementById('hhhhhh').innerHTML = "Confirm Add";
-              document.getElementById('rrrrrr').innerHTML = "Are you sure you want to add this review to featured?";
+              document.getElementById('confirmation_action_message').innerHTML = "Confirm Add";
+              document.getElementById('confirmation_message').innerHTML = "Are you sure you want to add this review to featured?";
               document.getElementById('deleteLink').classList.remove("bg-red-500", "hover:bg-red-700")
               document.getElementById('deleteLink').classList.add("bg-teal-500", "hover:bg-teal-700")
               document.getElementById('deleteLink').innerHTML = "Add to features"
           } else {
-              document.getElementById('hhhhhh').innerHTML = "Confirm Deletion";
-              document.getElementById('rrrrrr').innerHTML = "Are you sure you want to remove this review from featured?";
+              document.getElementById('confirmation_action_message').innerHTML = "Confirm Deletion";
+              document.getElementById('confirmation_message').innerHTML = "Are you sure you want to remove this review from featured?";
               document.getElementById('deleteLink').classList.remove("bg-teal-500", "hover:bg-teal-700")
               document.getElementById('deleteLink').classList.add("bg-red-500", "hover:bg-red-700")
               document.getElementById('deleteLink').innerHTML = "Remove from features"

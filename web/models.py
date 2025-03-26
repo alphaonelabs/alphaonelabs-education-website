@@ -650,7 +650,7 @@ class Review(models.Model):
     comment = models.TextField()
     is_featured = models.BooleanField(default=False)
     created_at = models.DateTimeField(default=timezone.now)
-    updated_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         unique_together = ["student", "course"]

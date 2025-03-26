@@ -10,7 +10,7 @@ import socket
 import subprocess
 import time
 from collections import Counter, defaultdict
-from datetime import timedelta
+from datetime import timedelta 
 from decimal import Decimal
 from urllib.parse import urlparse
 
@@ -492,7 +492,7 @@ def create_course_from_waiting_room(request, waiting_room_id):
 
 @login_required
 @teacher_required
-def addFeatured_review(request, slug, review_id):
+def add_featured_review(request, slug, review_id):
     # Get the course and review
     course = get_object_or_404(Course, slug=slug)
     review = get_object_or_404(Review, id=review_id, course=course)
@@ -514,7 +514,7 @@ def addFeatured_review(request, slug, review_id):
 
 @login_required
 @teacher_required
-def removeFeatured_review(request, slug, review_id):
+def remove_featured_review(request, slug, review_id):
     # Get the course and review
     course = get_object_or_404(Course, slug=slug)
     review = get_object_or_404(Review, id=review_id, course=course)
@@ -536,7 +536,7 @@ def removeFeatured_review(request, slug, review_id):
 @login_required
 def edit_review(request, slug, review_id):
     course = get_object_or_404(Course, slug=slug)
-    review = get_object_or_404(Review, id=review_id)
+    review = get_object_or_404(Review, id=review_id, course__slug=slug)
 
     # Security check - only allow editing own reviews
     if request.user.id != review.student.id:
@@ -546,6 +546,8 @@ def edit_review(request, slug, review_id):
     if request.method == "POST":
         form = ReviewForm(request.POST, instance=review)
         if form.is_valid():
+            review = form.save(commit=False)
+            review.updated_at = timezone.now()  # Set updated_at to current timestamp
             form.save()
             messages.success(request, "Your review has been updated.")
             url = reverse("course_detail", kwargs={"slug": slug})
@@ -564,7 +566,7 @@ def edit_review(request, slug, review_id):
 
 @login_required
 def delete_review(request, slug, review_id):
-    review = get_object_or_404(Review, id=review_id)
+    review = get_object_or_404(Review, id=review_id, course__slug=slug)
 
     # Security check - only allow deleting own reviews
     if request.user.id != review.student.id:
@@ -668,18 +670,18 @@ def course_detail(request, slug):
     reviews = course.reviews.filter(is_featured=False).order_by("-created_at")
 
     # Get the featured review
-    featured_review = Review.objects.filter(is_featured=True, course=course)
+    featured_reviews = Review.objects.filter(is_featured=True, course=course)
 
     # Get all reviews sum
-    reviews_num = reviews.count() + featured_review.count()
+    reviews_num = reviews.count() + featured_reviews.count()
 
     # Calculate rating distribution for visualization
     rating_distribution = {
-        5: reviews.filter(rating=5).count() + featured_review.filter(rating=5).count(),
-        4: reviews.filter(rating=4).count() + featured_review.filter(rating=4).count(),
-        3: reviews.filter(rating=3).count() + featured_review.filter(rating=3).count(),
-        2: reviews.filter(rating=2).count() + featured_review.filter(rating=2).count(),
-        1: reviews.filter(rating=1).count() + featured_review.filter(rating=1).count(),
+        5: reviews.filter(rating=5).count() + featured_reviews.filter(rating=5).count(),
+        4: reviews.filter(rating=4).count() + featured_reviews.filter(rating=4).count(),
+        3: reviews.filter(rating=3).count() + featured_reviews.filter(rating=3).count(),
+        2: reviews.filter(rating=2).count() + featured_reviews.filter(rating=2).count(),
+        1: reviews.filter(rating=1).count() + featured_reviews.filter(rating=1).count(),
     }
 
     context = {
@@ -698,7 +700,7 @@ def course_detail(request, slug):
         "student_attendance": student_attendance,
         "completed_enrollment_count": course.enrollments.filter(status="completed").count(),
         "in_progress_enrollment_count": course.enrollments.filter(status="in_progress").count(),
-        "featured_review": featured_review,
+        "featured_review": featured_reviews,
         "reviews": reviews,
         "user_review": user_review,
         "rating_distribution": rating_distribution,
@@ -749,8 +751,6 @@ def enroll_course(request, course_slug):
 @login_required
 def add_review(request, slug):
     course = Course.objects.get(slug=slug)
-    rating = request.POST.get("rating")
-    comment = request.POST.get("comment")
     student = request.user
 
     if not request.user.enrollments.filter(course=course).exists():
@@ -760,12 +760,10 @@ def add_review(request, slug):
     if request.method == "POST":
         form = ReviewForm(request.POST)
         if form.is_valid():
-            Review.objects.create(
-                student=student,
-                course=course,
-                rating=rating,
-                comment=comment,
-            )
+            review = form.save(commit=False)
+            review.student = student
+            review.course = course
+            review.save()
             messages.success(request, "Review added successfully!")
             # return redirect("course_detail", slug=slug)
             url = reverse("course_detail", kwargs={"slug": slug})
