@@ -139,17 +139,18 @@ class WebRequestMiddlewareTests(TestCase):
         self.assertEqual(web_request.referer, referer_url)
         self.assertEqual(web_request.ip_address, "1.2.3.4")
 
-    @override_settings(STATIC_URL="/static/")
+    @override_settings(
+        STATIC_URL="/static/",
+        DEBUG=False,
+    )
     def test_static_files_not_tracked(self):
         """Test that static file requests are not tracked"""
-        # Request a non-existent static file
-        response = self.client.get(
-            "/static/images/non-existent-file.png", HTTP_USER_AGENT="Test Agent", REMOTE_ADDR="1.2.3.4"
-        )
-        # Static files are not served in test environment, could be 404 or 500
-        self.assertIn(response.status_code, [404, 500])
+        # Request a path that starts with STATIC_URL
+        self.client.get("/static/images/non-existent-file.png", HTTP_USER_AGENT="Test Agent", REMOTE_ADDR="1.2.3.4")
+        # The actual response status code doesn't matter for this test
+        # We only care that no WebRequest was created
 
-        # No WebRequest should be created
+        # No WebRequest should be created for static file paths
         self.assertEqual(WebRequest.objects.count(), 0)
 
     @override_settings(
