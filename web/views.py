@@ -143,6 +143,8 @@ from .models import (
     TeamInvite,
     TimeSlot,
     UserBadge,
+    VoiceChatParticipant,
+    VoiceChatRoom,
     WaitingRoom,
     WebRequest,
 )
@@ -6007,3 +6009,163 @@ def all_study_groups(request):
             "enrolled_courses": enrolled_courses,
         },
     )
+
+
+@login_required
+def voice_chat_room(request, room_id=None):
+    """Render the voice chat room page"""
+    if not room_id:
+        return redirect("voice_chat_list")
+
+    room = get_object_or_404(VoiceChatRoom, id=room_id)
+
+    # Add the current user to the participants
+    participant, created = VoiceChatParticipant.objects.get_or_create(user=request.user, room=room)
+
+    # Get all participants for display
+    participants = room.participants.all()
+    context = {"room": room, "participants": participants, "participants_count": participants.count()}
+
+    return render(request, "web/voice_chat/room.html", context)
+
+
+@login_required
+def create_voice_chat_room(request):
+    """Create a new voice chat room"""
+    if request.method == "POST":
+        name = request.POST.get("name", f"{request.user.username}'s Room")
+        room = VoiceChatRoom.objects.create(name=name, created_by=request.user)
+        room.participants.add(request.user)
+        return redirect("voice_chat_room", room_id=room.id)
+    return render(request, "web/voice_chat/create.html")
+
+
+@login_required
+def list_voice_chat_rooms(request):
+    """List all active voice chat rooms"""
+    rooms = VoiceChatRoom.objects.filter(is_active=True)
+    context = {"rooms": rooms}
+    return render(request, "web/voice_chat/list.html", context)
+
+
+@csrf_exempt
+@login_required
+def signal_handler(request, room_id):
+    """Handle WebRTC signaling"""
+    room = get_object_or_404(VoiceChatRoom, id=room_id)
+
+    # Ensure user is a participant
+    participant, created = VoiceChatParticipant.objects.get_or_create(user=request.user, room=room)
+
+    data = json.loads(request.body)
+    signal_type = data.get("type")
+    # Get target user ID if needed for future implementation
+    # target_user_id = data.get('target')
+
+    # Process the signal based on type
+    # This would be relayed to the appropriate participant
+
+    return JsonResponse({"status": "success", "message": f"Signal of type {signal_type} processed"})
+
+
+class VoiceChatListView(LoginRequiredMixin, ListView):
+    """View for listing all voice chat rooms."""
+
+    model = VoiceChatRoom
+    template_name = "web/voice_chat/index.html"
+    context_object_name = "rooms"
+
+    def get_queryset(self):
+        return VoiceChatRoom.objects.filter(is_active=True)
+
+
+class VoiceChatCreateView(LoginRequiredMixin, CreateView):
+    """View for creating a new voice chat room."""
+
+    model = VoiceChatRoom
+    template_name = "web/voice_chat/create.html"
+    fields = ["name"]
+    success_url = reverse_lazy("voice_chat_list")
+
+    def form_valid(self, form):
+        # Set the creator and save the model
+        form.instance.created_by = self.request.user
+        response = super().form_valid(form)
+
+        # Add the creator to the participants
+        self.object.participants.add(self.request.user)
+
+        return response
+
+
+class VoiceChatRoomView(LoginRequiredMixin, DetailView):
+    """View for accessing a specific voice chat room."""
+
+    model = VoiceChatRoom
+    template_name = "web/voice_chat/room.html"
+    context_object_name = "room"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        room = self.get_object()
+
+        # Join the room
+        room.participants.add(self.request.user)
+
+        # Get all participants
+        context["participants"] = room.participants.all()
+        context["participants_count"] = room.participants.count()
+
+        return context
+
+
+def delete_voice_chat_room(request, room_id):
+    """Delete a voice chat room"""
+    print(f"Delete room request received. Method: {request.method}, User: {request.user}, Room ID: {room_id}")
+
+    if not request.user.is_authenticated:
+        return redirect("account_login")
+
+    # Get the room or return 404
+    try:
+        room = get_object_or_404(VoiceChatRoom, id=room_id)
+        print(f"Room found: {room.name}, Creator: {room.created_by.username}")
+    except Exception as e:
+        print(f"Error finding room: {e}")
+        messages.error(request, f"Room not found: {e}")
+        return redirect("voice_chat_list")
+
+    # Only allow the creator to delete the room
+    if request.user != room.created_by:
+        messages.error(request, "You don't have permission to delete this room.")
+        return redirect("voice_chat_room", room_id=room_id)
+
+    if request.method == "POST":
+        try:
+            # Log the deletion attempt
+            print(f"Attempting to delete room {room.id} by user {request.user.username}")
+
+            # Delete all participants
+            VoiceChatParticipant.objects.filter(room=room).delete()
+
+            # Delete the room
+            room_name = room.name
+            room.delete()
+
+            messages.success(request, f"Voice chat room '{room_name}' has been deleted.")
+            print("Redirecting to voice_chat_list")
+
+            # Always redirect to list page on success
+            return redirect("voice_chat_list")
+
+        except Exception as e:
+            import traceback
+
+            print(f"Error deleting room: {e}")
+            print(traceback.format_exc())
+            messages.error(request, f"Error deleting room: {e}")
+            return redirect("voice_chat_room", room_id=room_id)
+
+    # For GET requests, show confirmation page
+    print(f"Rendering confirmation page for room {room_id}")
+    return render(request, "web/voice_chat/delete_confirm.html", {"room": room})

@@ -386,6 +386,12 @@ urlpatterns += i18n_patterns(
     ),
     path("award-badge/", views.award_badge, name="award_badge"),
     path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
+    # Add voice chat URLs
+    path("voice-chat/", views.list_voice_chat_rooms, name="voice_chat_list"),
+    path("voice-chat/create/", views.create_voice_chat_room, name="voice_chat_create"),
+    path("voice-chat/room/<uuid:room_id>/", views.voice_chat_room, name="voice_chat_room"),
+    path("voice-chat/room/<uuid:room_id>/delete/", views.delete_voice_chat_room, name="delete_voice_chat_room"),
+    path("voice-chat/signal/<uuid:room_id>/", views.signal_handler, name="voice_chat_signal"),
     prefix_default_language=True,
 )
 
