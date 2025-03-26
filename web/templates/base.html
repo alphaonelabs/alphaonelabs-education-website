@@ -189,15 +189,15 @@
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-list-check mr-2 text-teal-500"></i>Subjects
                   </a>
-                  <a href="#"
+                  <a href="{% url 'quiz_list' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-question-circle mr-2 text-teal-500"></i>Quizzes
                   </a>
-                  <a href="#"
+                  <a href="{% url 'educational_videos_list' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-video mr-2 text-teal-500"></i>Videos
                   </a>
-                  <a href="#"
+                  <a href="{% url 'challenge_list' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-trophy mr-2 text-teal-500"></i>Challenges
                   </a>
@@ -205,7 +205,7 @@
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-palette mr-2 text-teal-500"></i>Whiteboard
                   </a>
-                  <a href="#"
+                  <a href="{% url 'all_study_groups' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-users mr-2 text-teal-500"></i>Study Groups
                   </a>
@@ -224,6 +224,10 @@
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-chalkboard-teacher mr-2 text-teal-500"></i>Learning Requests
                   </a>
+                  <a href="{% url 'waiting_room_list' %}"
+                     class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
+                    <i class="fas fa-door-open mr-2 text-teal-500"></i>Waiting Rooms
+                  </a>
                   <a href="{% url 'forum_categories' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-comments mr-2 text-teal-500"></i>Forum
@@ -236,15 +240,15 @@
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-face-smile mr-2 text-teal-500"></i>Edu Memes
                   </a>
-                  <a href="#"
+                  <a href="{% url 'success_story_list' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-star mr-2 text-teal-500"></i>Success Stories
                   </a>
-                  <a href="#"
+                  <a href="{% url 'team_goals' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-user-friends mr-2 text-teal-500"></i>Peer Network
                   </a>
-                  <a href="#"
+                  <a href="{% url 'team_goals' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-users-cog mr-2 text-teal-500"></i>Teams
                   </a>
@@ -259,11 +263,11 @@
               </button>
               <div class="absolute left-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 transform origin-top-left">
                 <div class="py-2 px-1">
-                  <a href="#"
+                  <a href="{% url 'progress_visualization' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
-                    <i class="fas fa-chart-line mr-2 text-teal-500"></i>Trackers
+                    <i class="fas fa-chart-line mr-2 text-teal-500"></i>Progress Trackers
                   </a>
-                  <a href="#"
+                  <a href="{% url 'gradeable_link_list' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-link mr-2 text-teal-500"></i>Grade Links
                   </a>
@@ -271,7 +275,7 @@
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-store mr-2 text-teal-500"></i>Products
                   </a>
-                  <a href="#"
+                  <a href="{% url 'goods_listing' %}?type=storefront"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-shopping-basket mr-2 text-teal-500"></i>Storefronts
                   </a>
@@ -308,7 +312,7 @@
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-comment-dots mr-2 text-teal-500"></i>Feedback
                   </a>
-                  <a href="#"
+                  <a href="{% url 'donate' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-hand-holding-heart mr-2 text-teal-500"></i>Donate
                   </a>
@@ -515,17 +519,17 @@
                       <i class="fas fa-list-check mr-2 text-teal-500"></i>
                       <span>Subjects</span>
                     </a>
-                    <a href="#"
+                    <a href="{% url 'quiz_list' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-question-circle mr-2 text-teal-500"></i>
                       <span>Quizzes</span>
                     </a>
-                    <a href="#"
+                    <a href="{% url 'educational_videos_list' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-video mr-2 text-teal-500"></i>
                       <span>Videos</span>
                     </a>
-                    <a href="#"
+                    <a href="{% url 'challenge_list' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-trophy mr-2 text-teal-500"></i>
                       <span>Challenges</span>
@@ -535,7 +539,7 @@
                       <i class="fas fa-palette mr-2 text-teal-500"></i>
                       <span>Whiteboard</span>
                     </a>
-                    <a href="#"
+                    <a href="{% url 'all_study_groups' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-users mr-2 text-teal-500"></i>
                       <span>Study Groups</span>
@@ -556,6 +560,11 @@
                       <i class="fas fa-chalkboard-teacher mr-2 text-teal-500"></i>
                       <span>Learning Requests</span>
                     </a>
+                    <a href="{% url 'waiting_room_list' %}"
+                       class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                      <i class="fas fa-door-open mr-2 text-teal-500"></i>
+                      <span>Waiting Rooms</span>
+                    </a>
                     <a href="{% url 'forum_categories' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-comments mr-2 text-teal-500"></i>
@@ -571,25 +580,20 @@
                       <i class="fas fa-face-smile mr-2 text-teal-500"></i>
                       <span>Edu Memes</span>
                     </a>
-                    <a href="#"
+                    <a href="{% url 'success_story_list' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-star mr-2 text-teal-500"></i>
                       <span>Success Stories</span>
                     </a>
-                    <a href="#"
+                    <a href="{% url 'team_goals' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-user-friends mr-2 text-teal-500"></i>
                       <span>Peer Network</span>
                     </a>
-                    <a href="#"
+                    <a href="{% url 'team_goals' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-users-cog mr-2 text-teal-500"></i>
                       <span>Teams</span>
-                    </a>
-                    <a href="{% url 'waiting_room_list' %}"
-                       class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                      <i class="fas fa-users-cog mr-2 text-teal-500"></i>
-                      <span>Waiting Rooms</span>
                     </a>
                   </div>
                 </div>
@@ -602,12 +606,12 @@
                        class="fas fa-chevron-down text-gray-500 dark:text-gray-400 transition-transform duration-200"></i>
                   </div>
                   <div id="resources-accordion" class="hidden mt-2 ml-2 space-y-2">
-                    <a href="#"
+                    <a href="{% url 'progress_visualization' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-chart-line mr-2 text-teal-500"></i>
                       <span>Trackers</span>
                     </a>
-                    <a href="#"
+                    <a href="{% url 'gradeable_link_list' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-link mr-2 text-teal-500"></i>
                       <span>Grade Links</span>
@@ -617,7 +621,7 @@
                       <i class="fas fa-store mr-2 text-teal-500"></i>
                       <span>Products</span>
                     </a>
-                    <a href="#"
+                    <a href="{% url 'goods_listing' %}?type=storefront"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-shopping-basket mr-2 text-teal-500"></i>
                       <span>Storefronts</span>
@@ -660,7 +664,7 @@
                       <i class="fas fa-comment-dots mr-2 text-teal-500"></i>
                       <span>Feedback</span>
                     </a>
-                    <a href="#"
+                    <a href="{% url 'donate' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-hand-holding-heart mr-2 text-teal-500"></i>
                       <span>Donate</span>
@@ -809,9 +813,27 @@
                 </a>
               </li>
               <li>
-                <a href="#"
+                <a href="{% url 'quiz_list' %}"
                    class="text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 flex items-center">
                   <i class="fas fa-question-circle mr-2 text-teal-500 w-5 text-center"></i>Quizzes
+                </a>
+              </li>
+              <li>
+                <a href="{% url 'educational_videos_list' %}"
+                   class="text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 flex items-center">
+                  <i class="fas fa-video mr-2 text-teal-500 w-5 text-center"></i>Videos
+                </a>
+              </li>
+              <li>
+                <a href="{% url 'challenge_list' %}"
+                   class="text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 flex items-center">
+                  <i class="fas fa-trophy mr-2 text-teal-500 w-5 text-center"></i>Challenges
+                </a>
+              </li>
+              <li>
+                <a href="{% url 'all_study_groups' %}"
+                   class="text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 flex items-center">
+                  <i class="fas fa-users mr-2 text-teal-500 w-5 text-center"></i>Study Groups
                 </a>
               </li>
             </ul>
@@ -833,7 +855,7 @@
                 </a>
               </li>
               <li>
-                <a href="#"
+                <a href="{% url 'success_story_list' %}"
                    class="text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 flex items-center">
                   <i class="fas fa-star mr-2 text-teal-500 w-5 text-center"></i>Success Stories
                 </a>
@@ -886,7 +908,7 @@
                      width="20"
                      height="20" />
               </a>
-              <a href="https://instagram.com/alphaonelabs"
+              <a href="https://instagram.com/alphaonelabs1"
                  target="_blank"
                  rel="noopener"
                  class="flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
@@ -937,8 +959,10 @@
                  class="hover:text-teal-600 dark:hover:text-teal-400">About Us</a>
               <a href="{% url 'terms' %}"
                  class="hover:text-teal-600 dark:hover:text-teal-400">Terms & Conditions</a>
-              <a href="#" class="hover:text-teal-600 dark:hover:text-teal-400">Privacy Policy</a>
-              <a href="#" class="hover:text-teal-600 dark:hover:text-teal-400">Cookie Policy</a>
+              <a href="{% url 'terms' %}#privacy"
+                 class="hover:text-teal-600 dark:hover:text-teal-400">Privacy Policy</a>
+              <a href="{% url 'terms' %}#cookies"
+                 class="hover:text-teal-600 dark:hover:text-teal-400">Cookie Policy</a>
             </div>
           </div>
         </div>

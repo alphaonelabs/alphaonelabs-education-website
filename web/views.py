@@ -6059,3 +6059,68 @@ def contributor_detail_view(request, username):
     # Cache for 1 hour
     cache.set(cache_key, context, 3600)
     return render(request, "web/contributor_detail.html", context)
+
+
+@login_required
+def all_study_groups(request):
+    """Display all study groups across courses."""
+    # Get all study groups
+    groups = StudyGroup.objects.all().order_by("-created_at")
+
+    # Group study groups by course
+    courses_with_groups = {}
+    for group in groups:
+        if group.course not in courses_with_groups:
+            courses_with_groups[group.course] = []
+        courses_with_groups[group.course].append(group)
+
+    # Handle creating a new study group
+    if request.method == "POST":
+        course_id = request.POST.get("course")
+        name = request.POST.get("name")
+        description = request.POST.get("description")
+        max_members = request.POST.get("max_members", 10)
+        is_private = request.POST.get("is_private", False) == "on"  # Convert checkbox to boolean
+
+        try:
+            # Validate the input
+            if not course_id or not name or not description:
+                raise ValueError("All fields are required")
+
+            # Get the course
+            course = Course.objects.get(id=course_id)
+
+            # Create the group
+            group = StudyGroup.objects.create(
+                course=course,
+                creator=request.user,
+                name=name,
+                description=description,
+                max_members=int(max_members),
+                is_private=is_private,
+            )
+
+            # Add the creator as a member
+            group.members.add(request.user)
+
+            messages.success(request, "Study group created successfully!")
+            return redirect("study_group_detail", group_id=group.id)
+        except Course.DoesNotExist:
+            messages.error(request, "Course not found.")
+        except ValueError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f"Error creating study group: {str(e)}")
+
+    # Get user's enrollments for the create group form
+    enrollments = request.user.enrollments.filter(status="approved").select_related("course")
+    enrolled_courses = [enrollment.course for enrollment in enrollments]
+
+    return render(
+        request,
+        "web/study/all_groups.html",
+        {
+            "courses_with_groups": courses_with_groups,
+            "enrolled_courses": enrolled_courses,
+        },
+    )
