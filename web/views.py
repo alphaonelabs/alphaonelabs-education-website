@@ -831,119 +831,25 @@ def delete_course(request, slug):
 
 @csrf_exempt
 def github_update(request):
-    # Parse the GitHub webhook payload
+    send_slack_message("New commit pulled from GitHub")
+    root_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     try:
-        # Verify that this is a POST request
-        if request.method != "POST":
-            return HttpResponse("Method not allowed, only POST requests are accepted.", status=405)
-
-        # Log the headers for debugging
-        logging.info(f"GitHub webhook received with headers: {request.headers}")
-
-        # Get the event type from headers
-        event_type = request.headers.get("X-GitHub-Event", "unknown")
-        logging.info(f"GitHub event type: {event_type}")
-
-        # Get the payload from the request
-        try:
-            payload = json.loads(request.body)
-        except json.JSONDecodeError as e:
-            logging.error(f"Invalid JSON payload: {e}")
-            return HttpResponse(f"Invalid JSON payload: {e}", status=400)
-
-        # Log the payload for debugging
-        logging.info(f"GitHub webhook payload: {payload}")
-
-        # Extract the ref from the payload
-        ref = payload.get("ref", "")
-        logging.info(f"Ref: {ref}")
-
-        # For push events, check the branch
-        deploy_updates = False
-
-        if event_type == "push":
-            # Check if this is a push to the main or master branch
-            if ref in ["refs/heads/main", "refs/heads/master"]:
-                deploy_updates = True
-                logging.info(f"Push event to {ref} detected, will deploy updates")
-            else:
-                logging.info(f"Push event to {ref} - not main or master branch, skipping")
-        # For commit events (they might come as 'push' too)
-        elif "commits" in payload and ref in ["refs/heads/main", "refs/heads/master"]:
-            deploy_updates = True
-            logging.info(f"Commit to {ref} detected, will deploy updates")
-        # For other GitHub events that we want to handle
-        elif event_type in ["workflow_run", "workflow_job"] and ref in ["refs/heads/main", "refs/heads/master"]:
-            deploy_updates = True
-            logging.info(f"Workflow event for {ref} detected, will deploy updates")
-        else:
-            # For any other event, we'll check if it's related to the main branch
-            default_branch = payload.get("repository", {}).get("default_branch", "")
-            if default_branch in ["main", "master"]:
-                branch = payload.get("branch", "")
-                if branch in ["main", "master"]:
-                    deploy_updates = True
-                    logging.info(f"Event {event_type} related to default branch {default_branch}, will deploy updates")
-                else:
-                    logging.info("Event not related to main/master branch, skipping deployment")
-            else:
-                logging.info(f"Unhandled event type: {event_type}, skipping deployment")
-
-        if not deploy_updates:
-            return HttpResponse(f"Event does not require deployment. Event type: {event_type}, Ref: {ref}")
-
-        send_slack_message(f"Deployment triggered by {event_type} event for {ref}, deploying updates")
-        logging.info(f"Deployment triggered by {event_type} event for {ref}")
-
-        root_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        logging.info(f"Root directory: {root_directory}")
-
-        try:
-            # Make sure setup.sh is executable
-            subprocess.run(["chmod", "+x", f"{root_directory}/setup.sh"], check=True)
-            logging.info("Made setup.sh executable")
-
-            # Run setup.sh with full output capture
-            result = subprocess.run(["bash", f"{root_directory}/setup.sh"], capture_output=True, text=True, check=True)
-
-            # Log the output from setup.sh
-            logging.info(f"setup.sh stdout: {result.stdout}")
-            if result.stderr:
-                logging.warning(f"setup.sh stderr: {result.stderr}")
-
-            send_slack_message("CHMOD success about to set time on: " + settings.PA_WSGI)
-            logging.info(f"About to touch WSGI file: {settings.PA_WSGI}")
-
-            # Touch the WSGI file to trigger a reload
-            if os.path.exists(settings.PA_WSGI):
-                current_time = time.time()
-                os.utime(settings.PA_WSGI, (current_time, current_time))
-                logging.info(f"Successfully touched WSGI file at {current_time}")
-                send_slack_message("Repository updated successfully")
-                return HttpResponse("Repository updated successfully")
-            else:
-                error_msg = f"WSGI file not found: {settings.PA_WSGI}"
-                logging.error(error_msg)
-                send_slack_message(error_msg)
-                return HttpResponse(error_msg, status=500)
-
-        except subprocess.CalledProcessError as e:
-            error_msg = (
-                f"Deploy error: setup.sh failed with return code {e.returncode}. "
-                f"stdout: {e.stdout}, stderr: {e.stderr}"
+        subprocess.run(["chmod", "+x", f"{root_directory}/setup.sh"])
+        result = subprocess.run(["bash", f"{root_directory}/setup.sh"], capture_output=True, text=True)
+        if result.returncode != 0:
+            raise Exception(
+                f"setup.sh failed with return code {result.returncode} and output: {result.stdout} {result.stderr}"
             )
-            logging.error(error_msg)
-            send_slack_message(error_msg)
-            return HttpResponse(error_msg, status=500)
-        except Exception as e:
-            error_msg = f"Deploy error: {str(e)}"
-            logging.error(error_msg)
-            send_slack_message(error_msg)
-            return HttpResponse(error_msg, status=500)
+        send_slack_message("CHMOD success about to set time on: " + settings.PA_WSGI)
+
+        current_time = time.time()
+        os.utime(settings.PA_WSGI, (current_time, current_time))
+        send_slack_message("Repository updated successfully")
+        return HttpResponse("Repository updated successfully")
     except Exception as e:
-        error_msg = f"Webhook processing error: {str(e)}"
-        logging.error(error_msg)
-        return HttpResponse(error_msg, status=500)
+        print(f"Deploy error: {e}")
+        send_slack_message(f"Deploy error: {e}")
+        return HttpResponse("Deploy error see logs.")
 
 
 def send_slack_message(message):

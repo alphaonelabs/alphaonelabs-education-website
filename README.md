@@ -8,7 +8,7 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 
 ## Features
 
-### For Studentstest
+### For Students
 
 - 📚 Course enrollment and management
 - 👥 Peer-to-peer connections and messaging
