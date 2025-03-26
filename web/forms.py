@@ -296,7 +296,7 @@ class AwardAchievementForm(forms.Form):
             teacher_courses = Course.objects.filter(teacher=teacher)
             student_ids = []
             for course in teacher_courses:
-                student_ids.extend(course.students.values_list("id", flat=True))
+                student_ids.extend(course.enrollments.filter(status="approved").values_list("student_id", flat=True))
 
             self.fields["student"].queryset = User.objects.filter(id__in=student_ids)
             self.fields["course"].queryset = teacher_courses
