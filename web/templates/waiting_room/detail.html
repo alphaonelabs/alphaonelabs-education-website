@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}{{ waiting_room.title }} - Waiting Room{% endblock %}
+{% block title %}
+  {{ waiting_room.title }} - Waiting Room
+{% endblock title %}
 {% block content %}
   <div class="container mx-auto px-4 py-8 max-w-4xl">
     <div class="mb-6">
@@ -101,7 +103,7 @@
                 <dt class="text-sm font-medium text-gray-500">Created By</dt>
                 <dd class="mt-1 text-gray-900 flex items-center">
                   <span class="bg-purple-100 text-purple-800 text-sm font-medium mr-2 px-2.5 py-0.5 rounded-full">
-                    {{ waiting_room.creator.get_full_name|default:waiting_room.creator.username }}
+                    {{ waiting_room.creator.username }}
                   </span>
                 </dd>
               </div>
@@ -119,10 +121,10 @@
                   <li class="flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm border border-gray-100">
                     <div class="flex-shrink-0">
                       <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span class="text-blue-600 font-medium">{{ participant.get_full_name|default:participant.username|first }}</span>
+                        <span class="text-blue-600 font-medium">{{ participant.username }}</span>
                       </div>
                     </div>
-                    <span class="text-gray-900">{{ participant.get_full_name|default:participant.username }}</span>
+                    <span class="text-gray-900">{{ participant.username }}</span>
                   </li>
                 {% endfor %}
               </ul>
@@ -147,9 +149,9 @@
                   <div class="flex justify-between items-center">
                     <div class="flex items-center">
                       <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center mr-2">
-                        <span class="text-blue-600 text-sm font-medium">{{ course.teacher.get_full_name|first }}</span>
+                        <span class="text-blue-600 text-sm font-medium">{{ course.teacher.username }}</span>
                       </div>
-                      <span class="text-sm text-gray-600">{{ course.teacher.get_full_name }}</span>
+                      <span class="text-sm text-gray-600">{{ course.teacher.username }}</span>
                     </div>
                     <a href="{% url 'course_detail' slug=course.slug %}"
                        class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium text-sm">
@@ -203,4 +205,4 @@
       </div>
     </div>
   </div>
-{% endblock %}
+{% endblock content %}

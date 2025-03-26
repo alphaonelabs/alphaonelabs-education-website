@@ -51,7 +51,7 @@
   <body>
     <div class="header">
       <h1>Welcome to {{ course.title }}!</h1>
-      <p>Dear {{ student.get_full_name|default:student.username }},</p>
+      <p>Dear {{ student.username }},</p>
       <p>
         Thank you for enrolling in <strong>{{ course.title }}</strong>. We're excited to have you join us!
       </p>
@@ -59,7 +59,7 @@
     <div class="course-info">
       <h2>Course Details</h2>
       <p>
-        <strong>Instructor:</strong> {{ teacher.get_full_name|default:teacher.username }}
+        <strong>Instructor:</strong> {{ teacher.username }}
       </p>
       <p>
         <strong>Description:</strong> {{ course.description|truncatewords:50 }}
