@@ -275,7 +275,7 @@ class EncryptedVoiceChat {
 
         try {
             // Verify message authenticity
-            if (!this.verifySignalingMessage(data)) {
+            if (!await this.verifySignalingMessage(data)) {
                 console.warn(`Rejected unverified signaling message of type: ${type}`);
                 return;
             }
@@ -339,27 +339,95 @@ class EncryptedVoiceChat {
     }
 
     // Helper method to verify message authenticity
-    verifySignalingMessage(message) {
-        // Verify the message signature using shared secret or public key
+    async verifySignalingMessage(message) {
         try {
-            const { signature, ...messageData } = message;
-            if (!signature) return false;
+            const { signature, timestamp, ...messageData } = message;
+            if (!signature) {
+                console.warn('Message rejected: Missing signature');
+                return false;
+            }
 
             // Get session token from meta tag
             const sessionToken = document.querySelector('meta[name="session-token"]')?.content;
-            if (!sessionToken) return false;
+            if (!sessionToken) {
+                console.warn('Message rejected: No session token available');
+                return false;
+            }
 
-            // Create verification data
+            // Create verification data that matches server-side signature
             const verificationData = {
                 ...messageData,
+                timestamp,
                 sessionToken
             };
 
-            // Verify using Web Crypto API
-            // Implementation depends on your authentication scheme
-            return true; // TODO: Implement actual verification
+            // Convert data to string in consistent order
+            const dataString = JSON.stringify(verificationData, Object.keys(verificationData).sort());
+
+            // Decode base64 signature
+            const signatureBuffer = Uint8Array.from(atob(signature), c => c.charCodeAt(0));
+            const messageBuffer = new TextEncoder().encode(dataString);
+
+            try {
+                // Import the server's public key (should be available in a meta tag)
+                const serverPublicKey = document.querySelector('meta[name="server-public-key"]')?.content;
+                if (!serverPublicKey) {
+                    console.warn('Message rejected: No server public key available');
+                    return false;
+                }
+
+                const cryptoKey = await window.crypto.subtle.importKey(
+                    'jwk',
+                    JSON.parse(serverPublicKey),
+                    {
+                        name: 'ECDSA',
+                        namedCurve: 'P-256'
+                    },
+                    false,
+                    ['verify']
+                );
+
+                // Verify signature
+                const isValid = await window.crypto.subtle.verify(
+                    {
+                        name: 'ECDSA',
+                        hash: { name: 'SHA-256' },
+                    },
+                    cryptoKey,
+                    signatureBuffer,
+                    messageBuffer
+                );
+
+                if (!isValid) {
+                    console.warn('Message rejected: Invalid signature');
+                    return false;
+                }
+
+                // Additional security checks
+                const currentTime = Date.now();
+                const messageTime = parseInt(timestamp);
+
+                // Reject messages from the future (allowing 30 sec clock skew)
+                if (messageTime > currentTime + 30000) {
+                    console.warn('Message rejected: Future timestamp');
+                    return false;
+                }
+
+                // Reject messages older than 5 minutes
+                if (currentTime - messageTime > 300000) {
+                    console.warn('Message rejected: Message too old');
+                    return false;
+                }
+
+                return true;
+
+            } catch (cryptoError) {
+                console.error('Crypto verification failed:', cryptoError);
+                return false;
+            }
+
         } catch (error) {
-            console.error('Error verifying message:', error);
+            console.error('Message verification error:', error);
             return false;
         }
     }
