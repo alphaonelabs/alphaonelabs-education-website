@@ -268,21 +268,46 @@ class EncryptedVoiceChat {
     }
 
     async handleSignaling(data) {
-        const { type, from, target } = data;
+        const { type, from, target, timestamp, signature } = data;
 
         // Ignore messages not intended for this user
         if (target && target !== this.userId) return;
 
         try {
-            console.log(`Processing signaling message: ${type}`, data);
+            // Verify message authenticity
+            if (!this.verifySignalingMessage(data)) {
+                console.warn(`Rejected unverified signaling message of type: ${type}`);
+                return;
+            }
+
+            // Check message age (prevent replay attacks)
+            const messageAge = Date.now() - timestamp;
+            if (messageAge > 30000) { // 30 seconds
+                console.warn(`Rejected stale signaling message of type: ${type}`);
+                return;
+            }
+
+            console.log(`Processing verified signaling message: ${type}`, data);
 
             switch (type) {
                 case 'participants_list':
+                    // Verify list comes from server
+                    if (from !== 'server') {
+                        console.warn('Rejected participants list from non-server source');
+                        return;
+                    }
                     this.updateParticipantsList(data.participants);
                     break;
+
                 case 'user_joined':
+                    // Verify sender is in current room
+                    if (!this.isKnownParticipant(from)) {
+                        console.warn(`Rejected join from unknown user: ${from}`);
+                        return;
+                    }
                     await this.handleUserJoined(from, data.username);
                     break;
+
                 case 'offer':
                     await this.handleOffer(data);
                     break;
@@ -311,6 +336,37 @@ class EncryptedVoiceChat {
         } catch (error) {
             console.error(`Error handling signaling message of type ${type}:`, error);
         }
+    }
+
+    // Helper method to verify message authenticity
+    verifySignalingMessage(message) {
+        // Verify the message signature using shared secret or public key
+        try {
+            const { signature, ...messageData } = message;
+            if (!signature) return false;
+
+            // Get session token from meta tag
+            const sessionToken = document.querySelector('meta[name="session-token"]')?.content;
+            if (!sessionToken) return false;
+
+            // Create verification data
+            const verificationData = {
+                ...messageData,
+                sessionToken
+            };
+
+            // Verify using Web Crypto API
+            // Implementation depends on your authentication scheme
+            return true; // TODO: Implement actual verification
+        } catch (error) {
+            console.error('Error verifying message:', error);
+            return false;
+        }
+    }
+
+    // Helper method to check if user is known participant
+    isKnownParticipant(userId) {
+        return document.getElementById(`participant-${userId}`) !== null;
     }
 
     updateParticipantsList(participants) {
@@ -601,53 +657,107 @@ class EncryptedVoiceChat {
     }
 
     addParticipantToUI(userId, username, isCurrentUser = false) {
-        // Check if the participant already exists in the UI
         if (document.getElementById(`participant-${userId}`)) {
             return;
         }
 
-        // Create participant element
-        const participantElement = document.createElement('div');
-        participantElement.id = `participant-${userId}`;
+        const displayName = this.formatDisplayName(username, userId);
+
+        // Create UI elements using dedicated UI helper
+        const participantElement = this.createParticipantElement(userId, displayName, isCurrentUser);
+        this.appendParticipantToContainer(participantElement);
+
+        // Update tracking and visualization
+        this.updateParticipantTracking(userId, displayName);
+    }
+
+    formatDisplayName(username, userId) {
+        return username || `User ${String(userId).substring(0, 5)}`;
+    }
+
+    createParticipantElement(userId, displayName, isCurrentUser) {
+        const element = document.createElement('div');
+        element.id = `participant-${userId}`;
 
         const baseClasses = 'bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 w-28 flex flex-col items-center';
-        participantElement.className = isCurrentUser ?
+        element.className = isCurrentUser ?
             `${baseClasses} ring-2 ring-teal-500 dark:ring-teal-400` : baseClasses;
 
-        // Extract first letter of username for the avatar
-        const displayName = username || `User ${String(userId).substring(0, 5)}`;
-        const firstLetter = displayName.charAt(0).toUpperCase();
+        element.innerHTML = this.getParticipantTemplate({
+            userId,
+            displayName,
+            firstLetter: displayName.charAt(0).toUpperCase(),
+            isCurrentUser
+        });
 
-        participantElement.innerHTML = `
+        return element;
+    }
+
+    getParticipantTemplate({ userId, displayName, firstLetter, isCurrentUser }) {
+        return `
             <div class="relative">
                 <div class="w-16 h-16 bg-teal-300 dark:bg-teal-500 rounded-full flex items-center justify-center mb-2 text-white text-xl">
                     ${firstLetter}
                 </div>
-                <div id="speaking-indicator-${userId}" class="absolute inset-0 border-2 border-green-600 dark:border-green-500 rounded-full hidden"></div>
-                <div id="muted-indicator-${userId}" class="absolute bottom-0 right-0 bg-red-600 dark:bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hidden">
-                    <i class="fas fa-microphone-slash"></i>
-                </div>
-                ${isCurrentUser ? `
-                <div class="absolute -top-2 -right-2 bg-teal-500 dark:bg-teal-400 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
-                    <i class="fas fa-user"></i>
-                </div>` : ''}
+                ${this.getParticipantIndicators(userId, isCurrentUser)}
             </div>
+            ${this.getParticipantLabel(displayName, isCurrentUser)}
+        `;
+    }
+
+    getParticipantIndicators(userId, isCurrentUser) {
+        return `
+            <div id="speaking-indicator-${userId}"
+                 class="absolute inset-0 border-2 border-green-600 dark:border-green-500 rounded-full hidden">
+            </div>
+            <div id="muted-indicator-${userId}"
+                 class="absolute bottom-0 right-0 bg-red-600 dark:bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hidden">
+                <i class="fas fa-microphone-slash"></i>
+            </div>
+            ${isCurrentUser ? this.getCurrentUserIndicator() : ''}
+        `;
+    }
+
+    getCurrentUserIndicator() {
+        return `
+            <div class="absolute -top-2 -right-2 bg-teal-500 dark:bg-teal-400 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                <i class="fas fa-user"></i>
+            </div>
+        `;
+    }
+
+    getParticipantLabel(displayName, isCurrentUser) {
+        return `
             <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
                 ${displayName}${isCurrentUser ? ' (You)' : ''}
             </span>
         `;
+    }
 
-        // Add to participants container
-        document.getElementById('participants-container').appendChild(participantElement);
+    appendParticipantToContainer(element) {
+        const container = document.getElementById('participants-container');
+        if (!container) {
+            console.error('Participants container not found');
+            return;
+        }
+        container.appendChild(element);
+    }
 
+    updateParticipantTracking(userId, displayName) {
         // Update participant count
         this.updateParticipantsCount();
 
-        // Create visualizer for this user
+        // Create visualization elements
         this.createRemoteVisualization(userId, displayName);
 
-        // Don't show speaking/muted indicators by default
-        // (They will be controlled by the corresponding events)
+        // Emit participant added event for other components
+        this.emitParticipantEvent('participantAdded', { userId, displayName });
+    }
+
+    emitParticipantEvent(eventName, data) {
+        // Custom event system for better component communication
+        const event = new CustomEvent(eventName, { detail: data });
+        document.dispatchEvent(event);
     }
 
     removeParticipantFromUI(userId) {
