@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}Terms of Service - Alpha One Labs{% endblock %}
+{% block title %}Terms of Service & Privacy Policy - Alpha One Labs{% endblock %}
 {% block content %}
   <div class="max-w-4xl mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-6">Terms of Service</h1>
+    <h1 class="text-3xl font-bold mb-6">Terms of Service & Privacy Policy</h1>
     <div class="prose dark:prose-invert max-w-none">
       <h2 class="text-2xl font-semibold mt-8 mb-4">1. Commission Structure</h2>
       <p>Alpha One Labs operates on a revenue-sharing model where:</p>
@@ -54,6 +54,38 @@
         <li>Securing payment information</li>
         <li>Maintaining transparent data practices</li>
       </ul>
+      <h3 class="text-xl font-semibold mt-6 mb-3">6.1 IP Address Collection and Usage</h3>
+      <p>For certain features on our platform, we collect and store IP addresses. This includes:</p>
+      <ul class="list-disc pl-6 mb-4">
+        <li>Feature voting system, where IP addresses are used to prevent duplicate votes from anonymous users</li>
+        <li>Security monitoring to detect and prevent abuse or unauthorized access</li>
+        <li>Analytics to understand geographical distribution of our users (in aggregated form only)</li>
+      </ul>
+      <h3 class="text-xl font-semibold mt-6 mb-3">6.2 IP Address Data Processing</h3>
+      <p>When we process IP address data, we adhere to the following practices:</p>
+      <ul class="list-disc pl-6 mb-4">
+        <li>IP addresses are stored securely in our database with appropriate access controls</li>
+        <li>For feature voting, IP addresses are stored only when a user is not logged in</li>
+        <li>IP addresses for feature votes are never used for marketing purposes</li>
+        <li>We do not share IP addresses with third parties except when required by law</li>
+      </ul>
+      <h3 class="text-xl font-semibold mt-6 mb-3">6.3 Data Retention</h3>
+      <p>Our data retention policies for IP addresses include:</p>
+      <ul class="list-disc pl-6 mb-4">
+        <li>IP addresses associated with feature votes are retained for a maximum of 1 year</li>
+        <li>After the retention period, IP addresses are either anonymized or deleted</li>
+        <li>Users can request deletion of their IP address data by contacting our support team</li>
+      </ul>
+      <h3 class="text-xl font-semibold mt-6 mb-3">6.4 Your Rights Regarding IP Address Data</h3>
+      <p>You have the following rights regarding the IP address data we collect:</p>
+      <ul class="list-disc pl-6 mb-4">
+        <li>Right to access: You can request information about what IP address data we store</li>
+        <li>Right to deletion: You can request deletion of your IP address data</li>
+        <li>
+          Right to opt-out: You can choose not to participate in features that collect IP addresses by creating an account and logging in
+        </li>
+        <li>To exercise these rights, please contact our support team with your request</li>
+      </ul>
       <h2 class="text-2xl font-semibold mt-8 mb-4">7. Platform Changes</h2>
       <p>Alpha One Labs reserves the right to:</p>
       <ul class="list-disc pl-6 mb-4">
@@ -64,7 +96,7 @@
       </ul>
       <div class="mt-8 p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
         <p class="font-semibold">Last Updated: {% now "F j, Y" %}</p>
-        <p class="mt-2">For questions about these terms, please contact our support team.</p>
+        <p class="mt-2">For questions about these terms or privacy policy, please contact our support team.</p>
       </div>
     </div>
   </div>

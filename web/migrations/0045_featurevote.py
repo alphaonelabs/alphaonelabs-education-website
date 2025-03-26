@@ -31,14 +31,22 @@ class Migration(migrations.Migration):
             options={
                 "verbose_name": "Feature Vote",
                 "verbose_name_plural": "Feature Votes",
+                "indexes": [
+                    models.Index(fields=["feature_id", "user"], name="web_feature_feature_9fbd0b_idx"),
+                    models.Index(fields=["feature_id", "ip_address"], name="web_feature_feature_988c48_idx"),
+                ],
+                "constraints": [
+                    models.UniqueConstraint(
+                        fields=["feature_id", "user"],
+                        name="unique_user_feature_vote",
+                        condition=models.Q(user__isnull=False),
+                    ),
+                    models.UniqueConstraint(
+                        fields=["feature_id", "ip_address"],
+                        name="unique_ip_feature_vote",
+                        condition=models.Q(ip_address__isnull=False),
+                    ),
+                ],
             },
-        ),
-        migrations.AddIndex(
-            model_name="featurevote",
-            index=models.Index(fields=["feature_id", "user"], name="web_feature_feature_9fbd0b_idx"),
-        ),
-        migrations.AddIndex(
-            model_name="featurevote",
-            index=models.Index(fields=["feature_id", "ip_address"], name="web_feature_feature_988c48_idx"),
         ),
     ]

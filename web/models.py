@@ -2526,11 +2526,23 @@ class FeatureVote(models.Model):
 
     class Meta:
         indexes = [
-            models.Index(fields=["feature_id", "user"]),
-            models.Index(fields=["feature_id", "ip_address"]),
+            models.Index(fields=["feature_id", "user"], name="web_feature_feature_9fbd0b_idx"),
+            models.Index(fields=["feature_id", "ip_address"], name="web_feature_feature_988c48_idx"),
         ]
         verbose_name = "Feature Vote"
         verbose_name_plural = "Feature Votes"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["feature_id", "user"],
+                name="unique_user_feature_vote",
+                condition=models.Q(user__isnull=False),
+            ),
+            models.UniqueConstraint(
+                fields=["feature_id", "ip_address"],
+                name="unique_ip_feature_vote",
+                condition=models.Q(ip_address__isnull=False),
+            ),
+        ]
 
     def clean(self):
         """Validate that a user or IP address hasn't already voted on this feature."""

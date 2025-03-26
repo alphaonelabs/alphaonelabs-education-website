@@ -5503,39 +5503,41 @@ def feature_vote(request):
 
     # Process the vote
     try:
-        # Check for existing vote
-        existing_vote = None
-        if request.user.is_authenticated:
-            existing_vote = FeatureVote.objects.filter(feature_id=feature_id, user=request.user).first()
-        elif ip_address:
-            existing_vote = FeatureVote.objects.filter(
-                feature_id=feature_id, ip_address=ip_address, user__isnull=True
-            ).first()
-
-        # Handle the vote logic
-        status_message = "Vote recorded"
-        if existing_vote:
-            if existing_vote.vote == vote_type:
-                status_message = "You've already cast this vote"
-            else:
-                # Change vote type if user changed their mind
-                existing_vote.vote = vote_type
-                existing_vote.save()
-                status_message = "Vote changed"
-        else:
-            # Create new vote
-            new_vote = FeatureVote(feature_id=feature_id, vote=vote_type)
-
+        # Use transaction to prevent race conditions during vote operations
+        with transaction.atomic():
+            # Check for existing vote
+            existing_vote = None
             if request.user.is_authenticated:
-                new_vote.user = request.user
+                existing_vote = FeatureVote.objects.filter(feature_id=feature_id, user=request.user).first()
+            elif ip_address:
+                existing_vote = FeatureVote.objects.filter(
+                    feature_id=feature_id, ip_address=ip_address, user__isnull=True
+                ).first()
+
+            # Handle the vote logic
+            status_message = "Vote recorded"
+            if existing_vote:
+                if existing_vote.vote == vote_type:
+                    status_message = "You've already cast this vote"
+                else:
+                    # Change vote type if user changed their mind
+                    existing_vote.vote = vote_type
+                    existing_vote.save()
+                    status_message = "Vote changed"
             else:
-                new_vote.ip_address = ip_address
+                # Create new vote
+                new_vote = FeatureVote(feature_id=feature_id, vote=vote_type)
 
-            new_vote.save()
+                if request.user.is_authenticated:
+                    new_vote.user = request.user
+                else:
+                    new_vote.ip_address = ip_address
 
-        # Get updated counts
-        up_count = FeatureVote.objects.filter(feature_id=feature_id, vote="up").count()
-        down_count = FeatureVote.objects.filter(feature_id=feature_id, vote="down").count()
+                new_vote.save()
+
+            # Get updated counts within the transaction to ensure consistency
+            up_count = FeatureVote.objects.filter(feature_id=feature_id, vote="up").count()
+            down_count = FeatureVote.objects.filter(feature_id=feature_id, vote="down").count()
 
         # Calculate percentage for visualization
         total_votes = up_count + down_count
@@ -5570,9 +5572,43 @@ def feature_vote_count(request):
         return JsonResponse({"error": "No feature IDs provided"}, status=400)
 
     result = {}
+    # Get all up and down votes in a single query each for better performance
+    up_votes = (
+        FeatureVote.objects.filter(feature_id__in=feature_ids, vote="up")
+        .values("feature_id")
+        .annotate(count=Count("id"))
+    )
+    down_votes = (
+        FeatureVote.objects.filter(feature_id__in=feature_ids, vote="down")
+        .values("feature_id")
+        .annotate(count=Count("id"))
+    )
+
+    # Create lookup dictionaries for efficient access
+    up_votes_dict = {str(vote["feature_id"]): vote["count"] for vote in up_votes}
+    down_votes_dict = {str(vote["feature_id"]): vote["count"] for vote in down_votes}
+
+    # Check user's votes if authenticated
+    user_votes = {}
+    if request.user.is_authenticated:
+        user_vote_objects = FeatureVote.objects.filter(feature_id__in=feature_ids, user=request.user)
+        for vote in user_vote_objects:
+            user_votes[str(vote.feature_id)] = vote.vote
+    elif request.META.get("REMOTE_ADDR"):
+        # Get IP address for anonymous users
+        ip_address = (
+            request.META.get("REMOTE_ADDR") or request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+        )
+        if ip_address:
+            anon_vote_objects = FeatureVote.objects.filter(
+                feature_id__in=feature_ids, ip_address=ip_address, user__isnull=True
+            )
+            for vote in anon_vote_objects:
+                user_votes[str(vote.feature_id)] = vote.vote
+
     for feature_id in feature_ids:
-        up_count = FeatureVote.objects.filter(feature_id=feature_id, vote="up").count()
-        down_count = FeatureVote.objects.filter(feature_id=feature_id, vote="down").count()
+        up_count = up_votes_dict.get(feature_id, 0)
+        down_count = down_votes_dict.get(feature_id, 0)
         total_votes = up_count + down_count
 
         # Calculate percentages
@@ -5585,6 +5621,7 @@ def feature_vote_count(request):
             "total_votes": total_votes,
             "up_percentage": round(up_percentage, 1),
             "down_percentage": round(down_percentage, 1),
+            "user_vote": user_votes.get(feature_id, None),
         }
 
     return JsonResponse(result)
