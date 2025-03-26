@@ -2512,7 +2512,6 @@ class NotificationPreference(models.Model):
         return f"Notification preferences for {self.user.username}"
 
 
-
 class FeatureVote(models.Model):
     VOTE_CHOICES = (
         ("up", "Thumbs Up"),
@@ -2593,6 +2592,7 @@ class FeatureVote(models.Model):
     def __str__(self):
         voter = self.user.username if self.user else self.ip_address
         return f"{self.get_vote_display()} for {self.feature_id} by {voter}"
+
 
 class MembershipPlan(models.Model):
     BILLING_PERIOD_CHOICES = [
@@ -2710,4 +2710,3 @@ class MembershipSubscriptionEvent(models.Model):
 
     def __str__(self):
         return f"{self.event_type} - {self.user.email} - {self.created_at}"
-
