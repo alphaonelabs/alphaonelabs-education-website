@@ -14,6 +14,9 @@ class EncryptedVoiceChat {
         this.analyser = null;
         this.speaking = false;
         this.muted = false;
+        this.messageQueue = [];
+        this.retryTimeout = null;
+        this.maxRetries = 3;
 
         // Initialize WebSocket connection
         this.initializeWebSocket();
@@ -1021,16 +1024,53 @@ class EncryptedVoiceChat {
     }
 
     // Add a method for sending messages with logging
-    sendSignalingMessage(message) {
-        // Check if socket exists and is open
+    sendSignalingMessage(message, retryCount = 0) {
         if (!this.socket || this.socket.readyState !== WebSocket.OPEN) {
             console.warn(`Cannot send message of type ${message.type}: WebSocket not open`);
+
+            // Store message for retry
+            if (retryCount < this.maxRetries) {
+                this.messageQueue.push({
+                    message,
+                    retryCount: retryCount + 1
+                });
+
+                // Set retry timer if not already set
+                if (!this.retryTimeout) {
+                    this.retryTimeout = setTimeout(() => this.processMessageQueue(), 1000);
+                }
+            } else {
+                console.error(`Failed to send message type ${message.type} after ${this.maxRetries} attempts`);
+            }
             return;
         }
 
-        // Log all outgoing messages for debugging
-        console.log(`[SEND] ${message.type} to ${message.target || 'all'} from ${this.userId}`);
-        this.socket.send(JSON.stringify(message));
+        try {
+            console.log(`[SEND] ${message.type} to ${message.target || 'all'} from ${this.userId}`);
+            this.socket.send(JSON.stringify(message));
+        } catch (error) {
+            console.error(`Error sending message: ${error.message}`);
+            // Queue for retry on error
+            if (retryCount < this.maxRetries) {
+                this.messageQueue.push({
+                    message,
+                    retryCount: retryCount + 1
+                });
+            }
+        }
+    }
+
+    processMessageQueue() {
+        this.retryTimeout = null;
+
+        if (this.messageQueue.length > 0) {
+            const queueCopy = [...this.messageQueue];
+            this.messageQueue = [];
+
+            queueCopy.forEach(({message, retryCount}) => {
+                this.sendSignalingMessage(message, retryCount);
+            });
+        }
     }
 
     cleanupAllParticipants() {
