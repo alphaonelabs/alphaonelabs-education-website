@@ -24,6 +24,13 @@ jobs:
 
             console.log(`Checking PR #${prNumber} for linked issues`);
 
+            // Check for exempt users that don't require issue links
+            const exemptUsers = ['A1L13N'];
+            if (exemptUsers.includes(pr.user.login)) {
+              console.log(`PR author ${pr.user.login} is exempt from issue link requirement`);
+              return;
+            }
+
             // Check for exempt labels that don't require issue links
             const exemptLabels = ['dependencies', 'documentation', 'typo', 'ci', 'chore'];
             const hasExemptLabel = pr.labels && pr.labels.some(label => exemptLabels.includes(label.name.toLowerCase()));
@@ -51,6 +58,7 @@ jobs:
                         nodes {
                           number
                           title
+                          state
                         }
                       }
                     }
@@ -69,10 +77,17 @@ jobs:
 
               if (linkedIssues && linkedIssues.length > 0) {
                 console.log(`Found ${linkedIssues.length} linked issues in the Development section:`);
-                for (const issue of linkedIssues) {
-                  console.log(`- Issue #${issue.number}: ${issue.title}`);
+                const openIssues = linkedIssues.filter(issue => issue.state === 'OPEN');
+
+                if (openIssues.length > 0) {
+                  for (const issue of openIssues) {
+                    console.log(`- Open Issue #${issue.number}: ${issue.title}`);
+                  }
+                  return;
+                } else {
+                  console.log(`All linked issues are closed. PRs must link to open issues.`);
+                  // Continue with other checks
                 }
-                return;
               }
             } catch (error) {
               console.log(`Error checking linked issues via GraphQL API: ${error.message}`);
@@ -94,10 +109,34 @@ jobs:
 
               if (linkedIssues.length > 0) {
                 console.log(`Found ${linkedIssues.length} linked issues via REST API`);
+
+                // Check if any of these issues are open
+                const openIssues = [];
                 for (const issue of linkedIssues) {
-                  console.log(`- Issue #${issue.number}: ${issue.title}`);
+                  try {
+                    const { data: issueData } = await github.rest.issues.get({
+                      owner: repo.owner,
+                      repo: repo.repo,
+                      issue_number: issue.number
+                    });
+
+                    if (issueData.state === 'open') {
+                      openIssues.push(issue);
+                      console.log(`- Open Issue #${issue.number}: ${issue.title}`);
+                    } else {
+                      console.log(`- Closed Issue #${issue.number}: ${issue.title} (not counted)`);
+                    }
+                  } catch (error) {
+                    console.log(`Error checking issue #${issue.number} state: ${error.message}`);
+                  }
                 }
-                return;
+
+                if (openIssues.length > 0) {
+                  return;
+                } else {
+                  console.log(`All linked issues are closed. PRs must link to open issues.`);
+                  // Continue with other checks
+                }
               }
             } catch (error) {
               console.log(`Error checking linked items via REST API: ${error.message}`);
@@ -108,7 +147,36 @@ jobs:
             const bodyIssueReferences = pr.body ? pr.body.match(/#[0-9]+/g) : [];
             if (bodyIssueReferences && bodyIssueReferences.length > 0) {
               console.log(`Found issue references in PR body: ${bodyIssueReferences.join(', ')}`);
-              return;
+
+              // Check if any of these referenced issues are open
+              const openIssuesFound = [];
+              for (const reference of bodyIssueReferences) {
+                const issueNumber = reference.replace('#', '');
+                try {
+                  const { data: issueData } = await github.rest.issues.get({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    issue_number: parseInt(issueNumber)
+                  });
+
+                  if (issueData.state === 'open') {
+                    openIssuesFound.push(reference);
+                    console.log(`Referenced ${reference} is open`);
+                  } else {
+                    console.log(`Referenced ${reference} is closed (not counted)`);
+                  }
+                } catch (error) {
+                  console.log(`Error checking issue ${reference} state: ${error.message}`);
+                }
+              }
+
+              if (openIssuesFound.length > 0) {
+                console.log(`Found open issues referenced in PR body: ${openIssuesFound.join(', ')}`);
+                return;
+              } else {
+                console.log(`All referenced issues are closed. PRs must link to open issues.`);
+                // Continue with other checks
+              }
             }
 
             // Check for issue references using various keywords in title or body
@@ -126,8 +194,27 @@ jobs:
               const regex = new RegExp(`${keyword}\\s+#([0-9]+)`, 'i');
               const match = pr.title.match(regex);
               if (match) {
-                console.log(`Found issue reference in PR title with keyword "${keyword}": #${match[1]}`);
-                return;
+                const issueNumber = match[1];
+                console.log(`Found issue reference in PR title with keyword "${keyword}": #${issueNumber}`);
+
+                try {
+                  const { data: issueData } = await github.rest.issues.get({
+                    owner: repo.owner,
+                    repo: repo.repo,
+                    issue_number: parseInt(issueNumber)
+                  });
+
+                  if (issueData.state === 'open') {
+                    console.log(`Referenced issue #${issueNumber} is open`);
+                    return;
+                  } else {
+                    console.log(`Referenced issue #${issueNumber} is closed (not counted)`);
+                    // Continue with next keyword check
+                  }
+                } catch (error) {
+                  console.log(`Error checking issue #${issueNumber} state: ${error.message}`);
+                  // Continue with next keyword check
+                }
               }
             }
 
@@ -137,8 +224,27 @@ jobs:
                 const regex = new RegExp(`${keyword}\\s+#([0-9]+)`, 'i');
                 const match = pr.body.match(regex);
                 if (match) {
-                  console.log(`Found issue reference in PR body with keyword "${keyword}": #${match[1]}`);
-                  return;
+                  const issueNumber = match[1];
+                  console.log(`Found issue reference in PR body with keyword "${keyword}": #${issueNumber}`);
+
+                  try {
+                    const { data: issueData } = await github.rest.issues.get({
+                      owner: repo.owner,
+                      repo: repo.repo,
+                      issue_number: parseInt(issueNumber)
+                    });
+
+                    if (issueData.state === 'open') {
+                      console.log(`Referenced issue #${issueNumber} is open`);
+                      return;
+                    } else {
+                      console.log(`Referenced issue #${issueNumber} is closed (not counted)`);
+                      // Continue with next keyword check
+                    }
+                  } catch (error) {
+                    console.log(`Error checking issue #${issueNumber} state: ${error.message}`);
+                    // Continue with next keyword check
+                  }
                 }
               }
             }
@@ -159,7 +265,38 @@ jobs:
 
               if (issueRefs.length > 0) {
                 console.log(`Found ${issueRefs.length} linked issues via GitHub references`);
-                return;
+
+                // Check if any of these cross-referenced issues are open
+                let foundOpenIssue = false;
+                for (const event of issueRefs) {
+                  if (event.source && event.source.issue) {
+                    const issueNumber = event.source.issue.number;
+                    try {
+                      const { data: issueData } = await github.rest.issues.get({
+                        owner: repo.owner,
+                        repo: repo.repo,
+                        issue_number: issueNumber
+                      });
+
+                      if (issueData.state === 'open') {
+                        console.log(`Cross-referenced issue #${issueNumber} is open`);
+                        foundOpenIssue = true;
+                        break;
+                      } else {
+                        console.log(`Cross-referenced issue #${issueNumber} is closed (not counted)`);
+                      }
+                    } catch (error) {
+                      console.log(`Error checking cross-referenced issue #${issueNumber} state: ${error.message}`);
+                    }
+                  }
+                }
+
+                if (foundOpenIssue) {
+                  return;
+                } else {
+                  console.log(`All cross-referenced issues are closed. PRs must link to open issues.`);
+                  // Continue with other checks
+                }
               }
             } catch (error) {
               console.log(`Error checking linked issues via timeline API: ${error.message}`);
@@ -190,41 +327,62 @@ jobs:
             }
 
             // If we get here, no linked issue was found
-            console.log(`No linked issues found for PR #${prNumber}. Closing PR.`);
+            console.log(`No linked issues found for PR #${prNumber}. Checking if we already commented.`);
 
-            const closeComment = `
-            ## 🚨 Missing Issue Link
-
-            This pull request appears to not reference any GitHub issue.
-
-            As per our workflow requirements, all PRs should address an existing issue. This ensures:
-
-            - Changes are properly tracked
-            - Work is discussed before implementation
-            - Code reviews are more focused
-
-            ### How to Fix This
-
-            Please link this PR to an existing issue using one of these methods:
-
-            1. Reference the issue in your PR description: "Fixes #123" or "Addresses #123"
-            2. Use GitHub's interface to link the PR to an issue in the Development section
-               - Look for the section that says "Development" on the right side of your PR
-               - Click "Link an issue" or "Link issues"
-               - Select the relevant issue(s)
-            3. If no issue exists yet, please create one first
-
-            This PR will be automatically closed. Feel free to reopen it once you've linked it to an issue or added appropriate labels.
-
-            Thank you for your contribution!
-            `;
-
-            await github.rest.issues.createComment({
+            // Check if we've already commented on this PR to avoid duplicates
+            const { data: comments } = await github.rest.issues.listComments({
               owner: repo.owner,
               repo: repo.repo,
               issue_number: prNumber,
-              body: closeComment
             });
+
+            // Check for our bot's previous "Missing Open Issue Link" comment
+            const botUserName = 'github-actions[bot]';
+            const previousBotComment = comments.find(comment =>
+              comment.user.login === botUserName &&
+              comment.body.includes('🚨 Missing Open Issue Link')
+            );
+
+            if (previousBotComment) {
+              console.log(`Already commented on PR #${prNumber} about missing open issue links. Skipping duplicate comment.`);
+            } else {
+              const closeComment = `
+              ## 🚨 Missing Open Issue Link
+
+              This pull request appears to not reference any open GitHub issue.
+
+              As per our workflow requirements, all PRs should address an existing open issue. This ensures:
+
+              - Changes are properly tracked
+              - Work is discussed before implementation
+              - Code reviews are more focused
+
+              ### How to Fix This
+
+              Please link this PR to an existing open issue using one of these methods:
+
+              1. Reference the issue in your PR description: "Fixes #123" or "Addresses #123"
+              2. Use GitHub's interface to link the PR to an issue in the Development section
+                - Look for the section that says "Development" on the right side of your PR
+                - Click "Link an issue" or "Link issues"
+                - Select the relevant issue(s)
+              3. If no issue exists yet, please create one first
+              4. If you linked to a closed issue, please link to an open issue instead
+
+              This PR will be automatically closed. Feel free to reopen it once you've linked it to an open issue or added appropriate labels.
+
+              Thank you for your contribution!
+              `;
+
+              await github.rest.issues.createComment({
+                owner: repo.owner,
+                repo: repo.repo,
+                issue_number: prNumber,
+                body: closeComment
+              });
+
+              console.log(`Added comment about missing open issue links to PR #${prNumber}`);
+            }
 
             await github.rest.pulls.update({
               owner: repo.owner,
@@ -232,3 +390,5 @@ jobs:
               pull_number: prNumber,
               state: 'closed'
             });
+
+            console.log(`Closed PR #${prNumber} due to missing open issue link`);
