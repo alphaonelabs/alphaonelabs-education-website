@@ -73,6 +73,7 @@
                class="block overflow-hidden rounded-md">
               <img loading="lazy"
                    src="{% if product.image %}{{ product.image.url }}{% else %}/static/images/placeholder.png{% endif %}"
+              <img src="{% if product.image_url %}{{ product.image_url }}{% else %}/static/images/placeholder.png{% endif %}"
                    alt="{{ product.name }}"
                    class="w-full h-56 object-cover rounded-md" />
             </a>

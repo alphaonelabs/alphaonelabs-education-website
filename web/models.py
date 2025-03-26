@@ -2510,3 +2510,121 @@ class NotificationPreference(models.Model):
 
     def __str__(self):
         return f"Notification preferences for {self.user.username}"
+
+
+class MembershipPlan(models.Model):
+    BILLING_PERIOD_CHOICES = [
+        ("monthly", "Monthly"),
+        ("yearly", "Yearly"),
+    ]
+
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    features = models.JSONField(default=list)
+    price_monthly = models.DecimalField(max_digits=10, decimal_places=2)
+    price_yearly = models.DecimalField(max_digits=10, decimal_places=2)
+    billing_period = models.CharField(max_length=10, choices=BILLING_PERIOD_CHOICES, default="monthly")
+    stripe_monthly_price_id = models.CharField(max_length=100, blank=True)
+    stripe_yearly_price_id = models.CharField(max_length=100, blank=True)
+    is_active = models.BooleanField(default=True)
+    is_popular = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    @property
+    def yearly_savings(self):
+        if self.price_monthly and self.price_yearly:
+            monthly_total = self.price_monthly * 12
+            savings = monthly_total - self.price_yearly
+            if savings > 0:
+                return int((savings / monthly_total) * 100)
+        return 0
+
+    def __str__(self):
+        return f"{self.name} - ${self.price_monthly}/month or ${self.price_yearly}/year"
+
+
+class UserMembership(models.Model):
+    STATUS_CHOICES = [
+        ("active", "Active"),
+        ("past_due", "Past Due"),
+        ("canceled", "Canceled"),
+        ("trialing", "Trialing"),
+        ("unpaid", "Unpaid"),
+        ("incomplete", "Incomplete"),
+        ("expired", "Expired"),
+    ]
+
+    BILLING_PERIOD_CHOICES = [
+        ("monthly", "Monthly"),
+        ("yearly", "Yearly"),
+    ]
+
+    user = models.OneToOneField("auth.User", on_delete=models.CASCADE, related_name="membership")
+    plan = models.ForeignKey(MembershipPlan, on_delete=models.PROTECT, related_name="user_memberships")
+    stripe_customer_id = models.CharField(max_length=100, blank=True)
+    stripe_subscription_id = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
+    billing_period = models.CharField(max_length=10, choices=BILLING_PERIOD_CHOICES, default="monthly")
+    start_date = models.DateTimeField(default=timezone.now)
+    end_date = models.DateTimeField(null=True, blank=True)
+    cancel_at_period_end = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def is_active(self):
+        active_statuses = ["active", "trialing"]
+        return self.status in active_statuses and (self.end_date is None or self.end_date > timezone.now())
+
+    @property
+    def is_canceled(self):
+        return self.status == "canceled" or self.cancel_at_period_end
+
+    @property
+    def days_until_expiration(self):
+        if not self.end_date:
+            return None
+        now = timezone.now()
+        if now > self.end_date:
+            return -1
+        return (self.end_date - now).days
+
+    def get_next_billing_date(self):
+        if self.end_date:
+            return self.end_date
+        return None
+
+    def __str__(self):
+        return f"{self.user.email} - {self.plan.name} ({self.status})"
+
+
+class MembershipSubscriptionEvent(models.Model):
+    EVENT_TYPE_CHOICES = [
+        ("created", "Created"),
+        ("updated", "Updated"),
+        ("canceled", "Canceled"),
+        ("payment_succeeded", "Payment Succeeded"),
+        ("payment_failed", "Payment Failed"),
+        ("reactivated", "Reactivated"),
+    ]
+
+    user = models.ForeignKey("auth.User", on_delete=models.CASCADE, related_name="membership_events")
+    membership = models.ForeignKey(UserMembership, on_delete=models.SET_NULL, null=True, related_name="events")
+    event_type = models.CharField(max_length=50, choices=EVENT_TYPE_CHOICES)
+    stripe_event_id = models.CharField(max_length=100, blank=True)
+    data = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.event_type} - {self.user.email} - {self.created_at}"

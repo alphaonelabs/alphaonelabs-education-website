@@ -3,7 +3,7 @@
 {% load static %}
 
 {% block title %}
-  {{ category.name }} - Forum
+  My Replies - Forum
 {% endblock title %}
 {% block content %}
   <main class="flex-1 w-full max-w-[90rem] mx-auto px-0 md:px-0 h-full">
@@ -37,22 +37,13 @@
                   All Categories
                 </a>
               </li>
-              {% for cat in categories|default:'' %}
+              {% for cat in categories %}
                 <li>
                   <a href="{% url 'forum_category' slug=cat.slug %}"
-                     class="flex items-center py-2 px-3 {% if cat.slug == category.slug %}text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 font-medium{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %} rounded-lg">
+                     class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                     <i class="fa-solid {{ cat.icon|default:'fa-folder' }} text-teal-300 mr-2"></i>
                     {{ cat.name }}
                     <span class="ml-auto text-xs text-gray-500 dark:text-gray-400">{{ cat.topics.count }}</span>
-                  </a>
-                </li>
-              {% empty %}
-                <li>
-                  <a href="{% url 'forum_category' slug=category.slug %}"
-                     class="flex items-center py-2 px-3 text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-lg font-medium">
-                    <i class="fa-solid {{ category.icon|default:'fa-folder' }} text-teal-300 mr-2"></i>
-                    {{ category.name }}
-                    <span class="ml-auto text-xs text-gray-500 dark:text-gray-400">{{ category.topics.count }}</span>
                   </a>
                 </li>
               {% endfor %}
@@ -71,7 +62,7 @@
                 </li>
                 <li>
                   <a href="{% url 'my_forum_replies' %}"
-                     class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                     class="flex items-center py-2 px-3 text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 font-medium rounded-lg">
                     <i class="fa-solid fa-reply text-teal-300 mr-2"></i>
                     My Replies
                   </a>
@@ -88,111 +79,77 @@
           <nav class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
             <a href="{% url 'forum_categories' %}" class="hover:text-teal-300">Forum</a>
             <span class="text-gray-400 dark:text-gray-600">/</span>
-            <span class="text-gray-800 dark:text-gray-200">{{ category.name }}</span>
+            <span class="text-gray-800 dark:text-gray-200">My Replies</span>
           </nav>
-          <!-- Category Header -->
+          <!-- Page Header -->
           <div class="mb-6">
             <div class="flex justify-between items-center">
               <div>
                 <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100 flex items-center">
-                  <i class="fa-solid {{ category.icon|default:'fa-folder' }} text-teal-300 mr-2"></i>
-                  {{ category.name }}
+                  <i class="fa-solid fa-reply text-teal-300 mr-2"></i>
+                  My Replies
                 </h1>
-                <p class="text-gray-600 dark:text-gray-400 mt-1">{{ category.description }}</p>
+                <p class="text-gray-600 dark:text-gray-400 mt-1">Replies that you have posted to forum topics</p>
               </div>
-              {% if user.is_authenticated %}
-                <a href="{% url 'create_topic' category.slug %}"
-                   class="bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center whitespace-nowrap">
-                  <i class="fas fa-plus mr-2"></i>
-                  New Topic
-                </a>
-              {% endif %}
             </div>
           </div>
-          <!-- Topics List -->
+          <!-- Replies List -->
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm divide-y divide-gray-200 dark:divide-gray-700">
-            {% for topic in topics %}
+            {% for reply in replies %}
               <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors duration-150">
                 <div class="flex items-start">
                   <!-- User Avatar -->
                   <div class="mr-4 hidden sm:block">
-                    {% if topic.author.profile.avatar %}
-                      <img src="{{ topic.author.profile.avatar.url }}"
-                           alt="{{ topic.author.username }}"
+                    {% if reply.author.profile.avatar %}
+                      <img src="{{ reply.author.profile.avatar.url }}"
+                           alt="{{ reply.author.username }}"
                            class="w-10 h-10 rounded-full object-cover"
                            width="40"
                            height="40" />
                     {% else %}
                       <div class="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center text-teal-600 dark:text-teal-300 font-bold text-sm">
-                        {{ topic.author.username|slice:":1"|upper }}
+                        {{ reply.author.username|slice:":1"|upper }}
                       </div>
                     {% endif %}
                   </div>
-                  <!-- Topic Content -->
+                  <!-- Reply Content -->
                   <div class="flex-1 min-w-0">
                     <div class="flex items-baseline justify-between mb-1">
                       <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                        <span class="font-medium text-gray-700 dark:text-gray-300">{{ topic.author.username }}</span>
+                        <span class="whitespace-nowrap">{{ reply.created_at|timesince }} ago</span>
                         <span class="mx-2">•</span>
-                        <span class="whitespace-nowrap">{{ topic.created_at|timesince }} ago</span>
+                        <a href="{% url 'forum_category' slug=reply.topic.category.slug %}"
+                           class="text-teal-300 hover:text-teal-400 font-medium">{{ reply.topic.category.name }}</a>
                       </div>
-                      {% if topic.replies.exists %}
-                        <div class="text-right text-xs text-gray-500 dark:text-gray-400 hidden md:block">
-                          <span class="flex items-center">
-                            <i class="fa-solid fa-reply text-teal-300 mr-1"></i>
-                            Last reply by {{ topic.replies.last.author.username }}
-                            ({{ topic.replies.last.created_at|timesince }} ago)
-                          </span>
-                        </div>
-                      {% endif %}
+                      <div class="text-right text-xs text-gray-500 dark:text-gray-400">
+                        <a href="{% url 'edit_reply' reply.id %}"
+                           class="text-teal-300 hover:text-teal-400 font-medium">
+                          <i class="fas fa-edit mr-1"></i>
+                          Edit
+                        </a>
+                      </div>
                     </div>
                     <h2 class="text-lg font-semibold mb-1">
-                      <a href="{% url 'forum_topic' category.slug topic.id %}"
+                      <a href="{% url 'forum_topic' reply.topic.category.slug reply.topic.id %}"
                          class="text-gray-800 dark:text-gray-100 hover:text-teal-300 transition duration-150">
-                        {% if topic.is_pinned %}<i class="fas fa-thumbtack text-gray-500 dark:text-gray-400 mr-1"></i>{% endif %}
-                        {{ topic.title }}
+                        {{ reply.topic.title }}
                       </a>
                     </h2>
                     <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-2">
-                      {{ topic.content|striptags|truncatechars:200 }}
+                      {{ reply.content|striptags|truncatechars:200 }}
                     </p>
-                    <!-- Engagement Metrics -->
-                    <div class="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                      <span class="flex items-center">
-                        <i class="fa-solid fa-eye mr-1"></i>
-                        {{ topic.views }} views
-                      </span>
-                      <span class="flex items-center">
-                        <i class="fa-solid fa-comments mr-1"></i>
-                        {{ topic.replies.count }} replies
-                      </span>
-                      {% if topic.replies.count > 0 %}
-                        <span class="flex items-center md:hidden">
-                          <i class="fa-solid fa-clock mr-1"></i>
-                          Last reply {{ topic.replies.last.created_at|timesince }} ago
-                        </span>
-                      {% endif %}
-                    </div>
                   </div>
                 </div>
               </div>
             {% empty %}
               <div class="p-8 text-center text-gray-500 dark:text-gray-400 flex flex-col items-center">
                 <i class="fa-solid fa-comment-slash text-4xl mb-4"></i>
-                <p class="mb-4">No topics have been created in this category yet.</p>
-                {% if user.is_authenticated %}
-                  <a href="{% url 'create_topic' category.slug %}"
-                     class="inline-flex items-center bg-teal-300 hover:bg-teal-400 text-white font-semibold px-4 py-2 rounded-lg">
-                    <i class="fa-solid fa-plus mr-2"></i>
-                    Create the First Topic
-                  </a>
-                {% else %}
-                  <a href="{% url 'account_login' %}?next={% url 'create_topic' category.slug %}"
-                     class="inline-flex items-center bg-teal-300 hover:bg-teal-400 text-white font-semibold px-4 py-2 rounded-lg">
-                    <i class="fa-solid fa-sign-in-alt mr-2"></i>
-                    Login to Create Topic
-                  </a>
-                {% endif %}
+                <p class="mb-4">You haven't replied to any topics yet.</p>
+                <a href="{% url 'forum_categories' %}"
+                   class="inline-flex items-center bg-teal-300 hover:bg-teal-400 text-white font-semibold px-4 py-2 rounded-lg">
+                  <i class="fa-solid fa-comments mr-2"></i>
+                  Browse Topics
+                </a>
               </div>
             {% endfor %}
           </div>

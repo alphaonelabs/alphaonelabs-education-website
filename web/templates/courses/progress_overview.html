@@ -121,6 +121,8 @@
                         <img loading="lazy"
                              src="{{ data.enrollment.student.profile.avatar.url }}"
                              alt="{{ data.enrollment.student.get_full_name }}"
+                        <img src="{{ data.enrollment.student.profile.avatar.url }}"
+                             alt="{{ data.enrollment.student.username }}"
                              class="h-8 w-8 rounded-full mr-3"
                              width="32"
                              height="32" />
@@ -128,12 +130,14 @@
                         <img loading="lazy"
                              src="{% static 'images/default_teacher.png' %}"
                              alt="{{ data.enrollment.student.get_full_name }}"
+                        <img src="{% static 'images/default_teacher.png' %}"
+                             alt="{{ data.enrollment.student.username }}"
                              class="h-8 w-8 rounded-full mr-3"
                              width="32"
                              height="32" />
                       {% endif %}
                       <div>
-                        <div class="font-medium">{{ data.enrollment.student.get_full_name }}</div>
+                        <div class="font-medium">{{ data.enrollment.student.username }}</div>
                         <div class="text-sm text-gray-500 dark:text-gray-400">{{ data.enrollment.student.email }}</div>
                       </div>
                     </div>

@@ -107,6 +107,7 @@ urlpatterns += i18n_patterns(
     path("github_update/", views.github_update, name="github_update"),
     path(f"{settings.ADMIN_URL}/dashboard/", admin_views.admin_dashboard, name="admin_dashboard"),
     path(f"{settings.ADMIN_URL}/", admin.site.urls),
+    path("waiting-rooms/<int:waiting_room_id>/delete/", views.delete_waiting_room, name="delete_waiting_room"),
     path("subjects/", views.subjects, name="subjects"),
     # Progress tracking URLs
     path(
@@ -184,6 +185,8 @@ urlpatterns += i18n_patterns(
         name="forum_topic",
     ),
     path("forum/topic/<int:topic_id>/edit/", views.edit_topic, name="edit_topic"),
+    path("forum/my-topics/", views.my_forum_topics, name="my_forum_topics"),
+    path("forum/my-replies/", views.my_forum_replies, name="my_forum_replies"),
     path("forum/sync-milestones/", views.sync_github_milestones, name="sync_github_milestones"),
     # Peer Networking URLs
     path("peers/", views.peer_connections, name="peer_connections"),
@@ -201,6 +204,7 @@ urlpatterns += i18n_patterns(
     # Study Groups URLs
     path("courses/<int:course_id>/groups/", views.study_groups, name="study_groups"),
     path("groups/<int:group_id>/", views.study_group_detail, name="study_group_detail"),
+    path("study-groups/", views.all_study_groups, name="all_study_groups"),
     path("sessions/<int:session_id>/", views.session_detail, name="session_detail"),
     path("sitemap/", views.sitemap, name="sitemap"),
     path("groups/<int:group_id>/invite/", views.invite_to_study_group, name="invite_to_study_group"),
@@ -381,6 +385,7 @@ urlpatterns += i18n_patterns(
         name="update_teacher_notes",
     ),
     path("award-badge/", views.award_badge, name="award_badge"),
+    path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
     prefix_default_language=True,
 )
 
