@@ -4,127 +4,181 @@
   Product Details - {{ product.name }}
 {% endblock title %}
 {% block content %}
+  <style>
+      .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+      }
+
+      .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+      }
+  </style>
   <div class="container mx-auto px-4 py-8">
-    <div class="flex flex-col md:flex-row gap-8">
-      <!-- Product Image Gallery -->
-      <div class="w-full md:w-3/4 lg:w-1/2 flex flex-row-reverse gap-4">
-        <!-- Thumbnail Images -->
-        <div class="hidden md:flex flex-col space-y-2 overflow-y-auto max-h-[600px]">
-          {% for image in product_images %}
-            <img src="{{ image.image.url }}"
-                 alt="{{ image.alt_text }}"
-                 class="w-20 h-20 object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-blue-500 transition-all duration-300"
-                 onclick="changeImage('{{ image.image.url }}')" />
-          {% endfor %}
-        </div>
-        <!-- Main Image Display -->
-        <div class="flex-grow relative">
-          <img id="main-product-image"
-               src="{{ product.image_url }}"
-               alt="{{ product.name }}"
-               class="w-full aspect-square object-cover rounded-lg shadow-lg" />
-          <!-- Mobile Thumbnails (for smaller screens) -->
-          <div class="md:hidden flex space-x-2 mt-4 overflow-x-auto">
-            {% for image in product_images %}
-              <img src="{{ image.image.url }}"
-                   alt="{{ image.alt_text }}"
-                   class="w-20 h-20 object-cover rounded-md cursor-pointer border-2 border-gray-300 hover:border-blue-500"
-                   onclick="changeImage('{{ image.image.url }}')" />
-            {% endfor %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div class="flex flex-col items-center">
+        <div class="relative w-full md:w-3/4 bg-gray-100 rounded-xl overflow-hidden shadow-lg flex">
+          <div class="hidden md:block relative w-20">
+            <button id="thumb-up"
+                    class="absolute top-0 left-0 w-full h-8 bg-gray-300 opacity-75 hover:opacity-100 z-10">
+              &uarr;
+            </button>
+            <div id="desktop-thumbnails"
+                 class="bg-gray-50 border-r overflow-y-auto hide-scrollbar max-h-[500px] pt-8 pb-8">
+              <div class="flex flex-col space-y-2 p-2">
+                {% for image in product_images %}
+                  <div class="thumbnail-container group relative cursor-pointer mb-2"
+                       onclick="changeImage('{{ image.image.url }}', this)">
+                    <img src="{{ image.image.url }}"
+                         alt="{{ image.alt_text }}"
+                         class="w-16 h-16 object-cover rounded-lg border-2 border-transparent group-hover:border-blue-500 transition-all duration-300 group-[.active]:border-blue-600 group-[.active]:shadow-lg" />
+                    <div class="absolute inset-0 bg-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-lg">
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+            <button id="thumb-down"
+                    class="absolute bottom-0 left-0 w-full h-8 bg-gray-300 opacity-75 hover:opacity-100 z-10">
+              &darr;
+            </button>
+          </div>
+          <div class="relative flex-grow overflow-hidden">
+            <img id="main-product-image"
+                 src="{{ product.image_url }}"
+                 alt="{{ product.name }}"
+                 class="w-full h-[500px] object-contain transition-all duration-500 ease-in-out transform hover:scale-105" />
+          </div>
+          <div class="md:hidden w-full absolute bottom-0 left-0 flex items-center bg-black bg-opacity-50">
+            <button id="mobile-thumb-left"
+                    class="w-8 h-8 bg-gray-300 opacity-75 hover:opacity-100 text-black rounded-full m-2">
+              &larr;
+            </button>
+            <div id="mobile-thumbnails"
+                 class="flex space-x-2 overflow-x-auto hide-scrollbar pb-2 flex-grow">
+              {% for image in product_images %}
+                <div class="thumbnail-container group relative cursor-pointer flex-shrink-0"
+                     onclick="changeImage('{{ image.image.url }}', this)">
+                  <img src="{{ image.image.url }}"
+                       alt="{{ image.alt_text }}"
+                       class="w-12 h-12 object-cover rounded-lg border-2 border-transparent group-hover:border-blue-500 transition-all duration-300 group-[.active]:border-blue-600 group-[.active]:shadow-lg" />
+                </div>
+              {% endfor %}
+            </div>
+            <button id="mobile-thumb-right"
+                    class="w-8 h-8 bg-gray-300 opacity-75 hover:opacity-100 text-black rounded-full m-2">
+              &rarr;
+            </button>
           </div>
         </div>
       </div>
-      <!-- Product Details -->
-      <div class="w-full md:w-1/2 bg-gradient-to-br from-white to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg shadow-xl p-6">
-        <h1 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">{{ product.name }}</h1>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h1 class="text-3xl font-bold mb-4">{{ product.name }}</h1>
         <p class="text-gray-600 dark:text-gray-400 mb-4">{{ product.description }}</p>
-        <!-- Price Section -->
-        <div class="mb-4 flex items-center justify-between">
-          <div>
-            {% if product.discount_price %}
-              <p class="text-lg text-gray-500 line-through">Original: ${{ product.price }}</p>
-              <p class="text-2xl font-bold text-red-500">Now: ${{ product.discount_price }}</p>
-            {% else %}
-              <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ product.price }}</p>
-            {% endif %}
-          </div>
-          <!-- Stock Status -->
-          <div>
-            <p class="text-gray-600 dark:text-gray-400">
-              Stock:
+        <div class="mb-4">
+          {% if product.discount_price %}
+            <p class="text-lg text-gray-500 line-through">Original: ${{ product.price }}</p>
+            <p class="text-2xl font-bold text-red-500">Now: ${{ product.discount_price }}</p>
+          {% else %}
+            <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ product.price }}</p>
+          {% endif %}
+        </div>
+        <p class="text-gray-600 dark:text-gray-400 mb-4">
+          Stock:
+          {% if product.stock > 0 %}
+            <span class="text-green-500 font-semibold">In Stock</span>
+          {% else %}
+            <span class="text-red-500 font-semibold">Out of Stock</span>
+          {% endif %}
+        </p>
+        <p class="text-gray-600 dark:text-gray-400 mb-4">Category: {{ product.category }}</p>
+        <p class="text-gray-600 dark:text-gray-400 mb-4">Product Type: {{ product.get_product_type_display }}</p>
+        <div class="mt-6">
+          <form method="post" action="{% url 'add_goods_to_cart' product.pk %}">
+            {% csrf_token %}
+            <button type="submit"
+                    class="bg-teal-600 text-white px-6 py-3 rounded-lg hover:bg-teal-700 transition duration-300"
+                    {% if product.stock == 0 %}disabled{% endif %}>
               {% if product.stock > 0 %}
-                <span class="text-green-500 font-semibold">In Stock</span>
+                Add to Cart
               {% else %}
-                <span class="text-red-500 font-semibold">Out of Stock</span>
+                Sold Out
               {% endif %}
-            </p>
-          </div>
+            </button>
+          </form>
         </div>
-        <div class="grid grid-cols-2 gap-4 mb-6">
-          <p class="text-gray-600 dark:text-gray-400">Category: {{ product.category }}</p>
-          <p class="text-gray-600 dark:text-gray-400">Type: {{ product.get_product_type_display }}</p>
-        </div>
-        <!-- Add to Cart Button -->
-        <form method="post"
-              action="{% url 'add_goods_to_cart' product.pk %}"
-              class="mt-6">
-          {% csrf_token %}
-          <button type="submit"
-                  class="w-full bg-gradient-to-r from-teal-500 to-blue-500 text-white px-6 py-3 rounded-lg hover:from-teal-600 hover:to-blue-600 transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
-                  {% if product.stock == 0 %}disabled{% endif %}>
-            {% if product.stock > 0 %}
-              Add to Cart
-            {% else %}
-              Sold Out
-            {% endif %}
-          </button>
-        </form>
       </div>
     </div>
-    <!-- Other Products Section -->
     <div class="mt-12">
-      <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Related Products</h2>
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Other Products</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {% for other_product in other_products %}
-          <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden transform transition duration-300 hover:scale-105 hover:shadow-xl">
-            <a href="{% url 'goods_detail' pk=other_product.pk %}" class="block">
+          <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <a href="{% url 'goods_detail' pk=other_product.pk %}"
+               class="block overflow-hidden rounded-md">
               <img src="{{ other_product.image_url }}"
                    alt="{{ other_product.name }}"
-                   class="w-full h-48 md:h-56 object-cover" />
+                   class="w-full h-56 object-cover rounded-md" />
             </a>
-            <div class="p-4">
-              <h3 class="text-lg font-semibold text-gray-900 dark:text-white truncate">{{ other_product.name }}</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">
-                {{ other_product.description|truncatewords:10 }}
-              </p>
-              <div>
-                {% if other_product.discount_price %}
-                  <p class="text-sm text-gray-500 line-through">${{ other_product.price }}</p>
-                  <p class="text-xl font-bold text-red-500">${{ other_product.discount_price }}</p>
-                {% else %}
-                  <p class="text-xl font-bold text-gray-900 dark:text-white">${{ other_product.price }}</p>
-                {% endif %}
-              </div>
+            <h3 class="mt-3 text-lg font-semibold text-gray-900 dark:text-white">{{ other_product.name }}</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">{{ other_product.description|truncatewords:10 }}</p>
+            <div class="mt-2">
+              {% if other_product.discount_price %}
+                <p class="text-sm text-gray-500 line-through">${{ other_product.price }}</p>
+                <p class="text-xl font-bold text-red-500">${{ other_product.discount_price }}</p>
+              {% else %}
+                <p class="text-xl font-bold text-gray-900 dark:text-white">${{ other_product.price }}</p>
+              {% endif %}
             </div>
           </div>
         {% empty %}
-          <p class="text-gray-500 dark:text-gray-400 col-span-full text-center">No other products available.</p>
+          <p class="text-gray-500 dark:text-gray-400">No other products available.</p>
         {% endfor %}
       </div>
     </div>
   </div>
-  <!-- JavaScript for Image Gallery -->
   <script>
-      function changeImage(newSrc) {
-          const mainImage = document.getElementById("main-product-image");
-          mainImage.classList.remove('opacity-100');
-          mainImage.classList.add('opacity-0');
+      function changeImage(newSrc, thumbnailElement) {
+          const mainImage = document.getElementById('main-product-image');
+          const thumbnails = document.querySelectorAll('.thumbnail-container');
 
+          thumbnails.forEach(thumb => thumb.classList.remove('active'));
+
+          thumbnailElement.classList.add('active');
+
+          mainImage.classList.add('opacity-0', 'scale-95');
           setTimeout(() => {
               mainImage.src = newSrc;
-              mainImage.classList.remove('opacity-0');
-              mainImage.classList.add('opacity-100');
+              mainImage.classList.remove('opacity-0', 'scale-95');
           }, 300);
       }
+
+      document.querySelector('.thumbnail-container')?.classList.add('active');
+
+      document.getElementById('thumb-up').addEventListener('click', function() {
+          document.getElementById('desktop-thumbnails').scrollBy({
+              top: -100,
+              behavior: 'smooth'
+          });
+      });
+      document.getElementById('thumb-down').addEventListener('click', function() {
+          document.getElementById('desktop-thumbnails').scrollBy({
+              top: 100,
+              behavior: 'smooth'
+          });
+      });
+
+      document.getElementById('mobile-thumb-left').addEventListener('click', function() {
+          document.getElementById('mobile-thumbnails').scrollBy({
+              left: -100,
+              behavior: 'smooth'
+          });
+      });
+      document.getElementById('mobile-thumb-right').addEventListener('click', function() {
+          document.getElementById('mobile-thumbnails').scrollBy({
+              left: 100,
+              behavior: 'smooth'
+          });
+      });
   </script>
 {% endblock content %}
