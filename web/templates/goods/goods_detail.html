@@ -11,7 +11,7 @@
         <!-- Thumbnail Images -->
         <div class="hidden md:flex flex-col space-y-2 overflow-y-auto max-h-[600px]">
           {% for image in product_images %}
-            <img src="https://shashwatpublication.com/files/book-covers/front_cover_imgSB20668.jpg"
+            <img src="{{ image.image.url }}"
                  alt="{{ image.alt_text }}"
                  class="w-20 h-20 object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-blue-500 transition-all duration-300"
                  onclick="changeImage('{{ image.image.url }}')" />
@@ -20,7 +20,7 @@
         <!-- Main Image Display -->
         <div class="flex-grow relative">
           <img id="main-product-image"
-               src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzV_sbZRJAw16LM_CfZGCeQ82dUjB7Vuju7A&s"
+               src="{{ product.image_url }}"
                alt="{{ product.name }}"
                class="w-full aspect-square object-cover rounded-lg shadow-lg" />
           <!-- Mobile Thumbnails (for smaller screens) -->
@@ -35,7 +35,7 @@
         </div>
       </div>
       <!-- Product Details -->
-      <div class="w-full md:w-1/2 h-[30vh] bg-gradient-to-br from-white to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg shadow-xl p-6">
+      <div class="w-full md:w-1/2 bg-gradient-to-br from-white to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg shadow-xl p-6">
         <h1 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">{{ product.name }}</h1>
         <p class="text-gray-600 dark:text-gray-400 mb-4">{{ product.description }}</p>
         <!-- Price Section -->
