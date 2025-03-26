@@ -5701,10 +5701,11 @@ def prepare_time_series_data(enrollment, total_sessions):
 
 
 # map views
+
+
 def classes_map(request):
     """View for displaying classes near the user."""
     now = timezone.now()
-
     sessions = (
         Session.objects.filter(Q(start_time__gte=now) | Q(start_time__lte=now, end_time__gte=now))
         .filter(is_virtual=False, location__isnull=False)
@@ -5712,23 +5713,18 @@ def classes_map(request):
         .order_by("start_time")
         .select_related("course", "course__teacher")
     )
-
     # Get filter parameters
     course_id = request.GET.get("course")
-    teaching_style = request.GET.get("teaching_style")  # "true" (Online) or "false" (In-Person)
-
+    teaching_style = request.GET.get("teaching_style")
     # Apply filters
     if course_id:
         sessions = sessions.filter(course_id=course_id)
-    # Filter value for teaching style (e.g., "lecture", "workshop", etc.)
     if teaching_style:
         sessions = sessions.filter(teaching_style=teaching_style)
-
-    # Fetch course and age group choices
+    # Fetch only necessary course fields
     courses = Course.objects.only("id", "title").order_by("title")
     age_groups = Course._meta.get_field("level").choices
     teaching_styles = list(set(Session.objects.values_list("teaching_style", flat=True)))
-
     context = {"sessions": sessions, "courses": courses, "age_groups": age_groups, "teaching_style": teaching_styles}
     return render(request, "web/classes_map.html", context)
 
