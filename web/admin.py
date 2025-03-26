@@ -742,6 +742,7 @@ class GSoCProposalAdmin(admin.ModelAdmin):
         ("Timestamps", {"fields": ("submitted_at", "updated_at"), "classes": ("collapse",)}),
     )
 
+
 @admin.register(MembershipPlan)
 class MembershipPlanAdmin(admin.ModelAdmin):
     list_display = ("name", "price_monthly", "price_yearly", "billing_period", "is_active", "is_popular", "order")

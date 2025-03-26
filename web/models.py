@@ -2578,6 +2578,7 @@ class GSoCProposal(models.Model):
     def get_status_choices(self):
         return self.STATUS_CHOICES
 
+
 class MembershipPlan(models.Model):
     BILLING_PERIOD_CHOICES = [
         ("monthly", "Monthly"),

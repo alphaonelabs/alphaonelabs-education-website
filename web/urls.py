@@ -389,7 +389,7 @@ urlpatterns += i18n_patterns(
     # GSoC proposal URLs
     path("gsoc-proposals/", views.gsoc_proposal_list, name="gsoc_proposal_list"),
     path("gsoc-proposals/upload/", views.upload_gsoc_proposal, name="upload_gsoc_proposal"),
-    path("gsoc-proposals/ <int:proposal_id>/", views.gsoc_proposal_detail, name="gsoc_proposal_detail"),
+    path("gsoc-proposals/<int:proposal_id>/", views.gsoc_proposal_detail, name="gsoc_proposal_detail"),
     prefix_default_language=True,
 )
 

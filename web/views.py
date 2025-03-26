@@ -6064,7 +6064,6 @@ def gsoc_proposal_list(request):
     else:
         proposals_list = GSoCProposal.objects.filter(student=request.user).order_by("-submitted_at")
         viewing_as = "student"
-    print("i am viewing as :", viewing_as)
     # Pagination
     paginator = Paginator(proposals_list, 10)  # Show 10 proposals per page
     page = request.GET.get("page", 1)
