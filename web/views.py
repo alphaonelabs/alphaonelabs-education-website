@@ -1464,12 +1464,16 @@ def forum_category(request, slug):
     """Display topics in a specific category."""
     category = get_object_or_404(ForumCategory, slug=slug)
     topics = category.topics.all()
-    return render(request, "web/forum/category.html", {"category": category, "topics": topics})
+    categories = ForumCategory.objects.all()
+    return render(
+        request, "web/forum/category.html", {"category": category, "topics": topics, "categories": categories}
+    )
 
 
 def forum_topic(request, category_slug, topic_id):
     """Display a forum topic and its replies."""
     topic = get_object_or_404(ForumTopic, id=topic_id, category__slug=category_slug)
+    categories = ForumCategory.objects.all()
 
     # Get view count from WebRequest model
     view_count = (
@@ -1499,13 +1503,14 @@ def forum_topic(request, category_slug, topic_id):
             return redirect("forum_category", slug=category_slug)
 
     replies = topic.replies.select_related("author").order_by("created_at")
-    return render(request, "web/forum/topic.html", {"topic": topic, "replies": replies})
+    return render(request, "web/forum/topic.html", {"topic": topic, "replies": replies, "categories": categories})
 
 
 @login_required
 def create_topic(request, category_slug):
     """Create a new forum topic."""
     category = get_object_or_404(ForumCategory, slug=category_slug)
+    categories = ForumCategory.objects.all()
 
     if request.method == "POST":
         form = ForumTopicForm(request.POST)
@@ -1521,7 +1526,9 @@ def create_topic(request, category_slug):
     else:
         form = ForumTopicForm()
 
-    return render(request, "web/forum/create_topic.html", {"category": category, "form": form})
+    return render(
+        request, "web/forum/create_topic.html", {"category": category, "form": form, "categories": categories}
+    )
 
 
 @login_required
@@ -2509,29 +2516,39 @@ def create_forum_category(request):
 @login_required
 def edit_topic(request, topic_id):
     """Edit an existing forum topic."""
-    topic = get_object_or_404(ForumTopic, id=topic_id)
-
-    # Check if user is the author of the topic
-    if request.user != topic.author:
-        messages.error(request, "You don't have permission to edit this topic.")
-        return redirect("forum_topic", category_slug=topic.category.slug, topic_id=topic.id)
+    topic = get_object_or_404(ForumTopic, id=topic_id, author=request.user)
+    categories = ForumCategory.objects.all()
 
     if request.method == "POST":
-        form = ForumTopicForm(request.POST)
+        form = ForumTopicForm(request.POST, instance=topic)
         if form.is_valid():
-            topic.title = form.cleaned_data["title"]
-            topic.content = form.cleaned_data["content"]
-            topic.save()
+            form.save()
             messages.success(request, "Topic updated successfully!")
             return redirect("forum_topic", category_slug=topic.category.slug, topic_id=topic.id)
     else:
-        form = ForumTopicForm(initial={"title": topic.title, "content": topic.content})
+        form = ForumTopicForm(instance=topic)
 
-    return render(
-        request,
-        "web/forum/create_topic.html",
-        {"form": form, "category": topic.category, "is_edit": True, "topic": topic},
+    return render(request, "web/forum/edit_topic.html", {"topic": topic, "form": form, "categories": categories})
+
+
+@login_required
+def my_forum_topics(request):
+    """Display all forum topics created by the current user."""
+    topics = ForumTopic.objects.filter(author=request.user).order_by("-created_at")
+    categories = ForumCategory.objects.all()
+    return render(request, "web/forum/my_topics.html", {"topics": topics, "categories": categories})
+
+
+@login_required
+def my_forum_replies(request):
+    """Display all forum replies created by the current user."""
+    replies = (
+        ForumReply.objects.filter(author=request.user)
+        .select_related("topic", "topic__category")
+        .order_by("-created_at")
     )
+    categories = ForumCategory.objects.all()
+    return render(request, "web/forum/my_replies.html", {"replies": replies, "categories": categories})
 
 
 def get_course_calendar(request, slug):
@@ -6048,3 +6065,68 @@ def contributor_detail_view(request, username):
     # Cache for 1 hour
     cache.set(cache_key, context, 3600)
     return render(request, "web/contributor_detail.html", context)
+
+
+@login_required
+def all_study_groups(request):
+    """Display all study groups across courses."""
+    # Get all study groups
+    groups = StudyGroup.objects.all().order_by("-created_at")
+
+    # Group study groups by course
+    courses_with_groups = {}
+    for group in groups:
+        if group.course not in courses_with_groups:
+            courses_with_groups[group.course] = []
+        courses_with_groups[group.course].append(group)
+
+    # Handle creating a new study group
+    if request.method == "POST":
+        course_id = request.POST.get("course")
+        name = request.POST.get("name")
+        description = request.POST.get("description")
+        max_members = request.POST.get("max_members", 10)
+        is_private = request.POST.get("is_private", False) == "on"  # Convert checkbox to boolean
+
+        try:
+            # Validate the input
+            if not course_id or not name or not description:
+                raise ValueError("All fields are required")
+
+            # Get the course
+            course = Course.objects.get(id=course_id)
+
+            # Create the group
+            group = StudyGroup.objects.create(
+                course=course,
+                creator=request.user,
+                name=name,
+                description=description,
+                max_members=int(max_members),
+                is_private=is_private,
+            )
+
+            # Add the creator as a member
+            group.members.add(request.user)
+
+            messages.success(request, "Study group created successfully!")
+            return redirect("study_group_detail", group_id=group.id)
+        except Course.DoesNotExist:
+            messages.error(request, "Course not found.")
+        except ValueError as e:
+            messages.error(request, str(e))
+        except Exception as e:
+            messages.error(request, f"Error creating study group: {str(e)}")
+
+    # Get user's enrollments for the create group form
+    enrollments = request.user.enrollments.filter(status="approved").select_related("course")
+    enrolled_courses = [enrollment.course for enrollment in enrollments]
+
+    return render(
+        request,
+        "web/study/all_groups.html",
+        {
+            "courses_with_groups": courses_with_groups,
+            "enrolled_courses": enrolled_courses,
+        },
+    )

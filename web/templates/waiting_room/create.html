@@ -1,6 +1,8 @@
 {% extends "base.html" %}
 
-{% block title %}Create Waiting Room{% endblock %}
+{% block title %}
+  Create Waiting Room
+{% endblock title %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <div class="mb-6">
@@ -100,5 +102,5 @@
             }
         });
     </script>
-  {% endblock %}
-{% endblock %}
+  {% endblock extra_js %}
+{% endblock content %}

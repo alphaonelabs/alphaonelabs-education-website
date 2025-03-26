@@ -185,6 +185,8 @@ urlpatterns += i18n_patterns(
         name="forum_topic",
     ),
     path("forum/topic/<int:topic_id>/edit/", views.edit_topic, name="edit_topic"),
+    path("forum/my-topics/", views.my_forum_topics, name="my_forum_topics"),
+    path("forum/my-replies/", views.my_forum_replies, name="my_forum_replies"),
     path("forum/sync-milestones/", views.sync_github_milestones, name="sync_github_milestones"),
     # Peer Networking URLs
     path("peers/", views.peer_connections, name="peer_connections"),
@@ -202,6 +204,7 @@ urlpatterns += i18n_patterns(
     # Study Groups URLs
     path("courses/<int:course_id>/groups/", views.study_groups, name="study_groups"),
     path("groups/<int:group_id>/", views.study_group_detail, name="study_group_detail"),
+    path("study-groups/", views.all_study_groups, name="all_study_groups"),
     path("sessions/<int:session_id>/", views.session_detail, name="session_detail"),
     path("sitemap/", views.sitemap, name="sitemap"),
     path("groups/<int:group_id>/invite/", views.invite_to_study_group, name="invite_to_study_group"),

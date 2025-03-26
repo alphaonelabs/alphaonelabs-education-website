@@ -3,9 +3,7 @@
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">
-        Message {{ teacher.get_full_name|default:teacher.username }}
-      </h1>
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">Message {{ teacher.username }}</h1>
       <form method="post" class="space-y-6">
         {% csrf_token %}
         {% if not user.is_authenticated %}
@@ -44,7 +42,8 @@
         </div>
         {% if form.errors %}<div class="text-red-600 dark:text-red-400">{{ form.errors }}</div>{% endif %}
         <div class="flex justify-end space-x-4">
-          <a href="javascript:history.back()"
+          <a href="#"
+             onclick="window.history.back(); return false;"
              class="px-6 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition duration-200">
             Cancel
           </a>
@@ -56,4 +55,4 @@
       </form>
     </div>
   </div>
-{% endblock %}
+{% endblock content %}
