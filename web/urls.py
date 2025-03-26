@@ -207,6 +207,7 @@ urlpatterns += i18n_patterns(
     # Study Groups URLs
     path("courses/<int:course_id>/groups/", views.study_groups, name="study_groups"),
     path("groups/<int:group_id>/", views.study_group_detail, name="study_group_detail"),
+    path("study-groups/", views.all_study_groups, name="all_study_groups"),
     path("sessions/<int:session_id>/", views.session_detail, name="session_detail"),
     path("sitemap/", views.sitemap, name="sitemap"),
     path("groups/<int:group_id>/invite/", views.invite_to_study_group, name="invite_to_study_group"),
