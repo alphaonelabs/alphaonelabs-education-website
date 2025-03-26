@@ -10,7 +10,7 @@ import socket
 import subprocess
 import time
 from collections import Counter, defaultdict
-from datetime import timedelta 
+from datetime import timedelta
 from decimal import Decimal
 from urllib.parse import urlparse
 
@@ -565,7 +565,7 @@ def edit_review(request, slug, review_id):
         form = ReviewForm(request.POST, instance=review)
         if form.is_valid():
             review = form.save(commit=False)
-            review.updated_at = timezone.now()  # Set updated_at to current timestamp
+            review.updated_at = timezone.now()
             form.save()
             messages.success(request, "Your review has been updated.")
             url = reverse("course_detail", kwargs={"slug": slug})
@@ -595,7 +595,6 @@ def delete_review(request, slug, review_id):
 
     url = reverse("course_detail", kwargs={"slug": slug})
     return redirect(f"{url}#course_reviews")
-    # return redirect('course_detail', slug=slug)
 
 
 def course_detail(request, slug):
@@ -688,19 +687,16 @@ def course_detail(request, slug):
     reviews = course.reviews.filter(is_featured=False).order_by("-created_at")
 
     # Get the featured review
-    featured_reviews = Review.objects.filter(is_featured=True, course=course)
+    featured_review = Review.objects.filter(is_featured=True, course=course)
 
     # Get all reviews sum
-    reviews_num = reviews.count() + featured_reviews.count()
+    reviews_num = reviews.count() + featured_review.count()
 
     # Calculate rating distribution for visualization
-    rating_distribution = {
-        5: reviews.filter(rating=5).count() + featured_reviews.filter(rating=5).count(),
-        4: reviews.filter(rating=4).count() + featured_reviews.filter(rating=4).count(),
-        3: reviews.filter(rating=3).count() + featured_reviews.filter(rating=3).count(),
-        2: reviews.filter(rating=2).count() + featured_reviews.filter(rating=2).count(),
-        1: reviews.filter(rating=1).count() + featured_reviews.filter(rating=1).count(),
-    }
+    rating_counts = Review.objects.filter(course=course).values("rating").annotate(count=Count("id"))
+    rating_distribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+    for item in rating_counts:
+        rating_distribution[item["rating"]] = item["count"]
 
     context = {
         "course": course,
@@ -718,7 +714,7 @@ def course_detail(request, slug):
         "student_attendance": student_attendance,
         "completed_enrollment_count": course.enrollments.filter(status="completed").count(),
         "in_progress_enrollment_count": course.enrollments.filter(status="in_progress").count(),
-        "featured_review": featured_reviews,
+        "featured_review": featured_review,
         "reviews": reviews,
         "user_review": user_review,
         "rating_distribution": rating_distribution,
