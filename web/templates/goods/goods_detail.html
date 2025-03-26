@@ -3,7 +3,6 @@
 {% block title %}
   Product Details - {{ product.name }}
 {% endblock title %}
-
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <div class="flex flex-col md:flex-row gap-8">
@@ -18,14 +17,12 @@
                  onclick="changeImage('{{ image.image.url }}')" />
           {% endfor %}
         </div>
-        
         <!-- Main Image Display -->
         <div class="flex-grow relative">
           <img id="main-product-image"
                src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTzV_sbZRJAw16LM_CfZGCeQ82dUjB7Vuju7A&s"
                alt="{{ product.name }}"
                class="w-full aspect-square object-cover rounded-lg shadow-lg" />
-          
           <!-- Mobile Thumbnails (for smaller screens) -->
           <div class="md:hidden flex space-x-2 mt-4 overflow-x-auto">
             {% for image in product_images %}
@@ -37,12 +34,10 @@
           </div>
         </div>
       </div>
-      
       <!-- Product Details -->
       <div class="w-full md:w-1/2 h-[30vh] bg-gradient-to-br from-white to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg shadow-xl p-6">
         <h1 class="text-3xl font-bold mb-4 text-gray-900 dark:text-white">{{ product.name }}</h1>
         <p class="text-gray-600 dark:text-gray-400 mb-4">{{ product.description }}</p>
-        
         <!-- Price Section -->
         <div class="mb-4 flex items-center justify-between">
           <div>
@@ -53,7 +48,6 @@
               <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ product.price }}</p>
             {% endif %}
           </div>
-          
           <!-- Stock Status -->
           <div>
             <p class="text-gray-600 dark:text-gray-400">
@@ -66,14 +60,14 @@
             </p>
           </div>
         </div>
-        
         <div class="grid grid-cols-2 gap-4 mb-6">
           <p class="text-gray-600 dark:text-gray-400">Category: {{ product.category }}</p>
           <p class="text-gray-600 dark:text-gray-400">Type: {{ product.get_product_type_display }}</p>
         </div>
-        
         <!-- Add to Cart Button -->
-        <form method="post" action="{% url 'add_goods_to_cart' product.pk %}" class="mt-6">
+        <form method="post"
+              action="{% url 'add_goods_to_cart' product.pk %}"
+              class="mt-6">
           {% csrf_token %}
           <button type="submit"
                   class="w-full bg-gradient-to-r from-teal-500 to-blue-500 text-white px-6 py-3 rounded-lg hover:from-teal-600 hover:to-blue-600 transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
@@ -87,22 +81,22 @@
         </form>
       </div>
     </div>
-    
     <!-- Other Products Section -->
     <div class="mt-12">
       <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Related Products</h2>
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {% for other_product in other_products %}
           <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden transform transition duration-300 hover:scale-105 hover:shadow-xl">
-            <a href="{% url 'goods_detail' pk=other_product.pk %}"
-               class="block">
+            <a href="{% url 'goods_detail' pk=other_product.pk %}" class="block">
               <img src="{{ other_product.image_url }}"
                    alt="{{ other_product.name }}"
                    class="w-full h-48 md:h-56 object-cover" />
             </a>
             <div class="p-4">
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white truncate">{{ other_product.name }}</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">{{ other_product.description|truncatewords:10 }}</p>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2 line-clamp-2">
+                {{ other_product.description|truncatewords:10 }}
+              </p>
               <div>
                 {% if other_product.discount_price %}
                   <p class="text-sm text-gray-500 line-through">${{ other_product.price }}</p>
@@ -119,19 +113,18 @@
       </div>
     </div>
   </div>
-  
   <!-- JavaScript for Image Gallery -->
   <script>
-    function changeImage(newSrc) {
-      const mainImage = document.getElementById("main-product-image");
-      mainImage.classList.remove('opacity-100');
-      mainImage.classList.add('opacity-0');
-      
-      setTimeout(() => {
-        mainImage.src = newSrc;
-        mainImage.classList.remove('opacity-0');
-        mainImage.classList.add('opacity-100');
-      }, 300);
-    }
+      function changeImage(newSrc) {
+          const mainImage = document.getElementById("main-product-image");
+          mainImage.classList.remove('opacity-100');
+          mainImage.classList.add('opacity-0');
+
+          setTimeout(() => {
+              mainImage.src = newSrc;
+              mainImage.classList.remove('opacity-0');
+              mainImage.classList.add('opacity-100');
+          }, 300);
+      }
   </script>
 {% endblock content %}
