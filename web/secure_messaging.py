@@ -1,19 +1,20 @@
-# web/secure_messaging.py
-
 from cryptography.fernet import Fernet
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
-from django.http import JsonResponse
-from django.shortcuts import redirect, render
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
+from django.utils import timezone
 
-from .models import PeerMessage  # Using your PeerMessage model
+from .models import PeerMessage
 
 # Initialize Fernet with the master key from settings
 master_fernet = Fernet(settings.SECURE_MESSAGE_KEY)
+
+# --- Envelope Encryption Utility Functions ---
 
 
 def encrypt_message_with_random_key(message: str) -> tuple[str, str]:
@@ -40,6 +41,7 @@ def decrypt_message_with_random_key(encrypted_message: str, encrypted_random_key
     return plaintext.decode("utf-8")
 
 
+# --- Simple Encryption Utility Functions (if needed) ---
 def encrypt_message(message: str) -> bytes:
     return master_fernet.encrypt(message.encode("utf-8"))
 
@@ -58,6 +60,9 @@ def send_secure_teacher_message(email_to: str, message: str):
     subject = "New Secure Message"
     message_body = render_to_string("web/emails/teacher_message.html", context)
     send_mail(subject, message_body, settings.DEFAULT_FROM_EMAIL, [email_to])
+
+
+# --- Secure Messaging Views Using Envelope Encryption ---
 
 
 @login_required
@@ -97,7 +102,6 @@ def compose_message(request):
             messages.error(request, "Recipient not found.")
             return redirect("compose_message")
 
-        # Use envelope encryption to encrypt the message and random key.
         encrypted_message, encrypted_key = encrypt_message_with_random_key(message_text)
         PeerMessage.objects.create(
             sender=request.user, receiver=recipient, content=encrypted_message, encrypted_key=encrypted_key
@@ -137,25 +141,67 @@ def send_encrypted_message(request):
 @login_required
 def inbox(request):
     """
-    Renders an inbox page displaying decrypted messages for the logged-in user,
-    and deletes them immediately after reading.
+    Renders an inbox page displaying decrypted messages for the logged-in user.
+    Also computes an expiration countdown (messages expire 7 days after creation).
     """
     messages_qs = PeerMessage.objects.filter(receiver=request.user).order_by("created_at")
     message_list = []
-    # Use list() to iterate over a static copy of the queryset
-    for msg in list(messages_qs):
+    now = timezone.now()
+    for msg in messages_qs:
+        # Mark message as read and update read receipt
+        if not msg.is_read:
+            msg.is_read = True
+            msg.read_at = now
+            msg.save(update_fields=["is_read", "read_at"])
         try:
             decrypted_message = decrypt_message_with_random_key(msg.content, msg.encrypted_key)
         except Exception:
             decrypted_message = "[Error decrypting message]"
+        expires_at = msg.created_at + timezone.timedelta(days=7)
+        time_remaining = expires_at - now
+        days = time_remaining.days
+        hours, remainder = divmod(time_remaining.seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+        expiration_str = f"{days}d {hours}h {minutes}m"
         message_list.append(
             {
                 "id": msg.id,
                 "sender": msg.sender.username,
                 "content": decrypted_message,
                 "sent_at": msg.created_at.isoformat(),
+                "expires_in": expiration_str,
+                "starred": msg.starred,
+                "is_read": msg.is_read,
             }
         )
-        # Delete the message after reading it
-        msg.delete()
     return render(request, "web/peer/inbox.html", {"messages": message_list})
+
+
+@login_required
+def download_message(request, message_id):
+    """
+    Decrypts and returns a message as a plain text file download.
+    When the message is downloaded, it is deleted from the server (unless it is starred).
+    """
+    message = get_object_or_404(PeerMessage, id=message_id, receiver=request.user)
+    try:
+        decrypted_message = decrypt_message_with_random_key(message.content, message.encrypted_key)
+    except Exception:
+        decrypted_message = "[Error decrypting message]"
+    response = HttpResponse(decrypted_message, content_type="text/plain")
+    response["Content-Disposition"] = f'attachment; filename="message_{message_id}.txt"'
+    # Delete the message after download if it's not starred.
+    if not message.starred:
+        message.delete()
+    return response
+
+
+@login_required
+def toggle_star_message(request, message_id):
+    """
+    Toggles the starred status of a message.
+    """
+    message = get_object_or_404(PeerMessage, id=message_id, receiver=request.user)
+    message.starred = not message.starred
+    message.save(update_fields=["starred"])
+    return redirect("inbox")

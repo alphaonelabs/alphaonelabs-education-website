@@ -5,25 +5,39 @@
 {% endblock title %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-6">Messaging Dashboard</h1>
-    <p>
-      You have <strong>{{ unread_count }}</strong> new message
-      {% if unread_count != 1 %}s{% endif %}
-      .
-    </p>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-      <!-- Inbox Button -->
-      <a href="{% url 'inbox' %}"
-         class="block p-6 bg-white dark:bg-gray-800 rounded-lg shadow hover:bg-gray-100 dark:hover:bg-gray-700">
-        <h2 class="text-xl font-semibold mb-2">Inbox</h2>
-        <p class="text-gray-600 dark:text-gray-400">You have {{ inbox_count }} messages in your inbox.</p>
-      </a>
-      <!-- Compose Message Button -->
-      <a href="{% url 'compose_message' %}"
-         class="block p-6 bg-white dark:bg-gray-800 rounded-lg shadow hover:bg-gray-100 dark:hover:bg-gray-700">
-        <h2 class="text-xl font-semibold mb-2">Compose Message</h2>
-        <p class="text-gray-600 dark:text-gray-400">Send a new message to a peer or teacher.</p>
-      </a>
+    <div class="bg-gradient-to-r from-blue-500 to-teal-500 rounded-xl shadow-lg p-8 text-white">
+      <h1 class="text-4xl font-bold mb-4">Messaging Dashboard</h1>
+      <p class="text-lg mb-6">
+        You have <span class="font-semibold">{{ inbox_count }}</span> messages in your inbox
+        (<span class="font-semibold">{{ unread_count }}</span> unread) and
+        <span class="font-semibold">{{ sent_count }}</span> sent messages.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4">
+        <a href="{% url 'inbox' %}"
+           class="block bg-white text-blue-600 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold px-6 py-3 rounded-full shadow transition-colors">
+          View Inbox
+        </a>
+        <a href="{% url 'compose_message' %}"
+           class="block bg-white text-green-600 hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold px-6 py-3 rounded-full shadow transition-colors">
+          Compose Message
+        </a>
+      </div>
     </div>
+    {% if recent_messages %}
+      <div class="mt-10">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">Recent Messages</h2>
+        <ul class="divide-y divide-gray-300 dark:divide-gray-600">
+          {% for msg in recent_messages %}
+            <li class="py-4 flex justify-between items-center">
+              <div>
+                <p class="font-semibold text-gray-800 dark:text-gray-200">From: {{ msg.sender }}</p>
+                <p class="text-gray-700 dark:text-gray-300 text-sm">{{ msg.content|truncatechars:60 }}</p>
+              </div>
+              <span class="text-xs text-gray-500">{{ msg.sent_at|date:"M d, Y h:ia" }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
   </div>
 {% endblock content %}

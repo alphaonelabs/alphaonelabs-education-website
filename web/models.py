@@ -784,8 +784,10 @@ class PeerMessage(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
     content = models.TextField()
-    encrypted_key = models.TextField(blank=True, default="")
+    encrypted_key = models.TextField(blank=True, default="")  # Using default empty string instead of null
     is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    starred = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
