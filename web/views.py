@@ -3044,6 +3044,7 @@ def content_dashboard(request):
     )
 
 
+# Challenges views
 def current_weekly_challenge(request):
     current_time = timezone.now()
     weekly_challenge = Challenge.objects.filter(
