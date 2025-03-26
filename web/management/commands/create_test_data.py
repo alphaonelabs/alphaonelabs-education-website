@@ -398,16 +398,18 @@ class Command(BaseCommand):
                 course = random.choice(available_courses)
                 available_courses.remove(course)  # Remove to avoid selecting again
 
-                boolean = random.choice([True, False])
+                is_featured = random.choice([True, False])
 
                 Review.objects.create(
                     student=student,
                     course=course,
                     rating=random.randint(3, 5),
                     comment="Great course!",
-                    is_featured=boolean,
+                    is_featured=is_featured,
                 )
-                self.stdout.write(f"Created review, student: {student}, course: {course}, review: Great course!")
+                self.stdout.write(
+                    f"Created review, student: {student}, course: {course}, featured: {is_featured}, review: Great course!"
+                )
 
         # Create forum categories and topics
         categories = []

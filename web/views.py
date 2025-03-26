@@ -523,9 +523,9 @@ def add_featured_review(request, slug, review_id):
     # Set the is_featured field to True
     review.is_featured = True
     review.save()
+    messages.success(request, "Review has been featured.")
 
     # Redirect to the course detail page
-    # return redirect(reverse("course_detail", kwargs={"slug": slug}))
     url = reverse("course_detail", kwargs={"slug": slug})
     return redirect(f"{url}#course_reviews")
 

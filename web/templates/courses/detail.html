@@ -1139,8 +1139,7 @@
                           <div class="w-12 text-sm text-right">{{ i }} star{{ i|pluralize }}</div>
                           <div class="flex-grow h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
                             {% if rating_distribution|get_item:i > 0 %}
-                              <div class="h-full bg-yellow-400"
-                                   id="rating-distribution-bar"
+                              <div class="h-full bg-yellow-400 rating-distribution-bar"
                                    data-rating="{{ rating_distribution|get_item:i }}"></div>
                             {% else %}
                               <div class="h-full bg-yellow-400" style="width: 0%"></div>
@@ -1336,6 +1335,11 @@
     <span class="notification-message">This is a notification</span>
   </div>
   <script>
+      document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+          closeDeleteModal();
+        }
+      });
       function setRatingDistributionWidths() {
           // Parse the widths data from the template
           const reviewsNum = JSON.parse('{{ reviews_num|escapejs }}');
@@ -1347,7 +1351,7 @@
           }
 
           // Apply widths to all elements
-          document.querySelectorAll('#rating-distribution-bar').forEach(element => {
+          document.querySelectorAll('.rating-distribution-bar').forEach(element => {
               const StartNum = element.getAttribute('data-rating');
               setWidth(element, StartNum);
           });
@@ -1367,21 +1371,22 @@
       }
 
       function confirmAddOrDeleteFeatureReviews(deleteUrl, action) {
+          let deleteLink = document.getElementById('deleteLink')
           if (action == "add") {
               document.getElementById('modal-title').innerHTML = "Confirm Add";
               document.getElementById('modal-message').innerHTML = "Are you sure you want to add this review to featured?";
-              document.getElementById('deleteLink').classList.remove("bg-red-500", "hover:bg-red-700")
-              document.getElementById('deleteLink').classList.add("bg-teal-500", "hover:bg-teal-700")
-              document.getElementById('deleteLink').innerHTML = "Add to features"
+              deleteLink.classList.remove("bg-red-500", "hover:bg-red-700")
+              deleteLink.classList.add("bg-teal-500", "hover:bg-teal-700")
+              deleteLink.innerHTML = "Add to features"
           } else {
               document.getElementById('modal-title').innerHTML = "Confirm Deletion";
               document.getElementById('modal-message').innerHTML = "Are you sure you want to remove this review from featured?";
-              document.getElementById('deleteLink').classList.remove("bg-teal-500", "hover:bg-teal-700")
-              document.getElementById('deleteLink').classList.add("bg-red-500", "hover:bg-red-700")
-              document.getElementById('deleteLink').innerHTML = "Remove from features"
+              deleteLink.classList.remove("bg-teal-500", "hover:bg-teal-700")
+              deleteLink.classList.add("bg-red-500", "hover:bg-red-700")
+              deleteLink.innerHTML = "Remove from features"
           }
 
-          document.getElementById('deleteLink').href = deleteUrl;
+          deleteLink.href = deleteUrl;
           document.getElementById('deleteModal').classList.remove('hidden');
       }
 
