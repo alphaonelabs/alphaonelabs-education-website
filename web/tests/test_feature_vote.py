@@ -1,6 +1,5 @@
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
 from django.test import TestCase
 
 from web.models import FeatureVote
@@ -42,7 +41,10 @@ class FeatureVoteModelTests(TestCase):
     def test_feature_vote_str(self):
         """Test the string representation of a FeatureVote"""
         vote = FeatureVote.objects.create(feature_id=self.feature_id, user=self.user, vote="up")
-        self.assertEqual(str(vote), "Thumbs Up for test-feature")
+        self.assertEqual(str(vote), "Thumbs Up for test-feature by testuser")
+
+        ip_vote = FeatureVote.objects.create(feature_id=self.feature_id, ip_address=self.test_ip, vote="down")
+        self.assertEqual(str(ip_vote), f"Thumbs Down for test-feature by {self.test_ip}")
 
     def test_unique_constraint_user(self):
         """Test that a user can only vote once per feature"""
@@ -50,8 +52,9 @@ class FeatureVoteModelTests(TestCase):
         FeatureVote.objects.create(feature_id=self.feature_id, user=self.user, vote="up")
 
         # Try to create another vote for the same feature and user
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError) as context:
             FeatureVote.objects.create(feature_id=self.feature_id, user=self.user, vote="down")
+        self.assertIn("user", context.exception.message_dict)
 
     def test_unique_constraint_ip(self):
         """Test that an IP address can only vote once per feature when no user is provided"""
@@ -59,8 +62,9 @@ class FeatureVoteModelTests(TestCase):
         FeatureVote.objects.create(feature_id=self.feature_id, ip_address=self.test_ip, user=None, vote="up")
 
         # Try to create another vote for the same feature and IP
-        with self.assertRaises(IntegrityError):
+        with self.assertRaises(ValidationError) as context:
             FeatureVote.objects.create(feature_id=self.feature_id, ip_address=self.test_ip, user=None, vote="down")
+        self.assertIn("ip_address", context.exception.message_dict)
 
     def test_user_can_vote_multiple_features(self):
         """Test that a user can vote on multiple different features"""
@@ -68,39 +72,44 @@ class FeatureVoteModelTests(TestCase):
         FeatureVote.objects.create(feature_id=self.feature_id, user=self.user, vote="up")
 
         # Vote on second feature
-        second_feature = "another-feature"
-        vote2 = FeatureVote.objects.create(feature_id=second_feature, user=self.user, vote="down")
-
-        self.assertEqual(vote2.feature_id, second_feature)
-        self.assertEqual(vote2.user, self.user)
-        self.assertEqual(vote2.vote, "down")
+        FeatureVote.objects.create(feature_id="another-feature", user=self.user, vote="down")
+        self.assertEqual(FeatureVote.objects.filter(user=self.user).count(), 2)
 
     def test_ip_can_vote_when_user_exists(self):
-        """Test that votes with the same IP but different users are allowed"""
-        # Create first vote with user1
-        FeatureVote.objects.create(feature_id=self.feature_id, user=self.user, ip_address=self.test_ip, vote="up")
+        """Test that an IP address can vote if no user is provided"""
+        # Create vote with IP
+        FeatureVote.objects.create(feature_id=self.feature_id, ip_address=self.test_ip, user=None, vote="up")
 
-        # Create second vote with user2 but same IP
-        vote2 = FeatureVote.objects.create(
-            feature_id=self.feature_id, user=self.user2, ip_address=self.test_ip, vote="down"
-        )
-
-        self.assertEqual(vote2.feature_id, self.feature_id)
-        self.assertEqual(vote2.user, self.user2)
-        self.assertEqual(vote2.ip_address, self.test_ip)
-        self.assertEqual(vote2.vote, "down")
+        # Create vote with user
+        FeatureVote.objects.create(feature_id="another-feature", user=self.user, vote="down")
+        self.assertEqual(FeatureVote.objects.filter(ip_address=self.test_ip).count(), 1)
+        self.assertEqual(FeatureVote.objects.filter(user=self.user).count(), 1)
 
     def test_vote_choices(self):
-        """Test that only valid vote choices can be used"""
-        # Valid vote
-        valid_vote = FeatureVote.objects.create(feature_id=self.feature_id, user=self.user, vote="up")
-        self.assertEqual(valid_vote.vote, "up")
-
-        # Valid vote
-        valid_vote2 = FeatureVote.objects.create(feature_id="another-feature", user=self.user, vote="down")
-        self.assertEqual(valid_vote2.vote, "down")
-
-        # Invalid vote - should raise an exception
+        """Test that vote choices are enforced"""
         with self.assertRaises(ValidationError):
-            invalid_vote = FeatureVote(feature_id="invalid-vote-feature", user=self.user, vote="invalid")
-            invalid_vote.full_clean()  # This should raise ValidationError
+            FeatureVote.objects.create(feature_id=self.feature_id, user=self.user, vote="invalid")
+
+    def test_required_fields(self):
+        """Test that required fields are validated"""
+        # Test missing feature_id
+        with self.assertRaises(ValidationError) as context:
+            FeatureVote.objects.create(user=self.user, vote="up")
+        self.assertIn("feature_id", context.exception.message_dict)
+
+        # Test missing vote
+        with self.assertRaises(ValidationError) as context:
+            FeatureVote.objects.create(feature_id=self.feature_id, user=self.user)
+        self.assertIn("vote", context.exception.message_dict)
+
+    def test_mutually_exclusive_fields(self):
+        """Test that user and IP address are mutually exclusive"""
+        with self.assertRaises(ValidationError) as context:
+            FeatureVote.objects.create(feature_id=self.feature_id, user=self.user, ip_address=self.test_ip, vote="up")
+        self.assertIn("Cannot provide both user and IP address", str(context.exception))
+
+    def test_required_voter(self):
+        """Test that either user or IP address must be provided"""
+        with self.assertRaises(ValidationError) as context:
+            FeatureVote.objects.create(feature_id=self.feature_id, vote="up")
+        self.assertIn("Either user or IP address must be provided", str(context.exception))

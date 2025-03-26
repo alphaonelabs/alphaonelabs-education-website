@@ -2525,16 +2525,58 @@ class FeatureVote(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["feature_id", "user"], condition=models.Q(user__isnull=False), name="unique_user_feature_vote"
-            ),
-            models.UniqueConstraint(
-                fields=["feature_id", "ip_address"],
-                condition=models.Q(user__isnull=True, ip_address__isnull=False),
-                name="unique_ip_feature_vote",
-            ),
+        indexes = [
+            models.Index(fields=["feature_id", "user"]),
+            models.Index(fields=["feature_id", "ip_address"]),
         ]
+        verbose_name = "Feature Vote"
+        verbose_name_plural = "Feature Votes"
+
+    def clean(self):
+        """Validate that a user or IP address hasn't already voted on this feature."""
+        if not self.feature_id:
+            raise ValidationError({"feature_id": "Feature ID is required"})
+
+        if not self.vote:
+            raise ValidationError({"vote": "Vote is required"})
+
+        if not self.user and not self.ip_address:
+            raise ValidationError("Either user or IP address must be provided")
+
+        if self.user and self.ip_address:
+            raise ValidationError("Cannot provide both user and IP address")
+
+        if self.user:
+            # Check for existing user vote
+            existing_vote = (
+                FeatureVote.objects.filter(feature_id=self.feature_id, user=self.user).exclude(pk=self.pk).first()
+            )
+            if existing_vote:
+                raise ValidationError(
+                    {"user": f"User has already voted on this feature with a {existing_vote.get_vote_display()}"}
+                )
+        elif self.ip_address:
+            # Check for existing IP vote
+            existing_vote = (
+                FeatureVote.objects.filter(feature_id=self.feature_id, ip_address=self.ip_address, user__isnull=True)
+                .exclude(pk=self.pk)
+                .first()
+            )
+            if existing_vote:
+                raise ValidationError(
+                    {
+                        "ip_address": (
+                            f"IP address has already voted on this feature with a "
+                            f"{existing_vote.get_vote_display()}"
+                        )
+                    }
+                )
+
+    def save(self, *args, **kwargs):
+        """Ensure clean() is called before saving."""
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.get_vote_display()} for {self.feature_id}"
+        voter = self.user.username if self.user else self.ip_address
+        return f"{self.get_vote_display()} for {self.feature_id} by {voter}"

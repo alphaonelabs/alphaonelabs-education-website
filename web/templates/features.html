@@ -5,184 +5,173 @@
 {% block title %}Features - AlphaOne Labs{% endblock %}
 {% block extra_head %}
   <style>
+      /* Enhanced Card Styles */
       .feature-card {
-          transition: all 0.3s ease;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           border: 1px solid #e2e8f0;
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
           transform: translateY(0);
           overflow: hidden;
+          position: relative;
+          background: linear-gradient(145deg, #ffffff, #f8fafc);
+      }
+
+      .dark .feature-card {
+          background: linear-gradient(145deg, #1f2937, #111827);
       }
 
       .feature-card:hover {
-          transform: translateY(-8px);
-          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+          transform: translateY(-12px) scale(1.02);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
       }
 
+      .feature-card::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(45deg, rgba(59, 130, 246, 0.1), rgba(147, 51, 234, 0.1));
+          opacity: 0;
+          transition: opacity 0.4s ease;
+          z-index: 0;
+      }
+
+      .feature-card:hover::before {
+          opacity: 1;
+      }
+
+      /* Enhanced Image Styles */
+      .feature-image {
+          height: 180px;
+          width: 100%;
+          object-fit: cover;
+          transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+          border-bottom: 1px solid #e2e8f0;
+          filter: brightness(0.95);
+      }
+
+      .feature-card:hover .feature-image {
+          transform: scale(1.08);
+          filter: brightness(1);
+      }
+
+      /* Enhanced Badge Styles */
       .feature-badge {
           position: absolute;
           top: -10px;
           right: -10px;
-          animation: pulse 2s infinite;
+          animation: float 3s ease-in-out infinite;
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          padding: 8px 16px;
+          border-radius: 9999px;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
       }
 
-      .feature-image {
-          height: 160px;
-          width: 100%;
-          object-fit: cover;
-          transition: transform 0.5s ease;
-          border-bottom: 1px solid #e2e8f0;
-      }
-
-      .feature-card:hover .feature-image {
-          transform: scale(1.05);
-      }
-
+      /* Enhanced Button Styles */
       .thumbs-button {
-          transition: all 0.2s ease;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
           position: relative;
           overflow: hidden;
+          border: 2px solid transparent;
       }
 
-      .thumbs-button:before {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 0;
-          height: 0;
-          background-color: rgba(255, 255, 255, 0.3);
-          border-radius: 50%;
-          transform: translate(-50%, -50%);
-          transition: width 0.4s ease, height 0.4s ease;
+      .thumbs-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
       }
 
-      .thumbs-button:active:before {
-          width: 200px;
-          height: 200px;
+      .thumbs-button:active {
+          transform: translateY(0);
       }
 
       .thumbs-up.selected {
-          background-color: rgba(52, 211, 153, 0.2);
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
           border-color: #10B981;
           color: #10B981;
           transform: scale(1.05);
       }
 
       .thumbs-down.selected {
-          background-color: rgba(248, 113, 113, 0.2);
+          background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
           border-color: #EF4444;
           color: #EF4444;
           transform: scale(1.05);
       }
 
-      .count-bubble {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          transition: all 0.3s ease;
-      }
-
-      .count-change {
-          animation: countPop 0.5s ease;
-      }
-
-      @keyframes countPop {
-          0% {
-              transform: scale(1);
-          }
-
-          50% {
-              transform: scale(1.3);
-          }
-
-          100% {
-              transform: scale(1);
-          }
-      }
-
-      @keyframes pulse {
-          0% {
-              transform: scale(1);
-          }
-
-          50% {
-              transform: scale(1.1);
-          }
-
-          100% {
-              transform: scale(1);
-          }
-      }
-
-      .feature-highlight {
-          font-weight: 500;
-          background: linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0) 100%);
-          padding: 4px 8px;
-          border-radius: 4px;
-          display: inline-block;
-          margin-bottom: 4px;
-      }
-
+      /* Enhanced Progress Bar */
       .vote-percentage-bar {
           position: absolute;
           bottom: 0;
           left: 0;
           width: 100%;
-          height: 6px;
-          background: #f3f4f6;
+          height: 8px;
+          background: rgba(243, 244, 246, 0.5);
           overflow: hidden;
+          border-radius: 4px;
       }
 
       .vote-percentage-indicator {
           height: 100%;
-          transition: width 0.5s ease;
+          transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
       }
 
-      .upvote-indicator {
-          background-color: #10B981;
-      }
-
-      .downvote-indicator {
-          background-color: #EF4444;
-          right: 0;
+      .vote-percentage-indicator::after {
+          content: '';
           position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: linear-gradient(90deg, rgba(255, 255, 255, 0.2), transparent);
+          animation: shimmer 2s infinite;
       }
 
-      .votes-summary {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-top: 8px;
-          font-size: 0.85rem;
-          color: #6b7280;
+      @keyframes shimmer {
+          0% {
+              transform: translateX(-100%);
+          }
+
+          100% {
+              transform: translateX(100%);
+          }
       }
 
+      /* Enhanced Feedback Message */
       .feedback-message {
           position: absolute;
           bottom: -30px;
           left: 50%;
           transform: translateX(-50%);
-          background-color: rgba(0, 0, 0, 0.7);
+          background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.8));
           color: white;
-          padding: 4px 12px;
-          border-radius: 4px;
-          font-size: 0.8rem;
+          padding: 8px 16px;
+          border-radius: 9999px;
+          font-size: 0.85rem;
           opacity: 0;
-          transition: all 0.3s ease;
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
           z-index: 20;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+          backdrop-filter: blur(4px);
       }
 
       .show-message {
-          bottom: 10px;
+          bottom: 20px;
           opacity: 1;
+          transform: translateX(-50%) translateY(-10px);
       }
 
+      /* Enhanced Ripple Effect */
       .ripple {
           position: absolute;
-          background-color: rgba(255, 255, 255, 0.7);
+          background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 70%);
           border-radius: 50%;
           transform: scale(0);
-          animation: ripple 0.6s linear;
+          animation: ripple 0.8s cubic-bezier(0.4, 0, 0.2, 1);
           pointer-events: none;
       }
 
@@ -193,9 +182,15 @@
           }
       }
 
+      /* Enhanced Upcoming Feature Styles */
       .upcoming-feature {
-          opacity: 0.8;
+          opacity: 0.9;
           position: relative;
+          background: linear-gradient(145deg, #f8fafc, #f1f5f9);
+      }
+
+      .dark .upcoming-feature {
+          background: linear-gradient(145deg, #1f2937, #111827);
       }
 
       .upcoming-feature::before {
@@ -205,39 +200,30 @@
           left: 0;
           right: 0;
           bottom: 0;
-          background: rgba(0, 0, 0, 0.05);
+          background: linear-gradient(45deg, rgba(139, 92, 246, 0.1), rgba(59, 130, 246, 0.1));
           z-index: 1;
       }
 
       .upcoming-badge {
           position: absolute;
-          top: 10px;
-          right: 10px;
-          background-color: #8B5CF6;
+          top: 12px;
+          right: 12px;
+          background: linear-gradient(135deg, #8B5CF6, #6D28D9);
           color: white;
-          padding: 4px 10px;
+          padding: 6px 12px;
           border-radius: 9999px;
           font-size: 0.75rem;
           font-weight: 600;
           z-index: 2;
           letter-spacing: 0.5px;
+          box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+          animation: pulse 2s infinite;
       }
 
-      .eta-badge {
-          position: absolute;
-          bottom: 10px;
-          right: 10px;
-          background-color: rgba(0, 0, 0, 0.7);
-          color: white;
-          padding: 2px 8px;
-          border-radius: 4px;
-          font-size: 0.7rem;
-          z-index: 2;
-      }
-
+      /* Enhanced Section Divider */
       .section-divider {
           position: relative;
-          margin: 2rem 0 3rem;
+          margin: 3rem 0 4rem;
           text-align: center;
       }
 
@@ -247,52 +233,157 @@
           top: 50%;
           left: 0;
           right: 0;
-          height: 1px;
-          background: #e5e7eb;
+          height: 2px;
+          background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
           z-index: 0;
       }
 
       .section-divider-text {
           position: relative;
           display: inline-block;
-          padding: 0 1rem;
+          padding: 0 1.5rem;
           background: white;
           z-index: 1;
           font-weight: 600;
+          font-size: 0.875rem;
+          letter-spacing: 0.05em;
+          color: #6b7280;
+          border-radius: 9999px;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
       }
 
       .dark .section-divider::before {
-          background: #4b5563;
+          background: linear-gradient(90deg, transparent, #4b5563, transparent);
       }
 
       .dark .section-divider-text {
           background: #1f2937;
+          color: #9ca3af;
       }
 
+      /* Enhanced Animations */
       @keyframes float {
-          0% {
-              transform: translateY(0px);
+
+          0%,
+          100% {
+              transform: translateY(0);
           }
 
           50% {
-              transform: translateY(-5px);
-          }
-
-          100% {
-              transform: translateY(0px);
+              transform: translateY(-8px);
           }
       }
 
-      .float {
-          animation: float 3s ease-in-out infinite;
+      @keyframes pulse {
+          0% {
+              transform: scale(1);
+          }
+
+          50% {
+              transform: scale(1.05);
+          }
+
+          100% {
+              transform: scale(1);
+          }
+      }
+
+      @keyframes countPop {
+          0% {
+              transform: scale(1);
+          }
+
+          50% {
+              transform: scale(1.4);
+          }
+
+          100% {
+              transform: scale(1);
+          }
+      }
+
+      /* Enhanced Feature Highlights */
+      .feature-highlight {
+          font-weight: 500;
+          background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), rgba(59, 130, 246, 0));
+          padding: 8px 12px;
+          border-radius: 8px;
+          display: inline-block;
+          margin-bottom: 8px;
+          transition: all 0.3s ease;
+          border: 1px solid rgba(59, 130, 246, 0.1);
+      }
+
+      .feature-highlight:hover {
+          background: linear-gradient(90deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.05));
+          transform: translateX(4px);
+      }
+
+      /* Enhanced Try it out Button */
+      .try-button {
+          background: linear-gradient(135deg, #3b82f6, #2563eb);
+          color: white;
+          padding: 10px 20px;
+          border-radius: 9999px;
+          font-weight: 600;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+      }
+
+      .try-button:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 16px rgba(37, 99, 235, 0.3);
+      }
+
+      .try-button:active {
+          transform: translateY(0);
+      }
+
+      /* Loading Animation */
+      .loading-skeleton {
+          background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+          background-size: 200% 100%;
+          animation: loading 1.5s infinite;
+      }
+
+      .dark .loading-skeleton {
+          background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+      }
+
+      @keyframes loading {
+          0% {
+              background-position: 200% 0;
+          }
+
+          100% {
+              background-position: -200% 0;
+          }
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+          .feature-card {
+              margin-bottom: 1.5rem;
+          }
+
+          .feature-image {
+              height: 160px;
+          }
+
+          .feature-badge {
+              padding: 6px 12px;
+              font-size: 0.7rem;
+          }
       }
   </style>
 {% endblock %}
 {% block content %}
   <div class="container mx-auto px-4 py-12">
     <div class="mb-16 text-center">
-      <h1 class="text-4xl font-bold mb-4">Community Features</h1>
-      <p class="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+      <h1 class="text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+        Community Features
+      </h1>
+      <p class="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-lg">
         Discover the latest features created by our community members. Try them out and provide feedback!
       </p>
     </div>
@@ -593,7 +684,14 @@
 
                   } catch (error) {
                       console.error('Error voting on feature:', error);
-                      showFeedbackMessage(featureCard, "Error recording your vote. Please try again.");
+                      // Enhanced error handling with specific messages
+                      if (error.message.includes('Network')) {
+                          showFeedbackMessage(featureCard, "Network error. Please check your connection.");
+                      } else if (error.message.includes('401') || error.message.includes('403')) {
+                          showFeedbackMessage(featureCard, "Please log in to vote on features.");
+                      } else {
+                          showFeedbackMessage(featureCard, "Error recording your vote. Please try again.");
+                      }
                   }
               });
           });
@@ -614,6 +712,9 @@
               }
           });
 
+          // Check for reduced motion preference
+          const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
           // Animate feature cards on scroll
           const observerOptions = {
               threshold: 0.1,
@@ -625,6 +726,7 @@
                   if (entry.isIntersecting) {
                       entry.target.style.opacity = '1';
                       entry.target.style.transform = 'translateY(0)';
+                      entry.target.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
                       observer.unobserve(entry.target);
                   }
               });
@@ -633,61 +735,89 @@
           document.querySelectorAll('.feature-card').forEach(card => {
               card.style.opacity = '0';
               card.style.transform = 'translateY(20px)';
-              card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+              card.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
               observer.observe(card);
+
+              // Add hover effect to feature highlights
+              const highlights = card.querySelectorAll('.feature-highlight');
+              highlights.forEach(highlight => {
+                  highlight.addEventListener('mouseenter', () => {
+                      highlight.style.transform = 'translateX(4px)';
+                  });
+                  highlight.addEventListener('mouseleave', () => {
+                      highlight.style.transform = 'translateX(0)';
+                  });
+              });
           });
 
           // Fetch initial vote counts
-          const fetchVoteCounts = async () => {
-              const features = document.querySelectorAll('.feature-card:not(.upcoming-feature)');
+          async function fetchVoteCounts() {
+              const features = document.querySelectorAll('.feature-card');
+              if (!features.length) return;
 
-              features.forEach(async feature => {
-                  const featureId = feature.querySelector('[data-feature-id]')?.getAttribute('data-feature-id');
-                  if (!featureId) return;
+              // Collect all feature IDs
+              const featureIds = Array.from(features)
+                  .map(feature => feature.dataset.featureId)
+                  .filter(id => id); // Remove any undefined/null values
 
-                  try {
-                      const response = await fetch(`{% url 'feature_vote_count' %}?feature_id=${featureId}`);
-                      if (response.ok) {
-                          const data = await response.json();
-                          const upButton = feature.querySelector('.thumbs-up');
-                          const downButton = feature.querySelector('.thumbs-down');
+              if (!featureIds.length) return;
 
-                          if (upButton) upButton.querySelector('.count').textContent = data.up_count;
-                          if (downButton) downButton.querySelector('.count').textContent = data.down_count;
+              try {
+                  const response = await fetch(`/api/feature-vote-count?feature_ids=${featureIds.join(',')}`);
+                  if (!response.ok) {
+                      throw new Error('Network response was not ok');
+                  }
+                  const data = await response.json();
 
-                          // Update vote percentages
-                          updateVotePercentages(feature, data.up_percentage || 0, data.down_percentage || 0);
+                  // Update UI for each feature
+                  features.forEach(feature => {
+                      const featureId = feature.dataset.featureId;
+                      if (!featureId || !data[featureId]) return;
 
-                          // Update total votes
-                          const totalVotesEl = feature.querySelector('.total-votes');
-                          if (totalVotesEl) {
-                              totalVotesEl.textContent = data.total_votes || 0;
-                          }
+                      const featureData = data[featureId];
+                      const upCount = feature.querySelector('.up-count');
+                      const downCount = feature.querySelector('.down-count');
+                      const upPercentage = feature.querySelector('.up-percentage');
+                      const downPercentage = feature.querySelector('.down-percentage');
 
-                          // Check if the user has already voted based on localStorage
-                          const featureId = feature.querySelector('[data-feature-id]').getAttribute('data-feature-id');
-                          const storedVote = localStorage.getItem(`feature-vote-${featureId}`);
+                      if (upCount) upCount.textContent = featureData.up_count;
+                      if (downCount) downCount.textContent = featureData.down_count;
+                      if (upPercentage) upPercentage.style.width = `${featureData.up_percentage}%`;
+                      if (downPercentage) downPercentage.style.width = `${featureData.down_percentage}%`;
 
-                          if (storedVote) {
-                              const parentFeedback = feature.querySelector('.flex.space-x-3');
-
-                              if (storedVote === 'up') {
-                                  const upBtn = feature.querySelector('.thumbs-up');
-                                  upBtn.classList.add('selected');
-                              } else if (storedVote === 'down') {
-                                  const downBtn = feature.querySelector('.thumbs-down');
-                                  downBtn.classList.add('selected');
-                              }
+                      // Check localStorage for existing votes
+                      const existingVote = localStorage.getItem(`feature_vote_${featureId}`);
+                      if (existingVote) {
+                          const upButton = feature.querySelector('.vote-up');
+                          const downButton = feature.querySelector('.vote-down');
+                          if (existingVote === 'up' && upButton) {
+                              upButton.classList.add('voted');
+                          } else if (existingVote === 'down' && downButton) {
+                              downButton.classList.add('voted');
                           }
                       }
-                  } catch (error) {
-                      console.error('Error fetching vote counts:', error);
+                  });
+              } catch (error) {
+                  console.error('Error fetching vote counts:', error);
+              }
+          }
+
+          // Initialize vote counts once
+          fetchVoteCounts();
+
+          // Add smooth scroll behavior
+          document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+              anchor.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  const target = document.querySelector(this.getAttribute('href'));
+                  if (target) {
+                      target.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'start'
+                      });
                   }
               });
-          };
-
-          // Initialize vote counts
-          fetchVoteCounts();
+          });
       });
   </script>
 {% endblock %}

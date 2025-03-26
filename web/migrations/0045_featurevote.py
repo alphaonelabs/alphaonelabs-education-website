@@ -28,21 +28,17 @@ class Migration(migrations.Migration):
                     ),
                 ),
             ],
+            options={
+                "verbose_name": "Feature Vote",
+                "verbose_name_plural": "Feature Votes",
+            },
         ),
-        migrations.AddConstraint(
+        migrations.AddIndex(
             model_name="featurevote",
-            constraint=models.UniqueConstraint(
-                condition=models.Q(("user__isnull", False)),
-                fields=("feature_id", "user"),
-                name="unique_user_feature_vote",
-            ),
+            index=models.Index(fields=["feature_id", "user"], name="web_feature_feature_9fbd0b_idx"),
         ),
-        migrations.AddConstraint(
+        migrations.AddIndex(
             model_name="featurevote",
-            constraint=models.UniqueConstraint(
-                condition=models.Q(("ip_address__isnull", False), ("user__isnull", True)),
-                fields=("feature_id", "ip_address"),
-                name="unique_ip_feature_vote",
-            ),
+            index=models.Index(fields=["feature_id", "ip_address"], name="web_feature_feature_988c48_idx"),
         ),
     ]

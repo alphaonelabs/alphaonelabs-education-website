@@ -5564,56 +5564,31 @@ def feature_vote(request):
 
 @require_GET
 def feature_vote_count(request):
-    """API endpoint to get current vote counts for a feature."""
-    feature_id = request.GET.get("feature_id")
+    """Get vote counts for one or more features."""
+    feature_ids = request.GET.get("feature_ids", "").split(",")
+    if not feature_ids or not feature_ids[0]:
+        return JsonResponse({"error": "No feature IDs provided"}, status=400)
 
-    if not feature_id:
-        return JsonResponse({"status": "error", "message": "Feature ID is required"}, status=400)
-
-    try:
+    result = {}
+    for feature_id in feature_ids:
         up_count = FeatureVote.objects.filter(feature_id=feature_id, vote="up").count()
         down_count = FeatureVote.objects.filter(feature_id=feature_id, vote="down").count()
-
-        # Calculate percentage for visualization
         total_votes = up_count + down_count
-        up_percentage = round((up_count / total_votes) * 100) if total_votes > 0 else 0
-        down_percentage = round((down_count / total_votes) * 100) if total_votes > 0 else 0
 
-        # Check if the current user has voted
-        user_vote = None
-        if request.user.is_authenticated:
-            vote = FeatureVote.objects.filter(feature_id=feature_id, user=request.user).first()
-            if vote:
-                user_vote = vote.vote
-        else:
-            ip_address = (
-                request.META.get("REMOTE_ADDR") or request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
-            )
-            if ip_address:
-                vote = FeatureVote.objects.filter(
-                    feature_id=feature_id, ip_address=ip_address, user__isnull=True
-                ).first()
-                if vote:
-                    user_vote = vote.vote
+        # Calculate percentages
+        up_percentage = (up_count / total_votes * 100) if total_votes > 0 else 0
+        down_percentage = (down_count / total_votes * 100) if total_votes > 0 else 0
 
-        return JsonResponse(
-            {
-                "status": "success",
-                "up_count": up_count,
-                "down_count": down_count,
-                "total_votes": total_votes,
-                "up_percentage": up_percentage,
-                "down_percentage": down_percentage,
-                "user_vote": user_vote,  # Will be 'up', 'down', or None
-            }
-        )
+        result[feature_id] = {
+            "up_count": up_count,
+            "down_count": down_count,
+            "total_votes": total_votes,
+            "up_percentage": round(up_percentage, 1),
+            "down_percentage": round(down_percentage, 1),
+        }
 
-    except Exception as e:
-        import logging
+    return JsonResponse(result)
 
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error getting vote counts: {str(e)}", exc_info=True)
-        return JsonResponse({"status": "error", "message": f"Error getting vote counts: {str(e)}"}, status=500)
 
 @login_required
 def progress_visualization(request):
@@ -6046,4 +6021,3 @@ def contributor_detail_view(request, username):
     # Cache for 1 hour
     cache.set(cache_key, context, 3600)
     return render(request, "web/contributor_detail.html", context)
-
