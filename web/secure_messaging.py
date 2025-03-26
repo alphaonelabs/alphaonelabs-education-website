@@ -68,15 +68,42 @@ def send_secure_teacher_message(email_to: str, message: str):
 @login_required
 def messaging_dashboard(request):
     """
-    Renders a messaging dashboard with counts of inbox, sent, and unread messages.
+    Renders a messaging dashboard that doubles as the inbox.
+    It immediately displays all messages (decrypted) for the logged-in user,
+    marks them as read, and computes an expiration countdown (messages expire 7 days after creation).
     """
-    inbox_count = PeerMessage.objects.filter(receiver=request.user).count()
-    sent_count = PeerMessage.objects.filter(sender=request.user).count()
-    unread_count = PeerMessage.objects.filter(receiver=request.user, is_read=False).count()
+    messages_qs = PeerMessage.objects.filter(receiver=request.user).order_by("created_at")
+    message_list = []
+    now = timezone.now()
+    for msg in messages_qs:
+        # Mark message as read and update read receipt
+        if not msg.is_read:
+            msg.is_read = True
+            msg.read_at = now
+            msg.save(update_fields=["is_read", "read_at"])
+        try:
+            decrypted_message = decrypt_message_with_random_key(msg.content, msg.encrypted_key)
+        except Exception:
+            decrypted_message = "[Error decrypting message]"
+        expires_at = msg.created_at + timezone.timedelta(days=7)
+        time_remaining = expires_at - now
+        days = time_remaining.days
+        hours, remainder = divmod(time_remaining.seconds, 3600)
+        minutes, _ = divmod(remainder, 60)
+        expiration_str = f"{days}d {hours}h {minutes}m"
+        message_list.append(
+            {
+                "id": msg.id,
+                "sender": msg.sender.username,
+                "content": decrypted_message,
+                "sent_at": msg.created_at,
+                "expires_in": expiration_str,
+                "starred": msg.starred,
+            }
+        )
     context = {
-        "inbox_count": inbox_count,
-        "sent_count": sent_count,
-        "unread_count": unread_count,
+        "messages": message_list,
+        "inbox_count": len(message_list),
     }
     return render(request, "web/messaging/dashboard.html", context)
 
@@ -198,10 +225,7 @@ def download_message(request, message_id):
 
 @login_required
 def toggle_star_message(request, message_id):
-    """
-    Toggles the starred status of a message.
-    """
     message = get_object_or_404(PeerMessage, id=message_id, receiver=request.user)
     message.starred = not message.starred
     message.save(update_fields=["starred"])
-    return redirect("inbox")
+    return redirect("messaging_dashboard")
