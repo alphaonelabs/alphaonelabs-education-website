@@ -62,7 +62,7 @@
     </div>
     <div class="content">
       <p>Hello,</p>
-      <p>{{ teacher.get_full_name|default:teacher.email }} has invited you to check out their course:</p>
+      <p>{{ teacher.username }} has invited you to check out their course:</p>
       <h2>{{ course.title }}</h2>
       {% if message %}
         <div class="message">
@@ -75,7 +75,7 @@
           <strong>Subject:</strong> {{ course.subject.name }}
         </li>
         <li>
-          <strong>Teacher:</strong> {{ teacher.get_full_name|default:teacher.email }}
+          <strong>Teacher:</strong> {{ teacher.username }}
         </li>
         <li>
           <strong>Duration:</strong> {{ course.duration }}

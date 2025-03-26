@@ -7,6 +7,8 @@
         Message {{ teacher.get_full_name|default:teacher.username }}
       </h1>
       <form id="teacherMessageForm" method="post" class="space-y-6">
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">Message {{ teacher.username }}</h1>
+      <form method="post" class="space-y-6">
         {% csrf_token %}
         {% if not user.is_authenticated %}
           <div>
@@ -46,7 +48,8 @@
         <input type="hidden" name="iv" id="id_iv" />
         {% if form.errors %}<div class="text-red-600 dark:text-red-400">{{ form.errors }}</div>{% endif %}
         <div class="flex justify-end space-x-4">
-          <a href="javascript:history.back()"
+          <a href="#"
+             onclick="window.history.back(); return false;"
              class="px-6 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition duration-200">
             Cancel
           </a>
@@ -133,3 +136,4 @@
       });
   </script>
 {% endblock %}
+{% endblock content %}
