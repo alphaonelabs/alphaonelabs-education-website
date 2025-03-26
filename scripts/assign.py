@@ -298,7 +298,91 @@ def main():
             print(f"Issue #{issue_number} was assigned {days_since_assignment:.2f} days ago.")
 
             if days_since_assignment > 1:
-                print(f"Revoking assignment of issue #{issue_number} due to exceeding 1 day since assignment")
+                print(f"Issue #{issue_number} has exceeded 1 day since assignment, checking for linked PRs")
+
+                # Check if this issue has any linked PRs before unassigning
+                has_linked_pr = False
+
+                # First check via GraphQL API for linked issues in the "Development" section
+                try:
+                    query = """
+                        query($owner:String!, $repo:String!, $issue_number:Int!) {
+                          repository(owner:$owner, name:$repo) {
+                            issue(number:$issue_number) {
+                              timelineItems(itemTypes: [CROSS_REFERENCED_EVENT], first: 10) {
+                                nodes {
+                                  ... on CrossReferencedEvent {
+                                    source {
+                                      ... on PullRequest {
+                                        number
+                                        state
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                    """
+
+                    graphql_headers = headers.copy()
+                    graphql_headers["Accept"] = "application/vnd.github.v4+json"
+                    graphql_url = "https://api.github.com/graphql"
+
+                    variables = {"owner": owner, "repo": repo, "issue_number": issue_number}
+
+                    print(f"Checking for linked PRs via GraphQL for issue #{issue_number}")
+                    graphql_response = requests.post(
+                        graphql_url, headers=graphql_headers, json={"query": query, "variables": variables}
+                    )
+
+                    if graphql_response.status_code == 200:
+                        graphql_data = graphql_response.json()
+                        timeline_items = (
+                            graphql_data.get("data", {})
+                            .get("repository", {})
+                            .get("issue", {})
+                            .get("timelineItems", {})
+                            .get("nodes", [])
+                        )
+
+                        for item in timeline_items:
+                            source = item.get("source", {})
+                            if source and "state" in source and source["state"] == "OPEN":
+                                pr_number = source.get("number")
+                                print(f"Found open PR #{pr_number} linked to issue #{issue_number}")
+                                has_linked_pr = True
+                                break
+                except Exception as e:
+                    print(f"Error checking for linked PRs via GraphQL: {str(e)}")
+
+                # If no PRs found via GraphQL, try REST API fallback
+                if not has_linked_pr:
+                    try:
+                        # Search for PRs referencing this issue
+                        search_url = "https://api.github.com/search/issues"
+                        search_query = f"type:pr state:open repo:{owner}/{repo} {issue_number} in:body"
+                        search_params = {"q": search_query}
+                        print(f"Searching PRs with REST API query: {search_query}")
+                        search_response = requests.get(search_url, headers=headers, params=search_params)
+                        search_data = search_response.json()
+
+                        if search_data.get("total_count", 0) > 0:
+                            pr_number = search_data.get("items", [])[0].get("number")
+                            print(f"Found open PR #{pr_number} linked to issue #{issue_number} via REST API search")
+                            has_linked_pr = True
+                    except Exception as e:
+                        print(f"Error checking for linked PRs via REST API: {str(e)}")
+
+                # Only unassign if no linked PRs found
+                if has_linked_pr:
+                    print(f"Keeping assignment for issue #{issue_number} because it has linked open PR(s)")
+                    continue
+                print(
+                    f"No linked PRs found, revoking assignment of issue #{issue_number} "
+                    "due to exceeding 1 day since assignment"
+                )
 
                 # Check if issue has "assigned" label
                 has_assigned_label = any(label.get("name") == "assigned" for label in issue.get("labels", []))

@@ -124,37 +124,32 @@
                 </span>
               </div>
               <div>
-                <!-- Clickable Section -->
-                <div id="toggleRating"
-                     class="cursor-pointer flex mb-2 items-center justify-between py-2 border-t dark:border-gray-700 pt-2">
-                  <span class="text-gray-600 dark:text-gray-300 font-medium flex items-center">
-                    <i class="fas fa-star text-yellow-500 dark:text-yellow-400 mr-2"></i>
-                    Rating
-                  </span>
-                  <span class="font-medium flex items-center">
-                    {% if course.average_rating %}
-                      <span class="flex items-center">
-                        {% for i in "12345" %}
-                          {% if forloop.counter <= course.average_rating|floatformat:"0" %}
-                            <i class="fas fa-star text-yellow-400 mr-0.5"></i>
-                          {% elif forloop.counter <= course.average_rating|add:"0.5"|floatformat:"0" %}
-                            <i class="fas fa-star-half-alt text-yellow-400 mr-0.5"></i>
-                          {% else %}
-                            <i class="far fa-star text-yellow-400 mr-0.5"></i>
-                          {% endif %}
-                        {% endfor %}
-                        <span id="average_stars" class="ml-1 text-gray-700 dark:text-gray-300">{{ course.average_rating }}</span>
-                      </span>
-                    {% else %}
-                      <span class="text-gray-500 dark:text-gray-400">No ratings yet</span>
-                    {% endif %}
-                  </span>
-                </div>
-                <!-- Hidden Section (Toggles on Click) -->
-                <div id="ratingSection" class="hidden">
-                  <a href="#course_reviews"
-                     class="w-full bg-teal-500 hover:bg-teal-700 text-white font-semibold py-3 px-4 rounded-lg flex items-center justify-center transition duration-200">Course reviews</a>
-                </div>
+                <a href="#course_reviews">
+                  <div class="cursor-pointer flex mb-2 items-center justify-between py-2 border-t dark:border-gray-700 pt-2">
+                    <span class="text-gray-600 dark:text-gray-300 font-medium flex items-center">
+                      <i class="fas fa-star text-yellow-500 dark:text-yellow-400 mr-2"></i>
+                      Rating
+                    </span>
+                    <span class="font-medium flex items-center">
+                      {% if course.average_rating %}
+                        <span class="flex items-center">
+                          {% for i in "12345" %}
+                            {% if forloop.counter <= course.average_rating|floatformat:"0" %}
+                              <i class="fas fa-star text-yellow-400 mr-0.5"></i>
+                            {% elif forloop.counter <= course.average_rating|add:"0.5"|floatformat:"0" %}
+                              <i class="fas fa-star-half-alt text-yellow-400 mr-0.5"></i>
+                            {% else %}
+                              <i class="far fa-star text-yellow-400 mr-0.5"></i>
+                            {% endif %}
+                          {% endfor %}
+                          <span id="average_stars" class="ml-1 text-gray-700 dark:text-gray-300">{{ course.average_rating }}</span>
+                        </span>
+                      {% else %}
+                        <span class="text-gray-500 dark:text-gray-400">No ratings yet</span>
+                      {% endif %}
+                    </span>
+                  </div>
+                </a>
               </div>
               {% if not is_enrolled %}
                 {% if course.invite_only %}
@@ -1349,12 +1344,6 @@
     <span class="notification-message">This is a notification</span>
   </div>
   <script>
-      // <!-- Handle Click Event on Course reviews button-->
-      document.getElementById("toggleRating").addEventListener("click", function() {
-          document.getElementById("ratingSection").classList.toggle("hidden");
-      });
-
-
       function setRatingDistributionWidths() {
           // Parse the widths data from the template
           const reviewsNum = JSON.parse('{{ reviews_num|escapejs }}');
