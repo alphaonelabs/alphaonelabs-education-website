@@ -1,13 +1,15 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8" />
+    <meta name="description" content="Course enrollment notification" />
+    <meta name="keywords" content="course, enrollment, notification, education" />
     <title>Enrollment Notification</title>
   </head>
   <body>
     <p>Hi {{ student.first_name }},</p>
     <p>
-      You have been enrolled in the course <strong>{{ course.title }}</strong> by {{ teacher.get_full_name|default:teacher.username }}.
+      You have been enrolled in the course <strong>{{ course.title }}</strong> by {{ teacher.username }}.
     </p>
     <p>Please click the link below to set your password:</p>
     <p>

@@ -4,7 +4,7 @@
   <tr>
     <td style="padding: 20px; font-family: Arial, sans-serif; color: #333;">
       <h2 style="color: #4a6cf7; margin-bottom: 20px;">New Course Created!</h2>
-      <p>Hello {{ user.first_name|default:user.username }},</p>
+      <p>Hello {{ user.username }},</p>
       <p>Great news! A new course has been created based on a waiting room you joined:</p>
       <div style="background-color: #f7f9fc;
                   padding: 15px;
@@ -29,7 +29,7 @@
         <h3 style="color: #4a6cf7; margin-top: 0;">{{ course.title }}</h3>
         <p>{{ course.description|truncatewords:50 }}</p>
         <p>
-          <strong>Teacher:</strong> {{ course.teacher.get_full_name|default:course.teacher.username }}
+          <strong>Teacher:</strong> {{ course.teacher.username }}
         </p>
         {% if course.price == 0 %}
           <p>

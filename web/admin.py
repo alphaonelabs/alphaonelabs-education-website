@@ -28,6 +28,8 @@ from .models import (
     Goods,
     LearningStreak,
     Meetup,
+    MembershipPlan,
+    MembershipSubscriptionEvent,
     Notification,
     Order,
     OrderItem,
@@ -48,6 +50,8 @@ from .models import (
     Subject,
     SuccessStory,
     UserBadge,
+    UserMembership,
+    WaitingRoom,
     WebRequest,
 )
 
@@ -84,6 +88,16 @@ class EmailAddressInline(admin.TabularInline):
     can_delete = True
     verbose_name_plural = "Email Addresses"
     extra = 1
+
+
+@admin.register(WaitingRoom)
+class WaitingRoomAdmin(admin.ModelAdmin):
+    list_display = ("title", "subject", "creator", "status", "created_at")
+    list_filter = ("status", "subject")
+    search_fields = ("title", "description", "subject", "topics")
+    date_hierarchy = "created_at"
+    raw_id_fields = ("creator", "participants", "fulfilled_course")
+    readonly_fields = ("created_at", "updated_at")
 
 
 @admin.register(Profile)
@@ -700,3 +714,30 @@ class QuizOptionAdmin(admin.ModelAdmin):
     list_filter = ("is_correct",)
     search_fields = ("text", "question__text")
     autocomplete_fields = ["question"]
+
+
+@admin.register(MembershipPlan)
+class MembershipPlanAdmin(admin.ModelAdmin):
+    list_display = ("name", "price_monthly", "price_yearly", "billing_period", "is_active", "is_popular", "order")
+    list_filter = ("is_active", "is_popular", "billing_period")
+    search_fields = ("name", "description")
+    prepopulated_fields = {"slug": ("name",)}
+    ordering = ("order", "name")
+
+
+@admin.register(UserMembership)
+class UserMembershipAdmin(admin.ModelAdmin):
+    list_display = ("user", "plan", "status", "billing_period", "start_date", "end_date", "is_active")
+    list_filter = ("status", "billing_period", "plan")
+    search_fields = ("user__email", "user__username", "stripe_customer_id", "stripe_subscription_id")
+    raw_id_fields = ("user", "plan")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(MembershipSubscriptionEvent)
+class MembershipSubscriptionEventAdmin(admin.ModelAdmin):
+    list_display = ("user", "event_type", "created_at")
+    list_filter = ("event_type", "created_at")
+    search_fields = ("user__email", "user__username", "stripe_event_id")
+    raw_id_fields = ("user", "membership")
+    readonly_fields = ("created_at",)
