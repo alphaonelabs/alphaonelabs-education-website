@@ -708,25 +708,39 @@ def delete_course(request, slug):
 
 @csrf_exempt
 def github_update(request):
-    send_slack_message("New commit pulled from GitHub")
-    root_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # Parse the GitHub webhook payload
     try:
-        subprocess.run(["chmod", "+x", f"{root_directory}/setup.sh"])
-        result = subprocess.run(["bash", f"{root_directory}/setup.sh"], capture_output=True, text=True)
-        if result.returncode != 0:
-            raise Exception(
-                f"setup.sh failed with return code {result.returncode} and output: {result.stdout} {result.stderr}"
-            )
-        send_slack_message("CHMOD success about to set time on: " + settings.PA_WSGI)
+        payload = json.loads(request.body)
+        ref = payload.get("ref", "")
 
-        current_time = time.time()
-        os.utime(settings.PA_WSGI, (current_time, current_time))
-        send_slack_message("Repository updated successfully")
-        return HttpResponse("Repository updated successfully")
+        # Check if this is a push to the main or master branch
+        if ref != "refs/heads/main" and ref != "refs/heads/master":
+            return HttpResponse("Skipping update - not a push to main branch")
+
+        send_slack_message(f"New commit pushed to {ref}, deploying updates")
+        root_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        try:
+            subprocess.run(["chmod", "+x", f"{root_directory}/setup.sh"])
+            result = subprocess.run(["bash", f"{root_directory}/setup.sh"], capture_output=True, text=True)
+            if result.returncode != 0:
+                raise Exception(
+                    f"setup.sh failed with return code {result.returncode} and output: {result.stdout} {result.stderr}"
+                )
+            send_slack_message("CHMOD success about to set time on: " + settings.PA_WSGI)
+
+            current_time = time.time()
+            os.utime(settings.PA_WSGI, (current_time, current_time))
+            send_slack_message("Repository updated successfully")
+            return HttpResponse("Repository updated successfully")
+        except Exception as e:
+            print(f"Deploy error: {e}")
+            send_slack_message(f"Deploy error: {e}")
+            return HttpResponse("Deploy error see logs.")
+    except json.JSONDecodeError:
+        return HttpResponse("Invalid JSON payload", status=400)
     except Exception as e:
-        print(f"Deploy error: {e}")
-        send_slack_message(f"Deploy error: {e}")
-        return HttpResponse("Deploy error see logs.")
+        print(f"Webhook processing error: {e}")
+        return HttpResponse(f"Error processing webhook: {str(e)}", status=500)
 
 
 def send_slack_message(message):
