@@ -554,10 +554,59 @@
                       return;
                   }
 
+                  // Helper functions for DOM operations and state management
+                  const helpers = {
+                      // Set button loading state
+                      setButtonLoading: (btn, isLoading) => {
+                          btn.disabled = isLoading;
+                          btn.classList.toggle('opacity-70', isLoading);
+                      },
+
+                      // Update vote count with animation
+                      updateVoteCount: (btn, count) => {
+                          const countElement = btn.querySelector('.count');
+                          if (countElement) {
+                              countElement.classList.add('scale-125', 'text-blue-600');
+                              countElement.textContent = count;
+                              setTimeout(() => countElement.classList.remove('scale-125', 'text-blue-600'), 500);
+                          }
+                      },
+
+                      // Reset all button styles
+                      resetButtonStyles: (buttons) => {
+                          buttons.forEach(btn => {
+                              btn.classList.remove(
+                                  'bg-green-50', 'dark:bg-green-900', 'border-green-400', 'text-green-600',
+                                  'bg-red-50', 'dark:bg-red-900', 'border-red-400', 'text-red-600'
+                              );
+                          });
+                      },
+
+                      // Apply selected state to button
+                      setSelectedState: (btn, isSelected, isUpvote) => {
+                          if (isSelected) {
+                              const colorClasses = isUpvote ? ['bg-green-50', 'dark:bg-green-900', 'border-green-400', 'text-green-600'] : ['bg-red-50', 'dark:bg-red-900', 'border-red-400', 'text-red-600'];
+
+                              btn.classList.add(...colorClasses);
+                              btn.setAttribute('aria-pressed', 'true');
+                          } else {
+                              btn.setAttribute('aria-pressed', 'false');
+                          }
+                      },
+
+                      // Disable all vote buttons
+                      disableAllButtons: (container) => {
+                          const buttons = container.querySelectorAll('button');
+                          buttons.forEach(btn => {
+                              btn.disabled = true;
+                              btn.classList.add('opacity-70');
+                          });
+                      }
+                  };
+
                   // Prevent double-clicking and add loading state
                   if (this.disabled) return;
-                  this.disabled = true;
-                  this.classList.add('opacity-70');
+                  helpers.setButtonLoading(this, true);
 
                   // Visual feedback
                   this.classList.add('scale-95');
@@ -582,66 +631,48 @@
                       // Update UI with animation
                       showFeedbackMessage(featureCard, data.message || 'Thanks for your feedback!');
 
-                      // Update counts with animation
+                      // Get button references
                       const upButton = featureCard.querySelector('.thumbs-up');
                       const downButton = featureCard.querySelector('.thumbs-down');
+                      const parentFeedback = featureCard.querySelector('.flex.space-x-2, .flex.space-x-3');
 
-                      if (upButton) {
-                          const countElement = upButton.querySelector('.count');
-                          countElement.classList.add('scale-125', 'text-blue-600');
-                          countElement.textContent = data.up_count;
-                          setTimeout(() => countElement.classList.remove('scale-125', 'text-blue-600'), 500);
-                      }
-
-                      if (downButton) {
-                          const countElement = downButton.querySelector('.count');
-                          countElement.classList.add('scale-125', 'text-blue-600');
-                          countElement.textContent = data.down_count;
-                          setTimeout(() => countElement.classList.remove('scale-125', 'text-blue-600'), 500);
-                      }
+                      // Update counts with animation
+                      helpers.updateVoteCount(upButton, data.up_count);
+                      helpers.updateVoteCount(downButton, data.down_count);
 
                       // Update percentages
                       updateVotePercentages(featureCard, data.up_percentage || 0, data.down_percentage || 0);
 
-                      // Handle button states
+                      // Handle button states based on server response
                       if (data.message !== "Vote changed" && data.message !== "You've already cast this vote") {
-                          const parentFeedback = featureCard.querySelector('.flex.space-x-2, .flex.space-x-3');
-                          parentFeedback.querySelectorAll('button').forEach(btn => {
-                              btn.disabled = true;
-                              btn.classList.add('opacity-70');
-                          });
+                          helpers.disableAllButtons(parentFeedback);
+                      } else {
+                          // Only reset loading state if not disabling all buttons
+                          helpers.setButtonLoading(this, false);
                       }
 
                       // Update selected state
-                      const parentFeedback = featureCard.querySelector('.flex.space-x-2, .flex.space-x-3');
-                      parentFeedback.querySelectorAll('button').forEach(btn => {
-                          btn.classList.remove('bg-green-50', 'dark:bg-green-900', 'border-green-400', 'text-green-600',
-                              'bg-red-50', 'dark:bg-red-900', 'border-red-400', 'text-red-600');
-                      });
-
-                      this.classList.remove('opacity-70');
-                      if (isUpvote) {
-                          this.classList.add('bg-green-50', 'dark:bg-green-900', 'border-green-400', 'text-green-600');
-                      } else {
-                          this.classList.add('bg-red-50', 'dark:bg-red-900', 'border-red-400', 'text-red-600');
-                      }
-
-                      // Update ARIA state
-                      this.setAttribute('aria-pressed', 'true');
+                      const allButtons = parentFeedback.querySelectorAll('button');
+                      helpers.resetButtonStyles(allButtons);
+                      helpers.setSelectedState(this, true, isUpvote);
 
                       // Store vote in localStorage
                       localStorage.setItem(`feature-vote-${featureId}`, isUpvote ? 'up' : 'down');
 
                   } catch (error) {
                       console.error('Error voting on feature:', error);
-                      showFeedbackMessage(featureCard,
-                          error.message.includes('Network') ? "Network error. Please check your connection." :
-                          error.message.includes('401') || error.message.includes('403') ? "Please log in to vote on features." :
-                          "Error recording your vote. Please try again."
-                      );
+
+                      // Determine appropriate error message
+                      const errorMessage = error.message.includes('Network') ?
+                          "Network error. Please check your connection." :
+                          error.message.includes('401') || error.message.includes('403') ?
+                          "Please log in to vote on features." :
+                          "Error recording your vote. Please try again.";
+
+                      showFeedbackMessage(featureCard, errorMessage);
+
                       // Reset button state on error
-                      this.disabled = false;
-                      this.classList.remove('opacity-70');
+                      helpers.setButtonLoading(this, false);
                   }
               });
           });
