@@ -11,7 +11,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.mail import send_mail
-from django.core.validators import MaxValueValidator, MinValueValidator
+from django.core.validators import FileExtensionValidator, MaxValueValidator, MinValueValidator
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -2510,3 +2510,70 @@ class NotificationPreference(models.Model):
 
     def __str__(self):
         return f"Notification preferences for {self.user.username}"
+
+
+class GSoCProposal(models.Model):
+    """Model for storing GSoC proposal PDF files submitted by students for review."""
+
+    STATUS_CHOICES = [
+        ("submitted", "Submitted"),
+        ("under_review", "Under Review"),
+        ("reviewed", "Reviewed"),
+        ("rejected", "Rejected"),
+        ("accepted", "Accepted"),
+    ]
+
+    title = models.CharField(max_length=200, help_text="Title of your GSoC proposal")
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="gsoc_proposals")
+    proposal_file = models.FileField(
+        upload_to="gsoc_proposals/",
+        validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
+        help_text="Upload your GSoC proposal in PDF format (max 10MB)",
+    )
+    organization = models.CharField(max_length=200, help_text="GSoC organization you're applying to")
+    project = models.CharField(max_length=200, help_text="Specific project or idea you're proposing")
+    year = models.PositiveIntegerField(default=2025, help_text="GSoC program year")
+    description = models.TextField(help_text="Brief description of your proposal", blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="submitted")
+    feedback = models.TextField(blank=True, help_text="Feedback from reviewers")
+
+    # Tracking fields
+    file_size = models.PositiveIntegerField(editable=False, null=True)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="reviewed_proposals"
+    )
+
+    class Meta:
+        ordering = ["-submitted_at"]
+        verbose_name = "GSoC Proposal"
+        verbose_name_plural = "GSoC Proposals"
+
+    def __str__(self):
+        return f"{self.student.username}'s GSoC Proposal: {self.title}"
+
+    def save(self, *args, **kwargs):
+        # Set file size on save
+        if self.proposal_file:
+            self.file_size = self.proposal_file.size
+
+        # Set reviewed_at timestamp when status changes to 'reviewed'
+        if self.pk:
+            old_instance = GSoCProposal.objects.get(pk=self.pk)
+            if old_instance.status != "reviewed" and self.status == "reviewed":
+                self.reviewed_at = timezone.now()
+
+        super().save(*args, **kwargs)
+
+    @property
+    def file_size_display(self):
+        """Returns the file size in a human-readable format."""
+        if self.file_size:
+            # Convert bytes to MB with 2 decimal places
+            return f"{self.file_size / (1024 * 1024):.2f} MB"
+        return "Unknown"
+
+    def get_status_choices(self):
+        return self.STATUS_CHOICES

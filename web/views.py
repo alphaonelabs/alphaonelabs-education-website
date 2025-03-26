@@ -25,7 +25,7 @@ from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.core.mail import send_mail
 from django.core.management import call_command
-from django.core.paginator import Paginator
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError, models, transaction
 from django.db.models import Avg, Count, Q, Sum
 from django.db.models.functions import Coalesce
@@ -68,6 +68,7 @@ from .forms import (
     ForumTopicForm,
     GoodsForm,
     GradeableLinkForm,
+    GSoCProposalForm,
     InviteStudentForm,
     LearnForm,
     LinkGradeForm,
@@ -116,6 +117,7 @@ from .models import (
     ForumTopic,
     Goods,
     GradeableLink,
+    GSoCProposal,
     LearningStreak,
     LinkGrade,
     Meme,
@@ -6007,3 +6009,117 @@ def all_study_groups(request):
             "enrolled_courses": enrolled_courses,
         },
     )
+
+
+@login_required
+def upload_gsoc_proposal(request):
+    """View for students to upload their GSoC proposals."""
+    if request.method == "POST":
+        form = GSoCProposalForm(request.POST, request.FILES)
+        if form.is_valid():
+            proposal = form.save(commit=False)
+            proposal.student = request.user
+            proposal.save()
+
+            # Create notification for user
+            Notification.objects.create(
+                user=request.user,
+                title="GSoC Proposal Submitted",
+                message="Your GSoC proposal has been submitted successfully and is pending review.",
+                notification_type="success",
+            )
+
+            # Create notification for admin users (teachers)
+            admin_users = User.objects.filter(profile__is_teacher=True)
+            for admin in admin_users:
+                Notification.objects.create(
+                    user=admin,
+                    title="New GSoC Proposal Submitted",
+                    message=f"A new GSoC proposal has been submitted by {request.user.username} and needs review.",
+                    notification_type="info",
+                )
+
+            messages.success(request, "Your GSoC proposal has been submitted successfully!")
+            return redirect("gsoc_proposal_list")
+    else:
+        form = GSoCProposalForm()
+
+    return render(request, "web/gsoc/upload_proposal.html", {"form": form})
+
+
+@login_required
+def gsoc_proposal_list(request):
+    """
+    View to see all submitted GSoC proposals.
+    - Teachers/admins see all proposals
+    - Students see only their own proposals
+    - Implements pagination
+    """
+    # Determine user type and filter proposals accordingly
+    if request.user.profile.is_teacher:
+        proposals_list = GSoCProposal.objects.all().order_by("-submitted_at")
+        viewing_as = "reviewer"
+
+    else:
+        proposals_list = GSoCProposal.objects.filter(student=request.user).order_by("-submitted_at")
+        viewing_as = "student"
+    print("i am viewing as :", viewing_as)
+    # Pagination
+    paginator = Paginator(proposals_list, 10)  # Show 10 proposals per page
+    page = request.GET.get("page", 1)
+
+    try:
+        proposals = paginator.page(page)
+    except PageNotAnInteger:
+        # If page is not an integer, deliver first page
+        proposals = paginator.page(1)
+    except EmptyPage:
+        # If page is out of range, deliver last page of results
+        proposals = paginator.page(paginator.num_pages)
+
+    context = {"proposals": proposals, "viewing_as": viewing_as}
+    return render(request, "web/gsoc/proposal_list.html", context)
+
+
+@login_required
+def gsoc_proposal_detail(request, proposal_id):
+    """View to see the details of a specific GSoC proposal and provide feedback."""
+
+    proposal = get_object_or_404(GSoCProposal, id=proposal_id)
+
+    # Only allow access to the student who submitted the proposal or teachers
+    if request.user != proposal.student and not request.user.profile.is_teacher:
+        return HttpResponseForbidden("You don't have permission to view this proposal.")
+
+    # Handle feedback submission from teachers
+    if request.method == "POST" and request.user.profile.is_teacher:
+        feedback = request.POST.get("feedback", "").strip()
+        status = request.POST.get("status", "")
+
+        if feedback:
+            proposal.feedback = feedback
+
+        if status and status in [choice[0] for choice in GSoCProposal.STATUS_CHOICES]:
+            old_status = proposal.status
+            proposal.status = status
+
+            # If moving to reviewed status, set the reviewer
+            if status == "reviewed" and old_status != "reviewed":
+                proposal.reviewed_by = request.user
+                proposal.reviewed_at = timezone.now()
+
+                # Create notification for the student
+                Notification.objects.create(
+                    user=proposal.student,
+                    title="GSoC Proposal Reviewed",
+                    message=f"Your GSoC proposal '{proposal.title}' has been reviewed. Check the feedback!",
+                    notification_type="info",
+                )
+
+        proposal.save()
+        messages.success(request, "Feedback and status updated successfully!")
+        return redirect("gsoc_proposal_detail", proposal_id=proposal_id)
+
+    context = {"proposal": proposal, "is_reviewer": request.user.profile.is_teacher}
+
+    return render(request, "web/gsoc/proposal_detail.html", context)

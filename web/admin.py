@@ -26,6 +26,7 @@ from .models import (
     ForumReply,
     ForumTopic,
     Goods,
+    GSoCProposal,
     LearningStreak,
     Notification,
     Order,
@@ -709,3 +710,31 @@ class QuizOptionAdmin(admin.ModelAdmin):
     list_filter = ("is_correct",)
     search_fields = ("text", "question__text")
     autocomplete_fields = ["question"]
+
+
+@admin.register(GSoCProposal)
+class GSoCProposalAdmin(admin.ModelAdmin):
+    list_display = ("title", "student", "organization", "year", "status", "submitted_at", "file_size_display")
+    list_filter = ("status", "year", "organization")
+    search_fields = ("title", "student__username", "organization", "project")
+    readonly_fields = ("file_size", "submitted_at", "updated_at", "reviewed_at")
+
+    fieldsets = (
+        (
+            "Proposal Information",
+            {
+                "fields": (
+                    "title",
+                    "student",
+                    "organization",
+                    "project",
+                    "year",
+                    "description",
+                    "proposal_file",
+                    "file_size_display",
+                )
+            },
+        ),
+        ("Review Information", {"fields": ("status", "feedback", "reviewed_by", "reviewed_at")}),
+        ("Timestamps", {"fields": ("submitted_at", "updated_at"), "classes": ("collapse",)}),
+    )

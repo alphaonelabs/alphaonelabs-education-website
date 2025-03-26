@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Upload GSoC Proposal{% endblock %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+      <div class="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden">
+        <div class="bg-blue-600 dark:bg-blue-700 text-white px-6 py-4">
+          <h2 class="text-xl font-semibold">Upload GSoC Proposal</h2>
+        </div>
+        <div class="p-6">
+          <p class="text-gray-600 dark:text-gray-300 mb-6">
+            Upload your Google Summer of Code (GSoC) proposal in PDF format for review. Our mentors will provide constructive feedback to help you improve your proposal before the final submission.
+          </p>
+          <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            {% if form.non_field_errors %}
+              <div class="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-600 text-red-700 dark:text-red-300 px-4 py-3 rounded relative"
+                   role="alert">
+                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+              </div>
+            {% endif %}
+            {% for field in form %}
+              <div class="mb-4">
+                <label for="{{ field.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {{ field.label }}
+                </label>
+                {% if field.field.widget.input_type == 'file' %}
+                  <input type="file"
+                         id="{{ field.id_for_label }}"
+                         name="{{ field.name }}"
+                         class="block w-full text-sm text-gray-500 dark:text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-500 file:text-white hover:file:bg-blue-600 dark:file:bg-blue-700 dark:hover:file:bg-blue-800"
+                         accept=".pdf"
+                         required />
+                {% else %}
+                  <input type="{{ field.field.widget.input_type }}"
+                         id="{{ field.id_for_label }}"
+                         name="{{ field.name }}"
+                         class="bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md p-2 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                         placeholder="{{ field.label }}"
+                         {% if field.field.required %}required{% endif %} />
+                {% endif %}
+                {% if field.errors %}
+                  <div class="mt-2 text-sm text-red-600 dark:text-red-400">
+                    {% for error in field.errors %}<p>{{ error }}</p>{% endfor %}
+                  </div>
+                {% endif %}
+                {% if field.help_text %}<p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>{% endif %}
+              </div>
+            {% endfor %}
+            <div class="mt-6">
+              <button type="submit"
+                      class="w-full bg-blue-600 dark:bg-blue-700 text-white py-3 px-4 rounded-md hover:bg-blue-700 dark:hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:ring-offset-2 transition duration-300 ease-in-out transform hover:scale-102">
+                Upload Proposal
+              </button>
+            </div>
+          </form>
+        </div>
+        <div class="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 px-6 py-4 text-sm flex items-center">
+          <svg class="w-5 h-5 mr-2 text-blue-500 dark:text-blue-400"
+               fill="none"
+               stroke="currentColor"
+               viewBox="0 0 24 24"
+               xmlns="http://www.w3.org/2000/svg">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+            </path>
+          </svg>
+          Your proposal will be carefully reviewed by our mentors, who will provide constructive feedback to help you improve your submission.
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

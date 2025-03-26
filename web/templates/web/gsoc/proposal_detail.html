@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}GSoC Proposal: {{ proposal.title }}{% endblock %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8 max-w-7xl">
+    <nav aria-label="Breadcrumb" class="mb-6">
+      <ol class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+        <li>
+          <a href="{% url 'gsoc_proposal_list' %}"
+             class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">GSoC Proposals</a>
+        </li>
+        <li class="flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               class="h-4 w-4 mx-2 text-gray-500 dark:text-gray-400"
+               viewBox="0 0 20 20"
+               fill="currentColor">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+          </svg>
+          <span class="font-medium text-gray-700 dark:text-gray-200">{{ proposal.title }}</span>
+        </li>
+      </ol>
+    </nav>
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="md:col-span-2">
+        <!-- Proposal Details Card -->
+        <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden mb-6">
+          <div class="bg-blue-600 dark:bg-blue-800 text-white px-6 py-4 flex justify-between items-center">
+            <h2 class="text-xl font-semibold">Proposal Details</h2>
+            <span class="bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm">
+              {{ proposal.get_status_display|capfirst }}
+            </span>
+          </div>
+          <div class="p-6">
+            <h3 class="text-lg font-bold mb-4 text-gray-800 dark:text-gray-200">{{ proposal.title }}</h3>
+            <div class="grid md:grid-cols-2 gap-4">
+              <div>
+                <div class="space-y-2">
+                  <p class="text-sm">
+                    <span class="font-semibold text-gray-600 dark:text-gray-400">Organization:</span>
+                    <span class="text-gray-800 dark:text-gray-200">{{ proposal.organization }}</span>
+                  </p>
+                  <p class="text-sm">
+                    <span class="font-semibold text-gray-600 dark:text-gray-400">Project:</span>
+                    <span class="text-gray-800 dark:text-gray-200">{{ proposal.project }}</span>
+                  </p>
+                  <p class="text-sm">
+                    <span class="font-semibold text-gray-600 dark:text-gray-400">Year:</span>
+                    <span class="text-gray-800 dark:text-gray-200">{{ proposal.year }}</span>
+                  </p>
+                </div>
+              </div>
+              <div>
+                <div class="space-y-2">
+                  <p class="text-sm">
+                    <span class="font-semibold text-gray-600 dark:text-gray-400">Student:</span>
+                    <span class="text-gray-800 dark:text-gray-200">{{ proposal.student.username }}</span>
+                  </p>
+                  <p class="text-sm">
+                    <span class="font-semibold text-gray-600 dark:text-gray-400">Submitted:</span>
+                    <span class="text-gray-800 dark:text-gray-200">{{ proposal.submitted_at|date:"F d, Y H:i" }}</span>
+                  </p>
+                  <p class="text-sm">
+                    <span class="font-semibold text-gray-600 dark:text-gray-400">File Size:</span>
+                    <span class="text-gray-800 dark:text-gray-200">{{ proposal.file_size_display }}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+            {% if proposal.description %}
+              <div class="mt-4 bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Description</h4>
+                <p class="text-gray-600 dark:text-gray-300 text-sm">{{ proposal.description|linebreaks }}</p>
+              </div>
+            {% endif %}
+            <div class="flex flex-wrap justify-center gap-4 mt-6">
+              <a href="{{ proposal.proposal_file.url }}"
+                 class="bg-blue-500 hover:bg-blue-600 dark:bg-blue-700 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center transition-colors"
+                 target="_blank"
+                 rel="noopener noreferrer">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+                </svg>
+                View PDF
+              </a>
+              <a href="{{ proposal.proposal_file.url }}"
+                 class="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-4 py-2 rounded-md flex items-center transition-colors"
+                 download>
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-9.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+                Download
+              </a>
+              <a href="{% url 'gsoc_proposal_list' %}"
+                 class="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-4 py-2 rounded-md flex items-center transition-colors">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+                </svg>
+                Back to List
+              </a>
+            </div>
+          </div>
+        </div>
+        <!-- Feedback Section -->
+        {% if proposal.feedback or is_reviewer %}
+          <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+            <div class="bg-teal-600 dark:bg-teal-800 text-white px-6 py-4">
+              <h3 class="text-xl font-semibold">Feedback</h3>
+            </div>
+            <div class="p-6">
+              {% if proposal.feedback %}
+                <blockquote class="border-l-4 border-teal-500 pl-4 py-2 bg-gray-50 dark:bg-gray-700 italic text-gray-700 dark:text-gray-300">
+                  <p class="mb-2">{{ proposal.feedback|linebreaks }}</p>
+                  {% if proposal.reviewed_by %}
+                    <footer class="text-right text-sm text-gray-500 dark:text-gray-400">
+                      — Reviewed by {{ proposal.reviewed_by.username }}
+                      on {{ proposal.reviewed_at|date:"F d, Y H:i" }}
+                    </footer>
+                  {% endif %}
+                </blockquote>
+              {% endif %}
+              {% if is_reviewer %}
+                <form method="post" class="mt-4" novalidate>
+                  {% csrf_token %}
+                  <div class="mb-4">
+                    <label for="feedback"
+                           class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Provide Feedback
+                    </label>
+                    <textarea name="feedback"
+                              id="feedback"
+                              rows="5"
+                              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ proposal.feedback }}</textarea>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      Provide constructive and specific feedback for the proposal.
+                    </p>
+                  </div>
+                  <div class="mb-4">
+                    <label for="status"
+                           class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Update Status
+                    </label>
+                    <select name="status"
+                            id="status"
+                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                      {% for status_value, status_display in proposal.get_status_choices %}
+                        <option value="{{ status_value }}"
+                                {% if proposal.status == status_value %}selected{% endif %}
+                                class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200">
+                          {{ status_display }}
+                        </option>
+                      {% endfor %}
+                    </select>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Select the current status of the proposal.</p>
+                  </div>
+                  <button type="submit"
+                          class="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-800 dark:hover:bg-blue-700 text-white py-2 rounded-md transition-colors">
+                    Submit Feedback
+                  </button>
+                </form>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
+      </div>
+      <div class="md:col-span-1 space-y-6">
+        <!-- Timeline Card -->
+        <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+          <div class="bg-gray-700 dark:bg-gray-900 text-white px-6 py-4">
+            <h3 class="text-xl font-semibold">Proposal Timeline: Till 8th April,2025</h3>
+          </div>
+          <div class="divide-y divide-gray-200 dark:divide-gray-700">
+            {% for stage in proposal.timeline_stages %}
+              <div class="px-6 py-4 flex justify-between items-center {% if not stage.is_active %}text-gray-400 dark:text-gray-500{% else %}text-gray-700 dark:text-gray-300{% endif %}">
+                <div class="flex items-center">
+                  <span class="mr-3 {% if stage.is_completed %}bg-green-500 {% elif stage.is_active %}bg-yellow-500 {% else %}bg-gray-300 dark:bg-gray-600{% endif %} text-white rounded-full px-2 py-1 text-xs font-bold">
+                    {{ forloop.counter }}
+                  </span>
+                  <span class="font-medium">{{ stage.name }}</span>
+                </div>
+                <small class="text-sm">
+                  {% if stage.date %}
+                    {{ stage.date|date:"M d, Y" }}
+                  {% else %}
+                    {{ stage.status }}
+                  {% endif %}
+                </small>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        <!-- Tips Card -->
+        <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
+          <div class="bg-teal-600 dark:bg-teal-800 text-white px-6 py-4">
+            <h3 class="text-xl font-semibold">GSoC Proposal Tips</h3>
+          </div>
+          <div class="p-6 bg-gray-50 dark:bg-gray-700">
+            <ul class="space-y-3">
+              <li class="flex items-center text-gray-700 dark:text-gray-300">
+                <svg class="w-5 h-5 mr-3 text-green-500"
+                     fill="currentColor"
+                     viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                Detailed implementation strategy
+              </li>
+              <li class="flex items-center text-gray-700 dark:text-gray-300">
+                <svg class="w-5 h-5 mr-3 text-green-500"
+                     fill="currentColor"
+                     viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                Comprehensive project timeline
+              </li>
+              <li class="flex items-center text-gray-700 dark:text-gray-300">
+                <svg class="w-5 h-5 mr-3 text-green-500"
+                     fill="currentColor"
+                     viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                Project understanding
+              </li>
+              <li class="flex items-center text-gray-700 dark:text-gray-300">
+                <svg class="w-5 h-5 mr-3 text-green-500"
+                     fill="currentColor"
+                     viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                Skill and experience showcase
+              </li>
+              <li class="flex items-center text-gray-700 dark:text-gray-300">
+                <svg class="w-5 h-5 mr-3 text-green-500"
+                     fill="currentColor"
+                     viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                Clear project motivation
+              </li>
+              <li class="flex items-center text-gray-700 dark:text-gray-300">
+                <svg class="w-5 h-5 mr-3 text-green-500"
+                     fill="currentColor"
+                     viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                </svg>
+                Visual aids and documentation
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block extra_js %}
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          const timelineItems = document.querySelectorAll('[class*="timeline"] > div');
+          timelineItems.forEach(item => {
+              item.addEventListener('mouseenter', function() {
+                  this.classList.add('bg-gray-100', 'dark:bg-gray-700');
+              });
+              item.addEventListener('mouseleave', function() {
+                  this.classList.remove('bg-gray-100', 'dark:bg-gray-700');
+              });
+          });
+      });
+  </script>
+{% endblock %}

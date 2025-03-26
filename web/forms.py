@@ -4,6 +4,7 @@ from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
 from django import forms
 from django.contrib.auth.models import User
+from django.core.validators import FileExtensionValidator
 from django.db import IntegrityError
 from django.utils import timezone
 from django.utils.crypto import get_random_string
@@ -21,6 +22,7 @@ from .models import (
     ForumCategory,
     Goods,
     GradeableLink,
+    GSoCProposal,
     LinkGrade,
     Meme,
     NotificationPreference,
@@ -1654,3 +1656,32 @@ class StudyGroupForm(forms.ModelForm):
         model = StudyGroup
         # You might exclude fields that are set automatically.
         fields = ["name", "description", "course", "max_members", "is_private"]
+
+
+class GSoCProposalForm(forms.ModelForm):
+    """Form for submitting GSoC proposals."""
+
+    # Additional validation for the file field
+    proposal_file = forms.FileField(
+        validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
+        help_text="Upload your GSoC proposal in PDF format (max 10MB)",
+        widget=forms.FileInput(attrs={"accept": "application/pdf"}),
+    )
+
+    class Meta:
+        model = GSoCProposal
+        fields = ["title", "organization", "project", "year", "description", "proposal_file"]
+
+    def clean_proposal_file(self):
+        uploaded_file = self.cleaned_data.get("proposal_file")
+        if uploaded_file:
+            # 10MB maximum file size
+            max_size = 10 * 1024 * 1024
+            if uploaded_file.size > max_size:
+                raise forms.ValidationError("File size must not exceed 10MB.")
+
+            # Verify file is actually a PDF
+            if not uploaded_file.content_type == "application/pdf":
+                raise forms.ValidationError("File must be a PDF document.")
+
+        return uploaded_file
