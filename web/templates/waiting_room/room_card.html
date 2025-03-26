@@ -40,9 +40,9 @@
     <div class="flex justify-between items-center mt-4">
       <div class="flex items-center">
         <div class="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center mr-2">
-          <span class="text-purple-600 text-sm font-medium">{{ room.creator.get_full_name|default:room.creator.username|first }}</span>
+          <span class="text-purple-600 text-sm font-medium">{{ room.creator.username }}</span>
         </div>
-        <span class="text-sm text-gray-600">{{ room.creator.get_full_name|default:room.creator.username }}</span>
+        <span class="text-sm text-gray-600">{{ room.creator.username }}</span>
       </div>
       <span class="text-xs text-gray-500">{{ room.created_at|timesince }} ago</span>
     </div>
