@@ -123,31 +123,24 @@
                   <span class="text-blue-600 dark:text-blue-400 font-bold">{{ course.enrollments.count }}</span> / {{ course.max_students }}
                 </span>
               </div>
-              <div>
-                <a href="#course_reviews">
-                  <div class="cursor-pointer flex mb-2 items-center justify-between py-2 border-t dark:border-gray-700 pt-2">
+              <div class="transform hover:-translate-y-1 transition-all duration-200 hover:shadow-md rounded-lg">
+                <a href="#course_reviews" class="block">
+                  <div class="cursor-pointer flex items-center justify-between py-3 px-4 border dark:border-gray-700 rounded-lg hover:border-blue-500 dark:hover:border-blue-400">
                     <span class="text-gray-600 dark:text-gray-300 font-medium flex items-center">
                       <i class="fas fa-star text-yellow-500 dark:text-yellow-400 mr-2"></i>
                       Rating
                     </span>
-                    <span class="font-medium flex items-center">
-                      {% if course.average_rating %}
-                        <span class="flex items-center">
-                          {% for i in "12345" %}
-                            {% if forloop.counter <= course.average_rating|floatformat:"0" %}
-                              <i class="fas fa-star text-yellow-400 mr-0.5"></i>
-                            {% elif forloop.counter <= course.average_rating|add:"0.5"|floatformat:"0" %}
-                              <i class="fas fa-star-half-alt text-yellow-400 mr-0.5"></i>
-                            {% else %}
-                              <i class="far fa-star text-yellow-400 mr-0.5"></i>
-                            {% endif %}
-                          {% endfor %}
-                          <span id="average_stars" class="ml-1 text-gray-700 dark:text-gray-300">{{ course.average_rating }}</span>
-                        </span>
-                      {% else %}
-                        <span class="text-gray-500 dark:text-gray-400">No ratings yet</span>
-                      {% endif %}
-                    </span>
+                    <div class="flex items-center">
+                      <span class="font-medium flex items-center">
+                        <i class="far fa-star text-yellow-400 mr-0.5"></i>
+                        <i class="far fa-star text-yellow-400 mr-0.5"></i>
+                        <i class="far fa-star text-yellow-400 mr-0.5"></i>
+                        <i class="far fa-star text-yellow-400 mr-0.5"></i>
+                        <i class="far fa-star text-yellow-400 mr-0.5"></i>
+                        <span id="average_stars" class="ml-1 text-gray-700 dark:text-gray-300">4.0</span>
+                      </span>
+                      <span class="ml-3 text-sm text-blue-500 dark:text-blue-400">View reviews</span>
+                    </div>
                   </div>
                 </a>
               </div>
@@ -1030,9 +1023,8 @@
                         <div class="relative mb-4">
                           <div class="flex justify-between items-center mb-2">
                             <h3 class="font-semibold text-lg">Your Progress</h3>
-                            <div class="text-2xl font-bold text-green-600 dark:text-green-400">
-                              {{ enrollment.progress.completion_percentage }}%
-                            </div>
+                            <div class="text-2xl font-bold text-green-600 dark:text-green-400"
+                                 style="width: 50%">{{ enrollment.progress.completion_percentage }}</div>
                           </div>
                           <!-- Green Gradient Progress Bar -->
                           <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -1350,7 +1342,7 @@
 
           // Function to set width based on rating
           function setWidth(element, StartNum) {
-              const width = 100 * (StartNum / reviewsNum) // Default to 0 if rating not found
+              const width = reviewsNum == 0 ? 0 : 100 * (StartNum / reviewsNum);
               element.style.width = `${width}%`;
           }
 
