@@ -6,77 +6,156 @@
   Forum Categories
 {% endblock title %}
 {% block content %}
-  <main class="flex-1 w-full max-w-[90rem] mx-auto mt-6 px-4 md:px-6">
-    <div class="flex justify-between items-center mb-6">
-      <div>
-        <h1 class="text-2xl font-bold mb-2 flex items-center">
-          <i class="fa-solid fa-comments text-teal-600 dark:text-teal-400 mr-2"></i>
-          Forum Categories
-        </h1>
-        <p class="text-gray-600 dark:text-gray-400">
-          Join discussions, ask questions, and share knowledge with our community.
-        </p>
-      </div>
-      {% if user.is_authenticated %}
-        <a href="{% url 'create_forum_category' %}"
-           class="bg-teal-600 hover:bg-teal-700 text-white font-semibold px-4 py-2 rounded-lg flex items-center">
-          <i class="fa-solid fa-folder-plus mr-2"></i>
-          Create Category
-        </a>
-      {% endif %}
-    </div>
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {% for category in categories %}
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-lg transition-shadow duration-200">
-          <a href="{% url 'forum_category' slug=category.slug %}" class="block">
-            <h2 class="text-lg font-semibold mb-2 flex items-center text-teal-600 dark:text-teal-400">
-              <i class="fa-solid {{ category.icon|default:'fa-folder' }} mr-2"></i>
-              {{ category.name }}
-            </h2>
-            <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">{{ category.description }}</p>
-            <div class="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-              <span>
-                <i class="fa-solid fa-message mr-1"></i>
-                {{ category.topics.count }} topics
-              </span>
-              <span>
-                <i class="fa-solid fa-clock mr-1"></i>
-                {{ category.last_activity|default:"No activity" }}
-              </span>
+  <main class="flex-1 w-full max-w-[90rem] mx-auto px-0 md:px-0 h-full">
+    <div class="flex flex-col lg:flex-row h-full min-h-[calc(100vh-4rem)]">
+      <!-- Left Sidebar - Categories Navigation -->
+      <div class="w-full lg:w-64 xl:w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 lg:p-6">
+        <div class="mb-6">
+          <h2 class="text-xl font-bold flex items-center text-gray-800 dark:text-gray-100">
+            <i class="fa-solid fa-comments text-teal-300 mr-2"></i>
+            Forum
+          </h2>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Join discussions, ask questions, and share knowledge</p>
+        </div>
+        <nav>
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">Categories</h3>
+              {% if user.is_authenticated %}
+                <a href="{% url 'create_forum_category' %}"
+                   class="text-xs text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 flex items-center">
+                  <i class="fa-solid fa-plus mr-1 text-xs"></i>
+                  New
+                </a>
+              {% endif %}
             </div>
-          </a>
-        </div>
-      {% empty %}
-        <div class="col-span-full text-center py-8 text-gray-500 dark:text-gray-400">
-          <i class="fa-solid fa-comment-slash text-4xl mb-2"></i>
-          <p class="mb-4">No categories have been created yet.</p>
-          {% if user.is_staff or user.profile.is_teacher %}
-            <a href="{% url 'create_forum_category' %}"
-               class="inline-flex items-center bg-teal-600 hover:bg-teal-700 text-white font-semibold px-4 py-2 rounded-lg">
-              <i class="fa-solid fa-folder-plus mr-2"></i>
-              Create the First Category
-            </a>
+            <ul class="space-y-2">
+              <li>
+                <a href="{% url 'forum_categories' %}"
+                   class="flex items-center py-2 px-3 text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-lg font-medium">
+                  <i class="fa-solid fa-layer-group text-teal-300 mr-2"></i>
+                  All Categories
+                </a>
+              </li>
+              {% for category in categories %}
+                <li>
+                  <a href="{% url 'forum_category' slug=category.slug %}"
+                     class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <i class="fa-solid {{ category.icon|default:'fa-folder' }} text-teal-300 mr-2"></i>
+                    {{ category.name }}
+                    <span class="ml-auto text-xs text-gray-500 dark:text-gray-400">{{ category.topics.count }}</span>
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% if user.is_authenticated %}
+            <div class="mb-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">My Activity</h3>
+              <ul class="space-y-2">
+                <li>
+                  <a href="{% url 'my_forum_topics' %}"
+                     class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <i class="fa-solid fa-pen-to-square text-teal-300 mr-2"></i>
+                    My Topics
+                  </a>
+                </li>
+                <li>
+                  <a href="{% url 'my_forum_replies' %}"
+                     class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <i class="fa-solid fa-reply text-teal-300 mr-2"></i>
+                    My Replies
+                  </a>
+                </li>
+              </ul>
+            </div>
           {% endif %}
+        </nav>
+      </div>
+      <!-- Main Content Area -->
+      <div class="flex-1 bg-gray-50 dark:bg-gray-900 overflow-y-auto">
+        <div class="p-4 lg:p-6">
+          <div class="flex justify-between items-center mb-6">
+            <div>
+              <h1 class="text-2xl font-bold mb-2 text-gray-800 dark:text-gray-100">Forum Categories</h1>
+              <p class="text-gray-600 dark:text-gray-400">Browse all categories or select one to see its topics</p>
+            </div>
+            {% if user.is_authenticated %}
+              <a href="{% url 'create_forum_category' %}"
+                 class="bg-teal-300 hover:bg-teal-400 text-white font-semibold px-4 py-2 rounded-lg flex items-center transition duration-200">
+                <i class="fa-solid fa-folder-plus mr-2"></i>
+                Create Category
+              </a>
+            {% endif %}
+          </div>
+          <!-- Recent Topics from All Categories -->
+          <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-100">Recent Discussions</h2>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6 divide-y divide-gray-200 dark:divide-gray-700">
+            {% for category in categories %}
+              {% for topic in category.topics.all|slice:":3" %}
+                <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors duration-150">
+                  <div class="flex items-start">
+                    <!-- User Avatar -->
+                    <div class="mr-4 hidden sm:block">
+                      {% if topic.author.profile.avatar %}
+                        <img src="{{ topic.author.profile.avatar.url }}"
+                             alt="{{ topic.author.username }}"
+                             class="w-10 h-10 rounded-full object-cover"
+                             width="40"
+                             height="40" />
+                      {% else %}
+                        <div class="w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center text-teal-600 dark:text-teal-300 font-bold text-sm">
+                          {{ topic.author.username|slice:":1"|upper }}
+                        </div>
+                      {% endif %}
+                    </div>
+                    <!-- Topic Content -->
+                    <div class="flex-1 min-w-0">
+                      <div class="flex items-baseline justify-between mb-1">
+                        <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
+                          <span class="font-medium text-gray-700 dark:text-gray-300">{{ topic.author.username }}</span>
+                          <span class="mx-2">•</span>
+                          <span class="whitespace-nowrap">{{ topic.created_at|timesince }} ago</span>
+                          <span class="mx-2">•</span>
+                          <a href="{% url 'forum_category' slug=category.slug %}"
+                             class="text-teal-300 hover:text-teal-400 font-medium">{{ category.name }}</a>
+                        </div>
+                      </div>
+                      <h3 class="text-base font-semibold mb-1 truncate">
+                        <a href="{% url 'forum_topic' category.slug topic.id %}"
+                           class="text-gray-800 dark:text-gray-100 hover:text-teal-300 transition duration-150">
+                          {% if topic.is_pinned %}<i class="fas fa-thumbtack text-gray-500 dark:text-gray-400 mr-1"></i>{% endif %}
+                          {{ topic.title }}
+                        </a>
+                      </h3>
+                      <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-2">
+                        {{ topic.content|striptags|truncatechars:150 }}
+                      </p>
+                      <!-- Engagement Metrics -->
+                      <div class="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                        <span class="flex items-center">
+                          <i class="fa-solid fa-eye mr-1"></i>
+                          {{ topic.views }} views
+                        </span>
+                        <span class="flex items-center">
+                          <i class="fa-solid fa-comments mr-1"></i>
+                          {{ topic.replies.count }} replies
+                        </span>
+                        {% if topic.replies.count > 0 %}
+                          <span class="flex items-center">
+                            <i class="fa-solid fa-clock mr-1"></i>
+                            Last reply {{ topic.replies.last.created_at|timesince }} ago
+                          </span>
+                        {% endif %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            {% endfor %}
+          </div>
         </div>
-      {% endfor %}
-    </div>
-    <!-- GitHub Milestones -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-      <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-200 flex items-center">
-        <i class="fa-brands fa-github mr-2 text-blue-600 dark:text-blue-400"></i>
-        Milestones
-      </h2>
-      {% if user.is_superuser %}
-        <div class="mb-4">
-          <a href="{% url 'sync_github_milestones' %}"
-             class="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white font-medium p-2 rounded-lg transition-colors duration-200">
-            <i class="fa-solid fa-sync mr-2"></i>
-            Sync GitHub Milestones
-          </a>
-          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">Updates forum with latest milestones</p>
-        </div>
-      {% endif %}
-      <div id="github-milestones" class="text-sm"></div>
+      </div>
     </div>
   </main>
 {% endblock content %}
