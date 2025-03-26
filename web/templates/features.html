@@ -5,479 +5,113 @@
 {% block title %}Features - AlphaOne Labs{% endblock %}
 {% block extra_head %}
   <style>
-      /* Enhanced Card Layout */
-      .feature-card {
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-          border: 1px solid #e2e8f0;
-          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-          transform: translateY(0);
-          overflow: hidden;
-          position: relative;
-          background: linear-gradient(145deg, #ffffff, #f8fafc);
-          height: 100%;
-          display: flex;
-          flex-direction: column;
-          border-radius: 1rem;
-      }
-
-      .feature-card .p-6 {
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          padding: 1.5rem;
-      }
-
-      /* Improved Content Spacing */
-      .feature-card h3 {
-          margin-bottom: 0.75rem;
-          line-height: 1.4;
-          font-size: 1.5rem;
-          font-weight: 600;
-          color: #1e293b;
-      }
-
-      .dark .feature-card h3 {
-          color: #f8fafc;
-      }
-
-      .feature-card .text-sm {
-          line-height: 1.5;
-          font-size: 0.875rem;
-      }
-
-      .feature-card p {
-          margin-bottom: 1.5rem;
-          line-height: 1.6;
-          color: #475569;
-      }
-
-      .dark .feature-card p {
-          color: #cbd5e1;
-      }
-
-      /* Enhanced Feature Highlights */
-      .feature-highlight {
-          margin-bottom: 0.75rem;
-          padding: 0.75rem 1rem;
-          border-radius: 0.75rem;
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          transition: all 0.3s ease;
-          background: #f8fafc;
-          border: 1px solid #e2e8f0;
-      }
-
-      .dark .feature-highlight {
-          background: #1e293b;
-          border-color: #334155;
-      }
-
-      .feature-highlight i {
-          font-size: 1.25rem;
-          flex-shrink: 0;
-          color: #10b981;
-      }
-
-      /* Improved Button Layout */
-      .feature-card .flex.justify-between {
-          margin-top: auto;
-          padding-top: 1.5rem;
-          border-top: 1px solid #e2e8f0;
-          display: flex;
-          align-items: center;
-          gap: 1rem;
-      }
-
-      .dark .feature-card .flex.justify-between {
-          border-top-color: #334155;
-      }
-
-      /* Enhanced Voting Buttons */
-      .thumbs-button {
-          min-width: 90px;
-          height: 36px;
-          justify-content: center;
-          padding: 0.5rem 1rem;
-          border-radius: 0.5rem;
-          font-weight: 500;
-          font-size: 0.875rem;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          border: 1px solid #e2e8f0;
-          background: #ffffff;
-          color: #475569;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.375rem;
-      }
-
-      .dark .thumbs-button {
-          background: #1e293b;
-          border-color: #334155;
-          color: #cbd5e1;
-      }
-
-      .thumbs-button i {
-          font-size: 1rem;
-          margin-right: 0.25rem;
-      }
-
-      .thumbs-button .count {
-          font-size: 0.875rem;
-          font-weight: 600;
-          min-width: 1.25rem;
-          text-align: center;
-      }
-
-      .thumbs-button:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
-
-      .thumbs-button:active {
-          transform: translateY(0);
-      }
-
-      .thumbs-up.selected {
-          background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1));
-          border-color: #10b981;
-          color: #10b981;
-          transform: scale(1.02);
-      }
-
-      .thumbs-down.selected {
-          background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(239, 68, 68, 0.1));
-          border-color: #ef4444;
-          color: #ef4444;
-          transform: scale(1.02);
-      }
-
-      /* Improved Vote Count Display */
-      .votes-summary {
-          text-align: center;
-          margin-top: 1rem;
-          padding: 0.75rem;
-          background: #f8fafc;
-          border-radius: 0.75rem;
-          font-size: 0.875rem;
-          color: #64748b;
-          border: 1px solid #e2e8f0;
-      }
-
-      .dark .votes-summary {
-          background: #1e293b;
-          color: #94a3b8;
-          border-color: #334155;
-      }
-
-      /* Enhanced Progress Bar */
-      .vote-percentage-bar {
-          height: 8px;
-          background: #f1f5f9;
-          border-radius: 4px;
-          overflow: hidden;
-          margin-top: 1rem;
-          position: relative;
-      }
-
-      .dark .vote-percentage-bar {
-          background: #334155;
-      }
-
-      .vote-percentage-indicator {
-          height: 100%;
-          transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-          position: absolute;
-          top: 0;
-      }
-
-      .upvote-indicator {
-          left: 0;
-          background: linear-gradient(90deg, #10b981, #059669);
-      }
-
-      .downvote-indicator {
-          right: 0;
-          background: linear-gradient(90deg, #ef4444, #dc2626);
-      }
-
-      /* Enhanced Badge Styles */
-      .feature-badge,
-      .upcoming-badge {
-          padding: 0.5rem 1rem;
-          font-size: 0.75rem;
-          font-weight: 600;
-          letter-spacing: 0.025em;
-          border-radius: 9999px;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-          position: absolute;
-          top: 1rem;
-          right: 1rem;
-          z-index: 10;
-      }
-
-      .feature-badge {
-          background: linear-gradient(135deg, #3b82f6, #2563eb);
-          color: white;
-      }
-
-      .upcoming-badge {
-          background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-          color: white;
-      }
-
-      /* Enhanced Image Styles */
-      .feature-image {
-          height: 200px;
-          width: 100%;
-          object-fit: cover;
-          transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-          border-bottom: 1px solid #e2e8f0;
-          filter: brightness(0.95);
-      }
-
-      .dark .feature-image {
-          border-bottom-color: #334155;
-      }
-
-      .feature-card:hover .feature-image {
-          transform: scale(1.08);
-          filter: brightness(1);
-      }
-
-      /* Enhanced Feedback Message */
-      .feedback-message {
-          position: fixed;
-          bottom: 2rem;
-          left: 50%;
-          transform: translateX(-50%) translateY(100px);
-          background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.8));
-          color: white;
-          padding: 0.875rem 1.75rem;
-          border-radius: 9999px;
-          font-size: 0.875rem;
-          opacity: 0;
-          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-          z-index: 50;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-          backdrop-filter: blur(4px);
-          max-width: 90%;
-          text-align: center;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
-      }
-
-      .feedback-message.show-message {
-          transform: translateX(-50%) translateY(0);
-          opacity: 1;
-      }
-
-      /* Enhanced Section Divider */
-      .section-divider {
-          position: relative;
-          margin: 4rem 0;
-          text-align: center;
-      }
-
-      .section-divider::before {
-          content: '';
-          position: absolute;
-          top: 50%;
-          left: 0;
-          right: 0;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, #e5e7eb, transparent);
-      }
-
-      .dark .section-divider::before {
-          background: linear-gradient(90deg, transparent, #4b5563, transparent);
-      }
-
-      .section-divider-text {
-          position: relative;
-          display: inline-block;
-          padding: 0.5rem 1.5rem;
-          background: white;
-          border-radius: 9999px;
-          font-size: 0.875rem;
-          font-weight: 600;
-          letter-spacing: 0.05em;
-          color: #6b7280;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-      }
-
-      .dark .section-divider-text {
-          background: #1f2937;
-          color: #9ca3af;
-      }
-
-      /* Enhanced Try Button */
-      .try-button {
-          height: 42px;
-          padding: 0.75rem 2rem;
-          font-weight: 600;
-          font-size: 1rem;
-          letter-spacing: 0.025em;
-          display: inline-flex;
-          align-items: center;
-          gap: 0.5rem;
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-          background: linear-gradient(135deg, #3b82f6, #2563eb);
-          color: white;
-          border-radius: 0.75rem;
-          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-          min-width: 160px;
-          justify-content: center;
-          margin-left: auto;
-      }
-
-      .try-button i {
-          font-size: 1.125rem;
-          transition: transform 0.3s ease;
-      }
-
-      /* Enhanced Mobile Responsiveness */
-      @media (max-width: 768px) {
-          .feature-card {
-              margin-bottom: 1.5rem;
-          }
-
-          .feature-image {
-              height: 180px;
-          }
-
-          .feature-card .flex.justify-between {
-              flex-wrap: wrap;
-              gap: 0.75rem;
-          }
-
-          .thumbs-button {
-              min-width: 80px;
-              height: 32px;
-              padding: 0.375rem 0.875rem;
-              font-size: 0.8125rem;
-          }
-
-          .thumbs-button i {
-              font-size: 0.875rem;
-          }
-
-          .try-button {
-              width: 100%;
-              height: 38px;
-              padding: 0.625rem 1.5rem;
-              font-size: 0.9375rem;
-              min-width: unset;
-              margin-left: 0;
-          }
-
-          .try-button i {
-              font-size: 1rem;
-          }
-
-          .feedback-message {
-              bottom: 1rem;
-              padding: 0.625rem 1.25rem;
-              font-size: 0.75rem;
-          }
-
-          .section-divider {
-              margin: 3rem 0;
-          }
-
-          .section-divider-text {
-              padding: 0.4rem 1rem;
-              font-size: 0.75rem;
-          }
-      }
-
-      /* Enhanced Focus States */
-      :focus-visible {
-          outline: 2px solid #3b82f6;
-          outline-offset: 2px;
-      }
-
-      .dark :focus-visible {
-          outline-color: #60a5fa;
-      }
-
-      /* Enhanced Reduced Motion */
-      @media (prefers-reduced-motion: reduce) {
-          * {
-              animation-duration: 0.01ms !important;
-              animation-iteration-count: 1 !important;
-              transition-duration: 0.01ms !important;
-              scroll-behavior: auto !important;
-          }
-      }
-
-      /* Enhanced Button States */
-      .thumbs-button:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
-
-      .thumbs-button:active {
-          transform: translateY(0);
-      }
-
-      .thumbs-button:hover i {
-          transform: translateX(2px);
-      }
-
-      .try-button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
-      }
-
-      .try-button:active {
-          transform: translateY(0);
-      }
-
-      .try-button:hover i {
-          transform: translateX(2px);
-      }
-
-      /* Enhanced Button Group */
-      .flex.space-x-3 {
-          gap: 0.5rem;
-          display: flex;
-          align-items: center;
-      }
-
-      /* Enhanced Button Loading State */
-      .thumbs-button:disabled,
-      .try-button:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-          transform: none;
-          box-shadow: none;
-      }
-
-      /* Enhanced Button Ripple Effect */
-      .ripple {
-          position: absolute;
-          background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0) 70%);
-          border-radius: 50%;
-          transform: scale(0);
-          animation: ripple 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-          pointer-events: none;
-      }
-
-      @keyframes ripple {
-          to {
-              transform: scale(4);
+      @keyframes fadeIn {
+          from {
               opacity: 0;
+              transform: translateY(20px);
           }
+
+          to {
+              opacity: 1;
+              transform: translateY(0);
+          }
+      }
+
+      @keyframes pulse {
+          0% {
+              transform: scale(1);
+          }
+
+          50% {
+              transform: scale(1.05);
+          }
+
+          100% {
+              transform: scale(1);
+          }
+      }
+
+      @keyframes float {
+          0% {
+              transform: translateY(0px);
+          }
+
+          50% {
+              transform: translateY(-10px);
+          }
+
+          100% {
+              transform: translateY(0px);
+          }
+      }
+
+      @keyframes slideIn {
+          from {
+              opacity: 0;
+              transform: translateX(-20px);
+          }
+
+          to {
+              opacity: 1;
+              transform: translateX(0);
+          }
+      }
+
+      @keyframes gradientShift {
+          0% {
+              background-position: 0% 50%;
+          }
+
+          50% {
+              background-position: 100% 50%;
+          }
+
+          100% {
+              background-position: 0% 50%;
+          }
+      }
+
+      .animate-fade-in {
+          animation: fadeIn 0.6s ease-out forwards;
+      }
+
+      .animate-pulse-slow {
+          animation: pulse 3s ease-in-out infinite;
+      }
+
+      .animate-float {
+          animation: float 6s ease-in-out infinite;
+      }
+
+      .animate-slide-in {
+          animation: slideIn 0.5s ease-out forwards;
+      }
+
+      .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradientShift 8s ease infinite;
+      }
+
+      .feature-card-hover {
+          transition: all 0.3s ease;
+      }
+
+      .feature-card-hover:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      }
+
+      .highlight-item {
+          opacity: 0;
       }
   </style>
 {% endblock %}
 {% block content %}
   <div class="container mx-auto px-4 py-12" role="main">
-    <div class="mb-16 text-center">
-      <h1 class="text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600">
+    <div class="mb-16 text-center animate-fade-in opacity-0"
+         style="animation-delay: 0.2s;
+                animation-fill-mode: forwards">
+      <h1 class="text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 animate-gradient">
         Community Features
       </h1>
       <p class="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-lg">
@@ -487,17 +121,19 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
          role="list">
       <!-- Get a Grade Feature Card -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl overflow-hidden relative feature-card"
+      <div class="feature-card feature-card-hover bg-white dark:bg-gray-800 rounded-xl overflow-hidden relative h-full flex flex-col transform transition-transform duration-400 ease-in-out hover:shadow-lg border border-gray-200 dark:border-gray-700 animate-fade-in opacity-0"
+           style="animation-delay: 0.4s;
+                  animation-fill-mode: forwards"
            role="listitem">
-        <div class="absolute top-0 right-0 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10"
+        <div class="absolute top-0 right-0 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10 animate-pulse-slow"
              role="status"
              aria-label="New feature">NEW</div>
         <img src="{% static 'images/features/grade_feature.jpg' %}"
              alt="Get a Grade feature preview"
-             class="feature-image"
+             class="h-48 w-full object-cover transition-transform duration-600 hover:scale-110 border-b border-gray-200 dark:border-gray-700 filter brightness-95 hover:brightness-100"
              onerror="this.src='{% static 'images/placeholder.jpg' %}'"
              loading="lazy" />
-        <div class="p-6">
+        <div class="p-6 flex-1 flex flex-col">
           <div class="flex justify-between items-start mb-5">
             <h3 class="text-xl font-semibold text-gray-800 dark:text-white">Get a Grade</h3>
             <span class="text-sm text-gray-500 dark:text-gray-400">by <a href="https://github.com/GautamSharmaaa"
@@ -506,88 +142,112 @@
     rel="noopener noreferrer"
     aria-label="View @GautamSharmaaa's GitHub profile">@GautamSharmaaa</a></span>
           </div>
-          <div>
+          <div class="flex-1 flex flex-col">
             <p class="text-gray-700 dark:text-gray-300 mb-5 leading-relaxed">
               Submit links to your projects, articles, or educational content for peer grading and feedback.
             </p>
             <div class="mb-6 space-y-2" role="list">
-              <div class="feature-highlight text-gray-800 dark:text-gray-200"
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
                    role="listitem">
-                <i class="fas fa-check-circle text-green-500 mr-2" aria-hidden="true"></i> Academic grading scale (A to F)
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Academic grading scale (A to F)</span>
               </div>
-              <div class="feature-highlight text-gray-800 dark:text-gray-200"
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
                    role="listitem">
-                <i class="fas fa-check-circle text-green-500 mr-2" aria-hidden="true"></i> Detailed feedback for grades below an A
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Detailed feedback for grades below an A</span>
               </div>
-              <div class="feature-highlight text-gray-800 dark:text-gray-200"
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
                    role="listitem">
-                <i class="fas fa-check-circle text-green-500 mr-2" aria-hidden="true"></i> Track average grades and improvement over time
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Track average grades and improvement over time</span>
               </div>
             </div>
-            <div class="flex justify-between items-center mt-6">
+            <div class="flex justify-between items-center mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
               <a href="{% url 'gradeable_link_list' %}"
-                 class="inline-block bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors shadow-md hover:shadow-lg transform hover:-translate-y-1 transition-transform duration-200"
+                 class="animate-float inline-flex items-center justify-center min-w-[140px] h-[42px] bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-6 py-2 rounded-lg shadow-md hover:shadow-lg transform transition-all duration-300 ease-in-out hover:-translate-y-1"
                  aria-label="Try out the Get a Grade feature">
                 <i class="fas fa-external-link-alt mr-2" aria-hidden="true"></i>Try it out
               </a>
-              <div class="flex space-x-3" role="group" aria-label="Vote on this feature">
-                <button class="thumbs-up thumbs-button flex items-center space-x-2 px-3 py-2 border rounded-lg hover:bg-green-50 dark:hover:bg-green-900 hover:border-green-400 transition-all"
+              <div class="flex space-x-2" role="group" aria-label="Vote on this feature">
+                <button class="thumbs-up thumbs-button relative overflow-hidden inline-flex items-center justify-center min-w-[90px] h-[36px] px-3 py-1 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-green-400 dark:hover:border-green-500 hover:shadow-sm transition-all duration-300"
                         data-feature-id="grade-link"
                         aria-label="Vote thumbs up for Get a Grade feature"
                         aria-pressed="false">
-                  <i class="fas fa-thumbs-up" aria-hidden="true"></i>
-                  <span class="count count-bubble text-sm font-medium">0</span>
+                  <i class="fas fa-thumbs-up text-sm mr-2 transition-transform duration-300 ease-in-out group-hover:translate-x-1"
+                     aria-hidden="true"></i>
+                  <span class="count text-xs font-semibold min-w-4 text-center">0</span>
                 </button>
-                <button class="thumbs-down thumbs-button flex items-center space-x-2 px-3 py-2 border rounded-lg hover:bg-red-50 dark:hover:bg-red-900 hover:border-red-400 transition-all"
+                <button class="thumbs-down thumbs-button relative overflow-hidden inline-flex items-center justify-center min-w-[90px] h-[36px] px-3 py-1 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-red-400 dark:hover:border-red-500 hover:shadow-sm transition-all duration-300"
                         data-feature-id="grade-link"
                         aria-label="Vote thumbs down for Get a Grade feature"
                         aria-pressed="false">
-                  <i class="fas fa-thumbs-down" aria-hidden="true"></i>
-                  <span class="count count-bubble text-sm font-medium">0</span>
+                  <i class="fas fa-thumbs-down text-sm mr-2 transition-transform duration-300 ease-in-out group-hover:translate-x-1"
+                     aria-hidden="true"></i>
+                  <span class="count text-xs font-semibold min-w-4 text-center">0</span>
                 </button>
               </div>
             </div>
-            <div class="votes-summary mt-3 text-center" aria-live="polite">
+            <div class="votes-summary mt-3 text-center p-2 bg-gray-50 dark:bg-gray-900 rounded-lg text-xs text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700"
+                 aria-live="polite">
               <span class="total-votes">0</span> votes
             </div>
           </div>
         </div>
         <!-- Voting percentage bar -->
-        <div class="vote-percentage-bar"
+        <div class="relative h-1 w-full bg-gray-100 dark:bg-gray-700 overflow-hidden"
              role="progressbar"
              aria-valuenow="50"
              aria-valuemin="0"
              aria-valuemax="100">
-          <div class="vote-percentage-indicator upvote-indicator" style="width: 50%"></div>
-          <div class="vote-percentage-indicator downvote-indicator"
+          <div class="vote-percentage-indicator upvote-indicator absolute top-0 left-0 h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-600 ease-in-out"
+               style="width: 50%"></div>
+          <div class="vote-percentage-indicator downvote-indicator absolute top-0 right-0 h-full bg-gradient-to-r from-red-600 to-red-500 transition-all duration-600 ease-in-out"
                style="width: 50%"></div>
         </div>
         <!-- Feedback message -->
-        <div class="feedback-message" role="alert" aria-live="polite">Thanks for your feedback!</div>
+        <div class="feedback-message absolute bottom-8 left-1/2 -translate-x-1/2 translate-y-24 bg-black/90 backdrop-blur-sm text-white px-6 py-3 rounded-full text-sm shadow-lg z-50 opacity-0 transition-all duration-400 ease-in-out max-w-[90%] text-center whitespace-nowrap overflow-hidden text-ellipsis"
+             role="alert"
+             aria-live="polite">Thanks for your feedback!</div>
       </div>
       <!-- Add more feature cards here -->
     </div>
     <!-- Upcoming Features Section -->
-    <div class="section-divider mt-16 mb-12">
-      <span class="section-divider-text text-gray-500 dark:text-gray-400"
-            role="heading"
-            aria-level="2">UPCOMING FEATURES</span>
+    <div class="relative my-16 text-center animate-fade-in opacity-0"
+         style="animation-delay: 0.8s;
+                animation-fill-mode: forwards"
+         role="separator">
+      <div class="absolute inset-0 flex items-center">
+        <div class="w-full border-t border-gray-200 dark:border-gray-700"></div>
+      </div>
+      <div class="relative">
+        <span class="bg-white dark:bg-gray-900 px-6 py-2 text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 rounded-full shadow-sm border border-gray-200 dark:border-gray-700"
+              role="heading"
+              aria-level="2">UPCOMING FEATURES</span>
+      </div>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
          role="list">
       <!-- AI Study Assistant - Upcoming -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl overflow-hidden relative feature-card upcoming-feature float"
+      <div class="feature-card upcoming-feature feature-card-hover bg-white dark:bg-gray-800 rounded-xl overflow-hidden relative h-full flex flex-col transform transition-transform duration-400 ease-in-out hover:shadow-lg border border-gray-200 dark:border-gray-700 animate-fade-in opacity-0"
+           style="animation-delay: 1.0s;
+                  animation-fill-mode: forwards"
            role="listitem">
-        <div class="upcoming-badge" role="status" aria-label="Coming soon">COMING SOON</div>
-        <div class="eta-badge"
+        <div class="absolute top-4 right-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-md z-10 animate-pulse-slow"
+             role="status"
+             aria-label="Coming soon">COMING SOON</div>
+        <div class="absolute top-16 right-4 bg-blue-600 text-white text-xs font-medium px-3 py-1 rounded-full shadow-sm"
              role="status"
              aria-label="Estimated release date: July 2024">ETA: July 2024</div>
         <img src="{% static 'images/features/ai_assistant.jpg' %}"
              alt="AI Study Assistant feature preview"
-             class="feature-image"
+             class="h-48 w-full object-cover transition-transform duration-600 hover:scale-110 border-b border-gray-200 dark:border-gray-700 filter brightness-95 hover:brightness-100"
              onerror="this.src='{% static 'images/placeholder.jpg' %}'"
              loading="lazy" />
-        <div class="p-6">
+        <div class="p-6 flex-1 flex flex-col">
           <div class="flex justify-between items-start mb-5">
             <h3 class="text-xl font-semibold text-gray-800 dark:text-white">AI Study Assistant</h3>
             <span class="text-sm text-gray-500 dark:text-gray-400">by <a href="#"
@@ -596,49 +256,59 @@
     rel="noopener noreferrer"
     aria-label="View @TeamAI's profile">@TeamAI</a></span>
           </div>
-          <div>
+          <div class="flex-1 flex flex-col">
             <p class="text-gray-700 dark:text-gray-300 mb-5 leading-relaxed">
               Personalized AI assistant that adapts to your learning style and helps you study more effectively.
             </p>
             <div class="mb-6 space-y-2" role="list">
-              <div class="feature-highlight text-gray-800 dark:text-gray-200"
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
                    role="listitem">
-                <i class="fas fa-check-circle text-green-500 mr-2" aria-hidden="true"></i> Personalized study plans
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Personalized study plans</span>
               </div>
-              <div class="feature-highlight text-gray-800 dark:text-gray-200"
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
                    role="listitem">
-                <i class="fas fa-check-circle text-green-500 mr-2" aria-hidden="true"></i> Intelligent question answering
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Intelligent question answering</span>
               </div>
-              <div class="feature-highlight text-gray-800 dark:text-gray-200"
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
                    role="listitem">
-                <i class="fas fa-check-circle text-green-500 mr-2" aria-hidden="true"></i> Knowledge gap identification
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Knowledge gap identification</span>
               </div>
             </div>
-            <div class="flex justify-between items-center mt-6">
+            <div class="flex justify-between items-center mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
               <button disabled
-                      class="inline-block bg-gray-400 text-white font-medium py-2 px-6 rounded-lg cursor-not-allowed opacity-70"
+                      class="inline-flex items-center justify-center bg-gray-400 text-white font-medium py-2 px-6 rounded-lg cursor-not-allowed opacity-70"
                       aria-label="AI Study Assistant feature coming soon">
                 <i class="fas fa-clock mr-2" aria-hidden="true"></i>Coming Soon
               </button>
-              <div class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs px-3 py-1 rounded-full"
+              <div class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs px-3 py-1 rounded-full shadow-sm"
                    role="status">In Development</div>
             </div>
           </div>
         </div>
       </div>
       <!-- Study Group Matching - Upcoming -->
-      <div class="bg-white dark:bg-gray-800 rounded-xl overflow-hidden relative feature-card upcoming-feature float"
+      <div class="feature-card upcoming-feature feature-card-hover bg-white dark:bg-gray-800 rounded-xl overflow-hidden relative h-full flex flex-col transform transition-transform duration-400 ease-in-out hover:shadow-lg border border-gray-200 dark:border-gray-700 animate-fade-in opacity-0"
+           style="animation-delay: 1.2s;
+                  animation-fill-mode: forwards"
            role="listitem">
-        <div class="upcoming-badge" role="status" aria-label="Coming soon">COMING SOON</div>
-        <div class="eta-badge"
+        <div class="absolute top-4 right-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-md z-10 animate-pulse-slow"
+             role="status"
+             aria-label="Coming soon">COMING SOON</div>
+        <div class="absolute top-16 right-4 bg-blue-600 text-white text-xs font-medium px-3 py-1 rounded-full shadow-sm"
              role="status"
              aria-label="Estimated release date: August 2024">ETA: August 2024</div>
         <img src="{% static 'images/features/study_groups.jpg' %}"
              alt="Study Group Matching feature preview"
-             class="feature-image"
+             class="h-48 w-full object-cover transition-transform duration-600 hover:scale-110 border-b border-gray-200 dark:border-gray-700 filter brightness-95 hover:brightness-100"
              onerror="this.src='{% static 'images/placeholder.jpg' %}'"
              loading="lazy" />
-        <div class="p-6">
+        <div class="p-6 flex-1 flex flex-col">
           <div class="flex justify-between items-start mb-5">
             <h3 class="text-xl font-semibold text-gray-800 dark:text-white">Study Group Matching</h3>
             <span class="text-sm text-gray-500 dark:text-gray-400">by <a href="#"
@@ -647,31 +317,37 @@
     rel="noopener noreferrer"
     aria-label="View @CommunityTeam's profile">@CommunityTeam</a></span>
           </div>
-          <div>
+          <div class="flex-1 flex flex-col">
             <p class="text-gray-700 dark:text-gray-300 mb-5 leading-relaxed">
               Find perfect study partners based on your learning goals, schedule, and study habits.
             </p>
             <div class="mb-6 space-y-2" role="list">
-              <div class="feature-highlight text-gray-800 dark:text-gray-200"
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
                    role="listitem">
-                <i class="fas fa-check-circle text-green-500 mr-2" aria-hidden="true"></i> Smart matching algorithm
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Smart matching algorithm</span>
               </div>
-              <div class="feature-highlight text-gray-800 dark:text-gray-200"
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
                    role="listitem">
-                <i class="fas fa-check-circle text-green-500 mr-2" aria-hidden="true"></i> Built-in scheduling tools
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Built-in scheduling tools</span>
               </div>
-              <div class="feature-highlight text-gray-800 dark:text-gray-200"
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
                    role="listitem">
-                <i class="fas fa-check-circle text-green-500 mr-2" aria-hidden="true"></i> Progress tracking for groups
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Progress tracking for groups</span>
               </div>
             </div>
-            <div class="flex justify-between items-center mt-6">
+            <div class="flex justify-between items-center mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
               <button disabled
-                      class="inline-block bg-gray-400 text-white font-medium py-2 px-6 rounded-lg cursor-not-allowed opacity-70"
+                      class="inline-flex items-center justify-center bg-gray-400 text-white font-medium py-2 px-6 rounded-lg cursor-not-allowed opacity-70"
                       aria-label="Study Group Matching feature coming soon">
                 <i class="fas fa-clock mr-2" aria-hidden="true"></i>Coming Soon
               </button>
-              <div class="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs px-3 py-1 rounded-full"
+              <div class="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs px-3 py-1 rounded-full shadow-sm"
                    role="status">In Planning</div>
             </div>
           </div>
@@ -689,6 +365,58 @@
           const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
           const featureCards = document.querySelectorAll('.feature-card');
 
+          // Animation for feature cards
+          const animateElements = document.querySelectorAll('.animate-fade-in');
+
+          // Enhanced animations with IntersectionObserver
+          const animationObserver = new IntersectionObserver((entries) => {
+              entries.forEach(entry => {
+                  if (entry.isIntersecting) {
+                      // Add a small delay for staggered effect
+                      const delay = parseFloat(entry.target.style.animationDelay || '0s');
+                      setTimeout(() => {
+                          entry.target.style.opacity = '1';
+                      }, delay * 1000);
+
+                      // If it's a feature card, animate its highlights
+                      if (entry.target.classList.contains('feature-card')) {
+                          const highlights = entry.target.querySelectorAll('.highlight-item');
+                          highlights.forEach((highlight, index) => {
+                              setTimeout(() => {
+                                  highlight.style.opacity = '0';
+                                  highlight.classList.add('animate-slide-in');
+                                  highlight.style.animationDelay = `${0.6 + (index * 0.15)}s`;
+                                  highlight.style.animationFillMode = 'forwards';
+                              }, 600);
+                          });
+                      }
+
+                      animationObserver.unobserve(entry.target);
+                  }
+              });
+          }, {
+              threshold: 0.1,
+              rootMargin: '0px 0px -50px 0px'
+          });
+
+          // Observe all animated elements
+          animateElements.forEach(element => {
+              animationObserver.observe(element);
+          });
+
+          // Add subtle hover effect to badges
+          document.querySelectorAll('.animate-pulse-slow').forEach(badge => {
+              badge.addEventListener('mouseenter', () => {
+                  badge.style.animationPlayState = 'paused';
+                  badge.style.transform = 'scale(1.1)';
+              });
+
+              badge.addEventListener('mouseleave', () => {
+                  badge.style.animationPlayState = 'running';
+                  badge.style.transform = 'scale(1)';
+              });
+          });
+
           // Performance optimization: Use ResizeObserver for dynamic adjustments
           const resizeObserver = new ResizeObserver(entries => {
               entries.forEach(entry => {
@@ -701,7 +429,10 @@
               });
           });
 
-          featureCards.forEach(card => resizeObserver.observe(card));
+          // Observe feature cards if they exist
+          if (featureCards.length > 0) {
+              featureCards.forEach(card => resizeObserver.observe(card));
+          }
 
           // Debounce function for performance
           function debounce(func, wait) {
@@ -724,12 +455,12 @@
               const radius = diameter / 2;
 
               const circle = document.createElement('span');
-              circle.classList.add('ripple');
+              circle.classList.add('absolute', 'rounded-full', 'pointer-events-none', 'opacity-30', 'bg-white', 'scale-0', 'animate-ripple');
               circle.style.width = circle.style.height = `${diameter}px`;
               circle.style.left = `${event.clientX - rect.left - radius}px`;
               circle.style.top = `${event.clientY - rect.top - radius}px`;
 
-              const ripple = button.getElementsByClassName('ripple')[0];
+              const ripple = button.getElementsByClassName('animate-ripple')[0];
               if (ripple) ripple.remove();
 
               button.appendChild(circle);
@@ -785,6 +516,8 @@
                   featureCard,
                   message
               } = feedbackQueue.shift();
+
+              // Find the correct feedback element
               const feedbackEl = featureCard.querySelector('.feedback-message');
 
               if (!feedbackEl) {
@@ -793,12 +526,16 @@
               }
 
               feedbackEl.textContent = message;
-              feedbackEl.classList.add('show-message');
+              feedbackEl.classList.remove('translate-y-24', 'opacity-0');
+              feedbackEl.classList.add('translate-y-0', 'opacity-100');
 
               requestAnimationFrame(() => {
                   setTimeout(() => {
-                      feedbackEl.classList.remove('show-message');
-                      processFeedbackQueue();
+                      feedbackEl.classList.remove('translate-y-0', 'opacity-100');
+                      feedbackEl.classList.add('translate-y-24', 'opacity-0');
+                      setTimeout(() => {
+                          processFeedbackQueue();
+                      }, 400); // Wait for transition to complete
                   }, 3000);
               });
           }
@@ -811,6 +548,11 @@
                   const featureId = this.getAttribute('data-feature-id');
                   const isUpvote = this.classList.contains('thumbs-up');
                   const featureCard = this.closest('.feature-card');
+
+                  if (!featureCard) {
+                      console.error('Feature card not found');
+                      return;
+                  }
 
                   // Prevent double-clicking and add loading state
                   if (this.disabled) return;
@@ -846,16 +588,16 @@
 
                       if (upButton) {
                           const countElement = upButton.querySelector('.count');
-                          countElement.classList.add('count-change');
+                          countElement.classList.add('scale-125', 'text-blue-600');
                           countElement.textContent = data.up_count;
-                          setTimeout(() => countElement.classList.remove('count-change'), 500);
+                          setTimeout(() => countElement.classList.remove('scale-125', 'text-blue-600'), 500);
                       }
 
                       if (downButton) {
                           const countElement = downButton.querySelector('.count');
-                          countElement.classList.add('count-change');
+                          countElement.classList.add('scale-125', 'text-blue-600');
                           countElement.textContent = data.down_count;
-                          setTimeout(() => countElement.classList.remove('count-change'), 500);
+                          setTimeout(() => countElement.classList.remove('scale-125', 'text-blue-600'), 500);
                       }
 
                       // Update percentages
@@ -863,7 +605,7 @@
 
                       // Handle button states
                       if (data.message !== "Vote changed" && data.message !== "You've already cast this vote") {
-                          const parentFeedback = featureCard.querySelector('.flex.space-x-3');
+                          const parentFeedback = featureCard.querySelector('.flex.space-x-2, .flex.space-x-3');
                           parentFeedback.querySelectorAll('button').forEach(btn => {
                               btn.disabled = true;
                               btn.classList.add('opacity-70');
@@ -871,13 +613,18 @@
                       }
 
                       // Update selected state
-                      const parentFeedback = featureCard.querySelector('.flex.space-x-3');
+                      const parentFeedback = featureCard.querySelector('.flex.space-x-2, .flex.space-x-3');
                       parentFeedback.querySelectorAll('button').forEach(btn => {
-                          btn.classList.remove('selected');
+                          btn.classList.remove('bg-green-50', 'dark:bg-green-900', 'border-green-400', 'text-green-600',
+                              'bg-red-50', 'dark:bg-red-900', 'border-red-400', 'text-red-600');
                       });
 
                       this.classList.remove('opacity-70');
-                      this.classList.add('selected');
+                      if (isUpvote) {
+                          this.classList.add('bg-green-50', 'dark:bg-green-900', 'border-green-400', 'text-green-600');
+                      } else {
+                          this.classList.add('bg-red-50', 'dark:bg-red-900', 'border-red-400', 'text-red-600');
+                      }
 
                       // Update ARIA state
                       this.setAttribute('aria-pressed', 'true');
@@ -939,10 +686,10 @@
                           const upButton = feature.querySelector('.thumbs-up');
                           const downButton = feature.querySelector('.thumbs-down');
                           if (existingVote === 'up' && upButton) {
-                              upButton.classList.add('selected');
+                              upButton.classList.add('bg-green-50', 'dark:bg-green-900', 'border-green-400', 'text-green-600');
                               upButton.setAttribute('aria-pressed', 'true');
                           } else if (existingVote === 'down' && downButton) {
-                              downButton.classList.add('selected');
+                              downButton.classList.add('bg-red-50', 'dark:bg-red-900', 'border-red-400', 'text-red-600');
                               downButton.setAttribute('aria-pressed', 'true');
                           }
                       }
@@ -958,48 +705,6 @@
           // Initialize vote counts
           fetchVoteCounts();
 
-          // Optimized scroll animations with IntersectionObserver
-          const observerOptions = {
-              threshold: 0.1,
-              rootMargin: '0px 0px 50px 0px'
-          };
-
-          const observer = new IntersectionObserver((entries) => {
-              entries.forEach(entry => {
-                  if (entry.isIntersecting) {
-                      requestAnimationFrame(() => {
-                          entry.target.style.opacity = '1';
-                          entry.target.style.transform = 'translateY(0)';
-                          entry.target.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
-                      });
-                      observer.unobserve(entry.target);
-                  }
-              });
-          }, observerOptions);
-
-          // Initialize scroll animations
-          featureCards.forEach(card => {
-              card.style.opacity = '0';
-              card.style.transform = 'translateY(20px)';
-              card.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
-              observer.observe(card);
-
-              // Add hover effect to feature highlights
-              const highlights = card.querySelectorAll('.feature-highlight');
-              highlights.forEach(highlight => {
-                  highlight.addEventListener('mouseenter', () => {
-                      requestAnimationFrame(() => {
-                          highlight.style.transform = 'translateX(4px)';
-                      });
-                  });
-                  highlight.addEventListener('mouseleave', () => {
-                      requestAnimationFrame(() => {
-                          highlight.style.transform = 'translateX(0)';
-                      });
-                  });
-              });
-          });
-
           // Smooth scroll with performance optimization
           document.querySelectorAll('a[href^="#"]').forEach(anchor => {
               anchor.addEventListener('click', function(e) {
@@ -1014,10 +719,28 @@
               });
           });
 
+          // Add keyframe animation for ripple effect if not already in stylesheet
+          if (!document.querySelector('#ripple-animation')) {
+              const style = document.createElement('style');
+              style.id = 'ripple-animation';
+              style.textContent = `
+                  @keyframes ripple {
+                      to {
+                          transform: scale(4);
+                          opacity: 0;
+                      }
+                  }
+                  .animate-ripple {
+                      animation: ripple 0.8s ease-out forwards;
+                  }
+              `;
+              document.head.appendChild(style);
+          }
+
           // Clean up observers on page unload
           window.addEventListener('unload', () => {
               resizeObserver.disconnect();
-              observer.disconnect();
+              animationObserver.disconnect();
           });
       });
   </script>
