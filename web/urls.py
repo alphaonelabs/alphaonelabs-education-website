@@ -106,6 +106,7 @@ urlpatterns += i18n_patterns(
     path("github_update/", views.github_update, name="github_update"),
     path(f"{settings.ADMIN_URL}/dashboard/", admin_views.admin_dashboard, name="admin_dashboard"),
     path(f"{settings.ADMIN_URL}/", admin.site.urls),
+    path("waiting-rooms/<int:waiting_room_id>/delete/", views.delete_waiting_room, name="delete_waiting_room"),
     path("subjects/", views.subjects, name="subjects"),
     # Progress tracking URLs
     path(
@@ -393,6 +394,7 @@ urlpatterns += i18n_patterns(
         name="update_teacher_notes",
     ),
     path("award-badge/", views.award_badge, name="award_badge"),
+    path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
     prefix_default_language=True,
 )
 
