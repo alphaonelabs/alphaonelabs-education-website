@@ -184,7 +184,7 @@ Copy `.env.sample` to `.env` and configure the variables.
   python manage.py test
   ```
 
-### Pre-commit Hooks
+### Pre-commit Hooks (Important)
 
 We use pre-commit hooks to ensure code quality and automatically format code:
 
