@@ -1,13 +1,29 @@
 {% extends "base.html" %}
 
+{% block title %}
+  Product Details - {{ product.name }}
+{% endblock title %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <!-- Product Image -->
-      <div class="flex justify-center">
-        <img src="{{ product.image_url }}"
-             alt="{{ product.name }}"
-             class="rounded-lg shadow-lg w-full md:w-3/4" />
+      <!-- Product Image Gallery -->
+      <div class="flex flex-col items-center">
+        <div class="relative w-full md:w-3/4">
+          <!-- Main Image Display -->
+          <img id="main-product-image"
+               src="{{ product.image_url }}"
+               alt="{{ product.name }}"
+               class="rounded-lg shadow-lg w-full object-cover" />
+        </div>
+        <!-- Thumbnail Images -->
+        <div class="flex space-x-2 mt-4 overflow-x-auto">
+          {% for image in product_images %}
+            <img src="{{ image.image.url }}"
+                 alt="{{ image.alt_text }}"
+                 class="w-20 h-20 object-cover rounded-md cursor-pointer border-2 border-gray-300 hover:border-blue-500"
+                 onclick="changeImage('{{ image.image.url }}')" />
+          {% endfor %}
+        </div>
       </div>
       <!-- Product Details -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
@@ -79,4 +95,10 @@
       </div>
     </div>
   </div>
+  <!-- JavaScript for Image Gallery -->
+  <script>
+      function changeImage(newSrc) {
+          document.getElementById("main-product-image").src = newSrc;
+      }
+  </script>
 {% endblock content %}

@@ -3248,9 +3248,8 @@ class GoodsDetailView(LoginRequiredMixin, generic.DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context["other_products"] = Goods.objects.exclude(pk=self.object.pk)[
-            :12
-        ]  # Show other products except the current one
+        context["product_images"] = self.object.goods_images.all()  # Get all images related to the product
+        context["other_products"] = Goods.objects.exclude(pk=self.object.pk)[:12]  # Fetch other products
         return context
 
 
