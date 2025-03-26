@@ -517,7 +517,7 @@ def add_featured_review(request, slug, review_id):
 
     # Check if the user is the course teacher
     if request.user != course.teacher:
-        messages.error(request, "Only the course teacher can feature reviews.")
+        messages.error(request, "Only the course teacher can manage featured reviews.")
         return redirect(reverse("course_detail", kwargs={"slug": slug}))
 
     # Toggle the is_featured field
@@ -539,7 +539,7 @@ def remove_featured_review(request, slug, review_id):
 
     # Check if the user is the course teacher
     if request.user != course.teacher:
-        messages.error(request, "Only the course teacher can feature reviews.")
+        messages.error(request, "Only the course teacher can manage featured reviews.")
         return redirect(reverse("course_detail", kwargs={"slug": slug}))
 
     # Toggle the is_featured field
