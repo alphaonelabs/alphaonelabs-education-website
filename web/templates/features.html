@@ -1,0 +1,802 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}Features - AlphaOne Labs{% endblock %}
+{% block extra_head %}
+  <style>
+      @keyframes fadeIn {
+          from {
+              opacity: 0;
+              transform: translateY(20px);
+          }
+
+          to {
+              opacity: 1;
+              transform: translateY(0);
+          }
+      }
+
+      @keyframes pulse {
+          0% {
+              transform: scale(1);
+          }
+
+          50% {
+              transform: scale(1.05);
+          }
+
+          100% {
+              transform: scale(1);
+          }
+      }
+
+      @keyframes float {
+          0% {
+              transform: translateY(0px);
+          }
+
+          50% {
+              transform: translateY(-10px);
+          }
+
+          100% {
+              transform: translateY(0px);
+          }
+      }
+
+      @keyframes slideIn {
+          from {
+              opacity: 0;
+              transform: translateX(-20px);
+          }
+
+          to {
+              opacity: 1;
+              transform: translateX(0);
+          }
+      }
+
+      @keyframes gradientShift {
+          0% {
+              background-position: 0% 50%;
+          }
+
+          50% {
+              background-position: 100% 50%;
+          }
+
+          100% {
+              background-position: 0% 50%;
+          }
+      }
+
+      .animate-fade-in {
+          animation: fadeIn 0.6s ease-out forwards;
+      }
+
+      .animate-pulse-slow {
+          animation: pulse 3s ease-in-out infinite;
+      }
+
+      .animate-float {
+          animation: float 6s ease-in-out infinite;
+      }
+
+      .animate-slide-in {
+          animation: slideIn 0.5s ease-out forwards;
+      }
+
+      .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradientShift 8s ease infinite;
+      }
+
+      .feature-card-hover {
+          transition: all 0.3s ease;
+      }
+
+      .feature-card-hover:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      }
+
+      .highlight-item {
+          opacity: 0;
+      }
+  </style>
+{% endblock %}
+{% block content %}
+  <div class="container mx-auto px-4 py-12" role="main">
+    <div class="mb-16 text-center animate-fade-in opacity-0"
+         style="animation-delay: 0.2s;
+                animation-fill-mode: forwards">
+      <h1 class="text-5xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-purple-600 animate-gradient">
+        Community Features
+      </h1>
+      <p class="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto text-lg">
+        Discover the latest features created by our community members. Try them out and provide feedback!
+      </p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+         role="list">
+      <!-- Get a Grade Feature Card -->
+      <div class="feature-card feature-card-hover bg-white dark:bg-gray-800 rounded-xl overflow-hidden relative h-full flex flex-col transform transition-transform duration-400 ease-in-out hover:shadow-lg border border-gray-200 dark:border-gray-700 animate-fade-in opacity-0"
+           style="animation-delay: 0.4s;
+                  animation-fill-mode: forwards"
+           role="listitem">
+        <div class="absolute top-0 right-0 bg-blue-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg z-10 animate-pulse-slow"
+             role="status"
+             aria-label="New feature">NEW</div>
+        <img src="{% static 'images/features/grade_feature.jpg' %}"
+             alt="Get a Grade feature preview"
+             class="h-48 w-full object-cover transition-transform duration-600 hover:scale-110 border-b border-gray-200 dark:border-gray-700 filter brightness-95 hover:brightness-100"
+             onerror="this.src='{% static 'images/placeholder.jpg' %}'"
+             loading="lazy" />
+        <div class="p-6 flex-1 flex flex-col">
+          <div class="flex justify-between items-start mb-5">
+            <h3 class="text-xl font-semibold text-gray-800 dark:text-white">Get a Grade</h3>
+            <span class="text-sm text-gray-500 dark:text-gray-400">by <a href="https://github.com/GautamSharmaaa"
+    class="text-blue-600 dark:text-blue-400 hover:underline"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="View @GautamSharmaaa's GitHub profile">@GautamSharmaaa</a></span>
+          </div>
+          <div class="flex-1 flex flex-col">
+            <p class="text-gray-700 dark:text-gray-300 mb-5 leading-relaxed">
+              Submit links to your projects, articles, or educational content for peer grading and feedback.
+            </p>
+            <div class="mb-6 space-y-2" role="list">
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
+                   role="listitem">
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Academic grading scale (A to F)</span>
+              </div>
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
+                   role="listitem">
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Detailed feedback for grades below an A</span>
+              </div>
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
+                   role="listitem">
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Track average grades and improvement over time</span>
+              </div>
+            </div>
+            <div class="flex justify-between items-center mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
+              <a href="{% url 'gradeable_link_list' %}"
+                 class="animate-float inline-flex items-center justify-center min-w-[140px] h-[42px] bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-semibold px-6 py-2 rounded-lg shadow-md hover:shadow-lg transform transition-all duration-300 ease-in-out hover:-translate-y-1"
+                 aria-label="Try out the Get a Grade feature">
+                <i class="fas fa-external-link-alt mr-2" aria-hidden="true"></i>Try it out
+              </a>
+              <div class="flex space-x-2" role="group" aria-label="Vote on this feature">
+                <button class="thumbs-up thumbs-button relative overflow-hidden inline-flex items-center justify-center min-w-[90px] h-[36px] px-3 py-1 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-green-400 dark:hover:border-green-500 hover:shadow-sm transition-all duration-300"
+                        data-feature-id="grade-link"
+                        aria-label="Vote thumbs up for Get a Grade feature"
+                        aria-pressed="false">
+                  <i class="fas fa-thumbs-up text-sm mr-2 transition-transform duration-300 ease-in-out group-hover:translate-x-1"
+                     aria-hidden="true"></i>
+                  <span class="count text-xs font-semibold min-w-4 text-center">0</span>
+                </button>
+                <button class="thumbs-down thumbs-button relative overflow-hidden inline-flex items-center justify-center min-w-[90px] h-[36px] px-3 py-1 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 font-medium rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-red-400 dark:hover:border-red-500 hover:shadow-sm transition-all duration-300"
+                        data-feature-id="grade-link"
+                        aria-label="Vote thumbs down for Get a Grade feature"
+                        aria-pressed="false">
+                  <i class="fas fa-thumbs-down text-sm mr-2 transition-transform duration-300 ease-in-out group-hover:translate-x-1"
+                     aria-hidden="true"></i>
+                  <span class="count text-xs font-semibold min-w-4 text-center">0</span>
+                </button>
+              </div>
+            </div>
+            <div class="votes-summary mt-3 text-center p-2 bg-gray-50 dark:bg-gray-900 rounded-lg text-xs text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700"
+                 aria-live="polite">
+              <span class="total-votes">0</span> votes
+            </div>
+          </div>
+        </div>
+        <!-- Voting percentage bar -->
+        <div class="relative h-1 w-full bg-gray-100 dark:bg-gray-700 overflow-hidden"
+             role="progressbar"
+             aria-valuenow="50"
+             aria-valuemin="0"
+             aria-valuemax="100">
+          <div class="vote-percentage-indicator upvote-indicator absolute top-0 left-0 h-full bg-gradient-to-r from-green-500 to-green-600 transition-all duration-600 ease-in-out"
+               style="width: 50%"></div>
+          <div class="vote-percentage-indicator downvote-indicator absolute top-0 right-0 h-full bg-gradient-to-r from-red-600 to-red-500 transition-all duration-600 ease-in-out"
+               style="width: 50%"></div>
+        </div>
+        <!-- Feedback message -->
+        <div class="feedback-message absolute bottom-8 left-1/2 -translate-x-1/2 translate-y-24 bg-black/90 backdrop-blur-sm text-white px-6 py-3 rounded-full text-sm shadow-lg z-50 opacity-0 transition-all duration-400 ease-in-out max-w-[90%] text-center whitespace-nowrap overflow-hidden text-ellipsis"
+             role="alert"
+             aria-live="polite">Thanks for your feedback!</div>
+      </div>
+      <!-- Add more feature cards here -->
+    </div>
+    <!-- Upcoming Features Section -->
+    <div class="relative my-16 text-center animate-fade-in opacity-0"
+         style="animation-delay: 0.8s;
+                animation-fill-mode: forwards"
+         role="separator">
+      <div class="absolute inset-0 flex items-center">
+        <div class="w-full border-t border-gray-200 dark:border-gray-700"></div>
+      </div>
+      <div class="relative">
+        <span class="bg-white dark:bg-gray-900 px-6 py-2 text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 rounded-full shadow-sm border border-gray-200 dark:border-gray-700"
+              role="heading"
+              aria-level="2">UPCOMING FEATURES</span>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+         role="list">
+      <!-- AI Study Assistant - Upcoming -->
+      <div class="feature-card upcoming-feature feature-card-hover bg-white dark:bg-gray-800 rounded-xl overflow-hidden relative h-full flex flex-col transform transition-transform duration-400 ease-in-out hover:shadow-lg border border-gray-200 dark:border-gray-700 animate-fade-in opacity-0"
+           style="animation-delay: 1.0s;
+                  animation-fill-mode: forwards"
+           role="listitem">
+        <div class="absolute top-4 right-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-md z-10 animate-pulse-slow"
+             role="status"
+             aria-label="Coming soon">COMING SOON</div>
+        <div class="absolute top-16 right-4 bg-blue-600 text-white text-xs font-medium px-3 py-1 rounded-full shadow-sm"
+             role="status"
+             aria-label="Estimated release date: July 2024">ETA: July 2024</div>
+        <img src="{% static 'images/features/ai_assistant.jpg' %}"
+             alt="AI Study Assistant feature preview"
+             class="h-48 w-full object-cover transition-transform duration-600 hover:scale-110 border-b border-gray-200 dark:border-gray-700 filter brightness-95 hover:brightness-100"
+             onerror="this.src='{% static 'images/placeholder.jpg' %}'"
+             loading="lazy" />
+        <div class="p-6 flex-1 flex flex-col">
+          <div class="flex justify-between items-start mb-5">
+            <h3 class="text-xl font-semibold text-gray-800 dark:text-white">AI Study Assistant</h3>
+            <span class="text-sm text-gray-500 dark:text-gray-400">by <a href="#"
+    class="text-blue-600 dark:text-blue-400 hover:underline"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="View @TeamAI's profile">@TeamAI</a></span>
+          </div>
+          <div class="flex-1 flex flex-col">
+            <p class="text-gray-700 dark:text-gray-300 mb-5 leading-relaxed">
+              Personalized AI assistant that adapts to your learning style and helps you study more effectively.
+            </p>
+            <div class="mb-6 space-y-2" role="list">
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
+                   role="listitem">
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Personalized study plans</span>
+              </div>
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
+                   role="listitem">
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Intelligent question answering</span>
+              </div>
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
+                   role="listitem">
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Knowledge gap identification</span>
+              </div>
+            </div>
+            <div class="flex justify-between items-center mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
+              <button disabled
+                      class="inline-flex items-center justify-center bg-gray-400 text-white font-medium py-2 px-6 rounded-lg cursor-not-allowed opacity-70"
+                      aria-label="AI Study Assistant feature coming soon">
+                <i class="fas fa-clock mr-2" aria-hidden="true"></i>Coming Soon
+              </button>
+              <div class="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs px-3 py-1 rounded-full shadow-sm"
+                   role="status">In Development</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Study Group Matching - Upcoming -->
+      <div class="feature-card upcoming-feature feature-card-hover bg-white dark:bg-gray-800 rounded-xl overflow-hidden relative h-full flex flex-col transform transition-transform duration-400 ease-in-out hover:shadow-lg border border-gray-200 dark:border-gray-700 animate-fade-in opacity-0"
+           style="animation-delay: 1.2s;
+                  animation-fill-mode: forwards"
+           role="listitem">
+        <div class="absolute top-4 right-4 bg-gradient-to-r from-purple-600 to-purple-700 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-md z-10 animate-pulse-slow"
+             role="status"
+             aria-label="Coming soon">COMING SOON</div>
+        <div class="absolute top-16 right-4 bg-blue-600 text-white text-xs font-medium px-3 py-1 rounded-full shadow-sm"
+             role="status"
+             aria-label="Estimated release date: August 2024">ETA: August 2024</div>
+        <img src="{% static 'images/features/study_groups.jpg' %}"
+             alt="Study Group Matching feature preview"
+             class="h-48 w-full object-cover transition-transform duration-600 hover:scale-110 border-b border-gray-200 dark:border-gray-700 filter brightness-95 hover:brightness-100"
+             onerror="this.src='{% static 'images/placeholder.jpg' %}'"
+             loading="lazy" />
+        <div class="p-6 flex-1 flex flex-col">
+          <div class="flex justify-between items-start mb-5">
+            <h3 class="text-xl font-semibold text-gray-800 dark:text-white">Study Group Matching</h3>
+            <span class="text-sm text-gray-500 dark:text-gray-400">by <a href="#"
+    class="text-blue-600 dark:text-blue-400 hover:underline"
+    target="_blank"
+    rel="noopener noreferrer"
+    aria-label="View @CommunityTeam's profile">@CommunityTeam</a></span>
+          </div>
+          <div class="flex-1 flex flex-col">
+            <p class="text-gray-700 dark:text-gray-300 mb-5 leading-relaxed">
+              Find perfect study partners based on your learning goals, schedule, and study habits.
+            </p>
+            <div class="mb-6 space-y-2" role="list">
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
+                   role="listitem">
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Smart matching algorithm</span>
+              </div>
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
+                   role="listitem">
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Built-in scheduling tools</span>
+              </div>
+              <div class="highlight-item mb-3 py-3 px-4 rounded-xl flex items-center gap-3 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 transition-all duration-300 hover:translate-x-1"
+                   role="listitem">
+                <i class="fas fa-check-circle text-green-500 text-lg flex-shrink-0"
+                   aria-hidden="true"></i>
+                <span class="text-gray-800 dark:text-gray-200">Progress tracking for groups</span>
+              </div>
+            </div>
+            <div class="flex justify-between items-center mt-6 pt-5 border-t border-gray-200 dark:border-gray-700">
+              <button disabled
+                      class="inline-flex items-center justify-center bg-gray-400 text-white font-medium py-2 px-6 rounded-lg cursor-not-allowed opacity-70"
+                      aria-label="Study Group Matching feature coming soon">
+                <i class="fas fa-clock mr-2" aria-hidden="true"></i>Coming Soon
+              </button>
+              <div class="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 text-xs px-3 py-1 rounded-full shadow-sm"
+                   role="status">In Planning</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% csrf_token %}
+{% endblock %}
+{% block extra_js %}
+  <script src="{% static 'js/vote-utils.js' %}"></script>
+  <script>
+      // Fallback for VoteUtils in case the external script fails to load
+      if (typeof VoteUtils === 'undefined') {
+          console.warn('VoteUtils not loaded from external file, using inline fallback');
+          window.VoteUtils = {
+              setButtonLoading: (btn, isLoading) => {
+                  btn.disabled = isLoading;
+                  btn.classList.toggle('opacity-70', isLoading);
+              },
+
+              updateVoteCount: (btn, count) => {
+                  const countElement = btn.querySelector('.count');
+                  if (countElement) {
+                      countElement.classList.add('scale-125', 'text-blue-600');
+                      countElement.textContent = count;
+                      setTimeout(() => countElement.classList.remove('scale-125', 'text-blue-600'), 500);
+                  }
+              },
+
+              resetButtonStyles: (buttons) => {
+                  buttons.forEach(btn => {
+                      btn.classList.remove(
+                          'bg-green-50', 'dark:bg-green-900', 'border-green-400', 'text-green-600',
+                          'bg-red-50', 'dark:bg-red-900', 'border-red-400', 'text-red-600'
+                      );
+                  });
+              },
+
+              setSelectedState: (btn, isSelected, isUpvote) => {
+                  if (isSelected) {
+                      const colorClasses = isUpvote ? ['bg-green-50', 'dark:bg-green-900', 'border-green-400', 'text-green-600'] : ['bg-red-50', 'dark:bg-red-900', 'border-red-400', 'text-red-600'];
+
+                      btn.classList.add(...colorClasses);
+                      btn.setAttribute('aria-pressed', 'true');
+                  } else {
+                      btn.setAttribute('aria-pressed', 'false');
+                  }
+              },
+
+              disableAllButtons: (container) => {
+                  const buttons = container.querySelectorAll('button');
+                  buttons.forEach(btn => {
+                      btn.disabled = true;
+                      btn.classList.add('opacity-70');
+                  });
+              },
+
+              getErrorMessage: (error) => {
+                  if (error.message.includes('Network')) {
+                      return "Network error. Please check your connection.";
+                  } else if (error.message.includes('401') || error.message.includes('403')) {
+                      return "Please log in to vote on features.";
+                  } else {
+                      return "Error recording your vote. Please try again.";
+                  }
+              }
+          };
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+          // Cache DOM elements
+          const thumbsButtons = document.querySelectorAll('.thumbs-up, .thumbs-down');
+          const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+          const featureCards = document.querySelectorAll('.feature-card');
+
+          // Animation for feature cards
+          const animateElements = document.querySelectorAll('.animate-fade-in');
+
+          // Enhanced animations with IntersectionObserver
+          const animationObserver = new IntersectionObserver((entries) => {
+              entries.forEach(entry => {
+                  if (entry.isIntersecting) {
+                      // Add a small delay for staggered effect
+                      const delay = parseFloat(entry.target.style.animationDelay || '0s');
+                      setTimeout(() => {
+                          entry.target.style.opacity = '1';
+                      }, delay * 1000);
+
+                      // If it's a feature card, animate its highlights
+                      if (entry.target.classList.contains('feature-card')) {
+                          const highlights = entry.target.querySelectorAll('.highlight-item');
+                          highlights.forEach((highlight, index) => {
+                              setTimeout(() => {
+                                  highlight.style.opacity = '0';
+                                  highlight.classList.add('animate-slide-in');
+                                  highlight.style.animationDelay = `${0.6 + (index * 0.15)}s`;
+                                  highlight.style.animationFillMode = 'forwards';
+                              }, 600);
+                          });
+                      }
+
+                      animationObserver.unobserve(entry.target);
+                  }
+              });
+          }, {
+              threshold: 0.1,
+              rootMargin: '0px 0px -50px 0px'
+          });
+
+          // Observe all animated elements
+          animateElements.forEach(element => {
+              animationObserver.observe(element);
+          });
+
+          // Add subtle hover effect to badges
+          document.querySelectorAll('.animate-pulse-slow').forEach(badge => {
+              badge.addEventListener('mouseenter', () => {
+                  badge.style.animationPlayState = 'paused';
+                  badge.style.transform = 'scale(1.1)';
+              });
+
+              badge.addEventListener('mouseleave', () => {
+                  badge.style.animationPlayState = 'running';
+                  badge.style.transform = 'scale(1)';
+              });
+          });
+
+          // Performance optimization: Use ResizeObserver for dynamic adjustments
+          const resizeObserver = new ResizeObserver(entries => {
+              entries.forEach(entry => {
+                  const card = entry.target;
+                  const content = card.querySelector('.p-6');
+                  if (content) {
+                      const height = content.offsetHeight;
+                      card.style.setProperty('--content-height', `${height}px`);
+                  }
+              });
+          });
+
+          // Observe feature cards if they exist
+          if (featureCards.length > 0) {
+              featureCards.forEach(card => resizeObserver.observe(card));
+          }
+
+          // Debounce function for performance
+          function debounce(func, wait) {
+              let timeout;
+              return function executedFunction(...args) {
+                  const later = () => {
+                      clearTimeout(timeout);
+                      func(...args);
+                  };
+                  clearTimeout(timeout);
+                  timeout = setTimeout(later, wait);
+              };
+          }
+
+          // Enhanced ripple effect with performance optimization
+          function createRipple(event) {
+              const button = event.currentTarget;
+              const rect = button.getBoundingClientRect();
+              const diameter = Math.max(rect.width, rect.height);
+              const radius = diameter / 2;
+
+              const circle = document.createElement('span');
+              circle.classList.add('absolute', 'rounded-full', 'pointer-events-none', 'opacity-30', 'bg-white', 'scale-0', 'animate-ripple');
+              circle.style.width = circle.style.height = `${diameter}px`;
+              circle.style.left = `${event.clientX - rect.left - radius}px`;
+              circle.style.top = `${event.clientY - rect.top - radius}px`;
+
+              const ripple = button.getElementsByClassName('animate-ripple')[0];
+              if (ripple) ripple.remove();
+
+              button.appendChild(circle);
+
+              // Clean up ripple element after animation
+              circle.addEventListener('animationend', () => {
+                  circle.remove();
+              });
+          }
+
+          // Optimized vote percentage update with RAF
+          function updateVotePercentages(featureCard, upPercentage, downPercentage) {
+              const upIndicator = featureCard.querySelector('.upvote-indicator');
+              const downIndicator = featureCard.querySelector('.downvote-indicator');
+              const totalVotesEl = featureCard.querySelector('.total-votes');
+
+              if (upIndicator && downIndicator) {
+                  requestAnimationFrame(() => {
+                      upIndicator.style.width = `${upPercentage}%`;
+                      downIndicator.style.width = `${downPercentage}%`;
+                  });
+              }
+
+              if (totalVotesEl) {
+                  const upCount = parseInt(featureCard.querySelector('.thumbs-up .count').textContent) || 0;
+                  const downCount = parseInt(featureCard.querySelector('.thumbs-down .count').textContent) || 0;
+                  totalVotesEl.textContent = upCount + downCount;
+              }
+          }
+
+          // Enhanced feedback message with animation and queue
+          const feedbackQueue = [];
+          let isShowingFeedback = false;
+
+          function showFeedbackMessage(featureCard, message) {
+              feedbackQueue.push({
+                  featureCard,
+                  message
+              });
+              if (!isShowingFeedback) {
+                  processFeedbackQueue();
+              }
+          }
+
+          function processFeedbackQueue() {
+              if (feedbackQueue.length === 0) {
+                  isShowingFeedback = false;
+                  return;
+              }
+
+              isShowingFeedback = true;
+              const {
+                  featureCard,
+                  message
+              } = feedbackQueue.shift();
+
+              // Find the correct feedback element
+              const feedbackEl = featureCard.querySelector('.feedback-message');
+
+              if (!feedbackEl) {
+                  processFeedbackQueue();
+                  return;
+              }
+
+              feedbackEl.textContent = message;
+              feedbackEl.classList.remove('translate-y-24', 'opacity-0');
+              feedbackEl.classList.add('translate-y-0', 'opacity-100');
+
+              requestAnimationFrame(() => {
+                  setTimeout(() => {
+                      feedbackEl.classList.remove('translate-y-0', 'opacity-100');
+                      feedbackEl.classList.add('translate-y-24', 'opacity-0');
+                      setTimeout(() => {
+                          processFeedbackQueue();
+                      }, 400); // Wait for transition to complete
+                  }, 3000);
+              });
+          }
+
+          // Optimized vote handling with error recovery
+          thumbsButtons.forEach(button => {
+              button.addEventListener('mousedown', createRipple);
+
+              button.addEventListener('click', async function() {
+                  const featureId = this.getAttribute('data-feature-id');
+                  const isUpvote = this.classList.contains('thumbs-up');
+                  const featureCard = this.closest('.feature-card');
+
+                  if (!featureCard) {
+                      console.error('Feature card not found');
+                      return;
+                  }
+
+                  // Prevent double-clicking and add loading state
+                  if (this.disabled) return;
+                  VoteUtils.setButtonLoading(this, true);
+
+                  // Visual feedback
+                  this.classList.add('scale-95');
+                  setTimeout(() => this.classList.remove('scale-95'), 100);
+
+                  try {
+                      const formData = new FormData();
+                      formData.append('feature_id', featureId);
+                      formData.append('vote', isUpvote ? 'up' : 'down');
+
+                      // Use absolute URL path to ensure proper routing
+                      const voteUrl = '{% url "feature_vote" %}' || '/api/features/vote/';
+
+                      console.log('Submitting vote to:', voteUrl);
+
+                      const response = await fetch(voteUrl, {
+                          method: 'POST',
+                          body: formData,
+                          headers: {
+                              'X-CSRFToken': csrfToken
+                          }
+                      });
+
+                      if (!response.ok) throw new Error(`Network response was not ok: ${response.status}`);
+
+                      const data = await response.json();
+
+                      // Update UI with animation
+                      showFeedbackMessage(featureCard, data.message || 'Thanks for your feedback!');
+
+                      // Get button references
+                      const upButton = featureCard.querySelector('.thumbs-up');
+                      const downButton = featureCard.querySelector('.thumbs-down');
+                      const parentFeedback = featureCard.querySelector('.flex.space-x-2, .flex.space-x-3');
+
+                      // Update counts with animation
+                      VoteUtils.updateVoteCount(upButton, data.up_count);
+                      VoteUtils.updateVoteCount(downButton, data.down_count);
+
+                      // Update percentages
+                      updateVotePercentages(featureCard, data.up_percentage || 0, data.down_percentage || 0);
+
+                      // Handle button states based on server response
+                      if (data.message !== "Vote changed" && data.message !== "You've already cast this vote") {
+                          VoteUtils.disableAllButtons(parentFeedback);
+                      } else {
+                          // Only reset loading state if not disabling all buttons
+                          VoteUtils.setButtonLoading(this, false);
+                      }
+
+                      // Update selected state
+                      const allButtons = parentFeedback.querySelectorAll('button');
+                      VoteUtils.resetButtonStyles(allButtons);
+                      VoteUtils.setSelectedState(this, true, isUpvote);
+
+                      // Store vote in localStorage
+                      localStorage.setItem(`feature-vote-${featureId}`, isUpvote ? 'up' : 'down');
+
+                  } catch (error) {
+                      console.error('Error voting on feature:', error);
+
+                      // Get appropriate error message from utils
+                      const errorMessage = VoteUtils.getErrorMessage(error);
+                      showFeedbackMessage(featureCard, errorMessage);
+
+                      // Reset button state on error
+                      VoteUtils.setButtonLoading(this, false);
+                  }
+              });
+          });
+
+          // Optimized vote count fetching with retry logic
+          const fetchVoteCounts = debounce(async function(retryCount = 0) {
+              const features = document.querySelectorAll('.feature-card');
+              if (!features.length) return;
+
+              const featureIds = Array.from(features)
+                  .map(feature => {
+                      const thumbsUpButton = feature.querySelector('.thumbs-up');
+                      return thumbsUpButton ? thumbsUpButton.getAttribute('data-feature-id') : null;
+                  })
+                  .filter(Boolean);
+
+              if (!featureIds.length) return;
+
+              try {
+                  // Use absolute URL path for API endpoint
+                  const voteCountUrl = `/api/feature-vote-count?feature_ids=${featureIds.join(',')}`;
+                  console.log('Fetching vote counts from:', voteCountUrl);
+
+                  const response = await fetch(voteCountUrl);
+                  if (!response.ok) throw new Error(`Network response was not ok: ${response.status}`);
+
+                  const data = await response.json();
+
+                  // Update UI for each feature
+                  features.forEach(feature => {
+                      const thumbsUpButton = feature.querySelector('.thumbs-up');
+                      const featureId = thumbsUpButton ? thumbsUpButton.getAttribute('data-feature-id') : null;
+                      if (!featureId || !data[featureId]) return;
+
+                      const featureData = data[featureId];
+                      const upCount = feature.querySelector('.thumbs-up .count');
+                      const downCount = feature.querySelector('.thumbs-down .count');
+
+                      if (upCount) upCount.textContent = featureData.up_count;
+                      if (downCount) downCount.textContent = featureData.down_count;
+
+                      updateVotePercentages(feature, featureData.up_percentage, featureData.down_percentage);
+
+                      // Check localStorage for existing votes
+                      const existingVote = localStorage.getItem(`feature-vote-${featureId}`);
+                      if (existingVote) {
+                          const upButton = feature.querySelector('.thumbs-up');
+                          const downButton = feature.querySelector('.thumbs-down');
+                          if (existingVote === 'up' && upButton) {
+                              VoteUtils.setSelectedState(upButton, true, true);
+                          } else if (existingVote === 'down' && downButton) {
+                              VoteUtils.setSelectedState(downButton, true, false);
+                          }
+                      }
+                  });
+              } catch (error) {
+                  console.error('Error fetching vote counts:', error);
+
+                  if (retryCount >= 2) {
+                      console.warn('Failed to fetch vote counts after multiple attempts');
+                      features.forEach(feature => {
+                          const feedbackEl = feature.querySelector('.feedback-message');
+                          if (feedbackEl) {
+                              feedbackEl.textContent = "Unable to load vote counts. Please refresh.";
+                              feedbackEl.classList.remove('translate-y-24', 'opacity-0');
+                              feedbackEl.classList.add('translate-y-0', 'opacity-100');
+                          }
+                      });
+                  } else if (retryCount < 3) {
+                      setTimeout(() => fetchVoteCounts(retryCount + 1), 1000 * (retryCount + 1));
+                  }
+              }
+          }, 250);
+
+          // Initialize vote counts
+          fetchVoteCounts();
+
+          // Smooth scroll with performance optimization
+          document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+              anchor.addEventListener('click', function(e) {
+                  e.preventDefault();
+                  const target = document.querySelector(this.getAttribute('href'));
+                  if (target) {
+                      target.scrollIntoView({
+                          behavior: 'smooth',
+                          block: 'start'
+                      });
+                  }
+              });
+          });
+
+          // Add keyframe animation for ripple effect if not already in stylesheet
+          if (!document.querySelector('#ripple-animation')) {
+              const style = document.createElement('style');
+              style.id = 'ripple-animation';
+              style.textContent = `
+                  @keyframes ripple {
+                      to {
+                          transform: scale(4);
+                          opacity: 0;
+                      }
+                  }
+                  .animate-ripple {
+                      animation: ripple 0.8s ease-out forwards;
+                  }
+              `;
+              document.head.appendChild(style);
+          }
+
+          // Clean up observers on page unload
+          window.addEventListener('unload', () => {
+              resizeObserver.disconnect();
+              animationObserver.disconnect();
+          });
+      });
+  </script>
+{% endblock %}
