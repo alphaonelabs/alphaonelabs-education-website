@@ -26,7 +26,7 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
                     # Previous regex with a single capture group
                     room_id_str = self.scope["url_route"]["args"][0]
                     # Clean up any encoded dashes in the URL
-                    room_id_str = room_id_str.replace('/u002D', '-')
+                    room_id_str = room_id_str.replace("/u002D", "-")
                 else:
                     # New regex with 5 capture groups for each UUID part
                     parts = self.scope["url_route"]["args"]
@@ -166,23 +166,27 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         # Only send to others, not back to the sender
         if event["from"] != self.user.id:
             await self.send(
-                text_data=json.dumps({
-                    "type": "user_joined",
-                    "from": event["from"],
-                    "username": event["username"],
-                    "timestamp": int(time.time() * 1000)
-                })
+                text_data=json.dumps(
+                    {
+                        "type": "user_joined",
+                        "from": event["from"],
+                        "username": event["username"],
+                        "timestamp": int(time.time() * 1000),
+                    }
+                )
             )
 
     async def user_left(self, event):
         """Send notification about a user leaving the room."""
         await self.send(
-            text_data=json.dumps({
-                "type": "user_left",
-                "from": event["from"],
-                "username": event["username"],
-                "timestamp": int(time.time() * 1000)
-            })
+            text_data=json.dumps(
+                {
+                    "type": "user_left",
+                    "from": event["from"],
+                    "username": event["username"],
+                    "timestamp": int(time.time() * 1000),
+                }
+            )
         )
 
     async def signaling_offer(self, event):
@@ -190,12 +194,14 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         # Only send to the target user
         if event["target"] == self.user.id:
             await self.send(
-                text_data=json.dumps({
-                    "type": "offer",
-                    "offer": event["offer"],
-                    "from": event["from"],
-                    "timestamp": int(time.time() * 1000)
-                })
+                text_data=json.dumps(
+                    {
+                        "type": "offer",
+                        "offer": event["offer"],
+                        "from": event["from"],
+                        "timestamp": int(time.time() * 1000),
+                    }
+                )
             )
 
     async def signaling_answer(self, event):
@@ -203,12 +209,14 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         # Only send to the target user
         if event["target"] == self.user.id:
             await self.send(
-                text_data=json.dumps({
-                    "type": "answer",
-                    "answer": event["answer"],
-                    "from": event["from"],
-                    "timestamp": int(time.time() * 1000)
-                })
+                text_data=json.dumps(
+                    {
+                        "type": "answer",
+                        "answer": event["answer"],
+                        "from": event["from"],
+                        "timestamp": int(time.time() * 1000),
+                    }
+                )
             )
 
     async def signaling_ice_candidate(self, event):
@@ -216,12 +224,14 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         # Only send to the target user
         if event["target"] == self.user.id:
             await self.send(
-                text_data=json.dumps({
-                    "type": "ice-candidate",
-                    "candidate": event["candidate"],
-                    "from": event["from"],
-                    "timestamp": int(time.time() * 1000)
-                })
+                text_data=json.dumps(
+                    {
+                        "type": "ice-candidate",
+                        "candidate": event["candidate"],
+                        "from": event["from"],
+                        "timestamp": int(time.time() * 1000),
+                    }
+                )
             )
 
     async def encryption_key(self, event):
@@ -229,12 +239,14 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         # Only send to the target user
         if event["target"] == self.user.id:
             await self.send(
-                text_data=json.dumps({
-                    "type": "encryption-key",
-                    "keyData": event["keyData"],
-                    "from": event["from"],
-                    "timestamp": int(time.time() * 1000)
-                })
+                text_data=json.dumps(
+                    {
+                        "type": "encryption-key",
+                        "keyData": event["keyData"],
+                        "from": event["from"],
+                        "timestamp": int(time.time() * 1000),
+                    }
+                )
             )
 
     async def speaking_status_changed(self, event):
@@ -246,7 +258,7 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
                     "type": "speaking_status_changed",
                     "from": event["from"],
                     "speaking": event["speaking"],
-                    "timestamp": int(time.time() * 1000)  # Current time in milliseconds
+                    "timestamp": int(time.time() * 1000),  # Current time in milliseconds
                 }
             )
         )
@@ -260,7 +272,7 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
                     "type": "mute_status_changed",
                     "from": event["from"],
                     "muted": event["muted"],
-                    "timestamp": int(time.time() * 1000)  # Current time in milliseconds
+                    "timestamp": int(time.time() * 1000),  # Current time in milliseconds
                 }
             )
         )
@@ -274,7 +286,7 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
             room_uuid = self.room_id
             if isinstance(room_uuid, str):
                 # Clean up any encoded dashes in the URL
-                room_uuid = room_uuid.replace('/u002D', '-')
+                room_uuid = room_uuid.replace("/u002D", "-")
                 room_uuid = uuid.UUID(room_uuid)
 
             room = VoiceChatRoom.objects.get(id=room_uuid)
@@ -305,7 +317,7 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
             room_uuid = self.room_id
             if isinstance(room_uuid, str):
                 # Clean up any encoded dashes in the URL
-                room_uuid = room_uuid.replace('/u002D', '-')
+                room_uuid = room_uuid.replace("/u002D", "-")
                 room_uuid = uuid.UUID(room_uuid)
 
             room = VoiceChatRoom.objects.get(id=room_uuid)
@@ -323,7 +335,7 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
             room_uuid = self.room_id
             if isinstance(room_uuid, str):
                 # Clean up any encoded dashes in the URL
-                room_uuid = room_uuid.replace('/u002D', '-')
+                room_uuid = room_uuid.replace("/u002D", "-")
                 room_uuid = uuid.UUID(room_uuid)
 
             room = VoiceChatRoom.objects.get(id=room_uuid)
@@ -340,7 +352,7 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
             room_uuid = self.room_id
             if isinstance(room_uuid, str):
                 # Clean up any encoded dashes in the URL
-                room_uuid = room_uuid.replace('/u002D', '-')
+                room_uuid = room_uuid.replace("/u002D", "-")
                 room_uuid = uuid.UUID(room_uuid)
 
             room = VoiceChatRoom.objects.get(id=room_uuid)
@@ -360,7 +372,7 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
             room_uuid = self.room_id
             if isinstance(room_uuid, str):
                 # Clean up any encoded dashes in the URL
-                room_uuid = room_uuid.replace('/u002D', '-')
+                room_uuid = room_uuid.replace("/u002D", "-")
                 room_uuid = uuid.UUID(room_uuid)
 
             room = VoiceChatRoom.objects.get(id=room_uuid)
