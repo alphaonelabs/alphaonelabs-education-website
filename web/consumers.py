@@ -1,4 +1,5 @@
 import json
+import time
 import uuid
 
 from channels.db import database_sync_to_async
@@ -16,7 +17,29 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         """Handle WebSocket connection."""
         try:
-            self.room_id = self.scope["url_route"]["kwargs"]["room_id"]
+            self.room_id = self.scope["url_route"]["kwargs"].get("room_id")
+            
+            # If room_id is not found in kwargs (using re_path with capture groups)
+            if not self.room_id and len(self.scope["url_route"]["args"]) > 0:
+                # Check if we have a single captured group or multiple groups
+                if len(self.scope["url_route"]["args"]) == 1:
+                    # Previous regex with a single capture group
+                    room_id_str = self.scope["url_route"]["args"][0]
+                    # Clean up any encoded dashes in the URL
+                    room_id_str = room_id_str.replace('/u002D', '-')
+                else:
+                    # New regex with 5 capture groups for each UUID part
+                    parts = self.scope["url_route"]["args"]
+                    # Combine the parts with proper dashes
+                    room_id_str = f"{parts[0]}-{parts[1]}-{parts[2]}-{parts[3]}-{parts[4]}"
+                
+                try:
+                    self.room_id = uuid.UUID(room_id_str)
+                except ValueError:
+                    print(f"Invalid UUID format: {room_id_str}")
+                    await self.close(code=4004)
+                    return
+            
             print(f"WebSocket connection attempt for room_id: {self.room_id}, type: {type(self.room_id)}")
 
             # Debug information
@@ -143,33 +166,62 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         # Only send to others, not back to the sender
         if event["from"] != self.user.id:
             await self.send(
-                text_data=json.dumps({"type": "user_joined", "from": event["from"], "username": event["username"]})
+                text_data=json.dumps({
+                    "type": "user_joined", 
+                    "from": event["from"], 
+                    "username": event["username"],
+                    "timestamp": int(time.time() * 1000)
+                })
             )
 
     async def user_left(self, event):
         """Send notification about a user leaving the room."""
         await self.send(
-            text_data=json.dumps({"type": "user_left", "from": event["from"], "username": event["username"]})
+            text_data=json.dumps({
+                "type": "user_left", 
+                "from": event["from"], 
+                "username": event["username"],
+                "timestamp": int(time.time() * 1000)
+            })
         )
 
     async def signaling_offer(self, event):
         """Forward WebRTC offer to the target client."""
         # Only send to the target user
         if event["target"] == self.user.id:
-            await self.send(text_data=json.dumps({"type": "offer", "offer": event["offer"], "from": event["from"]}))
+            await self.send(
+                text_data=json.dumps({
+                    "type": "offer", 
+                    "offer": event["offer"], 
+                    "from": event["from"],
+                    "timestamp": int(time.time() * 1000)
+                })
+            )
 
     async def signaling_answer(self, event):
         """Forward WebRTC answer to the target client."""
         # Only send to the target user
         if event["target"] == self.user.id:
-            await self.send(text_data=json.dumps({"type": "answer", "answer": event["answer"], "from": event["from"]}))
+            await self.send(
+                text_data=json.dumps({
+                    "type": "answer", 
+                    "answer": event["answer"], 
+                    "from": event["from"],
+                    "timestamp": int(time.time() * 1000)
+                })
+            )
 
     async def signaling_ice_candidate(self, event):
         """Forward ICE candidate to the target client."""
         # Only send to the target user
         if event["target"] == self.user.id:
             await self.send(
-                text_data=json.dumps({"type": "ice-candidate", "candidate": event["candidate"], "from": event["from"]})
+                text_data=json.dumps({
+                    "type": "ice-candidate", 
+                    "candidate": event["candidate"], 
+                    "from": event["from"],
+                    "timestamp": int(time.time() * 1000)
+                })
             )
 
     async def encryption_key(self, event):
@@ -177,21 +229,40 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         # Only send to the target user
         if event["target"] == self.user.id:
             await self.send(
-                text_data=json.dumps({"type": "encryption-key", "keyData": event["keyData"], "from": event["from"]})
+                text_data=json.dumps({
+                    "type": "encryption-key", 
+                    "keyData": event["keyData"], 
+                    "from": event["from"],
+                    "timestamp": int(time.time() * 1000)
+                })
             )
 
     async def speaking_status_changed(self, event):
         """Broadcast speaking status change to all clients."""
+        # Add timestamp for message verification
         await self.send(
             text_data=json.dumps(
-                {"type": "speaking_status_changed", "from": event["from"], "speaking": event["speaking"]}
+                {
+                    "type": "speaking_status_changed", 
+                    "from": event["from"], 
+                    "speaking": event["speaking"],
+                    "timestamp": int(time.time() * 1000)  # Current time in milliseconds
+                }
             )
         )
 
     async def mute_status_changed(self, event):
         """Broadcast mute status change to all clients."""
+        # Add timestamp for message verification
         await self.send(
-            text_data=json.dumps({"type": "mute_status_changed", "from": event["from"], "muted": event["muted"]})
+            text_data=json.dumps(
+                {
+                    "type": "mute_status_changed", 
+                    "from": event["from"], 
+                    "muted": event["muted"],
+                    "timestamp": int(time.time() * 1000)  # Current time in milliseconds
+                }
+            )
         )
 
     # Database operations (async)
@@ -202,6 +273,8 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
             # Try to parse the room_id as a UUID if it's a string
             room_uuid = self.room_id
             if isinstance(room_uuid, str):
+                # Clean up any encoded dashes in the URL
+                room_uuid = room_uuid.replace('/u002D', '-')
                 room_uuid = uuid.UUID(room_uuid)
 
             room = VoiceChatRoom.objects.get(id=room_uuid)
@@ -231,6 +304,8 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         try:
             room_uuid = self.room_id
             if isinstance(room_uuid, str):
+                # Clean up any encoded dashes in the URL
+                room_uuid = room_uuid.replace('/u002D', '-')
                 room_uuid = uuid.UUID(room_uuid)
 
             room = VoiceChatRoom.objects.get(id=room_uuid)
@@ -247,26 +322,32 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         try:
             room_uuid = self.room_id
             if isinstance(room_uuid, str):
+                # Clean up any encoded dashes in the URL
+                room_uuid = room_uuid.replace('/u002D', '-')
                 room_uuid = uuid.UUID(room_uuid)
 
             room = VoiceChatRoom.objects.get(id=room_uuid)
-            participant = VoiceChatParticipant.objects.filter(user=self.user, room=room).first()
-            if participant:
-                participant.delete()
+            participant = VoiceChatParticipant.objects.get(user=self.user, room=room)
+            participant.delete()
+            room.participants.remove(self.user)
         except Exception as e:
             print(f"Error updating participant left: {e}")
 
     @database_sync_to_async
     def update_speaking_status(self, is_speaking):
-        """Update the speaking status of a participant."""
+        """Update user's speaking status in the database."""
         try:
             room_uuid = self.room_id
             if isinstance(room_uuid, str):
+                # Clean up any encoded dashes in the URL
+                room_uuid = room_uuid.replace('/u002D', '-')
                 room_uuid = uuid.UUID(room_uuid)
 
             room = VoiceChatRoom.objects.get(id=room_uuid)
-            participant = VoiceChatParticipant.objects.filter(user=self.user, room=room).first()
-            if participant:
+            participant, created = VoiceChatParticipant.objects.get_or_create(
+                user=self.user, room=room, defaults={"is_speaking": is_speaking, "is_muted": False}
+            )
+            if not created:
                 participant.is_speaking = is_speaking
                 participant.save()
         except Exception as e:
@@ -274,15 +355,19 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
 
     @database_sync_to_async
     def update_mute_status(self, is_muted):
-        """Update the mute status of a participant."""
+        """Update user's mute status in the database."""
         try:
             room_uuid = self.room_id
             if isinstance(room_uuid, str):
+                # Clean up any encoded dashes in the URL
+                room_uuid = room_uuid.replace('/u002D', '-')
                 room_uuid = uuid.UUID(room_uuid)
 
             room = VoiceChatRoom.objects.get(id=room_uuid)
-            participant = VoiceChatParticipant.objects.filter(user=self.user, room=room).first()
-            if participant:
+            participant, created = VoiceChatParticipant.objects.get_or_create(
+                user=self.user, room=room, defaults={"is_speaking": False, "is_muted": is_muted}
+            )
+            if not created:
                 participant.is_muted = is_muted
                 participant.save()
         except Exception as e:

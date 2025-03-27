@@ -11,6 +11,8 @@
         href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
   <!-- Username meta tag for JavaScript -->
   <meta name="username" content="{{ request.user.username }}" />
+  <!-- Session token for WebSocket authentication -->
+  <meta name="session-token" content="{{ request.session.session_key }}" />
   <!-- Voice chat specific JavaScript -->
   <script src="{% static 'js/voice-chat.js' %}"></script>
 {% endblock extra_head %}

@@ -10,7 +10,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("web", "0045_add_membership_models"),
+        ("web", "0047_review_is_featured"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
