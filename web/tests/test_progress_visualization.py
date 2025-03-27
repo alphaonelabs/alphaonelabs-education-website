@@ -3,7 +3,6 @@ from datetime import timedelta
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
-from django.contrib.messages import get_messages
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
@@ -280,21 +279,3 @@ class ProgressVisualizationTest(TestCase):
         self.assertIn("progress_dates", chart_data)
         self.assertIn("sessions_completed", chart_data)
         self.assertIn("courses_json", chart_data)
-
-    def test_teacher_access_denied(self):
-        """Test that teachers are redirected with an error message."""
-        # Update user profile to be a teacher
-        self.user.profile.is_teacher = True
-        self.user.profile.save()
-
-        url = reverse("progress_visualization")
-        response = self.client.get(url)
-
-        # Should redirect to profile page
-        self.assertEqual(response.status_code, 302)
-        self.assertEqual(response.url, reverse("profile"))
-
-        # Check for error message
-        messages = list(get_messages(response.wsgi_request))
-        self.assertEqual(len(messages), 1)
-        self.assertEqual(str(messages[0]), "This Progress Chart is for students only.")

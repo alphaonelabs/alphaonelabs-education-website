@@ -44,7 +44,7 @@ from django.utils.crypto import get_random_string
 from django.utils.html import strip_tags
 from django.views import generic
 from django.views.decorators.clickjacking import xframe_options_exempt
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import (
     CreateView,
@@ -99,7 +99,6 @@ from .models import (
     Badge,
     BlogComment,
     BlogPost,
-    Cart,
     CartItem,
     Certificate,
     Challenge,
@@ -111,6 +110,7 @@ from .models import (
     EducationalVideo,
     Enrollment,
     EventCalendar,
+    FeatureVote,
     ForumCategory,
     ForumReply,
     ForumTopic,
@@ -129,6 +129,7 @@ from .models import (
     ProductImage,
     Profile,
     ProgressTracker,
+    Review,
     SearchLog,
     Session,
     SessionAttendance,
@@ -507,12 +508,101 @@ def create_course_from_waiting_room(request, waiting_room_id):
     return redirect(reverse("create_course"))
 
 
+@login_required
+@teacher_required
+def add_featured_review(request, slug, review_id):
+    # Get the course and review
+    course = get_object_or_404(Course, slug=slug)
+    review = get_object_or_404(Review, id=review_id, course=course)
+
+    # Check if the user is the course teacher
+    if request.user != course.teacher:
+        messages.error(request, "Only the course teacher can manage featured reviews.")
+        return redirect(reverse("course_detail", kwargs={"slug": slug}))
+
+    # Set the is_featured field to True
+    review.is_featured = True
+    review.save()
+    messages.success(request, "Review has been featured.")
+
+    # Redirect to the course detail page
+    url = reverse("course_detail", kwargs={"slug": slug})
+    return redirect(f"{url}#course_reviews")
+
+
+@login_required
+@teacher_required
+def remove_featured_review(request, slug, review_id):
+    # Get the course and review
+    course = get_object_or_404(Course, slug=slug)
+    review = get_object_or_404(Review, id=review_id, course=course)
+
+    # Check if the user is the course teacher
+    if request.user != course.teacher:
+        messages.error(request, "Only the course teacher can manage featured reviews.")
+        return redirect(reverse("course_detail", kwargs={"slug": slug}))
+
+    # Set the is_featured field to False
+    review.is_featured = False
+    review.save()
+
+    # Redirect to the course detail page
+    url = reverse("course_detail", kwargs={"slug": slug})
+    return redirect(f"{url}#course_reviews")
+
+
+@login_required
+def edit_review(request, slug, review_id):
+    course = get_object_or_404(Course, slug=slug)
+    review = get_object_or_404(Review, id=review_id, course__slug=slug)
+
+    # Security check - only allow editing own reviews
+    if request.user.id != review.student.id:
+        messages.error(request, "You can only edit your own reviews.")
+        return redirect("course_detail", slug=slug)
+
+    if request.method == "POST":
+        form = ReviewForm(request.POST, instance=review)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.save()
+            messages.success(request, "Your review has been updated.")
+            url = reverse("course_detail", kwargs={"slug": slug})
+            return redirect(f"{url}#course_reviews")
+    else:
+        form = ReviewForm(instance=review)
+
+    context = {
+        "form": form,
+        "course": course,
+        "review": review,
+        "action": "Edit",
+    }
+    return render(request, "courses/edit_or_add_review.html", context)
+
+
+@login_required
+def delete_review(request, slug, review_id):
+    review = get_object_or_404(Review, id=review_id, course__slug=slug)
+
+    # Security check - only allow deleting own reviews
+    if request.user.id != review.student.id:
+        messages.error(request, "You can only delete your own reviews.")
+    else:
+        review.delete()
+        messages.success(request, "Your review has been deleted.")
+
+    url = reverse("course_detail", kwargs={"slug": slug})
+    return redirect(f"{url}#course_reviews")
+
+
 def course_detail(request, slug):
     course = get_object_or_404(Course, slug=slug)
     sessions = course.sessions.all().order_by("start_time")
     now = timezone.now()
     is_teacher = request.user == course.teacher
     completed_sessions = []
+    # Check if user is the teacher of this course
 
     # Get enrollment if user is authenticated
     enrollment = None
@@ -587,6 +677,26 @@ def course_detail(request, slug):
                 calendar_week.append({"date": date, "in_month": True, "has_session": date in session_dates})
         calendar_weeks.append(calendar_week)
 
+    # Check if the current user has already reviewed this course
+    user_review = None
+    if request.user.is_authenticated:
+        user_review = Review.objects.filter(student=request.user, course=course).first()
+
+    # Get all reviews That not featured for this course
+    reviews = course.reviews.filter(is_featured=False).order_by("-created_at")
+
+    # Get the featured review
+    featured_review = Review.objects.filter(is_featured=True, course=course)
+
+    # Get all reviews sum
+    reviews_num = reviews.count() + featured_review.count()
+
+    # Calculate rating distribution for visualization
+    rating_counts = Review.objects.filter(course=course).values("rating").annotate(count=Count("id"))
+    rating_distribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+    for item in rating_counts:
+        rating_distribution[item["rating"]] = item["count"]
+
     context = {
         "course": course,
         "sessions": sessions,
@@ -603,6 +713,11 @@ def course_detail(request, slug):
         "student_attendance": student_attendance,
         "completed_enrollment_count": course.enrollments.filter(status="completed").count(),
         "in_progress_enrollment_count": course.enrollments.filter(status="in_progress").count(),
+        "featured_review": featured_review,
+        "reviews": reviews,
+        "user_review": user_review,
+        "rating_distribution": rating_distribution,
+        "reviews_num": reviews_num,
     }
 
     return render(request, "courses/detail.html", context)
@@ -672,6 +787,8 @@ def add_session(request, slug):
 @login_required
 def add_review(request, slug):
     course = Course.objects.get(slug=slug)
+    student = request.user
+
     if not request.user.enrollments.filter(course=course).exists():
         messages.error(request, "Only enrolled students can review the course!")
         return redirect("course_detail", slug=slug)
@@ -679,16 +796,20 @@ def add_review(request, slug):
     if request.method == "POST":
         form = ReviewForm(request.POST)
         if form.is_valid():
+            if Review.objects.filter(student=student, course=course).exists():
+                messages.error(request, "You have already reviewed this course.")
+                return redirect("course_detail", slug=slug)
             review = form.save(commit=False)
-            review.student = request.user
+            review.student = student
             review.course = course
             review.save()
             messages.success(request, "Review added successfully!")
-            return redirect("course_detail", slug=slug)
+            url = reverse("course_detail", kwargs={"slug": slug})
+            return redirect(f"{url}#course_reviews")
     else:
         form = ReviewForm()
 
-    return render(request, "courses/add_review.html", {"form": form, "course": course})
+    return render(request, "courses/edit_or_add_review.html", {"form": form, "course": course, "action": "Add"})
 
 
 @login_required
@@ -1961,9 +2082,6 @@ def student_dashboard(request):
     Dashboard view for students showing enrollments, progress, upcoming sessions, learning streak,
     and an Achievements section.
     """
-    if request.user.profile.is_teacher:
-        messages.error(request, "This dashboard is for students only.")
-        return redirect("profile")
 
     # Update the learning streak.
     streak, created = LearningStreak.objects.get_or_create(user=request.user)
@@ -3044,6 +3162,7 @@ def content_dashboard(request):
     )
 
 
+# Challenges views
 def current_weekly_challenge(request):
     current_time = timezone.now()
     weekly_challenge = Challenge.objects.filter(
@@ -3241,7 +3360,7 @@ class GoodsListView(LoginRequiredMixin, generic.ListView):
         return Goods.objects.filter(storefront__teacher=self.request.user)
 
 
-class GoodsDetailView(LoginRequiredMixin, generic.DetailView):
+class GoodsDetailView(generic.DetailView):
     model = Goods
     template_name = "goods/goods_detail.html"
     context_object_name = "product"
@@ -3321,16 +3440,17 @@ class GoodsDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
         return self.request.user == self.get_object().storefront.teacher
 
 
-@login_required
 def add_goods_to_cart(request, pk):
+    """Add a product (goods) to the cart."""
     product = get_object_or_404(Goods, pk=pk)
+
     # Prevent adding out-of-stock items
     if product.stock is None or product.stock <= 0:
         messages.error(request, f"{product.name} is out of stock and cannot be added to cart.")
         return redirect("goods_detail", pk=pk)  # Redirect back to product page
 
-    cart, created = Cart.objects.get_or_create(user=request.user)
-    cart_item, created = CartItem.objects.get_or_create(cart=cart, goods=product)
+    cart = get_or_create_cart(request)
+    cart_item, created = CartItem.objects.get_or_create(cart=cart, goods=product, defaults={"session": None})
 
     if created:
         messages.success(request, f"{product.name} added to cart.")
@@ -5511,13 +5631,160 @@ def create_study_group(request):
     return render(request, "web/study/create_group.html", {"form": form})
 
 
+def features_page(request):
+    """View to display the features page."""
+    return render(request, "features.html")
+
+
+@require_POST
+@csrf_protect
+def feature_vote(request):
+    """API endpoint to handle feature voting."""
+    feature_id = request.POST.get("feature_id")
+    vote_type = request.POST.get("vote")
+
+    if not feature_id or vote_type not in ["up", "down"]:
+        return JsonResponse({"status": "error", "message": "Invalid parameters"}, status=400)
+
+    # Store IP for anonymous users
+    ip_address = None
+    if not request.user.is_authenticated:
+        ip_address = (
+            request.META.get("REMOTE_ADDR") or request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+        )
+        if not ip_address:
+            return JsonResponse({"status": "error", "message": "Could not identify user"}, status=400)
+
+    # Process the vote
+    try:
+        # Use transaction to prevent race conditions during vote operations
+        with transaction.atomic():
+            # Check for existing vote
+            existing_vote = None
+            if request.user.is_authenticated:
+                existing_vote = FeatureVote.objects.filter(feature_id=feature_id, user=request.user).first()
+            elif ip_address:
+                existing_vote = FeatureVote.objects.filter(
+                    feature_id=feature_id, ip_address=ip_address, user__isnull=True
+                ).first()
+
+            # Handle the vote logic
+            status_message = "Vote recorded"
+            if existing_vote:
+                if existing_vote.vote == vote_type:
+                    status_message = "You've already cast this vote"
+                else:
+                    # Change vote type if user changed their mind
+                    existing_vote.vote = vote_type
+                    existing_vote.save()
+                    status_message = "Vote changed"
+            else:
+                # Create new vote
+                new_vote = FeatureVote(feature_id=feature_id, vote=vote_type)
+
+                if request.user.is_authenticated:
+                    new_vote.user = request.user
+                else:
+                    new_vote.ip_address = ip_address
+
+                new_vote.save()
+
+            # Get updated counts within the transaction to ensure consistency
+            up_count = FeatureVote.objects.filter(feature_id=feature_id, vote="up").count()
+            down_count = FeatureVote.objects.filter(feature_id=feature_id, vote="down").count()
+
+        # Calculate percentage for visualization
+        total_votes = up_count + down_count
+        up_percentage = round((up_count / total_votes) * 100) if total_votes > 0 else 0
+        down_percentage = round((down_count / total_votes) * 100) if total_votes > 0 else 0
+
+        return JsonResponse(
+            {
+                "status": "success",
+                "message": status_message,
+                "up_count": up_count,
+                "down_count": down_count,
+                "total_votes": total_votes,
+                "up_percentage": up_percentage,
+                "down_percentage": down_percentage,
+            }
+        )
+
+    except Exception as e:
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error processing vote: {str(e)}", exc_info=True)
+        return JsonResponse({"status": "error", "message": f"Error processing vote: {str(e)}"}, status=500)
+
+
+@require_GET
+def feature_vote_count(request):
+    """Get vote counts for one or more features."""
+    feature_ids = request.GET.get("feature_ids", "").split(",")
+    if not feature_ids or not feature_ids[0]:
+        return JsonResponse({"error": "No feature IDs provided"}, status=400)
+
+    result = {}
+    # Get all up and down votes in a single query each for better performance
+    up_votes = (
+        FeatureVote.objects.filter(feature_id__in=feature_ids, vote="up")
+        .values("feature_id")
+        .annotate(count=Count("id"))
+    )
+    down_votes = (
+        FeatureVote.objects.filter(feature_id__in=feature_ids, vote="down")
+        .values("feature_id")
+        .annotate(count=Count("id"))
+    )
+
+    # Create lookup dictionaries for efficient access
+    up_votes_dict = {str(vote["feature_id"]): vote["count"] for vote in up_votes}
+    down_votes_dict = {str(vote["feature_id"]): vote["count"] for vote in down_votes}
+
+    # Check user's votes if authenticated
+    user_votes = {}
+    if request.user.is_authenticated:
+        user_vote_objects = FeatureVote.objects.filter(feature_id__in=feature_ids, user=request.user)
+        for vote in user_vote_objects:
+            user_votes[str(vote.feature_id)] = vote.vote
+    elif request.META.get("REMOTE_ADDR"):
+        # Get IP address for anonymous users
+        ip_address = (
+            request.META.get("REMOTE_ADDR") or request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")[0].strip()
+        )
+        if ip_address:
+            anon_vote_objects = FeatureVote.objects.filter(
+                feature_id__in=feature_ids, ip_address=ip_address, user__isnull=True
+            )
+            for vote in anon_vote_objects:
+                user_votes[str(vote.feature_id)] = vote.vote
+
+    for feature_id in feature_ids:
+        up_count = up_votes_dict.get(feature_id, 0)
+        down_count = down_votes_dict.get(feature_id, 0)
+        total_votes = up_count + down_count
+
+        # Calculate percentages
+        up_percentage = (up_count / total_votes * 100) if total_votes > 0 else 0
+        down_percentage = (down_count / total_votes * 100) if total_votes > 0 else 0
+
+        result[feature_id] = {
+            "up_count": up_count,
+            "down_count": down_count,
+            "total_votes": total_votes,
+            "up_percentage": round(up_percentage, 1),
+            "down_percentage": round(down_percentage, 1),
+            "user_vote": user_votes.get(feature_id, None),
+        }
+
+    return JsonResponse(result)
+
+
 @login_required
 def progress_visualization(request):
     """Generate and render progress visualization statistics for a student's enrolled courses."""
     user = request.user
-    if request.user.profile.is_teacher:
-        messages.error(request, "This Progress Chart is for students only.")
-        return redirect("profile")
 
     # Create a unique cache key based on user ID
     cache_key = f"user_progress_{user.id}"
