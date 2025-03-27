@@ -6278,21 +6278,49 @@ def all_study_groups(request):
     )
 
 
+@login_required
 def get_twitter_client():
     """Initialize the Tweepy client."""
+    if not all(
+        [
+            settings.TWITTER_API_KEY,
+            settings.TWITTER_API_SECRET_KEY,
+            settings.TWITTER_ACCESS_TOKEN,
+            settings.TWITTER_ACCESS_TOKEN_SECRET,
+        ]
+    ):
+        raise ValueError("Twitter API credentials not configured")
     auth = tweepy.OAuthHandler(settings.TWITTER_API_KEY, settings.TWITTER_API_SECRET_KEY)
     auth.set_access_token(settings.TWITTER_ACCESS_TOKEN, settings.TWITTER_ACCESS_TOKEN_SECRET)
-    return tweepy.API(auth)
+    api = tweepy.API(auth)
+
+    # Verify credentials
+    try:
+        api.verify_credentials()
+        return api
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"Twitter authentication error: {e}")
+        raise ValueError(f"Failed to authenticate with Twitter: {e}")
 
 
+@login_required
 def social_media_dashboard(request):
     # Fetch all posts that haven't been posted yet
     posts = ScheduledPost.objects.filter(posted=False).order_by("-id")
     return render(request, "social_media_dashboard.html", {"posts": posts})
 
 
+@login_required
 def post_to_twitter(request, post_id):
     post = get_object_or_404(ScheduledPost, id=post_id)
+    if post.posted:
+        messages.error(request, "This post has already been posted.")
+        return redirect("social_media_dashboard")
+    # Check content length
+    if len(post.content) > 280:
+        messages.error(request, "Tweet content exceeds the 280 character limit.")
+        return redirect("social_media_dashboard")
     if request.method == "POST":
         client = get_twitter_client()
         try:
@@ -6306,17 +6334,29 @@ def post_to_twitter(request, post_id):
     return redirect("social_media_dashboard")
 
 
+@login_required
 def create_scheduled_post(request):
     if request.method == "POST":
         content = request.POST.get("content")
+        # Validate content
+        if not content:
+            messages.error(request, "Post content cannot be empty.")
+            return redirect("social_media_dashboard")
+
+        if len(content) > 280:
+            messages.error(request, "Content exceeds Twitter's 280 character limit.")
+            return redirect("social_media_dashboard")
         # Always set the scheduled time to now.
         ScheduledPost.objects.create(content=content, scheduled_time=timezone.now())
+        messages.success(request, "Post created successfully!")
     return redirect("social_media_dashboard")
 
 
+@login_required
 def delete_post(request, post_id):
     """Delete a scheduled post."""
     post = get_object_or_404(ScheduledPost, id=post_id)
     if request.method == "POST":
         post.delete()
+        messages.success(request, "Post deleted successfully!")
     return redirect("social_media_dashboard")
