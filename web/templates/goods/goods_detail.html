@@ -54,20 +54,9 @@
               <div class="flex flex-col space-y-2 p-2">
                 {% for image in product_images %}
                   <div class="thumbnail-container group relative cursor-pointer mb-2"
-                       onclick="changeImage('https://media.springernature.com/full/springer-static/cover-hires/book/978-1-4302-0072-7', this)">
-                    <img src="https://media.springernature.com/full/springer-static/cover-hires/book/978-1-4302-0072-7"
+                       onclick="changeImage('{{ image.image.url }}', this)">
+                    <img src="{{ image.image.url }}"
                          alt="{{ image.alt_text }}"
-                         class="w-16 h-16 object-cover rounded-lg border-2 border-transparent group-hover:border-blue-500 transition-all duration-300 group-[.active]:border-blue-600 group-[.active]:shadow-lg" />
-                    <div class="absolute inset-0 bg-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-lg">
-                    </div>
-                  </div>
-                {% endfor %}
-                <!-- Mock Images for Testing -->
-                {% for i in "12345678" %}
-                  <div class="thumbnail-container group relative cursor-pointer mb-2 flex-shrink-0"
-                       onclick="changeImage('https://media.springernature.com/full/springer-static/cover-hires/book/978-1-4302-0072-7', this)">
-                    <img src="https://media.springernature.com/full/springer-static/cover-hires/book/978-1-4302-0072-7"
-                         alt="Mock Thumbnail {{ i }}"
                          class="w-16 h-16 object-cover rounded-lg border-2 border-transparent group-hover:border-blue-500 transition-all duration-300 group-[.active]:border-blue-600 group-[.active]:shadow-lg" />
                     <div class="absolute inset-0 bg-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-lg">
                     </div>
@@ -90,7 +79,7 @@
           <!-- Main Image Display -->
           <div class="relative flex-grow overflow-hidden">
             <img id="main-product-image"
-                 src="https://m.media-amazon.com/images/I/6161h-ZkhuL.jpg"
+                 src="{{ product.image_url }}"
                  alt="{{ product.name }}"
                  class="w-full h-[500px] object-contain transition-all duration-500 ease-in-out transform hover:scale-105" />
           </div>
@@ -111,18 +100,9 @@
                  class="flex flex-nowrap space-x-2 overflow-x-auto hide-scrollbar pb-2 flex-grow">
               {% for image in product_images %}
                 <div class="thumbnail-container group relative cursor-pointer flex-shrink-0"
-                     onclick="changeImage('https://media.springernature.com/full/springer-static/cover-hires/book/978-1-4302-0072-7', this)">
-                  <img src="https://media.springernature.com/full/springer-static/cover-hires/book/978-1-4302-0072-7"
+                     onclick="changeImage('{{ image.image.url }}', this)">
+                  <img src="{{ image.image.url }}"
                        alt="{{ image.alt_text }}"
-                       class="w-12 h-12 object-cover rounded-lg border-2 border-transparent group-hover:border-blue-500 transition-all duration-300 group-[.active]:border-blue-600 group-[.active]:shadow-lg" />
-                </div>
-              {% endfor %}
-              <!-- Mock Images for Testing -->
-              {% for i in "12345678" %}
-                <div class="thumbnail-container group relative cursor-pointer flex-shrink-0"
-                     onclick="changeImage('https://media.springernature.com/full/springer-static/cover-hires/book/978-1-4302-0072-7', this)">
-                  <img src="https://media.springernature.com/full/springer-static/cover-hires/book/978-1-4302-0072-7"
-                       alt="Mock Thumbnail {{ i }}"
                        class="w-12 h-12 object-cover rounded-lg border-2 border-transparent group-hover:border-blue-500 transition-all duration-300 group-[.active]:border-blue-600 group-[.active]:shadow-lg" />
                 </div>
               {% endfor %}
