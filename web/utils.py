@@ -420,6 +420,20 @@ def geocode_address(address):
     Returns a tuple of (latitude, longitude) or None if geocoding fails.
     Follows OpenStreetMap's Nominatim usage policy with built-in rate limiting.
     """
+    # Rate limiting - ensure we don't exceed 1 request per second
+    rate_limit_key = "nominatim_last_request"
+    last_request_time = cache.get(rate_limit_key)
+
+    if last_request_time:
+        import time
+
+        current_time = time.time()
+        time_since_last_request = current_time - last_request_time
+
+        if time_since_last_request < 1.0:
+            # Sleep to maintain 1 request per second rate limit
+            time.sleep(1.0 - time_since_last_request)
+
     if not address:
         logger.debug("Empty address provided to geocode_address")
         return None
@@ -436,9 +450,13 @@ def geocode_address(address):
     params = {"q": address, "format": "json", "limit": 1}
 
     # Headers to comply with Nominatim usage policy
-    headers = {"User-Agent": "YourAppName/1.0 (your-email@example.com)"}
+    headers = {"User-Agent": "AlphaOneEducation/1.0 (support@alphaonelabs.com)"}
 
     try:
+        # Update last request timestamp
+        import time
+
+        cache.set(rate_limit_key, time.time(), 60 * 5)  # Keep for 5 minutes
         # Use requests with custom headers and params
         response = requests.get(url, params=params, headers=headers)
         response.raise_for_status()
