@@ -6304,7 +6304,12 @@ def post_to_twitter(request, post_id):
     if request.method == "POST":
         client = get_twitter_client()
         try:
-            client.update_status(post.content)
+            if post.image:
+                # Upload the image file from disk
+                media = client.media_upload(post.image.path)
+                client.update_status(post.content, media_ids=[media.media_id])
+            else:
+                client.update_status(post.content)
             post.posted = True
             post.posted_at = timezone.now()
             post.save()
@@ -6318,8 +6323,31 @@ def post_to_twitter(request, post_id):
 def create_scheduled_post(request):
     if request.method == "POST":
         content = request.POST.get("content")
-        # Always set the scheduled time to now.
-        ScheduledPost.objects.create(content=content, scheduled_time=timezone.now())
+        image = request.FILES.get("image")
+
+        # Extensive debugging
+        print("Request method: POST")
+        print("Content:", content)
+        print("Uploaded files:", request.FILES)
+        print("Image file:", image)
+
+        if not content:
+            messages.error(request, "Post content cannot be empty.")
+            return redirect("social_media_dashboard")
+
+        # Create post with image
+        post = ScheduledPost.objects.create(content=content, image=image, scheduled_time=timezone.now())
+
+        # More detailed debugging
+        print("Created post ID:", post.id)
+        print("Post image field:", post.image)
+        if post.image:
+            print("Post image name:", post.image.name)
+            print("Post image path:", post.image.path)
+            print("Post image URL:", post.image.url)
+        else:
+            print("No image was saved with the post")
+
     return redirect("social_media_dashboard")
 
 

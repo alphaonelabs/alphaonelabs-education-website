@@ -237,7 +237,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 if not DEBUG:
     MEDIA_ROOT = "/home/alphaonelabs99282llkb/web/media"
 else:
-    MEDIA_ROOT = BASE_DIR / "media"
+    MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
 
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")

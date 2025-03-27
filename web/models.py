@@ -2716,9 +2716,10 @@ class MembershipSubscriptionEvent(models.Model):
 
 class ScheduledPost(models.Model):
     content = models.CharField(max_length=280)
+    image = models.ImageField(upload_to="scheduled_posts/", blank=True)
     scheduled_time = models.DateTimeField()
     posted = models.BooleanField(default=False)
     posted_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"Post scheduled for {self.scheduled_time}"
+        return self.content
