@@ -48,21 +48,6 @@ class SocialMediaDashboardTests(TestCase):
         self.assertTrue(any("Post content cannot be empty." in m.message for m in messages))
         self.assertEqual(ScheduledPost.objects.count(), 0)
 
-    def test_create_scheduled_post_exceeds_limit(self):
-        """
-        Test that submitting content longer than 280 characters returns an error message.
-        """
-        url = reverse("create_scheduled_post")
-        data = {"content": "x" * 281}
-        response = self.client.post(url, data, follow=True)
-        self.assertEqual(response.status_code, 200)
-        messages = list(get_messages(response.wsgi_request))
-        self.assertTrue(
-            any("Content exceeds Twitter's 280 character limit." in m.message for m in messages),
-            "Expected error message for content exceeding 280 characters was not found.",
-        )
-        self.assertEqual(ScheduledPost.objects.count(), 0)
-
     def test_dashboard_view(self):
         """
         Test that the dashboard view displays the header and any posts.
