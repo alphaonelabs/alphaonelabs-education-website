@@ -18,7 +18,7 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         """Handle WebSocket connection."""
         try:
             self.room_id = self.scope["url_route"]["kwargs"].get("room_id")
-            
+
             # If room_id is not found in kwargs (using re_path with capture groups)
             if not self.room_id and len(self.scope["url_route"]["args"]) > 0:
                 # Check if we have a single captured group or multiple groups
@@ -32,14 +32,14 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
                     parts = self.scope["url_route"]["args"]
                     # Combine the parts with proper dashes
                     room_id_str = f"{parts[0]}-{parts[1]}-{parts[2]}-{parts[3]}-{parts[4]}"
-                
+
                 try:
                     self.room_id = uuid.UUID(room_id_str)
                 except ValueError:
                     print(f"Invalid UUID format: {room_id_str}")
                     await self.close(code=4004)
                     return
-            
+
             print(f"WebSocket connection attempt for room_id: {self.room_id}, type: {type(self.room_id)}")
 
             # Debug information
@@ -167,8 +167,8 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         if event["from"] != self.user.id:
             await self.send(
                 text_data=json.dumps({
-                    "type": "user_joined", 
-                    "from": event["from"], 
+                    "type": "user_joined",
+                    "from": event["from"],
                     "username": event["username"],
                     "timestamp": int(time.time() * 1000)
                 })
@@ -178,8 +178,8 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         """Send notification about a user leaving the room."""
         await self.send(
             text_data=json.dumps({
-                "type": "user_left", 
-                "from": event["from"], 
+                "type": "user_left",
+                "from": event["from"],
                 "username": event["username"],
                 "timestamp": int(time.time() * 1000)
             })
@@ -191,8 +191,8 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         if event["target"] == self.user.id:
             await self.send(
                 text_data=json.dumps({
-                    "type": "offer", 
-                    "offer": event["offer"], 
+                    "type": "offer",
+                    "offer": event["offer"],
                     "from": event["from"],
                     "timestamp": int(time.time() * 1000)
                 })
@@ -204,8 +204,8 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         if event["target"] == self.user.id:
             await self.send(
                 text_data=json.dumps({
-                    "type": "answer", 
-                    "answer": event["answer"], 
+                    "type": "answer",
+                    "answer": event["answer"],
                     "from": event["from"],
                     "timestamp": int(time.time() * 1000)
                 })
@@ -217,8 +217,8 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         if event["target"] == self.user.id:
             await self.send(
                 text_data=json.dumps({
-                    "type": "ice-candidate", 
-                    "candidate": event["candidate"], 
+                    "type": "ice-candidate",
+                    "candidate": event["candidate"],
                     "from": event["from"],
                     "timestamp": int(time.time() * 1000)
                 })
@@ -230,8 +230,8 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         if event["target"] == self.user.id:
             await self.send(
                 text_data=json.dumps({
-                    "type": "encryption-key", 
-                    "keyData": event["keyData"], 
+                    "type": "encryption-key",
+                    "keyData": event["keyData"],
                     "from": event["from"],
                     "timestamp": int(time.time() * 1000)
                 })
@@ -243,8 +243,8 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         await self.send(
             text_data=json.dumps(
                 {
-                    "type": "speaking_status_changed", 
-                    "from": event["from"], 
+                    "type": "speaking_status_changed",
+                    "from": event["from"],
                     "speaking": event["speaking"],
                     "timestamp": int(time.time() * 1000)  # Current time in milliseconds
                 }
@@ -257,8 +257,8 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
         await self.send(
             text_data=json.dumps(
                 {
-                    "type": "mute_status_changed", 
-                    "from": event["from"], 
+                    "type": "mute_status_changed",
+                    "from": event["from"],
                     "muted": event["muted"],
                     "timestamp": int(time.time() * 1000)  # Current time in milliseconds
                 }
