@@ -6278,7 +6278,12 @@ def all_study_groups(request):
     )
 
 
-@login_required
+def social_media_manager_required(user):
+    """Check if user has social media manager permissions."""
+    return user.is_authenticated and (user.is_staff or getattr(user.profile, "is_social_media_manager", False))
+
+
+@user_passes_test(social_media_manager_required)
 def get_twitter_client():
     """Initialize the Tweepy client."""
     auth = tweepy.OAuthHandler(settings.TWITTER_API_KEY, settings.TWITTER_API_SECRET_KEY)
@@ -6286,14 +6291,14 @@ def get_twitter_client():
     return tweepy.API(auth)
 
 
-@login_required
+@user_passes_test(social_media_manager_required)
 def social_media_dashboard(request):
     # Fetch all posts that haven't been posted yet
     posts = ScheduledPost.objects.filter(posted=False).order_by("-id")
     return render(request, "social_media_dashboard.html", {"posts": posts})
 
 
-@login_required
+@user_passes_test(social_media_manager_required)
 def post_to_twitter(request, post_id):
     post = get_object_or_404(ScheduledPost, id=post_id)
     if request.method == "POST":
@@ -6309,7 +6314,7 @@ def post_to_twitter(request, post_id):
     return redirect("social_media_dashboard")
 
 
-@login_required
+@user_passes_test(social_media_manager_required)
 def create_scheduled_post(request):
     if request.method == "POST":
         content = request.POST.get("content")
@@ -6318,7 +6323,7 @@ def create_scheduled_post(request):
     return redirect("social_media_dashboard")
 
 
-@login_required
+@user_passes_test(social_media_manager_required)
 def delete_post(request, post_id):
     """Delete a scheduled post."""
     post = get_object_or_404(ScheduledPost, id=post_id)

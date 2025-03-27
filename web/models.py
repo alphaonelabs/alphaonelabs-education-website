@@ -58,6 +58,7 @@ class Profile(models.Model):
         "Avatar", on_delete=models.SET_NULL, null=True, blank=True, related_name="profile"
     )
     is_teacher = models.BooleanField(default=False)
+    is_social_media_manager = models.BooleanField(default=False)
     referral_code = models.CharField(max_length=20, unique=True, blank=True)
     referred_by = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="referrals")
     referral_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
