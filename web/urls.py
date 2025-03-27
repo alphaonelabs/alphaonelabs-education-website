@@ -94,6 +94,11 @@ urlpatterns += i18n_patterns(
     ),
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
     path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session"),
+    # Social media sharing URLs
+    path("social-media/", views.social_media_dashboard, name="social_media_dashboard"),
+    path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
+    path("social-media/create/", views.create_scheduled_post, name="create_scheduled_post"),
+    path("social-media/delete/<int:post_id>/", views.delete_post, name="delete_post"),
     # Payment URLs
     path(
         "courses/<slug:slug>/create-payment-intent/",

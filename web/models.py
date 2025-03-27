@@ -2711,3 +2711,13 @@ class MembershipSubscriptionEvent(models.Model):
 
     def __str__(self):
         return f"{self.event_type} - {self.user.email} - {self.created_at}"
+
+
+class ScheduledPost(models.Model):
+    content = models.CharField(max_length=280)
+    scheduled_time = models.DateTimeField()
+    posted = models.BooleanField(default=False)
+    posted_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Post scheduled for {self.scheduled_time}"
