@@ -6323,31 +6323,14 @@ def post_to_twitter(request, post_id):
 def create_scheduled_post(request):
     if request.method == "POST":
         content = request.POST.get("content")
-        image = request.FILES.get("image")
-
-        # Extensive debugging
-        print("Request method: POST")
-        print("Content:", content)
-        print("Uploaded files:", request.FILES)
-        print("Image file:", image)
-
+        image = request.FILES.get("image")  # Get the uploaded image, if provided.
         if not content:
             messages.error(request, "Post content cannot be empty.")
             return redirect("social_media_dashboard")
-
-        # Create post with image
-        post = ScheduledPost.objects.create(content=content, image=image, scheduled_time=timezone.now())
-
-        # More detailed debugging
-        print("Created post ID:", post.id)
-        print("Post image field:", post.image)
-        if post.image:
-            print("Post image name:", post.image.name)
-            print("Post image path:", post.image.path)
-            print("Post image URL:", post.image.url)
-        else:
-            print("No image was saved with the post")
-
+        ScheduledPost.objects.create(
+            content=content, image=image, scheduled_time=timezone.now()  # This saves the image file.
+        )
+        messages.success(request, "Post created successfully!")
     return redirect("social_media_dashboard")
 
 
