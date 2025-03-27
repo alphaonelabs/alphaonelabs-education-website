@@ -650,6 +650,7 @@ class Review(models.Model):
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_featured = models.BooleanField(default=False, db_index=True)
 
     class Meta:
         unique_together = ["student", "course"]
@@ -2582,6 +2583,87 @@ class GSoCProposal(models.Model):
 
     def get_status_choices(self):
         return self.STATUS_CHOICES
+
+class FeatureVote(models.Model):
+    VOTE_CHOICES = (
+        ("up", "Thumbs Up"),
+        ("down", "Thumbs Down"),
+    )
+
+    feature_id = models.CharField(max_length=100)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    vote = models.CharField(max_length=4, choices=VOTE_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["feature_id", "user"], name="web_feature_feature_9fbd0b_idx"),
+            models.Index(fields=["feature_id", "ip_address"], name="web_feature_feature_988c48_idx"),
+        ]
+        verbose_name = "Feature Vote"
+        verbose_name_plural = "Feature Votes"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["feature_id", "user"],
+                name="unique_user_feature_vote",
+                condition=models.Q(user__isnull=False),
+            ),
+            models.UniqueConstraint(
+                fields=["feature_id", "ip_address"],
+                name="unique_ip_feature_vote",
+                condition=models.Q(ip_address__isnull=False),
+            ),
+        ]
+
+    def clean(self):
+        """Validate that a user or IP address hasn't already voted on this feature."""
+        if not self.feature_id:
+            raise ValidationError({"feature_id": "Feature ID is required"})
+
+        if not self.vote:
+            raise ValidationError({"vote": "Vote is required"})
+
+        if not self.user and not self.ip_address:
+            raise ValidationError("Either user or IP address must be provided")
+
+        if self.user and self.ip_address:
+            raise ValidationError("Cannot provide both user and IP address")
+
+        if self.user:
+            # Check for existing user vote
+            existing_vote = (
+                FeatureVote.objects.filter(feature_id=self.feature_id, user=self.user).exclude(pk=self.pk).first()
+            )
+            if existing_vote:
+                raise ValidationError(
+                    {"user": f"User has already voted on this feature with a {existing_vote.get_vote_display()}"}
+                )
+        elif self.ip_address:
+            # Check for existing IP vote
+            existing_vote = (
+                FeatureVote.objects.filter(feature_id=self.feature_id, ip_address=self.ip_address, user__isnull=True)
+                .exclude(pk=self.pk)
+                .first()
+            )
+            if existing_vote:
+                raise ValidationError(
+                    {
+                        "ip_address": (
+                            f"IP address has already voted on this feature with a "
+                            f"{existing_vote.get_vote_display()}"
+                        )
+                    }
+                )
+
+    def save(self, *args, **kwargs):
+        """Ensure clean() is called before saving."""
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        voter = self.user.username if self.user else self.ip_address
+        return f"{self.get_vote_display()} for {self.feature_id} by {voter}"
 
 
 class MembershipPlan(models.Model):

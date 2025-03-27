@@ -582,6 +582,36 @@
             {% endif %}
           </div>
         {% endif %}
+        <!-- Affiliations Section -->
+        <div class="border border-gradient-to-r from-purple-500 to-pink-400 p-1 rounded-md shadow-md mb-4 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800 mb-6">
+          <h2 class="text-xl font-semibold flex items-center mb-4">
+            <i class="fas fa-handshake text-teal-600 dark:text-teal-400 mr-2"></i> Our Affiliations
+          </h2>
+          <div class="flex flex-wrap items-center justify-center gap-6">
+            <!-- OSL Logo -->
+            <a href="https://opensciencelabs.org/"
+               target="_blank"
+               rel="noopener"
+               class="block">
+              <img src="{% static 'images/logo-osl.svg' %}"
+                   alt="Open Source License"
+                   class="h-32 w-auto dark:hidden"
+                   title="Licensed under Open Source License (OSL)"
+                   height="128"
+                   width="auto" />
+              <img src="{% static 'images/osl-color-horizontal.png' %}"
+                   alt="Open Source License"
+                   class="h-16 w-auto hidden dark:block"
+                   title="Licensed under Open Source License (OSL)"
+                   height="128"
+                   width="auto" />
+            </a>
+            <!-- Space for additional affiliation logos -->
+          </div>
+          <p class="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">
+            Alpha One Labs is proudly affiliated with open source initiatives that advance education technology.
+          </p>
+        </div>
       </div>
       <div class="md:w-1/4 space-y-8">
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 shadow-lg">
