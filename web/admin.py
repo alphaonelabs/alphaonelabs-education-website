@@ -26,7 +26,6 @@ from .models import (
     ForumReply,
     ForumTopic,
     Goods,
-    GSoCProposal,
     LearningStreak,
     MembershipPlan,
     MembershipSubscriptionEvent,
@@ -34,6 +33,8 @@ from .models import (
     Order,
     OrderItem,
     Payment,
+    PDFSubmission,
+    PDFType,
     PeerChallenge,
     PeerChallengeInvitation,
     ProductImage,
@@ -715,25 +716,32 @@ class QuizOptionAdmin(admin.ModelAdmin):
     autocomplete_fields = ["question"]
 
 
-@admin.register(GSoCProposal)
-class GSoCProposalAdmin(admin.ModelAdmin):
-    list_display = ("title", "student", "organization", "year", "status", "submitted_at", "file_size_display")
-    list_filter = ("status", "year", "organization")
-    search_fields = ("title", "student__username", "organization", "project")
+@admin.register(PDFType)
+class PDFTypeAdmin(admin.ModelAdmin):
+    list_display = ("name", "description")
+    search_fields = ("name", "description")
+
+
+@admin.register(PDFSubmission)
+class PDFSubmissionAdmin(admin.ModelAdmin):
+    list_display = ("title", "student", "pdf_type", "subject", "status", "submitted_at", "file_size_display")
+    list_filter = ("status", "pdf_type", "subject")
+    search_fields = ("title", "student__username", "subject", "assignment")
     readonly_fields = ("file_size", "submitted_at", "updated_at", "reviewed_at")
 
     fieldsets = (
         (
-            "Proposal Information",
+            "Submission Information",
             {
                 "fields": (
                     "title",
                     "student",
-                    "organization",
-                    "project",
-                    "year",
+                    "pdf_type",
+                    "subject",
+                    "assignment",
+                    "due_date",
                     "description",
-                    "proposal_file",
+                    "pdf_file",
                     "file_size_display",
                 )
             },

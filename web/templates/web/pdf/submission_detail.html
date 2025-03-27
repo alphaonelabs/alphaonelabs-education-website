@@ -2,14 +2,14 @@
 
 {% load static %}
 
-{% block title %}GSoC Proposal: {{ proposal.title }}{% endblock %}
+{% block title %}PDF Submission: {{ submission.title }}{% endblock %}
 {% block content %}
   <div class="container mx-auto px-4 py-8 max-w-7xl">
     <nav aria-label="Breadcrumb" class="mb-6">
       <ol class="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
         <li>
-          <a href="{% url 'gsoc_proposal_list' %}"
-             class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">GSoC Proposals</a>
+          <a href="{% url 'pdf_submission_list' %}"
+             class="hover:text-blue-600 dark:hover:text-blue-400 transition-colors">PDF Submissions</a>
         </li>
         <li class="flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg"
@@ -18,64 +18,70 @@
                fill="currentColor">
             <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
           </svg>
-          <span class="font-medium text-gray-700 dark:text-gray-200">{{ proposal.title }}</span>
+          <span class="font-medium text-gray-700 dark:text-gray-200">{{ submission.title }}</span>
         </li>
       </ol>
     </nav>
     <div class="grid md:grid-cols-3 gap-6">
       <div class="md:col-span-2">
-        <!-- Proposal Details Card -->
+        <!-- Submission Details Card -->
         <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden mb-6">
           <div class="bg-blue-600 dark:bg-blue-800 text-white px-6 py-4 flex justify-between items-center">
-            <h2 class="text-xl font-semibold">Proposal Details</h2>
+            <h2 class="text-xl font-semibold">Submission Details</h2>
             <span class="bg-blue-200 dark:bg-blue-700 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm">
-              {{ proposal.get_status_display|capfirst }}
+              {{ submission.get_status_display|capfirst }}
             </span>
           </div>
           <div class="p-6">
-            <h3 class="text-lg font-bold mb-4 text-gray-800 dark:text-gray-200">{{ proposal.title }}</h3>
+            <h3 class="text-lg font-bold mb-4 text-gray-800 dark:text-gray-200">{{ submission.title }}</h3>
             <div class="grid md:grid-cols-2 gap-4">
               <div>
                 <div class="space-y-2">
                   <p class="text-sm">
-                    <span class="font-semibold text-gray-600 dark:text-gray-400">Organization:</span>
-                    <span class="text-gray-800 dark:text-gray-200">{{ proposal.organization }}</span>
+                    <span class="font-semibold text-gray-600 dark:text-gray-400">Type:</span>
+                    <span class="text-gray-800 dark:text-gray-200">{{ submission.pdf_type.name }}</span>
                   </p>
                   <p class="text-sm">
-                    <span class="font-semibold text-gray-600 dark:text-gray-400">Project:</span>
-                    <span class="text-gray-800 dark:text-gray-200">{{ proposal.project }}</span>
+                    <span class="font-semibold text-gray-600 dark:text-gray-400">Subject:</span>
+                    <span class="text-gray-800 dark:text-gray-200">{{ submission.subject }}</span>
                   </p>
                   <p class="text-sm">
-                    <span class="font-semibold text-gray-600 dark:text-gray-400">Year:</span>
-                    <span class="text-gray-800 dark:text-gray-200">{{ proposal.year }}</span>
+                    <span class="font-semibold text-gray-600 dark:text-gray-400">Assignment:</span>
+                    <span class="text-gray-800 dark:text-gray-200">{{ submission.assignment }}</span>
                   </p>
+                  {% if submission.due_date %}
+                    <p class="text-sm">
+                      <span class="font-semibold text-gray-600 dark:text-gray-400">Due Date:</span>
+                      <span class="text-gray-800 dark:text-gray-200">{{ submission.due_date|date:"F d, Y" }}</span>
+                    </p>
+                  {% endif %}
                 </div>
               </div>
               <div>
                 <div class="space-y-2">
                   <p class="text-sm">
                     <span class="font-semibold text-gray-600 dark:text-gray-400">Student:</span>
-                    <span class="text-gray-800 dark:text-gray-200">{{ proposal.student.username }}</span>
+                    <span class="text-gray-800 dark:text-gray-200">{{ submission.student.username }}</span>
                   </p>
                   <p class="text-sm">
                     <span class="font-semibold text-gray-600 dark:text-gray-400">Submitted:</span>
-                    <span class="text-gray-800 dark:text-gray-200">{{ proposal.submitted_at|date:"F d, Y H:i" }}</span>
+                    <span class="text-gray-800 dark:text-gray-200">{{ submission.submitted_at|date:"F d, Y H:i" }}</span>
                   </p>
                   <p class="text-sm">
                     <span class="font-semibold text-gray-600 dark:text-gray-400">File Size:</span>
-                    <span class="text-gray-800 dark:text-gray-200">{{ proposal.file_size_display }}</span>
+                    <span class="text-gray-800 dark:text-gray-200">{{ submission.file_size_display }}</span>
                   </p>
                 </div>
               </div>
             </div>
-            {% if proposal.description %}
+            {% if submission.description %}
               <div class="mt-4 bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
                 <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Description</h4>
-                <p class="text-gray-600 dark:text-gray-300 text-sm">{{ proposal.description|linebreaks }}</p>
+                <p class="text-gray-600 dark:text-gray-300 text-sm">{{ submission.description|linebreaks }}</p>
               </div>
             {% endif %}
             <div class="flex flex-wrap justify-center gap-4 mt-6">
-              <a href="{{ proposal.proposal_file.url }}"
+              <a href="{{ submission.pdf_file.url }}"
                  class="bg-blue-500 hover:bg-blue-600 dark:bg-blue-700 dark:hover:bg-blue-600 text-white px-4 py-2 rounded-md flex items-center transition-colors"
                  target="_blank"
                  rel="noopener noreferrer">
@@ -84,7 +90,7 @@
                 </svg>
                 View PDF
               </a>
-              <a href="{{ proposal.proposal_file.url }}"
+              <a href="{{ submission.pdf_file.url }}"
                  class="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-4 py-2 rounded-md flex items-center transition-colors"
                  download>
                 <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -92,7 +98,7 @@
                 </svg>
                 Download
               </a>
-              <a href="{% url 'gsoc_proposal_list' %}"
+              <a href="{% url 'pdf_submission_list' %}"
                  class="border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 px-4 py-2 rounded-md flex items-center transition-colors">
                 <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clip-rule="evenodd" />
@@ -103,19 +109,19 @@
           </div>
         </div>
         <!-- Feedback Section -->
-        {% if proposal.feedback or is_reviewer %}
+        {% if submission.feedback or is_reviewer %}
           <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
             <div class="bg-teal-600 dark:bg-teal-800 text-white px-6 py-4">
               <h3 class="text-xl font-semibold">Feedback</h3>
             </div>
             <div class="p-6">
-              {% if proposal.feedback %}
+              {% if submission.feedback %}
                 <blockquote class="border-l-4 border-teal-500 pl-4 py-2 bg-gray-50 dark:bg-gray-700 italic text-gray-700 dark:text-gray-300">
-                  <p class="mb-2">{{ proposal.feedback|linebreaks }}</p>
-                  {% if proposal.reviewed_by %}
+                  <p class="mb-2">{{ submission.feedback|linebreaks }}</p>
+                  {% if submission.reviewed_by %}
                     <footer class="text-right text-sm text-gray-500 dark:text-gray-400">
-                      — Reviewed by {{ proposal.reviewed_by.username }}
-                      on {{ proposal.reviewed_at|date:"F d, Y H:i" }}
+                      — Reviewed by {{ submission.reviewed_by.username }}
+                      on {{ submission.reviewed_at|date:"F d, Y H:i" }}
                     </footer>
                   {% endif %}
                 </blockquote>
@@ -131,9 +137,9 @@
                     <textarea name="feedback"
                               id="feedback"
                               rows="5"
-                              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ proposal.feedback }}</textarea>
+                              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">{{ submission.feedback }}</textarea>
                     <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Provide constructive and specific feedback for the proposal.
+                      Provide constructive and specific feedback for the submission.
                     </p>
                   </div>
                   <div class="mb-4">
@@ -144,15 +150,15 @@
                     <select name="status"
                             id="status"
                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                      {% for status_value, status_display in proposal.get_status_choices %}
+                      {% for status_value, status_display in status_choices %}
                         <option value="{{ status_value }}"
-                                {% if proposal.status == status_value %}selected{% endif %}
+                                {% if submission.status == status_value %}selected{% endif %}
                                 class="bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-200">
                           {{ status_display }}
                         </option>
                       {% endfor %}
                     </select>
-                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Select the current status of the proposal.</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Select the current status of the submission.</p>
                   </div>
                   <button type="submit"
                           class="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-800 dark:hover:bg-blue-700 text-white py-2 rounded-md transition-colors">
@@ -168,32 +174,63 @@
         <!-- Timeline Card -->
         <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
           <div class="bg-gray-700 dark:bg-gray-900 text-white px-6 py-4">
-            <h3 class="text-xl font-semibold">Proposal Timeline: Till 8th April,2025</h3>
+            <h3 class="text-xl font-semibold">Submission Timeline</h3>
           </div>
           <div class="divide-y divide-gray-200 dark:divide-gray-700">
-            {% for stage in proposal.timeline_stages %}
-              <div class="px-6 py-4 flex justify-between items-center {% if not stage.is_active %}text-gray-400 dark:text-gray-500{% else %}text-gray-700 dark:text-gray-300{% endif %}">
-                <div class="flex items-center">
-                  <span class="mr-3 {% if stage.is_completed %}bg-green-500 {% elif stage.is_active %}bg-yellow-500 {% else %}bg-gray-300 dark:bg-gray-600{% endif %} text-white rounded-full px-2 py-1 text-xs font-bold">
-                    {{ forloop.counter }}
-                  </span>
-                  <span class="font-medium">{{ stage.name }}</span>
-                </div>
-                <small class="text-sm">
-                  {% if stage.date %}
-                    {{ stage.date|date:"M d, Y" }}
-                  {% else %}
-                    {{ stage.status }}
-                  {% endif %}
-                </small>
+            <div class="px-6 py-4 flex justify-between items-center text-gray-700 dark:text-gray-300">
+              <div class="flex items-center">
+                <span class="mr-3 bg-green-500 text-white rounded-full px-2 py-1 text-xs font-bold">1</span>
+                <span class="font-medium">Submitted</span>
               </div>
-            {% endfor %}
+              <small class="text-sm">{{ submission.submitted_at|date:"M d, Y" }}</small>
+            </div>
+            <div class="px-6 py-4 flex justify-between items-center {% if submission.status == 'submitted' %}text-gray-400 dark:text-gray-500{% else %}text-gray-700 dark:text-gray-300{% endif %}">
+              <div class="flex items-center">
+                <span class="mr-3 {% if submission.status == 'under_review' or submission.status == 'reviewed' or submission.status == 'needs_revision' or submission.status == 'approved' %}bg-green-500 {% elif submission.status == 'submitted' %}bg-yellow-500 {% else %}bg-gray-300 dark:bg-gray-600{% endif %} text-white rounded-full px-2 py-1 text-xs font-bold">
+                  2
+                </span>
+                <span class="font-medium">Under Review</span>
+              </div>
+              <small class="text-sm">
+                {% if submission.status == 'under_review' %}In Progress{% endif %}
+              </small>
+            </div>
+            <div class="px-6 py-4 flex justify-between items-center {% if submission.status == 'submitted' or submission.status == 'under_review' %}text-gray-400 dark:text-gray-500{% else %}text-gray-700 dark:text-gray-300{% endif %}">
+              <div class="flex items-center">
+                <span class="mr-3 {% if submission.status == 'reviewed' or submission.status == 'needs_revision' or submission.status == 'approved' %}bg-green-500 {% elif submission.status == 'under_review' %}bg-yellow-500 {% else %}bg-gray-300 dark:bg-gray-600{% endif %} text-white rounded-full px-2 py-1 text-xs font-bold">
+                  3
+                </span>
+                <span class="font-medium">Reviewed</span>
+              </div>
+              <small class="text-sm">
+                {% if submission.reviewed_at %}{{ submission.reviewed_at|date:"M d, Y" }}{% endif %}
+              </small>
+            </div>
+            <div class="px-6 py-4 flex justify-between items-center {% if submission.status != 'needs_revision' and submission.status != 'approved' %}text-gray-400 dark:text-gray-500{% else %}text-gray-700 dark:text-gray-300{% endif %}">
+              <div class="flex items-center">
+                <span class="mr-3 {% if submission.status == 'needs_revision' %}bg-orange-500 {% elif submission.status == 'approved' %}bg-green-500 {% else %}bg-gray-300 dark:bg-gray-600{% endif %} text-white rounded-full px-2 py-1 text-xs font-bold">
+                  4
+                </span>
+                <span class="font-medium">
+                  {% if submission.status == 'needs_revision' %}
+                    Needs Revision
+                  {% elif submission.status == 'approved' %}
+                    Approved
+                  {% else %}
+                    Final Status
+                  {% endif %}
+                </span>
+              </div>
+              <small class="text-sm">
+                {% if submission.status == 'needs_revision' or submission.status == 'approved' %}Final{% endif %}
+              </small>
+            </div>
           </div>
         </div>
         <!-- Tips Card -->
         <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden">
           <div class="bg-teal-600 dark:bg-teal-800 text-white px-6 py-4">
-            <h3 class="text-xl font-semibold">GSoC Proposal Tips</h3>
+            <h3 class="text-xl font-semibold">Document Submission Tips</h3>
           </div>
           <div class="p-6 bg-gray-50 dark:bg-gray-700">
             <ul class="space-y-3">
@@ -203,7 +240,7 @@
                      viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                 </svg>
-                Detailed implementation strategy
+                Clear and well-organized content
               </li>
               <li class="flex items-center text-gray-700 dark:text-gray-300">
                 <svg class="w-5 h-5 mr-3 text-green-500"
@@ -211,7 +248,7 @@
                      viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                 </svg>
-                Comprehensive project timeline
+                Proper formatting and styling
               </li>
               <li class="flex items-center text-gray-700 dark:text-gray-300">
                 <svg class="w-5 h-5 mr-3 text-green-500"
@@ -219,7 +256,7 @@
                      viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                 </svg>
-                Project understanding
+                Accurate citations and references
               </li>
               <li class="flex items-center text-gray-700 dark:text-gray-300">
                 <svg class="w-5 h-5 mr-3 text-green-500"
@@ -227,7 +264,7 @@
                      viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                 </svg>
-                Skill and experience showcase
+                Proofread for grammar and spelling
               </li>
               <li class="flex items-center text-gray-700 dark:text-gray-300">
                 <svg class="w-5 h-5 mr-3 text-green-500"
@@ -235,7 +272,7 @@
                      viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                 </svg>
-                Clear project motivation
+                Follow assignment requirements
               </li>
               <li class="flex items-center text-gray-700 dark:text-gray-300">
                 <svg class="w-5 h-5 mr-3 text-green-500"
@@ -243,7 +280,7 @@
                      viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                 </svg>
-                Visual aids and documentation
+                Submit before deadline
               </li>
             </ul>
           </div>

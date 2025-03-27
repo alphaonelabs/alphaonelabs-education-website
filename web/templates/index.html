@@ -376,42 +376,34 @@
             </a>
           </div>
         </div>
-        <!-- GSoC Proposal Submission/Review Announcement -->
-        <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white shadow-lg my-8">
+        <!-- PDF Submission/Review Announcement -->
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white shadow-lg my-8 relative">
+          <!-- GSOC Proposal CTA -->
+          <div class="absolute top-0 right-0 m-2 bg-yellow-400 text-blue-900 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider transform rotate-6 shadow-lg">
+            GSOC Proposals Open!
+          </div>
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
-              <div class="hidden sm:block">
-                <img src="{% static 'images/gsoc-logo.png' %}"
-                     alt="Google Summer of Code"
-                     class="h-16 w-16 object-contain"
-                     onerror="this.src='https://summerofcode.withgoogle.com/assets/media/gsoc-2024-badge.svg'"
-                     height="64"
-                     width="64" />
-              </div>
               <div>
                 {% if user.profile.is_teacher %}
-                  <h3 class="text-xl font-bold mb-2">Review Student Proposals 🔍</h3>
-                  <p class="text-blue-100">
-                    Evaluate incoming Google Summer of Code project proposals and help shape innovative student projects.
-                  </p>
+                  <h3 class="text-xl font-bold mb-2">Review Student Documents 🔍</h3>
+                  <p class="text-blue-100">Review student submitted PDF documents and provide timely feedback.</p>
                 {% else %}
-                  <h3 class="text-xl font-bold mb-2">Submit Your GSoC Proposal Now! 📝</h3>
-                  <p class="text-blue-100">
-                    Ready to showcase your project ideas? Upload and submit your Google Summer of Code proposal for review.
-                  </p>
+                  <h3 class="text-xl font-bold mb-2">Submit Your Documents 📝</h3>
+                  <p class="text-blue-100">Submit your assignments, essays, reports, and other documents for review.</p>
                 {% endif %}
               </div>
             </div>
             {% if user.profile.is_teacher %}
-              <a href="{% url 'gsoc_proposal_list' %}"
+              <a href="{% url 'pdf_submission_list' %}"
                  class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
-                <span>Review Proposals</span>
+                <span>Review Documents</span>
                 <i class="fas fa-clipboard-list ml-2"></i>
               </a>
             {% else %}
-              <a href="{% url 'gsoc_proposal_list' %}"
+              <a href="{% url 'pdf_submission_list' %}"
                  class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
-                <span>Upload Proposal</span>
+                <span>Upload Document</span>
                 <i class="fas fa-upload ml-2"></i>
               </a>
             {% endif %}

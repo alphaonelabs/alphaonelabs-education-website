@@ -4,9 +4,9 @@
 
 {% block title %}
   {% if viewing_as == 'reviewer' %}
-    GSoC Proposals for Review
+    PDF Submissions for Review
   {% else %}
-    My GSoC Proposals
+    My PDF Submissions
   {% endif %}
 {% endblock %}
 {% block content %}
@@ -14,13 +14,13 @@
     <div class="flex flex-col md:flex-row justify-between items-center mb-6">
       <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-4 md:mb-0">
         {% if viewing_as == 'reviewer' %}
-          GSoC Proposals for Review
+          PDF Submissions for Review
         {% else %}
-          My GSoC Proposals
+          My PDF Submissions
         {% endif %}
       </h1>
       {% if viewing_as == 'student' %}
-        <a href="{% url 'upload_gsoc_proposal' %}"
+        <a href="{% url 'upload_pdf_submission' %}"
            class="inline-flex items-center px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-800 transition-colors duration-300">
           <svg class="w-5 h-5 mr-2"
                fill="none"
@@ -30,11 +30,11 @@
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12">
             </path>
           </svg>
-          Upload New Proposal
+          Upload New Document
         </a>
       {% endif %}
     </div>
-    {% if proposals %}
+    {% if submissions %}
       <div class="bg-white dark:bg-gray-900 shadow-md rounded-lg overflow-hidden">
         <div class="overflow-x-auto">
           <table class="w-full">
@@ -48,11 +48,12 @@
                     Student
                   </th>
                 {% endif %}
+                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Type</th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Organization
+                  Subject
                 </th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  Project
+                  Assignment
                 </th>
                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Submitted
@@ -66,43 +67,44 @@
               </tr>
             </thead>
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
-              {% for proposal in proposals %}
+              {% for submission in submissions %}
                 <tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200">
-                  <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ proposal.title }}</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{{ submission.title }}</td>
                   {% if viewing_as == 'reviewer' %}
-                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ proposal.student.username }}</td>
+                    <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ submission.student.username }}</td>
                   {% endif %}
-                  <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ proposal.organization }}</td>
-                  <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ proposal.project }}</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ submission.pdf_type.name }}</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ submission.subject }}</td>
+                  <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{{ submission.assignment }}</td>
                   <td class="px-4 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                    {{ proposal.submitted_at|date:"M d, Y" }}
+                    {{ submission.submitted_at|date:"M d, Y" }}
                   </td>
                   <td class="px-4 py-4 whitespace-nowrap">
-                    {% if proposal.status == 'submitted' %}
+                    {% if submission.status == 'submitted' %}
                       <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
                         Submitted
                       </span>
-                    {% elif proposal.status == 'under_review' %}
+                    {% elif submission.status == 'under_review' %}
                       <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
                         Under Review
                       </span>
-                    {% elif proposal.status == 'reviewed' %}
+                    {% elif submission.status == 'reviewed' %}
                       <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
                         Reviewed
                       </span>
-                    {% elif proposal.status == 'rejected' %}
-                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
-                        Rejected
+                    {% elif submission.status == 'needs_revision' %}
+                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
+                        Needs Revision
                       </span>
-                    {% elif proposal.status == 'accepted' %}
+                    {% elif submission.status == 'approved' %}
                       <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300">
-                        Accepted
+                        Approved
                       </span>
                     {% endif %}
                   </td>
                   <td class="px-4 py-4 whitespace-nowrap text-sm font-medium">
                     <div class="flex space-x-2">
-                      <a href="{% url 'gsoc_proposal_detail' proposal.id %}"
+                      <a href="{% url 'pdf_submission_detail' submission.id %}"
                          class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300 transition-colors">
                         {% if viewing_as == 'reviewer' %}
                           Review
@@ -110,7 +112,7 @@
                           View
                         {% endif %}
                       </a>
-                      <a href="{{ proposal.proposal_file.url }}"
+                      <a href="{{ submission.pdf_file.url }}"
                          class="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                          target="_blank"
                          rel="noopener noreferrer">
@@ -144,28 +146,28 @@
           </svg>
           <div>
             {% if viewing_as == 'reviewer' %}
-              No GSoC proposals have been submitted yet.
+              No PDF submissions have been uploaded yet.
             {% else %}
-              You haven't uploaded any GSoC proposals yet.
-              <a href="{% url 'upload_gsoc_proposal' %}"
-                 class="underline hover:text-blue-600 transition-colors">Upload your first proposal</a>.
+              You haven't uploaded any PDF documents yet.
+              <a href="{% url 'upload_pdf_submission' %}"
+                 class="underline hover:text-blue-600 transition-colors">Upload your first document</a>.
             {% endif %}
           </div>
         </div>
       </div>
     {% endif %}
-    {% if proposals.paginator.num_pages > 1 %}
+    {% if submissions.paginator.num_pages > 1 %}
       <div class="mt-6 flex justify-center">
-        <nav aria-label="Proposal pagination"
+        <nav aria-label="Submission pagination"
              class="inline-flex rounded-md shadow-sm">
-          {% if proposals.has_previous %}
-            <a href="?page={{ proposals.previous_page_number }}"
+          {% if submissions.has_previous %}
+            <a href="?page={{ submissions.previous_page_number }}"
                class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
               Previous
             </a>
           {% endif %}
-          {% for page_num in proposals.paginator.page_range %}
-            {% if page_num == proposals.number %}
+          {% for page_num in submissions.paginator.page_range %}
+            {% if page_num == submissions.number %}
               <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-700 bg-blue-50 dark:bg-blue-900 text-sm font-medium text-blue-600 dark:text-blue-300">
                 {{ page_num }}
               </span>
@@ -176,8 +178,8 @@
               </a>
             {% endif %}
           {% endfor %}
-          {% if proposals.has_next %}
-            <a href="?page={{ proposals.next_page_number }}"
+          {% if submissions.has_next %}
+            <a href="?page={{ submissions.next_page_number }}"
                class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
               Next
             </a>

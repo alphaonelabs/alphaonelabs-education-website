@@ -2513,33 +2513,50 @@ class NotificationPreference(models.Model):
         return f"Notification preferences for {self.user.username}"
 
 
-class GSoCProposal(models.Model):
-    """Model for storing GSoC proposal PDF files submitted by students for review."""
+# web/models.py
+class PDFType(models.Model):
+    """Model for categorizing different types of PDF submissions."""
+
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    icon_class = models.CharField(max_length=50, blank=True, help_text="Font Awesome icon class")
+
+    class Meta:
+        verbose_name = "PDF Type"
+        verbose_name_plural = "PDF Types"
+
+    def __str__(self):
+        return self.name
+
+
+def validate_pdf_file_size(file):
+    if file.size > 10 * 1024 * 1024:  # 10MB
+        raise ValidationError("File size exceeds 10MB limit.")
+
+
+class PDFSubmission(models.Model):
+    """Model for storing PDF documents submitted by students for review."""
 
     STATUS_CHOICES = [
         ("submitted", "Submitted"),
         ("under_review", "Under Review"),
         ("reviewed", "Reviewed"),
-        ("rejected", "Rejected"),
-        ("accepted", "Accepted"),
+        ("needs_revision", "Needs Revision"),
+        ("approved", "Approved"),
     ]
 
-    title = models.CharField(max_length=200, help_text="Title of your GSoC proposal")
-    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="gsoc_proposals")
-
-    def validate_gsoc_file_size(file):
-        if file.size > 10 * 1024 * 1024:  # 10MB
-            raise ValidationError("File size exceeds 10MB limit.")
-
-    proposal_file = models.FileField(
-        upload_to="gsoc_proposals/",
-        validators=[FileExtensionValidator(allowed_extensions=["pdf"]), validate_gsoc_file_size],
-        help_text="Upload your GSoC proposal in PDF format (max 10MB)",
+    title = models.CharField(max_length=200, help_text="Title of your document")
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="pdf_submissions")
+    pdf_type = models.ForeignKey(PDFType, on_delete=models.PROTECT, related_name="submissions")
+    pdf_file = models.FileField(
+        upload_to="pdf_submissions/",
+        validators=[FileExtensionValidator(allowed_extensions=["pdf"]), validate_pdf_file_size],
+        help_text="Upload your PDF document (max 10MB)",
     )
-    organization = models.CharField(max_length=200, help_text="GSoC organization you're applying to")
-    project = models.CharField(max_length=200, help_text="Specific project or idea you're proposing")
-    year = models.PositiveIntegerField(default=2025, help_text="GSoC program year")
-    description = models.TextField(help_text="Brief description of your proposal", blank=True)
+    subject = models.CharField(max_length=200, help_text="Subject or department")
+    assignment = models.CharField(max_length=200, help_text="Assignment or topic")
+    due_date = models.DateField(null=True, blank=True, help_text="Due date (if applicable)")
+    description = models.TextField(help_text="Brief description of your submission", blank=True)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="submitted")
     feedback = models.TextField(blank=True, help_text="Feedback from reviewers")
 
@@ -2549,40 +2566,43 @@ class GSoCProposal(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
     reviewed_by = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="reviewed_proposals"
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="reviewed_submissions"
     )
 
     class Meta:
         ordering = ["-submitted_at"]
-        verbose_name = "GSoC Proposal"
-        verbose_name_plural = "GSoC Proposals"
+        verbose_name = "PDF Submission"
+        verbose_name_plural = "PDF Submissions"
 
     def __str__(self):
-        return f"{self.student.username}'s GSoC Proposal: {self.title}"
+        return f"{self.student.username}'s {self.pdf_type.name}: {self.title}"
 
     def save(self, *args, **kwargs):
         # Set file size on save
-        if self.proposal_file:
-            self.file_size = self.proposal_file.size
+        if self.pdf_file:
+            self.file_size = self.pdf_file.size
 
-        # Set reviewed_at timestamp when status changes to 'reviewed'
+        # Set reviewed_at timestamp when status changes to "reviewed"
         if self.pk:
-            old_instance = GSoCProposal.objects.get(pk=self.pk)
-            if old_instance.status != "reviewed" and self.status == "reviewed":
-                self.reviewed_at = timezone.now()
+            try:
+                old_instance = PDFSubmission.objects.get(pk=self.pk)
+                if old_instance.status != "reviewed" and self.status == "reviewed":
+                    self.reviewed_at = timezone.now()
+            except PDFSubmission.DoesNotExist:
+                pass
 
         super().save(*args, **kwargs)
 
     @property
     def file_size_display(self):
-        """Returns the file size in a human-readable format."""
+        """Return file size in MB with two decimal places."""
         if self.file_size:
-            # Convert bytes to MB with 2 decimal places
             return f"{self.file_size / (1024 * 1024):.2f} MB"
         return "Unknown"
 
     def get_status_choices(self):
         return self.STATUS_CHOICES
+
 
 class FeatureVote(models.Model):
     VOTE_CHOICES = (

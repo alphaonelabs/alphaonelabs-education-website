@@ -405,10 +405,10 @@ urlpatterns += i18n_patterns(
     path("features/vote/", feature_vote, name="feature_vote"),
     path("features/vote-count/", feature_vote_count, name="feature_vote_count"),
     path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
-    # GSoC proposal URLs
-    path("gsoc-proposals/", views.gsoc_proposal_list, name="gsoc_proposal_list"),
-    path("gsoc-proposals/upload/", views.upload_gsoc_proposal, name="upload_gsoc_proposal"),
-    path("gsoc-proposals/<int:proposal_id>/", views.gsoc_proposal_detail, name="gsoc_proposal_detail"),
+    # file review urls
+    path("pdf-submissions/", views.pdf_submission_list, name="pdf_submission_list"),
+    path("pdf-submissions/upload/", views.upload_pdf_submission, name="upload_pdf_submission"),
+    path("pdf-submissions/<int:submission_id>/", views.pdf_submission_detail, name="pdf_submission_detail"),
     prefix_default_language=True,
 )
 
