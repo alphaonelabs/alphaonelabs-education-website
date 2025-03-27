@@ -394,11 +394,22 @@ class Command(BaseCommand):
 
             # Create reviews for random courses
             for _ in range(min(random.randint(1, 3), len(available_courses))):
+                random_date = random_date_between(two_weeks_ago, now)
                 course = random.choice(available_courses)
                 available_courses.remove(course)  # Remove to avoid selecting again
 
+                is_featured = random.choice([True, False])
+
                 Review.objects.create(
-                    student=student, course=course, rating=random.randint(3, 5), comment="Great course!"
+                    student=student,
+                    course=course,
+                    rating=random.randint(3, 5),
+                    comment="Great course!",
+                    is_featured=is_featured,
+                )
+                self.stdout.write(
+                    f"Created review, student: {student}, course: {course},"
+                    "featured: {is_featured}, review: Great course!"
                 )
 
         # Create forum categories and topics
