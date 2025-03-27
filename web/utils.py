@@ -439,7 +439,8 @@ def geocode_address(address):
         return None
 
     # Check cache first
-    cache_key = f"geocode:{address.split(',')[0].strip()}"
+    normalized_address = address.strip().lower()
+    cache_key = f"geocode:{hash(normalized_address)}"
     cached_result = cache.get(cache_key)
     if cached_result:
         logger.debug(f"Using cached geocoding result for: {address}")
