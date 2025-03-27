@@ -742,8 +742,9 @@
                                     <td class="px-6 py-4 whitespace-nowrap">
                                       {% if enrollment.progress %}
                                         <div class="flex items-center">
-                                          <div class="w-20 h-2 bg-gray-200 dark:bg-gray-700 rounded-full mr-2 overflow-hidden">
+                                          <div class="min-w-[4.5rem] w-[4.5rem] h-2 bg-gray-200 dark:bg-gray-700 rounded-full mr-2 overflow-hidden">
                                             <div class="h-full bg-teal-500 dark:bg-teal-400 progress-bar"
+                                                 style="width: {{ enrollment.progress.completion_percentage }}%"
                                                  data-progress="{{ enrollment.progress.completion_percentage }}"></div>
                                           </div>
                                           <span class="text-sm text-gray-600 dark:text-gray-400">{{ enrollment.progress.completion_percentage }}%</span>
@@ -1028,9 +1029,9 @@
                           </div>
                           <!-- Green Gradient Progress Bar -->
                           <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                            <div class="h-full bg-teal-500 dark:bg-teal-400"
-                                 style="width: {% if total > 0 %}{{ attended|floatformat:0 }}%{% else %}0%{% endif %}">
-                            </div>
+                            <div data-progress="{{ enrollment.progress.completion_percentage }}"
+                                 class="h-full bg-teal-500 dark:bg-teal-400"
+                                 style="width: {{ enrollment.progress.completion_percentage }}%"></div>
                           </div>
                         </div>
                         <!-- Stats -->
