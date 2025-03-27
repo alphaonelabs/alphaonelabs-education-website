@@ -23,6 +23,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.core.management import call_command
 from django.core.paginator import Paginator
@@ -88,6 +89,12 @@ from .forms import (
     TeamInviteForm,
     UserRegistrationForm,
 )
+from .helpers import (
+    cancel_subscription,
+    create_subscription,
+    reactivate_subscription,
+    setup_stripe,
+)
 from .marketing import (
     generate_social_share_content,
     get_course_analytics,
@@ -118,6 +125,8 @@ from .models import (
     GradeableLink,
     LearningStreak,
     LinkGrade,
+    MembershipPlan,
+    MembershipSubscriptionEvent,
     Meme,
     NoteHistory,
     Notification,
@@ -6274,3 +6283,199 @@ def all_study_groups(request):
             "enrolled_courses": enrolled_courses,
         },
     )
+
+
+@login_required
+def membership_checkout(request, plan_id):
+    """Display the membership checkout page."""
+    plan = get_object_or_404(MembershipPlan, id=plan_id)
+
+    # Default to monthly billing
+    billing_period = request.GET.get("billing_period", "monthly")
+
+    context = {
+        "plan": plan,
+        "billing_period": billing_period,
+        "stripe_public_key": settings.STRIPE_PUBLISHABLE_KEY,
+    }
+
+    return render(request, "checkout.html", context)
+
+
+@login_required
+def create_membership_subscription(request):
+    """Create a new membership subscription."""
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        plan_id = data.get("plan_id")
+        payment_method_id = data.get("payment_method_id")
+        billing_period = data.get("billing_period", "monthly")
+
+        if not all([plan_id, payment_method_id, billing_period]):
+            return JsonResponse({"error": "Missing required fields"}, status=400)
+
+        # Create subscription using helper function
+        result = create_subscription(
+            user=request.user, plan_id=plan_id, payment_method_id=payment_method_id, billing_period=billing_period
+        )
+
+        if not result["success"]:
+            return JsonResponse({"error": result["error"]}, status=400)
+
+        return JsonResponse(
+            {
+                "subscription": result["subscription"],
+                "client_secret": (
+                    result["subscription"].latest_invoice.payment_intent.client_secret
+                    if hasattr(result["subscription"], "latest_invoice")
+                    and result["subscription"].latest_invoice
+                    and result["subscription"].latest_invoice.payment_intent
+                    else None
+                ),
+            }
+        )
+
+    except (json.JSONDecodeError, KeyError) as e:
+        return JsonResponse({"error": str(e)}, status=400)
+
+
+@login_required
+def membership_success(request):
+    """Display the membership success page."""
+    try:
+        membership = request.user.membership
+        context = {
+            "membership": membership,
+        }
+        return render(request, "membership_success.html", context)
+    except (AttributeError, ObjectDoesNotExist):
+        return redirect("index")
+
+
+@login_required
+def membership_settings(request):
+    """Display the membership settings page."""
+    try:
+        membership = request.user.membership
+
+        # Get Stripe invoices
+        if membership.stripe_customer_id:
+            setup_stripe()
+            invoices = stripe.Invoice.list(customer=membership.stripe_customer_id, limit=12)
+        else:
+            invoices = []
+
+        # Get subscription events
+        events = MembershipSubscriptionEvent.objects.filter(user=request.user).order_by("-created_at")[:10]
+
+        context = {
+            "membership": membership,
+            "invoices": invoices.data if invoices else [],
+            "events": events,
+        }
+        return render(request, "membership_settings.html", context)
+    except (AttributeError, ObjectDoesNotExist):
+        return redirect("index")
+
+
+@login_required
+def cancel_membership(request):
+    """Cancel the user's membership subscription."""
+    if request.method != "POST":
+        return redirect("membership_settings")
+
+    try:
+        result = cancel_subscription(request.user)
+
+        if result["success"]:
+            messages.success(
+                request, "Your subscription has been cancelled and will end at the current billing period."
+            )
+        else:
+            messages.error(request, result["error"])
+
+    except Exception as e:
+        messages.error(request, str(e))
+
+    return redirect("membership_settings")
+
+
+@login_required
+def reactivate_membership(request):
+    """Reactivate a cancelled membership subscription."""
+    if request.method != "POST":
+        return redirect("membership_settings")
+
+    try:
+        result = reactivate_subscription(request.user)
+
+        if result["success"]:
+            messages.success(request, "Your subscription has been reactivated.")
+        else:
+            messages.error(request, result["error"])
+
+    except Exception as e:
+        messages.error(request, str(e))
+
+    return redirect("membership_settings")
+
+
+@login_required
+def update_payment_method(request):
+    """Display the update payment method page."""
+    try:
+        membership = request.user.membership
+
+        # Get current payment method
+        if membership.stripe_customer_id:
+            setup_stripe()
+            payment_methods = stripe.PaymentMethod.list(customer=membership.stripe_customer_id, type="card")
+            current_payment_method = payment_methods.data[0] if payment_methods.data else None
+        else:
+            current_payment_method = None
+
+        context = {
+            "membership": membership,
+            "current_payment_method": current_payment_method,
+            "stripe_public_key": settings.STRIPE_PUBLISHABLE_KEY,
+        }
+        return render(request, "update_payment_method.html", context)
+    except (AttributeError, ObjectDoesNotExist):
+        return redirect("membership_settings")
+
+
+@login_required
+def update_payment_method_api(request):
+    """Update the payment method for a subscription."""
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        payment_method_id = data.get("payment_method_id")
+
+        if not payment_method_id:
+            return JsonResponse({"error": "Missing payment method ID"}, status=400)
+
+        membership = request.user.membership
+
+        if not membership.stripe_customer_id:
+            return JsonResponse({"error": "No active subscription found"}, status=400)
+
+        setup_stripe()
+
+        # Attach payment method to customer
+        stripe.PaymentMethod.attach(payment_method_id, customer=membership.stripe_customer_id)
+
+        # Set as default payment method
+        stripe.Customer.modify(
+            membership.stripe_customer_id, invoice_settings={"default_payment_method": payment_method_id}
+        )
+
+        return JsonResponse({"success": True})
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=400)
