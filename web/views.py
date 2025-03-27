@@ -565,7 +565,6 @@ def edit_review(request, slug, review_id):
         form = ReviewForm(request.POST, instance=review)
         if form.is_valid():
             review = form.save(commit=False)
-            review.updated_at = timezone.now()
             review.save()
             messages.success(request, "Your review has been updated.")
             url = reverse("course_detail", kwargs={"slug": slug})
@@ -763,35 +762,6 @@ def enroll_course(request, course_slug):
 
 
 @login_required
-def add_review(request, slug):
-    course = Course.objects.get(slug=slug)
-    student = request.user
-
-    if not request.user.enrollments.filter(course=course).exists():
-        messages.error(request, "Only enrolled students can review the course!")
-        return redirect("course_detail", slug=slug)
-
-    if request.method == "POST":
-        form = ReviewForm(request.POST)
-        if form.is_valid():
-            if Review.objects.filter(student=student, course=course).exists():
-                messages.error(request, "You have already reviewed this course.")
-                return redirect("course_detail", slug=slug)
-            review = form.save(commit=False)
-            review.student = student
-            review.course = course
-            review.save()
-            messages.success(request, "Review added successfully!")
-            # return redirect("course_detail", slug=slug)
-            url = reverse("course_detail", kwargs={"slug": slug})
-            return redirect(f"{url}#course_reviews")
-    else:
-        form = ReviewForm()
-
-    return render(request, "courses/edit_or_add_review.html", {"form": form, "course": course, "action": "Add"})
-
-
-@login_required
 def add_session(request, slug):
     course = Course.objects.get(slug=slug)
     if request.user != course.teacher:
@@ -816,7 +786,9 @@ def add_session(request, slug):
 
 @login_required
 def add_review(request, slug):
-    course = get_object_or_404(Course, slug=slug)
+    course = Course.objects.get(slug=slug)
+    student = request.user
+
     if not request.user.enrollments.filter(course=course).exists():
         messages.error(request, "Only enrolled students can review the course!")
         return redirect("course_detail", slug=slug)
@@ -824,16 +796,20 @@ def add_review(request, slug):
     if request.method == "POST":
         form = ReviewForm(request.POST)
         if form.is_valid():
+            if Review.objects.filter(student=student, course=course).exists():
+                messages.error(request, "You have already reviewed this course.")
+                return redirect("course_detail", slug=slug)
             review = form.save(commit=False)
-            review.student = request.user
+            review.student = student
             review.course = course
             review.save()
             messages.success(request, "Review added successfully!")
-            return redirect("course_detail", slug=slug)
+            url = reverse("course_detail", kwargs={"slug": slug})
+            return redirect(f"{url}#course_reviews")
     else:
         form = ReviewForm()
 
-    return render(request, "courses/add_review.html", {"form": form, "course": course})
+    return render(request, "courses/edit_or_add_review.html", {"form": form, "course": course, "action": "Add"})
 
 
 @login_required
