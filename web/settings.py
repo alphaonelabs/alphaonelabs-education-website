@@ -356,5 +356,3 @@ USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
-# OpenCage API Key for geocoding
-OPENCAGE_API_KEY = os.environ.get("OPENCAGE_API_KEY", "")

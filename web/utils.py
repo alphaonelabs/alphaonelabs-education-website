@@ -416,38 +416,48 @@ def create_leaderboard_context(
 
 def geocode_address(address):
     """
-    Convert a text address to latitude and longitude coordinates.
+    Convert a text address to latitude and longitude coordinates using Nominatim API.
     Returns a tuple of (latitude, longitude) or None if geocoding fails.
-    You'll need to add a OPENCAGE_API_KEY to your settings.py
-    and sign up for a service like Google Maps, Mapbox, or OpenCage.
+    Follows OpenStreetMap's Nominatim usage policy with built-in rate limiting.
     """
     if not address:
         logger.debug("Empty address provided to geocode_address")
         return None
+
     # Check cache first
-    cache_key = f"geocode:{address}"
+    cache_key = f"geocode:{address.split(',')[0].strip()}"
     cached_result = cache.get(cache_key)
     if cached_result:
         logger.debug(f"Using cached geocoding result for: {address}")
         return cached_result
-    # Example using OpenCage Geocoder
-    api_key = getattr(settings, "OPENCAGE_API_KEY", "")
-    if not api_key:
-        logger.error("OPENCAGE_API_KEY not configured in settings")
-        return None
-    url = f"https://api.opencagedata.com/geocode/v1/json?q={address}&key={api_key}"
+
+    # Nominatim API URL with custom User-Agent as recommended
+    url = "https://nominatim.openstreetmap.org/search"
+    params = {"q": address, "format": "json", "limit": 1}
+
+    # Headers to comply with Nominatim usage policy
+    headers = {"User-Agent": "YourAppName/1.0 (your-email@example.com)"}
+
     try:
-        response = requests.get(url)
-        response.raise_for_status()  # Raise exception for 4XX/5XX status codes
+        # Use requests with custom headers and params
+        response = requests.get(url, params=params, headers=headers)
+        response.raise_for_status()
+
         data = response.json()
-        if data["total_results"] > 0:
-            location = data["results"][0]["geometry"]
-            result = (location["lat"], location["lng"])
+
+        if data:
+            # Get the first result
+            first_result = data[0]
+            result = (float(first_result["lat"]), float(first_result["lon"]))
+
             # Cache the result for 24 hours
             cache.set(cache_key, result, 60 * 60 * 24)
+
             return result
+
         logger.warning(f"No geocoding results found for address: {address}")
         return None
+
     except requests.exceptions.RequestException as e:
         logger.error(f"Request error during geocoding: {e}")
         return None
