@@ -6503,8 +6503,8 @@ def update_payment_method_api(request):
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
-      
-      
+
+
 def social_media_manager_required(user):
     """Check if user has social media manager permissions."""
     return user.is_authenticated and (user.is_staff or getattr(user.profile, "is_social_media_manager", False))
