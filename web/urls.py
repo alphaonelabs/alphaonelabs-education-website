@@ -101,7 +101,7 @@ urlpatterns += i18n_patterns(
         name="student_management",
     ),
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
-    path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session")
+    path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session"),
     path("messaging/dashboard/", messaging_dashboard, name="messaging_dashboard"),
     path("messaging/compose/", compose_message, name="compose_message"),
     path("secure/send/", send_encrypted_message, name="send_encrypted_message"),
