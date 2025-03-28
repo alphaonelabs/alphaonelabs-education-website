@@ -58,6 +58,7 @@ class Profile(models.Model):
         "Avatar", on_delete=models.SET_NULL, null=True, blank=True, related_name="profile"
     )
     is_teacher = models.BooleanField(default=False)
+    is_social_media_manager = models.BooleanField(default=False)
     referral_code = models.CharField(max_length=20, unique=True, blank=True)
     referred_by = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="referrals")
     referral_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -2714,3 +2715,14 @@ class MembershipSubscriptionEvent(models.Model):
 
     def __str__(self):
         return f"{self.event_type} - {self.user.email} - {self.created_at}"
+
+
+class ScheduledPost(models.Model):
+    content = models.CharField(max_length=280)
+    image = models.ImageField(upload_to="scheduled_posts/", blank=True)
+    scheduled_time = models.DateTimeField()
+    posted = models.BooleanField(default=False)
+    posted_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return self.content
