@@ -1044,6 +1044,7 @@ def course_search(request):
     sort_by = request.GET.get("sort", "-created_at")
 
     courses = Course.objects.filter(status="published")
+    subject_display = None  # Initialize subject_display immediately after retrieving courses
 
     # Apply filters
     if query:
@@ -1058,40 +1059,38 @@ def course_search(request):
             | Q(teacher__last_name__icontains=query)
             | Q(teacher__profile__expertise__icontains=query)
         )
-
     if subject:
-        # Handle subject filtering based on whether it's an ID (number) or a string (slug/name)
+        # Handle subject filtering based on whether it's an ID (number) or a slug/name string
         try:
-            # Check if subject is an integer ID
             subject_id = int(subject)
+            try:
+                subject_obj = Subject.objects.get(id=subject_id)
+                subject_display = subject_obj.name
+            except Subject.DoesNotExist:
+                subject_display = subject  # fallback to the provided value if no Subject is found
             courses = courses.filter(subject_id=subject_id)
         except ValueError:
-            # If not an integer, treat as a slug or name
+            subject_display = subject
             courses = courses.filter(Q(subject__slug=subject) | Q(subject__name__iexact=subject))
-
     if level:
         courses = courses.filter(level=level)
-
     if min_price:
         try:
             min_price = float(min_price)
             courses = courses.filter(price__gte=min_price)
         except ValueError:
             pass
-
     if max_price:
         try:
             max_price = float(max_price)
             courses = courses.filter(price__lte=max_price)
         except ValueError:
             pass
-
     # Annotate with average rating for sorting
     courses = courses.annotate(
         avg_rating=Avg("reviews__rating"),
         total_students=Count("enrollments", filter=Q(enrollments__status="approved")),
     )
-
     # Apply sorting
     if sort_by == "price":
         courses = courses.order_by("price", "-avg_rating")
@@ -1103,36 +1102,17 @@ def course_search(request):
         courses = courses.order_by("-avg_rating", "-total_students")
     else:  # Default to newest
         courses = courses.order_by("-created_at")
-
     # Get total count before pagination
     total_results = courses.count()
-
-    # Log the search
-    if query or subject or level or min_price or max_price:
-        filters = {
-            "subject": subject,
-            "level": level,
-            "min_price": min_price,
-            "max_price": max_price,
-            "sort_by": sort_by,
-        }
-        SearchLog.objects.create(
-            query=query,
-            results_count=total_results,
-            user=request.user if request.user.is_authenticated else None,
-            filters_applied=filters,
-            search_type="course",
-        )
-
     # Pagination
     paginator = Paginator(courses, 12)  # Show 12 courses per page
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
-
     context = {
         "page_obj": page_obj,
         "query": query,
         "subject": subject,
+        "subject_display": subject_display,
         "level": level,
         "min_price": min_price,
         "max_price": max_price,
@@ -1141,10 +1121,8 @@ def course_search(request):
         "level_choices": Course._meta.get_field("level").choices,
         "total_results": total_results,
     }
-
     return render(request, "courses/search.html", context)
-
-
+    return render(request, "courses/search.html", context)
 @login_required
 def create_payment_intent(request, slug):
     """Create a payment intent for Stripe."""

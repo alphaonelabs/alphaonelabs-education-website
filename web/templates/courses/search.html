@@ -47,37 +47,39 @@
                       ${{ course.price }}
                     {% endif %}
                   </span>
+                {% empty %} <div class="no-results">
+                <p>We couldn't find any courses matching your search for "<strong>{{ query }}</strong>".</p>
+                <form method="post" action="{% url 'create_waiting_room' %}" class="waiting-form mt-4">
+                {% csrf_token %}
+                <input type="hidden" name="source_query" value="{{ query }}">
+                <div class="mb-2">
+                  <label for="course_title" class="block text-sm font-medium">Course title</label>
+                  <input type="text" id="course_title" name="course_title" value="{{ query }}" class="border rounded p-2 w-full" required>
                 </div>
-              </div>
-              <!-- Course Stats -->
-              <div class="grid grid-cols-2 gap-2 mb-3 text-sm">
-                <div class="flex items-center text-gray-600 dark:text-gray-300">
-                  <i class="fas fa-eye mr-2"></i>
-                  <span>{{ course.web_requests.count|default:"0" }} views</span>
+                <div class="mb-2">
+                  <label for="description" class="block text-sm font-medium">Description</label>
+                  <textarea id="description" name="description" placeholder="Enter course description..." class="border rounded p-2 w-full" required></textarea>
                 </div>
-                <div class="flex items-center text-gray-600 dark:text-gray-300">
-                  <i class="fas fa-users mr-2"></i>
-                  <span>{{ course.enrollments.count }}/{{ course.max_students }}</span>
+                <div class="mb-2">
+                  <label for="subject" class="block text-sm font-medium">Subject</label>
+                  <input type="text" id="subject" name="subject" value="{{ subject_display|default:subject }}" class="border rounded p-2 w-full" required>
                 </div>
-                <div class="flex items-center text-gray-600 dark:text-gray-300">
-                  <i class="fas fa-calendar-alt mr-2"></i>
-                  <span>{{ course.sessions.count }} sessions</span>
+                <div class="mb-2">
+                  <label for="topics" class="block text-sm font-medium">Topics</label>
+                  <input type="text" id="topics" name="topics" value="{{ query }}" class="border rounded p-2 w-full" required>
                 </div>
-                <div class="flex items-center text-gray-600 dark:text-gray-300">
-                  <i class="fas fa-star text-yellow-400 mr-2"></i>
-                  <span>{{ course.average_rating|default:"N/A" }}</span>
+                <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded mt-2 inline-flex items-center">
+                  <i class="fas fa-bell mr-2"></i> Join Waiting List
+                </button>
+                </form>
+                <div class="alternative-options mt-4 text-sm">
+                <p>
+                  Alternatively, you can <a href="{% url 'create_course' %}" class="text-orange-500 hover:text-orange-600 underline">create a course</a>,
+                  <a href="{% url 'subjects' %}" class="text-orange-500 hover:text-orange-600 underline">browse subjects</a>, or
+                  <a href="#" class="text-orange-500 hover:text-orange-600 underline" onclick="document.getElementById('q').value=''; document.getElementById('searchForm').submit();">clear your search</a>.
+                </p>
                 </div>
-              </div>
-              <!-- Session Dates -->
-              <div class="mb-3 text-sm text-gray-600 dark:text-gray-300 min-h-[4rem]">
-                {% with first_session=course.sessions.first last_session=course.sessions.last %}
-                  {% if first_session and last_session %}
-                    <div class="flex items-center mb-1">
-                      <i class="fas fa-calendar-day mr-2"></i>
-                      <span>Starts: {{ first_session.start_time|date:"M j, Y g:i A e" }}</span>
-                    </div>
-                    <div class="flex items-center">
-                      <i class="fas fa-calendar-check mr-2"></i>
+                </div> {% endfor %}
                       <span>Ends: {{ last_session.end_time|date:"M j, Y g:i A e" }}</span>
                     </div>
                   {% else %}
@@ -127,13 +129,55 @@
                 </form>
               {% endif %}
             </div>
-          {% empty %}
-            <p>
-              No courses found. Try searching for a different subject or level. or check back later for new courses! you can also <a href="{% url 'create_course' %}"
-    class="text-orange-500 hover:text-orange-600 underline transition-colors duration-200">create a course</a> if you are a teacher. or see a list of subjects or add subjects <a href="{% url 'subjects' %}"
-    class="text-orange-500 hover:text-orange-600 underline transition-colors duration-200">here</a>
-            </p>
-          {% endfor %}
+          {% empty %} <div class="p-4 bg-yellow-50 border border-yellow-200 rounded">
+              <p>We couldn't find any courses matching your search for <strong>{{ query }}</strong>.</p>
+              <form method="post" action="{% url 'course_waiting_submit' %}" class="mt-4 space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="source_query" value="{{ query }}">
+                <div>
+                  <label for="course_title" class="block text-sm font-medium">Course Title</label>
+                  <input type="text" id="course_title" name="course_title" value="{{ query }}" class="w-full border border-gray-300 rounded p-2">
+                </div>
+                <div>
+                  <label for="course_description" class="block text-sm font-medium">Course Description</label>
+                  <textarea id="course_description" name="course_description" class="w-full border border-gray-300 rounded p-2"></textarea>
+                </div>
+                <div>
+                  <label for="subject" class="block text-sm font-medium">Subject</label>
+                  <input type="text" id="subject" name="subject" value="{{ subject_display|default:subject }}" class="w-full border border-gray-300 rounded p-2">
+                </div>
+                <div>
+                  <label for="topics" class="block text-sm font-medium">Topics</label>
+                  <input type="text" id="topics" name="topics" value="{{ query }}" class="w-full border border-gray-300 rounded p-2">
+                </div>
+                <div class="flex items-center space-x-2">
+                  <button type="submit" class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded">
+                    <i class="fas fa-bell mr-2"></i> Submit
+                  </button>
+                  <a href="{% url 'create_course' %}" class="text-blue-500 underline text-sm">Create a Course</a>
+                  <a href="{% url 'subjects' %}" class="text-blue-500 underline text-sm">Browse Subjects</a>
+                  <a href="?q=" class="text-blue-500 underline text-sm">Clear Search</a>
+                </div>
+              </form>
+            </div>
+                <div class="mb-3">
+                  <label for="course_title" class="block text-sm font-medium">Course Title</label>
+                  <input type="text" id="course_title" name="course_title" value="{{ query }}" class="mt-1 block w-full border border-gray-300 rounded p-2" />
+                </div>
+                <div class="mb-3">
+                  <label for="subject" class="block text-sm font-medium">Subject</label>
+                  <input type="text" id="subject" name="subject" value="{{ subject_display|default:subject }}" class="mt-1 block w-full border border-gray-300 rounded p-2" />
+                </div>
+                <div class="mb-3">
+                  <label for="topics" class="block text-sm font-medium">Topics</label>
+                  <input type="text" id="topics" name="topics" value="{{ query }}" class="mt-1 block w-full border border-gray-300 rounded p-2" />
+                </div>
+                <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-3 py-2 rounded-lg">Join Waiting List</button>
+              </form>
+              <div class="mt-4 text-sm">
+                Alternatively, you can <a href="{% url 'create_course' %}" class="text-orange-500 hover:text-orange-600 underline">create a course</a>, <a href="{% url 'subjects' %}" class="text-orange-500 hover:text-orange-600 underline">browse subjects</a>, or <a href="{% url 'course_search' %}" class="text-orange-500 hover:text-orange-600 underline">clear your search</a>.
+              </div>
+            </div> {% endfor %}
         </div>
         <!-- Pagination -->
         {% if page_obj.paginator.num_pages > 1 %}
