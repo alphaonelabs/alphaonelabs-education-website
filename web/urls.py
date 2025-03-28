@@ -12,6 +12,9 @@ from .views import (
     GradeableLinkDetailView,
     GradeableLinkListView,
     add_goods_to_cart,
+    feature_vote,
+    feature_vote_count,
+    features_page,
     grade_link,
     notification_preferences,
     sales_analytics,
@@ -36,7 +39,7 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns.append(path("__reload__/", include("django_browser_reload.urls")))  # Browser reload URLs
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)  # Add this line
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  # Add this line
 
 # Language-prefixed URLs
 urlpatterns += i18n_patterns(
@@ -87,7 +90,6 @@ urlpatterns += i18n_patterns(
     path("courses/<slug:slug>/edit/", views.update_course, name="update_course"),
     path("courses/<slug:slug>/toggle-status/", views.toggle_course_status, name="toggle_course_status"),
     path("sessions/<int:session_id>/edit/", views.edit_session, name="edit_session"),
-    path("courses/<slug:slug>/add-review/", views.add_review, name="add_review"),
     path("courses/<slug:slug>/delete/", views.delete_course, name="delete_course"),
     path("courses/<slug:slug>/add-session/", views.add_session, name="add_session"),
     path("courses/<slug:slug>/confirm-rolled-sessions/", views.confirm_rolled_sessions, name="confirm_rolled_sessions"),
@@ -100,6 +102,11 @@ urlpatterns += i18n_patterns(
     ),
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
     path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session"),
+    # Social media sharing URLs
+    path("social-media/", views.social_media_dashboard, name="social_media_dashboard"),
+    path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
+    path("social-media/create/", views.create_scheduled_post, name="create_scheduled_post"),
+    path("social-media/delete/<int:post_id>/", views.delete_post, name="delete_post"),
     # Payment URLs
     path(
         "courses/<slug:slug>/create-payment-intent/",
@@ -211,6 +218,19 @@ urlpatterns += i18n_patterns(
     path("peers/messages/<int:user_id>/", views.peer_messages, name="peer_messages"),
     # Study Groups URLs
     path("courses/<int:course_id>/groups/", views.study_groups, name="study_groups"),
+    path("courses/<slug:slug>/reviews/<int:review_id>/edit/", views.edit_review, name="edit_review"),
+    path("courses/<slug:slug>/reviews/add/", views.add_review, name="add_review"),
+    path("courses/<slug:slug>/reviews/<int:review_id>/delete/", views.delete_review, name="delete_review"),
+    path(
+        "courses/<slug:slug>/reviews/<int:review_id>/add-featured-review/",
+        views.add_featured_review,
+        name="add_featured_review",
+    ),
+    path(
+        "courses/<slug:slug>/reviews/<int:review_id>/remove-featured-review/",
+        views.remove_featured_review,
+        name="remove_featured_review",
+    ),
     path("groups/<int:group_id>/", views.study_group_detail, name="study_group_detail"),
     path("study-groups/", views.all_study_groups, name="all_study_groups"),
     path("sessions/<int:session_id>/", views.session_detail, name="session_detail"),
@@ -393,6 +413,10 @@ urlpatterns += i18n_patterns(
         name="update_teacher_notes",
     ),
     path("award-badge/", views.award_badge, name="award_badge"),
+    # Features page
+    path("features/", features_page, name="features"),
+    path("features/vote/", feature_vote, name="feature_vote"),
+    path("features/vote-count/", feature_vote_count, name="feature_vote_count"),
     path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
     prefix_default_language=True,
 )
