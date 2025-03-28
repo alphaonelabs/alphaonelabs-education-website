@@ -11,12 +11,15 @@
           {{ challenge.title }}
         {% endif %}
       </h1>
+
       <!-- Challenge Description -->
       <p class="text-lg text-gray-700 dark:text-gray-300 text-center mb-4">{{ challenge.description }}</p>
+
       <!-- Challenge Period -->
       <p class="text-sm text-gray-600 dark:text-gray-400 text-center mb-6">
         <strong>Challenge Period:</strong> {{ challenge.start_date }} to {{ challenge.end_date }}
       </p>
+
       <!-- Submission Section -->
       {% if user.is_authenticated %}
         {% if user_submission %}
@@ -36,18 +39,24 @@
           🔒 Please log in to submit your result.
         </div>
       {% endif %}
+
       <!-- Submissions Section -->
       <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">Submissions:</h2>
       {% if submissions %}
         <ul class="space-y-4">
           {% for sub in submissions %}
-            <li class="bg-gray-100 dark:bg-gray-900 shadow-sm rounded-lg p-4">
-              <div class="flex items-center justify-between">
-                <span class="font-semibold text-gray-800 dark:text-gray-200">{{ sub.user.username }}</span>
-                <span class="text-sm text-gray-500 dark:text-gray-400">{{ sub.submitted_at|date:"M d, Y - H:i" }}</span>
-              </div>
-              <p class="mt-2 text-gray-700 dark:text-gray-300">{{ sub.submission_text }}</p>
-            </li>
+            {% if sub.is_public or sub.user == user %}
+              <li class="bg-gray-100 dark:bg-gray-900 shadow-sm rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                  <span class="font-semibold text-gray-800 dark:text-gray-200">{{ sub.user.username }}</span>
+                  <span class="text-sm text-gray-500 dark:text-gray-400">{{ sub.submitted_at|date:"M d, Y - H:i" }}</span>
+                </div>
+                <p class="mt-2 text-gray-700 dark:text-gray-300">{{ sub.submission_text }}</p>
+                {% if not sub.is_public %}
+                  <p class="text-sm text-red-500 dark:text-red-400 mt-1">🔒 This submission is private</p>
+                {% endif %}
+              </li>
+            {% endif %}
           {% endfor %}
         </ul>
       {% else %}

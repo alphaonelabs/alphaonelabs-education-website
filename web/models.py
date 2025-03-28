@@ -1323,6 +1323,7 @@ class ChallengeSubmission(models.Model):
     submission_text = models.TextField()
     submitted_at = models.DateTimeField(auto_now_add=True)
     points_awarded = models.PositiveIntegerField(default=10)
+    is_public = models.BooleanField(default=False)  # New field for visibility
 
     class Meta:
         unique_together = ["user", "challenge"]

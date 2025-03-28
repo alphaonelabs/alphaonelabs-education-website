@@ -7,11 +7,11 @@
       <h1 class="text-3xl font-bold text-gray-900 dark:text-white text-center mb-6">
         Submit for
         {% if challenge.challenge_type == 'weekly' %}
-          Week
-          {{ challenge.week_number }}
+          Week {{ challenge.week_number }}
         {% endif %}
         {{ challenge.title }}
       </h1>
+
       {% if submission %}
         <!-- Existing Submission -->
         <div class="bg-gray-100 dark:bg-gray-700 p-5 rounded-lg mb-6 shadow-sm">
@@ -19,6 +19,14 @@
           <p class="text-gray-700 dark:text-gray-300 italic">"{{ submission.submission_text }}"</p>
           <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
             Submitted on: {{ submission.submitted_at|date:"M d, Y - H:i A" }}
+          </p>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            Visibility: 
+            {% if submission.is_public %}
+              <span class="text-green-600 dark:text-green-400">Public</span>
+            {% else %}
+              <span class="text-red-600 dark:text-red-400">Private</span>
+            {% endif %}
           </p>
         </div>
       {% else %}
@@ -28,10 +36,17 @@
           <!-- Form Field -->
           <div class="flex flex-col">
             <label class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">✍️ Your Submission:</label>
-            <textarea name="submission_text" rows="4" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-900 dark:text-white">
-              {{ form.submission_text.value|default:"" }}
-            </textarea>
+            <textarea name="submission_text" rows="4" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-900 dark:text-white">{{ form.submission_text.value|default:"" }}</textarea>
           </div>
+
+          <!-- Public Visibility Checkbox -->
+          <div class="flex items-center space-x-2">
+            <input type="checkbox" name="is_public" id="is_public" class="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" {% if form.is_public.value %}checked{% endif %}>
+            <label for="is_public" class="text-gray-700 dark:text-gray-300">
+              📢 Make this submission public (visible to others)
+            </label>
+          </div>
+
           <!-- Submit Button -->
           <div class="text-center">
             <button type="submit"

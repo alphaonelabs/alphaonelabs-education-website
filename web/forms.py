@@ -1202,14 +1202,22 @@ class FeedbackForm(forms.Form):
 
 
 class ChallengeSubmissionForm(forms.ModelForm):
+    is_public = forms.BooleanField(
+        required=False, 
+        initial=False,
+        label="Make submission public",
+        widget=forms.CheckboxInput()
+    )
+
     class Meta:
         model = ChallengeSubmission
-        fields = ["submission_text"]
+        fields = ["submission_text", "is_public"]
         widgets = {
             "submission_text": forms.Textarea(
                 attrs={"rows": 5, "placeholder": "Describe your results or reflections..."}
             ),
         }
+
 
 
 class TailwindInput(forms.widgets.Input):
