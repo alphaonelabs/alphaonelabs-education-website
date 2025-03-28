@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 
 import requests
 import stripe
+import tweepy
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
@@ -131,6 +132,7 @@ from .models import (
     Profile,
     ProgressTracker,
     Review,
+    ScheduledPost,
     SearchLog,
     Session,
     SessionAttendance,
@@ -980,15 +982,37 @@ def learn(request):
                 messages.error(request, "Sorry, there was an error sending your inquiry. Please try again later.")
     else:
         initial_data = {}
-        if request.GET.get("subject"):
+
+        # Handle query parameters
+        query = request.GET.get("query", "")
+        subject_param = request.GET.get("subject", "")
+        level = request.GET.get("level", "")
+
+        # Try to match subject
+        if subject_param:
             try:
-                subject = Subject.objects.get(name=request.GET.get("subject"))
+                subject = Subject.objects.get(name=subject_param)
                 initial_data["subject"] = subject.id
             except Subject.DoesNotExist:
-                pass
-        form = LearnForm(initial=initial_data)
+                # Optionally, you could add the subject name to the description
+                initial_data["description"] = f"Looking for courses in {subject_param}"
 
-    return render(request, "learn.html", {"form": form})
+        # If you want to include other parameters in the description
+        if query or level:
+            title_parts = []
+            description_parts = []
+            if query:
+                title_parts.append(f"{query}")
+            if level:
+                description_parts.append(f"Level: {level}")
+
+            if "description" not in initial_data:
+                initial_data["title"] = " | ".join(title_parts)
+            else:
+                initial_data["description"] += " | " + " | ".join(description_parts)
+
+        form = LearnForm(initial=initial_data)
+        return render(request, "learn.html", {"form": form})
 
 
 def teach(request):
@@ -1127,6 +1151,7 @@ def course_search(request):
     paginator = Paginator(courses, 12)  # Show 12 courses per page
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
+    is_teacher = getattr(getattr(request.user, "profile", None), "is_teacher", False)
 
     context = {
         "page_obj": page_obj,
@@ -1139,6 +1164,7 @@ def course_search(request):
         "subject_choices": Course._meta.get_field("subject").choices,
         "level_choices": Course._meta.get_field("level").choices,
         "total_results": total_results,
+        "is_teacher": is_teacher,
     }
 
     return render(request, "courses/search.html", context)
@@ -6383,3 +6409,68 @@ def all_study_groups(request):
             "enrolled_courses": enrolled_courses,
         },
     )
+
+
+def social_media_manager_required(user):
+    """Check if user has social media manager permissions."""
+    return user.is_authenticated and (user.is_staff or getattr(user.profile, "is_social_media_manager", False))
+
+
+@user_passes_test(social_media_manager_required)
+def get_twitter_client():
+    """Initialize the Tweepy client."""
+    auth = tweepy.OAuthHandler(settings.TWITTER_API_KEY, settings.TWITTER_API_SECRET_KEY)
+    auth.set_access_token(settings.TWITTER_ACCESS_TOKEN, settings.TWITTER_ACCESS_TOKEN_SECRET)
+    return tweepy.API(auth)
+
+
+@user_passes_test(social_media_manager_required)
+def social_media_dashboard(request):
+    # Fetch all posts that haven't been posted yet
+    posts = ScheduledPost.objects.filter(posted=False).order_by("-id")
+    return render(request, "social_media_dashboard.html", {"posts": posts})
+
+
+@user_passes_test(social_media_manager_required)
+def post_to_twitter(request, post_id):
+    post = get_object_or_404(ScheduledPost, id=post_id)
+    if request.method == "POST":
+        client = get_twitter_client()
+        try:
+            if post.image:
+                # Upload the image file from disk
+                media = client.media_upload(post.image.path)
+                client.update_status(post.content, media_ids=[media.media_id])
+            else:
+                client.update_status(post.content)
+            post.posted = True
+            post.posted_at = timezone.now()
+            post.save()
+        except Exception as e:
+            print(f"Error posting tweet: {e}")
+        return redirect("social_media_dashboard")
+    return redirect("social_media_dashboard")
+
+
+@user_passes_test(social_media_manager_required)
+def create_scheduled_post(request):
+    if request.method == "POST":
+        content = request.POST.get("content")
+        image = request.FILES.get("image")  # Get the uploaded image, if provided.
+        if not content:
+            messages.error(request, "Post content cannot be empty.")
+            return redirect("social_media_dashboard")
+        ScheduledPost.objects.create(
+            content=content, image=image, scheduled_time=timezone.now()  # This saves the image file.
+        )
+        messages.success(request, "Post created successfully!")
+    return redirect("social_media_dashboard")
+
+
+@user_passes_test(social_media_manager_required)
+def delete_post(request, post_id):
+    """Delete a scheduled post."""
+    post = get_object_or_404(ScheduledPost, id=post_id)
+    if request.method == "POST":
+        post.delete()
+    return redirect("social_media_dashboard")
