@@ -321,6 +321,14 @@
                                   </form>
                                 {% endif %}
                               {% endif %}
+                              
+                              {% if is_enrolled and session.start_time <= now and not session in completed_sessions %}
+                                <a href="{% url 'self_report_attendance' session.id %}" 
+                                   class="text-green-600 hover:text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded text-xs font-medium">
+                                  <i class="fas fa-check mr-1"></i>
+                                  I Attended
+                                </a>
+                              {% endif %}
                             {% endif %}
                           {% elif course.allow_individual_sessions and session.price and not is_enrolled %}
                             {% if course.invite_only %}

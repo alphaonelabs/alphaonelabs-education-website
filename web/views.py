@@ -1272,32 +1272,57 @@ def update_course(request, slug):
 
 @login_required
 def mark_session_attendance(request, session_id):
-    session = Session.objects.get(id=session_id)
+    session = get_object_or_404(Session, id=session_id)
     if request.user != session.course.teacher:
         messages.error(request, "Only the course teacher can mark attendance!")
         return redirect("course_detail", slug=session.course.slug)
 
     if request.method == "POST":
-        for student_id, status in request.POST.items():
-            if student_id.startswith("student_"):
-                student_id = student_id.replace("student_", "")
+        # Process verified attendance
+        for key, value in request.POST.items():
+            if key.startswith("student_"):
+                student_id = key.replace("student_", "")
                 student = User.objects.get(id=student_id)
+                
+                # Get the status from the form
+                status = value
+                
+                # Update the attendance record
                 attendance, created = SessionAttendance.objects.update_or_create(
-                    session=session, student=student, defaults={"status": status}
+                    session=session, 
+                    student=student, 
+                    defaults={
+                        "status": status,
+                        "verified_by_teacher": True if status in ["present", "late", "excused"] else False
+                    }
                 )
+                
         messages.success(request, "Attendance marked successfully!")
         return redirect("course_detail", slug=session.course.slug)
 
+    # Get all approved enrollments for this course
     enrollments = session.course.enrollments.filter(status="approved")
-    attendances = {att.student_id: att.status for att in session.attendances.all()}
+    
+    # Get existing attendance records
+    attendances = {att.student_id: att for att in session.attendances.all()}
+    
+    # Prepare context with students and their attendance status
+    students_data = []
+    for enrollment in enrollments:
+        student = enrollment.student
+        attendance = attendances.get(student.id)
+        
+        students_data.append({
+            "student": student,
+            "attendance": attendance,
+            "is_pending": attendance.status == "pending" if attendance else False
+        })
 
     context = {
         "session": session,
-        "enrollments": enrollments,
-        "attendances": attendances,
+        "students_data": students_data,
     }
     return render(request, "courses/mark_attendance.html", context)
-
 
 @login_required
 def mark_session_completed(request, session_id):
@@ -6274,3 +6299,52 @@ def all_study_groups(request):
             "enrolled_courses": enrolled_courses,
         },
     )
+
+@login_required
+def self_report_attendance(request, session_id):
+    """Allow students to self-report attendance for a session."""
+    session = get_object_or_404(Session, id=session_id)
+    
+    # Check if the student is enrolled in the course
+    enrollment = get_object_or_404(
+        Enrollment, 
+        student=request.user, 
+        course=session.course, 
+        status="approved"
+    )
+    
+    # Check if the session is in the past or ongoing
+    now = timezone.now()
+    if session.start_time > now:
+        messages.error(request, "You cannot report attendance for a future session!")
+        return redirect("course_detail", slug=session.course.slug)
+    
+    # Check if student has already reported attendance
+    existing_attendance = SessionAttendance.objects.filter(
+        session=session, 
+        student=request.user
+    ).first()
+    
+    if existing_attendance and existing_attendance.status != "absent":
+        messages.info(request, "You have already reported attendance for this session.")
+        return redirect("course_detail", slug=session.course.slug)
+    
+    # Create or update attendance record as pending
+    attendance, created = SessionAttendance.objects.update_or_create(
+        session=session,
+        student=request.user,
+        defaults={
+            "status": "pending",
+            "self_reported": True,
+            "verified_by_teacher": False
+        }
+    )
+    
+    # Notify the teacher about the pending attendance
+    # (You can implement email notification here if needed)
+    
+    messages.success(
+        request, 
+        "Your attendance has been recorded and is pending teacher verification."
+    )
+    return redirect("course_detail", slug=session.course.slug)

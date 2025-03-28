@@ -1,42 +1,70 @@
+<!-- web/templates/courses/mark_attendance.html -->
 {% extends "base.html" %}
 
 {% block title %}
   Mark Attendance - {{ session.course.title }}
 {% endblock title %}
+
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <div class="max-w-3xl mx-auto">
       <div class="mb-8">
         <h1 class="text-3xl font-bold mb-4">Mark Attendance</h1>
-        <p class="text-gray-600 dark:text-gray-300">Session: {{ session.start_time|date:"F j, Y, g:i a" }}</p>
+        <p class="text-gray-600 dark:text-gray-300">Session: {{ session.title }} - {{ session.start_time|date:"F j, Y, g:i a" }}</p>
       </div>
+      
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <form method="post" class="space-y-6">
           {% csrf_token %}
-          <div class="space-y-4">
-            {% for student in students %}
-              <div class="flex items-center justify-between p-4 border dark:border-gray-700 rounded-lg">
-                <div>
-                  <h3 class="font-medium">{{ student.get_full_name|default:student.username }}</h3>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">{{ student.email }}</p>
+          
+          {% if students_data %}
+            <div class="space-y-4">
+              {% for data in students_data %}
+                <div class="flex items-center justify-between p-4 border {% if data.is_pending %}border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20{% else %}border-gray-200 dark:border-gray-700{% endif %} rounded-lg">
+                  <div>
+                    <h3 class="font-medium">{{ data.student.get_full_name|default:data.student.username }}</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">{{ data.student.email }}</p>
+                    {% if data.is_pending %}
+                      <span class="inline-flex items-center mt-1 px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100">
+                        <i class="fas fa-clock mr-1"></i> Self-reported - Pending verification
+                      </span>
+                    {% endif %}
+                  </div>
+                  <div class="flex space-x-4">
+                    <label class="inline-flex items-center">
+                      <input type="radio" name="student_{{ data.student.id }}" value="present" 
+                             {% if data.attendance and data.attendance.status == "present" %}checked{% endif %}
+                             class="text-green-600 focus:ring-green-500">
+                      <span class="ml-2">Present</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                      <input type="radio" name="student_{{ data.student.id }}" value="absent" 
+                             {% if not data.attendance or data.attendance.status == "absent" %}checked{% endif %}
+                             class="text-red-600 focus:ring-red-500">
+                      <span class="ml-2">Absent</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                      <input type="radio" name="student_{{ data.student.id }}" value="late" 
+                             {% if data.attendance and data.attendance.status == "late" %}checked{% endif %}
+                             class="text-orange-600 focus:ring-orange-500">
+                      <span class="ml-2">Late</span>
+                    </label>
+                    <label class="inline-flex items-center">
+                      <input type="radio" name="student_{{ data.student.id }}" value="excused" 
+                             {% if data.attendance and data.attendance.status == "excused" %}checked{% endif %}
+                             class="text-blue-600 focus:ring-blue-500">
+                      <span class="ml-2">Excused</span>
+                    </label>
+                  </div>
                 </div>
-                <div>
-                  <label class="inline-flex items-center">
-                    <input type="checkbox"
-                           name="present_students"
-                           value="{{ student.id }}"
-                           {% if student in present_students %}checked{% endif %}
-                           class="rounded border-gray-300 dark:border-gray-600 text-teal-600 focus:ring-teal-500 h-5 w-5" />
-                    <span class="ml-2">Present</span>
-                  </label>
-                </div>
-              </div>
-            {% empty %}
-              <p class="text-gray-500 dark:text-gray-400">No students enrolled in this course.</p>
-            {% endfor %}
-          </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-gray-500 dark:text-gray-400">No students enrolled in this course.</p>
+          {% endif %}
+          
           <div class="flex justify-end space-x-4">
-            <a href="{% url 'session_detail' session.id %}"
+            <a href="{% url 'course_detail' session.course.slug %}"
                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
               Cancel
             </a>

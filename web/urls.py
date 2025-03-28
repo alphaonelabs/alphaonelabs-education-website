@@ -82,6 +82,7 @@ urlpatterns += i18n_patterns(
     path("courses/<slug:slug>/edit/", views.update_course, name="update_course"),
     path("courses/<slug:slug>/toggle-status/", views.toggle_course_status, name="toggle_course_status"),
     path("sessions/<int:session_id>/edit/", views.edit_session, name="edit_session"),
+    path("sessions/<int:session_id>/self-report/",views.self_report_attendance,name="self_report_attendance",),
     path("courses/<slug:slug>/delete/", views.delete_course, name="delete_course"),
     path("courses/<slug:slug>/add-session/", views.add_session, name="add_session"),
     path("courses/<slug:slug>/confirm-rolled-sessions/", views.confirm_rolled_sessions, name="confirm_rolled_sessions"),
