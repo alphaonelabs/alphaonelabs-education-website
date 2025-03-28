@@ -11,7 +11,6 @@
         {% endif %}
         {{ challenge.title }}
       </h1>
-
       {% if submission %}
         <!-- Existing Submission -->
         <div class="bg-gray-100 dark:bg-gray-700 p-5 rounded-lg mb-6 shadow-sm">
@@ -38,7 +37,6 @@
             <label class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">✍️ Your Submission:</label>
             <textarea name="submission_text" rows="4" class="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-900 dark:text-white">{{ form.submission_text.value|default:"" }}</textarea>
           </div>
-
           <!-- Public Visibility Checkbox -->
           <div class="flex items-center space-x-2">
             <input type="checkbox" name="is_public" id="is_public" class="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" {% if form.is_public.value %}checked{% endif %}>
@@ -46,7 +44,6 @@
               📢 Make this submission public (visible to others)
             </label>
           </div>
-
           <!-- Submit Button -->
           <div class="text-center">
             <button type="submit"
