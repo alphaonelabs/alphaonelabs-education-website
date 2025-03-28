@@ -88,6 +88,12 @@ class Profile(models.Model):
     how_did_you_hear_about_us = models.TextField(
         blank=True, help_text="How did you hear about us? You can enter text or a link."
     )
+    # Existing Profile/User model - add this field
+    wallet_address = models.CharField(
+        max_length=42,  # Ethereum addresses are 42 chars including '0x'
+        blank=True,
+        help_text="Student's Ethereum wallet address for receiving NFT badges",
+    )
 
     def __str__(self):
         visibility = "Public" if self.is_profile_public else "Private"

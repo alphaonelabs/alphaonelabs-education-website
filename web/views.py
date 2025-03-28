@@ -5102,6 +5102,9 @@ def toggle_course_status(request, slug):
     return redirect("course_detail", slug=slug)
 
 
+# NFT management views
+
+
 @login_required
 @teacher_required
 def send_nft_badge(request, achievement_id):
@@ -5118,15 +5121,19 @@ def send_nft_badge(request, achievement_id):
         messages.error(request, "You don't have permission to mint this NFT badge!")
         return redirect("dashboard")
 
+    # Get the student's wallet address (if available)
+    student = achievement.student  # Assuming achievement is linked to a student
+    student_wallet = student.profile.wallet_address if hasattr(student, "profile") else ""
+
     if request.method == "POST":
-        wallet_address = request.POST.get("wallet_address")
+        wallet_address = request.POST.get("wallet_address", student_wallet)
         icon_url = request.POST.get("icon_url")  # Retrieve icon URL from form
 
         if not wallet_address:
             messages.error(request, "Wallet address is required to mint NFT badge!")
             return redirect("achievement_detail", achievement_id=achievement_id)
 
-        # Validate wallet address format (example for Ethereum/Polygon addresses)
+        # Validate wallet address format (Ethereum/Polygon example)
         if not wallet_address.startswith("0x") or len(wallet_address) != 42:
             messages.error(request, "Invalid wallet address format!")
             return redirect("achievement_detail", achievement_id=achievement_id)
@@ -5139,7 +5146,7 @@ def send_nft_badge(request, achievement_id):
         try:
             from web.services.nft_service import send_nft_badge as mint_nft_badge
 
-            # Append icon_url to the achievement
+            # Save the icon URL
             achievement.icon = icon_url
             achievement.save()
 
@@ -5154,9 +5161,13 @@ def send_nft_badge(request, achievement_id):
         except Exception as e:
             messages.error(request, f"Error minting NFT badge: {str(e)}")
 
-        return render(request, "achievements/send_nft_badge.html", {"achievement": achievement})
+        return render(
+            request, "achievements/send_nft_badge.html", {"achievement": achievement, "student_wallet": student_wallet}
+        )
 
-    return render(request, "achievements/send_nft_badge.html", {"achievement": achievement})
+    return render(
+        request, "achievements/send_nft_badge.html", {"achievement": achievement, "student_wallet": student_wallet}
+    )
 
 
 @login_required
@@ -5208,6 +5219,48 @@ def award_nft_badge(request, student_id=None):
         "achievements/award_nft_badge.html",
         {"form": form, "student": student, "all_students": all_students},
     )
+
+
+@login_required
+def show_mnemonic(request):
+    """Displays the mnemonic phrase once and removes it from session."""
+    mnemonic = request.session.get("mnemonic")
+    public_key = request.session.get("public_key")
+
+    if not mnemonic:
+        messages.error(request, "Mnemonic not found or already viewed.")
+        return redirect("student_dashboard")
+
+    # Remove mnemonic from session after displaying
+    del request.session["mnemonic"]
+    del request.session["public_key"]
+
+    return render(request, "crypto-wallet/show_mnemonic.html", {"mnemonic": mnemonic, "public_key": public_key})
+
+
+@login_required
+def create_student_wallet(request):
+    """Handles wallet creation and displays mnemonic once."""
+    student = request.user  # Get logged-in student
+    from web.services.wallet_services import create_student_wallet
+
+    if request.method == "POST":
+        wallet_data = create_student_wallet()  # Now generates a mnemonic
+
+        # Store only public address
+        profile, created = Profile.objects.get_or_create(user=student)
+        print(profile.wallet_address)
+        profile.wallet_address = wallet_data["address"]
+        profile.save()
+        print("profile saved:", profile.wallet_address)
+
+        # Store mnemonic temporarily in session (Do NOT store in DB)
+        request.session["mnemonic"] = wallet_data["mnemonic"]
+        request.session["public_key"] = wallet_data["address"]
+
+        return redirect("show_mnemonic")  # Redirect to mnemonic page
+
+    return render(request, "crypto-wallet/create_wallet.html")
 
 
 def public_profile(request, username):
