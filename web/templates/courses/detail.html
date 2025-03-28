@@ -680,11 +680,17 @@
                           Student Details
                         </h3>
                         {% if user == course.teacher %}
-                          <a href="{% url 'add_student_to_course' course.slug %}"
-                             class="inline-flex items-center px-3 py-1.5 text-sm bg-teal-300 hover:bg-teal-400 text-white rounded-lg transition duration-200">
-                            <i class="fas fa-user-plus mr-2"></i>
-                            Add Students
-                          </a>
+                          <div>
+                            <a href="{% url 'add_student_to_course' course.slug %}"
+                               class="inline-flex items-center px-3 py-1.5 text-sm bg-teal-300 hover:bg-teal-400 text-white rounded-lg transition duration-200">
+                              <i class="fas fa-user-plus mr-2"></i>
+                              Add Students
+                            </a>
+                            <button onclick="openSelectStudentModal()"
+                                    class="inline-flex items-center px-3 py-1.5 bg-purple-100 text-purple-700 text-sm hover:bg-purple-200 dark:bg-purple-900/40 dark:text-purple-300 rounded-lg transition-colors">
+                              <i class="fas fa-award mr-2"></i> Award Badge
+                            </button>
+                          </div>
                         {% endif %}
                       </div>
                       {% if course.enrollments.exists %}
@@ -1350,6 +1356,154 @@
     <i class="fas fa-info-circle notification-icon mr-2"></i>
     <span class="notification-message">This is a notification</span>
   </div>
+  <!-- Award Badge modal -->
+  <div id="awardBadgeModal"
+       class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
+            <i class="fas fa-award mr-2 text-purple-500"></i>
+            Award Badge to <span id="studentName"></span>
+          </h3>
+          <button onclick="closeAwardBadgeModal()"
+                  class="text-gray-400 hover:text-gray-500">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      <form id="awardBadgeForm" class="p-6 space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="student_id" id="studentId" />
+        <input type="hidden" name="course_slug" value="{{ course.slug }}" />
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Badge</label>
+          <div class="grid grid-cols-2 gap-3">
+            <div class="badge-option border rounded-lg p-3 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30"
+                 data-badge-type="perfect_attendance">
+              <div class="flex flex-col items-center text-center">
+                <div class="w-12 h-12 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center mb-2">
+                  <i class="fas fa-calendar-check text-yellow-600 dark:text-yellow-400 text-xl"></i>
+                </div>
+                <h5 class="font-medium text-gray-800 dark:text-gray-200 text-sm">Perfect Attendance</h5>
+              </div>
+            </div>
+            <div class="badge-option border rounded-lg p-3 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30"
+                 data-badge-type="participation">
+              <div class="flex flex-col items-center text-center">
+                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mb-2">
+                  <i class="fas fa-hand-paper text-blue-600 dark:text-blue-400 text-xl"></i>
+                </div>
+                <h5 class="font-medium text-gray-800 dark:text-gray-200 text-sm">Outstanding Participation</h5>
+              </div>
+            </div>
+            <div class="badge-option border rounded-lg p-3 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30"
+                 data-badge-type="challenge">
+              <div class="flex flex-col items-center text-center">
+                <div class="w-12 h-12 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center mb-2">
+                  <i class="fas fa-medal text-orange-600 dark:text-orange-400 text-xl"></i>
+                </div>
+                <h5 class="font-medium text-gray-800 dark:text-gray-200 text-sm">Challenge Completion</h5>
+              </div>
+            </div>
+            <div class="badge-option border rounded-lg p-3 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30"
+                 data-badge-type="completion">
+              <div class="flex flex-col items-center text-center">
+                <div class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-2">
+                  <i class="fas fa-graduation-cap text-green-600 dark:text-green-400 text-xl"></i>
+                </div>
+                <h5 class="font-medium text-gray-800 dark:text-gray-200 text-sm">Course Completion</h5>
+              </div>
+            </div>
+            <div class="badge-option border rounded-lg p-3 cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/30"
+                 data-badge-type="achievement">
+              <div class="flex flex-col items-center text-center">
+                <div class="w-12 h-12 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mb-2">
+                  <i class="fas fa-trophy text-purple-600 dark:text-purple-400 text-xl"></i>
+                </div>
+                <h5 class="font-medium text-gray-800 dark:text-gray-200 text-sm">Special Achievement</h5>
+              </div>
+            </div>
+          </div>
+          <input type="hidden" name="badge_type" id="selectedBadgeType" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Message (Optional)</label>
+          <textarea name="description"
+                    rows="3"
+                    class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-2"
+                    placeholder="Add a personal message..."></textarea>
+        </div>
+        <div class="flex justify-end space-x-3">
+          <button type="button"
+                  onclick="closeAwardBadgeModal()"
+                  class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+            Cancel
+          </button>
+          <button type="submit"
+                  class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50">
+            <span class="inline-flex items-center">
+              <i class="fas fa-award mr-2"></i> Award Badge
+            </span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- Student Selection Modal -->
+  <div id="selectStudentModal"
+       class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full mx-4">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
+            <i class="fas fa-user-graduate mr-2 text-purple-500"></i>
+            Select Student
+          </h3>
+          <button onclick="closeSelectStudentModal()"
+                  class="text-gray-400 hover:text-gray-500">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+      <div class="p-6">
+        <!-- Search input -->
+        <div class="mb-4">
+          <input type="text"
+                 id="studentSearch"
+                 placeholder="Search students..."
+                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-gray-200" />
+        </div>
+        <!-- Student list -->
+        <div class="max-h-96 overflow-y-auto">
+          <div class="grid gap-2">
+            {% for enrollment in course.enrollments.all %}
+              <div class="student-option p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/30 cursor-pointer"
+                   onclick="selectStudent('{{ enrollment.student.id }}', '{{ enrollment.student.get_full_name }}')">
+                <div class="flex items-center">
+                  <div class="flex-shrink-0">
+                    {% if enrollment.student.profile.avatar %}
+                      <img src="{{ enrollment.student.profile.avatar.url }}"
+                           class="w-10 h-10 rounded-full"
+                           alt="{{ enrollment.student.get_full_name }}" />
+                    {% else %}
+                      <div class="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900 flex items-center justify-center">
+                        <i class="fas fa-user text-purple-500 dark:text-purple-400"></i>
+                      </div>
+                    {% endif %}
+                  </div>
+                  <div class="ml-3">
+                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ enrollment.student.get_full_name }}</p>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">{{ enrollment.student.email }}</p>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   <script>
       document.addEventListener('keydown', function(event) {
           if (event.key === 'Escape') {
@@ -1576,6 +1730,121 @@
                   }
               });
           });
+      });
+
+      function openAwardBadgeModal(studentId, studentName) {
+          document.getElementById('awardBadgeModal').classList.remove('hidden');
+          document.getElementById('studentId').value = studentId;
+          document.getElementById('studentName').textContent = studentName;
+          document.getElementById('selectedBadgeType').value = '';
+          document.querySelectorAll('.badge-option').forEach(opt => {
+              opt.classList.remove('ring-2', 'ring-purple-500');
+          });
+      }
+
+      function closeAwardBadgeModal() {
+          document.getElementById('awardBadgeModal').classList.add('hidden');
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+          const form = document.getElementById('awardBadgeForm');
+
+          // Setup badge selection
+          document.querySelectorAll('.badge-option').forEach(option => {
+              option.addEventListener('click', function() {
+                  document.querySelectorAll('.badge-option').forEach(opt => {
+                      opt.classList.remove('ring-2', 'ring-purple-500');
+                  });
+                  this.classList.add('ring-2', 'ring-purple-500');
+                  document.getElementById('selectedBadgeType').value = this.dataset.badgeType;
+              });
+          });
+
+          // Handle form submission
+          form.addEventListener('submit', function(e) {
+              e.preventDefault();
+
+              const badgeType = document.getElementById('selectedBadgeType').value;
+              const description = form.querySelector('textarea[name="description"]').value;
+              if (!badgeType) {
+                  showNotification('Please select a badge type', 'error');
+                  return;
+              }
+
+              const submitBtn = form.querySelector('button[type="submit"]');
+              submitBtn.disabled = true;
+              submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Awarding...';
+              const formData = new FormData(form);
+              formData.append('description', description);
+              fetch('{% url "award_badge" %}', {
+                      method: 'POST',
+                      body: formData,
+                      headers: {
+                          'X-Requested-With': 'XMLHttpRequest'
+                      }
+                  })
+                  .then(response => response.json())
+                  .then(data => {
+                      if (data.success) {
+                          showNotification('Badge awarded successfully!', 'success');
+                          closeAwardBadgeModal();
+                          form.reset(); // Clear form data
+                          form.querySelector('textarea[name="description"]').value = ''; // Clear textarea
+                          setTimeout(() => window.location.reload(), 1500);
+                      } else {
+                          showNotification(data.message || 'Failed to award badge', 'error');
+                      }
+                  })
+                  .catch(error => {
+                      console.error('Error:', error);
+                      showNotification('An error occurred while awarding the badge', 'error');
+                  })
+                  .finally(() => {
+                      submitBtn.disabled = false;
+                      submitBtn.innerHTML = '<i class="fas fa-award mr-2"></i> Award Badge';
+                  });
+          });
+      });
+
+      function openSelectStudentModal() {
+          document.getElementById('selectStudentModal').classList.remove('hidden');
+          document.getElementById('studentSearch').focus();
+      }
+
+      function closeSelectStudentModal() {
+          document.getElementById('selectStudentModal').classList.add('hidden');
+      }
+
+      function selectStudent(studentId, studentName) {
+          closeSelectStudentModal();
+          openAwardBadgeModal(studentId, studentName);
+      }
+
+      // Add search functionality
+      document.getElementById('studentSearch')?.addEventListener('input', function(e) {
+          const searchTerm = e.target.value.toLowerCase();
+          document.querySelectorAll('.student-option').forEach(option => {
+              const studentName = option.querySelector('.font-medium').textContent.toLowerCase();
+              const studentEmail = option.querySelector('.text-gray-500').textContent.toLowerCase();
+
+              if (studentName.includes(searchTerm) || studentEmail.includes(searchTerm)) {
+                  option.classList.remove('hidden');
+              } else {
+                  option.classList.add('hidden');
+              }
+          });
+      });
+
+      // Close modals when clicking outside
+      window.addEventListener('click', function(e) {
+          const selectStudentModal = document.getElementById('selectStudentModal');
+          const awardBadgeModal = document.getElementById('awardBadgeModal');
+
+          if (e.target === selectStudentModal) {
+              closeSelectStudentModal();
+          } else if (e.target === awardBadgeModal) {
+              closeAwardBadgeModal();
+          }
       });
   </script>
   <script>

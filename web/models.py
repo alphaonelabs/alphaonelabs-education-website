@@ -1835,17 +1835,29 @@ class Donation(models.Model):
 
 
 class Badge(models.Model):
-    BADGE_TYPES = [
-        ("challenge", "Challenge Completion"),
-        ("course", "Course Completion"),
+    """Model representing badges awarded for various achievements."""
+
+    BADGE_TYPE_CHOICES = [
+        ("perfect_attendance", "Perfect Attendance"),
+        ("participation", "Outstanding Participation"),
+        ("completion", "Course Completion"),
         ("achievement", "Special Achievement"),
-        ("teacher_awarded", "Teacher Awarded"),
+        ("challenge", "Challenge Completion"),
     ]
     name = models.CharField(max_length=100)
-    description = models.TextField()
-    image = models.ImageField(upload_to="badges/")
-    badge_type = models.CharField(max_length=20, choices=BADGE_TYPES)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True, related_name="badges")
+    badge_type = models.CharField(
+        max_length=50,
+        choices=BADGE_TYPE_CHOICES,
+        default="perfect_attendance",
+    )
+    description = models.TextField(blank=True)
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name="badges",
+        null=True,
+        blank=True,
+    )
     challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, null=True, blank=True, related_name="badges")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_badges")
     is_active = models.BooleanField(default=True)
@@ -1855,22 +1867,6 @@ class Badge(models.Model):
 
     def __str__(self):
         return self.name
-
-    def save(self, *args, **kwargs):
-        if self.image:
-            img = Image.open(self.image)
-            if img.mode != "RGB":
-                img = img.convert("RGB")
-            img = img.resize((200, 200), Image.Resampling.LANCZOS)
-            buffer = BytesIO()
-            img.save(buffer, format="PNG", quality=90)
-            file_name = self.image.name
-            self.image.delete(save=False)
-            self.image.save(file_name, ContentFile(buffer.getvalue()), save=False)
-        super().save(*args, **kwargs)
-
-    class Meta:
-        ordering = ["badge_type", "name"]
 
 
 class UserBadge(models.Model):
@@ -1923,7 +1919,7 @@ def award_challenge_badge(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Enrollment)
 def award_course_completion_badge(sender, instance, **kwargs):
     if instance.status == "completed":
-        course_badges = Badge.objects.filter(course=instance.course, badge_type="course", is_active=True)
+        course_badges = Badge.objects.filter(course=instance.course, badge_type="completion", is_active=True)
         for badge in course_badges:
             if not UserBadge.objects.filter(user=instance.student, badge=badge).exists():
                 UserBadge.objects.create(

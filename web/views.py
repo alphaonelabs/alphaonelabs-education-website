@@ -5984,6 +5984,8 @@ def award_badge(request):
     student_id = request.POST.get("student_id")
     badge_type = request.POST.get("badge_type")
     course_slug = request.POST.get("course_slug")
+    message = request.POST.get("message", "")
+    description = request.POST.get("description", "")
 
     if not all([student_id, badge_type, course_slug]):
         return JsonResponse({"success": False, "message": "Missing required parameters"}, status=400)
@@ -5993,38 +5995,49 @@ def award_badge(request):
         course = Course.objects.get(slug=course_slug)
 
         # Check if user is the course teacher
-        if request.user != course.teacher:
+        if not request.user != course.teacher:
             return JsonResponse(
                 {"success": False, "message": "Unauthorized: Only the course teacher can award badges"}, status=403
             )
 
-        # Handle different badge types
-        badge = None
-        if badge_type == "perfect_attendance":
-            badge, created = Badge.objects.get_or_create(
-                name="Perfect Attendance",
-                defaults={"description": "Awarded for attending all sessions in a course", "points": 50},
-            )
-        elif badge_type == "participation":
-            badge, created = Badge.objects.get_or_create(
-                name="Outstanding Participation",
-                defaults={"description": "Awarded for exceptional participation in course discussions", "points": 75},
-            )
-        elif badge_type == "completion":
-            badge, created = Badge.objects.get_or_create(
-                name="Course Completion",
-                defaults={"description": "Awarded for successfully completing the course", "points": 100},
-            )
-        else:
-            return JsonResponse({"success": False, "message": "Invalid badge type"}, status=400)
+        # Check if the student is enrolled in the course
+        enrollment = Enrollment.objects.filter(student=student, course=course).first()
+        if enrollment.status != "approved":
+            return JsonResponse({"success": False, "message": "Student is not enrolled in this course"}, status=400)
+
+        # Create or get the badge
+        badge, _ = Badge.objects.get_or_create(
+            name=f"{badge_type.title().replace('_', ' ')}",
+            defaults={
+                "description": description or "No description provided",
+                "badge_type": badge_type,
+                "course": course,
+            },
+        )
 
         # Award the badge to the student
         user_badge, created = UserBadge.objects.get_or_create(
-            user=student, badge=badge, defaults={"awarded_by": request.user, "course": course}
+            user=student,
+            badge=badge,
+            course_enrollment=enrollment,
+            defaults={"award_method": "teacher_awarded", "awarded_by": request.user, "award_message": message},
         )
 
+        # Update the award message if the badge already exists
         if not created:
-            return JsonResponse({"success": False, "message": "Student already has this badge"}, status=400)
+            user_badge.award_message = message
+            user_badge.save()
+
+        # Notify the student about the awarded badge
+        Notification.objects.create(
+            user=student,
+            title=f"New Badge: {badge.name}",
+            message=(
+                f"You've been awarded the {badge.name} badge by "
+                f"{request.user.get_full_name() or request.user.username}. {message}"
+            ),
+            notification_type="badge_awarded",
+        )
 
         return JsonResponse(
             {"success": True, "message": f"Badge '{badge.name}' awarded successfully to {student.username}"}
@@ -6034,8 +6047,9 @@ def award_badge(request):
         return JsonResponse({"success": False, "message": "Student not found"}, status=404)
     except Course.DoesNotExist:
         return JsonResponse({"success": False, "message": "Course not found"}, status=404)
-    except Exception:
-        return JsonResponse({"success": False, "message": "Error: award_badge"}, status=500)
+    except Exception as e:
+        print(f"Error awarding badge: {str(e)}")
+        return JsonResponse({"success": False, "message": "An error occurred"}, status=500)
 
 
 def notification_preferences(request):
