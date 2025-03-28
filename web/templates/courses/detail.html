@@ -321,9 +321,8 @@
                                   </form>
                                 {% endif %}
                               {% endif %}
-                              
                               {% if is_enrolled and session.start_time <= now and not session in completed_sessions %}
-                                <a href="{% url 'self_report_attendance' session.id %}" 
+                                <a href="{% url 'self_report_attendance' session.id %}"
                                    class="text-green-600 hover:text-green-700 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded text-xs font-medium">
                                   <i class="fas fa-check mr-1"></i>
                                   I Attended
@@ -751,8 +750,7 @@
                                       {% if enrollment.progress %}
                                         <div class="flex items-center">
                                           <div class="min-w-[4.5rem] w-[4.5rem] h-2 bg-gray-200 dark:bg-gray-700 rounded-full mr-2 overflow-hidden">
-                                            <div class="h-full bg-teal-500 dark:bg-teal-400 progress-bar"
-                                                 style="width: {{ enrollment.progress.completion_percentage }}%"
+                                            <div class="progress-bar h-full bg-teal-500 dark:bg-teal-400"
                                                  data-progress="{{ enrollment.progress.completion_percentage }}"></div>
                                           </div>
                                           <span class="text-sm text-gray-600 dark:text-gray-400">{{ enrollment.progress.completion_percentage }}%</span>
@@ -911,7 +909,7 @@
                                       </div>
                                       <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
                                         <div class="h-full bg-teal-500 dark:bg-teal-400"
-                                             style="width: {% if total > 0 %}{{ attended|floatformat:0 }}%{% else %}0%{% endif %}">
+                                             data-width="{% if total > 0 %}{{ attended|floatformat:0 }}{% else %}0{% endif %}">
                                         </div>
                                       </div>
                                     </div>
@@ -1032,14 +1030,14 @@
                         <div class="relative mb-4">
                           <div class="flex justify-between items-center mb-2">
                             <h3 class="font-semibold text-lg">Your Progress</h3>
-                            <div class="text-2xl font-bold text-green-600 dark:text-green-400"
-                                 style="width: 50%">{{ enrollment.progress.completion_percentage }}</div>
+                            <div class="text-2xl font-bold text-green-600 dark:text-green-400">
+                              {{ enrollment.progress.completion_percentage }}%
+                            </div>
                           </div>
                           <!-- Green Gradient Progress Bar -->
                           <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                            <div data-progress="{{ enrollment.progress.completion_percentage }}"
-                                 class="h-full bg-teal-500 dark:bg-teal-400"
-                                 style="width: {{ enrollment.progress.completion_percentage }}%"></div>
+                            <div class="progress-bar h-full bg-teal-500 dark:bg-teal-400"
+                                 data-progress="{{ enrollment.progress.completion_percentage }}"></div>
                           </div>
                         </div>
                         <!-- Stats -->
@@ -1211,8 +1209,8 @@
                               <i class="fas fa-edit mr-2"></i>
                               Edit
                             </a>
-                            <button onclick="confirmDelete('{% url 'delete_review' course.slug review.id %}')"
-                                    class="inline-flex items-center px-3 py-1.5 text-sm bg-red-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
+                            <button data-delete-url="{% url 'delete_review' course.slug review.id %}"
+                                    class="delete-review-btn inline-flex items-center px-3 py-1.5 text-sm bg-red-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
                               <i class="fas fa-trash-alt mr-2"></i>
                               Delete
                             </button>
@@ -1223,9 +1221,10 @@
                       {% if is_teacher %}
                         <div class="flex mt-1 clearfix justify-end">
                           <div class="flex space-x-2 float-right">
-                            <button onclick="confirmAddOrDeleteFeatureReviews('{% url 'remove_featured_review' course.slug review.id %}', 'Remove')"
+                            <button data-action="remove"
+                                    data-feature-url="{% url 'remove_featured_review' course.slug review.id %}"
                                     data-content="Remove from features"
-                                    class="inline-flex items-center px-3 py-1.5 text-sm bg-red-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
+                                    class="feature-review-btn inline-flex items-center px-3 py-1.5 text-sm bg-red-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
                               <i class="fas fa-trash-alt mr-2"></i>
                               Remove from features
                             </button>
@@ -1281,8 +1280,8 @@
                               <i class="fas fa-edit mr-2"></i>
                               Edit
                             </a>
-                            <button onclick="confirmDelete('{% url 'delete_review' course.slug review.id %}')"
-                                    class="inline-flex items-center px-3 py-1.5 text-sm bg-red-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
+                            <button data-delete-url="{% url 'delete_review' course.slug review.id %}"
+                                    class="delete-review-btn inline-flex items-center px-3 py-1.5 text-sm bg-red-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
                               <i class="fas fa-trash-alt mr-2"></i>
                               Delete
                             </button>
@@ -1293,9 +1292,10 @@
                       {% if is_teacher %}
                         <div class="flex mt-1 clearfix justify-end">
                           <div class="flex space-x-2 float-right">
-                            <button onclick="confirmAddOrDeleteFeatureReviews('{% url 'add_featured_review' course.slug review.id %}', 'add')"
+                            <button data-action="add"
+                                    data-feature-url="{% url 'add_featured_review' course.slug review.id %}"
                                     data-content="Add to features"
-                                    class="inline-flex items-center px-3 py-1.5 text-sm bg-teal-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
+                                    class="feature-review-btn inline-flex items-center px-3 py-1.5 text-sm bg-teal-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
                               <i class="fas fa-plus mr-2"></i>
                               Add to features
                             </button>
@@ -1367,6 +1367,25 @@
           });
       }
       setRatingDistributionWidths()
+
+      // Set width for progress bars based on data attributes
+      document.addEventListener('DOMContentLoaded', function() {
+          // Set width for progress bars
+          document.querySelectorAll('[data-progress]').forEach(function(bar) {
+              const progress = bar.getAttribute('data-progress');
+              if (progress) {
+                  bar.style.width = progress + '%';
+              }
+          });
+
+          // Set width for attendance bars
+          document.querySelectorAll('[data-width]').forEach(function(bar) {
+              const width = bar.getAttribute('data-width');
+              if (width) {
+                  bar.style.width = width + '%';
+              }
+          });
+      });
 
       document.getElementById("average_stars").innerText = JSON.parse('{{ course.average_rating|escapejs }}').toFixed(1);
 
@@ -1567,6 +1586,26 @@
                   if (progress) {
                       bar.style.width = progress + '%';
                   }
+              });
+          });
+      });
+
+      // Add event listeners for delete review buttons
+      document.addEventListener('DOMContentLoaded', function() {
+          // Delete review buttons
+          document.querySelectorAll('.delete-review-btn').forEach(button => {
+              button.addEventListener('click', function() {
+                  const deleteUrl = this.getAttribute('data-delete-url');
+                  confirmDelete(deleteUrl);
+              });
+          });
+
+          // Feature review buttons
+          document.querySelectorAll('.feature-review-btn').forEach(button => {
+              button.addEventListener('click', function() {
+                  const featureUrl = this.getAttribute('data-feature-url');
+                  const action = this.getAttribute('data-action');
+                  confirmAddOrDeleteFeatureReviews(featureUrl, action);
               });
           });
       });
