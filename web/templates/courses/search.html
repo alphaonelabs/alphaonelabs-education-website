@@ -128,11 +128,71 @@
               {% endif %}
             </div>
           {% empty %}
-            <p>
-              No courses found. Try searching for a different subject or level. or check back later for new courses! you can also <a href="{% url 'create_course' %}"
-    class="text-orange-500 hover:text-orange-600 underline transition-colors duration-200">create a course</a> if you are a teacher. or see a list of subjects or add subjects <a href="{% url 'subjects' %}"
-    class="text-orange-500 hover:text-orange-600 underline transition-colors duration-200">here</a>
-            </p>
+            <!-- Enhanced No Courses Found Section -->
+            <div class="col-span-full bg-white dark:bg-gray-800 rounded-lg p-8 text-center shadow-md">
+              <div class="mb-6">
+                <svg class="mx-auto h-24 w-24 text-orange-500 opacity-70"
+                     fill="none"
+                     stroke="currentColor"
+                     viewBox="0 0 24 24"
+                     xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 21h7a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0013.586 3H7a2 2 0 00-2 2v11m0 5l4.879-4.879m0 0a3 3 0 104.243-4.242 3 3 0 00-4.243 4.242z">
+                  </path>
+                </svg>
+              </div>
+              <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-4">No Courses Found</h2>
+              <p class="text-gray-600 dark:text-gray-400 mb-6">
+                We couldn't find any courses matching
+                {% if query %}"{{ query }}"{% endif %}
+                {% if subject %}in {{ subject }}{% endif %}
+                {% if level %}at {{ level }} level{% endif %}
+                .
+              </p>
+              <!-- Waiting Room Button -->
+              <div class="max-w-md mx-auto bg-gray-50 dark:bg-gray-700 rounded-lg p-6 shadow-inner">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Interested in This Course?</h3>
+                <a href="{% url 'learn' %}?query={{ query|urlencode }}&subject={{ subject|urlencode }}&level={{ level|urlencode }}"
+                   class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded-lg transition-colors duration-300 flex items-center justify-center">
+                  <svg class="w-5 h-5 mr-2"
+                       fill="none"
+                       stroke="currentColor"
+                       viewBox="0 0 24 24"
+                       xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+                    </path>
+                  </svg>
+                  Join Waiting List
+                </a>
+                <p class="text-xs text-gray-500 dark:text-gray-400 mt-3">We'll notify you when similar courses become available.</p>
+              </div>
+              <!-- Course Creation Button -->
+              <div class="mt-6 flex justify-center space-x-4">
+                {% if is_teacher %}
+                  <a href="{% url 'create_course' %}"
+                     class="bg-teal-500 hover:bg-teal-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-300 flex items-center">
+                    <svg class="w-5 h-5 mr-2"
+                         fill="none"
+                         stroke="currentColor"
+                         viewBox="0 0 24 24"
+                         xmlns="http://www.w3.org/2000/svg">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    Create a Course
+                  </a>
+                {% endif %}
+                <a href="{% url 'subjects' %}"
+                   class="bg-indigo-500 hover:bg-indigo-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-300 flex items-center">
+                  <svg class="w-5 h-5 mr-2"
+                       fill="none"
+                       stroke="currentColor"
+                       viewBox="0 0 24 24"
+                       xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+                  </svg>
+                  Browse Subjects
+                </a>
+              </div>
+            </div>
           {% endfor %}
         </div>
         <!-- Pagination -->
