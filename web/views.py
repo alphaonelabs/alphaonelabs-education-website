@@ -104,6 +104,7 @@ from .models import (
     Certificate,
     Challenge,
     ChallengeSubmission,
+    CounterStatistic,
     Course,
     CourseMaterial,
     CourseProgress,
@@ -145,6 +146,7 @@ from .models import (
     TeamGoalMember,
     TeamInvite,
     TimeSlot,
+    UserActivity,
     UserBadge,
     WaitingRoom,
     WebRequest,
@@ -6409,3 +6411,34 @@ def delete_post(request, post_id):
     if request.method == "POST":
         post.delete()
     return redirect("social_media_dashboard")
+
+
+@require_GET
+def get_counter_data(request):
+    """API view to get the current counter statistics and recent activities."""
+    # Update counters in real-time
+    from web.services.counter_service import CounterService
+
+    CounterService.update_all_counters()
+
+    # Get counter values
+    counter_data = {
+        "total_learners": CounterStatistic.get_counter_value("total_learners"),
+        "total_enrollments": CounterStatistic.get_counter_value("total_enrollments"),
+        "total_courses_completed": CounterStatistic.get_counter_value("total_courses_completed"),
+        "total_quizzes_taken": CounterStatistic.get_counter_value("total_quizzes_taken"),
+    }
+
+    # Get recent activities
+    recent_activities = UserActivity.objects.all()[:10]
+
+    # Render the activity items as HTML
+    activities_html = render_to_string("web/components/activity_items.html", {"activities": recent_activities})
+
+    return JsonResponse(
+        {
+            "counters": counter_data,
+            "activities_html": activities_html,
+            "timestamp": timezone.now().isoformat(),
+        }
+    )

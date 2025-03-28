@@ -15,12 +15,15 @@ from .models import (
     BlogPost,
     Cart,
     CartItem,
+    Certificate,
     Challenge,
     ChallengeSubmission,
+    CounterStatistic,
     Course,
     CourseMaterial,
     CourseProgress,
     Donation,
+    EducationalVideo,
     Enrollment,
     ForumCategory,
     ForumReply,
@@ -48,6 +51,7 @@ from .models import (
     Storefront,
     Subject,
     SuccessStory,
+    UserActivity,
     UserBadge,
     UserMembership,
     WaitingRoom,
@@ -739,3 +743,35 @@ class MembershipSubscriptionEventAdmin(admin.ModelAdmin):
     search_fields = ("user__email", "user__username", "stripe_event_id")
     raw_id_fields = ("user", "membership")
     readonly_fields = ("created_at",)
+
+
+@admin.register(Certificate)
+class CertificateAdmin(admin.ModelAdmin):
+    list_display = ("user", "course", "completion_date")
+    list_filter = ("completion_date",)
+    search_fields = ("user__username", "course__title")
+    date_hierarchy = "completion_date"
+
+
+@admin.register(CounterStatistic)
+class CounterStatisticAdmin(admin.ModelAdmin):
+    list_display = ("get_counter_type_display", "value", "last_updated")
+    list_filter = ("counter_type", "last_updated")
+    readonly_fields = ("last_updated",)
+
+
+@admin.register(UserActivity)
+class UserActivityAdmin(admin.ModelAdmin):
+    list_display = ("user", "activity_type", "get_content_object_str", "timestamp", "location")
+    list_filter = ("activity_type", "timestamp", "show_full_name")
+    search_fields = ("user__username", "location")
+    readonly_fields = ("timestamp",)
+
+    def get_content_object_str(self, obj):
+        return str(obj.content_object)
+
+    get_content_object_str.short_description = "Content Object"
+
+
+# Register any models not explicitly registered above
+admin.site.register(EducationalVideo)
