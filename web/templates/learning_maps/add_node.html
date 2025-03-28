@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+
+{% block title %}Add Node to Learning Map{% endblock %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="mb-6">
+      <a href="{% url 'learning_map_detail' learning_map.slug %}"
+         class="text-blue-600 hover:underline flex items-center">
+        <svg class="w-4 h-4 mr-1"
+             fill="none"
+             stroke="currentColor"
+             viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+        Back to Learning Map
+      </a>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+      <h1 class="text-2xl font-bold mb-6">Add Node to "{{ learning_map.title }}"</h1>
+      <form method="post" class="space-y-6">
+        {% csrf_token %}
+        <div>
+          <label for="node_type" class="block text-sm font-medium mb-2">Node Type</label>
+          <select id="node_type"
+                  name="node_type"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md"
+                  required>
+            <option value="">Select a node type</option>
+            <option value="tracker">Progress Tracker</option>
+            <option value="course">Course</option>
+            <option value="milestone">Custom Milestone</option>
+          </select>
+        </div>
+        <div>
+          <label for="title" class="block text-sm font-medium mb-2">Title (optional for trackers and courses)</label>
+          <input type="text"
+                 id="title"
+                 name="title"
+                 class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md" />
+          <p class="text-sm text-gray-500 mt-1">Leave blank to use the default name from selected tracker or course</p>
+        </div>
+        <div>
+          <label for="description" class="block text-sm font-medium mb-2">Description (optional)</label>
+          <textarea id="description"
+                    name="description"
+                    rows="3"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md"></textarea>
+        </div>
+        <!-- Progress Tracker Selection (shown when tracker type is selected) -->
+        <div id="tracker_fields" class="hidden">
+          <label for="tracker_id" class="block text-sm font-medium mb-2">Select Progress Tracker</label>
+          <select id="tracker_id"
+                  name="tracker_id"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md">
+            <option value="">Select a progress tracker</option>
+            {% for tracker in trackers %}
+              <option value="{{ tracker.id }}">{{ tracker.title }} ({{ tracker.current_value }}/{{ tracker.target_value }})</option>
+            {% empty %}
+              <option value="" disabled>No progress trackers available</option>
+            {% endfor %}
+          </select>
+          {% if trackers|length == 0 %}
+            <p class="text-sm text-yellow-500 mt-1">
+              You don't have any progress trackers yet. <a href="{% url 'create_tracker' %}"
+    class="text-blue-500 hover:underline">Create one</a> first.
+            </p>
+          {% endif %}
+        </div>
+        <!-- Course Selection (shown when course type is selected) -->
+        <div id="course_fields" class="hidden">
+          <label for="enrollment_id" class="block text-sm font-medium mb-2">Select Course</label>
+          <select id="enrollment_id"
+                  name="enrollment_id"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md">
+            <option value="">Select a course</option>
+            {% for enrollment in enrollments %}
+              <option value="{{ enrollment.id }}">{{ enrollment.course.title }}</option>
+            {% empty %}
+              <option value="" disabled>No courses available</option>
+            {% endfor %}
+          </select>
+          {% if enrollments|length == 0 %}
+            <p class="text-sm text-yellow-500 mt-1">
+              You're not enrolled in any courses yet. <a href="{% url 'course_search' %}"
+    class="text-blue-500 hover:underline">Browse courses</a> to enroll.
+            </p>
+          {% endif %}
+        </div>
+        <!-- Custom Milestone Fields (shown when milestone type is selected) -->
+        <div id="milestone_fields" class="hidden space-y-4">
+          <div>
+            <label for="current_value" class="block text-sm font-medium mb-2">Current Value</label>
+            <input type="number"
+                   id="current_value"
+                   name="current_value"
+                   min="0"
+                   value="0"
+                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md" />
+          </div>
+          <div>
+            <label for="target_value" class="block text-sm font-medium mb-2">Target Value</label>
+            <input type="number"
+                   id="target_value"
+                   name="target_value"
+                   min="1"
+                   value="100"
+                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md" />
+          </div>
+          <div>
+            <label for="color" class="block text-sm font-medium mb-2">Node Color</label>
+            <select id="color"
+                    name="color"
+                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md">
+              <option value="blue-600">Primary (Blue)</option>
+              <option value="green-600">Success (Green)</option>
+              <option value="yellow-600">Warning (Yellow)</option>
+              <option value="red-600">Danger (Red)</option>
+              <option value="gray-600">Secondary (Gray)</option>
+            </select>
+          </div>
+        </div>
+        <div class="flex justify-end">
+          <a href="{% url 'learning_map_detail' learning_map.slug %}"
+             class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 mr-2">Cancel</a>
+          <button type="submit"
+                  class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Add Node</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          const nodeTypeSelect = document.getElementById('node_type');
+          const trackerFields = document.getElementById('tracker_fields');
+          const courseFields = document.getElementById('course_fields');
+          const milestoneFields = document.getElementById('milestone_fields');
+          const titleInput = document.getElementById('title');
+
+          nodeTypeSelect.addEventListener('change', function() {
+              // Hide all specific fields first
+              trackerFields.classList.add('hidden');
+              courseFields.classList.add('hidden');
+              milestoneFields.classList.add('hidden');
+
+              // Show fields based on selected type
+              switch (this.value) {
+                  case 'tracker':
+                      trackerFields.classList.remove('hidden');
+                      break;
+                  case 'course':
+                      courseFields.classList.remove('hidden');
+                      break;
+                  case 'milestone':
+                      milestoneFields.classList.remove('hidden');
+                      // Make title required for milestones
+                      titleInput.required = true;
+                      break;
+                  default:
+                      // Reset title requirement
+                      titleInput.required = false;
+              }
+          });
+
+          // Form validation before submission
+          document.querySelector('form').addEventListener('submit', function(event) {
+              const nodeType = nodeTypeSelect.value;
+
+              if (nodeType === 'tracker' && document.getElementById('tracker_id').value === '') {
+                  event.preventDefault();
+                  alert('Please select a progress tracker');
+              } else if (nodeType === 'course' && document.getElementById('enrollment_id').value === '') {
+                  event.preventDefault();
+                  alert('Please select a course');
+              } else if (nodeType === 'milestone' && titleInput.value.trim() === '') {
+                  event.preventDefault();
+                  alert('Please provide a title for your milestone');
+              }
+          });
+      });
+  </script>
+{% endblock %}

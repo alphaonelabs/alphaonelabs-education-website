@@ -206,5 +206,32 @@
         {% endfor %}
       </div>
     </div>
+    <!-- Learning Maps Section -->
+    <div class="mt-8">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-semibold">Your Learning Maps</h2>
+        <a href="{% url 'learning_map_list' %}"
+           class="text-blue-600 hover:underline">View All</a>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        {% if maps %}
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
+            {% for map in maps %}
+              <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                <h3 class="font-semibold mb-2">{{ map.title }}</h3>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">{{ map.description|truncatechars:60 }}</p>
+                <a href="{% url 'learning_map_detail' map.slug %}"
+                   class="text-blue-600 hover:underline text-sm">View Map</a>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="p-6 text-center">
+            <p class="text-gray-600 dark:text-gray-400 mb-4">You haven't created any learning maps yet.</p>
+            <a href="{% url 'learning_map_list' %}" class="btn-primary">Create Your First Learning Map</a>
+          </div>
+        {% endif %}
+      </div>
+    </div>
   </div>
 {% endblock %}
