@@ -5995,7 +5995,7 @@ def award_badge(request):
         course = Course.objects.get(slug=course_slug)
 
         # Check if user is the course teacher
-        if not request.user != course.teacher:
+        if request.user != course.teacher:
             return JsonResponse(
                 {"success": False, "message": "Unauthorized: Only the course teacher can award badges"}, status=403
             )

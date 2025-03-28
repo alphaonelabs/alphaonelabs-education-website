@@ -1851,6 +1851,7 @@ class Badge(models.Model):
         default="perfect_attendance",
     )
     description = models.TextField(blank=True)
+    image = models.CharField(max_length=255, blank=True, help_text="URL or path to the badge image")
     course = models.ForeignKey(
         Course,
         on_delete=models.CASCADE,
@@ -1867,6 +1868,22 @@ class Badge(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        if self.image:
+            img = Image.open(self.image)
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+            img = img.resize((200, 200), Image.Resampling.LANCZOS)
+            buffer = BytesIO()
+            img.save(buffer, format="PNG", quality=90)
+            file_name = self.image.name
+            self.image.delete(save=False)
+            self.image.save(file_name, ContentFile(buffer.getvalue()), save=False)
+        super().save(*args, **kwargs)
+
+    class Meta:
+        ordering = ["badge_type", "name"]
 
 
 class UserBadge(models.Model):
