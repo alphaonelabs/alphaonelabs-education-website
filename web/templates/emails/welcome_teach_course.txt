@@ -9,7 +9,6 @@ You can manage your courses by going to "Teacher Dashboard".
 Your account details:
 - Username: {{ user.username }}
 - Email: {{ user.email }}
-- Temporary Password: {{ temp_password }}
 
 To set your password and access your account, please visit:
 {{ reset_url }}
