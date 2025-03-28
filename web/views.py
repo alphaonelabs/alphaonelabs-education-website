@@ -6401,7 +6401,8 @@ def pdf_submission_detail(request, submission_id):
         "status_choices": submission.get_status_choices(),
     }
     return render(request, "web/pdf/submission_detail.html", context)
-=======
+
+
 def social_media_manager_required(user):
     """Check if user has social media manager permissions."""
     return user.is_authenticated and (user.is_staff or getattr(user.profile, "is_social_media_manager", False))
