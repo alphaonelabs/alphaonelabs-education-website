@@ -89,12 +89,6 @@ from .forms import (
     TeamInviteForm,
     UserRegistrationForm,
 )
-from .helpers import (
-    cancel_subscription,
-    create_subscription,
-    reactivate_subscription,
-    setup_stripe,
-)
 from .marketing import (
     generate_social_share_content,
     get_course_analytics,
@@ -167,12 +161,16 @@ from .notifications import (
 from .referrals import send_referral_reward_email
 from .social import get_social_stats
 from .utils import (
+    cancel_subscription,
     create_leaderboard_context,
+    create_subscription,
     get_cached_challenge_entries,
     get_cached_leaderboard_data,
     get_leaderboard,
     get_or_create_cart,
     get_user_points,
+    reactivate_subscription,
+    setup_stripe,
 )
 
 GOOGLE_CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "google_credentials.json")
