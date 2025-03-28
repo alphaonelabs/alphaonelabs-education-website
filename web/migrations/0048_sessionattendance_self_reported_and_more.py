@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('web', '0047_review_is_featured'),
+        ("web", "0047_review_is_featured"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='sessionattendance',
-            name='self_reported',
+            model_name="sessionattendance",
+            name="self_reported",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='sessionattendance',
-            name='verified_by_teacher',
+            model_name="sessionattendance",
+            name="verified_by_teacher",
             field=models.BooleanField(default=False),
         ),
     ]
