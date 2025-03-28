@@ -123,6 +123,8 @@ from .models import (
     ForumTopic,
     Goods,
     GradeableLink,
+    LearningMap,
+    LearningMapNode,
     LearningStreak,
     LinkGrade,
     MembershipPlan,
@@ -6906,3 +6908,257 @@ def delete_post(request, post_id):
     if request.method == "POST":
         post.delete()
     return redirect("social_media_dashboard")
+
+
+@login_required
+def learning_map_list(request):
+    """View for listing a user's learning maps"""
+    maps = LearningMap.objects.filter(user=request.user)
+
+    if request.method == "POST":
+        # Handle creation of a new map
+        title = request.POST.get("title")
+        description = request.POST.get("description", "")
+        public = request.POST.get("public") == "on"
+
+        if title:
+            new_map = LearningMap.objects.create(user=request.user, title=title, description=description, public=public)
+            messages.success(request, "Learning map created successfully!")
+            return redirect("learning_map_detail", slug=new_map.slug)
+        else:
+            messages.error(request, "Title is required")
+
+    return render(request, "learning_maps/list.html", {"maps": maps})
+
+
+@login_required
+def learning_map_detail(request, slug):
+    """View for displaying a learning map"""
+    learning_map = get_object_or_404(LearningMap, slug=slug)
+
+    # Check permission
+    if learning_map.user != request.user and not learning_map.public:
+        messages.error(request, "You don't have permission to view this learning map")
+        return redirect("learning_map_list")
+
+    # Get all nodes for this map
+    nodes = learning_map.nodes.all()
+
+    # Get available progress trackers and enrollments for adding to the map
+    if request.user == learning_map.user:
+        trackers = ProgressTracker.objects.filter(user=request.user)
+        enrollments = Enrollment.objects.filter(student=request.user)
+    else:
+        trackers = []
+        enrollments = []
+
+    context = {
+        "learning_map": learning_map,
+        "nodes": nodes,
+        "trackers": trackers,
+        "enrollments": enrollments,
+        "is_owner": request.user == learning_map.user,
+    }
+    return render(request, "learning_maps/detail.html", context)
+
+
+@login_required
+def add_map_node(request, slug):
+    """View for adding a node to a learning map"""
+    learning_map = get_object_or_404(LearningMap, slug=slug, user=request.user)
+
+    if request.method == "POST":
+        node_type = request.POST.get("node_type")
+        title = request.POST.get("title", "")
+        description = request.POST.get("description", "")
+
+        # Create the node with basic info
+        node = LearningMapNode(
+            learning_map=learning_map,
+            title=title,
+            description=description,
+            node_type=node_type,
+            order=learning_map.nodes.count() + 1,
+        )
+
+        # Handle specific node types
+        if node_type == "tracker":
+            tracker_id = request.POST.get("tracker_id")
+            if tracker_id:
+                node.tracker = get_object_or_404(ProgressTracker, id=tracker_id, user=request.user)
+                if not title:
+                    node.title = node.tracker.title
+
+        elif node_type == "course":
+            enrollment_id = request.POST.get("enrollment_id")
+            if enrollment_id:
+                node.enrollment = get_object_or_404(Enrollment, id=enrollment_id, student=request.user)
+                if not title:
+                    node.title = node.enrollment.course.title
+
+        elif node_type == "milestone":
+            node.current_value = int(request.POST.get("current_value", 0) or 0)
+            node.target_value = int(request.POST.get("target_value", 100) or 100)
+            node.color = request.POST.get("color", "blue-600")
+
+        # Handle positioning if provided
+        x_pos = request.POST.get("x_position")
+        y_pos = request.POST.get("y_position")
+        if x_pos and y_pos:
+            node.x_position = int(x_pos)
+            node.y_position = int(y_pos)
+
+        node.save()
+        messages.success(request, f"Added {node.get_node_type_display()} to your learning map")
+        return redirect("learning_map_detail", slug=learning_map.slug)
+
+    # Get available resources for the form
+    trackers = ProgressTracker.objects.filter(user=request.user)
+    enrollments = Enrollment.objects.filter(student=request.user)
+
+    context = {
+        "learning_map": learning_map,
+        "trackers": trackers,
+        "enrollments": enrollments,
+    }
+    return render(request, "learning_maps/add_node.html", context)
+
+
+@login_required
+def share_learning_map(request, slug):
+    """Generate sharing links for a learning map"""
+    learning_map = get_object_or_404(LearningMap, slug=slug)
+
+    # Check permission
+    if request.user != learning_map.user:
+        messages.error(request, "You can only share your own learning maps")
+        return redirect("learning_map_list")
+
+    # Make the map public for sharing
+    if not learning_map.public and request.method == "POST":
+        learning_map.public = True
+        learning_map.save()
+        messages.success(request, "Your learning map is now public and can be shared")
+
+    # Generate the share URL
+    share_url = request.build_absolute_uri(reverse("public_learning_map", args=[learning_map.share_token]))
+
+    # Get social sharing links
+    from web.social import get_social_share_links
+
+    social_links = get_social_share_links(
+        url=share_url,
+        title=f"{request.user.username}'s Learning Journey: {learning_map.title}",
+        summary=learning_map.description or "Check out my personalized learning map!",
+    )
+
+    context = {
+        "learning_map": learning_map,
+        "share_url": share_url,
+        "social_links": social_links,
+    }
+    return render(request, "learning_maps/share.html", context)
+
+
+def public_learning_map(request, share_token):
+    """Public view for a shared learning map"""
+    learning_map = get_object_or_404(LearningMap, share_token=share_token, public=True)
+    nodes = learning_map.nodes.all()
+
+    context = {
+        "learning_map": learning_map,
+        "nodes": nodes,
+        "owner": learning_map.user,
+        "is_public_view": True,
+    }
+    return render(request, "learning_maps/public.html", context)
+
+
+@login_required
+def update_map_node(request, node_id):
+    """Update a learning map node's progress"""
+    node = get_object_or_404(LearningMapNode, id=node_id)
+
+    # Only the map owner can update nodes
+    learning_map = node.learning_map
+    if request.user != learning_map.user:
+        messages.error(request, "You don't have permission to update this node")
+        return redirect("learning_map_detail", slug=learning_map.slug)
+
+    if request.method == "POST" and node.node_type == "milestone":
+        try:
+            # Custom milestones can be updated directly
+            new_value = int(request.POST.get("current_value", node.current_value) or 0)
+            node.current_value = new_value
+            node.save()
+            messages.success(request, f"Updated progress for {node.title}")
+        except ValueError:
+            messages.error(request, "Invalid value provided")
+
+    return redirect("learning_map_detail", slug=learning_map.slug)
+
+
+@login_required
+def get_learning_map_data(request, slug):
+    """API endpoint to get learning map data for visualization"""
+    learning_map = get_object_or_404(LearningMap, slug=slug)
+
+    # Check permission
+    if learning_map.user != request.user and not learning_map.public:
+        return JsonResponse({"error": "Permission denied"}, status=403)
+
+    nodes_data = []
+    for node in learning_map.nodes.all():
+        node_data = {
+            "id": node.id,
+            "title": node.title,
+            "description": node.description,
+            "type": node.node_type,
+            "progress": node.progress_percentage,
+            "completed": node.is_completed,
+            "x": node.x_position,
+            "y": node.y_position,
+            "order": node.order,
+        }
+
+        # Add specific data based on node type
+        if node.node_type == "tracker" and node.tracker:
+            node_data.update(
+                {
+                    "tracker_id": node.tracker.id,
+                    "current_value": node.tracker.current_value,
+                    "target_value": node.tracker.target_value,
+                    "color": node.tracker.color,
+                }
+            )
+        elif node.node_type == "course" and node.enrollment:
+            course = node.enrollment.course
+            node_data.update(
+                {
+                    "enrollment_id": node.enrollment.id,
+                    "course_id": course.id,
+                    "course_title": course.title,
+                    "course_slug": course.slug,
+                }
+            )
+        elif node.node_type == "milestone":
+            node_data.update(
+                {
+                    "current_value": node.current_value,
+                    "target_value": node.target_value,
+                    "color": node.color,
+                }
+            )
+
+        nodes_data.append(node_data)
+
+    data = {
+        "map_id": learning_map.id,
+        "map_slug": learning_map.slug,
+        "title": learning_map.title,
+        "description": learning_map.description,
+        "owner": learning_map.user.username,
+        "nodes": nodes_data,
+    }
+
+    return JsonResponse(data)

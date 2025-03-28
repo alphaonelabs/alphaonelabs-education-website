@@ -334,3 +334,25 @@ def get_social_stats():
     # Add other social media platforms here as needed
 
     return stats
+
+
+def get_social_share_links(url, title, summary=None, image_url=None):
+    """
+    Generate social media sharing links for a given URL, title, and optional summary or image.
+
+    Args:
+        url (str): The URL to share.
+        title (str): The title of the content being shared.
+        summary (str, optional): A short summary of the content.
+        image_url (str, optional): A URL to an image to include in the share (if supported).
+
+    Returns:
+        dict: A dictionary containing sharing links for various platforms.
+    """
+    links = {
+        "twitter": f"https://twitter.com/intent/tweet?url={url}&text={title}",
+        "facebook": f"https://www.facebook.com/sharer/sharer.php?u={url}",
+        "linkedin": f"https://www.linkedin.com/shareArticle?mini=true&url={url}&title={title}&summary={summary or ''}",
+        "email": f"mailto:?subject={title}&body=Check out this learning map: {url}",
+    }
+    return links
