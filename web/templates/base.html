@@ -399,6 +399,10 @@
                     onclick="toggleDarkMode()">
               <i id="darkModeIcon" class="fas fa-moon"></i>
             </button>
+            <a href="{% url 'social_media_dashboard' %}"
+               class="p-2 rounded-full inline-flex items-center ml-2">
+              <i class="fab fa-twitter text-xl"></i>
+            </a>
           </div>
           <!-- Auth Buttons -->
           {% if user.is_authenticated %}
