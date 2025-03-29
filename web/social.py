@@ -336,6 +336,8 @@ def get_social_stats():
     return stats
 
 
+from urllib.parse import quote
+
 def get_social_share_links(url, title, summary=None, image_url=None):
     """
     Generate social media sharing links for a given URL, title, and optional summary or image.
@@ -349,10 +351,14 @@ def get_social_share_links(url, title, summary=None, image_url=None):
     Returns:
         dict: A dictionary containing sharing links for various platforms.
     """
+    encoded_url = quote(url)
+    encoded_title = quote(title)
+    encoded_summary = quote(summary or '')
+    
     links = {
-        "twitter": f"https://twitter.com/intent/tweet?url={url}&text={title}",
-        "facebook": f"https://www.facebook.com/sharer/sharer.php?u={url}",
-        "linkedin": f"https://www.linkedin.com/shareArticle?mini=true&url={url}&title={title}&summary={summary or ''}",
-        "email": f"mailto:?subject={title}&body=Check out this learning map: {url}",
+        "twitter": f"https://twitter.com/intent/tweet?url={encoded_url}&text={encoded_title}",
+        "facebook": f"https://www.facebook.com/sharer/sharer.php?u={encoded_url}",
+        "linkedin": f"https://www.linkedin.com/shareArticle?mini=true&url={encoded_url}&title={encoded_title}&summary={encoded_summary}",
+        "email": f"mailto:?subject={encoded_title}&body=Check out this learning map: {url}",
     }
     return links
