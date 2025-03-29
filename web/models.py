@@ -1796,7 +1796,6 @@ class Meetup(models.Model):
 
 
 class MeetupRegistration(models.Model):
-class MeetupRegistration(models.Model):
     meetup = models.ForeignKey(Meetup, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     registered_at = models.DateTimeField(auto_now_add=True)
