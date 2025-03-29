@@ -16,8 +16,167 @@ from .forms import (
     QuizOptionFormSet,
     QuizQuestionForm,
     TakeQuizForm,
+    # QuizQuestionSpecializedForm,
 )
-from .models import Quiz, QuizQuestion, UserQuiz
+from .models import Quiz, QuizQuestion, UserQuiz, Course, Session
+
+
+# @login_required
+# def create_course_exam(request, course_id=None, session_id=None):
+#     """Create a new exam for a course or session."""
+#     course = None
+#     session = None
+    
+#     if course_id:
+#         course = get_object_or_404(Course, id=course_id)
+#         # Check if user is the teacher
+#         if course.teacher != request.user:
+#             return HttpResponseForbidden("You don't have permission to create exams for this course.")
+    
+#     if session_id:
+#         session = get_object_or_404(Session, id=session_id)
+#         course = session.course
+#         # Check if user is the teacher
+#         if course.teacher != request.user:
+#             return HttpResponseForbidden("You don't have permission to create exams for this session.")
+    
+#     # Default exam type
+#     exam_type = "course" if not session else "session"
+    
+#     # Handle request
+#     if request.method == "POST":
+#         form = QuizForm(request.POST)
+#         if form.is_valid():
+#             quiz = form.save(commit=False)
+#             quiz.creator = request.user
+#             quiz.share_code = get_random_string(8)
+#             quiz.exam_type = exam_type
+#             quiz.course = course
+#             quiz.session = session
+#             quiz.save()
+            
+#             messages.success(request, "Exam created successfully. Now add some questions!")
+#             return redirect("quiz_detail", quiz_id=quiz.id)
+#     else:
+#         # Pre-populate form with values from course
+#         initial_data = {
+#             'subject': course.subject,
+#             'time_limit': 60 if exam_type == "session" else 120,
+#             'title': f"Quiz - {session.title}" if session else f"Final Exam - {course.title}",
+#             'description': f"Quiz for {session.title}" if session else f"Final comprehensive exam for {course.title}",
+#             'status': 'draft',
+#         }
+#         form = QuizForm(initial=initial_data)
+    
+#     return render(
+#         request,
+#         "web/quiz/quiz_form.html",
+#         {
+#             "form": form,
+#             "title": "Create Session Quiz" if session else "Create Course Exam",
+#             "course": course,
+#             "session": session,
+#             "exam_type": exam_type,
+#         },
+#     )
+
+# @login_required
+# def add_question_specialized(request, quiz_id):
+#     """Add a specialized question to a quiz based on question type."""
+#     quiz = get_object_or_404(Quiz, id=quiz_id)
+    
+#     # Check if user can edit this quiz
+#     if quiz.creator != request.user:
+#         return HttpResponseForbidden("You don't have permission to edit this quiz.")
+    
+#     # Calculate the next order value
+#     next_order = 1
+#     if quiz.questions.exists():
+#         next_order = quiz.questions.order_by("-order").first().order + 1
+    
+#     if request.method == "POST":
+#         form = QuizQuestionSpecializedForm(request.POST, request.FILES)
+#         # Set the quiz ID explicitly in the form data
+#         form.instance.quiz_id = quiz.id
+        
+#         question_type = request.POST.get('question_type')
+        
+#         # Different handling based on question type
+#         if question_type in ['multiple', 'true_false']:
+#             # Use the standard option formset
+#             formset = QuizOptionFormSet(request.POST, request.FILES, prefix="options")
+#             formset_valid = formset.is_valid()
+#         else:
+#             # No options needed for other question types
+#             formset = None
+#             formset_valid = True
+        
+#         # Validate the form
+#         form_valid = form.is_valid()
+        
+#         if form_valid and formset_valid:
+#             try:
+#                 with transaction.atomic():
+#                     # Save the question
+#                     question = form.save(commit=False)
+#                     question.quiz = quiz
+#                     question.order = next_order
+                    
+#                     # Handle specialized fields based on question type
+#                     if question_type == 'fill_blank':
+#                         # Extract the blank parts
+#                         blank_text = form.cleaned_data.get('text', '')
+#                         question.text = blank_text
+#                     elif question_type == 'matching':
+#                         # Get matching items from form
+#                         items = request.POST.getlist('matching_item[]')
+#                         matches = request.POST.getlist('matching_match[]')
+#                         question.matching_items = {
+#                             'items': items,
+#                             'matches': matches
+#                         }
+#                     elif question_type == 'coding':
+#                         # Get code starter and expected output
+#                         question.code_starter = form.cleaned_data.get('code_starter', '')
+#                         question.expected_output = form.cleaned_data.get('expected_output', '')
+                    
+#                     question.save()
+                    
+#                     # Save options if applicable
+#                     if formset:
+#                         formset.instance = question
+#                         for i, option_form in enumerate(formset):
+#                             if option_form.cleaned_data and not option_form.cleaned_data.get("DELETE", False):
+#                                 option = option_form.save(commit=False)
+#                                 option.question = question
+#                                 option.order = i
+#                                 option.save()
+                
+#                 messages.success(request, "Question added successfully.")
+                
+#                 # Redirect based on the button clicked
+#                 if "save_and_add" in request.POST:
+#                     return redirect("add_question_specialized", quiz_id=quiz.id)
+#                 else:
+#                     return redirect("quiz_detail", quiz_id=quiz.id)
+#             except Exception as e:
+#                 print(e)
+#                 # Re-raise the exception
+#                 raise
+#     else:
+#         form = QuizQuestionSpecializedForm()
+#         formset = QuizOptionFormSet(prefix="options")
+    
+#     return render(
+#         request,
+#         "web/quiz/question_specialized_form.html",
+#         {
+#             "form": form,
+#             "formset": formset,
+#             "quiz": quiz,
+#             "title": "Add Question",
+#         },
+#     )
 
 
 @login_required

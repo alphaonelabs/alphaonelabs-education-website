@@ -596,6 +596,15 @@
                     My Progress
                   </button>
                 {% endif %}
+                <button class="px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800"
+                        data-tab="exams"
+                        id="tab-exams"
+                        role="tab"
+                        aria-selected="false"
+                        aria-controls="content-exams">
+                  <i class="fas fa-file-alt mr-2 text-teal-300 dark:text-teal-400"></i>
+                  Exams
+                </button>
               </div>
               <!-- Tab Content -->
               <div class="p-6">
@@ -919,6 +928,179 @@
                         </div>
                       </div>
                     {% endif %}
+
+                    <!-- Tab Content - Add this new section in the Tab Content area -->
+                    <div id="content-exams"
+                        class="tab-content hidden"
+                        role="tabpanel"
+                        aria-labelledby="tab-exams">
+                      <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
+                        <div class="flex justify-between items-center mb-4">
+                          <h2 class="text-xl font-bold">Course Exams and Quizzes</h2>
+                          {% if user == course.teacher %}
+                            <a href="{% url 'create_quiz' %}?course={{ course.id }}&exam_type=course"
+                              class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg transition duration-200 text-sm">
+                              <i class="fas fa-plus mr-1"></i>Add Course Exam
+                            </a>
+                          {% endif %}
+                        </div>
+                        
+                        <!-- Session Exams Section -->
+                        <div class="mb-6">
+                          <h3 class="text-lg font-semibold mb-2">Session Quizzes</h3>
+                          {% if sessions %}
+                            <div class="space-y-3">
+                              {% for session in sessions %}
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                                  <h4 class="font-medium">{{ session.title }}</h4>
+                                  
+                                  {% with session_exams=session.exams.all %}
+                                    {% if session_exams %}
+                                      <div class="mt-2 space-y-2">
+                                        {% for exam in session_exams %}
+                                          <div class="bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 p-3">
+                                            <div class="flex justify-between items-start">
+                                              <div>
+                                                <span class="font-medium">{{ exam.title }}</span>
+                                                <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                                  <span class="inline-flex items-center">
+                                                    <i class="far fa-clock mr-1"></i>{{ exam.time_limit }} minutes
+                                                  </span>
+                                                  <span class="mx-2">•</span>
+                                                  <span class="inline-flex items-center">
+                                                    <i class="far fa-question-circle mr-1"></i>{{ exam.questions.count }} questions
+                                                  </span>
+                                                </div>
+                                              </div>
+                                              
+                                              <div class="flex space-x-2">
+                                                {% if is_teacher %}
+                                                  <a href="{% url 'quiz_detail' exam.id %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                                    <i class="fas fa-edit"></i>
+                                                  </a>
+                                                {% elif is_enrolled %}
+                                                  {% with user_attempts=exam.user_quizzes.filter(user=user) %}
+                                                    {% if user_attempts %}
+                                                      <a href="{% url 'quiz_results' user_attempts.first.id %}" class="text-green-600 hover:text-green-800 dark:text-green-400">
+                                                        <i class="fas fa-check-circle"></i> View Results
+                                                      </a>
+                                                    {% else %}
+                                                      <a href="{% url 'take_quiz' exam.id %}" class="text-orange-600 hover:text-orange-800 dark:text-orange-400">
+                                                        <i class="fas fa-pencil-alt"></i> Take Quiz
+                                                      </a>
+                                                    {% endif %}
+                                                  {% endwith %}
+                                                {% endif %}
+                                              </div>
+                                            </div>
+                                          </div>
+                                        {% endfor %}
+                                      </div>
+                                    {% else %}
+                                      {% if is_teacher %}
+                                        <div class="mt-2">
+                                          <a href="{% url 'create_quiz' %}?course={{ course.id }}&session={{ session.id }}&exam_type=session" 
+                                            class="text-blue-600 hover:text-blue-800 dark:text-blue-400 text-sm inline-flex items-center">
+                                            <i class="fas fa-plus-circle mr-1"></i>Add Session Quiz
+                                          </a>
+                                        </div>
+                                      {% else %}
+                                        <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">No quizzes available for this session</p>
+                                      {% endif %}
+                                    {% endif %}
+                                  {% endwith %}
+                                </div>
+                              {% endfor %}
+                            </div>
+                          {% else %}
+                            <p class="text-gray-500 dark:text-gray-400 text-sm">No sessions available for this course yet.</p>
+                          {% endif %}
+                        </div>
+                        
+                        <!-- Final Course Exam Section -->
+                        <div>
+                          <h3 class="text-lg font-semibold mb-2">Final Course Exam</h3>
+                          {% with course_exams=course.exams.filter(exam_type='course', session__isnull=True) %}
+                            {% if course_exams %}
+                              <div class="space-y-3">
+                                {% for exam in course_exams %}
+                                  <div class="bg-white dark:bg-gray-800 rounded-lg border-2 border-teal-200 dark:border-teal-800 p-4">
+                                    <div class="flex justify-between items-start">
+                                      <div>
+                                        <h4 class="font-semibold text-lg">{{ exam.title }}</h4>
+                                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ exam.description|truncatechars:100 }}</p>
+                                        <div class="flex items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                          <span class="inline-flex items-center mr-3">
+                                            <i class="far fa-clock mr-1"></i>{{ exam.time_limit }} minutes
+                                          </span>
+                                          <span class="inline-flex items-center mr-3">
+                                            <i class="far fa-question-circle mr-1"></i>{{ exam.questions.count }} questions
+                                          </span>
+                                          <span class="inline-flex items-center">
+                                            <i class="fas fa-trophy mr-1"></i>Pass: {{ exam.passing_score }}%
+                                          </span>
+                                        </div>
+                                      </div>
+                                      
+                                      <div>
+                                        {% if is_teacher %}
+                                          <a href="{% url 'quiz_detail' exam.id %}" 
+                                            class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
+                                            <i class="fas fa-cog mr-1"></i>Manage
+                                          </a>
+                                        {% elif is_enrolled %}
+                                          {% with user_attempts=exam.user_quizzes.filter(user=user) %}
+                                            {% if user_attempts %}
+                                              <a href="{% url 'quiz_results' user_attempts.first.id %}" 
+                                                class="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                                                <i class="fas fa-check-circle mr-1"></i>View Results
+                                              </a>
+                                            {% else %}
+                                              <a href="{% url 'take_quiz' exam.id %}" 
+                                                class="inline-flex items-center px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm">
+                                                <i class="fas fa-pencil-alt mr-1"></i>Take Exam
+                                              </a>
+                                            {% endif %}
+                                          {% endwith %}
+                                        {% endif %}
+                                      </div>
+                                    </div>
+                                    
+                                    {% if is_teacher %}
+                                      {% with submissions=exam.user_quizzes.filter(completed=True) %}
+                                        <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                                          <h5 class="text-sm font-medium mb-1">Student Progress</h5>
+                                          <div class="flex items-center justify-between text-xs">
+                                            <span>{{ submissions.count }} submissions</span>
+                                            <a href="{% url 'quiz_analytics' exam.id %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                              View Analytics
+                                            </a>
+                                          </div>
+                                        </div>
+                                      {% endwith %}
+                                    {% endif %}
+                                  </div>
+                                {% endfor %}
+                              </div>
+                            {% else %}
+                              {% if is_teacher %}
+                                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center">
+                                  <p class="text-gray-600 dark:text-gray-300 mb-4">No final exam has been created for this course yet.</p>
+                                  <a href="{% url 'create_quiz' %}?course={{ course.id }}&exam_type=course" 
+                                    class="inline-flex items-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg">
+                                    <i class="fas fa-plus-circle mr-2"></i>Create Final Exam
+                                  </a>
+                                </div>
+                              {% else %}
+                                <p class="text-gray-500 dark:text-gray-400 text-sm">No final exam available for this course yet.</p>
+                              {% endif %}
+                            {% endif %}
+                          {% endwith %}
+                        </div>
+                      </div>
+                    </div>
+
+
                   </div>
                 {% endif %}
                 <!-- Course Description Tab -->
@@ -1336,6 +1518,121 @@
     <span class="notification-message">This is a notification</span>
   </div>
   <script>
+
+
+// Add to your JavaScript file or include in a script tag
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Question type specific forms
+    const questionTypeSelect = document.getElementById('id_question_type');
+    const questionFormAreas = {
+        multiple: document.getElementById('multiple_choice_options'),
+        true_false: document.getElementById('true_false_options'),
+        short: document.getElementById('short_answer_options'),
+        fill_blank: document.getElementById('fill_blank_options'),
+        open_ended: document.getElementById('open_ended_options'),
+        matching: document.getElementById('matching_options'),
+        problem_solving: document.getElementById('problem_solving_options'),
+        scenario: document.getElementById('scenario_options'),
+        diagram: document.getElementById('diagram_options'),
+        coding: document.getElementById('coding_options')
+    };
+    
+    // Show/hide appropriate form sections based on question type
+    function updateFormSections() {
+        if (!questionTypeSelect) return;
+        
+        const selectedType = questionTypeSelect.value;
+        
+        // Hide all sections first
+        Object.values(questionFormAreas).forEach(area => {
+            if (area) area.classList.add('hidden');
+        });
+        
+        // Show selected section
+        if (questionFormAreas[selectedType]) {
+            questionFormAreas[selectedType].classList.remove('hidden');
+        }
+    }
+    
+    // Add item to matching questions
+    const addMatchingItemBtn = document.getElementById('add_matching_item');
+    if (addMatchingItemBtn) {
+        addMatchingItemBtn.addEventListener('click', function() {
+            const matchingItemsContainer = document.getElementById('matching_items_container');
+            const itemCount = matchingItemsContainer.querySelectorAll('.matching-item-row').length;
+            
+            const itemHtml = `
+                <div class="matching-item-row flex items-center gap-2 mb-2">
+                    <input type="text" name="matching_item[]" class="border rounded p-2 flex-1" placeholder="Item ${itemCount + 1}">
+                    <span class="text-gray-500">→</span>
+                    <input type="text" name="matching_match[]" class="border rounded p-2 flex-1" placeholder="Match ${itemCount + 1}">
+                    <button type="button" class="remove-matching-item px-2 py-1 bg-red-500 text-white rounded">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            matchingItemsContainer.insertAdjacentHTML('beforeend', itemHtml);
+            
+            // Add event listener to the new remove button
+            const newRemoveBtn = matchingItemsContainer.querySelector('.matching-item-row:last-child .remove-matching-item');
+            newRemoveBtn.addEventListener('click', function() {
+                this.closest('.matching-item-row').remove();
+            });
+        });
+    }
+    
+    // Set up event delegation for remove buttons in matching items
+    const matchingItemsContainer = document.getElementById('matching_items_container');
+    if (matchingItemsContainer) {
+        matchingItemsContainer.addEventListener('click', function(e) {
+            if (e.target.closest('.remove-matching-item')) {
+                e.target.closest('.matching-item-row').remove();
+            }
+        });
+    }
+    
+    // Initialize form visibility
+    if (questionTypeSelect) {
+        questionTypeSelect.addEventListener('change', updateFormSections);
+        // Initial call to set correct visibility
+        updateFormSections();
+    }
+    
+    // Handle the exams tab in course detail page
+    const tabButtons = document.querySelectorAll('[data-tab]');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            
+            // Update button states
+            tabButtons.forEach(btn => {
+                btn.classList.remove('active-tab', 'border-teal-300', 'dark:border-teal-500', 'text-gray-800', 'dark:text-white');
+                btn.classList.add('border-transparent', 'text-gray-600', 'dark:text-gray-400', 'hover:text-gray-800', 'dark:hover:text-white', 'hover:border-gray-300', 'dark:hover:border-gray-600');
+                btn.setAttribute('aria-selected', 'false');
+            });
+            
+            this.classList.remove('border-transparent', 'text-gray-600', 'dark:text-gray-400', 'hover:text-gray-800', 'dark:hover:text-white', 'hover:border-gray-300', 'dark:hover:border-gray-600');
+            this.classList.add('active-tab', 'border-teal-300', 'dark:border-teal-500', 'text-gray-800', 'dark:text-white');
+            this.setAttribute('aria-selected', 'true');
+            
+            // Update content visibility
+            tabContents.forEach(content => {
+                content.classList.add('hidden');
+                content.classList.remove('active');
+            });
+            
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            document.getElementById(`content-${tabName}`).classList.add('active');
+        });
+    });
+});
+
+
+
       document.addEventListener('keydown', function(event) {
           if (event.key === 'Escape') {
               closeDeleteModal();
