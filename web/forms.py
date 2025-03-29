@@ -851,7 +851,7 @@ class TeachForm(forms.Form):
         widget=TailwindFileInput(
             attrs={
                 "accept": "image/*",
-                "help_text": "Upload a course image (optional)",
+                "help_text": "Upload a course image (required)",
                 "class": "block w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500",
             }
         ),
