@@ -1790,7 +1790,7 @@ class Meetup(models.Model):
     def __str__(self) -> str:
         return self.title
 
-    def can_edit(self, user):
+    def can_edit(self, user: User) -> bool:
         """Check if the given user can edit this meetup."""
         return user == self.creator or user.is_staff
 
