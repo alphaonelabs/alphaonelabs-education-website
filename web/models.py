@@ -362,6 +362,34 @@ class Session(models.Model):
     teacher_confirmed = models.BooleanField(
         default=False, help_text="Whether the teacher has confirmed the rolled over dates"
     )
+    latitude = models.DecimalField(
+        blank=True,
+        decimal_places=6,
+        help_text="Latitude coordinate for mapping",
+        max_digits=9,
+        null=True,
+        validators=[MinValueValidator(-90), MaxValueValidator(90)],
+    )
+    longitude = models.DecimalField(
+        blank=True,
+        decimal_places=6,
+        help_text="Longitude coordinate for mapping",
+        max_digits=9,
+        null=True,
+        validators=[MinValueValidator(-180), MaxValueValidator(180)],
+    )
+    teaching_style = models.CharField(
+        max_length=20,
+        choices=[
+            ("lecture", "Lecture Based"),
+            ("student-centered", "Student Centered"),
+            ("hybrid", "Hybrid Learning"),
+            ("practical", "Practical Learning"),
+        ],
+        default="hybrid",
+        blank=True,
+        help_text="What is the teachng style of session",
+    )
 
     class Meta:
         ordering = ["start_time"]
@@ -371,6 +399,11 @@ class Session(models.Model):
 
     def save(self, *args, **kwargs):
         # Store original times when first created
+        # calculate the lat and longitiude dynamically
+
+        if self.location and (self.latitude is None or self.longitude is None):
+            self.fetch_coordinates()
+
         if not self.pk and not self.original_start_time and not self.original_end_time:
             self.original_start_time = self.start_time
             self.original_end_time = self.end_time
@@ -434,6 +467,36 @@ class Session(models.Model):
 
             delete_calendar_event(self)
         super().delete(*args, **kwargs)
+
+    def fetch_coordinates(self):
+        """Fetch latitude and longitude using OpenStreetMap's Nominatim API."""
+        from .utils import geocode_address
+
+        if not self.location:
+            return
+        try:
+            coordinates = geocode_address(self.location)
+            if coordinates:
+                self.latitude, self.longitude = coordinates
+                print("location store:", self.latitude, self.longitude)
+            else:
+                print(
+                    f"Skipping session {self.id} due to invalid coordinates:",
+                    f"lat={self.latitude}, \n lng={self.longitude}",
+                )
+        except Exception as e:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.error("Error geocoding session %s location '%s': %s", self.id, self.location, str(e))
+
+    def is_live(self):
+        """Returns True if the session is live right now."""
+        now = timezone.now()
+        return self.start_time <= now <= self.end_time
+
+    def get_absolute_url(self):
+        return reverse("course_detail", kwargs={"slug": self.course.slug})
 
 
 class CourseMaterial(models.Model):
@@ -1287,6 +1350,7 @@ class SearchLog(models.Model):
 
 
 class Challenge(models.Model):
+    # defining two types of models
     CHALLENGE_TYPE_CHOICES = [
         ("weekly", "Weekly Challenge"),
         ("one_time", "One-time Challenge"),

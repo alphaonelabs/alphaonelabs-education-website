@@ -452,6 +452,7 @@ class SessionForm(forms.ModelForm):
             "price",
             "enable_rollover",
             "rollover_pattern",
+            "teaching_style",
         ]
         widgets = {
             "title": TailwindInput(),
@@ -461,6 +462,7 @@ class SessionForm(forms.ModelForm):
             "is_virtual": TailwindCheckboxInput(),
             "meeting_link": TailwindInput(attrs={"type": "url"}),
             "location": TailwindInput(),
+            "teaching_style": TailwindSelect(),
             "price": TailwindNumberInput(
                 attrs={
                     "min": "0",
