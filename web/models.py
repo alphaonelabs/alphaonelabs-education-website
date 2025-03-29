@@ -1803,9 +1803,17 @@ class MeetupRegistration(models.Model):
     def __str__(self):
         return f"{self.user.username} registered for {self.meetup.title}"
 
+class MeetupRegistration(models.Model):
+    meetup = models.ForeignKey(Meetup, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    registered_at = models.DateTimeField(auto_now_add=True)
+
     class Meta:
         unique_together = ["user", "meetup"]
         ordering = ["-registered_at"]
+
+    def __str__(self):
+        return f"{self.user.username} registered for {self.meetup.title}"
 
 
 class Badge(models.Model):
