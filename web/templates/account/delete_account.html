@@ -5,7 +5,8 @@
 {% block head_title %}
   {% trans "Delete Account" %}
 {% endblock %}
-{% block content %} <div class="container mx-auto px-4 py-8">
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
     <div class="max-w-md mx-auto">
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h1 class="text-2xl font-bold mb-6 text-red-600 dark:text-red-500">{% trans "Delete Account" %}</h1>
@@ -14,29 +15,22 @@
           <p>{% trans "You are about to permanently delete your account. This action cannot be undone." %}</p>
           <p class="mt-2">{% trans "All your personal data will be removed from our systems." %}</p>
         </div>
-        
         {% if model_count %}
-        <div class="bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-200 p-4 mb-6">
-          <h3 class="font-bold">{% trans "The following related items will also be deleted:" %}</h3>
-          <ul class="list-disc pl-5 mt-2">
-            {% for name, count in model_count %}
-              <li>{{ count }} {{ name }}</li>
-            {% endfor %}
-          </ul>
-        </div>
+          <div class="bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-500 text-yellow-700 dark:text-yellow-200 p-4 mb-6">
+            <h3 class="font-bold">{% trans "The following related items will also be deleted:" %}</h3>
+            <ul class="list-disc pl-5 mt-2">
+              {% for name, count in model_count %}<li>{{ count }} {{ name }}</li>{% endfor %}
+            </ul>
+          </div>
         {% endif %}
-        
         {% if protected %}
-        <div class="bg-blue-50 dark:bg-blue-900 border-l-4 border-blue-500 text-blue-700 dark:text-blue-200 p-4 mb-6">
-          <h3 class="font-bold">{% trans "Protected items that won't be deleted:" %}</h3>
-          <ul class="list-disc pl-5 mt-2">
-            {% for obj in protected %}
-              <li>{{ obj }}</li>
-            {% endfor %}
-          </ul>
-        </div>
+          <div class="bg-blue-50 dark:bg-blue-900 border-l-4 border-blue-500 text-blue-700 dark:text-blue-200 p-4 mb-6">
+            <h3 class="font-bold">{% trans "Protected items that won't be deleted:" %}</h3>
+            <ul class="list-disc pl-5 mt-2">
+              {% for obj in protected %}<li>{{ obj }}</li>{% endfor %}
+            </ul>
+          </div>
         {% endif %}
-        
         {% if form.non_field_errors %}
           <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
@@ -76,4 +70,5 @@
         </form>
       </div>
     </div>
-  </div> {% endblock %}
+  </div>
+{% endblock %}
