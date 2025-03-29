@@ -153,25 +153,19 @@ class NFTBadgeService:
         return metadata_ipfs_uri, image_ipfs_uri
 
     def mint_nft_badge(self, achievement, wallet_address):
-        print("🚀 Minting NFT Badge...")
-
+        logger.info("🚀 Minting NFT Badge...")
         if not wallet_address.startswith("0x") or len(wallet_address) != 42:
             raise ValueError(f"❌ Invalid Wallet Address: {wallet_address}")
-
         wallet_address = self.web3.to_checksum_address(wallet_address)
-        print(f"📌 Minting to Wallet: {wallet_address}")
-
+        logger.info(f"📌 Minting to Wallet: {wallet_address}")
         metadata_uri, image_ipfs_uri = self.create_metadata(achievement)
-        print(f"🌍 Metadata URI: {metadata_uri}")
-
+        logger.info(f"🌍 Metadata URI: {metadata_uri}")
         private_key = settings.ADMIN_WALLET_PRIVATE_ADDRESS
         if not private_key:
             raise ValueError("❌ Admin wallet private key not found in environment variables")
-
         admin_account = Account.from_key(private_key)
-
         # Build transaction
-        print("🛠️ Building mint transaction...")
+        logger.info("🛠️ Building mint transaction...")
         tx = self.contract.functions.mint(wallet_address, metadata_uri).build_transaction(
             {
                 "from": admin_account.address,
@@ -180,26 +174,23 @@ class NFTBadgeService:
                 "gasPrice": self.web3.eth.gas_price,
             }
         )
-
-        print("✍️ Signing transaction...")
+        logger.info("✍️ Signing transaction...")
         signed_tx = self.web3.eth.account.sign_transaction(tx, private_key)
-
-        print("📡 Sending transaction to blockchain...")
+        logger.info("📡 Sending transaction to blockchain...")
         tx_hash = self.web3.eth.send_raw_transaction(signed_tx.rawTransaction)
-
-        print("⏳ Waiting for transaction confirmation...")
+        logger.info("⏳ Waiting for transaction confirmation...")
         receipt = self.web3.eth.wait_for_transaction_receipt(tx_hash)
-
         # Extract token ID
-        token_id = "1"
+        token_id = None
         try:
             transfer_events = self.contract.events.Transfer().process_receipt(receipt)
             if transfer_events:
                 token_id = str(transfer_events[0]["args"]["tokenId"])
-                print(f"🏷️ Token ID: {token_id}")
+                logger.info(f"🏷️ Token ID: {token_id}")
+            else:
+                raise RuntimeError("⚠️ No Transfer event found in the transaction receipt!")
         except Exception as e:
-            print(f"⚠️ Could not extract token ID: {e}")
-
+            logger.warning(f"⚠️ Could not extract token ID: {e}")
         nft_badge, created = NFTBadge.objects.update_or_create(
             achievement=achievement,
             token_id=token_id,
@@ -211,7 +202,7 @@ class NFTBadgeService:
             transaction_hash=tx_hash.hex(),
             minted_at=timezone.now(),
         )
-        print(f"✅ NFT Minted Successfully! Token ID: {token_id}")
+        logger.info(f"✅ NFT Minted Successfully! Token ID: {token_id}")
         return nft_badge
 
 

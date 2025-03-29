@@ -18,6 +18,9 @@ def create_student_wallet() -> dict:
         account = Account.from_key(seed[:32])
         return {"mnemonic": mnemonic_phrase, "address": account.address, "private_key": account.key.hex()}
     except Exception as e:
-        # Log the error (consider using a proper logging mechanism)
-        print(f"Error creating wallet: {str(e)}")
+        # Log the error
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error creating wallet: {e!s}")
         raise
