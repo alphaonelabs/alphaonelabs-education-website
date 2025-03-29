@@ -3,11 +3,13 @@ import re
 from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
 from django import forms
+from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.db import IntegrityError
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 from markdownx.fields import MarkdownxFormField
 
 from .models import (
@@ -94,6 +96,25 @@ __all__ = [
     "LinkGradeForm",
     "AwardAchievementForm",
 ]
+
+
+class AccountDeleteForm(forms.Form):
+    password = forms.CharField(
+        label=_("Password"),
+        strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
+        help_text=_("Enter your password to confirm account deletion."),
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_password(self):
+        password = self.cleaned_data.get("password")
+        if not authenticate(username=self.user.username, password=password):
+            raise forms.ValidationError(_("Your password was entered incorrectly. Please enter it again."))
+        return password
 
 
 class UserRegistrationForm(SignupForm):
@@ -451,6 +472,7 @@ class SessionForm(forms.ModelForm):
             "price",
             "enable_rollover",
             "rollover_pattern",
+            "teaching_style",
         ]
         widgets = {
             "title": TailwindInput(),
@@ -460,6 +482,7 @@ class SessionForm(forms.ModelForm):
             "is_virtual": TailwindCheckboxInput(),
             "meeting_link": TailwindInput(attrs={"type": "url"}),
             "location": TailwindInput(),
+            "teaching_style": TailwindSelect(),
             "price": TailwindNumberInput(
                 attrs={
                     "min": "0",
