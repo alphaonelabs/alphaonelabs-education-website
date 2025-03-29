@@ -736,31 +736,60 @@ def course_detail(request, slug):
         rating_distribution[item["rating"]] = item["count"]
 
 
+    #  # Get materials
+    # materials = Material.objects.filter(course=course)
     
-    # # -----------------------------
-    # # Retrieve quiz and submission data
-    # # -----------------------------
-    # # All quizzes related to this course.
-    # quizzes = course.quizzes.all().order_by("start_date")
-    # print("$$$", "All" , quizzes)
+    # NEW CODE: Prepare exam data in the view
+    # 1. Get course-level exams (not associated with specific sessions)
+    course_exams = course.exams.filter(exam_type='course', session__isnull=True)
+    print("@@@@@@@", course_exams)
     
-    # # For student view: get the current user's quiz submissions.
-    # student_quiz_submissions = {}
-    # if request.user.is_authenticated and not is_teacher:
-    #     submissions = QuizSubmission.objects.filter(user=request.user, quiz__course=course)
-    #     print("$$$", "All Submission" , submissions)
-    #     for sub in submissions:
-    #         student_quiz_submissions[sub.quiz.id] = sub
-    #         print("$$$", "Every Submission" , sub , " - ",sub.quiz.id )
+    # 2. Process each course exam (with user attempts and submission counts)
+    course_exam_data = []
+    for exam in course_exams:
+        # Get user's attempts for this exam
+        user_attempt = None
+        if request.user.is_authenticated:
+            user_attempt = exam.user_quizzes.filter(user=request.user).first()
+        
+        # Get submission count for teachers
+        submission_count = 0
+        if is_teacher:
+            submission_count = exam.user_quizzes.filter(completed=True).count()
+        
+        course_exam_data.append({
+            'exam': exam,
+            'user_attempt': user_attempt,
+            'submission_count': submission_count,
+        })
+    print("#######", course_exam_data)
+    
+    # 3. Process each session with its exams
+    session_data = []
+    for session in sessions:
+        # Get all exams for this session
+        session_exams = session.exams.all()
+        session_exam_data = []
+        
+        # Process each exam in this session
+        for exam in session_exams:
+            user_attempt = None
+            if request.user.is_authenticated:
+                user_attempt = exam.user_quizzes.filter(user=request.user).first()
+            
+            session_exam_data.append({
+                'exam': exam,
+                'user_attempt': user_attempt,
+            })
+        
+        session_data.append({
+            'session': session,
+            'exams': session_exam_data,
+        })
+    print("%%%%%%%%%", session_data)
+    
 
-    # # For teacher view: get all submissions for each quiz.
-    # teacher_quiz_submissions = {}
-    # if is_teacher:
-    #     for quiz in quizzes:
-    #         teacher_quiz_submissions[quiz.id] = quiz.submissions.all()
-    #         print("$$$", "All TeacherQuizes" , quiz, " - " , quiz.id ," - " , quiz.submissions.all() )
 
-    
 
     context = {
         "course": course,
@@ -783,7 +812,43 @@ def course_detail(request, slug):
         "user_review": user_review,
         "rating_distribution": rating_distribution,
         "reviews_num": reviews_num,
+        "course_exams": course_exams, 
+        "course_exam_data":course_exam_data,
+        "session_data": session_data,
     }
+
+
+
+    # context = {
+    #     # "materials": materials,
+    #     "student_count": Enrollment.objects.filter(course=course).count(),
+    #     # Add the new exam data to context
+    #     "course_exam_data": course_exam_data,
+    #     "session_data": session_data,
+    #     # Include other existing context variables
+    #     "course": course,
+    #     "sessions": sessions,
+    #     "now": now,
+    #     "today": today,
+    #     "is_teacher": is_teacher,
+    #     "is_enrolled": is_enrolled,
+    #     "enrollment": enrollment,
+    #     "completed_sessions": completed_sessions,
+    #     "calendar_weeks": calendar_weeks,
+    #     "current_month": current_month,
+    #     "prev_month": prev_month,
+    #     "next_month": next_month,
+    #     "student_attendance": student_attendance,
+    #     "completed_enrollment_count": course.enrollments.filter(status="completed").count(),
+    #     "in_progress_enrollment_count": course.enrollments.filter(status="in_progress").count(),
+    #     "featured_review": featured_review,
+    #     "reviews": reviews,
+    #     "user_review": user_review,
+    #     "rating_distribution": rating_distribution,
+    #     "reviews_num": reviews_num,
+    #     'exam': exam,
+    #     'user_attempts': exam.user_quizzes.filter(user=request.user),
+    # }
 
     return render(request, "courses/detail.html", context)
 
