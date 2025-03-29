@@ -1767,7 +1767,7 @@ class Meetup(models.Model):
 
     creator = models.ForeignKey(User, on_delete=models.CASCADE)  # Creator field
 
-    def clean(self):
+    def clean(self) -> None:
         super().clean()
 
         # Validate that link is provided for online meetups
