@@ -6520,7 +6520,7 @@ def self_report_attendance(request: HttpRequest, session_id: int) -> HttpRespons
             request, "You have already reported attendance for this session. It is pending teacher verification."
         )
         return redirect("course_detail", slug=session.course.slug)
-    elif existing_attendance and existing_attendance.status in ["present", "late", "excused"]:
+    if existing_attendance and existing_attendance.status in ["present", "late", "excused"]:
         messages.success(request, "Your attendance for this session has already been verified.")
         return redirect("course_detail", slug=session.course.slug)
 
@@ -6546,8 +6546,8 @@ def self_report_attendance(request: HttpRequest, session_id: int) -> HttpRespons
                 [session.course.teacher.email],
                 fail_silently=True,
             )
-        except Exception as e:
-            logger.error(f"Failed to send attendance notification email: {e}")
+        except Exception:
+            logger.exception("Failed to send attendance notification email")
 
     messages.success(request, "Your attendance has been recorded and is pending teacher verification.")
     return redirect("course_detail", slug=session.course.slug)
