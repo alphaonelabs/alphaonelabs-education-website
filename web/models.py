@@ -2243,8 +2243,8 @@ class NFTBadge(models.Model):
     )
     transaction_hash = models.CharField(max_length=100, blank=True)
     metadata_uri = models.URLField(blank=True)
-    minted_at = models.DateTimeField(blank=True)
-    wallet_address = models.CharField(max_length=100, blank=True)
+    minted_at = models.DateTimeField(blank=True, null=True)
+    wallet_address = models.CharField(max_length=42, blank=True)
     icon_url = models.URLField(blank=True)
 
     def __str__(self):

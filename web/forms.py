@@ -1687,8 +1687,9 @@ class NFTBadgeForm(forms.ModelForm):
             "course": forms.Select(attrs={"class": "form-select"}),
         }
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # Make course optional for NFT badges
-        self.fields["course"].required = False
-        self.fields["course"].help_text = "Optional: Associate this NFT badge with a course"
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.badge_type = "nft"
+        if commit:
+            instance.save()
+        return instance

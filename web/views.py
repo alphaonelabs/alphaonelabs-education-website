@@ -5240,28 +5240,27 @@ def show_mnemonic(request):
     return render(request, "crypto-wallet/show_mnemonic.html", {"mnemonic": mnemonic, "public_key": public_key})
 
 
-@login_required
 def create_student_wallet(request):
     """Handles wallet creation and displays mnemonic once."""
     student = request.user  # Get logged-in student
     from web.services.wallet_services import create_student_wallet
 
     if request.method == "POST":
-        wallet_data = create_student_wallet()  # Now generates a mnemonic
-
-        # Store only public address
-        profile, created = Profile.objects.get_or_create(user=student)
-        print(profile.wallet_address)
-        profile.wallet_address = wallet_data["address"]
-        profile.save()
-        print("profile saved:", profile.wallet_address)
-
-        # Store mnemonic temporarily in session (Do NOT store in DB)
-        request.session["mnemonic"] = wallet_data["mnemonic"]
-        request.session["public_key"] = wallet_data["address"]
-
-        return redirect("show_mnemonic")  # Redirect to mnemonic page
-
+        try:
+            wallet_data = create_student_wallet()  # Now generates a mnemonic
+            # Store only public address
+            profile, created = Profile.objects.get_or_create(user=student)
+            profile.wallet_address = wallet_data["address"]
+            profile.save()
+            # Wallet address successfully saved to profile
+            # Store mnemonic temporarily in session (Do NOT store in DB)
+            request.session["mnemonic"] = wallet_data["mnemonic"]
+            request.session["public_key"] = wallet_data["address"]
+            return redirect("show_mnemonic")  # Redirect to mnemonic page
+        except Exception as e:
+            messages.error(request, "Failed to create wallet. Please try again.")
+            logger.error(f"Wallet creation error: {str(e)}")
+            return redirect("student_dashboard")
     return render(request, "crypto-wallet/create_wallet.html")
 
 

@@ -30,7 +30,7 @@ class NFTBadgeService:
         if not self.web3.is_connected():
             raise ConnectionError("❌ Failed to connect to blockchain")
 
-        print("✅ Connected to Polygon Amoy Testnet")
+        logger.info("✅ Connected to Polygon Amoy Testnet")
 
         # Validate Blockfrost API Key
         if not BLOCKFROST_API_KEY:
@@ -42,7 +42,7 @@ class NFTBadgeService:
             raise ValueError("❌ NFT_CONTRACT_ADDRESS is missing in environment variables")
 
         self.contract_address = self.web3.to_checksum_address(self.contract_address)
-        print(f"📜 Smart Contract Address: {self.contract_address}")
+        logger.info(f"📜 Smart Contract Address: {self.contract_address}")
 
         self.contract_abi = self._load_contract_abi()
         self.contract = self.web3.eth.contract(address=self.contract_address, abi=self.contract_abi)
@@ -56,7 +56,7 @@ class NFTBadgeService:
             raise FileNotFoundError("❌ ABI file not found!")
 
     @staticmethod
-    def upload_to_ipfs(file_path, max_retries=3):
+    def upload_to_ipfs(file_path):
         """
         Upload file to IPFS using Blockfrost API
         """
@@ -109,8 +109,8 @@ class NFTBadgeService:
                     logger.error(f"Upload failed: {response.status_code} - {response.text}")
                     raise ValueError(f"Upload failed: {response.text}")
 
-        except Exception as e:
-            logger.error(f"IPFS Upload Error: {e}")
+        except Exception:
+            logger.error("IPFS Upload Error")
             raise
 
     def create_metadata(self, achievement):
