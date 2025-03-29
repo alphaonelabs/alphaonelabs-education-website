@@ -3786,7 +3786,7 @@ class StorefrontDetailView(LoginRequiredMixin, generic.DetailView):
 
 
 def meetup_list(request):
-    meetups = Meetup.objects.all().order_by("-created_at")
+    meetups = Meetup.objects.select_related("creator").all().order_by("-created_at")
     paginator = Paginator(meetups, 10)  # Show 10 meetups per page
 
     page_number = request.GET.get("page")
