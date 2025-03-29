@@ -3278,7 +3278,7 @@ def challenge_detail(request, challenge_id):
         # For all challenge types: Show only public submissions or the user's submission
         submissions = ChallengeSubmission.objects.filter(challenge=challenge).filter(
             Q(is_public=True) | Q(user=request.user)
-        )
+        ),
 
         # Check if the current user has submitted this challenge
         user_submission = None
