@@ -238,8 +238,13 @@ document.addEventListener('DOMContentLoaded', function() {
         progressContainer.className = 'w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-4';
 
         const progressBar = document.createElement('div');
-        progressBar.className = `bg-${node.color || 'blue-600'} h-2.5 rounded-full`;
-        progressBar.style.width = `${node.progress}%`;
+        // Sanitize color value by using a whitelist approach
+        const safeColors = ['blue-600', 'green-600', 'yellow-600', 'purple-600', 'red-600'];
+        const safeColor = safeColors.includes(node.color) ? node.color : 'blue-600';
+        progressBar.className = `bg-${safeColor} h-2.5 rounded-full`;
+        // Ensure progress is a number between 0-100
+        const safeProgress = Math.min(Math.max(parseFloat(node.progress) || 0, 0), 100);
+        progressBar.style.width = `${safeProgress}%`;
         progressContainer.appendChild(progressBar);
 
         // Progress text
