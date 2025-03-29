@@ -483,6 +483,11 @@ def _attach_payment_method(customer_id: str, payment_method_id: str) -> bool:
 
     Returns:
         bool: True if successful, False otherwise
+
+    Notes:
+        - Centralizes payment method attachment logic to ensure consistency
+        - Contains error handling to prevent exceptions from propagating upward
+        - Logs errors for debugging purposes
     """
     try:
         # Attach payment method to customer
@@ -490,6 +495,9 @@ def _attach_payment_method(customer_id: str, payment_method_id: str) -> bool:
 
         # Set as default payment method
         stripe.Customer.modify(customer_id, invoice_settings={"default_payment_method": payment_method_id})
+
+        # Log success for tracking purposes
+        logger.info(f"Successfully attached payment method {payment_method_id} to customer {customer_id}")
         return True
     except stripe.error.StripeError:
         logger.exception(f"Error attaching payment method {payment_method_id} to customer {customer_id}")
@@ -511,7 +519,13 @@ def _create_new_subscription(
 
     Returns:
         stripe.Subscription: The newly created subscription
+
+    Notes:
+        - Standardizes subscription creation with consistent parameters
+        - Includes relevant metadata for subscription tracking
+        - Uses "allow_incomplete" to handle payment issues gracefully
     """
+    logger.info(f"Creating new subscription for user {user_id} with plan {plan_id} ({billing_period})")
     return stripe.Subscription.create(
         customer=customer_id,
         items=[{"price": price_id}],
@@ -530,7 +544,13 @@ def _update_existing_subscription(subscription_id: str, price_id: str) -> "strip
 
     Returns:
         stripe.Subscription: The updated subscription
+
+    Notes:
+        - Handles changing subscription plans without cancellation
+        - Creates prorations for billing adjustments
+        - Uses "allow_incomplete" to handle payment requirement scenarios
     """
+    logger.info(f"Updating subscription {subscription_id} with new price {price_id}")
     return stripe.Subscription.modify(
         subscription_id,
         items=[{"price": price_id}],
@@ -553,78 +573,110 @@ def create_subscription(user: "User", plan_id: int, payment_method_id: str, bill
         dict: Contains 'success' (bool) and either 'error' (str) or 'subscription' (object)
 
     Notes:
-        - This function uses Stripe's API which may raise various exceptions
-        - There's a potential race condition if multiple subscription operations happen simultaneously
-          for the same user. We mitigate this by checking the latest state before making changes.
-        - The function will validate inputs before proceeding with subscription creation.
+        - This function orchestrates the entire subscription lifecycle
+        - Input validation occurs early to fail fast before making API calls
+        - Uses database transactions to maintain consistency across operations
+        - Handles multiple subscription scenarios:
+          1. User with no subscription -> create new
+          2. User with active subscription -> update price
+          3. User with canceled subscription -> create new
+          4. User with subscription not found in Stripe -> create new
+        - Error handling is comprehensive with specific error messages
+        - Potential race conditions are mitigated through transaction isolation
+        - The database is updated only after successful Stripe operations
     """
     from django.db import transaction
 
     from .models import MembershipPlan
 
     try:
+        # Initialize Stripe API with secret key and verify configuration
         setup_stripe()
 
-        # Get the membership plan
+        # Validate membership plan existence
         try:
             plan = MembershipPlan.objects.get(id=plan_id)
         except MembershipPlan.DoesNotExist:
+            logger.warning(f"Membership plan not found: {plan_id}")
             return {"success": False, "error": "Membership plan not found"}
 
-        # Validate billing period
+        # Validate billing period option
         if billing_period not in ["monthly", "yearly"]:
+            logger.warning(f"Invalid billing period: {billing_period}")
             return {"success": False, "error": "Invalid billing period"}
 
-        # Get the price ID based on billing period
+        # Determine appropriate price ID based on billing period
         if billing_period == "monthly":
             price_id = plan.stripe_monthly_price_id
         else:
             price_id = plan.stripe_yearly_price_id
 
+        # Verify price configuration
         if not price_id:
+            logger.warning(f"No price ID for {billing_period} billing on plan {plan_id}")
             return {"success": False, "error": f"No price ID configured for {billing_period} billing"}
 
-        # Use transaction to avoid race conditions during customer/subscription creation
+        # Use transaction to maintain database consistency and prevent race conditions
         with transaction.atomic():
-            # Get or create customer
+            # Get or create customer - this must succeed before proceeding
             customer = get_stripe_customer(user)
             if not customer:
+                logger.error(f"Failed to create/retrieve Stripe customer for user {user.id}")
                 return {"success": False, "error": "Failed to create or retrieve customer"}
 
             # Attach payment method to customer and set as default
             if not _attach_payment_method(customer.id, payment_method_id):
+                logger.error(f"Failed to attach payment method {payment_method_id} for user {user.id}")
                 return {"success": False, "error": "Failed to attach payment method"}
 
-            # Check if user already has a subscription (get fresh data to prevent concurrency issues)
+            # Handle existing subscription scenario with fresh state check
             if hasattr(user, "membership") and user.membership.stripe_subscription_id:
-                # Verify the subscription still exists in Stripe before updating
+                # Verify subscription exists in Stripe to prevent errors
                 try:
                     existing_sub = stripe.Subscription.retrieve(user.membership.stripe_subscription_id)
+
+                    # Determine if we should update or create based on subscription status
                     if existing_sub.status not in ["canceled", "incomplete_expired"]:
-                        # Update existing subscription
+                        # Update the existing subscription with new price
                         subscription = _update_existing_subscription(user.membership.stripe_subscription_id, price_id)
+                        logger.info(f"Updated subscription {subscription.id} for user {user.id}")
                     else:
-                        # Create new subscription if previous one was canceled
+                        # Create new subscription for previously canceled subscription
                         subscription = _create_new_subscription(customer.id, price_id, user.id, plan.id, billing_period)
+                        logger.info(
+                            f"Created new subscription {subscription.id} for user {user.id} (replacing canceled sub)"
+                        )
                 except stripe.error.InvalidRequestError:
                     # Subscription not found in Stripe, create a new one
+                    logger.warning(
+                        f"Subscription {user.membership.stripe_subscription_id} not found in Stripe for user {user.id}"
+                    )
                     subscription = _create_new_subscription(customer.id, price_id, user.id, plan.id, billing_period)
+                    logger.info(f"Created new subscription {subscription.id} (previous not found)")
             else:
-                # Create a new subscription
+                # User has no existing subscription, create a new one
                 subscription = _create_new_subscription(customer.id, price_id, user.id, plan.id, billing_period)
+                logger.info(f"Created first subscription {subscription.id} for user {user.id}")
 
-            # Update user membership
-            update_membership_from_subscription(user, subscription)
+            # Update user membership with subscription details in database
+            update_success = update_membership_from_subscription(user, subscription)
+            if not update_success:
+                logger.error(f"Failed to update membership from subscription {subscription.id} for user {user.id}")
+                # We don't return an error here to avoid orphaned subscriptions
+                # The subscription was created in Stripe but our DB update failed
 
             return {"success": True, "subscription": subscription}
 
     except stripe.error.CardError as e:
+        # Card-specific errors have user-facing messages
         logger.exception(f"Card error for user {user.email}")
         return {"success": False, "error": str(e.user_message)}
     except stripe.error.StripeError:
+        # Generic Stripe API errors
         logger.exception(f"Stripe error for user {user.email}")
         return {"success": False, "error": "An error occurred with our payment processor"}
     except Exception:
+        # Catch-all for unexpected errors
         logger.exception(f"Error creating subscription for user {user.email}")
         return {"success": False, "error": "An unexpected error occurred"}
 
