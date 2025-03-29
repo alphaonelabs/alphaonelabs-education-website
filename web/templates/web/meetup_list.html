@@ -4,40 +4,54 @@
 
 {% block title %}Meetups and Webinars{% endblock %}
 {% block content %}
-  <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-semibold mb-6">Meetups and Webinars</h1>
-    <ul class="space-y-4">
+  <div class="container mx-auto px-4 py-12">
+    <h1 class="text-4xl font-bold text-center text-gray-900 dark:text-white mb-10">Meetups & Webinars</h1>
+    <!-- Meetup Cards -->
+    <div class="flex flex-wrap justify-center gap-6 relative">
       {% for meetup in page_obj %}
-        <li class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
-          <h2 class="text-2xl font-semibold mb-2">
+        <div class="w-full md:w-[320px] h-[250px] bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg transition-transform transform hover:scale-105 group relative">
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
             <a href="{% url 'meetup_detail' slug=meetup.slug %}"
-               class="text-blue-600 dark:text-blue-400">{{ meetup.title }}</a>
+               class="text-blue-600 dark:text-blue-400 hover:underline">{{ meetup.title }}</a>
           </h2>
-          <p class="text-gray-600 dark:text-gray-400">{{ meetup.description }}</p>
-          <p class="text-gray-600 dark:text-gray-400">Date: {{ meetup.date }}</p>
-          <p class="text-gray-600 dark:text-gray-400">Location: {{ meetup.location }}</p>
-          <p class="text-gray-600 dark:text-gray-400">Type: {{ meetup.get_event_type_display }}</p>
-        </li>
+          <!-- Truncated Description -->
+          <p class="text-gray-600 dark:text-gray-300 line-clamp-3 overflow-hidden">{{ meetup.description }}</p>
+          <p class="text-gray-700 dark:text-gray-400 text-sm mt-2">
+            <strong>Date:</strong> {{ meetup.date }}
+          </p>
+          <p class="text-gray-700 dark:text-gray-400 text-sm">
+            <strong>Location:</strong> {{ meetup.location }}
+          </p>
+          <!-- Register Button -->
+          {% if user.is_authenticated %}
+            {% if meetup.id in user_registered_meetups %}
+              <p class="text-green-600 font-semibold mt-3 text-sm">You are already registered</p>
+            {% else %}
+              <a href="{% url 'register_meetup' meetup.slug %}"
+                 class="block text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 mt-3 rounded-lg transition-all duration-200 text-sm">
+                Register
+              </a>
+            {% endif %}
+          {% else %}
+            <p class="text-gray-500 mt-2 text-sm">Log in to register for this meetup.</p>
+          {% endif %}
+        </div>
       {% endfor %}
-    </ul>
-    <div class="pagination mt-6">
-      <span class="step-links">
-        {% if page_obj.has_previous %}
-          <a href="?page=1" class="text-blue-600 dark:text-blue-400">&laquo; first</a>
-          <a href="?page={{ page_obj.previous_page_number }}"
-             class="text-blue-600 dark:text-blue-400">previous</a>
-        {% endif %}
-        <span class="current text-gray-600 dark:text-gray-400">
-          Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.
-        </span>
-        {% if page_obj.has_next %}
-          <a href="?page={{ page_obj.next_page_number }}"
-             class="text-blue-600 dark:text-blue-400">next</a>
-          <a href="?page={{ page_obj.paginator.num_pages }}"
-             class="text-blue-600 dark:text-blue-400">last &raquo;</a>
-        {% endif %}
-      </span>
+    </div>
+    <!-- Pagination -->
+    <div class="flex justify-center items-center space-x-4 mt-10">
+      {% if page_obj.has_previous %}
+        <a href="?page=1" class="text-blue-600 dark:text-blue-400">&laquo; First</a>
+        <a href="?page={{ page_obj.previous_page_number }}"
+           class="text-blue-600 dark:text-blue-400">Previous</a>
+      {% endif %}
+      <span class="text-gray-600 dark:text-gray-400">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.</span>
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}"
+           class="text-blue-600 dark:text-blue-400">Next</a>
+        <a href="?page={{ page_obj.paginator.num_pages }}"
+           class="text-blue-600 dark:text-blue-400">Last &raquo;</a>
+      {% endif %}
     </div>
   </div>
 {% endblock %}
-</html>

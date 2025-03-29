@@ -3792,7 +3792,21 @@ def meetup_list(request):
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
-    return render(request, "web/meetup_list.html", {"page_obj": page_obj})
+    # Check if the user is registered for each meetup
+    user_registered_meetups = []
+    if request.user.is_authenticated:
+        user_registered_meetups = MeetupRegistration.objects.filter(user=request.user).values_list(
+            "meetup_id", flat=True
+        )
+
+    return render(
+        request,
+        "web/meetup_list.html",
+        {
+            "page_obj": page_obj,
+            "user_registered_meetups": user_registered_meetups,
+        },
+    )
 
 
 @login_required
@@ -3829,23 +3843,23 @@ def edit_meetup(request, slug):
 @login_required
 def register_meetup(request, slug):
     meetup = get_object_or_404(Meetup, slug=slug)
-    
+
     # Check if the user is already registered
     if MeetupRegistration.objects.filter(meetup=meetup, user=request.user).exists():
         messages.info(request, "You are already registered for this meetup.")
         return redirect("meetup_detail", slug=meetup.slug)
-    
+
     # Check if the meetup has a capacity limit and if it's reached
     registrations_count = MeetupRegistration.objects.filter(meetup=meetup).count()
-    if hasattr(meetup, 'max_attendees') and meetup.max_attendees and registrations_count >= meetup.max_attendees:
+    if hasattr(meetup, "max_attendees") and meetup.max_attendees and registrations_count >= meetup.max_attendees:
         messages.error(request, "This meetup has reached its maximum capacity.")
         return redirect("meetup_detail", slug=meetup.slug)
-    
+
     MeetupRegistration.objects.get_or_create(meetup=meetup, user=request.user)
     messages.success(request, "You have successfully registered for this meetup.")
     return redirect("meetup_detail", slug=meetup.slug)
 
-@login_required
+
 @login_required
 def unregister_meetup(request, slug):
     meetup = get_object_or_404(Meetup, slug=slug)
@@ -3857,18 +3871,19 @@ def unregister_meetup(request, slug):
         messages.info(request, "You were not registered for this meetup.")
     return redirect("meetup_detail", slug=meetup.slug)
 
+
 def meetup_detail(request, slug):
     meetup = get_object_or_404(Meetup, slug=slug)
-    registrations = MeetupRegistration.objects.filter(meetup=meetup).select_related('user')
-    
+    registrations = MeetupRegistration.objects.filter(meetup=meetup).select_related("user")
+
     # Check if current user is registered
     user_is_registered = False
     if request.user.is_authenticated:
         user_is_registered = MeetupRegistration.objects.filter(meetup=meetup, user=request.user).exists()
-    
+
     # Check if current user can edit this meetup
-    can_edit = request.user.is_authenticated and meetup.can_edit(request.user)
-    
+    can_edit = request.user.is_authenticated and meetup.creator == request.user
+
     return render(
         request,
         "web/meetup_detail.html",
