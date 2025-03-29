@@ -3834,13 +3834,16 @@ def register_meetup(request, slug):
 
 
 @login_required
+@login_required
 def unregister_meetup(request, slug):
     meetup = get_object_or_404(Meetup, slug=slug)
     registration = MeetupRegistration.objects.filter(meetup=meetup, user=request.user)
     if registration.exists():
         registration.delete()
+        messages.success(request, "You have been unregistered from this meetup.")
+    else:
+        messages.info(request, "You were not registered for this meetup.")
     return redirect("meetup_detail", slug=meetup.slug)
-
 
 def meetup_detail(request, slug):
     meetup = get_object_or_404(Meetup, slug=slug)
