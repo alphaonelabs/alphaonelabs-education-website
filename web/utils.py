@@ -473,6 +473,72 @@ def get_stripe_customer(user: "User") -> Optional["stripe.Customer"]:
         return None
 
 
+def _attach_payment_method(customer_id: str, payment_method_id: str) -> bool:
+    """
+    Attach a payment method to a customer and set it as default.
+
+    Args:
+        customer_id: The Stripe customer ID
+        payment_method_id: The Stripe payment method ID
+
+    Returns:
+        bool: True if successful, False otherwise
+    """
+    try:
+        # Attach payment method to customer
+        stripe.PaymentMethod.attach(payment_method_id, customer=customer_id)
+
+        # Set as default payment method
+        stripe.Customer.modify(customer_id, invoice_settings={"default_payment_method": payment_method_id})
+        return True
+    except stripe.error.StripeError:
+        logger.exception(f"Error attaching payment method {payment_method_id} to customer {customer_id}")
+        return False
+
+
+def _create_new_subscription(
+    customer_id: str, price_id: str, user_id: int, plan_id: int, billing_period: str
+) -> "stripe.Subscription":
+    """
+    Create a new Stripe subscription.
+
+    Args:
+        customer_id: The Stripe customer ID
+        price_id: The Stripe price ID
+        user_id: The user's ID
+        plan_id: The membership plan ID
+        billing_period: Either "monthly" or "yearly"
+
+    Returns:
+        stripe.Subscription: The newly created subscription
+    """
+    return stripe.Subscription.create(
+        customer=customer_id,
+        items=[{"price": price_id}],
+        payment_behavior="allow_incomplete",
+        metadata={"user_id": user_id, "plan_id": plan_id, "billing_period": billing_period},
+    )
+
+
+def _update_existing_subscription(subscription_id: str, price_id: str) -> "stripe.Subscription":
+    """
+    Update an existing Stripe subscription with a new price.
+
+    Args:
+        subscription_id: The Stripe subscription ID
+        price_id: The new Stripe price ID
+
+    Returns:
+        stripe.Subscription: The updated subscription
+    """
+    return stripe.Subscription.modify(
+        subscription_id,
+        items=[{"price": price_id}],
+        payment_behavior="allow_incomplete",
+        proration_behavior="create_prorations",
+    )
+
+
 def create_subscription(user: "User", plan_id: int, payment_method_id: str, billing_period: str) -> dict[str, Any]:
     """
     Create a new subscription or update an existing one for the user.
@@ -525,11 +591,9 @@ def create_subscription(user: "User", plan_id: int, payment_method_id: str, bill
             if not customer:
                 return {"success": False, "error": "Failed to create or retrieve customer"}
 
-            # Attach payment method to customer
-            stripe.PaymentMethod.attach(payment_method_id, customer=customer.id)
-
-            # Set as default payment method
-            stripe.Customer.modify(customer.id, invoice_settings={"default_payment_method": payment_method_id})
+            # Attach payment method to customer and set as default
+            if not _attach_payment_method(customer.id, payment_method_id):
+                return {"success": False, "error": "Failed to attach payment method"}
 
             # Check if user already has a subscription (get fresh data to prevent concurrency issues)
             if hasattr(user, "membership") and user.membership.stripe_subscription_id:
@@ -538,52 +602,16 @@ def create_subscription(user: "User", plan_id: int, payment_method_id: str, bill
                     existing_sub = stripe.Subscription.retrieve(user.membership.stripe_subscription_id)
                     if existing_sub.status not in ["canceled", "incomplete_expired"]:
                         # Update existing subscription
-                        subscription = stripe.Subscription.modify(
-                            user.membership.stripe_subscription_id,
-                            items=[
-                                {
-                                    "price": price_id,
-                                },
-                            ],
-                            payment_behavior="allow_incomplete",
-                            proration_behavior="create_prorations",
-                        )
+                        subscription = _update_existing_subscription(user.membership.stripe_subscription_id, price_id)
                     else:
                         # Create new subscription if previous one was canceled
-                        subscription = stripe.Subscription.create(
-                            customer=customer.id,
-                            items=[
-                                {
-                                    "price": price_id,
-                                },
-                            ],
-                            payment_behavior="allow_incomplete",
-                            metadata={"user_id": user.id, "plan_id": plan.id, "billing_period": billing_period},
-                        )
+                        subscription = _create_new_subscription(customer.id, price_id, user.id, plan.id, billing_period)
                 except stripe.error.InvalidRequestError:
                     # Subscription not found in Stripe, create a new one
-                    subscription = stripe.Subscription.create(
-                        customer=customer.id,
-                        items=[
-                            {
-                                "price": price_id,
-                            },
-                        ],
-                        payment_behavior="allow_incomplete",
-                        metadata={"user_id": user.id, "plan_id": plan.id, "billing_period": billing_period},
-                    )
+                    subscription = _create_new_subscription(customer.id, price_id, user.id, plan.id, billing_period)
             else:
                 # Create a new subscription
-                subscription = stripe.Subscription.create(
-                    customer=customer.id,
-                    items=[
-                        {
-                            "price": price_id,
-                        },
-                    ],
-                    payment_behavior="allow_incomplete",
-                    metadata={"user_id": user.id, "plan_id": plan.id, "billing_period": billing_period},
-                )
+                subscription = _create_new_subscription(customer.id, price_id, user.id, plan.id, billing_period)
 
             # Update user membership
             update_membership_from_subscription(user, subscription)
