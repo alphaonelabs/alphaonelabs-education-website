@@ -107,20 +107,20 @@ class ProfileAdmin(admin.ModelAdmin):
         "points",  # NEW: Add points to list view
         "expertise", 
         "created_at", 
-        "updated_at"
+        "updated_at",
     )
     list_filter = (
         "is_teacher", 
         "points",  # NEW: Add to filters
         "created_at", 
-        "updated_at"
+        "updated_at",
     )
     search_fields = (
         "user__username", 
         "user__email", 
         "expertise", 
         "bio",
-        "points",  # NEW: Make searchable
+
     )
     ordering = ("-created_at",)
     raw_id_fields = ("user",)
