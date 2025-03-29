@@ -54,24 +54,21 @@ document.addEventListener('DOMContentLoaded', function() {
             nodeGroup.setAttribute('data-node-type', node.type);
 
             // Determine node color based on type and completion
-            let nodeColor;
-            if (node.completed) {
-                nodeColor = 'var(--color-green-500, #10b981)';
-            } else {
-                switch (node.type) {
-                    case 'tracker':
-                        nodeColor = `var(--color-${node.color || 'blue-500'}, #3b82f6)`;
-                        break;
-                    case 'course':
-                        nodeColor = 'var(--color-blue-500, #3b82f6)';
-                        break;
-                    case 'milestone':
-                        nodeColor = `var(--color-${node.color || 'yellow-500'}, #f59e0b)`;
-                        break;
-                    default:
-                        nodeColor = 'var(--color-gray-500, #6b7280)';
+            function getNodeColor(node) {
+                if (node.completed) {
+                    return 'var(--color-green-500, #10b981)';
                 }
+                
+                const colorMap = {
+                    tracker: `var(--color-${node.color || 'blue-500'}, #3b82f6)`,
+                    course: 'var(--color-blue-500, #3b82f6)',
+                    milestone: `var(--color-${node.color || 'yellow-500'}, #f59e0b)`,
+                };
+                
+                return colorMap[node.type] || 'var(--color-gray-500, #6b7280)';
             }
+
+            const nodeColor = getNodeColor(node);
 
             // Draw node circle
             const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
