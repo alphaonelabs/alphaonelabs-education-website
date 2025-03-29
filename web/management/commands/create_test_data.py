@@ -9,6 +9,10 @@ from django.db.models import Q
 from django.utils import timezone
 from django.utils.text import slugify
 
+import json
+from django.utils.crypto import get_random_string
+
+
 from web.models import (
     Achievement,
     BlogComment,
@@ -357,7 +361,6 @@ class Command(BaseCommand):
             self.stdout.write(f"Created sessions for course: {course.title}")
 
 
-        # Inside the Command class, add this function after creating courses and sessions
         def create_exams_and_quizzes(self, courses, sessions, students, teachers):
             """Create exams, quizzes, and student submissions for testing."""
             self.stdout.write("Creating exams and quizzes...")
@@ -383,15 +386,20 @@ class Command(BaseCommand):
                     passing_score=70,
                     max_attempts=2,
                     randomize_questions=True,
-                    show_correct_answers=False
+                    show_correct_answers=False,
+                    share_code=get_random_string(8)
                 )
                 
                 # Create questions for course exam
                 for i in range(10):
                     question_type = random.choice(question_types)
+                    
+                    # Generate appropriate question text
+                    question_text = self.get_question_text(question_type)
+                    
                     question = QuizQuestion.objects.create(
                         quiz=course_exam,
-                        text=f"Question {i+1}: {self.get_question_text(question_type)}",
+                        text=f"Question {i+1}: {question_text}",
                         question_type=question_type,
                         explanation=f"Explanation for question {i+1}",
                         points=random.randint(1, 5),
@@ -417,7 +425,7 @@ class Command(BaseCommand):
                 self.stdout.write(f"Created course exam for: {course.title}")
                 
                 # Create student submissions for course exam
-                for student in random.sample(students, min(5, len(students))):
+                for student in random.sample(list(students), min(5, len(students))):
                     user_quiz = UserQuiz.objects.create(
                         quiz=course_exam,
                         user=student,
@@ -425,10 +433,9 @@ class Command(BaseCommand):
                         max_score=100,
                         completed=True,
                         start_time=timezone.now() - timedelta(days=random.randint(1, 5)),
-                        end_time=timezone.now() - timedelta(days=random.randint(0, 4))
+                        end_time=timezone.now() - timedelta(days=random.randint(0, 4)),
+                        answers=json.dumps(self.generate_mock_answers(course_exam))
                     )
-                    user_quiz.answers = self.generate_mock_answers(course_exam)
-                    user_quiz.save()
                     self.stdout.write(f"Created submission for {student.username} - {course_exam.title}")
             
             # Create session exams
@@ -449,15 +456,20 @@ class Command(BaseCommand):
                     time_limit=30,  # 30 minutes
                     passing_score=60,
                     randomize_questions=False,
-                    show_correct_answers=True
+                    show_correct_answers=True,
+                    share_code=get_random_string(8)
                 )
                 
                 # Create questions for session exam (fewer than course exam)
                 for i in range(5):
                     question_type = random.choice(question_types)
+                    
+                    # Generate appropriate question text
+                    question_text = self.get_question_text(question_type)
+                    
                     question = QuizQuestion.objects.create(
                         quiz=session_exam,
-                        text=f"Question {i+1}: {self.get_question_text(question_type)}",
+                        text=f"Question {i+1}: {question_text}",
                         question_type=question_type,
                         explanation=f"Explanation for question {i+1}",
                         points=1,
@@ -467,7 +479,7 @@ class Command(BaseCommand):
                     # Add options for appropriate question types
                     if question_type in ["multiple", "true_false"]:
                         self.create_question_options(question)
-                    
+                
                 self.stdout.write(f"Created session exam for: {session.title}")
                 
                 # Create student submissions for session exams
@@ -482,10 +494,9 @@ class Command(BaseCommand):
                             max_score=100,
                             completed=True,
                             start_time=session.start_time + timedelta(days=1),
-                            end_time=session.start_time + timedelta(days=1, hours=1)
+                            end_time=session.start_time + timedelta(days=1, hours=1),
+                            answers=json.dumps(self.generate_mock_answers(session_exam))
                         )
-                        user_quiz.answers = self.generate_mock_answers(session_exam)
-                        user_quiz.save()
                         self.stdout.write(f"Created submission for {student.username} - {session_exam.title}")
 
         def get_question_text(self, question_type):
@@ -525,8 +536,9 @@ class Command(BaseCommand):
                     )
             elif question.question_type == "true_false":
                 # Create true/false options
-                QuizOption.objects.create(question=question, text="True", is_correct=random.choice([True, False]), order=1)
-                QuizOption.objects.create(question=question, text="False", is_correct=not question.options.first().is_correct, order=2)
+                is_true_correct = random.choice([True, False])
+                QuizOption.objects.create(question=question, text="True", is_correct=is_true_correct, order=1)
+                QuizOption.objects.create(question=question, text="False", is_correct=not is_true_correct, order=2)
 
         def generate_mock_answers(self, quiz):
             """Generate mock answers for a quiz submission."""
@@ -600,10 +612,12 @@ class Command(BaseCommand):
                         "is_correct": random.random() < 0.7
                     }
             
-            return json.dumps(answers)
+            return answers
+        
 
-        # In the handle method, add this line after creating sessions
+        # # In the handle method, add this line after creating sessions
         self.create_exams_and_quizzes(courses, sessions, students, teachers)
+
 
 
         # Create enrollments and progress

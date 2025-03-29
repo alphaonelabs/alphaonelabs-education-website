@@ -75,6 +75,10 @@ urlpatterns += i18n_patterns(
     path("dashboard/student/", views.student_dashboard, name="student_dashboard"),
     path("dashboard/teacher/", views.teacher_dashboard, name="teacher_dashboard"),
     path("dashboard/content/", views.content_dashboard, name="content_dashboard"),
+    # Add these to your web/urls.py file
+    path('quizzes/course/<int:course_id>/create/', quiz_views.create_course_exam, name='create_course_exam'),
+    path('quizzes/course/<int:course_id>/session/<int:session_id>/create/', quiz_views.create_course_exam, name='create_session_exam'),
+    path('quizzes/<int:quiz_id>/add-specialized-question/', quiz_views.add_question_specialized, name='add_question_specialized'),
     # Course Management
     path("courses/create/", views.create_course, name="create_course"),
     path("courses/search/", views.course_search, name="course_search"),
