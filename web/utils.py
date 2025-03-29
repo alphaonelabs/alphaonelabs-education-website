@@ -1,5 +1,6 @@
 import logging
 from datetime import timedelta
+from typing import Any, Dict, Optional
 
 import requests
 import stripe
@@ -419,10 +420,12 @@ def setup_stripe() -> None:
     stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
-def get_stripe_customer(user):
+def get_stripe_customer(user: "User") -> Optional["stripe.Customer"]:
+    """
+    Retrieve or create a Stripe customer for the given user.
+    """
+    setup_stripe()
     try:
-        setup_stripe()
-
         if not user.membership.stripe_customer_id:
             # Create a new customer
             customer = stripe.Customer.create(
@@ -441,12 +444,12 @@ def get_stripe_customer(user):
         # Get existing customer
         return stripe.Customer.retrieve(user.membership.stripe_customer_id)
 
-    except stripe.error.StripeError as e:
-        logger.error(f"Error retrieving Stripe customer for user {user.email}: {str(e)}")
+    except stripe.error.StripeError:
+        logger.exception(f"Error retrieving Stripe customer for user {user.email}")
         return None
 
 
-def create_subscription(user, plan_id, payment_method_id, billing_period):
+def create_subscription(user: "User", plan_id: int, payment_method_id: str, billing_period: str) -> Dict[str, Any]:
     """
     Create or update a subscription for the user based on the provided billing period.
     Returns a dictionary with "success" and optional keys "error" or "subscription".
@@ -496,7 +499,7 @@ def create_subscription(user, plan_id, payment_method_id, billing_period):
                 items=[
                     {
                         "price": price_id,
-                    }
+                    },
                 ],
                 payment_behavior="allow_incomplete",
                 proration_behavior="create_prorations",
@@ -508,7 +511,7 @@ def create_subscription(user, plan_id, payment_method_id, billing_period):
                 items=[
                     {
                         "price": price_id,
-                    }
+                    },
                 ],
                 payment_behavior="allow_incomplete",
                 metadata={"user_id": user.id, "plan_id": plan.id, "billing_period": billing_period},
@@ -530,7 +533,7 @@ def create_subscription(user, plan_id, payment_method_id, billing_period):
         return {"success": False, "error": "An unexpected error occurred"}
 
 
-def cancel_subscription(user):
+def cancel_subscription(user: "User") -> Dict[str, Any]:
     """
     Cancels the user's active Stripe subscription at period end, if any.
     Return {'success': bool, 'error': str, 'subscription': stripe.Subscription?}.
@@ -570,7 +573,7 @@ def cancel_subscription(user):
         return {"success": False, "error": "An unexpected error occurred"}
 
 
-def reactivate_subscription(user):
+def reactivate_subscription(user: "User") -> Dict[str, Any]:
     """
     Reactivates a subscription that was previously scheduled for cancellation.
     Returns a dictionary with "success" and optional keys "error" or "subscription".
