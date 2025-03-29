@@ -173,6 +173,9 @@
         <nav class="hidden md:flex items-center space-x-6">
           <!-- Main navigation links with dropdowns -->
           <div class="flex space-x-6 items-center">
+            <a class="nav-link" href="{% url 'classes_map' %}">
+              <i class="fas fa-map-marker-alt"></i> Classes Near Me
+            </a>
             <!-- LEARN Dropdown -->
             <div class="relative group">
               <button class="flex items-center space-x-1 text-white hover:text-teal-100 focus:outline-none py-2">
@@ -398,6 +401,10 @@
                     onclick="toggleDarkMode()">
               <i id="darkModeIcon" class="fas fa-moon"></i>
             </button>
+            <a href="{% url 'social_media_dashboard' %}"
+               class="p-2 rounded-full inline-flex items-center ml-2">
+              <i class="fab fa-twitter text-xl"></i>
+            </a>
           </div>
           <!-- Auth Buttons -->
           {% if user.is_authenticated %}
