@@ -1787,7 +1787,7 @@ class Meetup(models.Model):
                 self.slug = f"{self.slug}-{suffix}"
         super().save(*args, **kwargs)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title
 
     def can_edit(self, user):
