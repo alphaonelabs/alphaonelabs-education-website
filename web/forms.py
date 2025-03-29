@@ -1225,8 +1225,8 @@ class FeedbackForm(forms.Form):
 
 
 class ChallengeSubmissionForm(forms.ModelForm):
-    is_public = forms.BooleanField(
-        required=False, initial=False, label="Make submission public", widget=forms.CheckboxInput()
+    is_public = (
+        forms.BooleanField(required=False, initial=False, label="Make submission public", widget=forms.CheckboxInput()),
     )
 
     class Meta:
