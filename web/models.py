@@ -1778,7 +1778,7 @@ class Meetup(models.Model):
         if self.event_type == "in_person" and not self.location:
             raise ValidationError("In-person meetups require a location")
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         self.full_clean()  # Call full_clean to enforce validation
         if not self.slug:
             self.slug = slugify(self.title)
