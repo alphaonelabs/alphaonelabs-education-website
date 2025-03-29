@@ -163,12 +163,15 @@ from .referrals import send_referral_reward_email
 from .social import get_social_stats
 from .utils import (
     create_leaderboard_context,
+    geocode_address,
     get_cached_challenge_entries,
     get_cached_leaderboard_data,
     get_leaderboard,
     get_or_create_cart,
     get_user_points,
 )
+
+logger = logging.getLogger(__name__)
 
 GOOGLE_CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "google_credentials.json")
 
@@ -3393,8 +3396,11 @@ class GoodsDetailView(generic.DetailView):
     template_name = "goods/goods_detail.html"
     context_object_name = "product"
 
-    def get_object(self):
-        return get_object_or_404(Goods, pk=self.kwargs["pk"])
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["product_images"] = self.object.goods_images.all()  # Get all images related to the product
+        context["other_products"] = Goods.objects.exclude(pk=self.object.pk)[:12]  # Fetch other products
+        return context
 
 
 class GoodsCreateView(LoginRequiredMixin, UserPassesTestMixin, generic.CreateView):
@@ -5990,6 +5996,123 @@ def prepare_time_series_data(enrollment, total_sessions):
         # Format session dates consistently
         "dates": [s.start_time.strftime("%Y-%m-%d") for s in completed_sessions],
     }
+
+
+# map views
+
+
+@login_required
+def classes_map(request):
+    """View for displaying classes near the user."""
+    now = timezone.now()
+    sessions = (
+        Session.objects.filter(Q(start_time__gte=now) | Q(start_time__lte=now, end_time__gte=now))
+        .filter(is_virtual=False, location__isnull=False)
+        .exclude(location="")
+        .order_by("start_time")
+        .select_related("course", "course__teacher")
+    )
+    # Get filter parameters
+    course_id = request.GET.get("course")
+    teaching_style = request.GET.get("teaching_style")
+    # Apply filters
+    if course_id:
+        sessions = sessions.filter(course_id=course_id)
+    if teaching_style:
+        sessions = sessions.filter(teaching_style=teaching_style)
+    # Fetch only necessary course fields
+    courses = Course.objects.only("id", "title").order_by("title")
+    age_groups = Course._meta.get_field("level").choices
+    teaching_styles = list(set(Session.objects.values_list("teaching_style", flat=True)))
+    context = {"sessions": sessions, "courses": courses, "age_groups": age_groups, "teaching_style": teaching_styles}
+    return render(request, "web/classes_map.html", context)
+
+
+@login_required
+def map_data_api(request):
+    """API to return all live and ongoing class data in JSON format."""
+    now = timezone.now()
+    sessions = (
+        Session.objects.filter(
+            Q(start_time__gte=now) | Q(start_time__lte=now, end_time__gte=now)  # Future or Live classes
+        )
+        .filter(Q(is_virtual=False) & ~Q(location=""))
+        .select_related("course", "course__teacher")
+    )
+
+    course_id = request.GET.get("course")
+    age_group = request.GET.get("age_group")
+
+    if course_id:
+        sessions = sessions.filter(course__id=course_id)
+    if age_group:
+        sessions = sessions.filter(course__level=age_group)
+
+    logger.debug(f"API call with filters: course={course_id}, age={age_group}")
+
+    map_data = []
+    sessions_to_update = []
+    # Limit geocoding to a reasonable number per request
+    MAX_GEOCODING_PER_REQUEST = 5
+    geocoding_count = 0
+    geocoding_errors = 0
+    coordinate_errors = 0
+    for session in sessions:
+        if not session.latitude or not session.longitude:
+            if geocoding_count >= MAX_GEOCODING_PER_REQUEST:
+                logger.warning(f"Geocoding limit reached ({MAX_GEOCODING_PER_REQUEST}). Skipping session {session.id}")
+                continue
+            geocoding_count += 1
+            logger.info(f"Geocoding session {session.id} with location: {session.location}")
+            lat, lng = geocode_address(session.location)
+            if lat is not None and lng is not None:
+                session.latitude = lat
+                session.longitude = lng
+                sessions_to_update.append(session)
+            else:
+                geocoding_errors += 1
+                logger.warning(f"Skipping session {session.id} due to failed geocoding")
+                continue
+
+        try:
+            lat = float(session.latitude)
+            lng = float(session.longitude)
+            map_data.append(
+                {
+                    "id": session.id,
+                    "title": session.title,
+                    "course_title": session.course.title,
+                    "teacher": session.course.teacher.get_full_name() or session.course.teacher.username,
+                    "start_time": session.start_time.isoformat(),
+                    "end_time": session.end_time.isoformat(),
+                    "location": session.location,
+                    "lat": lat,
+                    "lng": lng,
+                    "price": str(session.price or session.course.price),
+                    "url": session.get_absolute_url(),
+                    "course": session.course.title,
+                    "level": session.course.get_level_display(),
+                    "is_virtual": session.is_virtual,
+                }
+            )
+        except (ValueError, TypeError):
+            coordinate_errors += 1
+            logger.warning(
+                f"Skipping session {session.id} due to invalid coordinates: "
+                f"lat={session.latitude}, lng={session.longitude}"
+            )
+            continue
+
+    if sessions_to_update:
+        logger.info(f"Batch updating coordinates for {len(sessions_to_update)} sessions")
+        Session.objects.bulk_update(sessions_to_update, ["latitude", "longitude"])  # Batch update
+
+    # Log summary of issues
+    if geocoding_errors > 0 or coordinate_errors > 0:
+        logger.warning(f"Map data issues: {geocoding_errors} geocoding errors, {coordinate_errors} coordinate errors")
+
+    logger.info(f"Found {len(map_data)} sessions with valid coordinates")
+    return JsonResponse({"sessions": map_data})
 
 
 GITHUB_REPO = "alphaonelabs/alphaonelabs-education-website"
