@@ -65,5 +65,5 @@ dotenv
 nltk
 tenacity
 
-# Social Media Integration
+# Social Media Dependencies
 tweepy==4.15.0 ; python_version >= "3.10" and python_version < "4.0"

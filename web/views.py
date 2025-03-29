@@ -447,6 +447,18 @@ def profile(request):
 
     return render(request, "profile.html", context)
 
+@login_required
+def notification_preferences(request):
+    if request.method == "POST":
+        # Handle notification preference updates
+        user = request.user
+        user.profile.email_notifications = request.POST.get("email_notifications", False)
+        user.profile.push_notifications = request.POST.get("push_notifications", False)
+        user.profile.save()
+        messages.success(request, "Notification preferences updated successfully.")
+        return redirect("profile")
+    
+    return render(request, "notification_preferences.html")
 
 @login_required
 def create_course(request):

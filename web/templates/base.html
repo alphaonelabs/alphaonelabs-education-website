@@ -405,18 +405,27 @@
             <div class="relative">
               <button onclick="toggleUserDropdown()"
                       class="flex items-center space-x-2 focus:outline-none p-2 hover:bg-teal-700 rounded-lg">
-                {% if user.profile.avatar %}
-                  <img src="{{ user.profile.avatar.url }}" 
-                       alt="{{ user.username }}" 
-                       class="w-8 h-8 rounded-full object-cover" />
+                {% if user.profile.custom_avatar %}
+                  <div class="w-12 h-12 p-1.5 transform hover:scale-105 transition-transform duration-200">
+                    <div class="w-full h-full overflow-hidden rounded-full flex items-center justify-center">
+                      {{ user.profile.custom_avatar.svg|safe }}
+                    </div>
+                  </div>
+                {% elif user.profile.avatar %}
+                  <img src="{{ user.profile.avatar.url }}"
+                       alt="User Avatar"
+                       class="h-8 w-8 rounded-full object-cover border-2 border-white"
+                       height="32"
+                       width="32" />
                 {% else %}
-                  <div class="w-8 h-8 rounded-full bg-teal-500 flex items-center justify-center text-white font-semibold">
-                    {{ user.username|first|upper }}
+                  <div class="h-8 w-8 rounded-full bg-orange-500 flex items-center justify-center text-white border-2 border-white">
+                    {{ user.first_name|first|default:user.username|first|upper }}
                   </div>
                 {% endif %}
-                <span class="hidden sm:inline text-white">{{ user.username }}</span>
+                <span class="text-white font-medium hidden sm:block truncate max-w-[100px]">{{ user.username }}</span>
+                <i class="fas fa-chevron-down text-white text-xs"></i>
               </button>
-              <!-- User Dropdown Menu (keeping as is) -->
+              <!-- User Dropdown Menu -->
               <div id="user-dropdown"
                    class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50">
                 <div class="px-4 py-2 text-sm text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700">
@@ -438,7 +447,6 @@
                    class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
                   <i class="fas fa-user-circle mr-2"></i> Profile
                 </a>
-                <!-- Add the Notification Preferences link here -->
                 <a href="{% url 'notification_preferences' %}"
                    class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
                   <i class="fas fa-bell mr-2"></i> Notification Preferences
@@ -479,7 +487,7 @@
             </div>
           {% endif %}
         </nav>
-        <!-- Mobile Menu (hidden by default) -->
+        <!-- Mobile Menu -->
         <div id="mobile-menu"
              class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden">
           <div class="absolute right-0 top-0 h-full w-72 bg-white dark:bg-gray-800 shadow-lg overflow-y-auto mobile-menu-content">
@@ -503,110 +511,6 @@
                   </button>
                 </form>
               </div>
-              <!-- Cart Link -->
-              <a href="{% url 'cart_view' %}"
-                 class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                <i class="fa-solid fa-shopping-cart"></i>
-                <span>Cart</span>
-                {% if request.user.cart.item_count > 0 or request.session.session_key and request.session.session_key|get_cart_item_count > 0 %}
-                  <span class="bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center ml-auto">
-                    {% if request.user.is_authenticated %}
-                      {{ request.user.cart.item_count }}
-                    {% else %}
-                      {{ request.session.session_key|get_cart_item_count }}
-                    {% endif %}
-                  </span>
-                {% endif %}
-              </a>
-              <!-- Navigation Links -->
-              <a href="{% url 'index' %}"
-                 class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                <i class="fa-solid fa-house"></i>
-                <span>Home</span>
-              </a>
-              <a href="{% url 'about' %}"
-                 class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                <i class="fa-solid fa-circle-info"></i>
-                <span>About</span>
-              </a>
-              <a href="{% url 'course_search' %}"
-                 class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                <i class="fa-solid fa-book-open"></i>
-                <span>Courses</span>
-              </a>
-              <a href="{% url 'subjects' %}"
-                 class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                <i class="fa-solid fa-list-check"></i>
-                <span>Subjects</span>
-              </a>
-              <a href="{% url 'goods_listing' %}"
-                 class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                <i class="fa-solid fa-store"></i>
-                <span>Products</span>
-              </a>
-              <a href="{% url 'forum_categories' %}"
-                 class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                <i class="fa-solid fa-comments"></i>
-                <span>Forum</span>
-              </a>
-              <a href="{% url 'blog_list' %}"
-                 class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                <i class="fa-solid fa-blog"></i>
-                <span>Blog</span>
-              </a>
-              <a href="{% url 'meme_list' %}"
-                 class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                <i class="fa-solid fa-face-smile"></i>
-                <span>Edu Memes</span>
-              </a>
-              <a href="{% url 'ai_chat' %}"
-                 class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                <i class="fa-solid fa-robot"></i>
-                <span>AI Chat</span>
-              </a>
-              {% if user.is_authenticated %}
-                <a href="{% url 'profile' %}"
-                   class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                  <i class="fas fa-user-circle"></i>
-                  <span>Profile</span>
-                </a>
-                {% if user.is_superuser %}
-                  <a href="{% url 'admin:index' %}"
-                     class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                    <i class="fas fa-cog"></i>
-                    <span>Admin Panel</span>
-                  </a>
-                  <a href="{% url 'admin:index' %}/dashboard"
-                     class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                    <i class="fas fa-cog"></i>
-                    <span>Admin Dashboard</span>
-                  </a>
-                {% endif %}
-                <form method="post" action="{% url 'account_logout' %}" class="block">
-                  {% csrf_token %}
-                  <button type="submit"
-                          class="w-full flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span>Logout</span>
-                  </button>
-                </form>
-              {% else %}
-                <div class="flex flex-col space-y-2 mt-4">
-                  <a href="{% url 'account_login' %}"
-                     class="flex items-center space-x-2 px-4 py-3 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                    <i class="fa-solid fa-right-to-bracket"></i>
-                    <span>Login</span>
-                  </a>
-                  <a href="{% url 'account_signup' %}"
-                     class="flex items-center space-x-2 px-4 py-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-lg mx-4">
-                    <i class="fa-solid fa-user-plus"></i>
-                    <span>Signup</span>
-                  </a>
-                </div>
-              {% endif %}
-              <!-- Dark Mode Toggle -->
-              <button onclick="toggleDarkMode()"
-=======
               <!-- Mobile Navigation Menu with Accordions -->
               <div class="space-y-4">
                 <!-- LEARN Section -->
@@ -659,7 +563,6 @@
                       <span>Study Groups</span>
                     </a>
                   </div>
->>>>>>> c7ad28c1d97cd86e0834b68bd5dff35e1a1b8035
                 </div>
                 <!-- COMMUNITY Section -->
                 <div class="border-b border-gray-200 dark:border-gray-700 pb-4">
@@ -700,9 +603,7 @@
                       <i class="fas fa-lightbulb mr-2 text-teal-500"></i>
                       <span>Features</span>
                     </a>
-                    <a href="#"
-                       a
-                       href="{% url 'success_story_list' %}"
+                    <a href="{% url 'success_story_list' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-star mr-2 text-teal-500"></i>
                       <span>Success Stories</span>
@@ -819,40 +720,23 @@
                       <i class="fas fa-user-circle mr-2 text-teal-500"></i>
                       <span>Profile</span>
                     </a>
-                    {% if request.user.is_teacher %}
-                      <a href="{% url 'teacher_dashboard' %}"
-                         class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                        <i class="fas fa-chalkboard-teacher mr-2 text-teal-500"></i>
-                        <span>Teacher Dashboard</span>
-                      </a>
-                    {% endif %}
-                    {% if request.user.enrollments.exists %}
-                      <a href="{% url 'student_dashboard' %}"
-                         class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                        <i class="fas fa-graduation-cap mr-2 text-teal-500"></i>
-                        <span>Student Dashboard</span>
-                      </a>
-                    {% endif %}
-                    {% if request.user.is_teacher %}
-                      <a href="{% url 'create_course' %}"
-                         class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                        <i class="fas fa-plus-circle mr-2 text-teal-500"></i>
-                        <span>Create Course</span>
-                      </a>
-                    {% endif %}
-                    {% if user.is_superuser %}
-                      <a href="{% url 'admin:index' %}"
-                         class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                        <i class="fas fa-cog mr-2 text-teal-500"></i>
-                        <span>Admin Panel</span>
-                      </a>
-                      <a href="{% url 'admin:index' %}/dashboard"
-                         class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                        <i class="fas fa-cog mr-2 text-teal-500"></i>
-                        <span>Admin Dashboard</span>
-                      </a>
-                    {% endif %}
-                    <form method="post" action="{% url 'account_logout' %}" class="block mt-2">
+                    <a href="{% url 'notification_preferences' %}"
+                       class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                      <i class="fas fa-bell mr-2"></i> Notification Preferences
+                    </a>
+                    <a href="{% url 'teacher_dashboard' %}"
+                       class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                      <i class="fas fa-chalkboard-teacher mr-2"></i> Teacher Dashboard
+                    </a>
+                    <a href="{% url 'student_dashboard' %}"
+                       class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                      <i class="fas fa-graduation-cap mr-2"></i> Student Dashboard
+                    </a>
+                    <a href="{% url 'progress_visualization' %}"
+                       class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                      <i class="fas fa-chart-line mr-2"></i> Progress Chart
+                    </a>
+                    <form method="post" action="{% url 'account_logout' %}" class="block">
                       {% csrf_token %}
                       <button type="submit"
                               class="w-full flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
@@ -869,7 +753,7 @@
                       <span>Login</span>
                     </a>
                     <a href="{% url 'account_signup' %}"
-                       class="flex items-center py-2 px-3 bg-orange-500 hover:bg-orange-600 text-white rounded-md">
+                       class="flex items-center py-2 px-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-md">
                       <i class="fa-solid fa-user-plus mr-2"></i>
                       <span>Signup</span>
                     </a>

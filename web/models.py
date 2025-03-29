@@ -80,6 +80,8 @@ class Profile(models.Model):
         help_text="Commission rate in percentage (e.g., 10.00 for 10%)",
         blank=True,
     )
+    email_notifications = models.BooleanField(default=True, help_text="Receive email notifications")
+    push_notifications = models.BooleanField(default=True, help_text="Receive push notifications")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     is_profile_public = models.BooleanField(
