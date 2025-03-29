@@ -410,6 +410,9 @@ urlpatterns += i18n_patterns(
         name="update_teacher_notes",
     ),
     path("award-badge/", views.award_badge, name="award_badge"),
+    # Map Urls
+    path("classes-map/", views.classes_map, name="classes_map"),
+    path("api/map-data/", views.map_data_api, name="map_data_api"),
     # Features page
     path("features/", features_page, name="features"),
     path("features/vote/", feature_vote, name="feature_vote"),
