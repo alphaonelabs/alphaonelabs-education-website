@@ -7,7 +7,7 @@ on:
 
 jobs:
   check_migrations:
-    name: Check for multiple migration files
+    name: Check for multiple migration files fix
     runs-on: ubuntu-latest
 
     steps:
