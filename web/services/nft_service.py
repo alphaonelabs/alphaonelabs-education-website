@@ -207,7 +207,7 @@ class NFTBadgeService:
             blockchain="polygon",
             contract_address=self.contract_address,
             metadata_uri=metadata_uri,
-            icon_url=settings.DEFAULT_BADGE_URL,
+            icon_url="web/static/images/logo.png",
             transaction_hash=tx_hash.hex(),
             minted_at=timezone.now(),
         )

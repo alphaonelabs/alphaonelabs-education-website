@@ -27,6 +27,7 @@
                name="wallet_address"
                id="wallet_address"
                required
+               value="{{ student_wallet }}"
                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                placeholder="Enter Ethereum wallet address" />
         <small class="text-gray-500 dark:text-gray-400">
@@ -42,11 +43,10 @@
     </form>
   </div>
   <script>
-      // Retrieve the icon URL from localStorage and set it in the hidden input field
       document.addEventListener("DOMContentLoaded", function() {
-          const icon = localStorage.getItem("icon"); // Retrieve from localStorage
-          if (icon) {
-              document.getElementById("icon_url").value = icon; // Set in hidden input
+          const walletInput = document.getElementById("wallet_address");
+          if (!walletInput.value) { // Only set if it's empty
+              walletInput.value = "{{ student_wallet|default:'' }}";
           }
       });
   </script>

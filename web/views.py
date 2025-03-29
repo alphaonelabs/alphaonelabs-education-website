@@ -5205,9 +5205,11 @@ def award_nft_badge(request, student_id=None):
             achievement.teacher = request.user
             achievement.badge_type = "nft"
             achievement.save()
+            print("it is coming here", achievement)
             print("achievement saved", achievement.id)
             messages.success(request, f"NFT badge created for {achievement.student.get_full_name()}!")
             return redirect("send_nft_badge", achievement_id=achievement.id)
+        print("form errors: ", form.errors.as_json)
     else:
         form = NFTBadgeForm()
 

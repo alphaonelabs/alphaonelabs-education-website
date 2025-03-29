@@ -1687,14 +1687,6 @@ class NFTBadgeForm(forms.ModelForm):
             "course": forms.Select(attrs={"class": "form-select"}),
         }
 
-    def clean_achievement_type(self):
-        badge_type = self.cleaned_data.get("badge_type")
-        # List the NFT-specific achievement types here
-        nft_types = ["nft"]
-        if badge_type not in nft_types:
-            raise forms.ValidationError("Please select an NFT-specific achievement type")
-        return badge_type
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Make course optional for NFT badges
