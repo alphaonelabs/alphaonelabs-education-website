@@ -97,7 +97,7 @@ urlpatterns += i18n_patterns(
     path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session"),
     # Learning Map URLs with slugs
     path("learning-maps/", views.learning_map_list, name="learning_map_list"),
-    path("learning-maps/ <slug:slug>/", views.learning_map_detail, name="learning_map_detail"),
+    path("learning-maps/<slug:slug>/", views.learning_map_detail, name="learning_map_detail"),
     path("learning-maps/<slug:slug>/add-node/", views.add_map_node, name="add_map_node"),
     path("learning-maps/<slug:slug>/share/", views.share_learning_map, name="share_learning_map"),
     path("learning-maps/<slug:slug>/data/", views.get_learning_map_data, name="learning_map_data"),
