@@ -1519,11 +1519,13 @@ class StudentEnrollmentForm(forms.Form):
     )
 
 
+import typing
+
 class MeetupForm(forms.ModelForm):
     class Meta:
         model = Meetup
-        fields = ["title", "description", "date", "link", "location", "event_type"]
-        widgets = {
+        fields: typing.ClassVar[list[str]] = ["title", "description", "date", "link", "location", "event_type"]
+        widgets: typing.ClassVar[dict] = {
             "title": TailwindInput(attrs={"required": True}),
             "description": TailwindTextarea(attrs={"required": True}),
             "date": TailwindDateTimeInput(attrs={"type": "datetime-local", "required": True}),
