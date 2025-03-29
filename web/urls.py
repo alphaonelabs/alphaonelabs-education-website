@@ -55,6 +55,8 @@ urlpatterns += i18n_patterns(
     path("blog/create/", views.create_blog_post, name="create_blog_post"),
     path("blog/tag/<str:tag>/", views.blog_tag, name="blog_tag"),
     path("blog/<slug:slug>/", views.blog_detail, name="blog_detail"),
+    # # Add to urlpatterns
+    # path('api/counter-data/', views.get_counter_data, name='counter_data'),
     # Leaderboard URLs
     path("leaderboards/", views.all_leaderboards, name="leaderboards"),
     # Success Stories URLs

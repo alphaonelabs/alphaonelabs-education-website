@@ -34,6 +34,8 @@ from web.models import (
     Storefront,
     StudyGroup,
     Subject,
+    # QuizSubmission,
+    # Quiz
 )
 
 
@@ -111,7 +113,7 @@ class Command(BaseCommand):
             students.append(user)
             self.stdout.write(f"Created student: {user.username}")
 
-        # Create challenges first
+        # Create weekly challenges
         challenges = []
         for i in range(5):
             week_num = i + 1
@@ -120,14 +122,30 @@ class Command(BaseCommand):
                 continue
 
             challenge = Challenge.objects.create(
-                title=f"Weekly Challenge {i + 1}",
-                description=f"Description for challenge {i + 1}",
+                title=f"Write a short poem",
+                description=f"Compose a short poem on any topic that inspires you.",
                 week_number=week_num,
                 start_date=timezone.now().date() - timedelta(days=14),  # Start from 2 weeks ago
                 end_date=(timezone.now() + timedelta(days=7)).date(),
             )
             challenges.append(challenge)
             self.stdout.write(f"Created challenge: {challenge.title}, {challenge.start_date},- {challenge.end_date}")
+
+        # Create one-time challenges
+        one_time_challenges = []
+        for i in range(3):  # Adjust the number as needed.
+            challenge = Challenge.objects.create(
+                title=f"One-time Challenge {i + 1}",
+                description=f"Description for one-time challenge {i + 1}",
+                challenge_type="one_time",  # Explicitly set to one-time.
+                # week_number is omitted for one-time challenges.
+                start_date=timezone.now().date(),
+                end_date=(timezone.now() + timedelta(days=7)).date(),
+            )
+            one_time_challenges.append(challenge)
+            self.stdout.write(
+                f"Created one-time challenge: {challenge.title}, {challenge.start_date} - {challenge.end_date}"
+            )
 
         if not challenges:
             self.stdout.write(self.style.WARNING("No new challenges created, all week numbers already exist."))
@@ -136,84 +154,84 @@ class Command(BaseCommand):
         now = timezone.now()
         two_weeks_ago = now - timedelta(days=14)
 
-        # Now create challenge submissions and points
-        for student in students:
-            challenge_list = list(Challenge.objects.all())
-            if not challenge_list:
-                self.stdout.write(f"No challenges found for student {student.username}, skipping challenge submissions")
-            else:
-                completed_challenges = random.sample(
-                    challenge_list, min(random.randint(1, len(challenge_list)), len(challenge_list))
-                )
-                for i, challenge in enumerate(completed_challenges):
-                    # Create submission (will auto-create points through save method)
-                    submission = ChallengeSubmission.objects.create(
-                        user=student,
-                        challenge=challenge,
-                        submission_text=f"Submission for challenge {challenge.week_number}",
-                        points_awarded=random.randint(5, 20),
-                    )
+        # # Now create challenge submissions and points
+        # for student in students:
+        #     challenge_list = list(Challenge.objects.all())
+        #     if not challenge_list:
+        #         self.stdout.write(f"No challenges found for student {student.username}, skipping challenge submissions")
+        #     else:
+        #         completed_challenges = random.sample(
+        #             challenge_list, min(random.randint(1, len(challenge_list)), len(challenge_list))
+        #         )
+        #         for i, challenge in enumerate(completed_challenges):
+        #             # Create submission (will auto-create points through save method)
+        #             submission = ChallengeSubmission.objects.create(
+        #                 user=student,
+        #                 challenge=challenge,
+        #                 submission_text=f"Submission for challenge {challenge.week_number}",
+        #                 points_awarded=random.randint(5, 20),
+        #             )
 
-                    # Assign random date to the submission
-                    random_date = random_date_between(two_weeks_ago, now)
-                    submission.submitted_at = random_date
-                    submission.save(update_fields=["submitted_at"])
+        #             # Assign random date to the submission
+        #             random_date = random_date_between(two_weeks_ago, now)
+        #             submission.submitted_at = random_date
+        #             submission.save(update_fields=["submitted_at"])
 
-                    self.stdout.write(
-                        f"Created submission for {student.username} - "
-                        f"Challenge {challenge.week_number} on {random_date.date()}"
-                    )
+        #             self.stdout.write(
+        #                 f"Created submission for {student.username} - "
+        #                 f"Challenge {challenge.week_number} on {random_date.date()}"
+        #             )
 
-                    # Find the points record created by the submission save method and update its date
-                    points = (
-                        Points.objects.filter(user=student, challenge=challenge, point_type="regular")
-                        .order_by("-awarded_at")
-                        .first()
-                    )
+        #             # Find the points record created by the submission save method and update its date
+        #             points = (
+        #                 Points.objects.filter(user=student, challenge=challenge, point_type="regular")
+        #                 .order_by("-awarded_at")
+        #                 .first()
+        #             )
 
-                    if points:
-                        points.awarded_at = random_date
-                        points.save(update_fields=["awarded_at"])
+        #             if points:
+        #                 points.awarded_at = random_date
+        #                 points.save(update_fields=["awarded_at"])
 
-                    # For testing streaks, artificially add streak records for some users
-                    if i > 0 and random.random() < 0.7:  # 70% chance to have a streak
-                        streak_len = i + 1
-                        streak_points = Points.objects.create(
-                            user=student,
-                            challenge=None,
-                            amount=0,
-                            reason=f"Current streak: {streak_len}",
-                            point_type="streak",
-                        )
+        #             # For testing streaks, artificially add streak records for some users
+        #             if i > 0 and random.random() < 0.7:  # 70% chance to have a streak
+        #                 streak_len = i + 1
+        #                 streak_points = Points.objects.create(
+        #                     user=student,
+        #                     challenge=None,
+        #                     amount=0,
+        #                     reason=f"Current streak: {streak_len}",
+        #                     point_type="streak",
+        #                 )
 
-                        # Set streak date slightly after the submission date
-                        streak_date = random_date + timedelta(minutes=random.randint(1, 30))
-                        streak_points.awarded_at = streak_date
-                        streak_points.save(update_fields=["awarded_at"])
+        #                 # Set streak date slightly after the submission date
+        #                 streak_date = random_date + timedelta(minutes=random.randint(1, 30))
+        #                 streak_points.awarded_at = streak_date
+        #                 streak_points.save(update_fields=["awarded_at"])
 
-                        self.stdout.write(
-                            f"Created streak record for {student.username}: {streak_len} on {streak_date.date()}"
-                        )
+        #                 self.stdout.write(
+        #                     f"Created streak record for {student.username}: {streak_len} on {streak_date.date()}"
+        #                 )
 
-                        # Add bonus points for streak milestones
-                        if streak_len % 5 == 0:
-                            bonus = streak_len // 5 * 5
-                            bonus_points = Points.objects.create(
-                                user=student,
-                                challenge=None,
-                                amount=bonus,
-                                reason=f"Streak milestone bonus ({streak_len} weeks)",
-                                point_type="bonus",
-                            )
+        #                 # Add bonus points for streak milestones
+        #                 if streak_len % 5 == 0:
+        #                     bonus = streak_len // 5 * 5
+        #                     bonus_points = Points.objects.create(
+        #                         user=student,
+        #                         challenge=None,
+        #                         amount=bonus,
+        #                         reason=f"Streak milestone bonus ({streak_len} weeks)",
+        #                         point_type="bonus",
+        #                     )
 
-                            # Set bonus date slightly after the streak record
-                            bonus_date = streak_date + timedelta(minutes=random.randint(1, 15))
-                            bonus_points.awarded_at = bonus_date
-                            bonus_points.save(update_fields=["awarded_at"])
+        #                     # Set bonus date slightly after the streak record
+        #                     bonus_date = streak_date + timedelta(minutes=random.randint(1, 15))
+        #                     bonus_points.awarded_at = bonus_date
+        #                     bonus_points.save(update_fields=["awarded_at"])
 
-                            self.stdout.write(
-                                f"Created bonus points for {student.username}:" "" f" {bonus} on {bonus_date.date()}"
-                            )
+        #                     self.stdout.write(
+        #                         f"Created bonus points for {student.username}:" "" f" {bonus} on {bonus_date.date()}"
+        #                     )
 
         # Create additional random points for testing
         for user in User.objects.all():
@@ -335,6 +353,73 @@ class Command(BaseCommand):
                 )
                 sessions.append(session)
             self.stdout.write(f"Created sessions for course: {course.title}")
+
+        
+
+        # # Create quizzes for each course
+        # for course in courses:
+        #     num_quizzes = random.randint(1, 3)
+        #     for i in range(num_quizzes):
+        #         exam_type = random.choice(["section", "end_course"])
+        #         grading_system = random.choice(["auto", "manual"])
+        #         # Create a dummy list of questions as JSON
+        #         num_questions = random.randint(3, 5)
+        #         questions = [
+        #             {
+        #                 "question": f"Sample question {j + 1} for {course.title}",
+        #                 "options": ["A", "B", "C", "D"],
+        #                 "answer": "A",
+        #             }
+        #             for j in range(num_questions)
+        #         ]
+        #         # Set quiz availability window
+        #         quiz_start = now + timedelta(days=random.randint(-10, 10))
+        #         quiz_end = quiz_start + timedelta(days=random.randint(1, 5))
+
+        #         # If exam type is "section", optionally link the quiz to one of the course's sessions.
+        #         session = None
+        #         if exam_type == "section":
+        #             # Filter sessions that belong to the current course
+        #             course_sessions = [s for s in sessions if s.course_id == course.id]
+        #             if course_sessions:
+        #                 session = random.choice(course_sessions)
+
+        #         quiz = Quiz.objects.create(
+        #             title=f"Quiz {i + 1} for {course.title}",
+        #             description="This is a test quiz.",
+        #             exam_type=exam_type,
+        #             questions=questions,
+        #             course=course,
+        #             session=session,
+        #             duration=random.randint(30, 90),  # duration in minutes
+        #             start_date=quiz_start,
+        #             end_date=quiz_end,
+        #             grading_system=grading_system,
+        #         )
+        #         self.stdout.write(f"Created quiz '{quiz.title}' for course '{course.title}'")
+
+        #         # Create quiz submissions for the quiz from random students
+        #         # We'll create a submission for a random subset of students.
+        #         num_submissions = random.randint(1, len(students))
+        #         selected_students = random.sample(list(students), num_submissions)
+        #         for student in selected_students:
+        #             # Create dummy answers matching the questions.
+        #             answers = {
+        #                 f"question_{j + 1}": random.choice(["A", "B", "C", "D"])
+        #                 for j in range(num_questions)
+        #             }
+        #             score = random.randint(0, 100)
+        #             submission = QuizSubmission.objects.create(
+        #                 user=student,
+        #                 quiz=quiz,
+        #                 answers=answers,
+        #                 score=score,
+        #                 teacher_feedback="Well done." if grading_system == "manual" else "",
+        #                 student_feedback="Keep up the good work!" if grading_system == "manual" else "",
+        #             )
+        #             self.stdout.write(f"Created submission for quiz '{quiz.title}' by {student.username}")
+
+
 
         # Create enrollments and progress
         for student in students:

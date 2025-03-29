@@ -10,12 +10,13 @@ import socket
 import subprocess
 import time
 from collections import Counter, defaultdict
-from datetime import timedelta
+from datetime import timedelta, datetime
 from decimal import Decimal
 from urllib.parse import urlparse
 
 import requests
 import stripe
+from web.services.counter_service import CounterService
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, login
@@ -146,6 +147,10 @@ from .models import (
     UserBadge,
     WaitingRoom,
     WebRequest,
+    CounterStatistic,
+    UserActivity,
+    # QuizSubmission,
+    # Quiz
 )
 from .notifications import (
     notify_session_reminder,
@@ -165,6 +170,7 @@ from .utils import (
     get_or_create_cart,
     get_user_points,
 )
+from .services.AI.ai_model import ai_assignment_corrector
 
 GOOGLE_CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "google_credentials.json")
 
@@ -279,6 +285,38 @@ def index(request):
                 }
             )
     return render(request, "index.html", context)
+
+
+# @require_GET
+# def get_counter_data(request):
+#     print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@", "working")
+#     """API view to get the current counter statistics and recent activities."""
+#     # Update active users counter in real-time
+#     CounterService.update_active_users_count()
+
+#     # Get counter values
+#     counter_data = {
+#         'active_users': CounterStatistic.get_counter_value('active_users'),
+#         'enrollments_today': CounterStatistic.get_counter_value('enrollments_today'),
+#         'courses_completed': CounterStatistic.get_counter_value('courses_completed'),
+#         'quizzes_completed': CounterStatistic.get_counter_value('quizzes_completed'),
+#     }
+
+#     # Get recent activities
+#     recent_activities = UserActivity.objects.all()[:10]
+
+#     print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@", counter_data)
+#     # Render the activity items as HTML
+#     activities_html = render_to_string('templates/components/live_counters.html', {
+#         'activities': recent_activities
+#     })
+
+#     print("```````````````````````````````````", counter_data)
+#     return JsonResponse({
+#         'counters': counter_data,
+#         'activities_html': activities_html,
+#         'timestamp': 000000000000000,
+#     })
 
 
 def signup_view(request):
@@ -696,6 +734,33 @@ def course_detail(request, slug):
     rating_distribution = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
     for item in rating_counts:
         rating_distribution[item["rating"]] = item["count"]
+
+
+    
+    # # -----------------------------
+    # # Retrieve quiz and submission data
+    # # -----------------------------
+    # # All quizzes related to this course.
+    # quizzes = course.quizzes.all().order_by("start_date")
+    # print("$$$", "All" , quizzes)
+    
+    # # For student view: get the current user's quiz submissions.
+    # student_quiz_submissions = {}
+    # if request.user.is_authenticated and not is_teacher:
+    #     submissions = QuizSubmission.objects.filter(user=request.user, quiz__course=course)
+    #     print("$$$", "All Submission" , submissions)
+    #     for sub in submissions:
+    #         student_quiz_submissions[sub.quiz.id] = sub
+    #         print("$$$", "Every Submission" , sub , " - ",sub.quiz.id )
+
+    # # For teacher view: get all submissions for each quiz.
+    # teacher_quiz_submissions = {}
+    # if is_teacher:
+    #     for quiz in quizzes:
+    #         teacher_quiz_submissions[quiz.id] = quiz.submissions.all()
+    #         print("$$$", "All TeacherQuizes" , quiz, " - " , quiz.id ," - " , quiz.submissions.all() )
+
+    
 
     context = {
         "course": course,
@@ -3229,13 +3294,27 @@ def challenge_submit(request, challenge_id):
 
     if request.method == "POST":
         form = ChallengeSubmissionForm(request.POST)
+        challenge_detail = {
+            "title": challenge.title,
+            "description": challenge.description,
+            "student_answer": request.POST.get("submission_text"),
+        }
+
         if form.is_valid():
+            ai_response = ai_assignment_corrector(challenge_detail)
+            print("..", ai_response["student_feed_back"], " // ", ai_response["teacher_feed_back"])
+
             submission = form.save(commit=False)
             submission.user = request.user
             submission.challenge = challenge
+            submission.student_feedback = ai_response["student_feed_back"]
+            submission.teacher_feedback = ai_response["teacher_feed_back"]
+            submission.points_awarded = ai_response["degree"]
             submission.save()
             messages.success(request, "Your submission has been recorded!")
-            return redirect("challenge_detail", challenge_id=challenge_id)
+            # return redirect("challenge_detail", challenge_id=challenge_id)
+            base_url = reverse("challenge_detail", kwargs={"challenge_id": challenge_id})
+            return redirect(f"{base_url}#{request.user.username}")
     else:
         form = ChallengeSubmissionForm()
 
