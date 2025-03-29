@@ -6476,6 +6476,7 @@ def all_study_groups(request):
 # PDF submission views
 
 
+@login_required
 def upload_pdf_submission(request):
     """View for students to upload their PDF documents."""
     if request.method == "POST":
@@ -6507,6 +6508,11 @@ def upload_pdf_submission(request):
                     )
                 )
             Notification.objects.bulk_create(notifications)
+            messages.success(request, "Your submission has been received and will be reviewed soon.")
+            return redirect("pdf_submission_list")
+    else:
+        form = PDFSubmissionForm()
+    return render(request, "web/pdf/upload_form.html", {"form": form})
 
 
 @login_required
@@ -6563,8 +6569,12 @@ def pdf_submission_detail(request, submission_id):
             with transaction.atomic():
                 if feedback:
                     submission.feedback = feedback
-                if new_status and new_status in dict(PDFSubmission.STATUS_CHOICES):
-                    submission.status = new_status
+                if new_status:
+                    if new_status in dict(PDFSubmission.STATUS_CHOICES):
+                        submission.status = new_status
+                    else:
+                        messages.error(request, f"Invalid status: {new_status}")
+                        return redirect("pdf_submission_detail", submission_id=submission.id)
                 submission.reviewed_by = request.user
                 submission.reviewed_at = timezone.now()
                 submission.save()
