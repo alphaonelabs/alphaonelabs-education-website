@@ -622,7 +622,7 @@ class SessionAttendance(models.Model):
         unique_together = ["session", "student"]
 
     def __str__(self):
-        return f"{self.student.username} - {self.session.title}({self.status})"
+        return f"{self.student.username} - {self.session.title} ({self.status})"
 
 
 class CourseProgress(models.Model):

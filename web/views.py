@@ -34,6 +34,7 @@ from django.db.models.functions import Coalesce
 from django.http import (
     FileResponse,
     Http404,
+    HttpRequest,
     HttpResponse,
     HttpResponseForbidden,
     JsonResponse,
@@ -1366,7 +1367,7 @@ def mark_session_attendance(request, session_id):
                     student=student,
                     defaults={
                         "status": status,
-                        "verified_by_teacher": True if status in ["present", "late", "excused"] else False,
+                        "verified_by_teacher": status in ["present", "late", "excused"],
                     },
                 )
 
@@ -6498,17 +6499,12 @@ def all_study_groups(request):
 
 
 @login_required
-def self_report_attendance(request, session_id):
+def self_report_attendance(request: HttpRequest, session_id: int) -> HttpResponse:
     """Allow students to self-report attendance for a session."""
     session = get_object_or_404(Session, id=session_id)
 
     # Check if the student is enrolled in the course
-    enrollment = get_object_or_404(Enrollment, student=request.user, course=session.course, status="approved")
-
-    # Additional check that uses the enrollment variable
-    if enrollment.status != "approved":
-        messages.error(request, "You must be an active student in this course to report attendance.")
-        return redirect("course_detail", slug=session.course.slug)
+    _ = get_object_or_404(Enrollment, student=request.user, course=session.course, status="approved")
 
     # Check if the session is in the past or ongoing
     now = timezone.now()
@@ -6519,8 +6515,13 @@ def self_report_attendance(request, session_id):
     # Check if student has already reported attendance
     existing_attendance = SessionAttendance.objects.filter(session=session, student=request.user).first()
 
-    if existing_attendance and existing_attendance.status != "absent":
-        messages.info(request, "You have already reported attendance for this session.")
+    if existing_attendance and existing_attendance.status == "pending":
+        messages.info(
+            request, "You have already reported attendance for this session. It is pending teacher verification."
+        )
+        return redirect("course_detail", slug=session.course.slug)
+    elif existing_attendance and existing_attendance.status in ["present", "late", "excused"]:
+        messages.success(request, "Your attendance for this session has already been verified.")
         return redirect("course_detail", slug=session.course.slug)
 
     # Create or update attendance record as pending
@@ -6531,7 +6532,22 @@ def self_report_attendance(request, session_id):
     )
 
     # Notify the teacher about the pending attendance
-    # (You can implement email notification here if needed)
+    if session.course.teacher.email:
+        subject = f"Pending Attendance Verification - {session.title}"
+        message = (
+            f"{request.user.get_full_name() or request.user.username} has self-reported attendance for "
+            f"'{session.title}' on {session.start_time.strftime('%Y-%m-%d')} and is pending your verification."
+        )
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [session.course.teacher.email],
+                fail_silently=True,
+            )
+        except Exception as e:
+            logger.error(f"Failed to send attendance notification email: {e}")
 
     messages.success(request, "Your attendance has been recorded and is pending teacher verification.")
     return redirect("course_detail", slug=session.course.slug)
