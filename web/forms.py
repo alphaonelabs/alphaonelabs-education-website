@@ -846,7 +846,7 @@ class TeachForm(forms.Form):
         ),
     )
     course_image = forms.ImageField(
-        required=False,
+        required=True,
         validators=[FileExtensionValidator(["jpg", "jpeg", "png", "gif"])],
         widget=TailwindFileInput(
             attrs={
