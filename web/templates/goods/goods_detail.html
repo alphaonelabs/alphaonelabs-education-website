@@ -4,15 +4,124 @@
   Product Details - {{ product.name }}
 {% endblock title %}
 {% block content %}
+  <style>
+      /* Hide scrollbar for Chrome, Safari and Opera */
+      .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+      }
+
+      /* Hide scrollbar for IE, Edge and Firefox */
+      .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+      }
+
+      /* Style for arrow buttons */
+      .arrow-btn {
+          background: rgba(255, 255, 255, 0.9);
+          border: none;
+          padding: 0.5rem;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+      }
+
+      .arrow-btn:hover {
+          background: rgba(240, 240, 240, 0.9);
+      }
+  </style>
   <div class="container mx-auto px-4 py-8">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-      <!-- Product Image -->
-      <div class="flex justify-center">
-        <img src="{{ product.image_url }}"
-             alt="{{ product.name }}"
-             class="rounded-lg shadow-lg w-full md:w-3/4" />
+      <!-- Product Image Gallery -->
+      <div class="flex flex-col items-center">
+        <div class="relative w-full md:w-3/4 bg-gray-100 rounded-xl overflow-hidden shadow-lg flex">
+          <!-- Desktop Thumbnails with overflow arrows -->
+          <div class="hidden md:block relative w-20">
+            <!-- Up Arrow (SVG Icon) -->
+            <button id="thumb-up" class="arrow-btn absolute top-0 left-0 w-full h-8 z-10">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   class="h-5 w-5"
+                   fill="none"
+                   stroke="currentColor"
+                   viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+              </svg>
+            </button>
+            <!-- Thumbnail Gallery Container -->
+            <div id="desktop-thumbnails"
+                 class="bg-gray-50 border overflow-y-auto hide-scrollbar max-h-[500px] pt-8 pb-8">
+              <div class="flex flex-col space-y-2 p-2">
+                {% for image in product_images %}
+                  <div class="thumbnail-container group relative cursor-pointer mb-2"
+                       onclick="changeImage('{{ image.image.url }}', this)">
+                    <img src="{{ image.image.url }}"
+                         alt="{{ image.alt_text }}"
+                         class="w-16 h-16 object-cover rounded-lg border-2 border-transparent group-hover:border-blue-500 transition-all duration-300 group-[.active]:border-blue-600 group-[.active]:shadow-lg" />
+                    <div class="absolute inset-0 bg-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-lg">
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+            <!-- Down Arrow (SVG Icon) -->
+            <button id="thumb-down"
+                    class="arrow-btn absolute bottom-0 left-0 w-full h-8 z-10">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   class="h-5 w-5"
+                   fill="none"
+                   stroke="currentColor"
+                   viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+          <!-- Main Image Display -->
+          <div class="relative flex-grow overflow-hidden">
+            <img id="main-product-image"
+                 src="{{ product.image_url }}"
+                 alt="{{ product.name }}"
+                 class="w-full h-[500px] object-contain transition-all duration-500 ease-in-out transform hover:scale-105" />
+          </div>
+          <!-- Mobile Thumbnails with left/right arrows -->
+          <div class="md:hidden w-full absolute bottom-0 left-0 flex items-center bg-black bg-opacity-50">
+            <!-- Left Arrow (SVG Icon) -->
+            <button id="mobile-thumb-left"
+                    class="arrow-btn w-8 h-8 text-black rounded-full m-2">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   class="h-4 w-4"
+                   fill="none"
+                   stroke="currentColor"
+                   viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <div id="mobile-thumbnails"
+                 class="flex flex-nowrap space-x-2 overflow-x-auto hide-scrollbar pb-2 flex-grow">
+              {% for image in product_images %}
+                <div class="thumbnail-container group relative cursor-pointer flex-shrink-0"
+                     onclick="changeImage('{{ image.image.url }}', this)">
+                  <img src="{{ image.image.url }}"
+                       alt="{{ image.alt_text }}"
+                       class="w-12 h-12 object-cover rounded-lg border-2 border-transparent group-hover:border-blue-500 transition-all duration-300 group-[.active]:border-blue-600 group-[.active]:shadow-lg" />
+                </div>
+              {% endfor %}
+            </div>
+            <!-- Right Arrow (SVG Icon) -->
+            <button id="mobile-thumb-right"
+                    class="arrow-btn w-8 h-8 text-black rounded-full m-2">
+              <svg xmlns="http://www.w3.org/2000/svg"
+                   class="h-4 w-4"
+                   fill="none"
+                   stroke="currentColor"
+                   viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
-      <!-- Product Details -->
+      <!-- Rest of the product details -->
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h1 class="text-3xl font-bold mb-4">{{ product.name }}</h1>
         <p class="text-gray-600 dark:text-gray-400 mb-4">{{ product.description }}</p>
@@ -53,5 +162,97 @@
         </div>
       </div>
     </div>
+    <!-- Other Product Section -->
+    <div class="mt-12">
+      <h2 class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Other Products</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {% for other_product in other_products %}
+          <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 border border-gray-300 dark:border-gray-700">
+            <a href="{% url 'goods_detail' pk=other_product.pk %}"
+               class="block overflow-hidden rounded-md">
+              <img src="{{ other_product.image_url }}"
+                   alt="{{ other_product.name }}"
+                   class="w-full h-56 object-cover rounded-md transition-transform duration-300 hover:scale-105" />
+            </a>
+            <h3 class="mt-3 text-lg font-semibold text-gray-900 dark:text-white">{{ other_product.name }}</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">{{ other_product.description|truncatewords:10 }}</p>
+            <div class="mt-2">
+              {% if other_product.discount_price %}
+                <p class="text-sm text-gray-500 line-through">${{ other_product.price }}</p>
+                <p class="text-xl font-bold text-red-500">${{ other_product.discount_price }}</p>
+              {% else %}
+                <p class="text-xl font-bold text-gray-900 dark:text-white">${{ other_product.price }}</p>
+              {% endif %}
+            </div>
+          </div>
+        {% empty %}
+          <p class="text-gray-500 dark:text-gray-400">No other products available.</p>
+        {% endfor %}
+      </div>
+    </div>
   </div>
+  <!-- JavaScript -->
+  <script>
+      function changeImage(newSrc, thumbnailElement) {
+          const mainImage = document.getElementById('main-product-image');
+          const thumbnails = document.querySelectorAll('.thumbnail-container');
+          thumbnails.forEach(thumb => thumb.classList.remove('active'));
+          thumbnailElement.classList.add('active');
+          mainImage.classList.add('opacity-0', 'scale-95');
+          setTimeout(() => {
+              mainImage.src = newSrc;
+              mainImage.classList.remove('opacity-0', 'scale-95');
+          }, 300);
+      }
+      // Set first thumbnail as active by default
+      document.querySelector('.thumbnail-container')?.classList.add('active');
+
+      // Desktop thumbnail scroll arrows and update visibility
+      const desktopThumbnails = document.getElementById('desktop-thumbnails');
+      const thumbUp = document.getElementById('thumb-up');
+      const thumbDown = document.getElementById('thumb-down');
+
+      function updateDesktopArrows() {
+          thumbUp.style.display = desktopThumbnails.scrollTop === 0 ? 'none' : 'flex';
+          thumbDown.style.display = (desktopThumbnails.scrollTop + desktopThumbnails.clientHeight >= desktopThumbnails.scrollHeight) ? 'none' : 'flex';
+      }
+      thumbUp.addEventListener('click', function() {
+          desktopThumbnails.scrollBy({
+              top: -100,
+              behavior: 'smooth'
+          });
+      });
+      thumbDown.addEventListener('click', function() {
+          desktopThumbnails.scrollBy({
+              top: 100,
+              behavior: 'smooth'
+          });
+      });
+      desktopThumbnails.addEventListener('scroll', updateDesktopArrows);
+      updateDesktopArrows();
+
+      // Mobile thumbnail scroll arrows and update visibility
+      const mobileThumbnails = document.getElementById('mobile-thumbnails');
+      const mobileLeft = document.getElementById('mobile-thumb-left');
+      const mobileRight = document.getElementById('mobile-thumb-right');
+
+      function updateMobileArrows() {
+          mobileLeft.style.display = mobileThumbnails.scrollLeft === 0 ? 'none' : 'flex';
+          mobileRight.style.display = (mobileThumbnails.scrollLeft + mobileThumbnails.clientWidth >= mobileThumbnails.scrollWidth) ? 'none' : 'flex';
+      }
+      mobileLeft.addEventListener('click', function() {
+          mobileThumbnails.scrollBy({
+              left: -100,
+              behavior: 'smooth'
+          });
+      });
+      mobileRight.addEventListener('click', function() {
+          mobileThumbnails.scrollBy({
+              left: 100,
+              behavior: 'smooth'
+          });
+      });
+      mobileThumbnails.addEventListener('scroll', updateMobileArrows);
+      updateMobileArrows();
+  </script>
 {% endblock content %}
