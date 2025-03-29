@@ -59,6 +59,7 @@
               {% for image in product.images.all %}
                 <img loading="lazy"
                      src="{{ image.url }}"
+                     alt="Product image preview"
                      class="w-20 h-20 rounded-lg object-cover border shadow-sm" />
               {% endfor %}
             </div>
