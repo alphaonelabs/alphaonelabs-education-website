@@ -681,7 +681,8 @@ def update_membership_from_subscription(user, subscription):
     except Exception as e:
         logger.error(f"Error updating membership for user {user.email}: {str(e)}")
         return False
-      
+
+
 def geocode_address(address):
     """
     Convert a text address to latitude and longitude coordinates using Nominatim API.
