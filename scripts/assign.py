@@ -232,11 +232,12 @@ def main():
 
                 # If not all issues have PRs, block the assignment
                 if not all_issues_have_prs:
+                    issue_without_pr = assigned_issue.get("number")  # Get the issue number missing a PR
                     comment_body = (
-                        f"You can't take this task yet. You have uncompleted issues without open PRs. "
+                        f"You can't take this task yet. Issue #{issue_without_pr} does not have an open PR. "
                         "Please complete your existing issues before requesting a new assignment."
                     )
-                    print(f"User {user_login} blocked due to uncompleted issues")
+                    print(f"User {user_login} blocked due to uncompleted issue #{issue_without_pr}")
                     requests.post(f"{issue_url}/comments", headers=headers, json={"body": comment_body})
                     return
 
