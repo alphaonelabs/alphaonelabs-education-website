@@ -818,38 +818,6 @@ def course_detail(request, slug):
     }
 
 
-
-    # context = {
-    #     # "materials": materials,
-    #     "student_count": Enrollment.objects.filter(course=course).count(),
-    #     # Add the new exam data to context
-    #     "course_exam_data": course_exam_data,
-    #     "session_data": session_data,
-    #     # Include other existing context variables
-    #     "course": course,
-    #     "sessions": sessions,
-    #     "now": now,
-    #     "today": today,
-    #     "is_teacher": is_teacher,
-    #     "is_enrolled": is_enrolled,
-    #     "enrollment": enrollment,
-    #     "completed_sessions": completed_sessions,
-    #     "calendar_weeks": calendar_weeks,
-    #     "current_month": current_month,
-    #     "prev_month": prev_month,
-    #     "next_month": next_month,
-    #     "student_attendance": student_attendance,
-    #     "completed_enrollment_count": course.enrollments.filter(status="completed").count(),
-    #     "in_progress_enrollment_count": course.enrollments.filter(status="in_progress").count(),
-    #     "featured_review": featured_review,
-    #     "reviews": reviews,
-    #     "user_review": user_review,
-    #     "rating_distribution": rating_distribution,
-    #     "reviews_num": reviews_num,
-    #     'exam': exam,
-    #     'user_attempts': exam.user_quizzes.filter(user=request.user),
-    # }
-
     return render(request, "courses/detail.html", context)
 
 

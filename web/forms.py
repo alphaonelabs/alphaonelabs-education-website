@@ -1622,13 +1622,15 @@ class TakeQuizForm(forms.Form):
                         label=question.text, choices=choices, widget=forms.CheckboxSelectMultiple, required=False
                     )
                 elif question.question_type == "true_false":
-                    # For true/false, add a radio select field
-                    options = question.options.all().order_by("order")
-                    choices = [(str(option.id), option.text) for option in options]
+                    # For true/false, use hardcoded true/false values to match the template
                     self.fields[f"question_{question.id}"] = forms.ChoiceField(
-                        label=question.text, choices=choices, widget=forms.RadioSelect, required=False
+                        label=question.text, 
+                        choices=[("true", "True"), ("false", "False")], 
+                        widget=forms.RadioSelect, 
+                        required=True,
+                        error_messages={'required': 'Please select an answer for this question'}
                     )
-                elif question.question_type == "short":
+                else:
                     # For short answer, add a text field
                     self.fields[f"question_{question.id}"] = forms.CharField(
                         label=question.text,

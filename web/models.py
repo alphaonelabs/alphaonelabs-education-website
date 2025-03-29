@@ -2036,7 +2036,7 @@ class Quiz(models.Model):
     course = models.ForeignKey('Course', on_delete=models.CASCADE, related_name="exams", null=True, blank=True)
     session = models.ForeignKey('Session', on_delete=models.CASCADE, related_name="exams", null=True, blank=True)
     passing_score = models.PositiveIntegerField(default=60, help_text="Minimum score to pass the exam (percentage)")
-    max_attempts = models.PositiveIntegerField(default=0, help_text="Maximum attempts allowed (0 = unlimited)")
+    max_attempts = models.PositiveIntegerField(default=1, help_text="Maximum attempts allowed 1")
     
     def __str__(self):
         return self.title
@@ -2097,6 +2097,13 @@ class QuizOption(models.Model):
 class UserQuiz(models.Model):
     """Model for tracking user quiz attempts and responses"""
 
+    CORRECTION_STATUS = [
+        ('not_needed', 'No Correction Needed'),
+        ('pending', 'Correction Pending'),
+        ('in_progress', 'Correction In Progress'),
+        ('completed', 'Correction Completed')
+    ]
+
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="user_quizzes")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="quiz_attempts", null=True, blank=True)
     anonymous_id = models.CharField(
@@ -2108,6 +2115,12 @@ class UserQuiz(models.Model):
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
     answers = models.JSONField(default=dict, blank=True, help_text="JSON storing the user's answers and question IDs")
+    correction_status = models.CharField(
+        max_length=15, 
+        choices=CORRECTION_STATUS, 
+        default='not_needed',
+        help_text="Status of manual correction for text questions"
+    )
 
     class Meta:
         ordering = ["-start_time"]

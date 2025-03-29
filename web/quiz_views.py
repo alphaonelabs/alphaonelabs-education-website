@@ -269,6 +269,7 @@ def quiz_detail(request, quiz_id):
     if is_owner:
         total_attempts = UserQuiz.objects.filter(quiz=quiz).count()
         average_score = UserQuiz.objects.filter(quiz=quiz).exclude(score=None).values_list("score", flat=True)
+        print("!!!!!!!!!!!!!!!", UserQuiz.objects.filter(quiz=quiz).values_list('correction_status', flat=True))
         if average_score:
             average_score = sum(average_score) / len(average_score)
         else:
@@ -450,7 +451,8 @@ def take_quiz_shared(request, share_code):
 def take_quiz(request, quiz_id):
     """Take a quiz as an authenticated user."""
     quiz = get_object_or_404(Quiz, id=quiz_id)
-
+    print("############", UserQuiz.objects.filter(quiz=quiz, user=request.user).count())
+    print("############", quiz_id)
     # Check if quiz is available
     if quiz.status != "published":
         messages.error(request, "This quiz is not currently available.")
@@ -461,6 +463,7 @@ def take_quiz(request, quiz_id):
 
 def _process_quiz_taking(request, quiz):
     """Helper function to process quiz taking for both routes."""
+    print("###############################################")
     # Check if the quiz has questions
     if not quiz.questions.exists():
         messages.error(request, "This quiz does not have any questions yet.")
@@ -477,6 +480,7 @@ def _process_quiz_taking(request, quiz):
     user = request.user if request.user.is_authenticated else None
 
     # Check if user has already reached max attempts
+    attempt_count = UserQuiz.objects.filter(quiz=quiz, user=user).count()
     if user and quiz.max_attempts > 0:
         attempt_count = UserQuiz.objects.filter(quiz=quiz, user=user).count()
         if attempt_count >= quiz.max_attempts:
@@ -484,9 +488,6 @@ def _process_quiz_taking(request, quiz):
                 request, f"You have reached the maximum number of attempts ({quiz.max_attempts}) for this quiz."
             )
             return redirect("quiz_detail", quiz_id=quiz.id)
-
-    user_quiz = UserQuiz(quiz=quiz, user=user)
-    user_quiz.save()
 
     # Prepare questions and options for display
     prepared_questions = []
@@ -516,6 +517,7 @@ def _process_quiz_taking(request, quiz):
         q_dict["options"] = clean_options
         prepared_questions.append(q_dict)
 
+    user_quiz = UserQuiz(quiz=quiz, user=user)
     if request.method == "POST":
         form = TakeQuizForm(request.POST, quiz=quiz)
 
@@ -524,6 +526,7 @@ def _process_quiz_taking(request, quiz):
             answers = {}
             score = 0
             total_points = 0
+            correction_status = "completed"
 
             for question in prepared_questions:
                 q_id = str(question["id"])
@@ -583,19 +586,22 @@ def _process_quiz_taking(request, quiz):
                     if answers[q_id]["is_correct"]:
                         score += question_obj.points
 
-                elif question_obj.question_type == "short":
+                else :
                     user_answer = form.cleaned_data.get(f"question_{q_id}", "")
                     answers[q_id] = {
                         "user_answer": user_answer,
-                        "is_graded": False,  # Short answers need manual grading
+                        "is_graded": False,  # need manual grading
                     }
+                    correction_status = 'pending'
 
             # Calculate percentage score
             percentage = (score / total_points * 100) if total_points > 0 else 0
 
             # Update the UserQuiz record
             user_quiz.answers = json.dumps(answers)
-            user_quiz.score = percentage
+            if correction_status == 'completed':
+                user_quiz.score = percentage
+            user_quiz.correction_status = correction_status
             user_quiz.end_time = timezone.now()
             user_quiz.completed = True
             user_quiz.save()
@@ -621,7 +627,7 @@ def quiz_results(request, user_quiz_id):
     """Display the results of a quiz attempt."""
     user_quiz = get_object_or_404(UserQuiz, id=user_quiz_id)
     quiz = user_quiz.quiz
-
+    
     # Check permissions
     if user_quiz.user and user_quiz.user != request.user and quiz.creator != request.user:
         return HttpResponseForbidden("You don't have permission to view these results.")
@@ -642,9 +648,12 @@ def quiz_results(request, user_quiz_id):
     # Only count questions that have actual answers (not empty or None)
     questions_attempted = 0
     for q_id, ans_data in answers.items():
+        print("----------", ans_data, " - ",  ans_data.get("user_answer"))
         # For multiple choice and true/false questions
         if ans_data.get("user_answer") not in [None, "", [], {}]:
             questions_attempted += 1
+        else:
+            print("----------", ans_data, " - ",  ans_data.get("user_answer"))
     correct_count = sum(1 for ans in answers.values() if ans.get("is_correct", False))
 
     # Calculate duration

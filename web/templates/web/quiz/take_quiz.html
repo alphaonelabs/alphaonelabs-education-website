@@ -146,14 +146,8 @@
                   <span class="inline-flex items-center justify-center bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-200 text-sm font-medium rounded-full h-8 w-8 mr-3">
                     {{ forloop.counter }}
                   </span>
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if question.question_type == 'multiple' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 {% elif question.question_type == 'true_false' %}bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 {% elif question.question_type == 'short' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300{% endif %}">
-                    {% if question.question_type == 'multiple' %}
-                      Multiple Choice
-                    {% elif question.question_type == 'true_false' %}
-                      True/False
-                    {% elif question.question_type == 'short' %}
-                      Short Answer
-                    {% endif %}
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium  bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 ">
+                    {{ question.question_type }}
                   </span>
                 </div>
                 <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">{{ question.text }}</h2>
@@ -193,7 +187,7 @@
                                class="ml-3 block text-gray-700 dark:text-gray-300">False</label>
                       </div>
                     </div>
-                  {% elif question.question_type == 'short' %}
+                  {% else %}
                     <div>
                       <textarea name="question_{{ question.id }}"
                                 rows="4"

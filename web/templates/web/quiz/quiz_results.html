@@ -25,24 +25,30 @@
         <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-4">Quiz Results</h1>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <!-- Score Card -->
-          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center">
-            <div class="text-5xl font-bold mb-2 {% if user_quiz.score >= user_quiz.quiz.passing_score %}text-green-600 dark:text-green-400 {% else %}text-red-600 dark:text-red-400{% endif %}">
-              {{ user_quiz.score }}%
-            </div>
-            <div class="text-gray-600 dark:text-gray-300">
-              {{ correct_count }} of {{ questions_attempted }} answered questions correct
-            </div>
-            <div class="mt-4">
-              {% if user_quiz.score >= user_quiz.quiz.passing_score %}
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                  <i class="fas fa-check-circle mr-2"></i> Passed
-                </span>
-              {% else %}
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
-                  <i class="fas fa-times-circle mr-2"></i> Failed
-                </span>
-              {% endif %}
-            </div>
+          <div class="{% if user_quiz.correction_status == 'pending' %} flex justify-center items-center {% else %}bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center {% endif %}">
+            {% if user_quiz.correction_status == "pending" %}
+              <div class="text-5xl font-bold mb-2 {% if user_quiz.score >= user_quiz.quiz.passing_score %}text-green-600 dark:text-green-400 {% else %}text-red-600 dark:text-red-400{% endif %}">
+                {{ user_quiz.correction_status }}
+              </div>
+            {% else %}
+              <div class="text-5xl font-bold mb-2 {% if user_quiz.score >= user_quiz.quiz.passing_score %}text-green-600 dark:text-green-400 {% else %}text-red-600 dark:text-red-400{% endif %}">
+                {{ user_quiz.score }}%
+              </div>
+              <div class="text-gray-600 dark:text-gray-300">
+                {{ correct_count }} of {{ questions_attempted }} answered questions correct
+              </div>
+              <div class="mt-4">
+                {% if user_quiz.score >= user_quiz.quiz.passing_score %}
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                    <i class="fas fa-check-circle mr-2"></i> Passed
+                  </span>
+                {% else %}
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
+                    <i class="fas fa-times-circle mr-2"></i> Failed
+                  </span>
+                {% endif %}
+              </div>
+            {% endif %}
           </div>
           <!-- Quiz Info -->
           <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
@@ -81,6 +87,10 @@
               <div class="flex justify-between">
                 <span>Time:</span>
                 <span class="font-medium">{{ user_quiz.created_at|date:"H:i" }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Remaining attempts:</span>
+                <span class="font-medium">{{ user_attempts }}/{{user_quiz.quiz.max_attempts}}</span>
               </div>
             </div>
           </div>

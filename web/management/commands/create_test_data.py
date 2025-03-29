@@ -59,6 +59,10 @@ class Command(BaseCommand):
         """Clear all existing data from the models."""
         self.stdout.write("Clearing existing data...")
         models = [
+            UserQuiz,
+            QuizOption,
+            QuizQuestion,
+            Quiz,
             BlogComment,
             BlogPost,
             PeerMessage,
@@ -587,7 +591,7 @@ class Command(BaseCommand):
         # Question types
         question_types = [
             "multiple", "true_false", "short", "fill_blank", "open_ended", 
-            "problem_solving", "scenario", "diagram", "coding"
+            "problem_solving", "scenario", "coding"
         ]
         
         # Create course exams (final exams)
@@ -688,7 +692,7 @@ class Command(BaseCommand):
                 
                 question = QuizQuestion.objects.create(
                     quiz=session_exam,
-                    text=f"Question {i+1}: {question_text}",
+                    text=f"Question {i+1}: {question_text} - {question_type}",
                     question_type=question_type,
                     explanation=f"Explanation for question {i+1}",
                     points=1,
@@ -730,14 +734,10 @@ class Command(BaseCommand):
             return "Complete the following sentence: The capital of France is _____."
         elif question_type == "open_ended":
             return "Explain the concept of machine learning in your own words."
-        # elif question_type == "matching":
-        #     return "Match the items in column A with their corresponding items in column B."
         elif question_type == "problem_solving":
             return "Solve the following problem: If a train travels at 60 mph, how long will it take to travel 240 miles?"
         elif question_type == "scenario":
             return "You are a software developer working on a critical project. The deadline is approaching, but you've discovered a major bug. What do you do?"
-        elif question_type == "diagram":
-            return "Label the components of the diagram below."
         elif question_type == "coding":
             return "Write a function that returns the sum of two numbers."
         return "Sample question text."
