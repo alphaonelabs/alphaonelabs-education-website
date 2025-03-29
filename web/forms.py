@@ -1537,19 +1537,6 @@ class MeetupForm(forms.ModelForm):
             ),
         }
 
-    def clean(self):
-        cleaned_data = super().clean()
-        event_type = cleaned_data.get("event_type")
-        location = cleaned_data.get("location")
-        link = cleaned_data.get("link")
-
-        if event_type == "in_person" and not location:
-            self.add_error("location", "Location is required for in-person events.")
-
-        if event_type == "online" and not link:
-            self.add_error("link", "Link is required for online events.")
-
-        return cleaned_data
 
 
 class QuizForm(forms.ModelForm):
