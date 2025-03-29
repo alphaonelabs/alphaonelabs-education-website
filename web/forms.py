@@ -867,12 +867,12 @@ class TeachForm(forms.Form):
         ),
     )
     course_image = forms.ImageField(
-        required=False,
+        required=True,
         validators=[FileExtensionValidator(["jpg", "jpeg", "png", "gif"])],
         widget=TailwindFileInput(
             attrs={
                 "accept": "image/*",
-                "help_text": "Upload a course image (optional)",
+                "help_text": "Upload a course image (required)",
                 "class": "block w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500",
             }
         ),
@@ -1734,5 +1734,4 @@ class NotificationPreferencesForm(forms.ModelForm):
 class StudyGroupForm(forms.ModelForm):
     class Meta:
         model = StudyGroup
-        # You might exclude fields that are set automatically.
         fields = ["name", "description", "course", "max_members", "is_private"]
