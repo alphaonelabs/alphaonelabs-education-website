@@ -3844,13 +3844,24 @@ def unregister_meetup(request, slug):
 
 def meetup_detail(request, slug):
     meetup = get_object_or_404(Meetup, slug=slug)
-    registrations = MeetupRegistration.objects.filter(meetup=meetup)
+    registrations = MeetupRegistration.objects.filter(meetup=meetup).select_related('user')
+    
+    # Check if current user is registered
+    user_is_registered = False
+    if request.user.is_authenticated:
+        user_is_registered = MeetupRegistration.objects.filter(meetup=meetup, user=request.user).exists()
+    
+    # Check if current user can edit this meetup
+    can_edit = request.user.is_authenticated and meetup.can_edit(request.user)
+    
     return render(
         request,
         "web/meetup_detail.html",
         {
             "meetup": meetup,
             "registrations": registrations,
+            "user_is_registered": user_is_registered,
+            "can_edit": can_edit,
         },
     )
 
