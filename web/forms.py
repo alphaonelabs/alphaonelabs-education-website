@@ -1713,5 +1713,4 @@ class NotificationPreferencesForm(forms.ModelForm):
 class StudyGroupForm(forms.ModelForm):
     class Meta:
         model = StudyGroup
-        # You might exclude fields that are set automatically.
         fields = ["name", "description", "course", "max_members", "is_private"]
