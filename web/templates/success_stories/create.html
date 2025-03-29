@@ -74,7 +74,8 @@
                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Featured Image</label>
             {% if success_story.featured_image %}
               <div class="mb-2">
-                <img src="{{ success_story.featured_image.url }}"
+                <img loading="lazy"
+                     src="{{ success_story.featured_image.url }}"
                      alt="Current featured image"
                      class="h-32 object-cover rounded-md" />
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Current image</p>

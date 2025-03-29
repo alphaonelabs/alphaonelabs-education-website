@@ -39,14 +39,16 @@
                 </div>
               </div>
             {% elif user.profile.avatar %}
-              <img src="{{ user.profile.avatar.url }}"
+              <img loading="lazy"
+                   src="{{ user.profile.avatar.url }}"
                    alt="{{ user.username }}'s avatar"
                    class="w-32 h-32 rounded-full object-cover mb-4"
                    height="128"
                    width="128" />
             {% else %}
               {% if user.profile.is_teacher %}
-                <img src="{% static 'images/default_teacher.png' %}"
+                <img loading="lazy"
+                     src="{% static 'images/default_teacher.png' %}"
                      alt="{{ user.username }}'s avatar"
                      class="w-32 h-32 rounded-full object-cover mb-4"
                      height="128"
@@ -505,7 +507,8 @@
                 <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {% for user_badge in badges %}
                     <div class="flex flex-col items-center bg-gray-50 dark:bg-gray-700 rounded-lg p-3 shadow-sm">
-                      <img src="{{ user_badge.badge.image.url }}"
+                      <img loading="lazy"
+                           src="{{ user_badge.badge.image.url }}"
                            alt="{{ user_badge.badge.name }}"
                            height="64"
                            width="64"
