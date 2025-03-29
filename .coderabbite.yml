@@ -1,0 +1,11 @@
+reviews:
+  # other review settings...
+  path_instructions:
+    - path: "web/**"
+      ignore:
+        - "web/__pycache__" # Exclude a specific file
+        - "web/migrations" # Exclude an entire folder
+        - "web/static" # Exclude all test files
+        - "web/tests" # Exclude all test files
+      instructions: |
+        Review all files in the 'web' directory except the ignored ones.
