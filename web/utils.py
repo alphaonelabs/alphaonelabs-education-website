@@ -420,18 +420,34 @@ def setup_stripe() -> None:
     """
     Initialize Stripe API with the secret key from settings.
     Verifies that the key is properly configured.
+
+    Raises:
+        ValueError: If STRIPE_SECRET_KEY is not configured
     """
     if not settings.STRIPE_SECRET_KEY:
         logger.warning("STRIPE_SECRET_KEY is not configured. Stripe functionality will not work properly.")
+        raise ValueError("STRIPE_SECRET_KEY is not configured. Please set a valid key in settings.")
+
     stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
 def get_stripe_customer(user: "User") -> Optional["stripe.Customer"]:
     """
     Retrieve or create a Stripe customer for the given user.
+
+    Args:
+        user: The user to create or retrieve a Stripe customer for
+
+    Returns:
+        Optional[stripe.Customer]: The Stripe customer object, or None if an error occurs
+
+    Raises:
+        ValueError: If the user does not have a membership object
+        stripe.error.StripeError: If there's an error with the Stripe API
     """
-    setup_stripe()
     try:
+        setup_stripe()  # This may raise ValueError if STRIPE_SECRET_KEY is not configured
+
         if not user.membership.stripe_customer_id:
             # Create a new customer
             customer = stripe.Customer.create(
@@ -459,9 +475,25 @@ def get_stripe_customer(user: "User") -> Optional["stripe.Customer"]:
 
 def create_subscription(user: "User", plan_id: int, payment_method_id: str, billing_period: str) -> dict[str, Any]:
     """
-    Create or update a subscription for the user based on the provided billing period.
-    Returns a dictionary with "success" and optional keys "error" or "subscription".
+    Create a new subscription or update an existing one for the user.
+
+    Args:
+        user: The user to create/update a subscription for
+        plan_id: The ID of the membership plan
+        payment_method_id: The Stripe payment method ID
+        billing_period: Either "monthly" or "yearly"
+
+    Returns:
+        dict: Contains 'success' (bool) and either 'error' (str) or 'subscription' (object)
+
+    Notes:
+        - This function uses Stripe's API which may raise various exceptions
+        - There's a potential race condition if multiple subscription operations happen simultaneously
+          for the same user. We mitigate this by checking the latest state before making changes.
+        - The function will validate inputs before proceeding with subscription creation.
     """
+    from django.db import transaction
+
     from .models import MembershipPlan
 
     try:
@@ -486,49 +518,77 @@ def create_subscription(user: "User", plan_id: int, payment_method_id: str, bill
         if not price_id:
             return {"success": False, "error": f"No price ID configured for {billing_period} billing"}
 
-        # Get or create customer
-        customer = get_stripe_customer(user)
-        if not customer:
-            return {"success": False, "error": "Failed to create or retrieve customer"}
+        # Use transaction to avoid race conditions during customer/subscription creation
+        with transaction.atomic():
+            # Get or create customer
+            customer = get_stripe_customer(user)
+            if not customer:
+                return {"success": False, "error": "Failed to create or retrieve customer"}
 
-        # Attach payment method to customer
-        stripe.PaymentMethod.attach(payment_method_id, customer=customer.id)
+            # Attach payment method to customer
+            stripe.PaymentMethod.attach(payment_method_id, customer=customer.id)
 
-        # Set as default payment method
-        stripe.Customer.modify(customer.id, invoice_settings={"default_payment_method": payment_method_id})
+            # Set as default payment method
+            stripe.Customer.modify(customer.id, invoice_settings={"default_payment_method": payment_method_id})
 
-        # Check if user already has a subscription
-        existing_subscription = user.membership if hasattr(user, "membership") else None
+            # Check if user already has a subscription (get fresh data to prevent concurrency issues)
+            if hasattr(user, "membership") and user.membership.stripe_subscription_id:
+                # Verify the subscription still exists in Stripe before updating
+                try:
+                    existing_sub = stripe.Subscription.retrieve(user.membership.stripe_subscription_id)
+                    if existing_sub.status not in ["canceled", "incomplete_expired"]:
+                        # Update existing subscription
+                        subscription = stripe.Subscription.modify(
+                            user.membership.stripe_subscription_id,
+                            items=[
+                                {
+                                    "price": price_id,
+                                },
+                            ],
+                            payment_behavior="allow_incomplete",
+                            proration_behavior="create_prorations",
+                        )
+                    else:
+                        # Create new subscription if previous one was canceled
+                        subscription = stripe.Subscription.create(
+                            customer=customer.id,
+                            items=[
+                                {
+                                    "price": price_id,
+                                },
+                            ],
+                            payment_behavior="allow_incomplete",
+                            metadata={"user_id": user.id, "plan_id": plan.id, "billing_period": billing_period},
+                        )
+                except stripe.error.InvalidRequestError:
+                    # Subscription not found in Stripe, create a new one
+                    subscription = stripe.Subscription.create(
+                        customer=customer.id,
+                        items=[
+                            {
+                                "price": price_id,
+                            },
+                        ],
+                        payment_behavior="allow_incomplete",
+                        metadata={"user_id": user.id, "plan_id": plan.id, "billing_period": billing_period},
+                    )
+            else:
+                # Create a new subscription
+                subscription = stripe.Subscription.create(
+                    customer=customer.id,
+                    items=[
+                        {
+                            "price": price_id,
+                        },
+                    ],
+                    payment_behavior="allow_incomplete",
+                    metadata={"user_id": user.id, "plan_id": plan.id, "billing_period": billing_period},
+                )
 
-        if existing_subscription and existing_subscription.stripe_subscription_id:
-            # Update existing subscription
-            subscription = stripe.Subscription.modify(
-                existing_subscription.stripe_subscription_id,
-                items=[
-                    {
-                        "price": price_id,
-                    },
-                ],
-                payment_behavior="allow_incomplete",
-                proration_behavior="create_prorations",
-            )
-        else:
-            # Create a new subscription
-            subscription = stripe.Subscription.create(
-                customer=customer.id,
-                items=[
-                    {
-                        "price": price_id,
-                    },
-                ],
-                payment_behavior="allow_incomplete",
-                metadata={"user_id": user.id, "plan_id": plan.id, "billing_period": billing_period},
-            )
+            # Update user membership
+            update_membership_from_subscription(user, subscription)
 
-        # Update user membership
-        update_membership_from_subscription(user, subscription)
-
-        return {"success": True, "subscription": subscription}
+            return {"success": True, "subscription": subscription}
 
     except stripe.error.CardError as e:
         logger.exception(f"Card error for user {user.email}")
@@ -585,6 +645,12 @@ def reactivate_subscription(user: "User") -> dict[str, Any]:
     """
     Reactivates a subscription that was previously scheduled for cancellation.
     Returns a dictionary with "success" and optional keys "error" or "subscription".
+
+    Args:
+        user: The user whose subscription to reactivate
+
+    Returns:
+        dict: A dictionary with 'success' (bool) and either 'error' (str) or 'subscription' (object)
     """
     from .models import MembershipSubscriptionEvent
 
@@ -600,7 +666,14 @@ def reactivate_subscription(user: "User") -> dict[str, Any]:
         if not membership.cancel_at_period_end:
             return {"success": False, "error": "Subscription is not scheduled for cancellation"}
 
-        # Reactivate subscription
+        # Retrieve the subscription to check its status
+        subscription = stripe.Subscription.retrieve(membership.stripe_subscription_id)
+
+        # Check if the subscription has already been fully canceled (not just scheduled for cancellation)
+        if subscription.status == "canceled":
+            return {"success": False, "error": "Subscription has already been fully canceled and cannot be reactivated"}
+
+        # Reactivate subscription (only if it's still active but scheduled for cancellation)
         subscription = stripe.Subscription.modify(membership.stripe_subscription_id, cancel_at_period_end=False)
 
         # Update membership status
