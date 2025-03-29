@@ -229,9 +229,7 @@ def main():
 
                 # Add assignment comment
                 assignment_msg = (
-                    f"Hey @{user_login}! You're assigned to [{owner}/{repo} issue #{issue_number}]"
-                    f"(https://github.com/{owner}/{repo}/issues/{issue_number}). "
-                    f"Please finish your PR within 1 day."
+                    f"Hey @{user_login}! You're now assigned to this issue. " f"Please finish your PR within 1 day."
                 )
                 print("Posting assignment comment.")
                 comment_response = requests.post(
@@ -251,69 +249,175 @@ def main():
     current_time = datetime.now()
 
     try:
-        # Get repository events
-        events_url = f"https://api.github.com/repos/{owner}/{repo}/issues/events"
-        print(f"Fetching repository events from {events_url}")
-        events_response = requests.get(events_url, headers=headers, params={"per_page": 100})
-        print(f"Events response status: {events_response.status_code}")
-        events = events_response.json()
-        print(f"Fetched {len(events)} events.")
+        # Get open issues with assignees
+        issues_url = f"https://api.github.com/repos/{owner}/{repo}/issues"
+        print(f"Fetching open issues with assignees from {issues_url}")
+        params = {"state": "open", "assignee": "*"}  # * means any assignee
+        issues_response = requests.get(issues_url, headers=headers, params=params)
+        print(f"Issues response status: {issues_response.status_code}")
+        assigned_issues = issues_response.json()
+        print(f"Found {len(assigned_issues)} open issues with assignees.")
 
-        # Filter for assignment events
-        assigned_events = [e for e in events if e.get("event") == "assigned"]
-        print(f"Found {len(assigned_events)} assignment events.")
+        for issue in assigned_issues:
+            issue_number = issue.get("number")
+            issue_url = issue.get("url")
+            assignee = issue.get("assignee", {}).get("login")
 
-        for event in assigned_events:
-            issue_url = event.get("issue", {}).get("url")
-            if not issue_url:
-                print("Skipping event with missing issue URL.")
+            if not assignee:
+                print(f"Issue #{issue_number} has no assignee. Skipping.")
                 continue
 
-            print(f"Reviewing issue from event: {issue_url}")
-            # Get issue details
-            issue_response = requests.get(issue_url, headers=headers)
-            print(f"Issue details response status: {issue_response.status_code}")
-            issue_data = issue_response.json()
+            print(f"Checking assignment age for issue #{issue_number} assigned to {assignee}")
 
-            if issue_data.get("assignee") and issue_data.get("state") == "open":
-                # Calculate days since last update
-                updated_at = datetime.strptime(issue_data.get("updated_at"), "%Y-%m-%dT%H:%M:%SZ")
-                days_since_update = (current_time - updated_at).total_seconds() / 86400  # seconds in a day
-                print(f"Issue #{issue_data.get('number')} last updated {days_since_update:.2f} days ago.")
+            # Get issue timeline to find the assignment event
+            timeline_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}/timeline"
+            timeline_headers = headers.copy()
+            timeline_headers["Accept"] = "application/vnd.github.mockingbird-preview+json"
+            print(f"Fetching timeline from {timeline_url}")
+            timeline_response = requests.get(timeline_url, headers=timeline_headers)
+            print(f"Timeline response status: {timeline_response.status_code}")
+            timeline_events = timeline_response.json()
 
-                if days_since_update > 1:
-                    issue_number = issue_data.get("number")
-                    print(f"Revoking assignment of issue #{issue_number} due to 1 day of inactivity")
+            # Find the most recent assignment event
+            assignment_events = [
+                event
+                for event in timeline_events
+                if event.get("event") == "assigned" and event.get("assignee", {}).get("login") == assignee
+            ]
 
-                    # Check if issue has "assigned" label
-                    has_assigned_label = any(label.get("name") == "assigned" for label in issue_data.get("labels", []))
-                    print(f"Assigned label present: {has_assigned_label}")
+            if not assignment_events:
+                print(f"No assignment events found for issue #{issue_number}. Skipping.")
+                continue
 
-                    if has_assigned_label:
-                        # Remove assignee
-                        assignee_login = issue_data.get("assignee", {}).get("login")
-                        assignees_url = f"{issue_url}/assignees"
-                        print(f"Removing assignee {assignee_login} via {assignees_url}")
-                        requests.delete(assignees_url, headers=headers, json={"assignees": [assignee_login]})
-                        print("Assignee removed.")
+            # Sort by created_at in descending order to get the most recent assignment
+            assignment_events.sort(key=lambda x: x.get("created_at"), reverse=True)
+            latest_assignment = assignment_events[0]
+            assigned_at = datetime.strptime(latest_assignment.get("created_at"), "%Y-%m-%dT%H:%M:%SZ")
+            days_since_assignment = (current_time - assigned_at).total_seconds() / 86400  # seconds in a day
 
-                        # Remove "assigned" label
-                        label_url = f"{issue_url}/labels/assigned"
-                        print(f"Removing 'assigned' label via {label_url}")
-                        requests.delete(label_url, headers=headers)
-                        print("'assigned' label removed.")
+            print(f"Issue #{issue_number} was assigned {days_since_assignment:.2f} days ago.")
 
-                        # Add unassign comment
-                        comments_url = f"{issue_url}/comments"
-                        print(f"Posting unassign comment to {comments_url}")
-                        requests.post(
-                            comments_url,
-                            headers=headers,
-                            json={"body": "⏳ Task unassigned due to inactivity. Available for reassignment."},
+            if days_since_assignment > 1:
+                print(f"Issue #{issue_number} has exceeded 1 day since assignment, checking for linked PRs")
+
+                # Check if this issue has any linked PRs before unassigning
+                has_linked_pr = False
+
+                # First check via GraphQL API for linked issues in the "Development" section
+                try:
+                    query = """
+                        query($owner:String!, $repo:String!, $issue_number:Int!) {
+                          repository(owner:$owner, name:$repo) {
+                            issue(number:$issue_number) {
+                              timelineItems(itemTypes: [CROSS_REFERENCED_EVENT], first: 10) {
+                                nodes {
+                                  ... on CrossReferencedEvent {
+                                    source {
+                                      ... on PullRequest {
+                                        number
+                                        state
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                    """
+
+                    graphql_headers = headers.copy()
+                    graphql_headers["Accept"] = "application/vnd.github.v4+json"
+                    graphql_url = "https://api.github.com/graphql"
+
+                    variables = {"owner": owner, "repo": repo, "issue_number": issue_number}
+
+                    print(f"Checking for linked PRs via GraphQL for issue #{issue_number}")
+                    graphql_response = requests.post(
+                        graphql_url, headers=graphql_headers, json={"query": query, "variables": variables}
+                    )
+
+                    if graphql_response.status_code == 200:
+                        graphql_data = graphql_response.json()
+                        timeline_items = (
+                            graphql_data.get("data", {})
+                            .get("repository", {})
+                            .get("issue", {})
+                            .get("timelineItems", {})
+                            .get("nodes", [])
                         )
-                        print("Unassign comment posted.")
-                    else:
-                        print(f"Issue #{issue_number} lacks 'assigned' label, skipping revocation.")
+
+                        for item in timeline_items:
+                            source = item.get("source", {})
+                            if source and "state" in source and source["state"] == "OPEN":
+                                pr_number = source.get("number")
+                                print(f"Found open PR #{pr_number} linked to issue #{issue_number}")
+                                has_linked_pr = True
+                                break
+                except Exception as e:
+                    print(f"Error checking for linked PRs via GraphQL: {str(e)}")
+
+                # If no PRs found via GraphQL, try REST API fallback
+                if not has_linked_pr:
+                    try:
+                        # Search for PRs referencing this issue
+                        search_url = "https://api.github.com/search/issues"
+                        search_query = f"type:pr state:open repo:{owner}/{repo} {issue_number} in:body"
+                        search_params = {"q": search_query}
+                        print(f"Searching PRs with REST API query: {search_query}")
+                        search_response = requests.get(search_url, headers=headers, params=search_params)
+                        search_data = search_response.json()
+
+                        if search_data.get("total_count", 0) > 0:
+                            pr_number = search_data.get("items", [])[0].get("number")
+                            print(f"Found open PR #{pr_number} linked to issue #{issue_number} via REST API search")
+                            has_linked_pr = True
+                    except Exception as e:
+                        print(f"Error checking for linked PRs via REST API: {str(e)}")
+
+                # Only unassign if no linked PRs found
+                if has_linked_pr:
+                    print(f"Keeping assignment for issue #{issue_number} because it has linked open PR(s)")
+                    continue
+                print(
+                    f"No linked PRs found, revoking assignment of issue #{issue_number} "
+                    "due to exceeding 1 day since assignment"
+                )
+
+                # Check if issue has "assigned" label
+                has_assigned_label = any(label.get("name") == "assigned" for label in issue.get("labels", []))
+                print(f"'assigned' label present: {has_assigned_label}")
+
+                if has_assigned_label:
+                    # Remove assignee
+                    assignees_url = f"{issue_url}/assignees"
+                    print(f"Removing assignee {assignee} via {assignees_url}")
+                    requests.delete(assignees_url, headers=headers, json={"assignees": [assignee]})
+                    print("Assignee removed.")
+
+                    # Remove "assigned" label
+                    label_url = f"{issue_url}/labels/assigned"
+                    print(f"Removing 'assigned' label via {label_url}")
+                    requests.delete(label_url, headers=headers)
+                    print("'assigned' label removed.")
+
+                    # Add unassign comment
+                    comments_url = f"{issue_url}/comments"
+                    print(f"Posting unassign comment to {comments_url}")
+
+                    unassign_message = (
+                        f"⏳ @{assignee}, you have been unassigned due to 24+ hours of inactivity. "
+                        f"This task is now available for reassignment."
+                    )
+
+                    requests.post(
+                        comments_url,
+                        headers=headers,
+                        json={"body": unassign_message},
+                    )
+                    print("Unassign comment posted.")
+                else:
+                    print(f"Issue #{issue_number} lacks 'assigned' label, skipping revocation.")
     except Exception as e:
         print(f"Failed to process inactive assignments: {str(e)}")
 

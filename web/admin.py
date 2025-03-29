@@ -10,6 +10,7 @@ from django.utils.html import format_html
 
 from .models import (
     Achievement,
+    Badge,
     BlogComment,
     BlogPost,
     Cart,
@@ -26,10 +27,14 @@ from .models import (
     ForumTopic,
     Goods,
     LearningStreak,
+    MembershipPlan,
+    MembershipSubscriptionEvent,
     Notification,
     Order,
     OrderItem,
     Payment,
+    PeerChallenge,
+    PeerChallengeInvitation,
     ProductImage,
     Profile,
     ProgressTracker,
@@ -43,6 +48,9 @@ from .models import (
     Storefront,
     Subject,
     SuccessStory,
+    UserBadge,
+    UserMembership,
+    WaitingRoom,
     WebRequest,
 )
 
@@ -62,6 +70,7 @@ class ProfileInline(admin.StackedInline):
         "referred_by",
         "referral_earnings",
         "commission_rate",
+        "how_did_you_hear_about_us",
     )
     raw_id_fields = ("referred_by",)
 
@@ -80,6 +89,16 @@ class EmailAddressInline(admin.TabularInline):
     extra = 1
 
 
+@admin.register(WaitingRoom)
+class WaitingRoomAdmin(admin.ModelAdmin):
+    list_display = ("title", "subject", "creator", "status", "created_at")
+    list_filter = ("status", "subject")
+    search_fields = ("title", "description", "subject", "topics")
+    date_hierarchy = "created_at"
+    raw_id_fields = ("creator", "participants", "fulfilled_course")
+    readonly_fields = ("created_at", "updated_at")
+
+
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ("user", "is_teacher", "expertise", "created_at", "updated_at")
@@ -90,7 +109,10 @@ class ProfileAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
         (None, {"fields": ("user", "is_teacher")}),
-        ("Profile Information", {"fields": ("bio", "expertise", "avatar")}),
+        (
+            "Profile Information",
+            {"fields": ("bio", "expertise", "avatar", "is_profile_public", "how_did_you_hear_about_us")},
+        ),
         ("Stripe Information", {"fields": ("stripe_account_id", "stripe_account_status", "commission_rate")}),
         (
             "Timestamps",
@@ -612,10 +634,54 @@ class DonationAdmin(admin.ModelAdmin):
     display_name.short_description = "Name"
 
 
+@admin.register(Badge)
+class BadgeAdmin(admin.ModelAdmin):
+    list_display = ("name", "badge_type", "is_active", "created_by", "created_at")
+    list_filter = ("badge_type", "is_active")
+    search_fields = ("name", "description")
+
+
+@admin.register(UserBadge)
+class UserBadgeAdmin(admin.ModelAdmin):
+    list_display = ("user", "badge", "award_method", "awarded_at")
+    list_filter = ("award_method", "badge__badge_type")
+    search_fields = ("user__username", "badge__name")
+    date_hierarchy = "awarded_at"
+
+
 @admin.register(LearningStreak)
 class LearningStreakAdmin(admin.ModelAdmin):
     list_display = ("user", "current_streak", "longest_streak", "last_engagement")
     search_fields = ("user__username",)
+
+
+# Register Peer Challenge models
+@admin.register(PeerChallenge)
+class PeerChallengeAdmin(admin.ModelAdmin):
+    list_display = ("title", "creator", "quiz", "status", "created_at", "expires_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("title", "description", "creator__username")
+    raw_id_fields = ("creator", "quiz")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (None, {"fields": ("creator", "quiz", "title", "description")}),
+        ("Status", {"fields": ("status", "expires_at")}),
+        ("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
+
+
+@admin.register(PeerChallengeInvitation)
+class PeerChallengeInvitationAdmin(admin.ModelAdmin):
+    list_display = ("challenge", "participant", "status", "created_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("challenge__title", "participant__username", "participant__email")
+    raw_id_fields = ("challenge", "participant", "user_quiz")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (None, {"fields": ("challenge", "participant")}),
+        ("Status", {"fields": ("status", "user_quiz")}),
+        ("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
 
 
 # Register Quiz-related models
@@ -641,3 +707,30 @@ class QuizOptionAdmin(admin.ModelAdmin):
     list_filter = ("is_correct",)
     search_fields = ("text", "question__text")
     autocomplete_fields = ["question"]
+
+
+@admin.register(MembershipPlan)
+class MembershipPlanAdmin(admin.ModelAdmin):
+    list_display = ("name", "price_monthly", "price_yearly", "billing_period", "is_active", "is_popular", "order")
+    list_filter = ("is_active", "is_popular", "billing_period")
+    search_fields = ("name", "description")
+    prepopulated_fields = {"slug": ("name",)}
+    ordering = ("order", "name")
+
+
+@admin.register(UserMembership)
+class UserMembershipAdmin(admin.ModelAdmin):
+    list_display = ("user", "plan", "status", "billing_period", "start_date", "end_date", "is_active")
+    list_filter = ("status", "billing_period", "plan")
+    search_fields = ("user__email", "user__username", "stripe_customer_id", "stripe_subscription_id")
+    raw_id_fields = ("user", "plan")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(MembershipSubscriptionEvent)
+class MembershipSubscriptionEventAdmin(admin.ModelAdmin):
+    list_display = ("user", "event_type", "created_at")
+    list_filter = ("event_type", "created_at")
+    search_fields = ("user__email", "user__username", "stripe_event_id")
+    raw_id_fields = ("user", "membership")
+    readonly_fields = ("created_at",)

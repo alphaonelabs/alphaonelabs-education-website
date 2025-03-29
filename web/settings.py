@@ -38,6 +38,10 @@ PA_SOURCE_DIR = "/home/" + PA_USER + "/web"
 
 # Social Media Settings
 TWITTER_USERNAME = "alphaonelabs"
+TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
+TWITTER_API_SECRET_KEY = os.getenv("TWITTER_API_SECRET_KEY")
+TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
+TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 
 # Production settings
 if not DEBUG:
@@ -122,17 +126,17 @@ ROOT_URLCONF = "web.urls"
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-            os.path.join(BASE_DIR, 'templates'),  # This line is important!
-        ],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates", BASE_DIR / "web/templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "web.context_processors.last_modified",
+                "web.context_processors.invitation_notifications",
             ],
             'libraries': {
                 'url_tags': 'ai_assistant.templatetags.url_tags',
@@ -249,6 +253,7 @@ if not DEBUG:
     MEDIA_ROOT = "/home/alphaonelabs99282llkb/web/media"
 else:
     MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_URL = "/media/"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

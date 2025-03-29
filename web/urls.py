@@ -7,8 +7,22 @@ from django.urls import include, path
 from django.urls import path, include
 from django.views.generic import RedirectView
 
-from . import admin_views, quiz_views, views
-from .views import GoodsListingView, add_goods_to_cart, sales_analytics, sales_data, streak_detail
+from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
+from .views import (
+    GoodsListingView,
+    GradeableLinkCreateView,
+    GradeableLinkDetailView,
+    GradeableLinkListView,
+    add_goods_to_cart,
+    feature_vote,
+    feature_vote_count,
+    features_page,
+    grade_link,
+    notification_preferences,
+    sales_analytics,
+    sales_data,
+    streak_detail,
+)
 
 # Non-prefixed URLs
 urlpatterns = [
@@ -22,14 +36,18 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns.append(path("__reload__/", include("django_browser_reload.urls")))  # Browser reload URLs
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)  # Add this line
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  # Add this line
 
 # Language-prefixed URLs
 urlpatterns += i18n_patterns(
     path("", views.index, name="index"),
+    path("create-test-data/", views.run_create_test_data, name="create_test_data"),
     path("learn/", views.learn, name="learn"),
+    path("waiting-rooms/", views.waiting_rooms, name="waiting_rooms"),
     path("teach/", views.teach, name="teach"),
     path("about/", views.about, name="about"),
+    path("profile/<str:username>/", views.public_profile, name="public_profile"),
+    path("graphing_calculator/", views.graphing_calculator, name="graphing_calculator"),
     path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
     path("certificate/generate/<int:enrollment_id>/", views.generate_certificate, name="generate_certificate"),
     path("donate/", views.donate, name="donate"),
@@ -42,6 +60,8 @@ urlpatterns += i18n_patterns(
     path("blog/create/", views.create_blog_post, name="create_blog_post"),
     path("blog/tag/<str:tag>/", views.blog_tag, name="blog_tag"),
     path("blog/<slug:slug>/", views.blog_detail, name="blog_detail"),
+    # Leaderboard URLs
+    path("leaderboards/", views.all_leaderboards, name="leaderboards"),
     # Success Stories URLs
     path("success-stories/", views.success_story_list, name="success_story_list"),
     path("success-stories/create/", views.create_success_story, name="create_success_story"),
@@ -51,6 +71,7 @@ urlpatterns += i18n_patterns(
     # Authentication URLs
     path("accounts/signup/", views.signup_view, name="account_signup"),  # Our custom signup view
     path("accounts/", include("allauth.urls")),
+    path("account/notification-preferences/", notification_preferences, name="notification_preferences"),
     path("profile/", views.profile, name="profile"),
     path("accounts/profile/", views.profile, name="accounts_profile"),
     # Dashboard URLs
@@ -66,13 +87,23 @@ urlpatterns += i18n_patterns(
     path("courses/<slug:slug>/edit/", views.update_course, name="update_course"),
     path("courses/<slug:slug>/toggle-status/", views.toggle_course_status, name="toggle_course_status"),
     path("sessions/<int:session_id>/edit/", views.edit_session, name="edit_session"),
-    path("courses/<slug:slug>/add-review/", views.add_review, name="add_review"),
     path("courses/<slug:slug>/delete/", views.delete_course, name="delete_course"),
     path("courses/<slug:slug>/add-session/", views.add_session, name="add_session"),
     path("courses/<slug:slug>/confirm-rolled-sessions/", views.confirm_rolled_sessions, name="confirm_rolled_sessions"),
     path("courses/<slug:slug>/message-students/", views.message_enrolled_students, name="message_students"),
     path("courses/<slug:slug>/add-student/", views.add_student_to_course, name="add_student_to_course"),
+    path(
+        "courses/<slug:course_slug>/manage-student/<int:student_id>/",
+        views.student_management,
+        name="student_management",
+    ),
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
+    path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session"),
+    # Social media sharing URLs
+    path("social-media/", views.social_media_dashboard, name="social_media_dashboard"),
+    path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
+    path("social-media/create/", views.create_scheduled_post, name="create_scheduled_post"),
+    path("social-media/delete/<int:post_id>/", views.delete_post, name="delete_post"),
     # Payment URLs
     path(
         "courses/<slug:slug>/create-payment-intent/",
@@ -80,10 +111,15 @@ urlpatterns += i18n_patterns(
         name="create_payment_intent",
     ),
     path("stripe-webhook/", views.stripe_webhook, name="stripe_webhook"),
+    # Avatar customization
+    path("avatar/customize/", views_avatar.customize_avatar, name="customize_avatar"),
+    path("avatar/set-as-profile/", views_avatar.set_avatar_as_profile_pic, name="set_avatar_as_profile_pic"),
+    path("avatar/preview/", views_avatar.preview_avatar, name="preview_avatar"),
     # Admin and Utilities
     path("github_update/", views.github_update, name="github_update"),
     path(f"{settings.ADMIN_URL}/dashboard/", admin_views.admin_dashboard, name="admin_dashboard"),
     path(f"{settings.ADMIN_URL}/", admin.site.urls),
+    path("waiting-rooms/<int:waiting_room_id>/delete/", views.delete_waiting_room, name="delete_waiting_room"),
     path("subjects/", views.subjects, name="subjects"),
     # Progress tracking URLs
     path(
@@ -138,6 +174,18 @@ urlpatterns += i18n_patterns(
         name="calendar_links",
     ),
     path("streak/", streak_detail, name="streak_detail"),
+    # Waiting Room URLs
+    path("waiting-rooms/", views.waiting_room_list, name="waiting_room_list"),
+    path("waiting-rooms/<int:waiting_room_id>/", views.waiting_room_detail, name="waiting_room_detail"),
+    path("waiting-rooms/<int:waiting_room_id>/join/", views.join_waiting_room, name="join_waiting_room"),
+    path("waiting-rooms/<int:waiting_room_id>/leave/", views.leave_waiting_room, name="leave_waiting_room"),
+    path(
+        "waiting-rooms/<int:waiting_room_id>/create-course/",
+        views.create_course_from_waiting_room,
+        name="create_course_from_waiting_room",
+    ),
+    # Progress Visualization
+    path("dashboard/progress/", views.progress_visualization, name="progress_visualization"),
     # Forum URLs
     path("forum/", views.forum_categories, name="forum_categories"),
     path("forum/category/create/", views.create_forum_category, name="create_forum_category"),
@@ -149,6 +197,8 @@ urlpatterns += i18n_patterns(
         name="forum_topic",
     ),
     path("forum/topic/<int:topic_id>/edit/", views.edit_topic, name="edit_topic"),
+    path("forum/my-topics/", views.my_forum_topics, name="my_forum_topics"),
+    path("forum/my-replies/", views.my_forum_replies, name="my_forum_replies"),
     path("forum/sync-milestones/", views.sync_github_milestones, name="sync_github_milestones"),
     # Peer Networking URLs
     path("peers/", views.peer_connections, name="peer_connections"),
@@ -165,9 +215,27 @@ urlpatterns += i18n_patterns(
     path("peers/messages/<int:user_id>/", views.peer_messages, name="peer_messages"),
     # Study Groups URLs
     path("courses/<int:course_id>/groups/", views.study_groups, name="study_groups"),
+    path("courses/<slug:slug>/reviews/<int:review_id>/edit/", views.edit_review, name="edit_review"),
+    path("courses/<slug:slug>/reviews/add/", views.add_review, name="add_review"),
+    path("courses/<slug:slug>/reviews/<int:review_id>/delete/", views.delete_review, name="delete_review"),
+    path(
+        "courses/<slug:slug>/reviews/<int:review_id>/add-featured-review/",
+        views.add_featured_review,
+        name="add_featured_review",
+    ),
+    path(
+        "courses/<slug:slug>/reviews/<int:review_id>/remove-featured-review/",
+        views.remove_featured_review,
+        name="remove_featured_review",
+    ),
     path("groups/<int:group_id>/", views.study_group_detail, name="study_group_detail"),
+    path("study-groups/", views.all_study_groups, name="all_study_groups"),
     path("sessions/<int:session_id>/", views.session_detail, name="session_detail"),
     path("sitemap/", views.sitemap, name="sitemap"),
+    path("groups/<int:group_id>/invite/", views.invite_to_study_group, name="invite_to_study_group"),
+    path("invitations/", views.user_invitations, name="user_invitations"),
+    path("invitations/<uuid:invite_id>/respond/", views.respond_to_invitation, name="respond_to_invitation"),
+    path("groups/create/", views.create_study_group, name="create_study_group"),
     # Cart URLs
     path("cart/", views.cart_view, name="cart_view"),
     path("cart/add/course/<int:course_id>/", views.add_course_to_cart, name="add_course_to_cart"),
@@ -191,8 +259,8 @@ urlpatterns += i18n_patterns(
     path("calendar/<str:share_token>/data", views.get_calendar_data, name="get_calendar_data"),
     path("status/", views.system_status, name="system_status"),
     # Challenge URLs
-    path("challenges/<int:week_number>/", views.challenge_detail, name="challenge_detail"),
-    path("challenges/<int:week_number>/submit/", views.challenge_submit, name="challenge_submit"),
+    path("challenges/<int:challenge_id>/", views.challenge_detail, name="challenge_detail"),
+    path("challenges/<int:challenge_id>/submit/", views.challenge_submit, name="challenge_submit"),
     path("current-weekly-challenge/", views.current_weekly_challenge, name="current_weekly_challenge"),
     # Educational Videos URLs
     path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),
@@ -222,6 +290,7 @@ urlpatterns += i18n_patterns(
         name="store_order_management",
     ),
     path("orders/item/<int:item_id>/update-status/", views.update_order_status, name="update_order_status"),
+    path("award-achievement/", views.award_achievement, name="award_achievement"),
     # Analytics
     path(
         "store/<slug:store_slug>/analytics/",
@@ -273,6 +342,79 @@ urlpatterns += i18n_patterns(
         name="grade_short_answer",
     ),
     path("quizzes/<int:quiz_id>/analytics/", quiz_views.quiz_analytics, name="quiz_analytics"),
+    # Grade-a-Link URLs
+    path("grade-links/", GradeableLinkListView.as_view(), name="gradeable_link_list"),
+    path("grade-links/submit/", GradeableLinkCreateView.as_view(), name="gradeable_link_create"),
+    path("grade-links/<int:pk>/", GradeableLinkDetailView.as_view(), name="gradeable_link_detail"),
+    path("grade-links/<int:pk>/grade/", grade_link, name="grade_link"),
+    # Peer Challenges URLs
+    path("peer-challenges/", peer_challenge_views.challenge_list, name="challenge_list"),
+    path("peer-challenges/create/", peer_challenge_views.create_challenge, name="create_challenge"),
+    path(
+        "peer-challenges/<int:challenge_id>/", peer_challenge_views.peer_challenge_detail, name="peer_challenge_detail"
+    ),
+    path(
+        "peer-challenges/invitation/<int:invitation_id>/accept/",
+        peer_challenge_views.accept_invitation,
+        name="accept_invitation",
+    ),
+    path(
+        "peer-challenges/invitation/<int:invitation_id>/decline/",
+        peer_challenge_views.decline_invitation,
+        name="decline_invitation",
+    ),
+    path(
+        "peer-challenges/invitation/<int:invitation_id>/take/",
+        peer_challenge_views.take_challenge,
+        name="take_challenge",
+    ),
+    path(
+        "peer-challenges/complete/<int:user_quiz_id>/",
+        peer_challenge_views.complete_challenge,
+        name="complete_challenge",
+    ),
+    path(
+        "peer-challenges/<int:challenge_id>/leaderboard/",
+        peer_challenge_views.leaderboard,
+        name="challenge_leaderboard",
+    ),
+    path(
+        "peer-challenges/submit-to-leaderboard/<int:user_quiz_id>/",
+        peer_challenge_views.submit_to_leaderboard,
+        name="submit_to_leaderboard",
+    ),
+    path(
+        "mark_session_completed/<int:session_id>/",
+        views.mark_session_completed,
+        name="mark_session_completed",
+    ),
+    path(
+        "update_student_attendance/",
+        views.update_student_attendance,
+        name="update_student_attendance",
+    ),
+    path(
+        "get_student_attendance/",
+        views.get_student_attendance,
+        name="get_student_attendance",
+    ),
+    # Student Management URLs
+    path(
+        "enrollment/<int:enrollment_id>/update-progress/",
+        views.update_student_progress,
+        name="update_student_progress",
+    ),
+    path(
+        "enrollment/<int:enrollment_id>/update-notes/",
+        views.update_teacher_notes,
+        name="update_teacher_notes",
+    ),
+    path("award-badge/", views.award_badge, name="award_badge"),
+    # Features page
+    path("features/", features_page, name="features"),
+    path("features/vote/", feature_vote, name="feature_vote"),
+    path("features/vote-count/", feature_vote_count, name="feature_vote_count"),
+    path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
     prefix_default_language=True,
 )
 

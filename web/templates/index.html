@@ -4,6 +4,25 @@
 
 {% block content %}
   <main class="flex-1 w-full max-w-[90rem] mx-auto mt-6 px-4 md:px-6">
+    {% if is_debug %}
+      <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-6 rounded">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <i class="fas fa-code text-yellow-500"></i>
+          </div>
+          <div class="ml-3">
+            <p class="text-sm text-yellow-700">Debug Mode: This banner and buttons are only visible in development.</p>
+            <div class="mt-2">
+              <a href="{% url 'create_test_data' %}"
+                 class="bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200 inline-flex items-center">
+                <i class="fas fa-database mr-2"></i>
+                Add Test Data
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endif %}
     <div class="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-6">
       <div class="md:w-3/4 space-y-7">
         <div class="space-y-4">
@@ -34,16 +53,16 @@
                     <img src="{{ course.image.url }}"
                          alt="{{ course.title }}"
                          class="w-full h-full object-cover"
-                         height=""
-                         width="" />
+                         height="300"
+                         width="300" />
                   </a>
                 {% else %}
                   <a href="{% url 'course_detail' course.slug %}">
                     <img src="{% static 'images/default-course.jpg' %}"
                          alt="{{ course.title }}"
                          class="w-full h-full object-cover"
-                         height=""
-                         width="" />
+                         height="300"
+                         width="300" />
                   </a>
                 {% endif %}
               </div>
@@ -107,19 +126,19 @@
               <div class="flex items-center mb-3">
                 {% if course.teacher.profile.avatar %}
                   <img src="{{ course.teacher.profile.avatar.url }}"
-                       alt="{{ course.teacher.get_full_name|default:course.teacher.username }}"
+                       alt="{{ course.teacher.username }}"
                        class="h-12 w-12 rounded-full mr-3"
                        width="48"
                        height="48" />
                 {% else %}
                   <img src="{% static 'images/default_teacher.png' %}"
-                       alt="{{ course.teacher.get_full_name|default:course.teacher.username }}"
+                       alt="{{ course.teacher.username }}"
                        class="h-12 w-12 rounded-full mr-3"
                        width="48"
                        height="48" />
                 {% endif %}
                 <div>
-                  <span class="text-sm font-medium">{{ course.teacher.get_full_name|default:course.teacher.username }}</span>
+                  <span class="text-sm font-medium">{{ course.teacher.username }}</span>
                   {% if course.teacher.profile.expertise %}
                     <p class="text-xs text-gray-600 dark:text-gray-400">{{ course.teacher.profile.expertise }}</p>
                   {% endif %}
@@ -197,6 +216,66 @@
             </div>
           </div>
         </div>
+        <!-- Peer Challenges Section -->
+        <div class="mb-6 bg-gradient-to-r from-purple-600 to-pink-500 rounded-lg overflow-hidden shadow-md">
+          <div class="flex flex-col md:flex-row">
+            <div class="p-4 md:w-3/4 text-white relative overflow-hidden">
+              <div class="relative z-10">
+                <div class="flex items-center mb-1">
+                  <span class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">New Feature</span>
+                </div>
+                <h2 class="text-lg md:text-xl font-bold mb-2">Challenge Your Friends with Peer Quizzes!</h2>
+                <p class="mb-3 text-pink-100 text-sm">
+                  Create personalized quiz challenges, invite friends, and compete on the leaderboard!
+                </p>
+                <div class="flex flex-wrap gap-2">
+                  <a href="{% url 'challenge_list' %}"
+                     class="bg-white text-purple-600 hover:bg-purple-50 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition duration-200 inline-flex items-center">
+                    <i class="fas fa-trophy mr-1.5"></i> View Challenges
+                  </a>
+                  {% if user.is_authenticated %}
+                    <a href="{% url 'create_challenge' %}"
+                       class="bg-transparent hover:bg-white/20 border border-white px-3 py-1.5 rounded-lg text-sm font-medium transition duration-200 inline-flex items-center">
+                      <i class="fas fa-plus mr-1.5"></i> Create Challenge
+                    </a>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            <div class="hidden md:block md:w-1/4 bg-gradient-to-br from-purple-500/30 to-pink-500/30 p-2 relative">
+              <!-- Single Challenge Card visual -->
+              <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                <div class="bg-white/90 dark:bg-gray-800/90 rounded-lg shadow-md p-2 w-36 border-t-4 border-yellow-500">
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-xs font-bold text-purple-600 dark:text-purple-400">Math Challenge</span>
+                    <span class="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded-full">1st</span>
+                  </div>
+                  <div class="text-xs text-gray-600 dark:text-gray-300">
+                    <div class="flex items-center">
+                      <i class="fas fa-user-friends mr-1 text-xs"></i> 8 Participants
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="bg-purple-700/30 py-1.5 px-4">
+            <div class="flex flex-wrap items-center justify-between text-xs text-white">
+              <div class="flex items-center">
+                <i class="fas fa-users mr-1"></i>
+                <span>Challenge friends</span>
+              </div>
+              <div class="flex items-center">
+                <i class="fas fa-crown mr-1"></i>
+                <span>Compete</span>
+              </div>
+              <div class="flex items-center">
+                <i class="fas fa-chart-bar mr-1"></i>
+                <span>Track results</span>
+              </div>
+            </div>
+          </div>
+        </div>
         <!-- Featured Products (3 across) -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           {% for product in featured_products %}
@@ -208,16 +287,16 @@
                     <img src="{{ product.image.url }}"
                          alt="{{ product.name }}"
                          class="w-full h-full object-cover"
-                         height=""
-                         width="" />
+                         height="250"
+                         width="250" />
                   </a>
                 {% else %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
                     <img src="{% static 'images/placeholder.png' %}"
                          alt="{{ product.name }}"
                          class="w-full h-full object-cover"
-                         height=""
-                         width="" />
+                         height="250"
+                         width="250" />
                   </a>
                 {% endif %}
               </div>
@@ -280,8 +359,8 @@
                      alt="Google Summer of Code"
                      class="h-16 w-16 object-contain"
                      onerror="this.src='https://summerofcode.withgoogle.com/assets/media/gsoc-2024-badge.svg'"
-                     height=""
-                     width="" />
+                     height="64"
+                     width="64" />
               </div>
               <div>
                 <h3 class="text-xl font-bold mb-2">Join us for Google Summer of Code 2025! 🚀</h3>
@@ -421,7 +500,7 @@
                       {% for invite in team_invites|slice:":3" %}
                         <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition duration-200">
                           <h4 class="font-medium text-white">{{ invite.goal.title }}</h4>
-                          <p class="text-sm text-gray-200 mt-1">Invited by {{ invite.sender.get_full_name|default:invite.sender.username }}</p>
+                          <p class="text-sm text-gray-200 mt-1">Invited by {{ invite.sender.username }}</p>
                           <div class="flex items-center space-x-2 mt-3">
                             <form method="post"
                                   action="{% url 'accept_team_invite' invite.id %}"
@@ -462,8 +541,38 @@
             {% endif %}
           </div>
         {% endif %}
+        <!-- Affiliations Section -->
+        <div class="border border-gradient-to-r from-purple-500 to-pink-400 p-1 rounded-md shadow-md mb-4 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800 mb-6">
+          <h2 class="text-xl font-semibold flex items-center mb-4">
+            <i class="fas fa-handshake text-teal-600 dark:text-teal-400 mr-2"></i> Our Affiliations
+          </h2>
+          <div class="flex flex-wrap items-center justify-center gap-6">
+            <!-- OSL Logo -->
+            <a href="https://opensciencelabs.org/"
+               target="_blank"
+               rel="noopener"
+               class="block">
+              <img src="{% static 'images/logo-osl.svg' %}"
+                   alt="Open Source License"
+                   class="h-32 w-auto dark:hidden"
+                   title="Licensed under Open Source License (OSL)"
+                   height="128"
+                   width="auto" />
+              <img src="{% static 'images/osl-color-horizontal.png' %}"
+                   alt="Open Source License"
+                   class="h-16 w-auto hidden dark:block"
+                   title="Licensed under Open Source License (OSL)"
+                   height="128"
+                   width="auto" />
+            </a>
+            <!-- Space for additional affiliation logos -->
+          </div>
+          <p class="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">
+            Alpha One Labs is proudly affiliated with open source initiatives that advance education technology.
+          </p>
+        </div>
       </div>
-      <div class="md:w-1/3 space-y-6">
+      <div class="md:w-1/4 space-y-8">
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 shadow-lg">
           <h2 class="text-xl font-semibold mb-6 text-center text-gray-800 dark:text-gray-200">What Would You Like To Do?</h2>
           <div class="space-y-4">
@@ -481,6 +590,47 @@
             </a>
           </div>
         </div>
+        {% if user.is_authenticated and teaching_courses %}
+          <!-- Courses Teaching Section -->
+          <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 shadow-lg">
+            <h2 class="text-lg font-semibold mb-4 flex items-center">
+              <i class="fa-solid fa-chalkboard-teacher text-teal-300 dark:text-teal-300 mr-2"></i>
+              My Teaching Courses
+            </h2>
+            <div class="space-y-3">
+              {% for course in teaching_courses %}
+                <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200">
+                  <div class="flex items-center justify-between mb-1">
+                    <a href="{% url 'course_detail' course.slug %}"
+                       class="font-medium text-gray-800 dark:text-gray-200 hover:text-teal-300 dark:hover:text-teal-300 transition">
+                      {{ course.title|truncatechars:28 }}
+                    </a>
+                    <span class="text-xs {% if course.status == 'published' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% elif course.status == 'draft' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %} px-2 py-1 rounded-full">
+                      {{ course.get_status_display }}
+                    </span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-300">
+                    <div class="flex items-center">
+                      <i class="fas fa-eye text-gray-400 mr-1.5"></i>
+                      <span>{{ course.view_count|default:"0" }} views</span>
+                    </div>
+                    <div class="flex items-center">
+                      <i class="fas fa-users text-gray-400 mr-1.5"></i>
+                      <span>{{ course.enrolled_students }}/{{ course.max_students }} enrolled</span>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+              {% if teaching_courses.count > 3 %}
+                <a href="{% url 'teacher_dashboard' %}"
+                   class="text-teal-300 hover:text-teal-400 dark:text-teal-300 dark:hover:text-teal-400 text-sm flex items-center justify-center mt-2">
+                  <span>View all courses</span>
+                  <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
         <!-- Progress Trackers Dashboard -->
         {% if user.is_authenticated %}
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
@@ -524,32 +674,90 @@
             {% endif %}
           </div>
         {% endif %}
-        <!-- Weekly Challenge -->
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800">
-          <h2 class="text-xl font-semibold mb-4 flex items-center">
-            <span class="mr-2">🏆</span> Weekly Challenge
+        <!-- Leaderboard -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <h2 class="text-lg font-semibold mb-4 flex items-center">
+            <i class="fa-solid fa-trophy text-yellow-600 dark:text-yellow-400 mr-2"></i>
+            Leaderboard Champions
           </h2>
-          {% if current_challenge %}
-            <div class="text-left">
-              <p class="text-lg font-semibold mb-2">Challenge Name:</p>
-              <p class="text-gray-700 dark:text-gray-300 mb-4">{{ current_challenge.title }}</p>
-              <p class="text-lg font-semibold mb-2">Details:</p>
-              <p class="text-gray-700 dark:text-gray-300 mb-4">{{ current_challenge.description }}</p>
-              <p class="text-lg font-semibold mb-2">Duration:</p>
-              <p class="text-gray-600 dark:text-gray-400 mb-6">
-                {{ current_challenge.start_date }} to {{ current_challenge.end_date }}
+          <div class="space-y-3">
+            <p class="text-gray-600 dark:text-gray-400 mb-6">Global leaderboard</p>
+            {% for entry in top_leaderboard_users %}
+              <div class="flex items-center p-2 {% if forloop.counter == 1 %}bg-yellow-50 dark:bg-yellow-900/30{% elif forloop.counter == 2 %}bg-gray-50 dark:bg-gray-700/50{% elif forloop.counter == 3 %}bg-amber-50 dark:bg-amber-900/30{% endif %} rounded-lg">
+                <div class="flex-shrink-0 mr-3 relative">
+                  {% if entry.user.profile.avatar %}
+                    <img src="{{ entry.user.profile.avatar.url }}"
+                         alt="{{ entry.user.username }}"
+                         class="w-10 h-10 rounded-full"
+                         width="40"
+                         height="40" />
+                  {% else %}
+                    <div class="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-white">
+                      {{ entry.user.username|make_list|first|upper }}
+                    </div>
+                  {% endif %}
+                  <div class="absolute -top-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-white {% if forloop.counter == 1 %}bg-yellow-500{% elif forloop.counter == 2 %}bg-gray-500{% elif forloop.counter == 3 %}bg-amber-600{% endif %}">
+                    {{ forloop.counter }}
+                  </div>
+                </div>
+                <div class="flex-1 min-w-0">
+                  {% if entry.user.id == user.id %}
+                    <p class="text-sm font-medium truncate">
+                      You
+                      <span class="bg-blue-200 px-3 py-1 rounded-full text-sm">Excellent Work</span>
+                    </p>
+                  {% else %}
+                    <p class="text-sm font-medium truncate">{{ entry.user.username }}</p>
+                  {% endif %}
+                  <div class="flex mt-2 text-xs text-gray-500 dark:text-gray-400 space-x-2">
+                    <span title="Points"><i class="fas fa-star text-yellow-500 mr-1"></i>{{ entry.points }}</span>
+                    <span title="Challenges Completed"><i class="fas fa-check-circle text-green-500 mr-1"></i>{{ entry.challenge_count }}</span>
+                    <span title="Streak"><i class="fas fa-fire text-orange-500 mr-1"></i>{{ entry.current_streak }}</span>
+                  </div>
+                </div>
+              </div>
+            {% empty %}
+              <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
+                No entries yet. Complete challenges to earn your spot!
               </p>
-              {% if user.is_authenticated %}
-                <a href="{% url 'challenge_submit' current_challenge.week_number %}"
-                   class="inline-block bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 transition-shadow shadow-md">
-                  Complete My Challenge
-                </a>
-              {% else %}
-                <p class="text-red-600 dark:text-red-400 mt-4">Please log in to submit your result.</p>
-              {% endif %}
+            {% endfor %}
+          </div>
+          <!-- Leaderboard Navigation Buttons -->
+          <div class="mt-4 space-y-2">
+            <a href="{% url 'leaderboards' %}"
+               class="block text-center bg-orange-500 hover:bg-orange-600 text-white font-medium px-4 py-2 rounded-lg transition-colors">
+              <i class="fas fa-list-ol mr-2"></i>Full Leaderboard
+            </a>
+          </div>
+        </div>
+        <!-- Weekly Challenge -->
+        <div class="container mx-auto px-4 py-8">
+          <h1 class="text-3xl font-bold mb-6 text-center">🏆 Weekly Challenges</h1>
+          {% if current_challenge %}
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800">
+              <!-- Only display the first challenge (current week) -->
+              <div class="challenge-item">
+                <!-- Challenge Title -->
+                <h2 class="text-xl font-semibold mb-4">{{ current_challenge.0.title }}</h2>
+                <!-- Challenge Description -->
+                <p class="text-gray-700 dark:text-gray-300 mb-4">{{ current_challenge.0.description }}</p>
+                <!-- Challenge Duration -->
+                <p class="text-gray-600 dark:text-gray-400 mb-4">
+                  <strong>Duration:</strong> {{ current_challenge.0.start_date }} to {{ current_challenge.0.end_date }}
+                </p>
+                <!-- Submission Button -->
+                {% if user.is_authenticated %}
+                  <a href="{% url 'challenge_submit' current_challenge.0.id %}"
+                     class="inline-block bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 transition-shadow shadow-md">
+                    Complete My Challenge
+                  </a>
+                {% else %}
+                  <p class="text-red-600 dark:text-red-400 mt-4">Please log in to submit your result.</p>
+                {% endif %}
+              </div>
             </div>
           {% else %}
-            <p class="text-left text-gray-500 dark:text-gray-400">No challenge available for this week.</p>
+            <p class="text-center text-gray-500 dark:text-gray-400">No challenges available at this time.</p>
           {% endif %}
         </div>
         <!-- Educational Videos -->
@@ -623,178 +831,468 @@
             </a>
           </div>
         </div>
-        <!-- Recent Contributors -->
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h2 class="text-lg font-semibold mb-4 flex items-center">
-            <i class="fa-solid fa-code-pull-request text-purple-600 dark:text-purple-400 mr-2"></i>
-            Recent Code Contributions
-          </h2>
-          <div class="space-y-4" id="recent-contributors">
-            <!-- Contributors will be loaded via JavaScript -->
-            <div class="animate-pulse space-y-3">
-              {% for i in "123456789"|make_list %}
-                <div class="flex items-center space-x-3">
-                  <div class="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                  <div class="flex-1">
-                    <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                    <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-2"></div>
-                  </div>
-                </div>
-              {% endfor %}
-            </div>
-          </div>
-          <script>
-              // Fetch recent contributors from GitHub API
-              fetch('https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=10')
-                  .then(response => response.json())
-                  .then(pulls => {
-                      const container = document.getElementById('recent-contributors');
-                      container.innerHTML = ''; // Clear loading state
-
-                      pulls.forEach(pull => {
-                          const date = new Date(pull.created_at).toLocaleDateString();
-                          const div = document.createElement('div');
-                          div.className = 'flex items-center space-x-3 p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
-                          div.innerHTML = `
-                    <img src="${pull.user.avatar_url}" alt="${pull.user.login}" class="w-10 h-10 rounded-full" loading="lazy" />
-                    <div class="flex-1 min-w-0">
-                      <a href="${pull.html_url}" target="_blank" class="text-sm font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 truncate block">
-                        ${pull.title}
-                      </a>
-                      <p class="text-xs text-gray-500 dark:text-gray-400">
-                        by <span class="font-medium">${pull.user.login}</span> · PR #${pull.number} · ${date}
-                      </p>
+        <!-- GitHub Contributors Section (Now in sidebar) -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+          <h3 class="text-lg font-semibold mb-4 flex items-center">
+            <i class="fa-brands fa-github text-gray-800 dark:text-gray-200 mr-2"></i>
+            Thank you to our Contributors!
+          </h3>
+          <!-- Top Contributors -->
+          <div class="mb-4">
+            <h4 class="text-sm font-medium mb-3 flex items-center">
+              <i class="fa-solid fa-trophy text-amber-600 dark:text-amber-400 mr-1"></i>
+              Top Contributors (<span id="current-month-display"></span>)
+            </h4>
+            <div class="space-y-2" id="top-contributors-section">
+              <div class="animate-pulse space-y-2">
+                {% for i in "12345"|make_list %}
+                  <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                    <div class="flex-1">
+                      <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                      <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-1"></div>
                     </div>
-                  `;
-                          container.appendChild(div);
-                      });
-                  })
-                  .catch(error => {
-                      const container = document.getElementById('recent-contributors');
-                      container.innerHTML = `
-                  <div class="text-sm text-gray-600 dark:text-gray-400 text-center py-4">
-                    <i class="fas fa-exclamation-circle text-red-500 mr-2"></i>
-                    Failed to load recent contributors. Please try again later.
                   </div>
-                `;
-                      console.error('Error fetching contributors:', error);
-                  });
-          </script>
-          <!-- Contributor Callout -->
-          <div class="mt-4 p-4 border border-blue-200 dark:border-blue-800 rounded-lg bg-blue-50 dark:bg-blue-900/50">
-            <p class="text-sm text-blue-800 dark:text-blue-200">
-              <i class="fas fa-code mr-2"></i>
-              Are you a coder? Get involved and help shape the future of education!
-              <a href="https://github.com/AlphaOneLabs/education-website/blob/main/CONTRIBUTING.md"
-                 class="inline-flex items-center text-blue-600 dark:text-blue-400 hover:underline ml-1">
-                View contributor guidelines
-                <i class="fas fa-arrow-right ml-1 text-xs"></i>
-              </a>
-            </p>
-          </div>
-        </div>
-        <!-- Referral Program -->
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mt-6">
-          <h2 class="text-lg font-semibold mb-4 flex items-center">
-            <i class="fa-solid fa-gift text-purple-600 dark:text-purple-400 mr-2"></i>
-            Referral Program
-          </h2>
-          <div class="space-y-4">
-            <div class="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 rounded-lg p-4 border border-purple-100 dark:border-purple-800">
-              <h3 class="font-medium mb-2 text-purple-800 dark:text-purple-200">Share and Earn!</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">
-                {% if user.is_authenticated %}
-                  {% if user.profile.is_teacher %}
-                    Get your first student and receive a $5 bonus! Share your unique referral link:
-                  {% else %}
-                    Get $5 when someone you refer enrolls in their first course! Share your unique referral link:
-                  {% endif %}
-                {% else %}
-                  Join our community and start earning rewards through our referral program!
-                {% endif %}
-              </p>
-              {% if user.is_authenticated %}
-                <div class="flex items-center space-x-2">
-                  <input type="text"
-                         value="{{ request.scheme }}://{{ request.get_host }}{% url 'index' %}?ref={{ user.profile.referral_code }}"
-                         class="text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 flex-1"
-                         readonly
-                         id="referralLink" />
-                  <button onclick="copyReferralLink()"
-                          class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded text-sm">
-                    <i class="fas fa-copy mr-1"></i>
-                    Copy
-                  </button>
-                </div>
-                <div class="mt-4 flex items-center justify-between">
-                  <p class="text-xs text-gray-500 dark:text-gray-400">
-                    <i class="fas fa-info-circle mr-1"></i>
-                    Your total referral earnings: ${{ user.profile.referral_earnings|default:"0" }}
-                  </p>
-                </div>
-              {% else %}
-                <a href="{% url 'account_signup' %}"
-                   class="inline-flex items-center bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm">
-                  <i class="fas fa-user-plus mr-2"></i>
-                  Sign Up to Start Earning
-                </a>
-              {% endif %}
-              <!-- Mini Leaderboard -->
-              <div class="mt-4 border-t border-purple-100 dark:border-purple-800 pt-4">
-                <h4 class="text-sm font-semibold text-purple-800 dark:text-purple-200 mb-3">
-                  <i class="fas fa-crown text-yellow-500 mr-2"></i>
-                  Top Referrers
-                </h4>
-                <div class="space-y-2">
-                  {% for referrer in top_referrers %}
-                    <div class="flex items-center justify-between text-sm {% if forloop.counter == 1 %}text-yellow-600 dark:text-yellow-400 font-medium{% endif %}">
-                      <div class="flex items-center space-x-2">
-                        <span class="w-5 text-center">
-                          {% if forloop.counter == 1 %}
-                            👑
-                          {% elif forloop.counter == 2 %}
-                            🥈
-                          {% elif forloop.counter == 3 %}
-                            🥉
-                          {% else %}
-                            {{ forloop.counter }}
-                          {% endif %}
-                        </span>
-                        <span>{{ referrer.user.username }}</span>
-                      </div>
-                      <div class="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                        <span title="Signups"><i class="fas fa-user-plus mr-1"></i>{{ referrer.total_signups }}</span>
-                        <span title="Enrollments"><i class="fas fa-graduation-cap mr-1"></i>{{ referrer.total_enrollments }}</span>
-                        <span title="Clicks"><i class="fas fa-mouse-pointer mr-1"></i>{{ referrer.total_clicks }}</span>
-                      </div>
-                    </div>
-                  {% empty %}
-                    <p class="text-sm text-gray-500 dark:text-gray-400 text-center">No referrals yet. Be the first!</p>
-                  {% endfor %}
-                </div>
+                {% endfor %}
               </div>
             </div>
           </div>
-          <script>
-              function copyReferralLink() {
-                  const linkInput = document.getElementById('referralLink');
-                  linkInput.select();
-                  document.execCommand('copy');
-
-                  // Show a temporary success message
-                  const button = event.target.closest('button');
-                  const originalText = button.innerHTML;
-                  button.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
-                  button.classList.add('bg-green-600');
-
-                  setTimeout(() => {
-                      button.innerHTML = originalText;
-                      button.classList.remove('bg-green-600');
-                  }, 2000);
-              }
-          </script>
+          <!-- New Contributors -->
+          <div class="mb-4">
+            <h4 class="text-sm font-medium mb-3 flex items-center">
+              <i class="fa-solid fa-user-plus text-green-600 dark:text-green-400 mr-1"></i>
+              New Contributors
+            </h4>
+            <div class="space-y-2" id="new-contributors-section">
+              <div class="animate-pulse space-y-2">
+                {% for i in "12345"|make_list %}
+                  <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                    <div class="flex-1">
+                      <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                      <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-1"></div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          <!-- Recent Contributions -->
+          <div class="mb-4">
+            <h4 class="text-sm font-medium mb-3 flex items-center">
+              <i class="fa-solid fa-code-pull-request text-purple-600 dark:text-purple-400 mr-1"></i>
+              Recently Merged PRs
+            </h4>
+            <div class="space-y-2" id="recent-contributors-section">
+              <div class="animate-pulse space-y-2">
+                {% for i in "12345"|make_list %}
+                  <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                    <div class="flex-1">
+                      <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                      <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-1"></div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          <div class="text-center">
+            <a href="https://github.com/AlphaOneLabs/education-website/graphs/contributors"
+               target="_blank"
+               class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
+              <i class="fas fa-users mr-1"></i>
+              View All Contributors
+            </a>
+          </div>
         </div>
       </div>
     </div>
   </main>
+  <script>
+      // Top Contributors - For Current Month
+      function fetchTopContributors() {
+          // Create a helper function to fetch paginated data
+          async function fetchPage(page) {
+              const response = await fetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=closed&per_page=100&page=${page}`);
+              return response.json();
+          }
+
+          // Get the first day of the current month
+          const now = new Date();
+          const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+
+          // Get month name for display
+          const monthNames = ["January", "February", "March", "April", "May", "June",
+              "July", "August", "September", "October", "November", "December"
+          ];
+          const currentMonth = monthNames[now.getMonth()];
+
+          // Display current month in the heading
+          document.getElementById('current-month-display').textContent = currentMonth;
+
+          // Fetch 2 pages of data
+          Promise.all([fetchPage(1), fetchPage(2)])
+              .then(results => {
+                  // Combine the results from both pages
+                  const pulls = [...results[0], ...results[1]];
+                  const contributors = {};
+                  pulls.forEach(pull => {
+                      const username = pull.user.login;
+                      const mergedAt = new Date(pull.merged_at);
+
+                      //skipping bots and specific users
+                      if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
+                          return;
+                      }
+
+                      //only count merged PRs from the current month
+                      if (!pull.merged_at || mergedAt < firstDay) {
+                          return;
+                      }
+
+                      if (!contributors[username]) {
+                          contributors[username] = {
+                              username: username,
+                              avatar_url: pull.user.avatar_url,
+                              profile_url: pull.user.html_url,
+                              merged_count: 0,
+                              prs: [],
+                              latest_merged_at: null
+                          };
+                      }
+
+                      contributors[username].merged_count++;
+
+                      contributors[username].prs.push({
+                          number: pull.number,
+                          title: pull.title,
+                          url: pull.html_url,
+                          merged_at: pull.merged_at,
+                          created_at: pull.created_at
+                      });
+
+                      if (!contributors[username].latest_merged_at ||
+                          new Date(pull.merged_at) > new Date(contributors[username].latest_merged_at)) {
+                          contributors[username].latest_merged_at = pull.merged_at;
+                      }
+                  });
+
+                  //sort by number of PRs, then by most recent PR
+                  const topContributors = Object.values(contributors)
+                      .sort((a, b) => {
+                          const countDiff = b.merged_count - a.merged_count;
+                          if (countDiff !== 0) return countDiff;
+                          return new Date(b.latest_merged_at) - new Date(a.latest_merged_at);
+                      })
+                      .slice(0, 5); // taking top 5
+
+                  // Sort PRs for each contributor by merged_at date (newest first)
+                  topContributors.forEach(contributor => {
+                      contributor.prs.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
+                  });
+
+                  const container = document.getElementById('top-contributors-section');
+                  container.innerHTML = '';
+
+                  if (topContributors.length === 0) {
+                      container.innerHTML = `
+            <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
+              No contributions found this month.
+            </div>
+          `;
+                      return;
+                  }
+
+                  // Top Contributors - Simplified for sidebar
+                  topContributors.forEach((contributor, index) => {
+                      const div = document.createElement('div');
+                      div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
+
+                      let rankBadgeInner = '';
+                      if (index === 0) {
+                          rankBadgeInner = '🥇';
+                      } else if (index === 1) {
+                          rankBadgeInner = '🥈';
+                      } else if (index === 2) {
+                          rankBadgeInner = '🥉';
+                      } else {
+                          rankBadgeInner = `${index + 1}`;
+                      }
+
+                      let rankBadgeClass = '';
+                      if (index === 0) {
+                          rankBadgeClass = 'bg-yellow-500 border-yellow-600';
+                      } else if (index === 1) {
+                          rankBadgeClass = 'bg-gray-300 border-gray-400';
+                      } else if (index === 2) {
+                          rankBadgeClass = 'bg-amber-600 border-amber-700';
+                      } else {
+                          rankBadgeClass = 'bg-blue-500 border-blue-600';
+                      }
+
+                      div.innerHTML = `
+                          <div class="relative">
+                              <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-8 h-8 rounded-full" loading="lazy" width="32" height="32" />
+                              <div class="absolute -bottom-1 -left-1 w-4 h-4 ${rankBadgeClass} text-white text-xs font-bold flex items-center justify-center rounded-full border-2 border-white dark:border-gray-800">
+                                  ${rankBadgeInner}
+                              </div>
+                          </div>
+                          <div class="flex-1 min-w-0">
+                              <div class="flex items-center justify-between">
+                                  <a href="/contributors/${contributor.username}/" target="_blank" class="text-xs font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 truncate">
+                                     ${contributor.username || 'Unknown Contributor'}
+                                  </a>
+                                  <span class="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 text-xs px-1 py-0.5 rounded-full text-[10px]">
+                                      <i class="fas fa-code-pull-request mr-0.5 text-[8px]"></i>${contributor.merged_count}
+                                  </span>
+                              </div>
+                              <p class="text-[9px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                  Latest: <a href="${contributor.prs[0].url}" class="hover:underline">#${contributor.prs[0].number}</a> · ${new Date(contributor.prs[0].merged_at).toLocaleDateString()}
+                              </p>
+                          </div>
+                      `;
+                      container.appendChild(div);
+                  });
+              })
+              .catch(error => {
+                  const container = document.getElementById('top-contributors-section');
+                  container.innerHTML = `
+        <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
+          <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
+          Failed to load contributors.
+        </div>
+    `;
+                  console.error('Error fetching top contributors:', error);
+              });
+      }
+
+      // New Contributors
+      function fetchNewContributors() {
+          // Create a helper function to fetch paginated data
+          async function fetchPage(page) {
+              const response = await fetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=${page}`);
+              return response.json();
+          }
+
+          // Calculate date 30 days ago for "new" threshold
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+          // Fetch 2 pages of data
+          Promise.all([fetchPage(1), fetchPage(2)])
+              .then(results => {
+                  // Combine the results from both pages
+                  const pulls = [...results[0], ...results[1]];
+                  const userPrs = {};
+                  const firstMergedPrDetails = {};
+
+                  pulls.forEach(pull => {
+                      const username = pull.user.login;
+
+                      //bots and specific users ignored
+                      if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
+                          return;
+                      }
+
+                      if (!pull.merged_at) {
+                          return;
+                      }
+
+                      if (!userPrs[username]) {
+                          userPrs[username] = [];
+                      }
+
+                      userPrs[username].push({
+                          number: pull.number,
+                          title: pull.title,
+                          url: pull.html_url,
+                          merged_at: pull.merged_at,
+                          created_at: pull.created_at,
+                          avatar_url: pull.user.avatar_url,
+                          profile_url: pull.user.html_url,
+                          state: pull.state
+                      });
+                  });
+
+                  //finding the first merged PR for each user
+                  Object.entries(userPrs).forEach(([username, prs]) => {
+                      if (prs.length > 0) {
+                          //sorting PRs by merged_at date (oldest first)
+                          prs.sort((a, b) => new Date(a.merged_at) - new Date(b.merged_at));
+
+                          const firstPr = prs[0];
+                          const firstPrDate = new Date(firstPr.merged_at);
+
+                          // Only include if their first PR was within the last 30 days
+                          if (firstPrDate >= thirtyDaysAgo) {
+                              firstMergedPrDetails[username] = {
+                                  username: username,
+                                  avatar_url: firstPr.avatar_url,
+                                  pr_url: firstPr.url,
+                                  pr_title: firstPr.title,
+                                  pr_number: firstPr.number,
+                                  created_at: firstPr.created_at,
+                                  profile_url: firstPr.profile_url,
+                                  merged_at: firstPr.merged_at,
+                                  state: firstPr.state,
+                                  // Add the GSoC-style PRs URL
+                                  prs_url: `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${username}+is:merged`
+                              };
+                          }
+                      }
+                  });
+
+                  //converting to array and sorting by most recently merged first PR
+                  const newContributors = Object.values(firstMergedPrDetails)
+                      .sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at))
+                      .slice(0, 5); // taking top 5
+
+                  const container = document.getElementById('new-contributors-section');
+                  container.innerHTML = '';
+
+                  if (newContributors.length === 0) {
+                      container.innerHTML = `
+                          <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
+                              No new contributors in the last 30 days.
+                          </div>
+                      `;
+                      return;
+                  }
+
+                  newContributors.forEach(contributor => {
+                      const div = document.createElement('div');
+                      div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
+
+                      const daysAgo = Math.floor((new Date() - new Date(contributor.merged_at)) / (1000 * 60 * 60 * 24));
+                      const timeLabel = daysAgo === 0 ? 'Today' : daysAgo === 1 ? 'Yesterday' : `${daysAgo} days ago`;
+
+                      div.innerHTML = `
+                          <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-8 h-8 rounded-full" loading="lazy" width="32" height="32" />
+                          <div class="flex-1 min-w-0">
+                              <div class="flex items-center justify-between">
+                                  <a href="${contributor.prs_url}" target="_blank" class="text-xs font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 truncate">
+                                      ${contributor.username}
+                                  </a>
+                                  <span class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 text-xs px-1 py-0.5 rounded-full text-[10px]">
+                                      New
+                                  </span>
+                              </div>
+                              <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                                  First PR: ${timeLabel}
+                              </p>
+                          </div>
+                      `;
+                      container.appendChild(div);
+                  });
+              })
+              .catch(error => {
+                  const container = document.getElementById('new-contributors-section');
+                  container.innerHTML = `
+                      <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
+                          <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
+                          Failed to load new contributors.
+                      </div>
+                  `;
+                  console.error('Error processing new contributors:', error);
+              });
+      }
+
+      // Recent Contributors
+      function fetchRecentContributions() {
+          // Create a helper function to fetch paginated data
+          async function fetchPage(page) {
+              const response = await fetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=${page}`);
+              return response.json();
+          }
+
+          // Fetch 2 pages of data
+          Promise.all([fetchPage(1), fetchPage(2)])
+              .then(results => {
+                  // Combine the results from both pages
+                  const pulls = [...results[0], ...results[1]];
+                  const filteredPulls = pulls.filter(pull => {
+                          const username = pull.user.login;
+                          return !username.includes('[bot]') &&
+                              !username.includes('dependabot') &&
+                              username !== 'A1L13N' &&
+                              pull.merged_at !== null;
+                      })
+                      .sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at))
+                      .slice(0, 5); //taking top 5
+
+                  const container = document.getElementById('recent-contributors-section');
+                  container.innerHTML = '';
+
+                  if (filteredPulls.length === 0) {
+                      container.innerHTML = `
+                          <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
+                              No merged pull requests found.
+                          </div>
+                      `;
+                      return;
+                  }
+
+                  filteredPulls.forEach(pull => {
+                      const div = document.createElement('div');
+                      div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
+
+                      // Create the GSoC-style PRs URL for this user
+                      const prs_url = `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${pull.user.login}+is:merged`;
+
+                      // Calculate how long ago the PR was merged
+                      const mergedDate = new Date(pull.merged_at);
+                      const now = new Date();
+                      const diffTime = Math.abs(now - mergedDate);
+                      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                      const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+                      let timeAgo;
+                      if (diffDays > 0) {
+                          timeAgo = diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+                      } else if (diffHours > 0) {
+                          timeAgo = diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
+                      } else {
+                          const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+                          timeAgo = diffMinutes === 0 ? 'just now' :
+                              diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`;
+                      }
+
+                      div.innerHTML = `
+                          <img src="${pull.user.avatar_url}" alt="${pull.user.login}" class="w-8 h-8 rounded-full" loading="lazy" width="32" height="32" />
+                          <div class="flex-1 min-w-0">
+                              <div class="flex items-center justify-between">
+                                  <a href="${pull.user.html_url}" target="_blank" class="text-xs font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 truncate">
+                                      ${pull.user.login}
+                                  </a>
+                                  <span class="text-[8px] text-gray-500 dark:text-gray-400">
+                                      <i class="fas fa-history mr-0.5"></i>${timeAgo}
+                                  </span>
+                              </div>
+                              <p class="text-[9px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                  PR <a href="${pull.html_url}" class="hover:underline">#${pull.number}</a>: ${pull.title.length > 25 ? pull.title.substring(0, 25) + '...' : pull.title}
+                              </p>
+                          </div>
+                      `;
+                      container.appendChild(div);
+                  });
+              })
+              .catch(error => {
+                  const container = document.getElementById('recent-contributors-section');
+                  container.innerHTML = `
+                      <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
+                          <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
+                          Failed to load contributions.
+                      </div>
+                  `;
+                  console.error('Error fetching recent contributions:', error);
+              });
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+          fetchTopContributors();
+          fetchNewContributors();
+          fetchRecentContributions();
+      });
+  </script>
 {% endblock content %}

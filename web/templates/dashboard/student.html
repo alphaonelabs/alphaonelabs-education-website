@@ -5,7 +5,14 @@
 {% endblock title %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
-    <h1 class="text-3xl font-bold mb-8">Student Dashboard</h1>
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold">Student Dashboard</h1>
+      <!-- Create Study Group Button -->
+      <a href="{% url 'create_study_group' %}"
+         class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg flex items-center">
+        <i class="fas fa-users mr-2"></i> Create Study Group
+      </a>
+    </div>
     <!-- Overview Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
       <!-- Total Courses -->
@@ -121,7 +128,7 @@
         </div>
       </div>
     </div>
-    <!-- Learning Streak Summary Section -->
+    <!-- Additional Sections (Learning Streak, Achievements, Certificates) -->
     <div class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
       <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Your Learning Streak</h2>
       {% if streak %}
@@ -139,7 +146,6 @@
         View Detailed Streak Info
       </a>
     </div>
-    <!-- Achievements Section -->
     <section class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
       <h2 class="text-xl font-semibold mb-4">Your Achievements</h2>
       {% if achievements %}
@@ -167,7 +173,6 @@
         <p class="text-gray-600 dark:text-gray-300">You haven't earned any achievements yet. Keep learning!</p>
       {% endif %}
     </section>
-    <!-- Your Certificates Section -->
     <div class="mt-12">
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Your Certificates</h2>
@@ -186,7 +191,6 @@
         {% else %}
           <p class="text-gray-500 dark:text-gray-400"></p>
         {% endif %}
-        <!-- Display generate buttons for enrollments with completed status but no certificate -->
         {% for enrollment in enrollments %}
           {% if enrollment.status|lower == "completed" %}
             <div class="mb-4 border-b border-gray-200 dark:border-gray-700 pb-2">

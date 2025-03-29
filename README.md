@@ -15,6 +15,7 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 - 📝 Study group creation and participation
 - 💬 Interactive discussion forums
 - 📊 Progress tracking and analytics
+- 🌟 Submit links and receive grades with feedback
 - 🌙 Dark mode support
 - 📱 Responsive design for all devices
 
@@ -24,6 +25,7 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 - 📊 Student progress monitoring
 - 📈 Analytics dashboard
 - 📣 Marketing tools for course promotion
+- 💯 Grade submitted links and provide feedback
 - 💰 Payment integration with Stripe
 - 📧 Email marketing capabilities
 - 🔔 Automated notifications
@@ -37,6 +39,7 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 - ⚡ Real-time updates
 - 🔍 Search functionality
 - 🎨 Customizable UI
+- 🏆 "Get a Grade" system with academic grading scale
 
 ## Tech Stack
 
@@ -181,14 +184,25 @@ Copy `.env.sample` to `.env` and configure the variables.
   python manage.py test
   ```
 
-### Pre-commit Hooks
+### Pre-commit Hooks (Important)
 
-We use pre-commit hooks to ensure code quality:
+We use pre-commit hooks to ensure code quality and automatically format code:
 
 ```bash
+# Install pre-commit
+pip install pre-commit
+
+# Install the git hooks
 pre-commit install
-pre-commit run --all-files
+
+# Automatically fix formatting issues
+poetry run pre-commit run --hook-stage commit
+
+# Run all checks on all files
+poetry run pre-commit run --all-files
 ```
+
+See [PRE-COMMIT-README.md](PRE-COMMIT-README.md) for detailed information about our pre-commit workflow and configuration.
 
 ### Documentation
 
