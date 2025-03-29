@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const items = [
             { color: 'var(--color-green-500, #10b981)', label: 'Completed' },
             { color: 'var(--color-blue-500, #3b82f6)', label: 'Course' },
-            { color: 'var(--color-purple-500, #8b5cf6)', label: 'Progress Tracker' },
+            { color: 'var(--color-blue-500, #3b82f6)', label: 'Progress Tracker' },
             { color: 'var(--color-yellow-500, #f59e0b)', label: 'Milestone' }
         ];
 
