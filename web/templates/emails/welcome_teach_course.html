@@ -1,35 +1,61 @@
 <!DOCTYPE html>
+<!-- Email template for sending welcoming teacher -->
 <html>
   <head>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #ff6b35;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+    </style>
   </head>
-  <body class="font-sans text-gray-800 max-w-lg mx-auto p-5">
-    <div class="bg-gray-100 p-5 text-center rounded-md">
-      <h1 class="text-xl font-bold">Welcome to Your Teaching Journey!</h1>
+  <body>
+    <div class="header">
+      <h1>Welcome to Your Teaching Journey!</h1>
     </div>
-    <div class="p-5">
+    <div class="content">
       <p>Hi {{ user.first_name|default:user.username }},</p>
       <p>
         Congratulations on taking the first step to become a teacher on our platform! We're excited to help you share your knowledge.
       </p>
       <p>You can manage your courses by going to "Teacher Dashboard".</p>
       <p>Your account details:</p>
-      <ul class="list-disc list-inside">
-        <li>
-          <strong>Username:</strong> {{ user.username }}
-        </li>
-        <li>
-          <strong>Email:</strong> {{ user.email }}
-        </li>
+      <ul>
+        <li>Username: {{ user.username }}</li>
+        <li>Email: {{ user.email }}</li>
       </ul>
       <p>To set your password and access your account, please click the button below:</p>
-      <a href="{{ reset_url }}"
-         class="inline-block px-4 py-2 bg-orange-500 text-white text-center rounded-md mt-4">Set Your Password</a>
-      <p class="mt-4">If the button doesn't work, you can copy and paste this link into your browser:</p>
-      <p class="text-blue-500 break-words">{{ reset_url }}</p>
-      <p class="mt-4">We're excited to have you join our teaching community!</p>
+      <a href="{{ reset_url }}" class="button">Set Your Password</a>
+      <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+      <p>{{ reset_url }}</p>
+      <p>We're excited to have you join our teaching community!</p>
       <p>If you have any questions, don't hesitate to contact our support team.</p>
-      <p class="mt-4">
+      <p>
         Best regards,
         <br />
         The Education Team
