@@ -8,7 +8,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "django-insecure-5kyff0s@l_##j3jawec5@b%!^^e(j7v)ouj4b7q6kru#o#a)o3"
 
-
 env = environ.Env()
 
 env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
@@ -42,7 +41,8 @@ TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 
 # Production settings
 if not DEBUG:
-    SECURE_SSL_REDIRECT = True
+    # SECURE_SSL_REDIRECT = True
+    # adding this to prevent redirect loop
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -60,7 +60,7 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
     "alphaonelabs.com",
-    "www.alphaonelabs.com",
+    "*.alphaonelabs.com",
 ]
 
 # Timezone settings
@@ -147,6 +147,8 @@ CAPTCHA_TEST_MODE = False
 
 WSGI_APPLICATION = "web.wsgi.application"
 
+# Add ASGI application configuration
+ASGI_APPLICATION = "web.asgi.application"
 
 DATABASES = {
     "default": {
@@ -360,5 +362,4 @@ MARKDOWNX_MEDIA_PATH = "markdownx/"  # Path within MEDIA_ROOT
 USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data
-# Use empty string as default to avoid errors when the token is not set
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
