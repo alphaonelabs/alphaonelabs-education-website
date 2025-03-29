@@ -11,15 +11,12 @@
           {{ challenge.title }}
         {% endif %}
       </h1>
-
       <!-- Challenge Description -->
       <p class="text-lg text-gray-700 dark:text-gray-300 text-center mb-4">{{ challenge.description }}</p>
-
       <!-- Challenge Period -->
       <p class="text-sm text-gray-600 dark:text-gray-400 text-center mb-6">
         <strong>Challenge Period:</strong> {{ challenge.start_date }} to {{ challenge.end_date }}
       </p>
-
       <!-- Submission Section -->
       {% if user.is_authenticated %}
         {% if user_submission %}
@@ -39,7 +36,6 @@
           🔒 Please log in to submit your result.
         </div>
       {% endif %}
-
       <!-- Submissions Section -->
       <h2 class="text-2xl font-semibold text-gray-900 dark:text-white mt-8 mb-4">Submissions:</h2>
       {% if submissions %}

@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('web', '0044_waitingroom_fulfilled_course'),
+        ("web", "0044_waitingroom_fulfilled_course"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='challengesubmission',
-            name='is_public',
+            model_name="challengesubmission",
+            name="is_public",
             field=models.BooleanField(default=False),
         ),
     ]
