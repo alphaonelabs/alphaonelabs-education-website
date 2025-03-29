@@ -18,71 +18,67 @@
         Alpha One Labs - Open Source Education Platform
       {% endblock title %}
     </title>
+    <!-- Preconnect to external domains -->
+    <link rel="preconnect" href="https://cdn.tailwindcss.com" crossorigin />
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+    <link rel="preconnect" href="https://code.jquery.com" crossorigin />
+    <link rel="preconnect" href="https://js-de.sentry-cdn.com" crossorigin />
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com" defer></script>
     <script src="https://js-de.sentry-cdn.com/ca8bad7e1a5a3012bccae7d9bd4f6d3d.min.js"
-            crossorigin="anonymous"></script>
+            crossorigin="anonymous"
+            async></script>
     <script>
-        // Configure Tailwind first
-        tailwind.config = {
+        // Set dark mode class immediately to prevent flash of incorrect theme
+        const darkModeEnabled = localStorage.getItem('darkMode') === 'true';
+        if (darkModeEnabled) {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Configure Tailwind when it loads
+        window.tailwindConfig = {
             darkMode: 'class',
             theme: {
                 extend: {}
             }
-        }
+        };
 
-        // Debug flag
-        const DEBUG = true;
+        // Defer the rest of dark mode functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const DEBUG = false;
 
-        // Logging helper
-        function log(message) {
-            if (DEBUG) {
-                console.log(`[DarkMode] ${message}`);
+            function log(message) {
+                if (DEBUG) console.log(`[DarkMode] ${message}`);
             }
-        }
 
-        // Initialize dark mode from localStorage only
-        function initializeDarkMode() {
-            log('Initializing dark mode');
-            const darkModeEnabled = localStorage.getItem('darkMode') === 'true';
-            log(`Dark mode enabled in localStorage: ${darkModeEnabled}`);
+            function updateDarkModeIcon() {
+                const isDark = document.documentElement.classList.contains('dark');
+                const icon = document.getElementById('darkModeIcon');
+                const mobileIcon = document.getElementById('darkModeIconMobile');
 
-            if (darkModeEnabled) {
-                document.documentElement.classList.add('dark');
-                log('Added dark class to HTML element');
-            } else if (localStorage.getItem('darkMode') === null) {
-                // Set default to light mode if no preference is set
+                if (icon) {
+                    icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+                    icon.title = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+                }
+
+                if (mobileIcon) {
+                    mobileIcon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+                }
+            }
+
+            window.toggleDarkMode = function() {
+                const isDark = document.documentElement.classList.toggle('dark');
+                localStorage.setItem('darkMode', isDark.toString());
+                updateDarkModeIcon();
+            };
+
+            // Set default if none exists
+            if (localStorage.getItem('darkMode') === null) {
                 localStorage.setItem('darkMode', 'false');
-                log('No preference found, defaulting to light mode');
             }
+
             updateDarkModeIcon();
-        }
-
-        function toggleDarkMode() {
-            log('Toggle dark mode called');
-            const isDark = document.documentElement.classList.toggle('dark');
-            localStorage.setItem('darkMode', isDark.toString());
-            log(`Dark mode toggled to: ${isDark}`);
-            updateDarkModeIcon();
-        }
-
-        function updateDarkModeIcon() {
-            const isDark = document.documentElement.classList.contains('dark');
-            const icon = document.getElementById('darkModeIcon');
-            log(`Updating icon. Dark mode is: ${isDark}`);
-
-            if (icon) {
-                icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-                icon.title = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
-                log('Icon updated successfully');
-            } else {
-                log('Warning: Dark mode icon element not found');
-            }
-        }
-
-        // Initialize dark mode immediately and after DOM content loads
-        initializeDarkMode();
-        document.addEventListener('DOMContentLoaded', initializeDarkMode);
+        });
     </script>
     <!-- Font Awesome (Free CDN) -->
     <link rel="stylesheet"
@@ -1052,6 +1048,7 @@
             });
         }
     </script>
+    <script src="{% static 'js/script.js' %}" defer></script>
     {% block extra_js %}
     {% endblock extra_js %}
   </body>
