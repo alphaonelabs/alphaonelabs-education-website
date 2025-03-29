@@ -77,6 +77,7 @@ urlpatterns += i18n_patterns(
     path("account/notification-preferences/", notification_preferences, name="notification_preferences"),
     path("profile/", views.profile, name="profile"),
     path("accounts/profile/", views.profile, name="accounts_profile"),
+    path("accounts/delete/", views.delete_account, name="delete_account"),
     # Dashboard URLs
     path("dashboard/student/", views.student_dashboard, name="student_dashboard"),
     path("dashboard/teacher/", views.teacher_dashboard, name="teacher_dashboard"),
@@ -413,6 +414,9 @@ urlpatterns += i18n_patterns(
         name="update_teacher_notes",
     ),
     path("award-badge/", views.award_badge, name="award_badge"),
+    # Map Urls
+    path("classes-map/", views.classes_map, name="classes_map"),
+    path("api/map-data/", views.map_data_api, name="map_data_api"),
     # Features page
     path("features/", features_page, name="features"),
     path("features/vote/", feature_vote, name="feature_vote"),
