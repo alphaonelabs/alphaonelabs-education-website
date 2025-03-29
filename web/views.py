@@ -35,6 +35,7 @@ from django.db.models.functions import Coalesce
 from django.http import (
     FileResponse,
     Http404,
+    HttpRequest,
     HttpResponse,
     HttpResponseForbidden,
     JsonResponse,
@@ -6477,7 +6478,7 @@ def all_study_groups(request):
 
 
 @login_required
-def upload_pdf_submission(request):
+def upload_pdf_submission(request: HttpRequest) -> HttpResponse:
     """View for students to upload their PDF documents."""
     if request.method == "POST":
         form = PDFSubmissionForm(request.POST, request.FILES)
@@ -6516,7 +6517,7 @@ def upload_pdf_submission(request):
 
 
 @login_required
-def pdf_submission_list(request):
+def pdf_submission_list(request: HttpRequest) -> HttpResponse:
     """View to see all submitted PDF documents."""
     viewing_as = "student"
     if request.user.profile.is_teacher:
@@ -6535,10 +6536,10 @@ def pdf_submission_list(request):
         submissions = paginator.page(page)
     except PageNotAnInteger:
         submissions = paginator.page(1)
-        messages.info(request, "Showing first page.")
+        messages.info(request, "Page number not valid. Showing first page of results.")
     except EmptyPage:
         submissions = paginator.page(paginator.num_pages)
-        messages.info(request, "Showing last page.")
+        messages.info(request, "Requested page is empty. Showing last page of results.")
 
     context = {
         "submissions": submissions,
@@ -6549,7 +6550,7 @@ def pdf_submission_list(request):
 
 
 @login_required
-def pdf_submission_detail(request, submission_id):
+def pdf_submission_detail(request: HttpRequest, submission_id: int) -> HttpResponse:
     """View to see the details of a specific PDF submission and provide feedback."""
     submission = get_object_or_404(PDFSubmission, pk=submission_id)
 
