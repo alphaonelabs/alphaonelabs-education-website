@@ -25,10 +25,10 @@
         <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-4">Quiz Results</h1>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <!-- Score Card -->
-          <div class="{% if user_quiz.correction_status == 'pending' %} flex justify-center items-center {% else %}bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center {% endif %}">
-            {% if user_quiz.correction_status == "pending" %}
+          <div class="{% if user_quiz.correction_status == 'in_progress' %} flex justify-center items-center {% else %}bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center {% endif %}">
+            {% if user_quiz.correction_status == "in_progress" %}
               <div class="text-5xl font-bold mb-2 {% if user_quiz.score >= user_quiz.quiz.passing_score %}text-green-600 dark:text-green-400 {% else %}text-red-600 dark:text-red-400{% endif %}">
-                {{ user_quiz.correction_status }}
+                In progress
               </div>
             {% else %}
               <div class="text-5xl font-bold mb-2 {% if user_quiz.score >= user_quiz.quiz.passing_score %}text-green-600 dark:text-green-400 {% else %}text-red-600 dark:text-red-400{% endif %}">

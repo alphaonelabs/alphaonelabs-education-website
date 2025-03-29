@@ -2115,6 +2115,8 @@ class UserQuiz(models.Model):
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
     answers = models.JSONField(default=dict, blank=True, help_text="JSON storing the user's answers and question IDs")
+    student_feedback = models.TextField(null=True, blank=True, default=None)
+    teacher_feedback = models.TextField(null=True, blank=True, default=None)
     correction_status = models.CharField(
         max_length=15, 
         choices=CORRECTION_STATUS, 

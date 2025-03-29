@@ -657,7 +657,7 @@ class Command(BaseCommand):
                     completed=True,
                     start_time=timezone.now() - timedelta(days=random.randint(1, 5)),
                     end_time=timezone.now() - timedelta(days=random.randint(0, 4)),
-                    answers=json.dumps(self.generate_mock_answers(course_exam))
+                    answers=json.dumps(self.generate_mock_answers(course_exam)),
                 )
                 self.stdout.write(f"Created submission for {student.username} - {course_exam.title}")
         
@@ -718,7 +718,7 @@ class Command(BaseCommand):
                         completed=True,
                         start_time=session.start_time + timedelta(days=1),
                         end_time=session.start_time + timedelta(days=1, hours=1),
-                        answers=json.dumps(self.generate_mock_answers(session_exam))
+                        answers=json.dumps(self.generate_mock_answers(session_exam)),
                     )
                     self.stdout.write(f"Created submission for {student.username} - {session_exam.title}")
 

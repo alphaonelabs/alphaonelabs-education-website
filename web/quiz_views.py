@@ -451,8 +451,7 @@ def take_quiz_shared(request, share_code):
 def take_quiz(request, quiz_id):
     """Take a quiz as an authenticated user."""
     quiz = get_object_or_404(Quiz, id=quiz_id)
-    print("############", UserQuiz.objects.filter(quiz=quiz, user=request.user).count())
-    print("############", quiz_id)
+
     # Check if quiz is available
     if quiz.status != "published":
         messages.error(request, "This quiz is not currently available.")
@@ -463,7 +462,6 @@ def take_quiz(request, quiz_id):
 
 def _process_quiz_taking(request, quiz):
     """Helper function to process quiz taking for both routes."""
-    print("###############################################")
     # Check if the quiz has questions
     if not quiz.questions.exists():
         messages.error(request, "This quiz does not have any questions yet.")
@@ -553,7 +551,9 @@ def _process_quiz_taking(request, quiz):
                             "user_answer": user_answer,
                             "correct_answer": correct_options,
                             "is_correct": is_correct,
+                            "is_graded": True,
                         }
+
                     # Handle case when user_answer is a single value (e.g., from radio button)
                     else:
                         user_answer_id = int(user_answer) if user_answer is not None else None
@@ -565,6 +565,7 @@ def _process_quiz_taking(request, quiz):
                             "user_answer": user_answer,
                             "correct_answer": correct_options[0] if correct_options else None,
                             "is_correct": user_answer_id in correct_options if user_answer_id is not None else False,
+                            "is_graded": True
                         }
 
                     if answers[q_id]["is_correct"]:
@@ -580,7 +581,8 @@ def _process_quiz_taking(request, quiz):
                     answers[q_id] = {
                         "user_answer": user_answer,
                         "correct_answer": correct_id,
-                        "is_correct": user_answer == correct_id if user_answer else False,
+                        "is_correct": user_answer == correct_answer if user_answer else False,
+                        "is_graded": True
                     }
 
                     if answers[q_id]["is_correct"]:
@@ -592,7 +594,7 @@ def _process_quiz_taking(request, quiz):
                         "user_answer": user_answer,
                         "is_graded": False,  # need manual grading
                     }
-                    correction_status = 'pending'
+                    correction_status = 'in_progress'
 
             # Calculate percentage score
             percentage = (score / total_points * 100) if total_points > 0 else 0
@@ -627,7 +629,7 @@ def quiz_results(request, user_quiz_id):
     """Display the results of a quiz attempt."""
     user_quiz = get_object_or_404(UserQuiz, id=user_quiz_id)
     quiz = user_quiz.quiz
-    
+
     # Check permissions
     if user_quiz.user and user_quiz.user != request.user and quiz.creator != request.user:
         return HttpResponseForbidden("You don't have permission to view these results.")
@@ -648,12 +650,10 @@ def quiz_results(request, user_quiz_id):
     # Only count questions that have actual answers (not empty or None)
     questions_attempted = 0
     for q_id, ans_data in answers.items():
-        print("----------", ans_data, " - ",  ans_data.get("user_answer"))
         # For multiple choice and true/false questions
         if ans_data.get("user_answer") not in [None, "", [], {}]:
             questions_attempted += 1
-        else:
-            print("----------", ans_data, " - ",  ans_data.get("user_answer"))
+
     correct_count = sum(1 for ans in answers.values() if ans.get("is_correct", False))
 
     # Calculate duration
@@ -736,6 +736,9 @@ def quiz_results(request, user_quiz_id):
     user_attempts = 0
     if request.user.is_authenticated:
         user_attempts = UserQuiz.objects.filter(quiz=quiz, user=request.user).count()
+
+
+
 
     context = {
         "user_quiz": user_quiz,
@@ -1019,3 +1022,127 @@ def quiz_analytics(request, quiz_id):
     # All context variables are set correctly
 
     return render(request, "web/quiz/quiz_analytics.html", context)
+
+
+@login_required
+def student_exam_correction(request, course_id, quiz_id, user_quiz_id):
+    """View and grade a specific student's exam"""
+    course = get_object_or_404(Course, id=course_id)
+    quiz = get_object_or_404(Quiz, id=quiz_id, course=course)
+    user_quiz = get_object_or_404(UserQuiz, id=user_quiz_id, quiz=quiz)
+    
+    # Check if user is the teacher
+    if course.teacher != request.user:
+        return HttpResponseForbidden("You don't have permission to grade exams for this course.")
+    
+    # Check if the exam is completed
+    if not user_quiz.completed:
+        messages.error(request, "This exam is not completed yet.")
+        # return redirect('course_exam_analytics', course_id=course.id)
+        return quiz_analytics(request,  course_id=course.id)
+    
+    # Parse answers JSON
+    answers = json.loads(user_quiz.answers) if user_quiz.answers else {}
+    
+    # If user is submitting a grade
+    if request.method == 'POST':
+        # Get question ID and points from POST data
+        question_id = request.POST.get('question_id')
+        points_awarded = float(request.POST.get('points_awarded', 0))
+        
+        # Get the question
+        question = quiz.questions.filter(id=question_id).first()
+        
+        if question:
+            # Validate points
+            if points_awarded < 0:
+                points_awarded = 0
+            if points_awarded > question.points:
+                points_awarded = question.points
+            
+            # Update the answer
+            if question_id in answers:
+                answers[question_id]['is_graded'] = True
+                answers[question_id]['points_awarded'] = points_awarded
+                answers[question_id]['is_correct'] = points_awarded == question.points
+                
+                # Calculate new total score
+                total_points = sum(q.points for q in quiz.questions.all())
+                current_score = 0
+                
+                for q in quiz.questions.all():
+                    q_id = str(q.id)
+                    if q_id in answers:
+                        if answers[q_id].get('is_graded', False):
+                            # Use awarded points for manually graded answers
+                            current_score += answers[q_id].get('points_awarded', 0)
+                        elif answers[q_id].get('is_correct', False):
+                            # Use full points for auto-graded correct answers
+                            current_score += q.points
+                
+                # Update user quiz 
+                user_quiz.answers = json.dumps(answers)
+                user_quiz.score = (current_score / total_points * 100) if total_points > 0 else 0
+                
+                # Check if all questions are graded
+                all_graded = True
+                for q in quiz.questions.all():
+                    q_id = str(q.id)
+                    if q_id in answers:
+                        if not answers[q_id].get('is_graded', False) and not answers[q_id].get('is_correct', False):
+                            all_graded = False
+                            break
+                
+                if all_graded:
+                    user_quiz.correction_status = 'completed'
+                else:
+                    user_quiz.correction_status = 'in_progress'
+                
+                user_quiz.save()
+                
+                messages.success(request, f"Question graded successfully. Awarded {points_awarded} points.")
+            
+            # Redirect to avoid resubmission
+            return redirect('student_exam_correction', course_id=course.id, quiz_id=quiz.id, user_quiz_id=user_quiz.id)
+    
+    # Prepare questions and answers for display
+    questions = []
+    for question in quiz.questions.all():
+        q_dict = {
+            'id': question.id,
+            'text': question.text,
+            'question_type': question.question_type,
+            'points': question.points,
+            'explanation': question.explanation,
+        }
+
+        # Get options if applicable
+        if question.question_type in ['multiple', 'true_false']:
+            q_dict['options'] = list(question.options.all())
+        
+        # Get user's answer
+        q_id = str(question.id)
+        if q_id in answers:
+            answer_data = answers[q_id]
+            q_dict['user_answer'] = answer_data.get('user_answer', '')
+            q_dict['is_correct'] = answer_data.get('is_correct', False)
+            q_dict['is_graded'] = answer_data.get('is_graded', False)
+            q_dict['points_awarded'] = answer_data.get('points_awarded', 0)
+            q_dict['needs_grading'] = question.question_type not in ['multiple', 'true_false'] and not answer_data.get('is_graded', False)
+        else:
+            q_dict['user_answer'] = ''
+            q_dict['is_correct'] = False
+            q_dict['is_graded'] = False
+            q_dict['points_awarded'] = 0
+            q_dict['needs_grading'] = False
+        
+        questions.append(q_dict)
+    
+    print("Done #########", request)
+    return render(request, 'web/quiz/student_exam_correction.html', {
+        'course': course,
+        'quiz': quiz,
+        'user_quiz': user_quiz,
+        'questions': questions,
+        'student': user_quiz.user,
+    })
