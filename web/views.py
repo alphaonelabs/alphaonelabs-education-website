@@ -19,7 +19,8 @@ import stripe
 import tweepy
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import get_user_model, login
+from django.contrib.admin.utils import NestedObjects
+from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
@@ -27,7 +28,7 @@ from django.core.cache import cache
 from django.core.mail import send_mail
 from django.core.management import call_command
 from django.core.paginator import Paginator
-from django.db import IntegrityError, models, transaction
+from django.db import IntegrityError, models, router, transaction
 from django.db.models import Avg, Count, Q, Sum
 from django.db.models.functions import Coalesce
 from django.http import (
@@ -43,6 +44,7 @@ from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.html import strip_tags
+from django.utils.translation import gettext as _
 from django.views import generic
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
@@ -58,6 +60,7 @@ from django.views.generic import (
 from .calendar_sync import generate_google_calendar_link, generate_ical_feed, generate_outlook_calendar_link
 from .decorators import teacher_required
 from .forms import (
+    AccountDeleteForm,
     AwardAchievementForm,
     BlogPostForm,
     ChallengeSubmissionForm,
@@ -314,6 +317,47 @@ def signup_view(request):
             "login_url": reverse("account_login"),
         },
     )
+
+
+@login_required
+def delete_account(request):
+    if request.method == "POST":
+        form = AccountDeleteForm(request.user, request.POST)
+        if form.is_valid():
+            if request.POST.get("confirm"):
+                user = request.user
+                user.delete()
+                logout(request)
+                messages.success(request, _("Your account has been successfully deleted."))
+                return redirect("index")
+            else:
+                form.add_error(None, _("You must confirm the account deletion."))
+    else:
+        # Get all related objects that will be deleted
+        deleted_objects_collector = NestedObjects(using=router.db_for_write(request.user.__class__))
+        deleted_objects_collector.collect([request.user])
+
+        # Transform the nested structure into something more user-friendly
+        to_delete = deleted_objects_collector.nested()
+        protected = deleted_objects_collector.protected
+
+        # Format the collected objects in a user-friendly way
+        model_count = {
+            model._meta.verbose_name_plural: len(objs) for model, objs in deleted_objects_collector.model_objs.items()
+        }
+
+        # Format as a list of tuples (model name, count)
+        formatted_count = [(name, count) for name, count in model_count.items()]
+
+        form = AccountDeleteForm(request.user)
+        # Pass the deletion info to the template
+        return render(
+            request,
+            "account/delete_account.html",
+            {"form": form, "deleted_objects": to_delete, "protected": protected, "model_count": formatted_count},
+        )
+
+    return render(request, "account/delete_account.html", {"form": form})
 
 
 @login_required

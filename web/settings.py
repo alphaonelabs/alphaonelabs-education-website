@@ -41,7 +41,8 @@ TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 
 # Production settings
 if not DEBUG:
-    SECURE_SSL_REDIRECT = True
+    # SECURE_SSL_REDIRECT = True
+    # adding this to prevent redirect loop
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -59,7 +60,7 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
     "alphaonelabs.com",
-    "www.alphaonelabs.com",
+    "*.alphaonelabs.com",
 ]
 
 # Timezone settings
@@ -148,6 +149,8 @@ CAPTCHA_TEST_MODE = False
 WSGI_APPLICATION = "web.wsgi.application"
 ASGI_APPLICATION = "web.asgi.application"
 
+# Add ASGI application configuration
+ASGI_APPLICATION = "web.asgi.application"
 
 DATABASES = {
     "default": {
