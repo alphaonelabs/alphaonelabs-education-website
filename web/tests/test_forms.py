@@ -807,3 +807,22 @@ class TeachFormTests(TestCase):
         self.assertFalse(form.is_valid())
         self.assertIn("preferred_session_times", form.errors)
         self.assertIn("Preferred session time cannot be in the past", str(form.errors))
+
+    def test_missing_course_image(self):
+        """Test TeachForm with no course_image provided when required=True."""
+        self.mock_captcha.side_effect = lambda x: True
+
+        form_data = {
+            "course_title": "Introduction to Python",
+            "course_description": "A beginner-friendly Python course.",
+            "preferred_session_times": (timezone.now() + timezone.timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"),
+            "flexible_timing": True,
+            "email": "newuser@example.com",
+            "captcha_0": "dummy-hash",
+            "captcha_1": "PASSED",
+        }
+        # Explicitly no files provided
+        form = TeachForm(data=form_data, files={})
+        self.assertFalse(form.is_valid())
+        self.assertIn("course_image", form.errors)
+        self.assertIn("This field is required", str(form.errors))

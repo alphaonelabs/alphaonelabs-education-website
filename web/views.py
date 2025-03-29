@@ -1104,13 +1104,15 @@ def teach(request):
                     email_address = EmailAddress.objects.filter(user=user, email=email, primary=True).first()
                     if email_address and email_address.verified:
                         messages.info(
-                            request, "An account with this email exists. Please login to finalize your course."
+                            request,
+                            "An account with this email exists. Please login to finalize your course.",
                         )
                     else:
                         # Email not verified, resend verification email
                         send_email_confirmation(request, user, signup=False)
                         messages.info(
-                            request, "An account with this email exists. Please verify your email to continue."
+                            request,
+                            "An account with this email exists. Please verify your email to continue.",
                         )
                 except User.DoesNotExist:
                     # Create a new user account
