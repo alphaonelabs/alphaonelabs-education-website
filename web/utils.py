@@ -1,6 +1,6 @@
 import logging
 from datetime import timedelta
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import requests
 import stripe
@@ -417,6 +417,12 @@ def create_leaderboard_context(
 
 
 def setup_stripe() -> None:
+    """
+    Initialize Stripe API with the secret key from settings.
+    Verifies that the key is properly configured.
+    """
+    if not settings.STRIPE_SECRET_KEY:
+        logger.warning("STRIPE_SECRET_KEY is not configured. Stripe functionality will not work properly.")
     stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
@@ -429,7 +435,9 @@ def get_stripe_customer(user: "User") -> Optional["stripe.Customer"]:
         if not user.membership.stripe_customer_id:
             # Create a new customer
             customer = stripe.Customer.create(
-                email=user.email, name=f"{user.first_name} {user.last_name}".strip(), metadata={"user_id": user.id}
+                email=user.email,
+                name=f"{user.first_name} {user.last_name}".strip(),
+                metadata={"user_id": user.id},
             )
 
             # Save the customer ID to the user membership
@@ -449,7 +457,7 @@ def get_stripe_customer(user: "User") -> Optional["stripe.Customer"]:
         return None
 
 
-def create_subscription(user: "User", plan_id: int, payment_method_id: str, billing_period: str) -> Dict[str, Any]:
+def create_subscription(user: "User", plan_id: int, payment_method_id: str, billing_period: str) -> dict[str, Any]:
     """
     Create or update a subscription for the user based on the provided billing period.
     Returns a dictionary with "success" and optional keys "error" or "subscription".
@@ -533,7 +541,7 @@ def create_subscription(user: "User", plan_id: int, payment_method_id: str, bill
         return {"success": False, "error": "An unexpected error occurred"}
 
 
-def cancel_subscription(user: "User") -> Dict[str, Any]:
+def cancel_subscription(user: "User") -> dict[str, Any]:
     """
     Cancels the user's active Stripe subscription at period end, if any.
     Return {'success': bool, 'error': str, 'subscription': stripe.Subscription?}.
@@ -573,7 +581,7 @@ def cancel_subscription(user: "User") -> Dict[str, Any]:
         return {"success": False, "error": "An unexpected error occurred"}
 
 
-def reactivate_subscription(user: "User") -> Dict[str, Any]:
+def reactivate_subscription(user: "User") -> dict[str, Any]:
     """
     Reactivates a subscription that was previously scheduled for cancellation.
     Returns a dictionary with "success" and optional keys "error" or "subscription".
@@ -617,7 +625,17 @@ def reactivate_subscription(user: "User") -> Dict[str, Any]:
         return {"success": False, "error": "An unexpected error occurred"}
 
 
-def update_membership_from_subscription(user, subscription):
+def update_membership_from_subscription(user: "User", subscription: dict) -> bool:
+    """
+    Update the user's membership details based on the Stripe subscription.
+
+    Args:
+        user: The user whose membership is being updated
+        subscription: The Stripe subscription object
+
+    Returns:
+        bool: True if update was successful, False otherwise
+    """
     from .models import MembershipPlan, MembershipSubscriptionEvent, UserMembership
 
     try:
@@ -634,8 +652,8 @@ def update_membership_from_subscription(user, subscription):
             if not plan:
                 logger.error(f"No plan found for price ID {price_id}")
                 return False
-        except Exception as e:
-            logger.error(f"Error finding plan for price ID {price_id}: {str(e)}")
+        except Exception:
+            logger.exception(f"Error finding plan for price ID {price_id}")
             return False
 
         # Determine billing period
@@ -693,8 +711,8 @@ def update_membership_from_subscription(user, subscription):
 
         return True
 
-    except Exception as e:
-        logger.error(f"Error updating membership for user {user.email}: {str(e)}")
+    except Exception:
+        logger.exception(f"Error updating membership for user {user.email}")
         return False
 
 
