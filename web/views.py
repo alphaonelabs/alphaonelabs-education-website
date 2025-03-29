@@ -6513,7 +6513,7 @@ def upload_pdf_submission(request: HttpRequest) -> HttpResponse:
             return redirect("pdf_submission_list")
     else:
         form = PDFSubmissionForm()
-    return render(request, "web/pdf/upload_form.html", {"form": form})
+    return render(request, "web/pdf/upload_submission.html", {"form": form})
 
 
 @login_required
@@ -6579,6 +6579,7 @@ def pdf_submission_detail(request: HttpRequest, submission_id: int) -> HttpRespo
                 submission.reviewed_by = request.user
                 submission.reviewed_at = timezone.now()
                 submission.save()
+                print(submission)
                 # Create notification for student
                 Notification.objects.create(
                     user=submission.student,
@@ -6590,7 +6591,7 @@ def pdf_submission_detail(request: HttpRequest, submission_id: int) -> HttpRespo
             return redirect("pdf_submission_list")
 
     context = {
-        "proposal": submission,  # Rename to match template
+        "submission": submission,  # Rename to match template
         "is_reviewer": is_reviewer,
         "is_student": is_student,
         "status_choices": submission.get_status_choices(),
