@@ -6,9 +6,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('web', '0045_challengesubmission_is_public'),
-        ('web', '0049_session_latitude_session_longitude_and_more'),
+        ("web", "0045_challengesubmission_is_public"),
+        ("web", "0049_session_latitude_session_longitude_and_more"),
     ]
 
-    operations = [
-    ]
+    operations = []
