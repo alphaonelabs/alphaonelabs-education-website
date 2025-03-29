@@ -55,7 +55,8 @@
                 {% for image in product_images %}
                   <div class="thumbnail-container group relative cursor-pointer mb-2"
                        onclick="changeImage('{{ image.image.url }}', this)">
-                    <img src="{{ image.image.url }}"
+                    <img loading="lazy"
+                         src="{{ image.image.url }}"
                          alt="{{ image.alt_text }}"
                          class="w-16 h-16 object-cover rounded-lg border-2 border-transparent group-hover:border-blue-500 transition-all duration-300 group-[.active]:border-blue-600 group-[.active]:shadow-lg" />
                     <div class="absolute inset-0 bg-blue-500 opacity-0 group-hover:opacity-20 transition-opacity duration-300 rounded-lg">
@@ -78,7 +79,8 @@
           </div>
           <!-- Main Image Display -->
           <div class="relative flex-grow overflow-hidden">
-            <img id="main-product-image"
+            <img loading="lazy"
+                 id="main-product-image"
                  src="{{ product.image_url }}"
                  alt="{{ product.name }}"
                  class="w-full h-[500px] object-contain transition-all duration-500 ease-in-out transform hover:scale-105" />
@@ -101,7 +103,8 @@
               {% for image in product_images %}
                 <div class="thumbnail-container group relative cursor-pointer flex-shrink-0"
                      onclick="changeImage('{{ image.image.url }}', this)">
-                  <img src="{{ image.image.url }}"
+                  <img loading="lazy"
+                       src="{{ image.image.url }}"
                        alt="{{ image.alt_text }}"
                        class="w-12 h-12 object-cover rounded-lg border-2 border-transparent group-hover:border-blue-500 transition-all duration-300 group-[.active]:border-blue-600 group-[.active]:shadow-lg" />
                 </div>
@@ -170,7 +173,8 @@
           <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-4 border border-gray-300 dark:border-gray-700">
             <a href="{% url 'goods_detail' pk=other_product.pk %}"
                class="block overflow-hidden rounded-md">
-              <img src="{{ other_product.image_url }}"
+              <img loading="lazy"
+                   src="{{ other_product.image_url }}"
                    alt="{{ other_product.name }}"
                    class="w-full h-56 object-cover rounded-md transition-transform duration-300 hover:scale-105" />
             </a>

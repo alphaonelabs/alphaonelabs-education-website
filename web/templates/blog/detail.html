@@ -14,7 +14,8 @@
       <article class="prose dark:prose-invert lg:prose-lg max-w-none mb-12 prose-headings:font-bold prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-h1:text-4xl prose-h2:text-3xl prose-h3:text-2xl prose-p:text-gray-600 dark:prose-p:text-gray-300 prose-p:leading-relaxed prose-p:mb-6 prose-a:text-teal-600 hover:prose-a:text-teal-700 dark:prose-a:text-teal-400 dark:hover:prose-a:text-teal-300 prose-a:no-underline hover:prose-a:underline prose-strong:text-gray-900 dark:prose-strong:text-gray-100 prose-ul:list-none prose-ul:ml-6 prose-li:text-gray-600 dark:prose-li:text-gray-300 prose-blockquote:border-l-4 prose-blockquote:border-teal-500 prose-blockquote:pl-4 prose-blockquote:italic prose-code:text-teal-600 dark:prose-code:text-teal-400 prose-code:bg-gray-100 dark:prose-code:bg-gray-800 prose-code:px-1 prose-code:rounded prose-pre:bg-gray-100 dark:prose-pre:bg-gray-800 prose-pre:p-4 prose-pre:rounded-lg">
         {% if post.featured_image %}
           <div class="mb-8">
-            <img src="{{ post.featured_image.url }}"
+            <img loading="lazy"
+                 src="{{ post.featured_image.url }}"
                  alt="{{ post.title }}"
                  class="w-full h-auto rounded-lg shadow-lg"
                  width="800"

@@ -57,7 +57,8 @@
             </div>
             <div id="image-preview" class="grid grid-cols-4 gap-2 mt-2">
               {% for image in product.images.all %}
-                <img src="{{ image.url }}"
+                <img loading="lazy"
+                     src="{{ image.url }}"
                      class="w-20 h-20 rounded-lg object-cover border shadow-sm" />
               {% endfor %}
             </div>

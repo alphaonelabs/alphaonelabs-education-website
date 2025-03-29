@@ -16,7 +16,8 @@
               <div class="aspect-square w-full relative overflow-hidden rounded-lg mb-3">
                 {% if course.image %}
                   <a href="{% url 'course_detail' course.slug %}">
-                    <img src="{{ course.image.url }}"
+                    <img loading="lazy"
+                         src="{{ course.image.url }}"
                          alt="{{ course.title }}"
                          class="w-full h-full object-cover"
                          width="300"
@@ -24,7 +25,8 @@
                   </a>
                 {% else %}
                   <a href="{% url 'course_detail' course.slug %}">
-                    <img src="{% static 'images/default-course.jpg' %}"
+                    <img loading="lazy"
+                         src="{% static 'images/default-course.jpg' %}"
                          alt="{{ course.title }}"
                          class="w-full h-full object-cover"
                          width="300"
@@ -91,13 +93,15 @@
               <!-- Teacher Info -->
               <div class="flex items-center mb-3">
                 {% if course.teacher.profile.avatar %}
-                  <img src="{{ course.teacher.profile.avatar.url }}"
+                  <img loading="lazy"
+                       src="{{ course.teacher.profile.avatar.url }}"
                        alt="{{ course.teacher.username }}"
                        class="h-12 w-12 rounded-full mr-3"
                        width="48"
                        height="48" />
                 {% else %}
-                  <img src="{% static 'images/default_teacher.png' %}"
+                  <img loading="lazy"
+                       src="{% static 'images/default_teacher.png' %}"
                        alt="{{ course.teacher.username }}"
                        class="h-12 w-12 rounded-full mr-3"
                        width="48"

@@ -5,7 +5,8 @@
     <div class="bg-white dark:bg-gray-900 rounded-lg shadow-xl p-8">
       <div class="flex items-center mb-8">
         {% if storefront.logo %}
-          <img src="{{ storefront.logo.url }}"
+          <img loading="lazy"
+               src="{{ storefront.logo.url }}"
                alt="{{ storefront.name }}"
                class="w-20 h-20 rounded-full mr-5 shadow-md" />
         {% endif %}
@@ -28,7 +29,8 @@
             <div class="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 border border-gray-300 dark:border-gray-700 hover:shadow-2xl transition-all">
               <a href="{% url 'goods_detail' pk=item.id %}"
                  class="block overflow-hidden rounded-md">
-                <img src="{% if item.images.all %}{{ item.images.first.image.url }}{% else %}/static/images/placeholder.png{% endif %}"
+                <img loading="lazy"
+                     src="{% if item.images.all %}{{ item.images.first.image.url }}{% else %}/static/images/placeholder.png{% endif %}"
                      alt="{{ item.name }}"
                      class="w-full h-60 object-cover rounded-md transition-transform duration-300 hover:scale-105" />
               </a>

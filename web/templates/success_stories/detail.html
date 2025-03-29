@@ -9,7 +9,8 @@
       <!-- Featured Image -->
       {% if success_story.featured_image %}
         <div class="w-full h-64 md:h-96 bg-gray-100 dark:bg-gray-700">
-          <img src="{{ success_story.featured_image.url }}"
+          <img loading="lazy"
+               src="{{ success_story.featured_image.url }}"
                alt="{{ success_story.title }}"
                class="w-full h-full object-cover" />
         </div>
@@ -22,7 +23,8 @@
           <div class="flex flex-wrap items-center text-sm text-gray-500 dark:text-gray-400 mb-4">
             <div class="flex items-center mr-4 mb-2">
               {% if success_story.author.profile.avatar %}
-                <img src="{{ success_story.author.profile.avatar.url }}"
+                <img loading="lazy"
+                     src="{{ success_story.author.profile.avatar.url }}"
                      alt="{{ success_story.author.get_full_name|default:success_story.author.username }}"
                      class="w-8 h-8 rounded-full mr-2" />
               {% else %}
@@ -92,7 +94,8 @@
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
               {% if story.featured_image %}
                 <div class="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-700">
-                  <img src="{{ story.featured_image.url }}"
+                  <img loading="lazy"
+                       src="{{ story.featured_image.url }}"
                        alt="{{ story.title }}"
                        class="object-cover w-full h-full" />
                 </div>
