@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  {% load static %}
+
+  <div class="container mx-auto px-6 py-8">
+    <!-- Title -->
+    <h2 class="text-4xl font-bold text-gray-900 dark:text-white text-center mb-8">🎓 Live Classes Near You</h2>
+    <!-- Filters -->
+    <form id="filter-form"
+          method="GET"
+          class="bg-white dark:bg-gray-800 p-6 shadow-xl rounded-lg flex flex-wrap items-center gap-6 mb-10">
+      <!-- Course Filter -->
+      <div class="flex flex-col w-full sm:w-auto">
+        <label for="course" class="text-gray-700 dark:text-gray-300 font-semibold">📘 Course</label>
+        <select name="course"
+                id="course"
+                class="p-3 border rounded-lg shadow-sm dark:bg-gray-700 dark:text-white hover:border-blue-500 transition">
+          <option value="">All</option>
+          {% for course in courses %}
+            <option value="{{ course.id }}"
+                    {% if request.GET.course == course.id|stringformat:"s" %}selected{% endif %}>
+              {{ course.title }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <!-- Age Group Filter -->
+      <div class="flex flex-col w-full sm:w-auto">
+        <label for="age_group"
+               class="text-gray-700 dark:text-gray-300 font-semibold">🎯 Age Group</label>
+        <select name="age_group"
+                id="age_group"
+                class="p-3 border rounded-lg shadow-sm dark:bg-gray-700 dark:text-white hover:border-blue-500 transition">
+          <option value="">All</option>
+          {% for value, display in age_groups %}
+            <option value="{{ value }}"
+                    {% if request.GET.age_group == value|stringformat:"s" %}selected{% endif %}>{{ display }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <!-- Teaching Style Filter -->
+      <div class="flex flex-col w-full sm:w-auto">
+        <label for="teaching_style"
+               class="text-gray-700 dark:text-gray-300 font-semibold">🎓 Teaching Style</label>
+        <select name="teaching_style"
+                id="teaching_style"
+                class="p-3 border rounded-lg shadow-sm dark:bg-gray-700 dark:text-white hover:border-blue-500 transition">
+          <option value="">All</option>
+          {% for style in teaching_style %}
+            <option value="{{ style }}"
+                    {% if request.GET.teaching_style == style %}selected{% endif %}>{{ style }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <!-- Buttons -->
+      <div class="flex gap-4">
+        <button type="submit"
+                class="px-5 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition">
+          🎯 Apply Filters
+        </button>
+        <button type="button"
+                id="recenter-btn"
+                class="px-5 py-3 bg-gray-600 text-white font-semibold rounded-lg shadow-md hover:bg-gray-700 transition">
+          🔄 Recenter
+        </button>
+      </div>
+    </form>
+    <!-- Loading Indicator -->
+    <div id="loading"
+         class="text-center text-gray-600 dark:text-gray-300 hidden text-lg font-medium">⏳ Loading classes...</div>
+    <!-- Map & List Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Session List -->
+      <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg lg:col-span-1 overflow-auto max-h-[500px]">
+        <h3 class="text-2xl font-semibold text-gray-900 dark:text-white mb-5">📅 Upcoming Sessions</h3>
+        <ul id="session-list" class="space-y-4">
+          {% for session in sessions %}
+            <li class="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg flex justify-between items-center shadow-md transition hover:bg-gray-200 dark:hover:bg-gray-600">
+              <div>
+                <strong class="text-gray-900 dark:text-white text-lg">{{ session.title }}</strong>
+                <p class="text-gray-600 dark:text-gray-300 text-sm">
+                  📍 {{ session.location }} | 🕒 {{ session.start_time|date:"M d, Y - H:i" }}
+                </p>
+              </div>
+              <button class="px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition locate-btn"
+                      data-lat="{{ session.latitude }}"
+                      data-lng="{{ session.longitude }}">📍 Locate</button>
+            </li>
+          {% empty %}
+            <p class="text-gray-500 dark:text-gray-400">No sessions available.</p>
+          {% endfor %}
+        </ul>
+      </div>
+      <!-- Map -->
+      <div class="relative lg:col-span-2">
+        <div id="map"
+             class="w-full h-[500px] rounded-lg shadow-lg border dark:border-gray-700"></div>
+        <div id="no-results"
+             class="hidden absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-900 bg-opacity-80 rounded-lg">
+          <p class="text-lg text-gray-700 dark:text-gray-300 font-semibold">❌ No classes found. Try adjusting your filters.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- OpenStreetMap -->
+  <link rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+  <!-- Data Attributes for Sessions -->
+  <div id="session-data"
+       data-has-sessions="{% if sessions %}true{% else %}false{% endif %}"
+       style="display: none">
+    {% for session in sessions %}
+      <div class="session-item"
+           data-lat="{{ session.latitude }}"
+           data-lng="{{ session.longitude }}"
+           data-title="{{ session.title }}"
+           data-date="{{ session.date }}"
+           data-location="{{ session.location }}"
+           data-teacher="{{ session.course.teacher }}"
+           data-course-title="{{ session.course }}"
+           data-start-time="{{ session.start_time|date:'H:i' }}, {{ session.start_time|date:'Y-m-d' }}"
+           data-end-time="{{ session.end_time|date:'H:i' }}, {{ session.end_time|date:'Y-m-d' }}"
+           data-enrollment-url="{{ session.get_absolute_url }}"></div>
+    {% endfor %}
+  </div>
+  <!-- JavaScript -->
+  <script src="{% static 'js/classes_map.js' %}"></script>
+{% endblock %}
