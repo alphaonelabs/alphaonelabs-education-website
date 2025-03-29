@@ -101,14 +101,32 @@ class WaitingRoomAdmin(admin.ModelAdmin):
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "is_teacher", "expertise", "created_at", "updated_at")
-    list_filter = ("is_teacher", "created_at", "updated_at")
-    search_fields = ("user__username", "user__email", "expertise", "bio")
+    list_display = (
+        "user", 
+        "is_teacher", 
+        "points",  # NEW: Add points to list view
+        "expertise", 
+        "created_at", 
+        "updated_at"
+    )
+    list_filter = (
+        "is_teacher", 
+        "points",  # NEW: Add to filters
+        "created_at", 
+        "updated_at"
+    )
+    search_fields = (
+        "user__username", 
+        "user__email", 
+        "expertise", 
+        "bio",
+        "points",  # NEW: Make searchable
+    )
     ordering = ("-created_at",)
     raw_id_fields = ("user",)
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
-        (None, {"fields": ("user", "is_teacher")}),
+        (None, {"fields": ("user", "is_teacher", "points")}),  # NEW: Added points here
         (
             "Profile Information",
             {"fields": ("bio", "expertise", "avatar", "is_profile_public", "how_did_you_hear_about_us")},
@@ -119,8 +137,6 @@ class ProfileAdmin(admin.ModelAdmin):
             {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
         ),
     )
-
-
 class EmailVerifiedFilter(admin.SimpleListFilter):
     title = "Email Verification"
     parameter_name = "email_verified"

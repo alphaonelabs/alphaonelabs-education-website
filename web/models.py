@@ -50,6 +50,10 @@ class Notification(models.Model):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
+    points = models.PositiveIntegerField(
+        default=0,
+        help_text="User points balance"
+    )
     bio = models.TextField(max_length=500, blank=True)
     expertise = models.CharField(max_length=200, blank=True)
     # Avatar fields
