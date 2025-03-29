@@ -3829,9 +3829,21 @@ def edit_meetup(request, slug):
 @login_required
 def register_meetup(request, slug):
     meetup = get_object_or_404(Meetup, slug=slug)
+    
+    # Check if the user is already registered
+    if MeetupRegistration.objects.filter(meetup=meetup, user=request.user).exists():
+        messages.info(request, "You are already registered for this meetup.")
+        return redirect("meetup_detail", slug=meetup.slug)
+    
+    # Check if the meetup has a capacity limit and if it's reached
+    registrations_count = MeetupRegistration.objects.filter(meetup=meetup).count()
+    if hasattr(meetup, 'max_attendees') and meetup.max_attendees and registrations_count >= meetup.max_attendees:
+        messages.error(request, "This meetup has reached its maximum capacity.")
+        return redirect("meetup_detail", slug=meetup.slug)
+    
     MeetupRegistration.objects.get_or_create(meetup=meetup, user=request.user)
+    messages.success(request, "You have successfully registered for this meetup.")
     return redirect("meetup_detail", slug=meetup.slug)
-
 
 @login_required
 @login_required
