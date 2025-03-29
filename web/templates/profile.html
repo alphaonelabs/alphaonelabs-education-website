@@ -307,6 +307,19 @@
               </a>
             {% endif %}
           </div>
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
+            <h2 class="text-xl font-semibold mb-4">Account Management</h2>
+            <div class="space-y-3">
+              <a href="{% url 'account_change_password' %}"
+                 class="block w-full text-center bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded">
+                <i class="fas fa-key mr-2"></i> Change Password
+              </a>
+              <a href="{% url 'delete_account' %}"
+                 class="block w-full text-center bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded">
+                <i class="fas fa-trash-alt mr-2"></i> Delete Account
+              </a>
+            </div>
+          </div>
         </div>
       </div>
       <!-- Stats and Activity -->
