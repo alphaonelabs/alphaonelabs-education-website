@@ -262,20 +262,33 @@ document.addEventListener('DOMContentLoaded', function() {
         details.className = 'mb-4';
 
         if (node.type === 'tracker') {
-            details.innerHTML = `
-                <p class="text-sm"><span class="font-medium">Current value:</span> ${node.current_value}</p>
-                <p class="text-sm"><span class="font-medium">Target value:</span> ${node.target_value}</p>
-            `;
-        } else if (node.type === 'course') {
-            details.innerHTML = `
-                <p class="text-sm"><span class="font-medium">Course:</span> ${node.course_title}</p>
-                <a href="/courses/${node.course_slug}" class="text-blue-600 dark:text-blue-400 hover:underline text-sm">View course</a>
-            `;
-        } else if (node.type === 'milestone') {
-            details.innerHTML = `
-                <p class="text-sm"><span class="font-medium">Current value:</span> ${node.current_value}</p>
-                <p class="text-sm"><span class="font-medium">Target value:</span> ${node.target_value}</p>
-            `;
+// Helper function to escape HTML
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+if (node.type === 'tracker') {
+    details.innerHTML = `
+        <p class="text-sm"><span class="font-medium">Current value:</span> ${escapeHTML(node.current_value)}</p>
+        <p class="text-sm"><span class="font-medium">Target value:</span> ${escapeHTML(node.target_value)}</p>
+    `;
+} else if (node.type === 'course') {
+    details.innerHTML = `
+        <p class="text-sm"><span class="font-medium">Course:</span> ${escapeHTML(node.course_title)}</p>
+        <a href="/courses/${encodeURIComponent(node.course_slug)}" class="text-blue-600 dark:text-blue-400 hover:underline text-sm">View course</a>
+    `;
+} else if (node.type === 'milestone') {
+    details.innerHTML = `
+        <p class="text-sm"><span class="font-medium">Current value:</span> ${escapeHTML(node.current_value)}</p>
+        <p class="text-sm"><span class="font-medium">Target value:</span> ${escapeHTML(node.target_value)}</p>
+    `;
+}
 
             // Add update form for milestones if we're the owner
             if (document.getElementById('is-owner-indicator')) {
