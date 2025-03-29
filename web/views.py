@@ -6477,7 +6477,7 @@ def all_study_groups(request):
 
 
 @login_required
-def membership_checkout(request, plan_id):
+def membership_checkout(request, plan_id: int) -> HttpResponse:
     """Display the membership checkout page."""
     plan = get_object_or_404(MembershipPlan, id=plan_id)
 
@@ -6494,7 +6494,7 @@ def membership_checkout(request, plan_id):
 
 
 @login_required
-def create_membership_subscription(request):
+def create_membership_subscription(request) -> JsonResponse:
     """Create a new membership subscription."""
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
@@ -6516,25 +6516,39 @@ def create_membership_subscription(request):
         if not result["success"]:
             return JsonResponse({"error": result["error"]}, status=400)
 
+        # Helper function to extract client_secret
+        def get_client_secret(subscription):
+            """Extract client_secret safely from a subscription object."""
+            if (
+                hasattr(subscription, "latest_invoice")
+                and subscription.latest_invoice
+                and hasattr(subscription.latest_invoice, "payment_intent")
+            ):
+                return subscription.latest_invoice.payment_intent.client_secret
+            return None
+
         return JsonResponse(
             {
                 "subscription": result["subscription"],
-                "client_secret": (
-                    result["subscription"].latest_invoice.payment_intent.client_secret
-                    if hasattr(result["subscription"], "latest_invoice")
-                    and result["subscription"].latest_invoice
-                    and result["subscription"].latest_invoice.payment_intent
-                    else None
-                ),
-            }
+                "client_secret": get_client_secret(result["subscription"]),
+            },
         )
 
-    except (json.JSONDecodeError, KeyError) as e:
-        return JsonResponse({"error": str(e)}, status=400)
+    except json.JSONDecodeError as e:
+        return JsonResponse({"error": f"Invalid JSON: {str(e)}"}, status=400)
+    except stripe.error.CardError as e:
+        return JsonResponse({"error": f"Card error: {str(e)}"}, status=400)
+    except stripe.error.StripeError as e:
+        return JsonResponse({"error": f"Payment processing error: {str(e)}"}, status=500)
+    except KeyError as e:
+        return JsonResponse({"error": f"Missing key: {str(e)}"}, status=400)
+    except Exception as e:
+        logger.error(f"Unexpected error in create_membership_subscription: {str(e)}")
+        return JsonResponse({"error": "An unexpected error occurred"}, status=500)
 
 
 @login_required
-def membership_success(request):
+def membership_success(request) -> HttpResponse:
     """Display the membership success page."""
     try:
         membership = request.user.membership
@@ -6543,11 +6557,12 @@ def membership_success(request):
         }
         return render(request, "membership_success.html", context)
     except (AttributeError, ObjectDoesNotExist):
+        messages.info(request, "You don't have an active membership subscription.")
         return redirect("index")
 
 
 @login_required
-def membership_settings(request):
+def membership_settings(request) -> HttpResponse:
     """Display the membership settings page."""
     try:
         membership = request.user.membership
@@ -6573,7 +6588,7 @@ def membership_settings(request):
 
 
 @login_required
-def cancel_membership(request):
+def cancel_membership(request) -> HttpResponse:
     """Cancel the user's membership subscription."""
     if request.method != "POST":
         return redirect("membership_settings")
@@ -6583,19 +6598,25 @@ def cancel_membership(request):
 
         if result["success"]:
             messages.success(
-                request, "Your subscription has been cancelled and will end at the current billing period."
+                request,
+                "Your subscription has been cancelled and will end at the current billing period.",
             )
         else:
             messages.error(request, result["error"])
 
+    except stripe.error.StripeError as e:
+        messages.error(request, f"Stripe error: {str(e)}")
+    except ObjectDoesNotExist:
+        messages.error(request, "No membership found for your account.")
     except Exception as e:
+        logger.error(f"Unexpected error in cancel_membership: {str(e)}")
         messages.error(request, str(e))
 
     return redirect("membership_settings")
 
 
 @login_required
-def reactivate_membership(request):
+def reactivate_membership(request) -> HttpResponse:
     """Reactivate a cancelled membership subscription."""
     if request.method != "POST":
         return redirect("membership_settings")
@@ -6608,14 +6629,19 @@ def reactivate_membership(request):
         else:
             messages.error(request, result["error"])
 
+    except stripe.error.StripeError as e:
+        messages.error(request, f"Stripe error: {str(e)}")
+    except ObjectDoesNotExist:
+        messages.error(request, "No membership found for your account.")
     except Exception as e:
+        logger.error(f"Unexpected error in reactivate_membership: {str(e)}")
         messages.error(request, str(e))
 
     return redirect("membership_settings")
 
 
 @login_required
-def update_payment_method(request):
+def update_payment_method(request) -> HttpResponse:
     """Display the update payment method page."""
     try:
         membership = request.user.membership
@@ -6639,7 +6665,7 @@ def update_payment_method(request):
 
 
 @login_required
-def update_payment_method_api(request):
+def update_payment_method_api(request) -> JsonResponse:
     """Update the payment method for a subscription."""
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
@@ -6663,12 +6689,20 @@ def update_payment_method_api(request):
 
         # Set as default payment method
         stripe.Customer.modify(
-            membership.stripe_customer_id, invoice_settings={"default_payment_method": payment_method_id}
+            membership.stripe_customer_id,
+            invoice_settings={"default_payment_method": payment_method_id},
         )
 
         return JsonResponse({"success": True})
 
+    except stripe.error.CardError as e:
+        return JsonResponse({"error": f"Card error: {str(e)}"}, status=400)
+    except stripe.error.InvalidRequestError as e:
+        return JsonResponse({"error": f"Invalid request: {str(e)}"}, status=400)
+    except stripe.error.StripeError as e:
+        return JsonResponse({"error": f"Payment processing error: {str(e)}"}, status=500)
     except Exception as e:
+        logger.error(f"Unexpected error in update_payment_method_api: {str(e)}")
         return JsonResponse({"error": str(e)}, status=400)
 
 

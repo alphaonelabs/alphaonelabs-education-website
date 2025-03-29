@@ -415,7 +415,7 @@ def create_leaderboard_context(
     }
 
 
-def setup_stripe():
+def setup_stripe() -> None:
     stripe.api_key = settings.STRIPE_SECRET_KEY
 
 
@@ -447,6 +447,10 @@ def get_stripe_customer(user):
 
 
 def create_subscription(user, plan_id, payment_method_id, billing_period):
+    """
+    Create or update a subscription for the user based on the provided billing period.
+    Returns a dictionary with "success" and optional keys "error" or "subscription".
+    """
     from .models import MembershipPlan
 
     try:
@@ -516,17 +520,21 @@ def create_subscription(user, plan_id, payment_method_id, billing_period):
         return {"success": True, "subscription": subscription}
 
     except stripe.error.CardError as e:
-        logger.error(f"Card error for user {user.email}: {str(e)}")
+        logger.exception(f"Card error for user {user.email}")
         return {"success": False, "error": str(e.user_message)}
-    except stripe.error.StripeError as e:
-        logger.error(f"Stripe error for user {user.email}: {str(e)}")
+    except stripe.error.StripeError:
+        logger.exception(f"Stripe error for user {user.email}")
         return {"success": False, "error": "An error occurred with our payment processor"}
-    except Exception as e:
-        logger.error(f"Error creating subscription for user {user.email}: {str(e)}")
+    except Exception:
+        logger.exception(f"Error creating subscription for user {user.email}")
         return {"success": False, "error": "An unexpected error occurred"}
 
 
 def cancel_subscription(user):
+    """
+    Cancels the user's active Stripe subscription at period end, if any.
+    Return {'success': bool, 'error': str, 'subscription': stripe.Subscription?}.
+    """
     from .models import MembershipSubscriptionEvent
 
     try:
@@ -554,15 +562,19 @@ def cancel_subscription(user):
 
         return {"success": True, "subscription": subscription}
 
-    except stripe.error.StripeError as e:
-        logger.error(f"Error canceling subscription for user {user.email}: {str(e)}")
+    except stripe.error.StripeError:
+        logger.exception(f"Error canceling subscription for user {user.email}")
         return {"success": False, "error": "An error occurred with our payment processor"}
-    except Exception as e:
-        logger.error(f"Error canceling subscription for user {user.email}: {str(e)}")
+    except Exception:
+        logger.exception(f"Error canceling subscription for user {user.email}")
         return {"success": False, "error": "An unexpected error occurred"}
 
 
 def reactivate_subscription(user):
+    """
+    Reactivates a subscription that was previously scheduled for cancellation.
+    Returns a dictionary with "success" and optional keys "error" or "subscription".
+    """
     from .models import MembershipSubscriptionEvent
 
     try:
@@ -594,11 +606,11 @@ def reactivate_subscription(user):
 
         return {"success": True, "subscription": subscription}
 
-    except stripe.error.StripeError as e:
-        logger.error(f"Error reactivating subscription for user {user.email}: {str(e)}")
+    except stripe.error.StripeError:
+        logger.exception(f"Error reactivating subscription for user {user.email}")
         return {"success": False, "error": "An error occurred with our payment processor"}
-    except Exception as e:
-        logger.error(f"Error reactivating subscription for user {user.email}: {str(e)}")
+    except Exception:
+        logger.exception(f"Error reactivating subscription for user {user.email}")
         return {"success": False, "error": "An unexpected error occurred"}
 
 

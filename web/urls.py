@@ -417,7 +417,9 @@ urlpatterns += i18n_patterns(
     # Membership URLs
     path("membership/checkout/<int:plan_id>/", views.membership_checkout, name="membership_checkout"),
     path(
-        "membership/create-subscription/", views.create_membership_subscription, name="create_membership_subscription"
+        "membership/create-subscription/",
+        views.create_membership_subscription,
+        name="create_membership_subscription",
     ),
     path("membership/success/", views.membership_success, name="membership_success"),
     path("membership/settings/", views.membership_settings, name="membership_settings"),
