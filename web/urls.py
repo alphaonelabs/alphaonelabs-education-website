@@ -408,7 +408,6 @@ urlpatterns += i18n_patterns(
     # Map Urls
     path("classes-map/", views.classes_map, name="classes_map"),
     path("api/map-data/", views.map_data_api, name="map_data_api"),
-    # Contributor urls
     # Features page
     path("features/", features_page, name="features"),
     path("features/vote/", feature_vote, name="feature_vote"),
