@@ -6086,7 +6086,7 @@ def map_data_api(request):
     age_group = request.GET.get("age_group")
 
     if course_id:
-        sessions = sessions.filter(course__id=course_id)
+        sessions = sessions.filter(course__id=course_id, status="published")
     if age_group:
         sessions = sessions.filter(course__level=age_group)
 
