@@ -1708,14 +1708,14 @@ class PDFSubmissionForm(forms.ModelForm):
         model = PDFSubmission
         fields = ["title", "pdf_type", "subject", "assignment", "due_date", "description", "pdf_file"]
 
-    def clean_pdf_file(self):
-        uploaded_file = self.cleaned_data.get("pdf_file")
-        if uploaded_file:
-            # 10MB maximum file size
-            max_size = 10 * 1024 * 1024
-            if uploaded_file.size > max_size:
-                raise forms.ValidationError("File size must not exceed 10MB.")
-            # Verify file is actually a PDF
-            if not uploaded_file.content_type.lower() in ["application/pdf", "application/x-pdf"]:
-                raise forms.ValidationError("File must be a PDF document.")
-        return uploaded_file
+        def clean_pdf_file(self):
+            uploaded_file = self.cleaned_data.get("pdf_file")
+            if uploaded_file:
+                # 10MB maximum file size
+                max_size = 10 * 1024 * 1024
+                if uploaded_file.size > max_size:
+                    raise forms.ValidationError("File size must not exceed 10MB.")
+                # Verify file is actually a PDF
+                if uploaded_file.content_type.lower() not in ["application/pdf", "application/x-pdf"]:
+                    raise forms.ValidationError("File must be a PDF document.")
+            return uploaded_file

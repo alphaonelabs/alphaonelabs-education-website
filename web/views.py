@@ -6473,10 +6473,9 @@ def all_study_groups(request):
     )
 
 
-# file review views
+# PDF submission views
 
 
-@login_required
 def upload_pdf_submission(request):
     """View for students to upload their PDF documents."""
     if request.method == "POST":
@@ -6485,7 +6484,6 @@ def upload_pdf_submission(request):
             submission = form.save(commit=False)
             submission.student = request.user
             submission.save()
-
             # Create notification for user
             Notification.objects.create(
                 user=request.user,
@@ -6493,26 +6491,22 @@ def upload_pdf_submission(request):
                 message=f"Your {submission.pdf_type.name} has been submitted successfully and is pending review.",
                 notification_type="success",
             )
-
             # Create notifications for teachers
             admin_users = User.objects.filter(profile__is_teacher=True)
+            notifications = []
             for admin in admin_users:
-                Notification.objects.create(
-                    user=admin,
-                    title="New PDF Submission",
-                    message=(
-                        f"A new {submission.pdf_type.name} has been submitted by "
-                        f"{request.user.username} and needs review."
-                    ),
-                    notification_type="info",
+                notifications.append(
+                    Notification(
+                        user=admin,
+                        title="New PDF Submission",
+                        message=(
+                            f"A new {submission.pdf_type.name} has been submitted by "
+                            f"{request.user.username} and needs review."
+                        ),
+                        notification_type="info",
+                    )
                 )
-
-            messages.success(request, "Your PDF document has been submitted successfully!")
-            return redirect("pdf_submission_list")
-    else:
-        form = PDFSubmissionForm()
-
-    return render(request, "web/pdf/upload_submission.html", {"form": form})
+            Notification.objects.bulk_create(notifications)
 
 
 @login_required
@@ -6535,8 +6529,10 @@ def pdf_submission_list(request):
         submissions = paginator.page(page)
     except PageNotAnInteger:
         submissions = paginator.page(1)
+        messages.info(request, "Showing first page.")
     except EmptyPage:
         submissions = paginator.page(paginator.num_pages)
+        messages.info(request, "Showing last page.")
 
     context = {
         "submissions": submissions,
@@ -6553,8 +6549,9 @@ def pdf_submission_detail(request, submission_id):
 
     # Determine user role
     is_student = request.user == submission.student
-    is_reviewer = request.user.profile.is_teacher or request.user.profile.is_reviewer
-
+    is_reviewer = hasattr(request.user, "profile") and (
+        getattr(request.user.profile, "is_teacher", False) or getattr(request.user.profile, "is_reviewer", False)
+    )
     # Access control
     if not (is_student or is_reviewer):
         raise PermissionDenied("You do not have permission to view this submission.")
@@ -6562,27 +6559,23 @@ def pdf_submission_detail(request, submission_id):
     if request.method == "POST" and is_reviewer:
         feedback = request.POST.get("feedback", "")
         new_status = request.POST.get("status", "")
-
         if feedback or new_status:
-            if feedback:
-                submission.feedback = feedback
-
-            if new_status and new_status in dict(PDFSubmission.STATUS_CHOICES):
-                submission.status = new_status
-
-            submission.reviewed_by = request.user
-            submission.reviewed_at = timezone.now()
-            submission.save()
-
-            # Create notification for student
-            Notification.objects.create(
-                user=submission.student,
-                title="Your PDF Submission Has Been Reviewed",
-                message=f"Your {submission.pdf_type.name} has been reviewed. Check the feedback for details.",
-                notification_type="info",
-            )
-
-            messages.success(request, "Feedback and status updated successfully.")
+            with transaction.atomic():
+                if feedback:
+                    submission.feedback = feedback
+                if new_status and new_status in dict(PDFSubmission.STATUS_CHOICES):
+                    submission.status = new_status
+                submission.reviewed_by = request.user
+                submission.reviewed_at = timezone.now()
+                submission.save()
+                # Create notification for student
+                Notification.objects.create(
+                    user=submission.student,
+                    title="Your PDF Submission Has Been Reviewed",
+                    message=f"Your {submission.pdf_type.name} has been reviewed. Check the feedback for details.",
+                    notification_type="info",
+                )
+                messages.success(request, "Feedback and status updated successfully.")
             return redirect("pdf_submission_list")
 
     context = {

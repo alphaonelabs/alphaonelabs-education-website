@@ -2608,6 +2608,7 @@ class PDFSubmission(models.Model):
         ("reviewed", "Reviewed"),
         ("needs_revision", "Needs Revision"),
         ("approved", "Approved"),
+        ("rejected", "Rejected"),
     ]
 
     title = models.CharField(max_length=200, help_text="Title of your document")
@@ -2626,7 +2627,7 @@ class PDFSubmission(models.Model):
     feedback = models.TextField(blank=True, help_text="Feedback from reviewers")
 
     # Tracking fields
-    file_size = models.PositiveIntegerField(editable=False, null=True)
+    file_size = models.PositiveIntegerField(editable=False, default=0)
     submitted_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     reviewed_at = models.DateTimeField(null=True, blank=True)
