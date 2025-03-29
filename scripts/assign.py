@@ -168,6 +168,36 @@ def main():
                         print(f"User {user_login} is already assigned to this issue. No action needed.")
                         return
 
+                # Check if this is a "good first issue" and the user has existing PRs
+                issue_labels = issue_data.get("labels", [])
+                is_good_first_issue = any(label.get("name") == "good first issue" for label in issue_labels)
+
+                if is_good_first_issue:
+                    print(f"Issue #{issue_number} is labeled as 'good first issue', checking if user has existing PRs")
+
+                    # Check if user has any PRs in the repository
+                    search_url = "https://api.github.com/search/issues"
+                    search_query = f"type:pr repo:{owner}/{repo} author:{user_login}"
+                    search_params = {"q": search_query}
+                    print(f"Searching PRs created by user with query: {search_query}")
+                    search_response = requests.get(search_url, headers=headers, params=search_params)
+                    print(f"Search response status: {search_response.status_code}")
+                    search_data = search_response.json()
+
+                    pr_count = search_data.get("total_count", 0)
+                    print(f"User {user_login} has {pr_count} PRs in the repository")
+
+                    if pr_count > 0:
+                        # User has existing PRs, don't allow them to take a good first issue
+                        comment_body = (
+                            f"@{user_login} 'Good first issue' tasks are reserved for newcomers who haven't "
+                            f"submitted PRs yet. Since you already have PRs in this repository, "
+                            f"please choose a different issue to work on."
+                        )
+                        print(f"Rejecting 'good first issue' assignment for user with existing PRs: {user_login}")
+                        requests.post(f"{issue_url}/comments", headers=headers, json={"body": comment_body})
+                        return
+
                 # Get user's open issues
                 issues_url = f"https://api.github.com/repos/{owner}/{repo}/issues"
                 params = {"state": "open", "assignee": user_login}

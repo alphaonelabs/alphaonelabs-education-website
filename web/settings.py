@@ -8,7 +8,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "django-insecure-5kyff0s@l_##j3jawec5@b%!^^e(j7v)ouj4b7q6kru#o#a)o3"
 
-
 env = environ.Env()
 
 env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
@@ -35,6 +34,10 @@ PA_SOURCE_DIR = "/home/" + PA_USER + "/web"
 
 # Social Media Settings
 TWITTER_USERNAME = "alphaonelabs"
+TWITTER_API_KEY = os.getenv("TWITTER_API_KEY")
+TWITTER_API_SECRET_KEY = os.getenv("TWITTER_API_SECRET_KEY")
+TWITTER_ACCESS_TOKEN = os.getenv("TWITTER_ACCESS_TOKEN")
+TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 
 # Production settings
 if not DEBUG:
@@ -233,7 +236,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 if not DEBUG:
     MEDIA_ROOT = "/home/alphaonelabs99282llkb/web/media"
 else:
-    MEDIA_ROOT = BASE_DIR / "media"
+    MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 MEDIA_URL = "/media/"
 
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
@@ -356,5 +359,4 @@ MARKDOWNX_MEDIA_PATH = "markdownx/"  # Path within MEDIA_ROOT
 USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data
-# Use empty string as default to avoid errors when the token is not set
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
