@@ -214,6 +214,36 @@
     animation: bounce 1s infinite;
 }
 
+/* Subtle Bounce Animation */
+@keyframes bounce-subtle {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.animate-bounce-subtle {
+    animation: bounce-subtle 2s infinite;
+}
+
+/* Ping Animation for status indicators */
+@keyframes ping {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    75%, 100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+.animate-ping {
+    animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
 /* Accessibility - Respects user's reduced motion preferences */
 @media (prefers-reduced-motion: reduce) {
     .animate-fadeIn,
@@ -221,7 +251,9 @@
     .animate-shimmer,
     .animate-pulse,
     .animate-pulse-slow,
-    .animate-bounce {
+    .animate-bounce,
+    .animate-bounce-subtle,
+    .animate-ping {
         animation: none;
         transition: none;
     }

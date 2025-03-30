@@ -14,7 +14,7 @@ def format_price(value: Optional[Union[float, int]] = None, period: Optional[str
         return "$0"
     if period == "yearly":
         return f"${value}/year"
-    elif period == "monthly":
+    if period == "monthly":
         return f"${value}/month"
     return f"${value}"
 

@@ -41,6 +41,9 @@
               <input type="checkbox"
                      id="billingToggle"
                      class="sr-only"
+                     role="switch"
+                     aria-checked="{% if billing_period == 'yearly' %}true{% else %}false{% endif %}"
+                     aria-label="Toggle between monthly and yearly billing"
                      {% if billing_period == 'yearly' %}checked{% endif %} />
               <label for="billingToggle"
                      class="block h-10 rounded-full bg-blue-300 bg-opacity-50 cursor-pointer"></label>

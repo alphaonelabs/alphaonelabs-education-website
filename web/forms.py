@@ -1,4 +1,5 @@
 import re
+from typing import Any, ClassVar, Dict
 
 from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
@@ -1700,7 +1701,7 @@ class MembershipPlanForm(forms.ModelForm):
             "is_popular",
             "order",
         ]
-        widgets = {
+        widgets: ClassVar[Dict[str, Any]] = {
             "name": TailwindInput(),
             "slug": TailwindInput(),
             "description": TailwindTextarea(attrs={"rows": 3}),

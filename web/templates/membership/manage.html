@@ -291,69 +291,6 @@
       </div>
     </div>
   </div>
-  <style>
-      @keyframes fadeIn {
-          from {
-              opacity: 0;
-          }
-
-          to {
-              opacity: 1;
-          }
-      }
-
-      @keyframes fadeInUp {
-          from {
-              opacity: 0;
-              transform: translateY(20px);
-          }
-
-          to {
-              opacity: 1;
-              transform: translateY(0);
-          }
-      }
-
-      @keyframes shimmer {
-          0% {
-              transform: translateX(-150%);
-          }
-
-          100% {
-              transform: translateX(150%);
-          }
-      }
-
-      .animate-fadeIn {
-          animation: fadeIn 1s ease forwards;
-      }
-
-      .animate-fadeInUp {
-          animation: fadeInUp 0.7s ease forwards;
-      }
-
-      .animate-shimmer {
-          animation: shimmer 2s infinite;
-      }
-
-      /* Ping animation for the status indicator */
-      @keyframes ping {
-          0% {
-              transform: scale(1);
-              opacity: 1;
-          }
-
-          75%,
-          100% {
-              transform: scale(2);
-              opacity: 0;
-          }
-      }
-
-      .animate-ping {
-          animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
-      }
-  </style>
   <script>
       document.addEventListener('DOMContentLoaded', function() {
           // Add intersection observer for scroll animations

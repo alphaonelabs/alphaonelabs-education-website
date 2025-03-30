@@ -1,3 +1,7 @@
+import html
+import json
+from typing import Any, Dict, List
+
 from captcha.fields import CaptchaTextInput
 from django import forms
 
@@ -138,9 +142,9 @@ class TailwindCaptchaTextInput(CaptchaTextInput):
 
 
 class TailwindJSONWidget(forms.Widget):
-    template_name = "admin/widgets/json_features_widget.html"
+    """A custom widget for editing JSON arrays of strings as a list of inputs with drag-and-drop reordering."""
 
-    def __init__(self, attrs=None):
+    def __init__(self, attrs: Dict = None) -> None:
         default_attrs = {
             "class": "json-features-widget",
         }
@@ -148,9 +152,13 @@ class TailwindJSONWidget(forms.Widget):
             default_attrs.update(attrs)
         super().__init__(default_attrs)
 
-    def render(self, name, value, attrs=None, renderer=None):
-        import json
+    def render(self, name: str, value: Any, attrs: Dict = None, renderer=None) -> str:
+        """
+        Render the widget.
 
+        Parameters attrs and renderer are part of Django's Widget interface
+        but not used in this implementation.
+        """
         if value is None:
             decoded_value = []
         elif isinstance(value, str):
@@ -161,139 +169,98 @@ class TailwindJSONWidget(forms.Widget):
         else:
             decoded_value = value
 
-        # Ensure value is a list
-        if not isinstance(decoded_value, list):
-            decoded_value = []
-
-        # Create HTML with format for readability
+        # Generate feature items HTML
         feature_items = []
         for i, feature in enumerate(decoded_value):
-            item_html = f"""
-            <div class="flex items-center group" data-index="{i}">
-                <div class="flex-grow p-2 border rounded-lg bg-white dark:bg-gray-800
-                     group-hover:border-teal-400 transition-all duration-200">
+            item_html = """
+            <div class="flex items-center mb-2 bg-white dark:bg-gray-800 rounded-lg p-2 shadow-sm border
+                 border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200" data-index="{i}">
+                <div class="cursor-move mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300
+                     transition-colors duration-200 drag-handle">
+                    <i class="fas fa-grip-vertical"></i>
+                </div>
+                <div class="flex-grow">
                     <input type="text" value="{feature}"
                            class="w-full border-none p-1 focus:outline-none focus:ring-1
                                   focus:ring-teal-300 bg-transparent" />
                 </div>
-                <button type="button" class="ml-2 text-gray-400 hover:text-red-500
-                        transition-colors duration-200 delete-item">
-                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd"
-                              d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9z"  # noqa: E501
-                              clip-rule="evenodd" />
-                        <path fill-rule="evenodd"
-                              d="M7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"  # noqa: E501
-                              clip-rule="evenodd" />
-                    </svg>
-                </button>
-                <button type="button" class="ml-1 text-gray-400 hover:text-blue-500
-                        drag-handle cursor-grab">  # noqa: E501
-                    <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd"
-                              d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3z"
-                              clip-rule="evenodd" />
-                        <path fill-rule="evenodd"
-                              d="M6.293 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                              clip-rule="evenodd" />
-                    </svg>
+                <button type="button"
+                        class="ml-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300
+                               transition-colors duration-200 delete-btn">
+                    <i class="fas fa-trash-alt"></i>
                 </button>
             </div>
-            """
+            """.format(
+                i=i, feature=html.escape(str(feature))
+            )
             feature_items.append(item_html)
 
+        # Render the complete widget
         return """
-        <div class="membership-features-container" id="{0}-container">
-            <div class="mb-4">
-                <label class="block text-sm font-medium text-gray-700">Features</label>
-                <p class="text-sm text-gray-500 mb-2">Add features for this membership plan</p>
-                <div class="space-y-2" id="{0}-items">
-                    {1}
-                </div>
-                <input type="hidden" name="{0}" id="{0}-input" value='{2}'>
-                <button type="button"
-                        id="{0}-add-btn"
-                        class="mt-3 inline-flex items-center px-3 py-1.5 border border-transparent
-                               text-xs leading-4 font-medium rounded-md text-white bg-teal-600
-                               hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2
-                               focus:ring-teal-500 transition-all duration-200">
-                    <svg class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
-                        <path fill-rule="evenodd"
-                              d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                              clip-rule="evenodd" />
-                    </svg>
-                    Add Feature
-                </button>
+        <div class="mb-4">
+            <input type="hidden" name="{0}" id="{0}" value='{2}' />
+            <div id="{0}-items" class="mb-3">
+                {1}
             </div>
+            <button type="button"
+                    id="{0}-add"
+                    class="bg-teal-500 hover:bg-teal-600 text-white py-1 px-3 rounded-md text-sm flex items-center">
+                <i class="fas fa-plus mr-1"></i> Add Item
+            </button>
             <script>
                 document.addEventListener('DOMContentLoaded', function() {{
-                    const container = document.getElementById('{0}-container');
-                    const inputField = document.getElementById('{0}-input');
+                    const input = document.getElementById('{0}');
                     const itemsContainer = document.getElementById('{0}-items');
-                    const addButton = document.getElementById('{0}-add-btn');
+                    const addButton = document.getElementById('{0}-add');
 
-                    // Initial data
+                    // Parse the initial features
                     let features = {2};
 
-                    // Update the hidden input with the features array
+                    // Function to update the hidden input with the current features
                     function updateInput() {{
-                        inputField.value = JSON.stringify(features);
+                        input.value = JSON.stringify(features);
                     }}
 
-                    // Render all feature items
+                    // Function to render the feature items
                     function renderItems() {{
                         itemsContainer.innerHTML = '';
                         features.forEach((feature, index) => {{
-                            const itemHtml = `
-                                <div class="flex items-center group animate-fadeIn" data-index="${{index}}">
-                                    <div class="flex-grow p-2 border rounded-lg bg-white dark:bg-gray-800
-                                         group-hover:border-teal-400 transition-all duration-200">
-                                        <input type="text" value="${{feature}}"
-                                               class="w-full border-none p-1 focus:outline-none focus:ring-1
-                                                      focus:ring-teal-300 bg-transparent"
-                                               oninput="this.parentNode.parentNode.dataset.value = this.value" />
-                                    </div>
-                                    <button type="button"
-                                            class="ml-2 text-gray-400 hover:text-red-500
-                                                   transition-colors duration-200 delete-item">
-                                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd"
-                                                  d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9z"  # noqa: E501
-                                                  clip-rule="evenodd" />
-                                            <path fill-rule="evenodd"
-                                                  d="M7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"  # noqa: E501
-                                                  clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
-                                    <button type="button"
-                                            class="ml-1 text-gray-400 hover:text-blue-500
-                                                   drag-handle cursor-grab">  # noqa: E501
-                                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd"
-                                                  d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3z"
-                                                  clip-rule="evenodd" />
-                                            <path fill-rule="evenodd"
-                                                  d="M6.293 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z"
-                                                  clip-rule="evenodd" />
-                                        </svg>
-                                    </button>
+                            const itemElement = document.createElement('div');
+                            itemElement.className = 'flex items-center mb-2 bg-white dark:bg-gray-800 rounded-lg p-2 ' +
+                                'shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md ' +
+                                'transition-shadow duration-200';
+                            itemElement.dataset.index = index;
+
+                            itemElement.innerHTML = `
+                                <div class="cursor-move mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300
+                                     transition-colors duration-200 drag-handle">
+                                    <i class="fas fa-grip-vertical"></i>
                                 </div>
+                                <div class="flex-grow">
+                                    <input type="text" value="${{feature}}"
+                                           class="w-full border-none p-1 focus:outline-none focus:ring-1
+                                                  focus:ring-teal-300 bg-transparent" />
+                                </div>
+                                <button type="button"
+                                        class="ml-2 text-red-500 hover:text-red-700 dark:text-red-400
+                                               dark:hover:text-red-300 transition-colors duration-200 delete-btn">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
                             `;
-                            const div = document.createElement('div');
-                            div.innerHTML = itemHtml;
-                            itemsContainer.appendChild(div.firstElementChild);
+
+                            itemsContainer.appendChild(itemElement);
                         }});
 
                         // Add event listeners for delete buttons
-                        document.querySelectorAll('#{0}-items .delete-item').forEach(button => {{
+                        document.querySelectorAll('#{0}-items .delete-btn').forEach(button => {{
                             button.addEventListener('click', function() {{
-                                const index = parseInt(this.closest('[data-index]').dataset.index);
+                                const item = this.closest('[data-index]');
+                                const index = parseInt(item.dataset.index);
                                 features.splice(index, 1);
                                 renderItems();
                                 updateInput();
                             }});
                         }});
-
                         // Add event listeners for input changes
                         document.querySelectorAll('#{0}-items input').forEach(input => {{
                             input.addEventListener('input', function() {{
@@ -302,34 +269,27 @@ class TailwindJSONWidget(forms.Widget):
                                 updateInput();
                             }});
                         }});
-
                         // Enable drag and drop reordering
                         makeItemsDraggable();
                     }}
-
                     function makeItemsDraggable() {{
                         const items = itemsContainer.querySelectorAll('[data-index]');
                         items.forEach(item => {{
                             const handle = item.querySelector('.drag-handle');
                             handle.addEventListener('mousedown', function(e) {{
                                 e.preventDefault();
-
                                 const draggedItem = item;
                                 const initialIndex = parseInt(draggedItem.dataset.index);
                                 let currentY = e.clientY;
-
                                 const mouseMoveHandler = function(e) {{
                                     const deltaY = e.clientY - currentY;
                                     if (Math.abs(deltaY) > 10) {{
                                         draggedItem.classList.add('opacity-50');
-
                                         // Find the item to swap with
                                         const hoveredItem = document.elementFromPoint(e.clientX, e.clientY)
                                             .closest('#{{0}}-items [data-index]');
-
                                         if (hoveredItem && hoveredItem !== draggedItem) {{
                                             const hoverIndex = parseInt(hoveredItem.dataset.index);
-
                                             // Swap in the UI
                                             if (initialIndex < hoverIndex) {{
                                                 itemsContainer.insertBefore(
@@ -339,58 +299,50 @@ class TailwindJSONWidget(forms.Widget):
                                             }} else {{
                                                 itemsContainer.insertBefore(draggedItem, hoveredItem);
                                             }}
-
                                             // Swap in the array
                                             const temp = features[initialIndex];
                                             features.splice(initialIndex, 1);
                                             features.splice(hoverIndex, 0, temp);
-
                                             // Update indices
                                             renderItems();
                                             updateInput();
-
                                             currentY = e.clientY;
                                         }}
                                     }}
                                 }};
-
                                 const mouseUpHandler = function() {{
                                     draggedItem.classList.remove('opacity-50');
                                     document.removeEventListener('mousemove', mouseMoveHandler);
                                     document.removeEventListener('mouseup', mouseUpHandler);
                                 }};
-
                                 document.addEventListener('mousemove', mouseMoveHandler);
                                 document.addEventListener('mouseup', mouseUpHandler);
                             }});
                         }});
                     }}
-
                     // Add button event listener
                     addButton.addEventListener('click', function() {{
                         features.push('');
                         renderItems();
                         updateInput();
-
                         // Focus the newly added input
                         const newItem = itemsContainer.lastElementChild;
                         if (newItem) {{
                             newItem.querySelector('input').focus();
                         }}
                     }});
-
                     // Initial render
                     renderItems();
                 }});
             </script>
         </div>
         """.format(
-            name, "".join(feature_items), json.dumps(decoded_value)  # {0}  # {1}  # {2}
+            name,
+            "".join(feature_items),
+            json.dumps(decoded_value),  # {0}  # {1}  # {2}
         )
 
-    def value_from_datadict(self, data, files, name):
-        import json
-
+    def value_from_datadict(self, data: Dict, files: Dict, name: str) -> List:
         json_value = data.get(name, "[]")
         try:
             value = json.loads(json_value)

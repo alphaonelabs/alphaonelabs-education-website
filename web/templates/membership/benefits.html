@@ -180,6 +180,14 @@
                   observer.observe(card);
               }, 100 * index); // Staggered animation
           });
+
+          // If user prefers reduced motion, make items visible immediately
+          if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+              benefitCards.forEach(card => {
+                  card.style.opacity = '1';
+                  card.style.transform = 'none';
+              });
+          }
       });
   </script>
 {% endblock %}

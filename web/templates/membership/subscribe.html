@@ -177,8 +177,11 @@
               if (checkoutBtn) {
                   const baseUrl = checkoutBtn.getAttribute('data-base-url');
                   checkoutBtn.href = `${baseUrl}?billing_period=${billingPeriod}`;
-                  // Update the button text to reflect choice
-                  checkoutBtn.textContent = `Subscribe ${billingPeriod === 'yearly' ? 'Yearly' : 'Monthly'}`;
+                  // Update only the button text within the span to preserve the icon
+                  const btnLabel = checkoutBtn.querySelector('span.relative');
+                  if (btnLabel) {
+                      btnLabel.innerHTML = `<i class="fas fa-credit-card mr-2 group-hover:animate-bounce" aria-hidden="true"></i>Subscribe ${billingPeriod === 'yearly' ? 'Yearly' : 'Monthly'}`;
+                  }
                   // Set focus to the checkout button when selection changes
                   setTimeout(() => checkoutBtn.focus(), 100);
               }

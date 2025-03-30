@@ -187,7 +187,7 @@
         <div class="flex flex-wrap gap-3 mt-5">
           <a href="{% url 'manage_membership' %}"
              class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center shadow transform transition-transform duration-300 hover:scale-105">
-            <i class="fas fa-cog mr-2 animate-spin hover:animate-none"></i> Manage Subscription
+            <i class="fas fa-cog mr-2 hover:animate-spin"></i> Manage Subscription
           </a>
           {% if subscription.status == 'active' %}
             <a href="{% url 'change_membership_plan' %}"
@@ -197,7 +197,7 @@
           {% elif subscription.status == 'canceled' %}
             <a href="{% url 'reactivate_subscription' %}"
                class="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center shadow transform transition-transform duration-300 hover:scale-105">
-              <i class="fas fa-redo mr-2 animate-spin hover:animate-none"></i> Reactivate
+              <i class="fas fa-redo mr-2 hover:animate-spin"></i> Reactivate
             </a>
           {% endif %}
         </div>
