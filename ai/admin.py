@@ -3,17 +3,17 @@ from .models import Interaction, ProgressRecord, StudentProfile, StudyPlan
 
 @admin.register(Interaction)
 class InteractionAdmin(admin.ModelAdmin):
-    list_display = ('user', 'subject', 'created_at', 'ai_provider', 'feedback_rating')
+    list_display = ('user', 'subject', 'created_at', 'ai_provider', 'feedback')
     list_filter = ('subject', 'ai_provider', 'created_at')
     search_fields = ('question', 'answer', 'user__username')
     date_hierarchy = 'created_at'
 
 @admin.register(ProgressRecord)
 class ProgressRecordAdmin(admin.ModelAdmin):
-    list_display = ('user', 'subject', 'topic', 'mastery_level', 'updated_at')
-    list_filter = ('subject', 'updated_at')
+    list_display = ('user', 'subject', 'topic', 'mastery_level', 'last_activity')
+    list_filter = ('subject', 'last_activity')
     search_fields = ('user__username', 'subject', 'topic')
-    date_hierarchy = 'updated_at'
+    date_hierarchy = 'last_activity'
 
 @admin.register(StudentProfile)
 class StudentProfileAdmin(admin.ModelAdmin):

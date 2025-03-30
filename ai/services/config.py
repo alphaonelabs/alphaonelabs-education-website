@@ -41,3 +41,6 @@ def log_ai_configuration():
         logger.info(f"AI configured with {provider} provider using {model} model")
     else:
         logger.warning("No AI provider configured, using demo mode")
+
+# Export the API keys configuration status
+API_KEYS_CONFIGURED = is_ai_configured()
