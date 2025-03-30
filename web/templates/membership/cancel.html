@@ -3,6 +3,9 @@
 {% load static %}
 
 {% block title %}Cancel Membership{% endblock %}
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/membership-animations.css' %}" />
+{% endblock extra_head %}
 {% block content %}
   <div class="bg-gradient-to-r from-gray-50 to-gray-100 min-h-screen py-12">
     <div class="container mx-auto px-4">
@@ -132,21 +135,4 @@
       </div>
     </div>
   </div>
-  <style>
-      @keyframes pulseSlow {
-
-          0%,
-          100% {
-              opacity: 1;
-          }
-
-          50% {
-              opacity: 0.8;
-          }
-      }
-
-      .animate-pulse-slow {
-          animation: pulseSlow 3s ease-in-out infinite;
-      }
-  </style>
 {% endblock %}

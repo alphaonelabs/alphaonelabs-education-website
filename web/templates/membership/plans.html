@@ -4,6 +4,9 @@
 {% load membership_tags %}
 
 {% block title %}Membership Plans{% endblock %}
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/membership-animations.css' %}" />
+{% endblock extra_head %}
 {% block content %}
   <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 py-20 relative overflow-hidden">
     <!-- Animated background elements -->

@@ -5,6 +5,9 @@
 {% block title %}
   Checkout - {{ plan.name }}
 {% endblock title %}
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/membership-animations.css' %}" />
+{% endblock extra_head %}
 {% block content %}
   <div class="container mx-auto px-4 py-8 max-w-4xl">
     <div class="mb-6">

@@ -3,6 +3,9 @@
 {% load static %}
 
 {% block title %}Membership Benefits{% endblock %}
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/membership-animations.css' %}" />
+{% endblock extra_head %}
 {% block content %}
   <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 py-20 relative overflow-hidden">
     <!-- Animated background elements -->
@@ -164,7 +167,7 @@
           const observer = new IntersectionObserver((entries) => {
               entries.forEach(entry => {
                   if (entry.isIntersecting) {
-                      entry.target.classList.add('fade-in-up');
+                      entry.target.classList.add('animate-fadeInUp');
                       observer.unobserve(entry.target);
                   }
               });
@@ -175,36 +178,8 @@
               card.style.transform = 'translateY(30px)';
               setTimeout(() => {
                   observer.observe(card);
-              }, 100);
+              }, 100 * index); // Staggered animation
           });
-
-          // Check for reduced motion preference
-          if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-              // Add fade-in-up animation only if user doesn't prefer reduced motion
-              const style = document.createElement('style');
-              style.textContent = `
-                @keyframes fadeInUp {
-                    from {
-                        opacity: 0;
-                        transform: translateY(30px);
-                    }
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-                .fade-in-up {
-                    animation: fadeInUp 0.6s ease forwards;
-                }
-            `;
-              document.head.appendChild(style);
-          } else {
-              // For users who prefer reduced motion, simply show the elements without animation
-              benefitCards.forEach(card => {
-                  card.style.opacity = '1';
-                  card.style.transform = 'none';
-              });
-          }
       });
   </script>
 {% endblock %}

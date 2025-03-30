@@ -4,6 +4,9 @@
 {% load membership_tags %}
 
 {% block title %}Manage Your Membership{% endblock %}
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/membership-animations.css' %}" />
+{% endblock extra_head %}
 {% block content %}
   <!-- Decorative background elements -->
   <div class="absolute inset-0 overflow-hidden pointer-events-none z-0">

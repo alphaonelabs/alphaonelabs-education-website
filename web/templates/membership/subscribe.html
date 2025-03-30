@@ -3,6 +3,9 @@
 {% load static %}
 
 {% block title %}Subscribe to {{ plan.name }}{% endblock %}
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/membership-animations.css' %}" />
+{% endblock extra_head %}
 {% block content %}
   <!-- Decorative background elements -->
   <div class="absolute inset-0 overflow-hidden pointer-events-none z-0">
@@ -136,51 +139,6 @@
       </div>
     </div>
   </div>
-  <style>
-      @keyframes fadeIn {
-          from {
-              opacity: 0;
-          }
-
-          to {
-              opacity: 1;
-          }
-      }
-
-      @keyframes fadeInUp {
-          from {
-              opacity: 0;
-              transform: translateY(20px);
-          }
-
-          to {
-              opacity: 1;
-              transform: translateY(0);
-          }
-      }
-
-      @keyframes shimmer {
-          0% {
-              transform: translateX(-150%);
-          }
-
-          100% {
-              transform: translateX(150%);
-          }
-      }
-
-      .animate-fadeIn {
-          animation: fadeIn 1s ease forwards;
-      }
-
-      .animate-fadeInUp {
-          animation: fadeInUp 0.7s ease forwards;
-      }
-
-      .animate-shimmer {
-          animation: shimmer 2s infinite;
-      }
-  </style>
   <script>
       document.addEventListener('DOMContentLoaded', function() {
           const monthlyPrice = document.getElementById('monthly-price');
@@ -192,11 +150,11 @@
           // Function to update price display
           function updatePriceDisplay(showYearly) {
               if (showYearly) {
-                  monthlyPrice.classList.add('hidden');
-                  yearlyPrice.classList.remove('hidden');
+                  monthlyPrice.classList.add('opacity-0', 'translate-y-4');
+                  yearlyPrice.classList.remove('opacity-0', 'translate-y-4');
               } else {
-                  monthlyPrice.classList.remove('hidden');
-                  yearlyPrice.classList.add('hidden');
+                  monthlyPrice.classList.remove('opacity-0', 'translate-y-4');
+                  yearlyPrice.classList.add('opacity-0', 'translate-y-4');
               }
           }
 
