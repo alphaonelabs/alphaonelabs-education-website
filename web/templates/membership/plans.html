@@ -1,0 +1,253 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load membership_tags %}
+
+{% block title %}Membership Plans{% endblock %}
+
+{% block content %}
+<div class="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 py-20 relative overflow-hidden">
+    <!-- Animated background elements -->
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+        <div class="absolute top-10 left-10 w-64 h-64 bg-white opacity-10 rounded-full filter blur-3xl animate-pulse"></div>
+        <div class="absolute bottom-10 right-10 w-80 h-80 bg-blue-300 opacity-10 rounded-full filter blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+        <div class="absolute top-1/2 left-1/4 w-40 h-40 bg-purple-200 opacity-10 rounded-full filter blur-2xl animate-pulse" style="animation-delay: 2s;"></div>
+        <div class="absolute top-1/4 right-1/3 w-32 h-32 bg-indigo-300 opacity-10 rounded-full filter blur-xl animate-pulse" style="animation-delay: 1.5s;"></div>
+    </div>
+    
+    <div class="container mx-auto px-4 relative z-10">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-12">
+                <h1 class="text-5xl font-extrabold text-white mb-6 tracking-tight">
+                    <span class="bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200">Choose Your Membership Plan</span>
+                </h1>
+                <p class="text-xl text-white opacity-90 mb-10 max-w-3xl mx-auto">Unlock premium features and content with our membership plans</p>
+                
+                {% if not user.is_authenticated %}
+                <div class="bg-blue-100 border border-blue-200 text-blue-800 px-6 py-4 rounded-lg mb-10 transform transition-all duration-300 hover:scale-[1.02] shadow-lg max-w-2xl mx-auto">
+                    <p class="font-medium"><i class="fas fa-info-circle mr-2"></i> You need to <a href="{% url 'login' %}" class="text-blue-600 hover:text-blue-800 underline font-bold">log in</a> or <a href="{% url 'register' %}" class="text-blue-600 hover:text-blue-800 underline font-bold">sign up</a> to subscribe to a membership plan.</p>
+                </div>
+                {% endif %}
+                
+                <div class="flex items-center justify-center mb-10">
+                    <span class="text-white font-bold text-lg {% if billing_period == 'monthly' %}opacity-100{% else %}opacity-70{% endif %} transition-opacity duration-300">Monthly</span>
+                    <div class="relative mx-4 w-20 h-10">
+                        <input type="checkbox" id="billingToggle" class="sr-only" {% if billing_period == 'yearly' %}checked{% endif %}>
+                        <label for="billingToggle" class="block h-10 rounded-full bg-blue-300 bg-opacity-50 cursor-pointer"></label>
+                        <span class="absolute left-1 top-1 bg-white w-8 h-8 rounded-full shadow-md transition-transform duration-500 ease-in-out {% if billing_period == 'yearly' %}transform translate-x-10{% endif %}"></span>
+                    </div>
+                    <span class="text-white font-bold text-lg {% if billing_period == 'yearly' %}opacity-100{% else %}opacity-70{% endif %} transition-opacity duration-300">Yearly</span>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-12 plan-cards">
+                {% for plan in plans %}
+                <div class="bg-white dark:bg-gray-800 rounded-xl shadow-xl overflow-hidden transform transition-all duration-500 hover:-translate-y-3 hover:shadow-2xl group {% if plan.is_popular %}ring-4 ring-green-500{% endif %}">
+                    {% if plan.is_popular %}
+                    <div class="bg-gradient-to-r from-green-500 to-green-600 text-white text-center py-2 font-bold text-sm">
+                        <span class="inline-block animate-pulse">★</span> MOST POPULAR <span class="inline-block animate-pulse">★</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="p-8">
+                        <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-200">{{ plan.name }}</h2>
+                        
+                        <div class="monthly-price {% if billing_period == 'yearly' %}hidden{% endif %} transition-opacity duration-500">
+                            <div class="text-5xl font-extrabold text-blue-600 dark:text-blue-400">{{ plan.price_monthly|format_price }}</div>
+                            <div class="text-gray-500 dark:text-gray-400 mb-6">per month</div>
+                        </div>
+                        
+                        <div class="yearly-price {% if billing_period == 'monthly' %}hidden{% endif %} transition-opacity duration-500">
+                            <div class="text-5xl font-extrabold text-blue-600 dark:text-blue-400">{{ plan.price_yearly|format_price }}</div>
+                            <div class="text-gray-500 dark:text-gray-400 mb-2">per year</div>
+                            {% if plan.yearly_savings > 0 %}
+                            <div class="bg-gradient-to-r from-yellow-200 to-yellow-100 dark:from-yellow-700 dark:to-yellow-800 text-yellow-800 dark:text-yellow-200 text-sm font-bold px-3 py-1 rounded-full inline-flex items-center mb-4 animate-pulse">
+                                <i class="fas fa-tag mr-1"></i> Save {{ plan.yearly_savings }}%
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <ul class="space-y-4 mb-8">
+                            {% for feature in plan.features %}
+                            <li class="flex items-start group-hover:transform group-hover:translate-x-1 transition-transform duration-300 ease-in-out">
+                                <svg class="h-6 w-6 text-green-500 dark:text-green-400 mr-2 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                </svg>
+                                <span class="text-gray-700 dark:text-gray-300">{{ feature }}</span>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                        
+                        {% if user.is_authenticated %}
+                        <a href="{% url 'subscribe_membership' plan.slug %}" class="block w-full text-center py-4 px-6 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold transition-all duration-300 ease-in-out transform hover:scale-[1.02] shadow-md {% if plan.is_popular %}from-green-500 to-green-600 hover:from-green-600 hover:to-green-700{% endif %}">
+                            <span class="flex items-center justify-center">
+                                <i class="fas fa-check-circle mr-2"></i> Choose Plan
+                            </span>
+                        </a>
+                        {% else %}
+                        <a href="{% url 'login' %}?next={% url 'subscribe_membership' plan.slug %}" class="block w-full text-center py-4 px-6 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold transition-all duration-300 ease-in-out transform hover:scale-[1.02] shadow-md {% if plan.is_popular %}from-green-500 to-green-600 hover:from-green-600 hover:to-green-700{% endif %}">
+                            <span class="flex items-center justify-center">
+                                <i class="fas fa-sign-in-alt mr-2"></i> Sign In to Subscribe
+                            </span>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-span-3 bg-yellow-100 dark:bg-yellow-900 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200 px-6 py-5 rounded-lg shadow-md">
+                    <p class="flex items-center justify-center"><i class="fas fa-exclamation-circle mr-2 text-xl"></i> No membership plans are currently available. Please check back later.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mx-auto px-4 py-20">
+    <div class="max-w-4xl mx-auto text-center mb-16">
+        <h2 class="text-4xl font-bold mb-6 text-gray-800 dark:text-gray-200">Membership Benefits</h2>
+        <p class="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">Unlock these premium features with your membership</p>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 benefits-cards">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-gray-100 dark:border-gray-700">
+            <div class="w-16 h-16 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center mb-6 text-blue-600 dark:text-blue-400 mx-auto transform transition-transform duration-500 group-hover:scale-110">
+                <i class="fas fa-graduation-cap text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-4 text-center text-gray-800 dark:text-gray-200">Premium Courses</h3>
+            <p class="text-gray-600 dark:text-gray-400 text-center">Access our exclusive premium courses not available to free users.</p>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-gray-100 dark:border-gray-700">
+            <div class="w-16 h-16 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center mb-6 text-purple-600 dark:text-purple-400 mx-auto transform transition-transform duration-500 group-hover:scale-110">
+                <i class="fas fa-headset text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-4 text-center text-gray-800 dark:text-gray-200">Priority Support</h3>
+            <p class="text-gray-600 dark:text-gray-400 text-center">Get prioritized support responses from our team of experts.</p>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-gray-100 dark:border-gray-700">
+            <div class="w-16 h-16 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mb-6 text-green-600 dark:text-green-400 mx-auto transform transition-transform duration-500 group-hover:scale-110">
+                <i class="fas fa-download text-2xl"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-4 text-center text-gray-800 dark:text-gray-200">Downloadable Resources</h3>
+            <p class="text-gray-600 dark:text-gray-400 text-center">Download course materials and resources for offline access.</p>
+        </div>
+    </div>
+    
+    <div class="text-center mt-16">
+        <a href="{% url 'membership_benefits' %}" class="inline-flex items-center py-3 px-8 border-2 border-blue-500 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 font-medium transition-all duration-300 hover:shadow-md group">
+            <span>Learn more about membership benefits</span>
+            <i class="fas fa-arrow-right ml-2 transform transition-transform duration-300 group-hover:translate-x-1"></i>
+        </a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const billingToggle = document.getElementById('billingToggle');
+        const monthlyPrices = document.querySelectorAll('.monthly-price');
+        const yearlyPrices = document.querySelectorAll('.yearly-price');
+        
+        // Fade transition helper
+        function fadeToggle(hideElements, showElements) {
+            // Fade out
+            hideElements.forEach(item => {
+                item.classList.add('opacity-0');
+                setTimeout(() => {
+                    item.classList.add('hidden');
+                }, 300);
+            });
+            
+            // Fade in
+            showElements.forEach(item => {
+                item.classList.remove('hidden');
+                setTimeout(() => {
+                    item.classList.remove('opacity-0');
+                }, 50);
+            });
+        }
+        
+        billingToggle.addEventListener('change', function() {
+            if (this.checked) {
+                // Yearly billing
+                fadeToggle(monthlyPrices, yearlyPrices);
+                
+                // Update URL parameter
+                const url = new URL(window.location);
+                url.searchParams.set('billing', 'yearly');
+                window.history.replaceState({}, '', url);
+            } else {
+                // Monthly billing
+                fadeToggle(yearlyPrices, monthlyPrices);
+                
+                // Update URL parameter
+                const url = new URL(window.location);
+                url.searchParams.set('billing', 'monthly');
+                window.history.replaceState({}, '', url);
+            }
+        });
+        
+        // Initialize opacity classes for fade transitions
+        monthlyPrices.forEach(item => {
+            if (!item.classList.contains('hidden')) {
+                item.classList.remove('opacity-0');
+            }
+        });
+        
+        yearlyPrices.forEach(item => {
+            if (!item.classList.contains('hidden')) {
+                item.classList.remove('opacity-0');
+            }
+        });
+        
+        // Add entrance animations on page load
+        const planCards = document.querySelectorAll('.plan-cards > div');
+        planCards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 100 + (index * 150));
+        });
+        
+        // Add staggered entrance for benefit cards
+        const benefitCards = document.querySelectorAll('.benefits-cards > div');
+        benefitCards.forEach((card, index) => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            setTimeout(() => {
+                card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 700 + (index * 200));
+        });
+        
+        // Fix potential issue with plan cards layout on some viewports
+        function adjustCardHeight() {
+            const cards = document.querySelectorAll('.plan-cards > div');
+            // Reset heights first
+            cards.forEach(card => card.style.height = 'auto');
+            
+            // Only adjust if we're on desktop layout
+            if (window.innerWidth >= 1024) { // lg breakpoint
+                // Find the tallest card
+                let maxHeight = 0;
+                cards.forEach(card => {
+                    const height = card.offsetHeight;
+                    if (height > maxHeight) maxHeight = height;
+                });
+                
+                // Set all cards to the height of the tallest
+                cards.forEach(card => card.style.height = `${maxHeight}px`);
+            }
+        }
+        
+        // Run on load and resize
+        window.addEventListener('resize', adjustCardHeight);
+        // Delay to ensure proper rendering
+        setTimeout(adjustCardHeight, 500);
+    });
+</script>
+{% endblock %} 
