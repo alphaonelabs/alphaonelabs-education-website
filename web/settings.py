@@ -13,7 +13,7 @@ env_file = os.path.join(BASE_DIR, ".env")
 if os.path.exists(env_file):
     env.read_env(env_file)
 
-SECRET_KEY = env.str("SECRET_KEY")
+SECRET_KEY = env.str("SECRET_KEY", default="django-insecure-5kyff0s@l_##j3jawec5@b%!^^e(j7v)ouj4b7q6kru#o#a)o3")
 # Set encryption key for secure messaging; in production, this must come from the environment
 MESSAGE_ENCRYPTION_KEY = env.str("MESSAGE_ENCRYPTION_KEY", default=Fernet.generate_key()).strip()
 SECURE_MESSAGE_KEY = MESSAGE_ENCRYPTION_KEY
