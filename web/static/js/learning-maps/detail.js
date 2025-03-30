@@ -207,7 +207,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function shortenText(text, maxLength) {
         if (text.length <= maxLength) return text;
-        return text.substring(0, maxLength - 3) + '...';
+        return `${text.substring(0, maxLength - 3)}...`;
     }
 
     function showNodeDetails(node) {
