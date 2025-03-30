@@ -1448,6 +1448,74 @@
           </button>
         </div>
       </form>
+      <div>
+        <button type="button"
+                onclick="openCustomBadgeModal()"
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+          <i class="fas fa-plus mr-2"></i> Add Custom Badge
+        </button>
+      </div>
+      <!-- Custom Badge Modal -->
+      <div id="customBadgeModal"
+           class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4">
+          <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+            <div class="flex items-center justify-between">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                <i class="fas fa-award mr-2 text-blue-500"></i>
+                Add Custom Badge
+              </h3>
+              <button onclick="closeCustomBadgeModal()"
+                      class="text-gray-400 hover:text-gray-500">
+                <i class="fas fa-times"></i>
+              </button>
+            </div>
+          </div>
+          <form id="customBadgeForm"
+                class="p-6 space-y-4"
+                enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="course_slug" value="{{ course.slug }}" />
+            <input type="hidden" name="student_id" value="{{ student.id }}" />
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Badge Name</label>
+              <input type="text"
+                     name="custom_type"
+                     class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-2"
+                     placeholder="Enter custom badge name"
+                     required />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Badge Image</label>
+              <input type="file"
+                     name="image"
+                     accept="image/*"
+                     class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-2"
+                     required />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Description (Optional)</label>
+              <textarea name="description"
+                        rows="3"
+                        class="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-gray-200 p-2"
+                        placeholder="Add a description for the badge..."></textarea>
+            </div>
+            <div class="flex justify-end space-x-3">
+              <button type="button"
+                      onclick="closeCustomBadgeModal()"
+                      class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                Cancel
+              </button>
+              <button type="submit"
+                      class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+                <span class="inline-flex items-center">
+                  <i class="fas fa-save mr-2"></i> Save Badge
+                </span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
   <!-- Student Selection Modal -->
@@ -1788,8 +1856,8 @@
                       if (data.success) {
                           showNotification('Badge awarded successfully!', 'success');
                           closeAwardBadgeModal();
-                          form.reset(); // Clear form data
-                          form.querySelector('textarea[name="description"]').value = ''; // Clear textarea
+                          form.reset();
+                          form.querySelector('textarea[name="description"]').value = '';
                           setTimeout(() => window.location.reload(), 1500);
                       } else {
                           showNotification(data.message || 'Failed to award badge', 'error');
@@ -1820,7 +1888,7 @@
           openAwardBadgeModal(studentId, studentName);
       }
 
-      // Add search functionality
+
       document.getElementById('studentSearch')?.addEventListener('input', function(e) {
           const searchTerm = e.target.value.toLowerCase();
           document.querySelectorAll('.student-option').forEach(option => {
@@ -1835,7 +1903,7 @@
           });
       });
 
-      // Close modals when clicking outside
+
       window.addEventListener('click', function(e) {
           const selectStudentModal = document.getElementById('selectStudentModal');
           const awardBadgeModal = document.getElementById('awardBadgeModal');
@@ -1846,6 +1914,81 @@
               closeAwardBadgeModal();
           }
       });
+
+      function openCustomBadgeModal() {
+          const modal = document.getElementById('customBadgeModal');
+          const studentIdInput = document.querySelector('#customBadgeForm input[name="student_id"]');
+          studentIdInput.value = studentId;
+          modal.classList.remove('hidden');
+      }
+
+      function closeCustomBadgeModal() {
+          document.getElementById('customBadgeModal').classList.add('hidden');
+      }
+
+      document.getElementById('customBadgeForm').addEventListener('submit', function(e) {
+          e.preventDefault();
+
+          const form = e.target;
+          const formData = new FormData(form);
+
+          const submitBtn = form.querySelector('button[type="submit"]');
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Saving...';
+
+          fetch('{% url "add_custom_badge" %}', {
+                  method: 'POST',
+                  body: formData,
+                  headers: {
+                      'X-Requested-With': 'XMLHttpRequest'
+                  }
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      showNotification('Custom badge added successfully!', 'success');
+                      closeCustomBadgeModal();
+                      form.reset();
+                      setTimeout(() => window.location.reload(), 1500);
+                  } else {
+                      showNotification(data.message || 'Failed to add custom badge', 'error');
+                  }
+              })
+              .catch(error => {
+                  console.error('Error:', error);
+                  showNotification('An error occurred while adding the badge', 'error');
+              })
+              .finally(() => {
+                  submitBtn.disabled = false;
+                  submitBtn.innerHTML = '<i class="fas fa-save mr-2"></i> Save Badge';
+              });
+      });
+
+      let selectedStudentId = null;
+
+      function selectStudent(studentId, studentName) {
+          selectedStudentId = studentId;
+          closeSelectStudentModal();
+          openAwardBadgeModal(studentId, studentName);
+      }
+
+
+      function openCustomBadgeModal() {
+          if (!selectedStudentId) {
+              showNotification('Please select a student first.', 'error');
+              return;
+          }
+
+          const modal = document.getElementById('customBadgeModal');
+          const studentIdInput = document.querySelector('#customBadgeForm input[name="student_id"]');
+          studentIdInput.value = selectedStudentId;
+          modal.classList.remove('hidden');
+      }
+
+
+      function closeCustomBadgeModal() {
+          document.getElementById('customBadgeModal').classList.add('hidden');
+      }
   </script>
   <script>
       document.getElementById('open-share-window').addEventListener('click', function() {

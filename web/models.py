@@ -1850,8 +1850,17 @@ class Badge(models.Model):
         choices=BADGE_TYPE_CHOICES,
         default="perfect_attendance",
     )
+    custom_type = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Custom badge type (optional, overrides predefined types)",
+    )
     description = models.TextField(blank=True)
-    image = models.CharField(max_length=255, blank=True, help_text="URL or path to the badge image")
+    image = models.ImageField(
+        upload_to="badge_images/",
+        blank=True,
+        help_text="Upload an image for the badge (200x200 recommended)",
+    )
     course = models.ForeignKey(
         Course,
         on_delete=models.CASCADE,

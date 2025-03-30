@@ -506,28 +506,44 @@
                   {% for user_badge in badges %}
                     <div class="flex flex-col items-center bg-gray-50 dark:bg-gray-700 rounded-lg p-3 shadow-sm">
                       <div class="mb-2">
-                        {% if user_badge.badge.badge_type == "perfect_attendance" %}
-                          <i class="fas fa-calendar-check text-yellow-600 dark:text-yellow-400 text-2xl"></i>
-                        {% elif user_badge.badge.badge_type == "participation" %}
-                          <i class="fas fa-hand-paper text-blue-600 dark:text-blue-400 text-2xl"></i>
-                        {% elif user_badge.badge.badge_type == "completion" %}
-                          <i class="fas fa-graduation-cap text-green-600 dark:text-green-400 text-2xl"></i>
-                        {% elif user_badge.badge.badge_type == "challenge" %}
-                          <i class="fas fa-medal text-orange-600 dark:text-orange-400 text-xl"></i>
-                        {% elif user_badge.badge.badge_type == "achievement" %}
-                          <i class="fas fa-trophy text-purple-600 dark:text-purple-400 text-2xl"></i>
+                        {% if user_badge.badge.image %}
+                          <img src="{{ user_badge.badge.image.url }}"
+                               alt="{% if user_badge.badge.custom_type %}{{ user_badge.badge.custom_type }}{% else %}{{ user_badge.badge.get_badge_type_display }}{% endif %}"
+                               class="w-16 h-16 object-contain" />
+                        {% else %}
+                          {% if user_badge.badge.badge_type == "perfect_attendance" %}
+                            <i class="fas fa-calendar-check text-yellow-600 dark:text-yellow-400 text-2xl"></i>
+                          {% elif user_badge.badge.badge_type == "participation" %}
+                            <i class="fas fa-hand-paper text-blue-600 dark:text-blue-400 text-2xl"></i>
+                          {% elif user_badge.badge.badge_type == "completion" %}
+                            <i class="fas fa-graduation-cap text-green-600 dark:text-green-400 text-2xl"></i>
+                          {% elif user_badge.badge.badge_type == "challenge" %}
+                            <i class="fas fa-medal text-orange-600 dark:text-orange-400 text-xl"></i>
+                          {% elif user_badge.badge.badge_type == "achievement" %}
+                            <i class="fas fa-trophy text-purple-600 dark:text-purple-400 text-2xl"></i>
+                          {% else %}
+                            <i class="fas fa-star text-gray-500 dark:text-gray-400 text-2xl"></i> <!-- Special Achievement Icon -->
+                          {% endif %}
                         {% endif %}
                       </div>
                       <p class="text-sm font-medium text-center text-gray-600 dark:text-gray-300">
-                        {{ user_badge.badge.get_badge_type_display }}
+                        {% if user_badge.badge.custom_type %}
+                          {{ user_badge.badge.custom_type }}
+                        {% else %}
+                          {{ user_badge.badge.get_badge_type_display }}
+                        {% endif %}
                       </p>
-                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        <span class="font-semibold">Course:</span> {{ user_badge.badge.course.title }}
-                      </p>
-                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        <span class="font-semibold">Instructor:</span> {{ user_badge.badge.course.teacher.first_name }} {{ user_badge.badge.course.teacher.last_name }}
-                      </p>
-                      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ user_badge.badge.description }}</p>
+                      {% if user_badge.badge.course %}
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          <span class="font-semibold">Course:</span> {{ user_badge.badge.course.title }}
+                        </p>
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          <span class="font-semibold">Instructor:</span> {{ user_badge.badge.course.teacher.get_full_name|default:user_badge.badge.course.teacher.username }}
+                        </p>
+                      {% endif %}
+                      {% if user_badge.badge.description %}
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">{{ user_badge.badge.description }}</p>
+                      {% endif %}
                     </div>
                   {% endfor %}
                 </div>
