@@ -1,132 +1,185 @@
-{% extends "base.html" %}
-
+{% extends 'base.html' %}
 {% load static %}
 {% load membership_tags %}
 
 {% block title %}Manage Your Membership{% endblock %}
+
 {% block content %}
-  <div class="container mx-auto px-4 py-12">
-    <div class="max-w-3xl mx-auto">
-      <h1 class="text-3xl font-bold mb-6 text-gray-900 dark:text-gray-100">Manage Your Membership</h1>
-      {% if payment_updated %}
-        <div class="bg-green-100 dark:bg-green-900/30 border-l-4 border-green-500 text-green-700 dark:text-green-300 p-4 mb-6 rounded-r-md">
-          <p class="font-medium">Your payment method has been updated successfully.</p>
-        </div>
-      {% endif %}
-      <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden mb-8 border border-gray-200 dark:border-gray-700">
-        <div class="px-6 py-4 bg-gradient-to-r from-blue-500 to-purple-600 flex items-center">
-          <i class="fas fa-crown text-2xl text-white mr-3"></i>
-          <h2 class="text-xl font-bold text-white">Subscription Details</h2>
-        </div>
-        <div class="p-6 divide-y divide-gray-200 dark:divide-gray-700">
-          <div class="py-4 flex justify-between items-center">
-            <span class="text-gray-600 dark:text-gray-400">Plan</span>
-            <p class="text-lg font-bold text-gray-800 dark:text-gray-200">{{ membership.plan.name }}</p>
-          </div>
-          <div class="py-4 flex justify-between items-center">
-            <span class="text-gray-600 dark:text-gray-400">Status</span>
-            <div>
-              {% if membership.is_active %}
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-                  <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                  Active
-                </span>
-              {% elif membership.is_canceled %}
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300">
-                  <i class="fas fa-calendar-times mr-2"></i>
-                  Canceled
-                </span>
-              {% else %}
-                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300">
-                  {{ membership.status|title }}
-                </span>
-              {% endif %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">Manage Your Membership</h1>
+
+        {% if messages %}
+        <div class="mb-6">
+            {% for message in messages %}
+            <div class="{% if message.tags == 'success' %}bg-green-100 border-green-500 text-green-700{% elif message.tags == 'error' %}bg-red-100 border-red-500 text-red-700{% else %}bg-blue-100 border-blue-500 text-blue-700{% endif %} border-l-4 p-4 mb-4 rounded">
+                <p>{{ message }}</p>
             </div>
-          </div>
-          <div class="py-4 flex justify-between items-center">
-            <span class="text-gray-600 dark:text-gray-400">Billing Period</span>
-            <p class="text-gray-800 dark:text-gray-200">{{ membership.billing_period|title }}</p>
-          </div>
-          <div class="py-4 flex justify-between items-center">
-            <span class="text-gray-600 dark:text-gray-400">
-              {% if membership.is_canceled %}
-                Access Until
-              {% else %}
-                Next Billing Date
-              {% endif %}
-            </span>
-            <p class="text-gray-800 dark:text-gray-200">{{ membership.end_date|date:"F j, Y" }}</p>
-          </div>
-          <div class="py-4 flex justify-between items-center">
-            <span class="text-gray-600 dark:text-gray-400">Current Rate</span>
-            <p class="text-gray-800 dark:text-gray-200 font-semibold">
-              {% if membership.billing_period == 'monthly' %}
-                ${{ membership.plan.price_monthly }}/month
-              {% else %}
-                ${{ membership.plan.price_yearly }}/year
-              {% endif %}
-            </p>
-          </div>
-        </div>
-      </div>
-      <div class="flex flex-wrap justify-between gap-4 mb-8">
-        {% if membership.is_active and not membership.is_canceled %}
-          <a href="{% url 'membership_cancel' %}"
-             class="inline-flex items-center px-4 py-2 border border-red-500 text-red-500 dark:text-red-400 dark:border-red-400 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20 font-medium transition-colors duration-300">
-            <i class="fas fa-times-circle mr-2"></i> Cancel Membership
-          </a>
-        {% elif membership.is_canceled %}
-          <a href="{% url 'reactivate_subscription' %}"
-             class="inline-flex items-center px-4 py-2 border border-green-500 text-green-500 dark:text-green-400 dark:border-green-400 rounded-md hover:bg-green-50 dark:hover:bg-green-900/20 font-medium transition-colors duration-300">
-            <i class="fas fa-sync mr-2"></i> Reactivate Membership
-          </a>
-        {% endif %}
-        <a href="{% url 'update_payment_method' %}"
-           class="inline-flex items-center px-4 py-2 border border-blue-500 text-blue-500 dark:text-blue-400 dark:border-blue-400 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium transition-colors duration-300">
-          <i class="fas fa-credit-card mr-2"></i> Update Payment Method
-        </a>
-        {% if membership.is_active %}
-          <a href="{% url 'change_membership_plan' %}"
-             class="inline-flex items-center px-4 py-2 border border-blue-500 text-blue-500 dark:text-blue-400 dark:border-blue-400 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/20 font-medium transition-colors duration-300">
-            <i class="fas fa-exchange-alt mr-2"></i> Change Plan
-          </a>
-        {% endif %}
-      </div>
-      <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-        <div class="px-6 py-4 bg-gradient-to-r from-green-500 to-teal-600 flex items-center">
-          <i class="fas fa-shield-alt text-2xl text-white mr-3"></i>
-          <h2 class="text-xl font-bold text-white">Membership Benefits</h2>
-        </div>
-        <div class="p-6">
-          <ul class="space-y-3">
-            {% for feature in membership.plan.features.all %}
-              <li class="flex items-start">
-                <div class="flex-shrink-0 h-5 w-5 text-green-500 dark:text-green-400 mt-0.5">
-                  <svg fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd">
-                    </path>
-                  </svg>
-                </div>
-                <span class="ml-3 text-gray-700 dark:text-gray-300">{{ feature.description }}</span>
-              </li>
-            {% empty %}
-              <li class="text-gray-500 dark:text-gray-400">Your plan details are being processed. Please check back soon.</li>
             {% endfor %}
-          </ul>
-          <div class="mt-6 text-center">
-            <a href="{% url 'membership_benefits' %}"
-               class="inline-flex items-center text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium">
-              <span>View all membership benefits</span>
-              <svg class="ml-2 h-5 w-5"
-                   xmlns="http://www.w3.org/2000/svg"
-                   viewBox="0 0 20 20"
-                   fill="currentColor">
-                <path fill-rule="evenodd" d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-              </svg>
-            </a>
-          </div>
         </div>
-      </div>
+        {% endif %}
+
+        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+            <div class="bg-gray-50 p-6 border-b">
+                <h2 class="text-xl font-semibold">Subscription Details</h2>
+            </div>
+            <div class="p-6">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h3 class="text-gray-600 font-medium mb-2">Current Plan</h3>
+                        <p class="text-lg font-bold">{{ membership.plan.name }}</p>
+                    </div>
+                    <div>
+                        <h3 class="text-gray-600 font-medium mb-2">Status</h3>
+                        <div class="flex items-center">
+                            {% if membership.is_active %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                Active
+                            </span>
+                            {% elif membership.is_canceled %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                Canceled
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                {{ membership.status|title }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="text-gray-600 font-medium mb-2">Billing Period</h3>
+                        <p>{{ membership.billing_period|title }}</p>
+                    </div>
+                    <div>
+                        <h3 class="text-gray-600 font-medium mb-2">Next Billing Date</h3>
+                        <p>{{ membership.end_date|date:"F j, Y" }}</p>
+                    </div>
+                    <div>
+                        <h3 class="text-gray-600 font-medium mb-2">Price</h3>
+                        <p>
+                            {% if membership.billing_period == 'monthly' %}
+                            ${{ membership.plan.price_monthly }}/month
+                            {% else %}
+                            ${{ membership.plan.price_yearly }}/year
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex flex-wrap gap-4">
+                    {% if membership.is_active and not membership.is_canceled %}
+                    <a href="{% url 'membership_cancel' %}" class="inline-flex items-center px-4 py-2 border border-red-500 text-red-500 rounded-md hover:bg-red-50 font-medium">
+                        Cancel Subscription
+                    </a>
+                    {% elif membership.is_canceled %}
+                    <form method="post" action="{% url 'reactivate_subscription' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-green-500 border border-transparent rounded-md font-medium text-white hover:bg-green-600 focus:outline-none">
+                            Reactivate Subscription
+                        </button>
+                    </form>
+                    {% endif %}
+
+                    <a href="{% url 'update_payment_method' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 font-medium">
+                        Update Payment Method
+                    </a>
+
+                    <a href="{% url 'change_membership_plan' %}" class="inline-flex items-center px-4 py-2 border border-blue-500 text-blue-500 rounded-md hover:bg-blue-50 font-medium">
+                        Change Plan
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+            <div class="bg-gray-50 p-6 border-b">
+                <h2 class="text-xl font-semibold">Payment History</h2>
+            </div>
+            <div class="p-6">
+                {% if invoices %}
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Date
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Amount
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Status
+                                </th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Invoice
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            {% for invoice in invoices %}
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    {{ invoice.created|date:"F j, Y" }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    ${{ invoice.amount_paid|floatformat:2 }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if invoice.paid %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                        {{ invoice.status|title }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <a href="{{ invoice.hosted_invoice_url }}" target="_blank" class="text-blue-500 hover:text-blue-700">
+                                        View Invoice
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-gray-600">No payment history available.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <div class="bg-gray-50 p-6 border-b">
+                <h2 class="text-xl font-semibold">Subscription Events</h2>
+            </div>
+            <div class="p-6">
+                {% if events %}
+                <div class="space-y-4">
+                    {% for event in events %}
+                    <div class="border-l-4 {% if event.event_type == 'created' or event.event_type == 'reactivated' %}border-green-500{% elif event.event_type == 'canceled' %}border-red-500{% elif event.event_type == 'payment_succeeded' %}border-blue-500{% elif event.event_type == 'payment_failed' %}border-yellow-500{% else %}border-gray-500{% endif %} pl-4 py-2">
+                        <div class="flex justify-between">
+                            <span class="font-medium">{{ event.event_type|title }}</span>
+                            <span class="text-sm text-gray-500">{{ event.created_at|date:"F j, Y - g:i A" }}</span>
+                        </div>
+                        {% if event.data %}
+                        <div class="text-sm text-gray-600 mt-1">
+                            {% if event.data.plan_id %}
+                            Plan: {{ event.data.plan_id }}
+                            {% endif %}
+                            {% if event.data.status %}
+                            | Status: {{ event.data.status|title }}
+                            {% endif %}
+                            {% if event.data.billing_period %}
+                            | Billing: {{ event.data.billing_period|title }}
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-gray-600">No subscription events recorded.</p>
+                {% endif %}
+            </div>
+        </div>
     </div>
-  </div>
+</div>
 {% endblock %}
