@@ -1,181 +1,193 @@
 {% extends 'base.html' %}
+
 {% load static %}
 
 {% block title %}Update Payment Method{% endblock %}
-
 {% block content %}
-<div class="container mx-auto px-4 py-8">
+  <div class="container mx-auto px-4 py-8">
     <div class="max-w-xl mx-auto">
-        <h1 class="text-3xl font-bold mb-6 text-center">Update Payment Method</h1>
-
-        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
-            <div class="bg-gray-50 p-6 border-b">
-                <h2 class="text-xl font-semibold">Current Payment Method</h2>
-            </div>
-            <div class="p-6">
-                {% if current_payment_method %}
-                <div class="flex items-center justify-between mb-6">
-                    <div class="flex items-center">
-                        <div class="mr-3">
-                            {% if current_payment_method.card.brand == 'visa' %}
-                            <svg class="h-8 w-8" viewBox="0 0 32 32" fill="none">
-                                <rect width="32" height="32" rx="4" fill="#1A1F71"/>
-                                <path d="M13.0449 11.3274L10.0332 20.6716H12.3137L15.3254 11.3274H13.0449Z" fill="white"/>
-                                <path d="M22.1168 11.5066C21.5262 11.2865 20.6012 11.0455 19.4543 11.0455C16.9309 11.0455 15.1816 12.2809 15.1715 14.1099C15.1613 15.4745 16.4305 16.246 17.3453 16.7046C18.2805 17.1736 18.5922 17.4763 18.5922 17.8795C18.5922 18.5134 17.8281 18.8059 17.1152 18.8059C16.0703 18.8059 15.5105 18.6463 14.625 18.2327L14.2621 18.0525L13.8789 20.1427C14.5816 20.4454 15.8402 20.708 17.1457 20.7183C19.8438 20.7183 21.5621 19.5034 21.5723 17.5555C21.5723 16.4595 20.9102 15.6168 19.4645 14.8868C18.5918 14.4178 18.0625 14.1151 18.0625 13.6768C18.0625 13.2893 18.5102 12.9022 19.5859 12.9022C20.4902 12.8816 21.1418 13.0928 21.6309 13.3039L21.8809 13.4326L22.2539 11.3939L22.1168 11.5066Z" fill="white"/>
-                                <path d="M25.8922 11.3274H24.0922C23.593 11.3274 23.218 11.4561 23.0094 12.0077L19.9062 20.6716H22.5938C22.5938 20.6716 22.9668 19.5344 23.0527 19.2935C23.3027 19.2935 25.6445 19.2935 25.9453 19.2935C26.0117 19.5963 26.2102 20.6716 26.2102 20.6716H28.6113L26.3207 11.3274H25.8922ZM23.6914 17.208C23.8691 16.7387 24.5922 14.9303 24.5922 14.9303C24.582 14.9508 24.7598 14.4711 24.8662 14.1684L24.9727 14.8641C24.9727 14.8641 25.4102 16.8121 25.4973 17.208H23.6914Z" fill="white"/>
-                                <path d="M9.56054 11.3274L7.10937 17.4763L6.89062 16.4492C6.52734 15.1874 5.28516 13.8028 3.875 13.0728L6.14453 20.6613H8.8418L12.834 11.3274H9.56054Z" fill="white"/>
-                                <path d="M5.54297 11.3274H1.58203L1.53125 11.5486C4.34766 12.2124 6.22266 14.16 6.88281 16.4598L6.03516 12.0386C5.91797 11.4764 5.77734 11.338 5.54297 11.3274Z" fill="#F7B600"/>
-                            </svg>
-                            {% elif current_payment_method.card.brand == 'mastercard' %}
-                            <svg class="h-8 w-8" viewBox="0 0 32 32" fill="none">
-                                <rect width="32" height="32" rx="4" fill="#16366F"/>
-                                <path d="M16 23.9998C13.2067 23.9998 10.8 21.7265 10.8 18.9998C10.8 16.2731 13.2067 13.9998 16 13.9998C18.7933 13.9998 21.2 16.2731 21.2 18.9998C21.2 21.7265 18.7933 23.9998 16 23.9998Z" fill="#D9222A"/>
-                                <path d="M16 13.9998C18.7933 13.9998 21.2 16.2731 21.2 18.9998C21.2 21.7265 18.7933 23.9998 16 23.9998" fill="#EE9F2D"/>
-                                <path d="M16 13.9998C13.2067 13.9998 10.8 16.2731 10.8 18.9998C10.8 21.7265 13.2067 23.9998 16 23.9998" fill="#D9222A"/>
-                                <path d="M16 8C19.3137 8 22 10.6863 22 14V19C22 22.3137 19.3137 25 16 25H10C6.68629 25 4 22.3137 4 19V14C4 10.6863 6.68629 8 10 8H16Z" fill="#16366F"/>
-                                <path d="M19.2 16L20.8 10.4L16.8 10.4L15.2 16L19.2 16Z" fill="#D9222A"/>
-                                <path d="M14.4 10.4H10.4L12 16H16L14.4 10.4Z" fill="#EE9F2D"/>
-                                <path d="M21.6 10.4H25.6L24 16H20L21.6 10.4Z" fill="#D9222A"/>
-                                <path d="M12.8 16C14.6 18.4 19.2 18.4 21.6 16" fill="#EE9F2D"/>
-                                <path d="M10.4 21.6H14.4L16 16H12L10.4 21.6Z" fill="#D9222A"/>
-                                <path d="M16 16L14.4 21.6H18.4L20 16H16Z" fill="#EE9F2D"/>
-                                <path d="M20 16L18.4 21.6H22.4L24 16H20Z" fill="#D9222A"/>
-                            </svg>
-                            {% elif current_payment_method.card.brand == 'amex' %}
-                            <svg class="h-8 w-8" viewBox="0 0 32 32" fill="none">
-                                <rect width="32" height="32" rx="4" fill="#006FCF"/>
-                                <path d="M4.37427 15.3125L3.35547 13.3642H4.72093L5.33013 14.5049L5.95117 13.3642H7.2998L6.28027 15.2982L7.33691 17.3293H5.97217L5.31738 16.1089L4.66113 17.3293H3.31787L4.37427 15.3125Z" fill="white"/>
-                                <path d="M7.39062 13.3643H9.91797L10.3662 14.39L10.8232 13.3643H16.1855V14.2358C16.1855 14.2358 16.7236 14.0916 17.0518 14.0916H19.9873L20.4258 14.4111L20.8643 14.0916H24.084V17.3294H20.9097L20.4541 17.0028L20.0068 17.3294H17.0518C16.6655 17.3294 16.1855 17.1923 16.1855 17.1923V17.3294H13.5654V16.7493C13.5654 16.7493 13.3408 16.8149 12.9688 16.8149H12.1885V17.3293H9.65479L9.20654 16.2891L8.75928 17.3293H7.39062V13.3643ZM12.1885 15.7803H12.9961C13.3306 15.7803 13.8024 15.4894 13.8024 15.116C13.8024 14.7498 13.3306 14.4538 12.9961 14.4538L12.1885 14.4538V15.7803ZM16.1855 15.6979H18.5654V15.1177H16.1855V14.7089H18.6113C18.6113 14.7089 19.1611 14.7803 19.1611 15.4082C19.1611 16.0389 18.6113 16.1104 18.6113 16.1104H16.1855V15.6979ZM8.66016 16.3003L9.65479 14.4538H10.644L11.6387 16.3003V14.4538H13.3301V16.3003H12.8916V15.9189H12.8916C12.8916 15.9189 12.5835 16.3003 12.0186 16.3003H8.66016ZM20.4531 16.3003L21.8535 14.9189H20.3579V14.4537H22.915V15.1715L21.5146 16.5528H22.915V17.0096H20.4531V16.3003ZM17.0527 16.3003C17.4391 16.3003 17.9189 16.1632 17.9189 16.1632V14.9189H16.1855V15.1177H17.3389V15.6979H16.1855V16.1104H17.9189V16.3003H17.0527Z" fill="white"/>
-                                <path d="M19.8333 17.6187H22.1654V18.9404H20.3325V19.4304H22.1564V19.9831C22.1564 19.9831 21.9016 20.2984 21.0859 20.2984H19.8333V17.6187ZM18.144 20.2984H15.8027V17.6187H18.144C18.8594 17.6187 19.188 18.0016 19.188 18.3738C19.188 18.7459 18.8496 18.8935 18.8496 18.8935C18.8496 18.8935 19.2627 19.0322 19.2627 19.4863C19.2627 19.9312 18.9342 20.2984 18.144 20.2984ZM17.5449 19.4406H18.2695C18.4609 19.4406 18.5557 19.3265 18.5557 19.1773C18.5557 19.0322 18.4619 18.9233 18.2695 18.9233H17.5449V19.4406ZM17.5459 18.4313H18.2324C18.418 18.4313 18.5137 18.3212 18.5137 18.1823C18.5137 18.0371 18.4191 17.9332 18.2324 17.9332H17.5459V18.4313ZM13.1709 17.6187H15.5029V17.9332H13.9023V18.6162H15.4277V18.9307H13.9023V19.9841H15.5029V20.2984H13.1709V17.6187ZM24.0684 20.2984H26.4004V20.2984H28.6445V17.6187H26.3125V17.6188L24.0684 17.6187V20.2984ZM26.3135 19.9841V18.9307H27.9238V18.6162H26.3135V17.9332H27.9238V17.6187L26.3135 17.6188V19.9841ZM19.8848 19.9841V19.415H21.4873V18.9307H19.8848V17.9332H21.5039V17.6187H19.1533V20.2984H19.8848V19.9841ZM28.6436 20.2984V17.6187H28.6445V17.6187H27.9131V19.9841H28.6436V20.2984Z" fill="white"/>
-                                <path d="M7.91016 20.2984L9.06055 17.6187H10.9854L12.1191 20.2984H10.9229L10.7324 19.8359H9.29395L9.10254 20.2984H7.91016ZM9.52344 19.3202H10.5029L10.0137 18.1781L9.52344 19.3202Z" fill="white"/>
-                                <path d="M12.3906 17.6187H13.6611L14.7197 19.201V17.6187H15.8271L16.459 19.0167L17.0723 17.6188H18.1445V20.2984H17.0352V18.5371L16.2031 20.2984H15.7051L14.8672 18.5371V20.2984H13.0254L12.8135 19.8105H11.375L11.1611 20.2984H9.97949L11.123 17.6187H13.0381L13.5615 18.9004L14.1396 17.6187H12.3906ZM11.6055 19.2796H12.584L12.0918 18.1375L11.6055 19.2796Z" fill="white"/>
-                                <path d="M22.3848 17.6187H24.7168V17.9332H23.1152V18.6162H24.6406V18.9307H23.1152V19.9841H24.7158V20.2984H22.3848V17.6187Z" fill="white"/>
-                            </svg>
-                            {% else %}
-                            <svg class="h-8 w-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"></path>
-                                <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"></path>
-                            </svg>
-                            {% endif %}
-                        </div>
-                        <div>
-                            <p class="font-medium">{{ current_payment_method.card.brand|title }} ending in {{ current_payment_method.card.last4 }}</p>
-                            <p class="text-sm text-gray-500">Expires {{ current_payment_method.card.exp_month }}/{{ current_payment_method.card.exp_year }}</p>
-                        </div>
-                    </div>
-                    <div>
-                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            Default
-                        </span>
-                    </div>
+      <h1 class="text-3xl font-bold mb-6 text-center">Update Payment Method</h1>
+      <div class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+        <div class="bg-gray-50 p-6 border-b">
+          <h2 class="text-xl font-semibold">Current Payment Method</h2>
+        </div>
+        <div class="p-6">
+          {% if current_payment_method %}
+            <div class="flex items-center justify-between mb-6">
+              <div class="flex items-center">
+                <div class="mr-3">
+                  {% if current_payment_method.card.brand == 'visa' %}
+                    <svg class="h-8 w-8" viewBox="0 0 32 32" fill="none">
+                      <rect width="32" height="32" rx="4" fill="#1A1F71" />
+                      <path d="M13.0449 11.3274L10.0332 20.6716H12.3137L15.3254 11.3274H13.0449Z" fill="white" />
+                      <path d="M22.1168 11.5066C21.5262 11.2865 20.6012 11.0455 19.4543 11.0455C16.9309 11.0455 15.1816 12.2809 15.1715 14.1099C15.1613 15.4745 16.4305 16.246 17.3453 16.7046C18.2805 17.1736 18.5922 17.4763 18.5922 17.8795C18.5922 18.5134 17.8281 18.8059 17.1152 18.8059C16.0703 18.8059 15.5105 18.6463 14.625 18.2327L14.2621 18.0525L13.8789 20.1427C14.5816 20.4454 15.8402 20.708 17.1457 20.7183C19.8438 20.7183 21.5621 19.5034 21.5723 17.5555C21.5723 16.4595 20.9102 15.6168 19.4645 14.8868C18.5918 14.4178 18.0625 14.1151 18.0625 13.6768C18.0625 13.2893 18.5102 12.9022 19.5859 12.9022C20.4902 12.8816 21.1418 13.0928 21.6309 13.3039L21.8809 13.4326L22.2539 11.3939L22.1168 11.5066Z" fill="white" />
+                      <path d="M25.8922 11.3274H24.0922C23.593 11.3274 23.218 11.4561 23.0094 12.0077L19.9062 20.6716H22.5938C22.5938 20.6716 22.9668 19.5344 23.0527 19.2935C23.3027 19.2935 25.6445 19.2935 25.9453 19.2935C26.0117 19.5963 26.2102 20.6716 26.2102 20.6716H28.6113L26.3207 11.3274H25.8922ZM23.6914 17.208C23.8691 16.7387 24.5922 14.9303 24.5922 14.9303C24.582 14.9508 24.7598 14.4711 24.8662 14.1684L24.9727 14.8641C24.9727 14.8641 25.4102 16.8121 25.4973 17.208H23.6914Z" fill="white" />
+                      <path d="M9.56054 11.3274L7.10937 17.4763L6.89062 16.4492C6.52734 15.1874 5.28516 13.8028 3.875 13.0728L6.14453 20.6613H8.8418L12.834 11.3274H9.56054Z" fill="white" />
+                      <path d="M5.54297 11.3274H1.58203L1.53125 11.5486C4.34766 12.2124 6.22266 14.16 6.88281 16.4598L6.03516 12.0386C5.91797 11.4764 5.77734 11.338 5.54297 11.3274Z" fill="#F7B600" />
+                    </svg>
+                  {% elif current_payment_method.card.brand == 'mastercard' %}
+                    <svg class="h-8 w-8" viewBox="0 0 32 32" fill="none">
+                      <rect width="32" height="32" rx="4" fill="#16366F" />
+                      <path d="M16 23.9998C13.2067 23.9998 10.8 21.7265 10.8 18.9998C10.8 16.2731 13.2067 13.9998 16 13.9998C18.7933 13.9998 21.2 16.2731 21.2 18.9998C21.2 21.7265 18.7933 23.9998 16 23.9998Z" fill="#D9222A" />
+                      <path d="M16 13.9998C18.7933 13.9998 21.2 16.2731 21.2 18.9998C21.2 21.7265 18.7933 23.9998 16 23.9998" fill="#EE9F2D" />
+                      <path d="M16 13.9998C13.2067 13.9998 10.8 16.2731 10.8 18.9998C10.8 21.7265 13.2067 23.9998 16 23.9998" fill="#D9222A" />
+                      <path d="M16 8C19.3137 8 22 10.6863 22 14V19C22 22.3137 19.3137 25 16 25H10C6.68629 25 4 22.3137 4 19V14C4 10.6863 6.68629 8 10 8H16Z" fill="#16366F" />
+                      <path d="M19.2 16L20.8 10.4L16.8 10.4L15.2 16L19.2 16Z" fill="#D9222A" />
+                      <path d="M14.4 10.4H10.4L12 16H16L14.4 10.4Z" fill="#EE9F2D" />
+                      <path d="M21.6 10.4H25.6L24 16H20L21.6 10.4Z" fill="#D9222A" />
+                      <path d="M12.8 16C14.6 18.4 19.2 18.4 21.6 16" fill="#EE9F2D" />
+                      <path d="M10.4 21.6H14.4L16 16H12L10.4 21.6Z" fill="#D9222A" />
+                      <path d="M16 16L14.4 21.6H18.4L20 16H16Z" fill="#EE9F2D" />
+                      <path d="M20 16L18.4 21.6H22.4L24 16H20Z" fill="#D9222A" />
+                    </svg>
+                  {% elif current_payment_method.card.brand == 'amex' %}
+                    <svg class="h-8 w-8" viewBox="0 0 32 32" fill="none">
+                      <rect width="32" height="32" rx="4" fill="#006FCF" />
+                      <path d="M4.37427 15.3125L3.35547 13.3642H4.72093L5.33013 14.5049L5.95117 13.3642H7.2998L6.28027 15.2982L7.33691 17.3293H5.97217L5.31738 16.1089L4.66113 17.3293H3.31787L4.37427 15.3125Z" fill="white" />
+                      <path d="M7.39062 13.3643H9.91797L10.3662 14.39L10.8232 13.3643H16.1855V14.2358C16.1855 14.2358 16.7236 14.0916 17.0518 14.0916H19.9873L20.4258 14.4111L20.8643 14.0916H24.084V17.3294H20.9097L20.4541 17.0028L20.0068 17.3294H17.0518C16.6655 17.3294 16.1855 17.1923 16.1855 17.1923V17.3294H13.5654V16.7493C13.5654 16.7493 13.3408 16.8149 12.9688 16.8149H12.1885V17.3293H9.65479L9.20654 16.2891L8.75928 17.3293H7.39062V13.3643ZM12.1885 15.7803H12.9961C13.3306 15.7803 13.8024 15.4894 13.8024 15.116C13.8024 14.7498 13.3306 14.4538 12.9961 14.4538L12.1885 14.4538V15.7803ZM16.1855 15.6979H18.5654V15.1177H16.1855V14.7089H18.6113C18.6113 14.7089 19.1611 14.7803 19.1611 15.4082C19.1611 16.0389 18.6113 16.1104 18.6113 16.1104H16.1855V15.6979ZM8.66016 16.3003L9.65479 14.4538H10.644L11.6387 16.3003V14.4538H13.3301V16.3003H12.8916V15.9189H12.8916C12.8916 15.9189 12.5835 16.3003 12.0186 16.3003H8.66016ZM20.4531 16.3003L21.8535 14.9189H20.3579V14.4537H22.915V15.1715L21.5146 16.5528H22.915V17.0096H20.4531V16.3003ZM17.0527 16.3003C17.4391 16.3003 17.9189 16.1632 17.9189 16.1632V14.9189H16.1855V15.1177H17.3389V15.6979H16.1855V16.1104H17.9189V16.3003H17.0527Z" fill="white" />
+                      <path d="M19.8333 17.6187H22.1654V18.9404H20.3325V19.4304H22.1564V19.9831C22.1564 19.9831 21.9016 20.2984 21.0859 20.2984H19.8333V17.6187ZM18.144 20.2984H15.8027V17.6187H18.144C18.8594 17.6187 19.188 18.0016 19.188 18.3738C19.188 18.7459 18.8496 18.8935 18.8496 18.8935C18.8496 18.8935 19.2627 19.0322 19.2627 19.4863C19.2627 19.9312 18.9342 20.2984 18.144 20.2984ZM17.5449 19.4406H18.2695C18.4609 19.4406 18.5557 19.3265 18.5557 19.1773C18.5557 19.0322 18.4619 18.9233 18.2695 18.9233H17.5449V19.4406ZM17.5459 18.4313H18.2324C18.418 18.4313 18.5137 18.3212 18.5137 18.1823C18.5137 18.0371 18.4191 17.9332 18.2324 17.9332H17.5459V18.4313ZM13.1709 17.6187H15.5029V17.9332H13.9023V18.6162H15.4277V18.9307H13.9023V19.9841H15.5029V20.2984H13.1709V17.6187ZM24.0684 20.2984H26.4004V20.2984H28.6445V17.6187H26.3125V17.6188L24.0684 17.6187V20.2984ZM26.3135 19.9841V18.9307H27.9238V18.6162H26.3135V17.9332H27.9238V17.6187L26.3135 17.6188V19.9841ZM19.8848 19.9841V19.415H21.4873V18.9307H19.8848V17.9332H21.5039V17.6187H19.1533V20.2984H19.8848V19.9841ZM28.6436 20.2984V17.6187H28.6445V17.6187H27.9131V19.9841H28.6436V20.2984Z" fill="white" />
+                      <path d="M7.91016 20.2984L9.06055 17.6187H10.9854L12.1191 20.2984H10.9229L10.7324 19.8359H9.29395L9.10254 20.2984H7.91016ZM9.52344 19.3202H10.5029L10.0137 18.1781L9.52344 19.3202Z" fill="white" />
+                      <path d="M12.3906 17.6187H13.6611L14.7197 19.201V17.6187H15.8271L16.459 19.0167L17.0723 17.6188H18.1445V20.2984H17.0352V18.5371L16.2031 20.2984H15.7051L14.8672 18.5371V20.2984H13.0254L12.8135 19.8105H11.375L11.1611 20.2984H9.97949L11.123 17.6187H13.0381L13.5615 18.9004L14.1396 17.6187H12.3906ZM11.6055 19.2796H12.584L12.0918 18.1375L11.6055 19.2796Z" fill="white" />
+                      <path d="M22.3848 17.6187H24.7168V17.9332H23.1152V18.6162H24.6406V18.9307H23.1152V19.9841H24.7158V20.2984H22.3848V17.6187Z" fill="white" />
+                    </svg>
+                  {% else %}
+                    <svg class="h-8 w-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"></path>
+                      <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd">
+                      </path>
+                    </svg>
+                  {% endif %}
                 </div>
-                {% else %}
-                <p class="text-gray-600 mb-6">No payment method on file.</p>
-                {% endif %}
+                <div>
+                  <p class="font-medium">
+                    {{ current_payment_method.card.brand|title }} ending in {{ current_payment_method.card.last4 }}
+                  </p>
+                  <p class="text-sm text-gray-500">
+                    Expires {{ current_payment_method.card.exp_month }}/{{ current_payment_method.card.exp_year }}
+                  </p>
+                </div>
+              </div>
+              <div>
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  Default
+                </span>
+              </div>
             </div>
+          {% else %}
+            <p class="text-gray-600 mb-6">No payment method on file.</p>
+          {% endif %}
         </div>
-
-        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
-            <div class="bg-gray-50 p-6 border-b">
-                <h2 class="text-xl font-semibold">Add New Payment Method</h2>
-            </div>
-            <div class="p-6">
-                <form id="payment-form">
-                    {% csrf_token %}
-                    <div class="mb-6">
-                        <label for="card-element" class="block text-sm font-medium text-gray-700 mb-2">Credit or debit card</label>
-                        <div id="card-element" class="p-3 border rounded-md bg-white"></div>
-                        <div id="card-errors" role="alert" class="mt-2 text-sm text-red-600"></div>
-                    </div>
-
-                    <div class="flex justify-between">
-                        <a href="{% url 'manage_membership' %}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 font-medium focus:outline-none">
-                            Cancel
-                        </a>
-                        <button type="submit" id="submit-button" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">
-                            <span id="button-text">Update Payment Method</span>
-                            <span id="spinner" class="hidden ml-2">
-                                <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                </svg>
-                            </span>
-                        </button>
-                    </div>
-                </form>
-            </div>
+      </div>
+      <div class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+        <div class="bg-gray-50 p-6 border-b">
+          <h2 class="text-xl font-semibold">Add New Payment Method</h2>
         </div>
+        <div class="p-6">
+          <form id="payment-form">
+            {% csrf_token %}
+            <div class="mb-6">
+              <label for="card-element"
+                     class="block text-sm font-medium text-gray-700 mb-2">Credit or debit card</label>
+              <div id="card-element" class="p-3 border rounded-md bg-white"></div>
+              <div id="card-errors" role="alert" class="mt-2 text-sm text-red-600"></div>
+            </div>
+            <div class="flex justify-between">
+              <a href="{% url 'manage_membership' %}"
+                 class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 font-medium focus:outline-none">
+                Cancel
+              </a>
+              <button type="submit"
+                      id="submit-button"
+                      class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none">
+                <span id="button-text">Update Payment Method</span>
+                <span id="spinner" class="hidden ml-2">
+                  <svg class="animate-spin h-5 w-5 text-white"
+                       xmlns="http://www.w3.org/2000/svg"
+                       fill="none"
+                       viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                    </path>
+                  </svg>
+                </span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          // Initialize Stripe
+          const stripe = Stripe('{{ stripe_public_key }}');
+          const elements = stripe.elements();
 
-<script src="https://js.stripe.com/v3/"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize Stripe
-        const stripe = Stripe('{{ stripe_public_key }}');
-        const elements = stripe.elements();
+          // Create card Element
+          const card = elements.create('card');
+          card.mount('#card-element');
 
-        // Create card Element
-        const card = elements.create('card');
-        card.mount('#card-element');
+          // Handle form submission
+          const form = document.getElementById('payment-form');
+          const submitButton = document.getElementById('submit-button');
+          const buttonText = document.getElementById('button-text');
+          const spinner = document.getElementById('spinner');
+          const errorElement = document.getElementById('card-errors');
 
-        // Handle form submission
-        const form = document.getElementById('payment-form');
-        const submitButton = document.getElementById('submit-button');
-        const buttonText = document.getElementById('button-text');
-        const spinner = document.getElementById('spinner');
-        const errorElement = document.getElementById('card-errors');
+          form.addEventListener('submit', async (event) => {
+              event.preventDefault();
 
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
+              // Disable form submission
+              submitButton.disabled = true;
+              buttonText.textContent = 'Processing...';
+              spinner.classList.remove('hidden');
 
-            // Disable form submission
-            submitButton.disabled = true;
-            buttonText.textContent = 'Processing...';
-            spinner.classList.remove('hidden');
+              try {
+                  // Create payment method
+                  const {
+                      paymentMethod,
+                      error
+                  } = await stripe.createPaymentMethod({
+                      type: 'card',
+                      card: card,
+                  });
 
-            try {
-                // Create payment method
-                const { paymentMethod, error } = await stripe.createPaymentMethod({
-                    type: 'card',
-                    card: card,
-                });
+                  if (error) {
+                      throw error;
+                  }
 
-                if (error) {
-                    throw error;
-                }
+                  // Update payment method via API
+                  const response = await fetch('{% url "update_payment_method_api" %}', {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json',
+                          'X-CSRFToken': '{{ csrf_token }}',
+                      },
+                      body: JSON.stringify({
+                          payment_method_id: paymentMethod.id,
+                      }),
+                  });
 
-                // Update payment method via API
-                const response = await fetch('{% url "update_payment_method_api" %}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}',
-                    },
-                    body: JSON.stringify({
-                        payment_method_id: paymentMethod.id,
-                    }),
-                });
+                  const data = await response.json();
 
-                const data = await response.json();
+                  if (!response.ok) {
+                      throw new Error(data.error || 'An error occurred');
+                  }
 
-                if (!response.ok) {
-                    throw new Error(data.error || 'An error occurred');
-                }
+                  // Redirect to success page
+                  window.location.href = '{% url "manage_membership" %}?payment_updated=true';
 
-                // Redirect to success page
-                window.location.href = '{% url "manage_membership" %}?payment_updated=true';
+              } catch (error) {
+                  // Display error message
+                  errorElement.textContent = error.message;
 
-            } catch (error) {
-                // Display error message
-                errorElement.textContent = error.message;
-
-                // Re-enable form submission
-                submitButton.disabled = false;
-                buttonText.textContent = 'Update Payment Method';
-                spinner.classList.add('hidden');
-            }
-        });
-    });
-</script>
+                  // Re-enable form submission
+                  submitButton.disabled = false;
+                  buttonText.textContent = 'Update Payment Method';
+                  spinner.classList.add('hidden');
+              }
+          });
+      });
+  </script>
 {% endblock %}

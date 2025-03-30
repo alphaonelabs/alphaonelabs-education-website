@@ -1,108 +1,118 @@
 {% extends 'base.html' %}
+
 {% load static %}
 
 {% block title %}Subscribe to {{ plan.name }}{% endblock %}
-
 {% block content %}
-<div class="container mx-auto px-4 py-12">
+  <div class="container mx-auto px-4 py-12">
     <div class="max-w-2xl mx-auto">
-        <h1 class="text-3xl font-bold mb-8 text-center">Subscribe to {{ plan.name }}</h1>
-
-        <div class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
-            <div class="p-6">
-                <div class="mb-6">
-                    <h2 class="font-bold text-xl mb-3">Plan Details</h2>
-                    <p class="text-gray-600 mb-4">{{ plan.description }}</p>
-
-                    <div class="flex items-center justify-between mb-4 border-b pb-4">
-                        <div>
-                            <span class="text-lg font-semibold">Billing Period:</span>
-                        </div>
-                        <div class="flex items-center space-x-4">
-                            <label class="flex items-center cursor-pointer">
-                                <input type="radio" name="billing_period" value="monthly" class="form-radio h-4 w-4 text-blue-600" {% if billing_period == 'monthly' %}checked{% endif %}>
-                                <span class="ml-2">Monthly</span>
-                            </label>
-                            <label class="flex items-center cursor-pointer">
-                                <input type="radio" name="billing_period" value="yearly" class="form-radio h-4 w-4 text-green-600" {% if billing_period == 'yearly' %}checked{% endif %}>
-                                <span class="ml-2">Yearly</span>
-                                {% if plan.yearly_savings > 0 %}
-                                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Save {{ plan.yearly_savings }}%</span>
-                                {% endif %}
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <span class="text-lg font-semibold">Price:</span>
-                        </div>
-                        <div>
-                            <div id="monthly-price" class="text-2xl font-bold {% if billing_period != 'monthly' %}hidden{% endif %}">
-                                ${{ plan.price_monthly }}/month
-                            </div>
-                            <div id="yearly-price" class="text-2xl font-bold {% if billing_period != 'yearly' %}hidden{% endif %}">
-                                ${{ plan.price_yearly }}/year
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="mb-8">
-                    <h2 class="font-bold text-xl mb-3">Plan Features</h2>
-                    <ul class="space-y-3">
-                        {% for feature in plan.features %}
-                        <li class="flex items-start">
-                            <svg class="h-5 w-5 text-green-500 mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                            </svg>
-                            <span>{{ feature }}</span>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-
-                <a href="{% url 'checkout_membership' plan.slug billing_period %}" class="block w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-md text-center transition-colors duration-200">
-                    Continue to Checkout
-                </a>
+      <h1 class="text-3xl font-bold mb-8 text-center">Subscribe to {{ plan.name }}</h1>
+      <div class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
+        <div class="p-6">
+          <div class="mb-6">
+            <h2 class="font-bold text-xl mb-3">Plan Details</h2>
+            <p class="text-gray-600 mb-4">{{ plan.description }}</p>
+            <div class="flex items-center justify-between mb-4 border-b pb-4">
+              <div>
+                <span class="text-lg font-semibold">Billing Period:</span>
+              </div>
+              <div class="flex items-center space-x-4">
+                <label class="flex items-center cursor-pointer">
+                  <input type="radio"
+                         name="billing_period"
+                         value="monthly"
+                         class="form-radio h-4 w-4 text-blue-600"
+                         {% if billing_period == 'monthly' %}checked{% endif %} />
+                  <span class="ml-2">Monthly</span>
+                </label>
+                <label class="flex items-center cursor-pointer">
+                  <input type="radio"
+                         name="billing_period"
+                         value="yearly"
+                         class="form-radio h-4 w-4 text-green-600"
+                         {% if billing_period == 'yearly' %}checked{% endif %} />
+                  <span class="ml-2">Yearly</span>
+                  {% if plan.yearly_savings > 0 %}
+                    <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Save {{ plan.yearly_savings }}%</span>
+                  {% endif %}
+                </label>
+              </div>
             </div>
+            <div class="flex items-center justify-between">
+              <div>
+                <span class="text-lg font-semibold">Price:</span>
+              </div>
+              <div>
+                <div id="monthly-price"
+                     class="text-2xl font-bold {% if billing_period != 'monthly' %}hidden{% endif %}">
+                  ${{ plan.price_monthly }}/month
+                </div>
+                <div id="yearly-price"
+                     class="text-2xl font-bold {% if billing_period != 'yearly' %}hidden{% endif %}">
+                  ${{ plan.price_yearly }}/year
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mb-8">
+            <h2 class="font-bold text-xl mb-3">Plan Features</h2>
+            <ul class="space-y-3">
+              {% for feature in plan.features %}
+                <li class="flex items-start">
+                  <svg class="h-5 w-5 text-green-500 mr-2 mt-0.5"
+                       viewBox="0 0 20 20"
+                       fill="currentColor">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span>{{ feature }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+          <a href="{% url 'checkout_membership' plan.slug billing_period %}"
+             class="block w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-md text-center transition-colors duration-200">
+            Continue to Checkout
+          </a>
         </div>
-
-        <div class="text-center">
-            <a href="{% url 'membership_plans' %}" class="inline-flex items-center text-blue-600 hover:text-blue-800">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                </svg>
-                Back to All Plans
-            </a>
-        </div>
+      </div>
+      <div class="text-center">
+        <a href="{% url 'membership_plans' %}"
+           class="inline-flex items-center text-blue-600 hover:text-blue-800">
+          <svg class="w-4 h-4 mr-2"
+               fill="none"
+               stroke="currentColor"
+               viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+          </svg>
+          Back to All Plans
+        </a>
+      </div>
     </div>
-</div>
+  </div>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          const monthlyPriceDiv = document.getElementById('monthly-price');
+          const yearlyPriceDiv = document.getElementById('yearly-price');
+          const radioBtns = document.querySelectorAll('input[name="billing_period"]');
+          const continueBtn = document.querySelector('a[href*="checkout_membership"]');
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const monthlyPriceDiv = document.getElementById('monthly-price');
-        const yearlyPriceDiv = document.getElementById('yearly-price');
-        const radioBtns = document.querySelectorAll('input[name="billing_period"]');
-        const continueBtn = document.querySelector('a[href*="checkout_membership"]');
+          // Handle billing period change
+          radioBtns.forEach(function(radio) {
+              radio.addEventListener('change', function() {
+                  // Update price display
+                  if (this.value === 'monthly') {
+                      monthlyPriceDiv.classList.remove('hidden');
+                      yearlyPriceDiv.classList.add('hidden');
+                  } else {
+                      monthlyPriceDiv.classList.add('hidden');
+                      yearlyPriceDiv.classList.remove('hidden');
+                  }
 
-        // Handle billing period change
-        radioBtns.forEach(function(radio) {
-            radio.addEventListener('change', function() {
-                // Update price display
-                if (this.value === 'monthly') {
-                    monthlyPriceDiv.classList.remove('hidden');
-                    yearlyPriceDiv.classList.add('hidden');
-                } else {
-                    monthlyPriceDiv.classList.add('hidden');
-                    yearlyPriceDiv.classList.remove('hidden');
-                }
-
-                // Update checkout URL
-                const planSlug = '{{ plan.slug }}';
-                continueBtn.href = "{% url 'checkout_membership' plan_slug='placeholder' billing_period='placeholder' %}".replace('placeholder', planSlug).replace('placeholder', this.value);
-            });
-        });
-    });
-</script>
+                  // Update checkout URL
+                  const planSlug = '{{ plan.slug }}';
+                  continueBtn.href = "{% url 'checkout_membership' plan_slug='placeholder' billing_period='placeholder' %}".replace('placeholder', planSlug).replace('placeholder', this.value);
+              });
+          });
+      });
+  </script>
 {% endblock %}

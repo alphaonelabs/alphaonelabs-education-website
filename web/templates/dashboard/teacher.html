@@ -204,7 +204,6 @@
           </a>
         {% endif %}
       </div>
-
       {% if subscription %}
         <div class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30 rounded-xl p-6 mb-5 border-l-4 border-purple-500 shadow-inner transform transition-all duration-300 hover:shadow-lg">
           <div class="flex flex-col md:flex-row items-start">
@@ -269,15 +268,14 @@
             <div class="absolute inset-0 opacity-20">
               <svg class="h-full w-full" xmlns="http://www.w3.org/2000/svg">
                 <defs>
-                  <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
-                    <path d="M0 20h40M20 0v40" stroke="currentColor" stroke-width="0.5" fill="none" />
-                  </pattern>
+                <pattern id="grid-pattern" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M0 20h40M20 0v40" stroke="currentColor" stroke-width="0.5" fill="none" />
+                </pattern>
                 </defs>
                 <rect width="100%" height="100%" fill="url(#grid-pattern)" />
               </svg>
             </div>
           </div>
-
           <div class="relative">
             <p class="text-gray-700 dark:text-gray-300 text-lg mb-6">
               Unlock premium teaching tools and resources with our membership plans.
@@ -308,7 +306,6 @@
                 <span class="text-gray-700 dark:text-gray-300">Custom certificates</span>
               </li>
             </ul>
-
             <div class="flex justify-center">
               <a href="{% url 'membership_plans' %}"
                  class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white font-medium px-6 py-3 rounded-lg shadow-lg flex items-center transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
