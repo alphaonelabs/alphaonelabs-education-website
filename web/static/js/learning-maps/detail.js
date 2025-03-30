@@ -7,7 +7,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Fetch map data
     fetch(`/learning-maps/${mapSlug}/data/`)
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => renderLearningMap(data))
         .catch(error => {
             console.error('Error loading learning map data:', error);
