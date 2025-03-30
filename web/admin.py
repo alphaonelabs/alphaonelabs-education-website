@@ -35,6 +35,7 @@ from .models import (
     Payment,
     PeerChallenge,
     PeerChallengeInvitation,
+    Points,
     ProductImage,
     Profile,
     ProgressTracker,
@@ -770,3 +771,18 @@ class MembershipSubscriptionEventAdmin(admin.ModelAdmin):
     search_fields = ("user__email", "user__username", "stripe_event_id")
     raw_id_fields = ("user", "membership")
     readonly_fields = ("created_at",)
+
+
+@admin.register(Points)
+class PointsAdmin(admin.ModelAdmin):
+    list_display = ("user", "amount", "reason", "point_type", "awarded_at", "challenge")
+    list_filter = ("point_type", "awarded_at")
+    search_fields = ("user__username", "user__email", "reason")
+    raw_id_fields = ("user", "challenge")
+    readonly_fields = ("awarded_at", "updated_at")
+    date_hierarchy = "awarded_at"
+    fieldsets = (
+        (None, {"fields": ("user", "amount", "reason", "point_type")}),
+        ("Related Data", {"fields": ("challenge", "current_streak")}),
+        ("Timestamps", {"fields": ("awarded_at", "updated_at"), "classes": ("collapse",)}),
+    )
