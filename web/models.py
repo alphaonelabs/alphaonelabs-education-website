@@ -2817,8 +2817,14 @@ class LearningMap(models.Model):
 
         super().save(*args, **kwargs)
 
+class LearningMap(models.Model):
+    # ... fields ...
+
     def __str__(self):
         return f"{self.user.username}'s {self.title}"
+
+    def save(self, *args, **kwargs):
+         # ... implementation ...
 
 
 class LearningMapNode(models.Model):
