@@ -140,7 +140,8 @@
         </h2>
         {% if not subscription %}
           <a href="{% url 'membership_plans' %}"
-             class="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-semibold px-5 py-2 rounded-lg flex items-center transform transition-transform duration-300 hover:scale-105 shadow-md">
+             class="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white font-semibold px-5 py-2 rounded-lg flex items-center transform transition-transform duration-300 hover:scale-105 shadow-md"
+             aria-label="Upgrade to Premium Membership">
             <i class="fas fa-crown mr-2 animate-pulse"></i> Upgrade to Premium
           </a>
         {% endif %}
@@ -238,7 +239,8 @@
           </div>
           <div class="mt-6 flex justify-center">
             <a href="{% url 'membership_plans' %}"
-               class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white font-medium px-6 py-3 rounded-lg shadow-lg flex items-center transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+               class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white font-medium px-6 py-3 rounded-lg shadow-lg flex items-center transform transition-all duration-300 hover:scale-105 hover:shadow-xl"
+               aria-label="View membership plan options">
               <i class="fas fa-crown mr-2"></i> View Membership Plans
             </a>
           </div>
@@ -324,4 +326,20 @@
       </div>
     </div>
   </div>
+  <style>
+      @media (prefers-reduced-motion: reduce) {
+
+          /* Disable animations for users who prefer reduced motion */
+          .transition-transform,
+          .transition-all,
+          .animate-pulse,
+          .hover\:translate-x-2:hover,
+          .hover\:scale-105:hover,
+          .hover\:shadow-xl:hover {
+              transition: none !important;
+              transform: none !important;
+              animation: none !important;
+          }
+      }
+  </style>
 {% endblock %}

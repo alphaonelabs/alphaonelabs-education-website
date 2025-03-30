@@ -8,6 +8,7 @@ from django.http import HttpResponseRedirect
 from django.urls import path, reverse
 from django.utils.html import format_html
 
+from .forms import MembershipPlanForm
 from .models import (
     Achievement,
     Badge,
@@ -752,6 +753,21 @@ class MembershipPlanAdmin(admin.ModelAdmin):
     search_fields = ("name", "description")
     prepopulated_fields = {"slug": ("name",)}
     ordering = ("order", "name")
+    form = MembershipPlanForm
+
+    # Add fieldsets for a better organized admin interface
+    fieldsets = (
+        (None, {"fields": ("name", "slug", "description")}),
+        ("Pricing", {"fields": ("price_monthly", "price_yearly", "billing_period")}),
+        ("Features", {"fields": ("features",)}),
+        (
+            "Stripe Integration",
+            {
+                "fields": ("stripe_monthly_price_id", "stripe_yearly_price_id"),
+            },
+        ),
+        ("Display Options", {"fields": ("is_active", "is_popular", "order")}),
+    )
 
 
 @admin.register(UserMembership)

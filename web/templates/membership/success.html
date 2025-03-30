@@ -1,6 +1,7 @@
 {% extends 'base.html' %}
 
 {% load static %}
+{% load membership_tags %}
 
 {% block title %}Membership Subscription Successful{% endblock %}
 {% block content %}
@@ -13,7 +14,9 @@
             <svg class="h-24 w-24 text-green-500 mx-auto relative z-10 animate-bounce-subtle"
                  fill="none"
                  viewBox="0 0 24 24"
-                 stroke="currentColor">
+                 stroke="currentColor"
+                 role="img"
+                 aria-label="Success check mark">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z">
               </path>
             </svg>
@@ -28,7 +31,7 @@
              style="animation-delay: 0.5s">
           <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
             <h2 class="text-xl font-bold text-white flex items-center">
-              <i class="fas fa-clipboard-list mr-2"></i> Subscription Details
+              <i class="fas fa-clipboard-list mr-2" aria-hidden="true"></i> Subscription Details
             </h2>
           </div>
           <div class="p-8">
@@ -73,21 +76,23 @@
              style="animation-delay: 0.7s">
           <div class="bg-gradient-to-r from-purple-500 to-indigo-600 p-6">
             <h2 class="text-xl font-bold text-white flex items-center">
-              <i class="fas fa-star mr-2"></i> Your Membership Benefits
+              <i class="fas fa-star mr-2" aria-hidden="true"></i> Your Membership Benefits
             </h2>
           </div>
           <div class="p-8">
             <ul class="space-y-4">
               {% for feature in membership.plan.features %}
-                <li class="flex items-start group transform transition-all duration-300 hover:translate-x-2">
-                  <div class="bg-green-100 rounded-full p-1 mr-3 flex-shrink-0 transform transition-all duration-300 group-hover:scale-110">
+                <li class="flex items-start feature-item transform transition-all duration-300 hover:translate-x-2 animate-fadeInUp"
+                    style="animation-delay: {{ forloop.counter0|multiply:150 }}ms">
+                  <div class="bg-green-100 rounded-full p-1 mr-3 flex-shrink-0 transform transition-all duration-300 hover:scale-110 hover:bg-green-200">
                     <svg class="h-5 w-5 text-green-500"
                          viewBox="0 0 20 20"
-                         fill="currentColor">
+                         fill="currentColor"
+                         aria-hidden="true">
                       <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                     </svg>
                   </div>
-                  <span class="text-gray-800">{{ feature }}</span>
+                  <span class="text-gray-800 font-medium">{{ feature|format_feature }}</span>
                 </li>
               {% endfor %}
             </ul>
@@ -97,11 +102,11 @@
              style="animation-delay: 0.9s">
           <a href="{% url 'index' %}"
              class="inline-flex justify-center items-center px-6 py-3 border border-transparent rounded-lg shadow-md text-base font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none transition-all duration-300 transform hover:scale-[1.02]">
-            <i class="fas fa-home mr-2"></i> Return to Homepage
+            <i class="fas fa-home mr-2" aria-hidden="true"></i> Return to Homepage
           </a>
           <a href="{% url 'manage_membership' %}"
              class="inline-flex justify-center items-center px-6 py-3 border border-gray-300 rounded-lg shadow-md text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition-all duration-300 transform hover:scale-[1.02]">
-            <i class="fas fa-cog mr-2"></i> Manage Your Membership
+            <i class="fas fa-cog mr-2" aria-hidden="true"></i> Manage Your Membership
           </a>
         </div>
         <div class="text-center mt-10 text-gray-500 text-sm animate-fadeIn"
@@ -112,6 +117,7 @@
     </div>
   </div>
   <style>
+      /* Animation styles - Consider moving these to a shared stylesheet */
       @keyframes fadeIn {
           from {
               opacity: 0;
@@ -134,7 +140,7 @@
           }
       }
 
-      @keyframes bounceSlight {
+      @keyframes bounce-subtle {
 
           0%,
           100% {
@@ -147,22 +153,40 @@
       }
 
       .animate-fadeIn {
-          animation: fadeIn 0.8s ease forwards;
+          animation: fadeIn 1s ease forwards;
       }
 
       .animate-fadeInUp {
-          opacity: 0;
-          animation: fadeInUp 0.8s ease forwards;
+          animation: fadeInUp 0.7s ease forwards;
       }
 
       .animate-bounce-subtle {
-          animation: bounceSlight 2s ease-in-out infinite;
+          animation: bounce-subtle 2s infinite;
+      }
+
+      /* Media query for reduced motion */
+      @media (prefers-reduced-motion: reduce) {
+
+          .animate-fadeIn,
+          .animate-fadeInUp,
+          .animate-bounce-subtle,
+          .animate-pulse {
+              animation: none !important;
+          }
       }
 
       .text-gradient {
-          background: linear-gradient(to right, #10b981, #3b82f6);
+          background-clip: text;
           -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
+          color: transparent;
+          background-image: linear-gradient(135deg, #3B82F6, #8B5CF6);
+      }
+
+      .confetti {
+          width: 10px;
+          height: 10px;
+          position: absolute;
+          z-index: 1;
       }
 
       /* Confetti styling */
@@ -174,16 +198,17 @@
           left: 0;
           pointer-events: none;
       }
-
-      .confetti {
-          position: absolute;
-          z-index: 1;
-          width: 10px;
-          height: 10px;
-      }
   </style>
   <script>
       document.addEventListener('DOMContentLoaded', function() {
+          // Check if user prefers reduced motion
+          const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+          // Skip confetti animation if user prefers reduced motion
+          if (prefersReducedMotion) {
+              return;
+          }
+
           // Create confetti celebration effect
           const confettiContainer = document.querySelector('.confetti-container');
           const colors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899'];

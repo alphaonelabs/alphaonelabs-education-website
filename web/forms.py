@@ -24,6 +24,7 @@ from .models import (
     Goods,
     GradeableLink,
     LinkGrade,
+    MembershipPlan,
     Meme,
     NotificationPreference,
     PeerChallenge,
@@ -52,6 +53,7 @@ from .widgets import (
     TailwindEmailInput,
     TailwindFileInput,
     TailwindInput,
+    TailwindJSONWidget,
     TailwindNumberInput,
     TailwindSelect,
     TailwindTextarea,
@@ -95,6 +97,8 @@ __all__ = [
     "GradeableLinkForm",
     "LinkGradeForm",
     "AwardAchievementForm",
+    "StudyGroupForm",
+    "MembershipPlanForm",
 ]
 
 
@@ -1677,3 +1681,42 @@ class StudyGroupForm(forms.ModelForm):
         model = StudyGroup
         # You might exclude fields that are set automatically.
         fields = ["name", "description", "course", "max_members", "is_private"]
+
+
+class MembershipPlanForm(forms.ModelForm):
+    class Meta:
+        model = MembershipPlan
+        fields = [
+            "name",
+            "slug",
+            "description",
+            "features",
+            "price_monthly",
+            "price_yearly",
+            "billing_period",
+            "stripe_monthly_price_id",
+            "stripe_yearly_price_id",
+            "is_active",
+            "is_popular",
+            "order",
+        ]
+        widgets = {
+            "name": TailwindInput(),
+            "slug": TailwindInput(),
+            "description": TailwindTextarea(attrs={"rows": 3}),
+            "features": TailwindJSONWidget(),
+            "price_monthly": TailwindNumberInput(attrs={"step": "0.01", "min": "0"}),
+            "price_yearly": TailwindNumberInput(attrs={"step": "0.01", "min": "0"}),
+            "billing_period": TailwindSelect(),
+            "stripe_monthly_price_id": TailwindInput(),
+            "stripe_yearly_price_id": TailwindInput(),
+            "is_active": TailwindCheckboxInput(),
+            "is_popular": TailwindCheckboxInput(),
+            "order": TailwindNumberInput(attrs={"min": "0"}),
+        }
+        help_texts = {
+            "features": "Enter the features for this membership plan, one per line.",
+            "is_popular": "Mark this plan as popular to highlight it on the pricing page.",
+            "stripe_monthly_price_id": "Stripe Price ID for monthly billing",
+            "stripe_yearly_price_id": "Stripe Price ID for yearly billing",
+        }

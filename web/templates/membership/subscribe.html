@@ -42,7 +42,7 @@
                            name="billing_period"
                            value="monthly"
                            class="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400 absolute opacity-0"
-                           {% if billing_period == 'monthly' %}checked{% endif %} />
+                           {% if billing_period == 'monthly' %}checked aria-checked="true"{% else %}aria-checked="false"{% endif %} />
                     <span class="relative inline-flex items-center justify-center w-full p-2 rounded-lg {% if billing_period == 'monthly' %}bg-blue-100 dark:bg-blue-900 dark:bg-opacity-40 border border-blue-200 dark:border-blue-700{% endif %} group-hover:bg-blue-50 dark:group-hover:bg-blue-900 dark:group-hover:bg-opacity-20 transition-all duration-300">
                       <span class="{% if billing_period == 'monthly' %}text-blue-600 dark:text-blue-400 font-medium{% else %}text-gray-700 dark:text-gray-300{% endif %} group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">Monthly</span>
                     </span>
@@ -55,7 +55,7 @@
                            name="billing_period"
                            value="yearly"
                            class="form-radio h-4 w-4 text-green-600 focus:ring-green-500 dark:focus:ring-green-400 absolute opacity-0"
-                           {% if billing_period == 'yearly' %}checked{% endif %} />
+                           {% if billing_period == 'yearly' %}checked aria-checked="true"{% else %}aria-checked="false"{% endif %} />
                     <span class="relative inline-flex items-center justify-center w-full p-2 rounded-lg {% if billing_period == 'yearly' %}bg-green-100 dark:bg-green-900 dark:bg-opacity-40 border border-green-200 dark:border-green-700{% endif %} group-hover:bg-green-50 dark:group-hover:bg-green-900 dark:group-hover:bg-opacity-20 transition-all duration-300">
                       <span class="{% if billing_period == 'yearly' %}text-green-600 dark:text-green-400 font-medium{% else %}text-gray-700 dark:text-gray-300{% endif %} group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors duration-300">Yearly</span>
                       {% if plan.yearly_savings > 0 %}
@@ -92,7 +92,9 @@
                 <li class="flex items-start group transform transition-all duration-300 hover:translate-x-1 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg">
                   <svg class="h-5 w-5 text-green-500 dark:text-green-400 mr-2 mt-0.5 group-hover:scale-110 transition-transform duration-300"
                        viewBox="0 0 20 20"
-                       fill="currentColor">
+                       fill="currentColor"
+                       aria-hidden="true"
+                       role="img">
                     <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                   </svg>
                   <span class="text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-200">{{ feature }}</span>
@@ -102,9 +104,13 @@
           </div>
           <a href="{% url 'checkout_membership' plan.slug billing_period %}"
              id="checkout-button"
-             class="block w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-md text-center transition-all duration-300 transform hover:scale-[1.02] hover:shadow-md relative overflow-hidden group">
+             class="block w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-md text-center transition-all duration-300 transform hover:scale-[1.02] hover:shadow-md relative overflow-hidden group"
+             data-plan-slug="{{ plan.slug }}"
+             data-billing-period="{{ billing_period }}"
+             data-base-url="{% url 'checkout_membership' plan_slug='PLAN_SLUG' billing_period='BILLING_PERIOD' %}">
             <span class="relative z-10 flex items-center justify-center">
-              <i class="fas fa-credit-card mr-2 group-hover:animate-bounce"></i>
+              <i class="fas fa-credit-card mr-2 group-hover:animate-bounce"
+                 aria-hidden="true"></i>
               Continue to Checkout
             </span>
             <div class="absolute inset-0 w-full h-full">
@@ -120,7 +126,9 @@
           <svg class="w-4 h-4 mr-2 transform transition-transform duration-300 group-hover:-translate-x-1"
                fill="none"
                stroke="currentColor"
-               viewBox="0 0 24 24">
+               viewBox="0 0 24 24"
+               aria-hidden="true"
+               role="img">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
           </svg>
           Back to All Plans
@@ -181,62 +189,58 @@
           const yearlyOption = document.getElementById('yearly-option');
           const checkoutBtn = document.getElementById('checkout-button');
 
-          // Function to handle price visibility with animation
-          function updatePriceDisplay(isYearly) {
-              if (isYearly) {
-                  monthlyPrice.classList.add('opacity-0', 'translate-y-4');
-                  setTimeout(() => {
-                      yearlyPrice.classList.remove('opacity-0', 'translate-y-4');
-                  }, 150);
+          // Function to update price display
+          function updatePriceDisplay(showYearly) {
+              if (showYearly) {
+                  monthlyPrice.classList.add('hidden');
+                  yearlyPrice.classList.remove('hidden');
               } else {
-                  yearlyPrice.classList.add('opacity-0', 'translate-y-4');
-                  setTimeout(() => {
-                      monthlyPrice.classList.remove('opacity-0', 'translate-y-4');
-                  }, 150);
+                  monthlyPrice.classList.remove('hidden');
+                  yearlyPrice.classList.add('hidden');
               }
           }
 
-          // Function to update radio button styling
+          // Function to update radio styling
           function updateRadioStyling(isYearly) {
+              const monthlyLabel = monthlyOption.parentElement.querySelector('span');
+              const yearlyLabel = yearlyOption.parentElement.querySelector('span');
+
               if (isYearly) {
-                  monthlyOption.nextElementSibling.classList.remove('bg-blue-100', 'dark:bg-blue-900', 'dark:bg-opacity-40', 'border', 'border-blue-200', 'dark:border-blue-700');
-                  monthlyOption.nextElementSibling.querySelector('span').classList.remove('text-blue-600', 'dark:text-blue-400', 'font-medium');
-                  monthlyOption.nextElementSibling.querySelector('span').classList.add('text-gray-700', 'dark:text-gray-300');
-
-                  yearlyOption.nextElementSibling.classList.add('bg-green-100', 'dark:bg-green-900', 'dark:bg-opacity-40', 'border', 'border-green-200', 'dark:border-green-700');
-                  yearlyOption.nextElementSibling.querySelector('span').classList.add('text-green-600', 'dark:text-green-400', 'font-medium');
-                  yearlyOption.nextElementSibling.querySelector('span').classList.remove('text-gray-700', 'dark:text-gray-300');
+                  monthlyLabel.classList.remove('bg-blue-100', 'dark:bg-blue-900', 'dark:bg-opacity-40', 'border', 'border-blue-200', 'dark:border-blue-700');
+                  yearlyLabel.classList.add('bg-green-100', 'dark:bg-green-900', 'dark:bg-opacity-40', 'border', 'border-green-200', 'dark:border-green-700');
               } else {
-                  yearlyOption.nextElementSibling.classList.remove('bg-green-100', 'dark:bg-green-900', 'dark:bg-opacity-40', 'border', 'border-green-200', 'dark:border-green-700');
-                  yearlyOption.nextElementSibling.querySelector('span').classList.remove('text-green-600', 'dark:text-green-400', 'font-medium');
-                  yearlyOption.nextElementSibling.querySelector('span').classList.add('text-gray-700', 'dark:text-gray-300');
-
-                  monthlyOption.nextElementSibling.classList.add('bg-blue-100', 'dark:bg-blue-900', 'dark:bg-opacity-40', 'border', 'border-blue-200', 'dark:border-blue-700');
-                  monthlyOption.nextElementSibling.querySelector('span').classList.add('text-blue-600', 'dark:text-blue-400', 'font-medium');
-                  monthlyOption.nextElementSibling.querySelector('span').classList.remove('text-gray-700', 'dark:text-gray-300');
+                  monthlyLabel.classList.add('bg-blue-100', 'dark:bg-blue-900', 'dark:bg-opacity-40', 'border', 'border-blue-200', 'dark:border-blue-700');
+                  yearlyLabel.classList.remove('bg-green-100', 'dark:bg-green-900', 'dark:bg-opacity-40', 'border', 'border-green-200', 'dark:border-green-700');
               }
           }
 
-          // Handle billing period change
+          // Function to update checkout URL based on billing period
+          function updateCheckoutUrl(billingPeriod) {
+              if (checkoutBtn) {
+                  const baseUrl = checkoutBtn.getAttribute('data-base-url');
+                  checkoutBtn.href = `${baseUrl}?billing_period=${billingPeriod}`;
+                  // Update the button text to reflect choice
+                  checkoutBtn.textContent = `Subscribe ${billingPeriod === 'yearly' ? 'Yearly' : 'Monthly'}`;
+                  // Set focus to the checkout button when selection changes
+                  setTimeout(() => checkoutBtn.focus(), 100);
+              }
+          }
+
+          // Add click event for monthly option
           monthlyOption.addEventListener('change', function() {
               if (this.checked) {
                   updatePriceDisplay(false);
                   updateRadioStyling(false);
-
-                  // Update checkout URL
-                  const planSlug = '{{ plan.slug }}';
-                  checkoutBtn.href = "{% url 'checkout_membership' plan_slug='placeholder' billing_period='placeholder' %}".replace('placeholder', planSlug).replace('placeholder', this.value);
+                  updateCheckoutUrl('monthly');
               }
           });
 
+          // Add click event for yearly option
           yearlyOption.addEventListener('change', function() {
               if (this.checked) {
                   updatePriceDisplay(true);
                   updateRadioStyling(true);
-
-                  // Update checkout URL
-                  const planSlug = '{{ plan.slug }}';
-                  checkoutBtn.href = "{% url 'checkout_membership' plan_slug='placeholder' billing_period='placeholder' %}".replace('placeholder', planSlug).replace('placeholder', this.value);
+                  updateCheckoutUrl('yearly');
               }
           });
 
@@ -260,6 +264,9 @@
           // Initialize styling based on current selection
           updatePriceDisplay(yearlyOption.checked);
           updateRadioStyling(yearlyOption.checked);
+
+          // Initialize checkout URL
+          updateCheckoutUrl(yearlyOption.checked ? 'yearly' : 'monthly');
       });
   </script>
 {% endblock %}

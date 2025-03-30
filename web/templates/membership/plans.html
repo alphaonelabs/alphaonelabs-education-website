@@ -6,22 +6,17 @@
 {% block title %}Membership Plans{% endblock %}
 {% block content %}
   <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 py-20 relative overflow-hidden">
-    <!-- Enhanced animated background elements -->
+    <!-- Animated background elements -->
     <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
       <div class="absolute top-10 left-10 w-64 h-64 bg-white opacity-10 rounded-full filter blur-3xl animate-pulse"></div>
       <div class="absolute bottom-10 right-10 w-80 h-80 bg-blue-300 opacity-10 rounded-full filter blur-3xl animate-pulse"
            style="animation-delay: 1s"></div>
       <div class="absolute top-1/2 left-1/4 w-40 h-40 bg-purple-200 opacity-10 rounded-full filter blur-2xl animate-pulse"
            style="animation-delay: 2s"></div>
-      <div class="absolute bottom-1/3 right-1/4 w-60 h-60 bg-indigo-200 opacity-10 rounded-full filter blur-2xl animate-pulse"
-           style="animation-delay: 1.5s"></div>
-      <!-- Additional animated element -->
-      <div class="absolute top-1/4 right-1/3 w-32 h-32 bg-pink-200 opacity-10 rounded-full filter blur-xl animate-float">
-      </div>
     </div>
     <div class="container mx-auto px-4 relative z-10">
       <div class="max-w-6xl mx-auto">
-        <div class="text-center mb-12 animate-fadeIn">
+        <div class="text-center mb-12">
           <h1 class="text-5xl font-extrabold text-white mb-6 tracking-tight">
             <span class="bg-clip-text text-transparent bg-gradient-to-r from-white to-blue-200">Choose Your Membership Plan</span>
           </h1>
@@ -37,57 +32,36 @@
               </p>
             </div>
           {% endif %}
-          <!-- Enhanced toggle with improved animation -->
           <div class="flex items-center justify-center mb-10">
-            <span id="monthlyLabel"
-                  class="text-white font-bold text-lg {% if billing_period == 'monthly' %}opacity-100{% else %}opacity-70{% endif %} transition-opacity duration-300">Monthly</span>
-            <div class="relative mx-4 w-20 h-10 group">
+            <span class="text-white font-bold text-lg {% if billing_period == 'monthly' %}opacity-100{% else %}opacity-70{% endif %} transition-opacity duration-300">Monthly</span>
+            <div class="relative mx-4 w-20 h-10">
               <input type="checkbox"
                      id="billingToggle"
                      class="sr-only"
                      {% if billing_period == 'yearly' %}checked{% endif %} />
               <label for="billingToggle"
-                     class="block h-10 rounded-full bg-blue-300 bg-opacity-50 cursor-pointer group-hover:bg-opacity-70 transition-all duration-300">
-              </label>
-              <div id="toggleHandle"
-                   class="absolute left-1 top-1 bg-white w-8 h-8 rounded-full shadow-md transition-transform duration-500 ease-in-out group-hover:ring-2 group-hover:ring-blue-300 group-hover:ring-opacity-50 {% if billing_period == 'yearly' %}translate-x-10{% endif %}">
-              </div>
+                     class="block h-10 rounded-full bg-blue-300 bg-opacity-50 cursor-pointer"></label>
+              <span class="absolute left-1 top-1 bg-white w-8 h-8 rounded-full shadow-md transition-transform duration-500 ease-in-out {% if billing_period == 'yearly' %}transform translate-x-10{% endif %}"></span>
             </div>
-            <span id="yearlyLabel"
-                  class="text-white font-bold text-lg {% if billing_period == 'yearly' %}opacity-100{% else %}opacity-70{% endif %} transition-opacity duration-300">Yearly</span>
+            <span class="text-white font-bold text-lg {% if billing_period == 'yearly' %}opacity-100{% else %}opacity-70{% endif %} transition-opacity duration-300">Yearly</span>
           </div>
         </div>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10 mb-12">
           {% for plan in plans %}
-            <div class="bg-white rounded-xl shadow-xl overflow-hidden transform transition-all duration-500 hover:-translate-y-3 hover:shadow-2xl group {% if plan.is_popular %}ring-4 ring-green-500{% endif %} animate-fadeInUp"
-                 style="animation-delay: {{ forloop.counter0|add:3 }}00ms">
+            <div class="bg-white rounded-xl shadow-xl overflow-hidden transform transition-all duration-500 hover:-translate-y-3 hover:shadow-2xl group {% if plan.is_popular %}ring-4 ring-green-500{% endif %}">
               {% if plan.is_popular %}
-                <div class="bg-gradient-to-r from-green-500 to-green-600 text-white text-center py-2 font-bold text-sm relative overflow-hidden">
-                  <div class="flex justify-center items-center">
-                    <span class="inline-block animate-pulse mr-2">★</span>
-                    <span class="relative z-10">MOST POPULAR</span>
-                    <span class="inline-block animate-pulse ml-2">★</span>
-                  </div>
-                  <div class="absolute inset-0 w-full h-full">
-                    <div class="absolute top-0 left-0 w-full h-full bg-white opacity-20 transform -skew-x-45 translate-x-full animate-shimmer">
-                    </div>
-                  </div>
+                <div class="bg-gradient-to-r from-green-500 to-green-600 text-white text-center py-2 font-bold text-sm">
+                  <span class="inline-block animate-pulse">★</span> MOST POPULAR <span class="inline-block animate-pulse">★</span>
                 </div>
               {% endif %}
               <div class="p-8">
-                <h2 class="text-2xl font-bold mb-4 text-gray-800 group-hover:text-blue-600 transition-colors duration-300">
-                  {{ plan.name }}
-                </h2>
-                <div class="monthly-price {% if billing_period == 'yearly' %}hidden{% endif %} transition-all duration-500">
-                  <div class="text-5xl font-extrabold text-blue-600 bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-blue-700">
-                    {{ plan.price_monthly|format_price }}
-                  </div>
+                <h2 class="text-2xl font-bold mb-4 text-gray-800">{{ plan.name }}</h2>
+                <div class="monthly-price {% if billing_period == 'yearly' %}hidden{% endif %} transition-opacity duration-500">
+                  <div class="text-5xl font-extrabold text-blue-600">{{ plan.price_monthly|format_price }}</div>
                   <div class="text-gray-500 mb-6">per month</div>
                 </div>
-                <div class="yearly-price {% if billing_period == 'monthly' %}hidden{% endif %} transition-all duration-500">
-                  <div class="text-5xl font-extrabold text-blue-600 bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-green-700">
-                    {{ plan.price_yearly|format_price }}
-                  </div>
+                <div class="yearly-price {% if billing_period == 'monthly' %}hidden{% endif %} transition-opacity duration-500">
+                  <div class="text-5xl font-extrabold text-blue-600">{{ plan.price_yearly|format_price }}</div>
                   <div class="text-gray-500 mb-2">per year</div>
                   {% if plan.yearly_savings > 0 %}
                     <div class="bg-gradient-to-r from-yellow-200 to-yellow-100 text-yellow-800 text-sm font-bold px-3 py-1 rounded-full inline-flex items-center mb-4 animate-pulse">
@@ -97,37 +71,32 @@
                 </div>
                 <ul class="space-y-4 mb-8">
                   {% for feature in plan.features %}
-                    <li class="flex items-start group-hover:transform group-hover:translate-x-1 transition-transform duration-300 ease-in-out hover:text-blue-700">
-                      <svg class="h-6 w-6 text-green-500 mr-2 mt-0.5 flex-shrink-0 group-hover:scale-110 transition-transform duration-300"
-                           viewBox="0 0 20 20"
-                           fill="currentColor">
-                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-                      </svg>
-                      <span class="text-gray-700">{{ feature }}</span>
+                    <li class="flex items-start feature-item transform transition-all duration-300 hover:translate-x-2"
+                        style="animation-delay: {{ forloop.counter0|multiply:100 }}ms">
+                      <div class="bg-green-100 rounded-full p-1 mr-3 flex-shrink-0 transform transition-all duration-300 group-hover:scale-110">
+                        <svg class="h-5 w-5 text-green-500"
+                             viewBox="0 0 20 20"
+                             fill="currentColor">
+                          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                        </svg>
+                      </div>
+                      <span class="text-gray-700 font-medium">{{ feature|format_feature }}</span>
                     </li>
                   {% endfor %}
                 </ul>
                 {% if user.is_authenticated %}
                   <a href="{% url 'subscribe_membership' plan.slug %}"
-                     class="block w-full text-center py-4 px-6 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold transition-all duration-300 ease-in-out transform hover:scale-[1.02] hover:shadow-lg {% if plan.is_popular %}from-green-500 to-green-600 hover:from-green-600 hover:to-green-700{% endif %} relative overflow-hidden group">
-                    <span class="flex items-center justify-center relative z-10">
-                      <i class="fas fa-check-circle mr-2 group-hover:animate-bounce"></i> Choose Plan
+                     class="block w-full text-center py-4 px-6 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold transition-all duration-300 ease-in-out transform hover:scale-[1.02] shadow-md {% if plan.is_popular %}from-green-500 to-green-600 hover:from-green-600 hover:to-green-700{% endif %}">
+                    <span class="flex items-center justify-center">
+                      <i class="fas fa-check-circle mr-2"></i> Choose Plan
                     </span>
-                    <div class="absolute inset-0 w-full h-full">
-                      <div class="absolute top-0 left-0 w-full h-full bg-white opacity-10 transform -skew-x-45 translate-x-full group-hover:animate-shimmer">
-                      </div>
-                    </div>
                   </a>
                 {% else %}
                   <a href="{% url 'login' %}?next={% url 'subscribe_membership' plan.slug %}"
-                     class="block w-full text-center py-4 px-6 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold transition-all duration-300 ease-in-out transform hover:scale-[1.02] hover:shadow-lg {% if plan.is_popular %}from-green-500 to-green-600 hover:from-green-600 hover:to-green-700{% endif %} relative overflow-hidden group">
-                    <span class="flex items-center justify-center relative z-10">
-                      <i class="fas fa-sign-in-alt mr-2 group-hover:animate-bounce"></i> Sign In to Subscribe
+                     class="block w-full text-center py-4 px-6 rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold transition-all duration-300 ease-in-out transform hover:scale-[1.02] shadow-md {% if plan.is_popular %}from-green-500 to-green-600 hover:from-green-600 hover:to-green-700{% endif %}">
+                    <span class="flex items-center justify-center">
+                      <i class="fas fa-sign-in-alt mr-2"></i> Sign In to Subscribe
                     </span>
-                    <div class="absolute inset-0 w-full h-full">
-                      <div class="absolute top-0 left-0 w-full h-full bg-white opacity-10 transform -skew-x-45 translate-x-full group-hover:animate-shimmer">
-                      </div>
-                    </div>
                   </a>
                 {% endif %}
               </div>
@@ -144,178 +113,68 @@
     </div>
   </div>
   <div class="container mx-auto px-4 py-20">
-    <div class="max-w-4xl mx-auto text-center mb-16 animate-fadeIn">
-      <h2 class="text-4xl font-bold mb-6 text-gray-800 bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-700">
-        Membership Benefits
-      </h2>
+    <div class="max-w-4xl mx-auto text-center mb-16">
+      <h2 class="text-4xl font-bold mb-6 text-gray-800">Membership Benefits</h2>
       <p class="text-xl text-gray-600 max-w-3xl mx-auto">Unlock these premium features with your membership</p>
     </div>
     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-      <div class="bg-white rounded-xl shadow-lg p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-gray-100 group animate-fadeInUp"
-           style="animation-delay: 200ms">
-        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-6 text-blue-600 mx-auto transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
+      <div class="bg-white rounded-xl shadow-lg p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-gray-100">
+        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-6 text-blue-600 mx-auto transform transition-transform duration-500 group-hover:scale-110">
           <i class="fas fa-graduation-cap text-2xl"></i>
         </div>
-        <h3 class="text-xl font-bold mb-4 text-center text-gray-800 group-hover:text-blue-600 transition-colors duration-300">
-          Premium Courses
-        </h3>
-        <p class="text-gray-600 text-center group-hover:text-gray-800 transition-colors duration-300">
-          Access our exclusive premium courses not available to free users.
-        </p>
+        <h3 class="text-xl font-bold mb-4 text-center text-gray-800">Premium Courses</h3>
+        <p class="text-gray-600 text-center">Access our exclusive premium courses not available to free users.</p>
       </div>
-      <div class="bg-white rounded-xl shadow-lg p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-gray-100 group animate-fadeInUp"
-           style="animation-delay: 400ms">
-        <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-6 text-purple-600 mx-auto transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
+      <div class="bg-white rounded-xl shadow-lg p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-gray-100">
+        <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mb-6 text-purple-600 mx-auto transform transition-transform duration-500 group-hover:scale-110">
           <i class="fas fa-headset text-2xl"></i>
         </div>
-        <h3 class="text-xl font-bold mb-4 text-center text-gray-800 group-hover:text-purple-600 transition-colors duration-300">
-          Priority Support
-        </h3>
-        <p class="text-gray-600 text-center group-hover:text-gray-800 transition-colors duration-300">
-          Get prioritized support responses from our team of experts.
-        </p>
+        <h3 class="text-xl font-bold mb-4 text-center text-gray-800">Priority Support</h3>
+        <p class="text-gray-600 text-center">Get prioritized support responses from our team of experts.</p>
       </div>
-      <div class="bg-white rounded-xl shadow-lg p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-gray-100 group animate-fadeInUp"
-           style="animation-delay: 600ms">
-        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-600 mx-auto transform transition-transform duration-500 group-hover:scale-110 group-hover:rotate-6">
+      <div class="bg-white rounded-xl shadow-lg p-8 transition-all duration-300 hover:-translate-y-2 hover:shadow-xl border border-gray-100">
+        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-6 text-green-600 mx-auto transform transition-transform duration-500 group-hover:scale-110">
           <i class="fas fa-download text-2xl"></i>
         </div>
-        <h3 class="text-xl font-bold mb-4 text-center text-gray-800 group-hover:text-green-600 transition-colors duration-300">
-          Downloadable Resources
-        </h3>
-        <p class="text-gray-600 text-center group-hover:text-gray-800 transition-colors duration-300">
-          Download course materials and resources for offline access.
-        </p>
+        <h3 class="text-xl font-bold mb-4 text-center text-gray-800">Downloadable Resources</h3>
+        <p class="text-gray-600 text-center">Download course materials and resources for offline access.</p>
       </div>
     </div>
-    <div class="text-center mt-16 animate-fadeIn"
-         style="animation-delay: 800ms">
+    <div class="text-center mt-16">
       <a href="{% url 'membership_benefits' %}"
-         class="inline-flex items-center py-3 px-8 border-2 border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 font-medium transition-all duration-300 hover:shadow-md group relative overflow-hidden">
-        <span class="relative z-10">Learn more about membership benefits</span>
+         class="inline-flex items-center py-3 px-8 border-2 border-blue-500 text-blue-600 rounded-lg hover:bg-blue-50 font-medium transition-all duration-300 hover:shadow-md group">
+        <span>Learn more about membership benefits</span>
         <i class="fas fa-arrow-right ml-2 transform transition-transform duration-300 group-hover:translate-x-1"></i>
-        <div class="absolute inset-0 w-0 bg-blue-50 transition-all duration-300 group-hover:w-full"></div>
       </a>
     </div>
   </div>
-  <style>
-      @keyframes fadeIn {
-          from {
-              opacity: 0;
-          }
-
-          to {
-              opacity: 1;
-          }
-      }
-
-      @keyframes fadeInUp {
-          from {
-              opacity: 0;
-              transform: translateY(20px);
-          }
-
-          to {
-              opacity: 1;
-              transform: translateY(0);
-          }
-      }
-
-      @keyframes shimmer {
-          0% {
-              transform: translateX(-150%);
-          }
-
-          100% {
-              transform: translateX(150%);
-          }
-      }
-
-      @keyframes float {
-          0% {
-              transform: translateY(0px);
-          }
-
-          50% {
-              transform: translateY(-15px);
-          }
-
-          100% {
-              transform: translateY(0px);
-          }
-      }
-
-      .animate-fadeIn {
-          animation: fadeIn 1s ease forwards;
-      }
-
-      .animate-fadeInUp {
-          animation: fadeInUp 0.7s ease forwards;
-      }
-
-      .animate-shimmer {
-          animation: shimmer 2s infinite;
-      }
-
-      .animate-float {
-          animation: float 6s ease-in-out infinite;
-      }
-  </style>
   <script>
       document.addEventListener('DOMContentLoaded', function() {
           const billingToggle = document.getElementById('billingToggle');
-          const toggleHandle = document.getElementById('toggleHandle');
-          const monthlyLabel = document.getElementById('monthlyLabel');
-          const yearlyLabel = document.getElementById('yearlyLabel');
           const monthlyPrices = document.querySelectorAll('.monthly-price');
           const yearlyPrices = document.querySelectorAll('.yearly-price');
 
-          // Fade transition helper with improved animation
+          // Fade transition helper
           function fadeToggle(hideElements, showElements) {
               // Fade out
               hideElements.forEach(item => {
                   item.classList.add('opacity-0');
                   setTimeout(() => {
                       item.classList.add('hidden');
-
-                      // Fade in
-                      showElements.forEach(showItem => {
-                          showItem.classList.remove('hidden');
-                          requestAnimationFrame(() => {
-                              requestAnimationFrame(() => {
-                                  showItem.classList.remove('opacity-0');
-                              });
-                          });
-                      });
                   }, 300);
+              });
+
+              // Fade in
+              showElements.forEach(item => {
+                  item.classList.remove('hidden');
+                  setTimeout(() => {
+                      item.classList.remove('opacity-0');
+                  }, 50);
               });
           }
 
-          // Function to toggle the monthly/yearly switch
-          function updateToggleVisuals(isYearly) {
-              if (isYearly) {
-                  toggleHandle.classList.add('translate-x-10');
-                  monthlyLabel.classList.add('opacity-70');
-                  monthlyLabel.classList.remove('opacity-100');
-                  yearlyLabel.classList.add('opacity-100');
-                  yearlyLabel.classList.remove('opacity-70');
-              } else {
-                  toggleHandle.classList.remove('translate-x-10');
-                  monthlyLabel.classList.add('opacity-100');
-                  monthlyLabel.classList.remove('opacity-70');
-                  yearlyLabel.classList.add('opacity-70');
-                  yearlyLabel.classList.remove('opacity-100');
-              }
-          }
-
           billingToggle.addEventListener('change', function() {
-              const isYearly = this.checked;
-
-              // Update toggle visuals
-              updateToggleVisuals(isYearly);
-
-              // Toggle prices with fade effect
-              if (isYearly) {
+              if (this.checked) {
                   // Yearly billing
                   fadeToggle(monthlyPrices, yearlyPrices);
 
@@ -336,40 +195,28 @@
 
           // Initialize opacity classes for fade transitions
           monthlyPrices.forEach(item => {
-              if (item.classList.contains('hidden')) {
-                  item.classList.add('opacity-0');
-              } else {
+              if (!item.classList.contains('hidden')) {
                   item.classList.remove('opacity-0');
               }
           });
 
           yearlyPrices.forEach(item => {
-              if (item.classList.contains('hidden')) {
-                  item.classList.add('opacity-0');
-              } else {
+              if (!item.classList.contains('hidden')) {
                   item.classList.remove('opacity-0');
               }
           });
 
-          // Add intersection observer for scroll animations
-          const observer = new IntersectionObserver((entries) => {
-              entries.forEach(entry => {
-                  if (entry.isIntersecting) {
-                      entry.target.classList.add('show');
-                      observer.unobserve(entry.target);
-                  }
-              });
-          }, {
-              threshold: 0.1
+          // Add subtle entrance animations on page load
+          const planCards = document.querySelectorAll('.grid-cols-3 > div');
+          planCards.forEach((card, index) => {
+              card.style.opacity = '0';
+              card.style.transform = 'translateY(20px)';
+              setTimeout(() => {
+                  card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                  card.style.opacity = '1';
+                  card.style.transform = 'translateY(0)';
+              }, 100 + (index * 100));
           });
-
-          // Observe elements with animation classes
-          document.querySelectorAll('.animate-fadeIn, .animate-fadeInUp').forEach(el => {
-              observer.observe(el);
-          });
-
-          // Apply slide animation initially if needed
-          updateToggleVisuals(billingToggle.checked);
       });
   </script>
 {% endblock %}
