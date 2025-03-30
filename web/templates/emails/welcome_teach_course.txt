@@ -1,0 +1,22 @@
+Welcome to Your Teaching Journey!
+
+Hello {{ user.first_name|default:user.username }},
+
+Congratulations on taking the first step to becoming a teacher on our platform! We're excited to help you share your knowledge.
+
+You can manage your courses by going to "Teacher Dashboard".
+
+Your account details:
+- Username: {{ user.username }}
+- Email: {{ user.email }}
+
+To set your password and access your account, please visit:
+{{ reset_url }}
+
+We're excited to have you join our teaching community!
+
+If you have any questions, don't hesitate to contact our support team.
+
+Best regards,
+The Education Team
+Alpha One Labs
