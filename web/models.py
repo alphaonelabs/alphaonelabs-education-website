@@ -2884,16 +2884,15 @@ class LearningMapNode(models.Model):
                 else 0
             )
 
-        elif self.node_type == "course" and self.enrollment:
+        if self.node_type == "course" and self.enrollment:
             if hasattr(self.enrollment, "progress"):
                 return self.enrollment.progress.completion_percentage
             return 0
 
-        elif self.node_type == "milestone" and self.target_value:
+        if self.node_type == "milestone" and self.target_value:
             return min(100, int((self.current_value / self.target_value) * 100)) if self.target_value else 0
 
         return 0
-
     @property
     @property
     def is_completed(self) -> bool:
