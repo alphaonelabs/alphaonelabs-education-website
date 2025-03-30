@@ -5,71 +5,63 @@
 {% endblock title %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
-    <!-- Header with gradient background -->
-    <div class="bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 rounded-xl shadow-lg p-6 mb-8 transform transition-all duration-300 hover:shadow-xl">
-      <div class="flex flex-col md:flex-row justify-between items-center">
-        <div class="flex items-center mb-4 md:mb-0">
-          <div class="bg-white/20 p-3 rounded-lg mr-4 shadow">
-            <i class="fas fa-chalkboard-teacher text-white text-2xl"></i>
-          </div>
-          <h1 class="text-3xl font-bold text-white">Teacher Dashboard</h1>
-        </div>
-        <a href="{% url 'create_course' %}"
-           class="bg-white text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 font-semibold px-5 py-2 rounded-lg flex items-center transition-all duration-300 transform hover:scale-105 shadow-md">
-          <i class="fas fa-plus mr-2"></i> Create New Course
-        </a>
-      </div>
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold">Teacher Dashboard</h1>
+      <a href="{% url 'create_course' %}"
+         class="bg-teal-500 hover:bg-teal-600 text-white font-semibold px-4 py-2 rounded-lg flex items-center">
+        <i class="fas fa-plus mr-2"></i> Create New Course
+      </a>
     </div>
     <!-- Overview Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
       <!-- Total Courses -->
-      <div class="bg-gradient-to-br from-white to-indigo-50 dark:from-gray-800 dark:to-indigo-900 rounded-xl shadow-lg p-6 border border-indigo-100 dark:border-indigo-700 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Courses</p>
-            <h3 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">
-              {{ courses.count }}
-            </h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Total Courses</p>
+            <h3 class="text-2xl font-bold">{{ courses.count }}</h3>
           </div>
-          <div class="bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full p-3 shadow-lg transform transition-all duration-500 hover:rotate-12">
-            <i class="fas fa-book text-white text-xl"></i>
+          <div class="bg-teal-100 dark:bg-teal-900 rounded-full p-3">
+            <i class="fas fa-book text-teal-500 dark:text-teal-300 text-xl"></i>
           </div>
         </div>
       </div>
       <!-- Total Students -->
-      <div class="bg-gradient-to-br from-white to-orange-50 dark:from-gray-800 dark:to-orange-900 rounded-xl shadow-lg p-6 border border-orange-100 dark:border-orange-700 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Students</p>
-            <h3 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-pink-600">
-              {{ total_students|default:"0" }}
-            </h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Total Students</p>
+            <h3 class="text-2xl font-bold">{{ total_students|default:"0" }}</h3>
           </div>
-          <div class="bg-gradient-to-r from-orange-400 to-orange-600 rounded-full p-3 shadow-lg transform transition-all duration-500 hover:rotate-12">
-            <i class="fas fa-users text-white text-xl"></i>
+          <div class="bg-orange-100 dark:bg-orange-900 rounded-full p-3">
+            <i class="fas fa-users text-orange-500 dark:text-orange-300 text-xl"></i>
           </div>
         </div>
       </div>
+      <!-- AWARD ACHIEVEMENTS -->
+      <!-- Add this button to the teacher dashboard template -->
+      <a href="{% url 'award_achievement' %}" class="btn btn-primary mb-3">
+        <i class="fas fa-award me-2"></i>Award Achievement
+      </a>
+      <!-- AWARD ACHIEVEMENTS -->
       <!-- Total Earnings -->
-      <div class="bg-gradient-to-br from-white to-green-50 dark:from-gray-800 dark:to-green-900 rounded-xl shadow-lg p-6 border border-green-100 dark:border-green-700 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Earnings</p>
-            <h3 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-teal-600">
-              ${{ total_earnings|default:"0.00" }}
-            </h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Total Earnings</p>
+            <h3 class="text-2xl font-bold">${{ total_earnings|default:"0.00" }}</h3>
           </div>
-          <div class="bg-gradient-to-r from-green-400 to-green-600 rounded-full p-3 shadow-lg transform transition-all duration-500 hover:rotate-12">
-            <i class="fas fa-dollar-sign text-white text-xl"></i>
+          <div class="bg-indigo-100 dark:bg-indigo-900 rounded-full p-3">
+            <i class="fas fa-dollar-sign text-indigo-500 dark:text-indigo-300 text-xl"></i>
           </div>
         </div>
       </div>
       <!-- Average Completion Rate -->
-      <div class="bg-gradient-to-br from-white to-blue-50 dark:from-gray-800 dark:to-blue-900 rounded-xl shadow-lg p-6 border border-blue-100 dark:border-blue-700 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Avg. Completion Rate</p>
-            <h3 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-purple-600">
+            <p class="text-sm text-gray-500 dark:text-gray-400">Avg. Completion Rate</p>
+            <h3 class="text-2xl font-bold">
               {% with total=0 count=0 %}
                 {% for stat in course_stats %}
                   {% if stat.total_students > 0 %}
@@ -85,61 +77,49 @@
               {% endwith %}
             </h3>
           </div>
-          <div class="bg-gradient-to-r from-blue-400 to-blue-600 rounded-full p-3 shadow-lg transform transition-all duration-500 hover:rotate-12">
-            <i class="fas fa-chart-line text-white text-xl"></i>
+          <div class="bg-green-100 dark:bg-green-900 rounded-full p-3">
+            <i class="fas fa-chart-line text-green-500 dark:text-green-300 text-xl"></i>
           </div>
         </div>
       </div>
     </div>
-    <!-- Award Achievements Button -->
-    <div class="flex justify-center mb-8">
-      <a href="{% url 'award_achievement' %}"
-         class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold px-6 py-3 rounded-xl shadow-lg flex items-center transition-all duration-300 transform hover:scale-105">
-        <i class="fas fa-award text-xl mr-3 animate-pulse"></i> Award Achievement to Students
-      </a>
-    </div>
-    <!-- Rest of the content continues below -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <!-- Course List -->
       <div class="lg:col-span-2">
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-100 dark:border-gray-700 transform transition-all duration-300 hover:shadow-xl">
-          <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-4">
-            <h2 class="text-xl font-bold text-white flex items-center">
-              <i class="fas fa-book-open mr-2"></i> Your Courses
-            </h2>
-          </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
           <div class="p-6">
+            <h2 class="text-xl font-semibold mb-4">Your Courses</h2>
             {% if courses %}
               <div class="space-y-6">
                 {% for course in courses %}
-                  <div class="bg-gradient-to-r from-white to-gray-50 dark:from-gray-800 dark:to-gray-750 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-md hover:shadow-lg transform transition-all duration-300 hover:-translate-y-1">
+                  <div class="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-0 last:pb-0 hover:bg-gray-50 dark:hover:bg-gray-750 transition duration-200 rounded-lg">
                     <a href="{% url 'course_detail' course.slug %}" class="block">
-                      <div class="flex justify-between items-start p-4">
+                      <div class="flex justify-between items-start p-2">
                         <div class="flex items-start space-x-4">
                           <div class="flex-shrink-0">
                             {% if course.image %}
                               <img src="{{ course.image.url }}"
                                    alt="{{ course.title }}"
-                                   class="w-24 h-24 object-cover rounded-lg shadow-md"
+                                   class="w-24 h-24 object-cover rounded-lg"
                                    width="96"
                                    height="96" />
                             {% else %}
-                              <div class="w-24 h-24 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-600 rounded-lg flex items-center justify-center shadow-md">
+                              <div class="w-24 h-24 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
                                 <i class="fas fa-book text-gray-400 dark:text-gray-500 text-2xl"></i>
                               </div>
                             {% endif %}
                           </div>
                           <div>
-                            <h3 class="font-bold text-lg text-gray-800 dark:text-gray-200">{{ course.title }}</h3>
-                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ course.description|truncatewords:20 }}</p>
-                            <div class="flex flex-wrap items-center mt-3 gap-3">
-                              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                            <h3 class="font-medium">{{ course.title }}</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ course.description|truncatewords:30 }}</p>
+                            <div class="flex items-center mt-2 space-x-4">
+                              <span class="text-sm text-gray-500 dark:text-gray-400">
                                 <i class="fas fa-users mr-1"></i> {{ course.enrollments.count }} students
                               </span>
-                              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                              <span class="text-sm text-gray-500 dark:text-gray-400">
                                 <i class="fas fa-calendar mr-1"></i> {{ course.sessions.count }} sessions
                               </span>
-                              <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                              <span class="text-sm text-gray-500 dark:text-gray-400">
                                 <i class="fas fa-dollar-sign mr-1"></i> ${{ course.price }}
                               </span>
                             </div>
@@ -147,17 +127,17 @@
                         </div>
                       </div>
                     </a>
-                    <div class="flex flex-wrap gap-2 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 p-3">
+                    <div class="flex space-x-3 mt-2 px-4">
                       <a href="{% url 'course_detail' course.slug %}"
-                         class="inline-flex items-center bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white px-3 py-1 rounded-lg text-sm font-medium transition duration-200 transform hover:scale-105 shadow">
+                         class="bg-teal-100 hover:bg-teal-200 dark:bg-teal-700 dark:hover:bg-teal-600 text-teal-700 dark:text-teal-200 px-3 py-1 rounded-lg text-sm transition duration-200">
                         <i class="fas fa-eye mr-1"></i> View
                       </a>
                       <a href="{% url 'update_course' course.slug %}"
-                         class="inline-flex items-center bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-3 py-1 rounded-lg text-sm font-medium transition duration-200 transform hover:scale-105 shadow">
+                         class="bg-blue-100 hover:bg-blue-200 dark:bg-blue-700 dark:hover:bg-blue-600 text-blue-700 dark:text-blue-200 px-3 py-1 rounded-lg text-sm transition duration-200">
                         <i class="fas fa-edit mr-1"></i> Edit
                       </a>
                       <a href="{% url 'course_progress_overview' course.slug %}"
-                         class="inline-flex items-center bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-3 py-1 rounded-lg text-sm font-medium transition duration-200 transform hover:scale-105 shadow">
+                         class="bg-orange-100 hover:bg-orange-200 dark:bg-orange-700 dark:hover:bg-orange-600 text-orange-700 dark:text-orange-200 px-3 py-1 rounded-lg text-sm transition duration-200">
                         <i class="fas fa-chart-bar mr-1"></i> Students
                       </a>
                     </div>
@@ -165,47 +145,34 @@
                 {% endfor %}
               </div>
             {% else %}
-              <div class="text-center py-10">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-100 text-indigo-500 mb-4">
-                  <i class="fas fa-book-open text-xl"></i>
-                </div>
-                <p class="text-gray-500 dark:text-gray-400 mb-4">You haven't created any courses yet.</p>
-                <a href="{% url 'create_course' %}"
-                   class="inline-flex items-center bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white px-4 py-2 rounded-lg font-medium transition duration-300 transform hover:scale-105 shadow">
-                  <i class="fas fa-plus-circle mr-2"></i> Create Your First Course
-                </a>
-              </div>
+              <p class="text-gray-500 dark:text-gray-400">You haven't created any courses yet.</p>
             {% endif %}
           </div>
         </div>
       </div>
       <!-- Upcoming Sessions -->
       <div>
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-100 dark:border-gray-700 transform transition-all duration-300 hover:shadow-xl">
-          <div class="bg-gradient-to-r from-orange-500 to-amber-600 p-4">
-            <h2 class="text-xl font-bold text-white flex items-center">
-              <i class="fas fa-calendar-alt mr-2"></i> Upcoming Sessions
-            </h2>
-          </div>
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow">
           <div class="p-6">
+            <h2 class="text-xl font-semibold mb-4">Upcoming Sessions</h2>
             {% if upcoming_sessions %}
-              <div class="space-y-5">
+              <div class="space-y-4">
                 {% for session in upcoming_sessions %}
-                  <div class="bg-gradient-to-r from-white to-amber-50 dark:from-gray-800 dark:to-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-800 p-4 shadow-md hover:shadow-lg transform transition-all duration-300 hover:-translate-y-1">
+                  <div class="border-b border-gray-200 dark:border-gray-700 pb-4 last:border-0 last:pb-0">
                     <div class="flex items-start">
-                      <div class="flex-shrink-0 bg-gradient-to-r from-amber-400 to-orange-500 rounded-lg p-3 mr-4 shadow">
-                        <i class="fas fa-calendar-day text-white text-lg"></i>
+                      <div class="bg-orange-100 dark:bg-orange-900 rounded-lg p-2 mr-4">
+                        <i class="fas fa-calendar text-orange-500 dark:text-orange-300"></i>
                       </div>
                       <div>
-                        <h4 class="font-bold text-gray-800 dark:text-gray-200">{{ session.title }}</h4>
-                        <p class="text-sm text-blue-600 dark:text-blue-400 mb-1">{{ session.course.title }}</p>
-                        <p class="text-sm text-gray-500 dark:text-gray-400 flex items-center">
-                          <i class="far fa-clock mr-1"></i> {{ session.start_time|date:"M d, Y" }} at {{ session.start_time|time:"g:i A" }}
+                        <h4 class="font-medium">{{ session.title }}</h4>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">{{ session.course.title }}</p>
+                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                          {{ session.start_time|date:"M d, Y" }} at {{ session.start_time|time:"g:i A" }}
                         </p>
                         {% if session.is_virtual %}
                           <a href="{{ session.meeting_link }}"
                              target="_blank"
-                             class="inline-flex items-center mt-3 px-3 py-1 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white rounded-lg text-sm font-medium transition-all duration-200 transform hover:scale-105 shadow">
+                             class="inline-block mt-2 text-sm text-teal-500 hover:text-teal-600 dark:text-teal-400">
                             <i class="fas fa-video mr-1"></i> Join Meeting
                           </a>
                         {% endif %}
@@ -215,355 +182,216 @@
                 {% endfor %}
               </div>
             {% else %}
-              <div class="text-center py-8">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-orange-100 text-orange-500 mb-4">
-                  <i class="fas fa-calendar-alt text-xl"></i>
-                </div>
-                <p class="text-gray-500 dark:text-gray-400">No upcoming sessions scheduled.</p>
-                <a href="#"
-                   class="inline-block mt-3 text-orange-500 hover:text-orange-600 dark:text-orange-400 font-medium">
-                  <i class="fas fa-plus-circle mr-1"></i> Schedule a Session
-                </a>
-              </div>
+              <p class="text-gray-500 dark:text-gray-400">No upcoming sessions scheduled.</p>
             {% endif %}
           </div>
         </div>
       </div>
     </div>
     <!-- Membership Section -->
-    <div class="mt-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-purple-100 dark:border-purple-900 transform transition-all duration-500 hover:shadow-xl">
-      <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-6">
-        <div class="flex justify-between items-center">
-          <h2 class="text-2xl font-bold text-white flex items-center">
-            <span class="inline-block bg-white/20 p-3 rounded-lg text-white mr-4 shadow-md transform transition-transform duration-500 hover:rotate-12">
-              <i class="fas fa-crown text-xl"></i>
-            </span>
-            Teacher Membership
-          </h2>
-          {% if not subscription %}
-            <a href="{% url 'membership_plans' %}"
-               class="bg-white text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 font-semibold px-5 py-2 rounded-lg flex items-center transform transition-transform duration-300 hover:scale-105 shadow-md">
-              <i class="fas fa-crown mr-2 animate-pulse"></i> Upgrade to Premium
+    <div class="mt-12 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 overflow-hidden transform transition-all duration-300 hover:shadow-xl hover:scale-[1.01]">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-200 flex items-center">
+          <span class="inline-block bg-gradient-to-br from-purple-500 to-indigo-600 p-3 rounded-lg text-white mr-4 shadow-md transform transition-transform duration-500 hover:rotate-12">
+            <i class="fas fa-crown text-xl"></i>
+          </span>
+          Teacher Membership
+        </h2>
+        {% if not subscription %}
+          <a href="{% url 'membership_plans' %}"
+             class="bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-semibold px-5 py-2 rounded-lg flex items-center transform transition-transform duration-300 hover:scale-105 shadow-md">
+            <i class="fas fa-crown mr-2 animate-pulse"></i> Upgrade to Premium
+          </a>
+        {% endif %}
+      </div>
+      {% if subscription %}
+        <div class="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900 dark:to-indigo-900 rounded-lg p-6 mb-6 border-l-4 border-purple-500 shadow-inner transform transition-all duration-300">
+          <div class="flex flex-col sm:flex-row items-start">
+            <div class="mr-5 mb-4 sm:mb-0 relative">
+              <div class="absolute inset-0 bg-gradient-to-r from-purple-400 to-indigo-500 rounded-full opacity-25 animate-ping">
+              </div>
+              <div class="relative">
+                <i class="fas fa-crown text-yellow-500 dark:text-yellow-300 text-4xl"></i>
+              </div>
+            </div>
+            <div>
+              <h3 class="font-bold text-xl text-purple-700 dark:text-purple-300 mb-3">{{ subscription.plan.name }}</h3>
+              <p class="text-gray-600 dark:text-indigo-300 flex items-center mb-3">
+                {% if subscription.plan.billing_period == 'monthly' %}
+                  <i class="fas fa-calendar-alt mr-2"></i> Monthly Plan - <span class="font-semibold ml-1">${{ subscription.plan.monthly_price }}/month</span>
+                {% else %}
+                  <i class="fas fa-calendar-check mr-2"></i> Annual Plan - <span class="font-semibold ml-1">${{ subscription.plan.yearly_price }}/year</span>
+                {% endif %}
+              </p>
+              <div class="text-gray-600 dark:text-indigo-300">
+                <p class="font-medium mb-2">Status:</p>
+                <div class="flex flex-wrap gap-2">
+                  {% if subscription.status == 'active' %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-700 text-green-800 dark:text-green-200">
+                      <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                      Active
+                    </span>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-700 text-blue-800 dark:text-blue-200">
+                      <i class="fas fa-certificate mr-2"></i>
+                      Premium Features Enabled
+                    </span>
+                  {% elif subscription.status == 'canceled' %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-100 dark:bg-orange-700 text-orange-800 dark:text-orange-200">
+                      <i class="fas fa-calendar-times mr-2"></i>
+                      Canceled
+                    </span>
+                    <span class="text-sm bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
+                      <i class="fas fa-clock mr-2"></i>
+                      Access until {{ subscription.ends_at|date:"F d, Y" }}
+                    </span>
+                  {% else %}
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
+                      <i class="fas fa-info-circle mr-2"></i>
+                      {{ subscription.status|title }}
+                    </span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-3 mt-5">
+          <a href="{% url 'manage_membership' %}"
+             class="bg-indigo-500 hover:bg-indigo-600 text-white px-5 py-2 rounded-lg text-sm font-medium flex items-center shadow transform transition-transform duration-300 hover:scale-105">
+            <i class="fas fa-cog mr-2 animate-spin hover:animate-none"></i> Manage Subscription
+          </a>
+          {% if subscription.status == 'active' %}
+            <a href="{% url 'change_membership_plan' %}"
+               class="bg-purple-500 hover:bg-purple-600 text-white px-5 py-2 rounded-lg text-sm font-medium flex items-center shadow transform transition-transform duration-300 hover:scale-105">
+              <i class="fas fa-exchange-alt mr-2"></i> Change Plan
+            </a>
+          {% elif subscription.status == 'canceled' %}
+            <a href="{% url 'reactivate_subscription' %}"
+               class="bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white px-5 py-2 rounded-lg text-sm font-medium flex items-center shadow transform transition-transform duration-300 hover:scale-105">
+              <i class="fas fa-redo mr-2 animate-spin hover:animate-none"></i> Reactivate
             </a>
           {% endif %}
         </div>
-      </div>
-      {% if subscription %}
-        <div class="p-6">
-          <div class="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-xl p-6 mb-6 border border-purple-100 dark:border-purple-800 shadow-inner transform transition-all duration-300">
-            <div class="flex flex-col sm:flex-row items-start">
-              <div class="mr-6 mb-4 sm:mb-0 relative">
-                <div class="absolute inset-0 bg-gradient-to-r from-purple-400 to-indigo-500 rounded-full opacity-25 animate-ping">
-                </div>
-                <div class="relative w-16 h-16 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center shadow-lg">
-                  <i class="fas fa-crown text-yellow-300 text-2xl animate-pulse"></i>
-                </div>
-              </div>
-              <div>
-                <div class="flex items-center mb-3">
-                  <h3 class="font-bold text-2xl bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400">
-                    {{ subscription.plan.name }}
-                  </h3>
-                  <span class="ml-3 px-3 py-1 bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900 dark:to-indigo-900 text-purple-800 dark:text-purple-300 text-xs font-semibold rounded-full">Premium</span>
-                </div>
-                <p class="text-gray-600 dark:text-indigo-300 flex items-center mb-4">
-                  {% if subscription.plan.billing_period == 'monthly' %}
-                    <i class="fas fa-calendar-alt mr-2 text-purple-500"></i> Monthly Plan - <span class="font-semibold ml-1 text-indigo-700 dark:text-indigo-300">${{ subscription.plan.monthly_price }}/month</span>
-                  {% else %}
-                    <i class="fas fa-calendar-check mr-2 text-purple-500"></i> Annual Plan - <span class="font-semibold ml-1 text-indigo-700 dark:text-indigo-300">${{ subscription.plan.yearly_price }}/year</span>
-                  {% endif %}
-                </p>
-                <div class="text-gray-600 dark:text-indigo-300 mb-3">
-                  <p class="font-medium mb-2">Status:</p>
-                  <div class="flex flex-wrap gap-2">
-                    {% if subscription.status == 'active' %}
-                      <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-700">
-                        <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                        Active
-                      </span>
-                      <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-900 dark:to-blue-800 text-blue-800 dark:text-blue-200 border border-blue-200 dark:border-blue-700">
-                        <i class="fas fa-certificate mr-2 text-blue-500"></i>
-                        Premium Features Enabled
-                      </span>
-                    {% elif subscription.status == 'canceled' %}
-                      <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-gradient-to-r from-orange-100 to-orange-200 dark:from-orange-900 dark:to-orange-800 text-orange-800 dark:text-orange-200 border border-orange-200 dark:border-orange-700">
-                        <i class="fas fa-calendar-times mr-2 text-orange-500"></i>
-                        Canceled
-                      </span>
-                      <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
-                        <i class="fas fa-clock mr-2 text-gray-500"></i>
-                        Access until {{ subscription.ends_at|date:"F d, Y" }}
-                      </span>
-                    {% else %}
-                      <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-medium bg-gradient-to-r from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-700 text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700">
-                        <i class="fas fa-info-circle mr-2 text-gray-500"></i>
-                        {{ subscription.status|title }}
-                      </span>
-                    {% endif %}
-                  </div>
-                </div>
-                <!-- Premium features summary -->
-                <div class="mt-4 grid grid-cols-2 gap-3">
-                  <div class="flex items-center">
-                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">Unlimited Courses</span>
-                  </div>
-                  <div class="flex items-center">
-                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">Advanced Analytics</span>
-                  </div>
-                  <div class="flex items-center">
-                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">Priority Support</span>
-                  </div>
-                  <div class="flex items-center">
-                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                    <span class="text-sm text-gray-700 dark:text-gray-300">Reduced Platform Fees</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="flex flex-wrap gap-3">
-            <a href="{% url 'manage_membership' %}"
-               class="inline-flex items-center bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium shadow transform transition-all duration-300 hover:scale-105 hover:shadow-lg">
-              <i class="fas fa-cog mr-2"></i> Manage Subscription
-            </a>
-            {% if subscription.status == 'active' %}
-              <a href="{% url 'change_membership_plan' %}"
-                 class="inline-flex items-center bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-5 py-2 rounded-lg text-sm font-medium shadow transform transition-all duration-300 hover:scale-105 hover:shadow-lg">
-                <i class="fas fa-exchange-alt mr-2"></i> Change Plan
-              </a>
-            {% elif subscription.status == 'canceled' %}
-              <a href="{% url 'reactivate_subscription' %}"
-                 class="inline-flex items-center bg-gradient-to-r from-green-500 to-teal-500 hover:from-green-600 hover:to-teal-600 text-white px-5 py-2 rounded-lg text-sm font-medium shadow transform transition-all duration-300 hover:scale-105 hover:shadow-lg">
-                <i class="fas fa-redo mr-2"></i> Reactivate
-              </a>
-            {% endif %}
-          </div>
-        </div>
       {% else %}
-        <div class="p-6">
-          <div class="relative overflow-hidden bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-6 border border-indigo-100 dark:border-indigo-800 shadow-inner">
-            <!-- Animated background pattern -->
-            <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-              <div class="absolute top-10 left-10 w-40 h-40 bg-indigo-300 opacity-10 rounded-full filter blur-3xl animate-pulse">
+        <div class="relative overflow-hidden bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900 dark:to-purple-900 rounded-xl p-6 border border-indigo-200 dark:border-indigo-700 shadow-inner">
+          <!-- Animated background pattern -->
+          <div class="absolute inset-0 bg-grid-indigo-100 dark:bg-grid-indigo-700/25 [mask-image:linear-gradient(0deg,#fff,rgba(255,255,255,0.6))] dark:[mask-image:linear-gradient(0deg,rgba(0,0,0,0.4),rgba(0,0,0,0.1))]">
+          </div>
+          <div class="relative">
+            <div class="flex items-center mb-4">
+              <div class="bg-gradient-to-r from-indigo-500 to-purple-500 p-3 rounded-full shadow-lg mr-4">
+                <i class="fas fa-rocket text-white text-xl"></i>
               </div>
-              <div class="absolute bottom-10 right-10 w-60 h-60 bg-purple-300 opacity-10 rounded-full filter blur-3xl animate-pulse"
-                   style="animation-delay: 1s"></div>
+              <h3 class="text-xl font-bold text-gray-800 dark:text-white">Unlock Premium Teaching Tools</h3>
             </div>
-            <div class="relative">
-              <div class="flex items-center mb-6">
-                <div class="bg-gradient-to-r from-indigo-500 to-purple-500 p-4 rounded-xl shadow-lg mr-4">
-                  <i class="fas fa-rocket text-white text-2xl"></i>
+            <p class="text-gray-700 dark:text-gray-300 text-lg mb-4">
+              Upgrade to a premium teacher membership to unlock advanced features for your courses.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+              <div class="bg-white dark:bg-gray-700 rounded-lg p-4 shadow-md border border-indigo-100 dark:border-indigo-800 transform transition-transform duration-300 hover:translate-y-[-4px]">
+                <div class="flex items-center mb-3">
+                  <span class="flex items-center justify-center w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-800 text-indigo-600 dark:text-indigo-300 mr-3 shadow">
+                    <i class="fas fa-infinity"></i>
+                  </span>
+                  <h3 class="font-semibold text-indigo-700 dark:text-indigo-300">Unlimited Courses</h3>
                 </div>
-                <h3 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
-                  Unlock Premium Teaching Tools
-                </h3>
+                <p class="text-gray-600 dark:text-gray-300 text-sm">
+                  Create and manage an unlimited number of courses with premium features.
+                </p>
               </div>
-              <p class="text-gray-700 dark:text-gray-300 text-lg mb-6">
-                Upgrade to a premium teacher membership to unlock advanced features and increase your teaching potential.
-              </p>
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-                <div class="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-md border border-indigo-100 dark:border-indigo-800 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
-                  <div class="flex items-center mb-3">
-                    <span class="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-indigo-100 to-indigo-200 dark:from-indigo-800 dark:to-indigo-700 text-indigo-600 dark:text-indigo-300 mr-3 shadow group-hover:scale-110 transition-transform duration-300">
-                      <i class="fas fa-infinity"></i>
-                    </span>
-                    <h3 class="font-semibold text-indigo-700 dark:text-indigo-300">Unlimited Courses</h3>
-                  </div>
-                  <p class="text-gray-600 dark:text-gray-300 text-sm">
-                    Create and manage an unlimited number of courses with premium features.
-                  </p>
+              <div class="bg-white dark:bg-gray-700 rounded-lg p-4 shadow-md border border-indigo-100 dark:border-indigo-800 transform transition-transform duration-300 hover:translate-y-[-4px]">
+                <div class="flex items-center mb-3">
+                  <span class="flex items-center justify-center w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-800 text-purple-600 dark:text-purple-300 mr-3 shadow">
+                    <i class="fas fa-chart-line"></i>
+                  </span>
+                  <h3 class="font-semibold text-purple-700 dark:text-purple-300">Advanced Analytics</h3>
                 </div>
-                <div class="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-md border border-purple-100 dark:border-purple-800 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
-                  <div class="flex items-center mb-3">
-                    <span class="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-purple-100 to-purple-200 dark:from-purple-800 dark:to-purple-700 text-purple-600 dark:text-purple-300 mr-3 shadow group-hover:scale-110 transition-transform duration-300">
-                      <i class="fas fa-chart-line"></i>
-                    </span>
-                    <h3 class="font-semibold text-purple-700 dark:text-purple-300">Advanced Analytics</h3>
-                  </div>
-                  <p class="text-gray-600 dark:text-gray-300 text-sm">
-                    Gain insights with detailed student engagement and revenue reporting tools.
-                  </p>
+                <p class="text-gray-600 dark:text-gray-300 text-sm">
+                  Gain insights with detailed student engagement and revenue reporting tools.
+                </p>
+              </div>
+              <div class="bg-white dark:bg-gray-700 rounded-lg p-4 shadow-md border border-indigo-100 dark:border-indigo-800 transform transition-transform duration-300 hover:translate-y-[-4px]">
+                <div class="flex items-center mb-3">
+                  <span class="flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-800 text-blue-600 dark:text-blue-300 mr-3 shadow">
+                    <i class="fas fa-search"></i>
+                  </span>
+                  <h3 class="font-semibold text-blue-700 dark:text-blue-300">Search Priority</h3>
                 </div>
-                <div class="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-md border border-blue-100 dark:border-blue-800 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
-                  <div class="flex items-center mb-3">
-                    <span class="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-800 dark:to-blue-700 text-blue-600 dark:text-blue-300 mr-3 shadow group-hover:scale-110 transition-transform duration-300">
-                      <i class="fas fa-search"></i>
-                    </span>
-                    <h3 class="font-semibold text-blue-700 dark:text-blue-300">Search Priority</h3>
-                  </div>
-                  <p class="text-gray-600 dark:text-gray-300 text-sm">
-                    Your courses will rank higher in search results, increasing visibility to students.
-                  </p>
+                <p class="text-gray-600 dark:text-gray-300 text-sm">
+                  Your courses will rank higher in search results, increasing visibility.
+                </p>
+              </div>
+              <div class="bg-white dark:bg-gray-700 rounded-lg p-4 shadow-md border border-indigo-100 dark:border-indigo-800 transform transition-transform duration-300 hover:translate-y-[-4px]">
+                <div class="flex items-center mb-3">
+                  <span class="flex items-center justify-center w-10 h-10 rounded-full bg-green-100 dark:bg-green-800 text-green-600 dark:text-green-300 mr-3 shadow">
+                    <i class="fas fa-percentage"></i>
+                  </span>
+                  <h3 class="font-semibold text-green-700 dark:text-green-300">Lower Fees</h3>
                 </div>
-                <div class="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-md border border-green-100 dark:border-green-800 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
-                  <div class="flex items-center mb-3">
-                    <span class="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-green-100 to-green-200 dark:from-green-800 dark:to-green-700 text-green-600 dark:text-green-300 mr-3 shadow group-hover:scale-110 transition-transform duration-300">
-                      <i class="fas fa-percentage"></i>
-                    </span>
-                    <h3 class="font-semibold text-green-700 dark:text-green-300">Lower Fees</h3>
-                  </div>
-                  <p class="text-gray-600 dark:text-gray-300 text-sm">
-                    Enjoy reduced platform fees on all course sales, increasing your earnings.
-                  </p>
-                </div>
+                <p class="text-gray-600 dark:text-gray-300 text-sm">
+                  Enjoy reduced platform fees on all course sales, increasing your earnings.
+                </p>
               </div>
             </div>
-            <div class="mt-8 flex justify-center">
-              <a href="{% url 'membership_plans' %}"
-                 class="inline-flex items-center bg-gradient-to-r from-indigo-500 via-purple-500 to-violet-500 hover:from-indigo-600 hover:via-purple-600 hover:to-violet-600 text-white font-medium px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
-                <i class="fas fa-crown mr-2"></i> Explore Teacher Plans
-              </a>
-            </div>
+          </div>
+          <div class="mt-8 flex justify-center">
+            <a href="{% url 'membership_plans' %}"
+               class="bg-gradient-to-r from-indigo-500 via-purple-500 to-violet-500 hover:from-indigo-600 hover:via-purple-600 hover:to-violet-600 text-white font-medium px-6 py-3 rounded-lg shadow-lg flex items-center transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
+              <i class="fas fa-crown mr-2"></i> Explore Teacher Plans
+            </a>
           </div>
         </div>
       {% endif %}
     </div>
     <!-- Merchandise Section -->
     {% if storefront %}
-      <div class="mt-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-teal-100 dark:border-teal-900 transform transition-all duration-500 hover:shadow-xl">
-        <div class="bg-gradient-to-r from-teal-500 to-emerald-600 p-6">
-          <h2 class="text-2xl font-bold text-white flex items-center">
-            <span class="inline-block bg-white/20 p-3 rounded-lg text-white mr-4 shadow-md transform transition-transform duration-500 hover:rotate-12">
-              <i class="fas fa-store text-xl"></i>
-            </span>
-            Storefront Management
-          </h2>
-          <p class="text-teal-100 mt-2">Manage your digital storefront, products, and sales analytics</p>
-        </div>
-        <div class="p-6">
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <!-- Add New Product -->
-            <a href="{% url 'goods_create' store_slug=storefront.store_slug %}"
-               class="flex flex-col items-center bg-gradient-to-br from-white to-teal-50 dark:from-gray-800 dark:to-teal-900/20 rounded-xl p-5 border border-teal-100 dark:border-teal-800 shadow-md hover:shadow-lg transform transition-all duration-300 hover:-translate-y-1 text-center">
-              <div class="w-16 h-16 bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full flex items-center justify-center shadow-md mb-4">
-                <i class="fas fa-plus-circle text-white text-2xl"></i>
-              </div>
-              <h3 class="font-bold text-teal-700 dark:text-teal-300 mb-1">New Product</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400">Add a new product to your store</p>
-            </a>
-            <!-- Product Management -->
-            <a href="{% url 'goods_list' %}"
-               class="flex flex-col items-center bg-gradient-to-br from-white to-emerald-50 dark:from-gray-800 dark:to-emerald-900/20 rounded-xl p-5 border border-emerald-100 dark:border-emerald-800 shadow-md hover:shadow-lg transform transition-all duration-300 hover:-translate-y-1 text-center">
-              <div class="w-16 h-16 bg-gradient-to-r from-emerald-400 to-green-500 rounded-full flex items-center justify-center shadow-md mb-4">
-                <i class="fas fa-boxes text-white text-2xl"></i>
-              </div>
-              <h3 class="font-bold text-emerald-700 dark:text-emerald-300 mb-1">Manage Products</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400">Edit and manage existing products</p>
-            </a>
-            <!-- Order Management -->
-            <a href="{% url 'store_order_management' store_slug=storefront.store_slug %}"
-               class="flex flex-col items-center bg-gradient-to-br from-white to-orange-50 dark:from-gray-800 dark:to-orange-900/20 rounded-xl p-5 border border-orange-100 dark:border-orange-800 shadow-md hover:shadow-lg transform transition-all duration-300 hover:-translate-y-1 text-center">
-              <div class="w-16 h-16 bg-gradient-to-r from-orange-400 to-amber-500 rounded-full flex items-center justify-center shadow-md mb-4">
-                <i class="fas fa-clipboard-list text-white text-2xl"></i>
-              </div>
-              <h3 class="font-bold text-orange-700 dark:text-orange-300 mb-1">View Orders</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400">Manage customer orders</p>
-            </a>
-            <!-- Analytics -->
-            <a href="{% url 'store_analytics' store_slug=storefront.store_slug %}"
-               class="flex flex-col items-center bg-gradient-to-br from-white to-blue-50 dark:from-gray-800 dark:to-blue-900/20 rounded-xl p-5 border border-blue-100 dark:border-blue-800 shadow-md hover:shadow-lg transform transition-all duration-300 hover:-translate-y-1 text-center">
-              <div class="w-16 h-16 bg-gradient-to-r from-blue-400 to-indigo-500 rounded-full flex items-center justify-center shadow-md mb-4">
-                <i class="fas fa-chart-bar text-white text-2xl"></i>
-              </div>
-              <h3 class="font-bold text-blue-700 dark:text-blue-300 mb-1">Sales Analytics</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400">View detailed sales reports</p>
-            </a>
-            <!-- Storefront Settings -->
-            <a href="{% url 'storefront_update' store_slug=storefront.store_slug %}"
-               class="flex flex-col items-center bg-gradient-to-br from-white to-purple-50 dark:from-gray-800 dark:to-purple-900/20 rounded-xl p-5 border border-purple-100 dark:border-purple-800 shadow-md hover:shadow-lg transform transition-all duration-300 hover:-translate-y-1 text-center">
-              <div class="w-16 h-16 bg-gradient-to-r from-purple-400 to-violet-500 rounded-full flex items-center justify-center shadow-md mb-4">
-                <i class="fas fa-cog text-white text-2xl"></i>
-              </div>
-              <h3 class="font-bold text-purple-700 dark:text-purple-300 mb-1">Store Settings</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400">Customize your storefront</p>
-            </a>
-            <!-- Preview Store -->
-            <a href="{% url 'storefront_detail' store_slug=storefront.store_slug %}"
-               class="flex flex-col items-center bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-700/20 rounded-xl p-5 border border-gray-100 dark:border-gray-700 shadow-md hover:shadow-lg transform transition-all duration-300 hover:-translate-y-1 text-center">
-              <div class="w-16 h-16 bg-gradient-to-r from-gray-400 to-gray-500 rounded-full flex items-center justify-center shadow-md mb-4">
-                <i class="fas fa-eye text-white text-2xl"></i>
-              </div>
-              <h3 class="font-bold text-gray-700 dark:text-gray-300 mb-1">Preview Store</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400">See your store as customers do</p>
-            </a>
-          </div>
-        </div>
-      </div>
-    {% else %}
-      <div class="mt-12 bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-teal-100 dark:border-teal-900 transform transition-all duration-500 hover:shadow-xl">
-        <div class="bg-gradient-to-r from-teal-500 to-emerald-600 p-6">
-          <h2 class="text-2xl font-bold text-white flex items-center">
-            <span class="inline-block bg-white/20 p-3 rounded-lg text-white mr-4 shadow-md">
-              <i class="fas fa-store text-xl"></i>
-            </span>
-            Create Your Storefront
-          </h2>
-        </div>
-        <div class="p-8 text-center">
-          <div class="mb-6 inline-block">
-            <div class="w-24 h-24 mx-auto bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg mb-4">
-              <i class="fas fa-store text-white text-3xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-3">Start Selling Merchandise</h3>
-          </div>
-          <p class="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-8">
-            Create your own digital storefront to sell merchandise, downloads, and other products to your students and audience.
-          </p>
-          <a href="{% url 'storefront_create' %}"
-             class="inline-flex items-center bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-medium px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
-            <i class="fas fa-plus-circle mr-2"></i> Create Storefront
+      <div class="mt-12 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-200">Storefront Management</h2>
+        <p class="text-gray-600 dark:text-gray-400 mb-4">Manage your digital storefront, products, and sales analytics.</p>
+        <div class="flex flex-wrap gap-4">
+          <!-- Add New Product -->
+          <a href="{% url 'goods_create' store_slug=storefront.store_slug %}"
+             class="bg-green-500 hover:bg-green-600 text-white font-semibold px-5 py-3 rounded-lg flex items-center">
+            <i class="fas fa-plus-circle mr-2"></i> New Product
+          </a>
+          <!-- Product Management -->
+          <a href="{% url 'goods_list' %}"
+             class="bg-teal-500 hover:bg-teal-600 text-white font-semibold px-5 py-3 rounded-lg flex items-center">
+            <i class="fas fa-boxes mr-2"></i> Manage Products
+          </a>
+          <!-- Order Management -->
+          <a href="{% url 'store_order_management' store_slug=storefront.store_slug %}"
+             class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-5 py-3 rounded-lg flex items-center">
+            <i class="fas fa-clipboard-list mr-2"></i> View Orders
+          </a>
+          <!-- Analytics -->
+          <a href="{% url 'store_analytics' store_slug=storefront.store_slug %}"
+             class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-5 py-3 rounded-lg flex items-center">
+            <i class="fas fa-chart-bar mr-2"></i> Sales Analytics
+          </a>
+          <!-- Storefront Settings -->
+          <a href="{% url 'storefront_update' store_slug=storefront.store_slug %}"
+             class="bg-purple-500 hover:bg-purple-600 text-white font-semibold px-5 py-3 rounded-lg flex items-center">
+            <i class="fas fa-store mr-2"></i> Store Settings
+          </a>
+          <!-- Preview Store -->
+          <a href="{% url 'storefront_detail' store_slug=storefront.store_slug %}"
+             class="bg-gray-500 hover:bg-gray-600 text-white font-semibold px-5 py-3 rounded-lg flex items-center">
+            <i class="fas fa-eye mr-2"></i> Preview Store
           </a>
         </div>
       </div>
+    {% else %}
+      <div class="mt-12 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h2 class="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-200">Create Your Storefront</h2>
+        <p class="text-gray-600 dark:text-gray-400 mb-4">
+          You don't have a storefront yet. Create one to start selling your merchandise.
+        </p>
+        <a href="{% url 'storefront_create' %}"
+           class="bg-green-500 hover:bg-green-600 text-white font-semibold px-5 py-3 rounded-lg flex items-center">
+          <i class="fas fa-plus-circle mr-2"></i> Create Storefront
+        </a>
+      </div>
     {% endif %}
   </div>
-  <!-- Add animations script -->
-  <script>
-      document.addEventListener('DOMContentLoaded', function() {
-          // Animate cards on scroll
-          const cards = document.querySelectorAll('.bg-white, .bg-gradient-to-br');
-
-          const observerOptions = {
-              threshold: 0.1,
-              rootMargin: '0px 0px -50px 0px'
-          };
-
-          const observer = new IntersectionObserver((entries) => {
-              entries.forEach(entry => {
-                  if (entry.isIntersecting) {
-                      setTimeout(() => {
-                          entry.target.classList.add('motion-safe:animate-fadeIn');
-                          entry.target.style.opacity = 1;
-                      }, 100);
-                      observer.unobserve(entry.target);
-                  }
-              });
-          }, observerOptions);
-
-          cards.forEach((card, index) => {
-              card.style.opacity = 0;
-              observer.observe(card);
-          });
-      });
-  </script>
-  <style>
-      @keyframes fadeIn {
-          from {
-              opacity: 0;
-              transform: translateY(10px);
-          }
-
-          to {
-              opacity: 1;
-              transform: translateY(0);
-          }
-      }
-
-      .motion-safe\:animate-fadeIn {
-          animation: fadeIn 0.6s ease-out forwards;
-      }
-  </style>
 {% endblock content %}

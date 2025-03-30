@@ -1,215 +1,235 @@
 {% extends 'base.html' %}
+
 {% load static %}
 
 {% block title %}Membership Subscription Successful{% endblock %}
-
 {% block content %}
-<div class="bg-gradient-to-r from-blue-50 to-indigo-50 min-h-screen py-16">
+  <div class="bg-gradient-to-r from-blue-50 to-indigo-50 min-h-screen py-16">
     <div class="container mx-auto px-4">
-        <div class="max-w-3xl mx-auto">
-            <div class="text-center mb-10 animate-fadeIn">
-                <div class="relative inline-block mb-6">
-                    <div class="absolute inset-0 rounded-full bg-green-100 animate-pulse"></div>
-                    <svg class="h-24 w-24 text-green-500 mx-auto relative z-10 animate-bounce-subtle" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <!-- Celebration Elements -->
-                    <div class="confetti-container"></div>
-                </div>
-                <h1 class="text-4xl font-extrabold mb-4 text-gradient">Subscription Successful!</h1>
-                <p class="text-green-600 text-xl mb-8 animate-fadeIn" style="animation-delay: 0.3s">Your membership subscription has been processed successfully.</p>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8 transform transition-all duration-500 hover:shadow-xl border border-gray-100 animate-fadeInUp" style="animation-delay: 0.5s">
-                <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
-                    <h2 class="text-xl font-bold text-white flex items-center">
-                        <i class="fas fa-clipboard-list mr-2"></i> Subscription Details
-                    </h2>
-                </div>
-                <div class="p-8">
-                    <div class="grid md:grid-cols-2 gap-8">
-                        <div class="transform transition-all duration-300 hover:translate-x-1">
-                            <h3 class="text-gray-500 font-medium mb-2">Membership Plan</h3>
-                            <p class="text-xl font-bold text-gray-800">{{ membership.plan.name }}</p>
-                        </div>
-                        <div class="transform transition-all duration-300 hover:translate-x-1">
-                            <h3 class="text-gray-500 font-medium mb-2">Status</h3>
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                                <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-                                Active
-                            </span>
-                        </div>
-                        <div class="transform transition-all duration-300 hover:translate-x-1">
-                            <h3 class="text-gray-500 font-medium mb-2">Start Date</h3>
-                            <p class="text-gray-800 font-semibold">{{ membership.start_date|date:"F j, Y" }}</p>
-                        </div>
-                        <div class="transform transition-all duration-300 hover:translate-x-1">
-                            <h3 class="text-gray-500 font-medium mb-2">Next Billing Date</h3>
-                            <p class="text-gray-800 font-semibold">{{ membership.end_date|date:"F j, Y" }}</p>
-                        </div>
-                        <div class="transform transition-all duration-300 hover:translate-x-1">
-                            <h3 class="text-gray-500 font-medium mb-2">Billing Cycle</h3>
-                            <p class="text-gray-800 font-semibold">{{ membership.billing_period|title }}</p>
-                        </div>
-                        <div class="transform transition-all duration-300 hover:translate-x-1">
-                            <h3 class="text-gray-500 font-medium mb-2">Amount</h3>
-                            <p class="text-gray-800 font-semibold">
-                                {% if membership.billing_period == 'monthly' %}
-                                <span class="text-lg font-bold text-blue-600">${{ membership.plan.price_monthly }}</span>/month
-                                {% else %}
-                                <span class="text-lg font-bold text-blue-600">${{ membership.plan.price_yearly }}</span>/year
-                                {% endif %}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-10 transform transition-all duration-500 hover:shadow-xl border border-gray-100 animate-fadeInUp" style="animation-delay: 0.7s">
-                <div class="bg-gradient-to-r from-purple-500 to-indigo-600 p-6">
-                    <h2 class="text-xl font-bold text-white flex items-center">
-                        <i class="fas fa-star mr-2"></i> Your Membership Benefits
-                    </h2>
-                </div>
-                <div class="p-8">
-                    <ul class="space-y-4">
-                        {% for feature in membership.plan.features %}
-                        <li class="flex items-start group transform transition-all duration-300 hover:translate-x-2">
-                            <div class="bg-green-100 rounded-full p-1 mr-3 flex-shrink-0 transform transition-all duration-300 group-hover:scale-110">
-                                <svg class="h-5 w-5 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                </svg>
-                            </div>
-                            <span class="text-gray-800">{{ feature }}</span>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                </div>
-            </div>
-
-            <div class="flex flex-col sm:flex-row justify-center gap-4 animate-fadeInUp" style="animation-delay: 0.9s">
-                <a href="{% url 'index' %}" class="inline-flex justify-center items-center px-6 py-3 border border-transparent rounded-lg shadow-md text-base font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none transition-all duration-300 transform hover:scale-[1.02]">
-                    <i class="fas fa-home mr-2"></i> Return to Homepage
-                </a>
-                <a href="{% url 'manage_membership' %}" class="inline-flex justify-center items-center px-6 py-3 border border-gray-300 rounded-lg shadow-md text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition-all duration-300 transform hover:scale-[1.02]">
-                    <i class="fas fa-cog mr-2"></i> Manage Your Membership
-                </a>
-            </div>
-
-            <div class="text-center mt-10 text-gray-500 text-sm animate-fadeIn" style="animation-delay: 1.2s">
-                <p>A confirmation email has been sent to your registered email address.</p>
-            </div>
+      <div class="max-w-3xl mx-auto">
+        <div class="text-center mb-10 animate-fadeIn">
+          <div class="relative inline-block mb-6">
+            <div class="absolute inset-0 rounded-full bg-green-100 animate-pulse"></div>
+            <svg class="h-24 w-24 text-green-500 mx-auto relative z-10 animate-bounce-subtle"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z">
+              </path>
+            </svg>
+            <!-- Celebration Elements -->
+            <div class="confetti-container"></div>
+          </div>
+          <h1 class="text-4xl font-extrabold mb-4 text-gradient">Subscription Successful!</h1>
+          <p class="text-green-600 text-xl mb-8 animate-fadeIn"
+             style="animation-delay: 0.3s">Your membership subscription has been processed successfully.</p>
         </div>
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8 transform transition-all duration-500 hover:shadow-xl border border-gray-100 animate-fadeInUp"
+             style="animation-delay: 0.5s">
+          <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
+            <h2 class="text-xl font-bold text-white flex items-center">
+              <i class="fas fa-clipboard-list mr-2"></i> Subscription Details
+            </h2>
+          </div>
+          <div class="p-8">
+            <div class="grid md:grid-cols-2 gap-8">
+              <div class="transform transition-all duration-300 hover:translate-x-1">
+                <h3 class="text-gray-500 font-medium mb-2">Membership Plan</h3>
+                <p class="text-xl font-bold text-gray-800">{{ membership.plan.name }}</p>
+              </div>
+              <div class="transform transition-all duration-300 hover:translate-x-1">
+                <h3 class="text-gray-500 font-medium mb-2">Status</h3>
+                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
+                  <span class="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
+                  Active
+                </span>
+              </div>
+              <div class="transform transition-all duration-300 hover:translate-x-1">
+                <h3 class="text-gray-500 font-medium mb-2">Start Date</h3>
+                <p class="text-gray-800 font-semibold">{{ membership.start_date|date:"F j, Y" }}</p>
+              </div>
+              <div class="transform transition-all duration-300 hover:translate-x-1">
+                <h3 class="text-gray-500 font-medium mb-2">Next Billing Date</h3>
+                <p class="text-gray-800 font-semibold">{{ membership.end_date|date:"F j, Y" }}</p>
+              </div>
+              <div class="transform transition-all duration-300 hover:translate-x-1">
+                <h3 class="text-gray-500 font-medium mb-2">Billing Cycle</h3>
+                <p class="text-gray-800 font-semibold">{{ membership.billing_period|title }}</p>
+              </div>
+              <div class="transform transition-all duration-300 hover:translate-x-1">
+                <h3 class="text-gray-500 font-medium mb-2">Amount</h3>
+                <p class="text-gray-800 font-semibold">
+                  {% if membership.billing_period == 'monthly' %}
+                    <span class="text-lg font-bold text-blue-600">${{ membership.plan.price_monthly }}</span>/month
+                  {% else %}
+                    <span class="text-lg font-bold text-blue-600">${{ membership.plan.price_yearly }}</span>/year
+                  {% endif %}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-10 transform transition-all duration-500 hover:shadow-xl border border-gray-100 animate-fadeInUp"
+             style="animation-delay: 0.7s">
+          <div class="bg-gradient-to-r from-purple-500 to-indigo-600 p-6">
+            <h2 class="text-xl font-bold text-white flex items-center">
+              <i class="fas fa-star mr-2"></i> Your Membership Benefits
+            </h2>
+          </div>
+          <div class="p-8">
+            <ul class="space-y-4">
+              {% for feature in membership.plan.features %}
+                <li class="flex items-start group transform transition-all duration-300 hover:translate-x-2">
+                  <div class="bg-green-100 rounded-full p-1 mr-3 flex-shrink-0 transform transition-all duration-300 group-hover:scale-110">
+                    <svg class="h-5 w-5 text-green-500"
+                         viewBox="0 0 20 20"
+                         fill="currentColor">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                  <span class="text-gray-800">{{ feature }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+        <div class="flex flex-col sm:flex-row justify-center gap-4 animate-fadeInUp"
+             style="animation-delay: 0.9s">
+          <a href="{% url 'index' %}"
+             class="inline-flex justify-center items-center px-6 py-3 border border-transparent rounded-lg shadow-md text-base font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none transition-all duration-300 transform hover:scale-[1.02]">
+            <i class="fas fa-home mr-2"></i> Return to Homepage
+          </a>
+          <a href="{% url 'manage_membership' %}"
+             class="inline-flex justify-center items-center px-6 py-3 border border-gray-300 rounded-lg shadow-md text-base font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition-all duration-300 transform hover:scale-[1.02]">
+            <i class="fas fa-cog mr-2"></i> Manage Your Membership
+          </a>
+        </div>
+        <div class="text-center mt-10 text-gray-500 text-sm animate-fadeIn"
+             style="animation-delay: 1.2s">
+          <p>A confirmation email has been sent to your registered email address.</p>
+        </div>
+      </div>
     </div>
-</div>
+  </div>
+  <style>
+      @keyframes fadeIn {
+          from {
+              opacity: 0;
+          }
 
-<style>
-    @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
-    }
+          to {
+              opacity: 1;
+          }
+      }
 
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
+      @keyframes fadeInUp {
+          from {
+              opacity: 0;
+              transform: translateY(20px);
+          }
 
-    @keyframes bounceSlight {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-10px); }
-    }
+          to {
+              opacity: 1;
+              transform: translateY(0);
+          }
+      }
 
-    .animate-fadeIn {
-        animation: fadeIn 0.8s ease forwards;
-    }
+      @keyframes bounceSlight {
 
-    .animate-fadeInUp {
-        opacity: 0;
-        animation: fadeInUp 0.8s ease forwards;
-    }
+          0%,
+          100% {
+              transform: translateY(0);
+          }
 
-    .animate-bounce-subtle {
-        animation: bounceSlight 2s ease-in-out infinite;
-    }
+          50% {
+              transform: translateY(-10px);
+          }
+      }
 
-    .text-gradient {
-        background: linear-gradient(to right, #10b981, #3b82f6);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
+      .animate-fadeIn {
+          animation: fadeIn 0.8s ease forwards;
+      }
 
-    /* Confetti styling */
-    .confetti-container {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        top: 0;
-        left: 0;
-        pointer-events: none;
-    }
+      .animate-fadeInUp {
+          opacity: 0;
+          animation: fadeInUp 0.8s ease forwards;
+      }
 
-    .confetti {
-        position: absolute;
-        z-index: 1;
-        width: 10px;
-        height: 10px;
-    }
-</style>
+      .animate-bounce-subtle {
+          animation: bounceSlight 2s ease-in-out infinite;
+      }
 
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Create confetti celebration effect
-        const confettiContainer = document.querySelector('.confetti-container');
-        const colors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899'];
-        const shapes = ['circle', 'square', 'triangle'];
+      .text-gradient {
+          background: linear-gradient(to right, #10b981, #3b82f6);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+      }
 
-        // Create confetti elements
-        for (let i = 0; i < 80; i++) {
-            createConfetti(confettiContainer, colors, shapes);
-        }
+      /* Confetti styling */
+      .confetti-container {
+          position: absolute;
+          width: 100%;
+          height: 100%;
+          top: 0;
+          left: 0;
+          pointer-events: none;
+      }
 
-        function createConfetti(container, colors, shapes) {
-            const confetti = document.createElement('div');
-            confetti.classList.add('confetti');
+      .confetti {
+          position: absolute;
+          z-index: 1;
+          width: 10px;
+          height: 10px;
+      }
+  </style>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          // Create confetti celebration effect
+          const confettiContainer = document.querySelector('.confetti-container');
+          const colors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899'];
+          const shapes = ['circle', 'square', 'triangle'];
 
-            // Random position, color, shape, and animation
-            const color = colors[Math.floor(Math.random() * colors.length)];
-            const shape = shapes[Math.floor(Math.random() * shapes.length)];
-            const left = Math.random() * 100;
+          // Create confetti elements
+          for (let i = 0; i < 80; i++) {
+              createConfetti(confettiContainer, colors, shapes);
+          }
 
-            confetti.style.backgroundColor = color;
-            confetti.style.left = `${left}%`;
-            confetti.style.top = '-20px';
-            confetti.style.opacity = Math.random() + 0.4;
+          function createConfetti(container, colors, shapes) {
+              const confetti = document.createElement('div');
+              confetti.classList.add('confetti');
 
-            if (shape === 'circle') {
-                confetti.style.borderRadius = '50%';
-            } else if (shape === 'triangle') {
-                confetti.style.width = '0';
-                confetti.style.height = '0';
-                confetti.style.backgroundColor = 'transparent';
-                confetti.style.borderLeft = '5px solid transparent';
-                confetti.style.borderRight = '5px solid transparent';
-                confetti.style.borderBottom = `10px solid ${color}`;
-            }
+              // Random position, color, shape, and animation
+              const color = colors[Math.floor(Math.random() * colors.length)];
+              const shape = shapes[Math.floor(Math.random() * shapes.length)];
+              const left = Math.random() * 100;
 
-            // Animation with random duration and delay
-            const duration = Math.random() * 3 + 2;
-            const delay = Math.random() * 2;
+              confetti.style.backgroundColor = color;
+              confetti.style.left = `${left}%`;
+              confetti.style.top = '-20px';
+              confetti.style.opacity = Math.random() + 0.4;
 
-            confetti.style.animation = `fall ${duration}s ease-in ${delay}s forwards`;
+              if (shape === 'circle') {
+                  confetti.style.borderRadius = '50%';
+              } else if (shape === 'triangle') {
+                  confetti.style.width = '0';
+                  confetti.style.height = '0';
+                  confetti.style.backgroundColor = 'transparent';
+                  confetti.style.borderLeft = '5px solid transparent';
+                  confetti.style.borderRight = '5px solid transparent';
+                  confetti.style.borderBottom = `10px solid ${color}`;
+              }
 
-            // Add keyframe animation dynamically
-            if (!document.querySelector('#confetti-animation')) {
-                const style = document.createElement('style');
-                style.id = 'confetti-animation';
-                style.textContent = `
+              // Animation with random duration and delay
+              const duration = Math.random() * 3 + 2;
+              const delay = Math.random() * 2;
+
+              confetti.style.animation = `fall ${duration}s ease-in ${delay}s forwards`;
+
+              // Add keyframe animation dynamically
+              if (!document.querySelector('#confetti-animation')) {
+                  const style = document.createElement('style');
+                  style.id = 'confetti-animation';
+                  style.textContent = `
                     @keyframes fall {
                         0% {
                             transform: translateY(0) rotate(0deg);
@@ -221,16 +241,16 @@
                         }
                     }
                 `;
-                document.head.appendChild(style);
-            }
+                  document.head.appendChild(style);
+              }
 
-            container.appendChild(confetti);
+              container.appendChild(confetti);
 
-            // Remove after animation completes
-            setTimeout(() => {
-                confetti.remove();
-            }, (duration + delay) * 1000);
-        }
-    });
-</script>
+              // Remove after animation completes
+              setTimeout(() => {
+                  confetti.remove();
+              }, (duration + delay) * 1000);
+          }
+      });
+  </script>
 {% endblock %}
