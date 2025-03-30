@@ -125,7 +125,7 @@ class ProfileAdmin(admin.ModelAdmin):
     raw_id_fields = ("user",)
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
-        (None, {"fields": ("user", "is_teacher")}),  # NEW: Added points here
+        (None, {"fields": ("user", "is_teacher")}),  
         (
             "Profile Information",
             {"fields": ("bio", "expertise", "avatar", "is_profile_public", "how_did_you_hear_about_us")},
