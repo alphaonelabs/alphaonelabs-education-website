@@ -60,6 +60,19 @@
           <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
           <span class="ml-2">Loading your learning map...</span>
         </div>
+        <div id="learning-map-error"
+             class="absolute inset-0 flex items-center justify-center hidden">
+          <svg class="w-8 h-8 text-red-500 mr-2"
+               fill="none"
+               stroke="currentColor"
+               viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+            </path>
+          </svg>
+          <span>Failed to load the learning map.
+            <button class="text-blue-500 underline" onclick="location.reload()">Retry</button>
+          </span>
+        </div>
       </div>
       {% if is_owner %}
         <!-- Hidden input to indicate owner status for JS -->
@@ -146,57 +159,62 @@
               {% if node.description %}<p class="text-gray-600 dark:text-gray-400 mt-1">{{ node.description }}</p>{% endif %}
               <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mt-3">
                 <div class=" {% if node.is_completed %} bg-green-600 {% else %} {% if node.node_type == 'tracker' %} bg-purple-600 {% elif node.node_type == 'course' %} bg-blue-600 {% else %} bg-yellow-600 {% endif %} {% endif %} h-2.5 rounded-full"
+                     role="progressbar"
+                     aria-valuenow="{{ node.progress_percentage }}"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
                      style="width: {{ node.progress_percentage }}%"></div>
               </div>
-              <!-- Node-specific details -->
-              <div class="mt-2 text-sm">
-                {% if node.node_type == 'tracker' and node.tracker %}
-                  <div class="text-gray-600 dark:text-gray-400">
-                    Progress: {{ node.tracker.current_value }}/{{ node.tracker.target_value }}
-                  </div>
-                {% elif node.node_type == 'course' and node.enrollment %}
-                  <div class="text-gray-600 dark:text-gray-400">
-                    <a href="{% url 'course_detail' node.enrollment.course.slug %}"
-                       class="text-blue-600 hover:underline">View Course</a>
-                  </div>
-                {% elif node.node_type == 'milestone' %}
-                  <div class="text-gray-600 dark:text-gray-400">
-                    Progress: {{ node.current_value }}/{{ node.target_value }}
-                    {% if is_owner %}
-                      <!-- Progress update form for milestones -->
-                      <form method="post"
-                            action="{% url 'update_map_node' node.id %}"
-                            class="mt-2 flex items-center">
-                        {% csrf_token %}
-                        <input type="number"
-                               name="current_value"
-                               value="{{ node.current_value }}"
-                               min="0"
-                               max="{{ node.target_value }}"
-                               class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700" />
-                        <button type="submit"
-                                class="ml-2 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
-                          Update
-                        </button>
-                      </form>
-                    {% endif %}
-                  </div>
-                {% endif %}
-              </div>
+            </div>
+            <!-- Node-specific details -->
+            <div class="mt-2 text-sm">
+              {% if node.node_type == 'tracker' and node.tracker %}
+                <div class="text-gray-600 dark:text-gray-400">
+                  Progress: {{ node.tracker.current_value }}/{{ node.tracker.target_value }}
+                </div>
+              {% elif node.node_type == 'course' and node.enrollment %}
+                <div class="text-gray-600 dark:text-gray-400">
+                  <a href="{% url 'course_detail' node.enrollment.course.slug %}"
+                     class="text-blue-600 hover:underline">View Course</a>
+                </div>
+              {% elif node.node_type == 'milestone' %}
+                <div class="text-gray-600 dark:text-gray-400">
+                  Progress: {{ node.current_value }}/{{ node.target_value }}
+                  {% if is_owner %}
+                    <!-- Progress update form for milestones -->
+                    <form method="post"
+                          action="{% url 'update_map_node' node.id %}"
+                          class="mt-2 flex items-center">
+                      {% csrf_token %}
+                      <input type="number"
+                             name="current_value"
+                             value="{{ node.current_value }}"
+                             min="0"
+                             max="{{ node.target_value }}"
+                             class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700" />
+                      <button type="submit"
+                              class="ml-2 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
+                        Update
+                      </button>
+                    </form>
+                  {% endif %}
+                </div>
+              {% endif %}
             </div>
           </div>
-        {% empty %}
-          <div class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
-            <p class="mb-2">You haven't added any nodes to this learning map yet.</p>
-            {% if is_owner %}
-              <a href="{% url 'add_map_node' learning_map.slug %}"
-                 class="text-blue-600 hover:underline">Add your first node</a> to start tracking your learning journey.
-            {% endif %}
-          </div>
-        {% endfor %}
-      </div>
+        </div>
+      {% empty %}
+        <div class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+          <p class="mb-2">You haven't added any nodes to this learning map yet.</p>
+          {% if is_owner %}
+            <a href="{% url 'add_map_node' learning_map.slug %}"
+               class="text-blue-600 hover:underline">Add your first node</a> to start tracking your learning journey.
+          {% endif %}
+        </div>
+      {% endfor %}
     </div>
   </div>
-  <!-- Include the learning map visualization script -->
-  <script src="{% static 'js/learning-maps/detail.js' %}"></script>
+</div>
+<!-- Include the learning map visualization script -->
+<script src="{% static 'js/learning-maps/detail.js' %}"></script>
 {% endblock %}

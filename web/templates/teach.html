@@ -2,41 +2,160 @@
 
 {% load static %}
 
+{% block title %}
+  Start Teaching a Class
+{% endblock title %}
+{% block extra_head %}
+  <!-- Flatpickr CSS -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/flatpickr/dist/themes/dark.css" />
+  <!-- EasyMDE for rich text editing -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+  <!-- Flatpickr JS -->
+  <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+  {{ form.media }}
+{% endblock extra_head %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold text-center mb-4">
-      <i class="fas fa-chalkboard-teacher mr-2"></i>Teach with Alpha One Labs
+      <i class="fas fa-chalkboard-teacher mr-2"></i>Start Teaching with Alpha One Labs
     </h1>
     <p class="text-lg text-center text-gray-600 dark:text-gray-400 mb-8">
-      Share your knowledge and help others learn! Fill out the form below to get started.
+      Ready to share your knowledge? Fill out the form below to begin creating your course!
     </p>
     <div class="max-w-2xl mx-auto">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-        <div class="p-6">
-          <h3 class="text-2xl font-semibold mb-6">Teaching Application</h3>
-          {% if form.errors %}
-            <div class="mb-4 p-4 bg-red-50 dark:bg-red-900 text-red-600 dark:text-red-200 rounded-lg"
-                 role="alert">Please correct the errors below.</div>
-          {% endif %}
-          <form method="post" novalidate>
-            {% csrf_token %}
-            {% for field in form %}
-              <div class="mb-4">
-                <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-2">{{ field.label }}</label>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h3 class="text-2xl font-semibold mb-6">Create Your Course</h3>
+        {% if form.errors %}
+          <div class="mb-4 p-4 bg-red-50 dark:bg-red-900 text-red-600 dark:text-red-200 rounded-lg"
+               role="alert">Please correct the errors below.</div>
+        {% endif %}
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {% csrf_token %}
+          {% for field in form %}
+            <div class="mb-4">
+              <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-2">{{ field.label }}</label>
+              {% if field.name == "course_description" %}
+                <div class="markdown-editor" data-required="true">{{ field }}</div>
+              {% elif field.name == "preferred_session_times" %}
+                <div id="session-times-container">{{ field }}</div>
+                <button type="button"
+                        id="add-session-time"
+                        class="mt-2 text-indigo-500 hover:text-indigo-600">+ Add Another Session Time</button>
+              {% else %}
                 {{ field }}
-                {% if field.help_text %}<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>{% endif %}
-                {% if field.errors %}
-                  {% for error in field.errors %}<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>{% endfor %}
-                {% endif %}
-              </div>
-            {% endfor %}
-            <button type="submit"
-                    class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg transition duration-200">
-              Submit Application
-            </button>
-          </form>
-        </div>
+              {% endif %}
+              {% if field.help_text %}<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>{% endif %}
+              {% if field.errors %}
+                {% for error in field.errors %}<p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ error }}</p>{% endfor %}
+              {% endif %}
+            </div>
+          {% endfor %}
+          <button type="submit"
+                  class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg transition duration-200">
+            {% if user.is_authenticated %}
+              Create Course Draft
+            {% else %}
+              Submit and Create Account
+            {% endif %}
+          </button>
+        </form>
       </div>
     </div>
   </div>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          // Initialize EasyMDE for description
+          const editors = new Map();
+          document.querySelectorAll('.markdown-editor textarea').forEach(textarea => {
+              const editor = new EasyMDE({
+                  element: textarea,
+                  spellChecker: false,
+                  status: false,
+                  toolbar: ['bold', 'italic', 'heading', '|', 'quote', 'unordered-list', 'ordered-list', '|', 'link', 'preview', 'guide'],
+                  minHeight: '100px',
+                  maxHeight: '400px',
+                  placeholder: 'Describe your course...',
+                  autoDownloadFontAwesome: false
+              });
+              editors.set(textarea.name, editor);
+              editor.codemirror.on('change', () => {
+                  textarea.value = editor.value();
+              });
+          });
+
+          // Configuration for Flatpickr
+          const config = {
+              enableTime: true,
+              time_24hr: true,
+              dateFormat: "Y-m-d H:i",
+              minuteIncrement: 15,
+              defaultHour: 9,
+              disableMobile: false,
+              allowInput: true,
+              clickOpens: true,
+              static: true,
+              position: "auto",
+              monthSelectorType: "static",
+              animate: true,
+              showMonths: 1
+          };
+
+          // Initialize Flatpickr for the initial session time input
+          const initialInput = document.querySelector('input[name="preferred_session_times"]');
+          if (initialInput) {
+              flatpickr(initialInput, config);
+          }
+
+          // Handle adding additional session times
+          const sessionContainer = document.getElementById('session-times-container');
+          const addSessionButton = document.getElementById('add-session-time');
+
+          addSessionButton.addEventListener('click', function() {
+              const newInput = document.createElement('input');
+              newInput.type = 'text'; // Use text type for Flatpickr
+              newInput.name = 'preferred_session_times';
+              newInput.className = 'block w-full border rounded p-2 mt-2 focus:outline-none focus:ring-2 focus:ring-indigo-500';
+              newInput.placeholder = 'Select date and time';
+
+              sessionContainer.appendChild(newInput);
+
+              // Initialize Flatpickr for the new input
+              flatpickr(newInput, config);
+          });
+      });
+  </script>
+  <style>
+      .dark .EasyMDEContainer {
+          background-color: #1f2937;
+      }
+
+      .dark .EasyMDEContainer .CodeMirror {
+          background-color: #374151;
+          color: #e5e7eb;
+          border-color: #4b5563;
+      }
+
+      .dark .editor-toolbar {
+          background-color: #1f2937;
+          border-color: #4b5563;
+      }
+
+      .dark .editor-toolbar button {
+          color: #e5e7eb !important;
+      }
+
+      .dark .editor-toolbar button:hover {
+          background-color: #374151;
+      }
+
+      .dark .editor-preview {
+          background-color: #1f2937;
+          color: #e5e7eb;
+      }
+  </style>
 {% endblock content %}

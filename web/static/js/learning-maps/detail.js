@@ -7,7 +7,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Fetch map data
     fetch(`/learning-maps/${mapSlug}/data/`)
-        .then(response => response.json())
+
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => renderLearningMap(data))
         .catch(error => {
             console.error('Error loading learning map data:', error);
@@ -54,24 +60,21 @@ document.addEventListener('DOMContentLoaded', function() {
             nodeGroup.setAttribute('data-node-type', node.type);
 
             // Determine node color based on type and completion
-            let nodeColor;
-            if (node.completed) {
-                nodeColor = 'var(--color-green-500, #10b981)';
-            } else {
-                switch (node.type) {
-                    case 'tracker':
-                        nodeColor = `var(--color-${node.color || 'blue-500'}, #3b82f6)`;
-                        break;
-                    case 'course':
-                        nodeColor = 'var(--color-blue-500, #3b82f6)';
-                        break;
-                    case 'milestone':
-                        nodeColor = `var(--color-${node.color || 'yellow-500'}, #f59e0b)`;
-                        break;
-                    default:
-                        nodeColor = 'var(--color-gray-500, #6b7280)';
+            function getNodeColor(node) {
+                if (node.completed) {
+                    return 'var(--color-green-500, #10b981)';
                 }
+
+                const colorMap = {
+                    tracker: `var(--color-${node.color || 'blue-500'}, #3b82f6)`,
+                    course: 'var(--color-blue-500, #3b82f6)',
+                    milestone: `var(--color-${node.color || 'yellow-500'}, #f59e0b)`,
+                };
+
+                return colorMap[node.type] || 'var(--color-gray-500, #6b7280)';
             }
+
+            const nodeColor = getNodeColor(node);
 
             // Draw node circle
             const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -167,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const items = [
             { color: 'var(--color-green-500, #10b981)', label: 'Completed' },
             { color: 'var(--color-blue-500, #3b82f6)', label: 'Course' },
-            { color: 'var(--color-purple-500, #8b5cf6)', label: 'Progress Tracker' },
+            { color: 'var(--color-blue-500, #3b82f6)', label: 'Progress Tracker' },
             { color: 'var(--color-yellow-500, #f59e0b)', label: 'Milestone' }
         ];
 
@@ -210,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function shortenText(text, maxLength) {
         if (text.length <= maxLength) return text;
-        return text.substring(0, maxLength - 3) + '...';
+        return `${text.substring(0, maxLength - 3)}...`;
     }
 
     function showNodeDetails(node) {
@@ -238,8 +241,13 @@ document.addEventListener('DOMContentLoaded', function() {
         progressContainer.className = 'w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mb-4';
 
         const progressBar = document.createElement('div');
-        progressBar.className = `bg-${node.color || 'blue-600'} h-2.5 rounded-full`;
-        progressBar.style.width = `${node.progress}%`;
+        // Sanitize color value by using a whitelist approach
+        const safeColors = ['blue-600', 'green-600', 'yellow-600', 'purple-600', 'red-600'];
+        const safeColor = safeColors.includes(node.color) ? node.color : 'blue-600';
+        progressBar.className = `bg-${safeColor} h-2.5 rounded-full`;
+        // Ensure progress is a number between 0-100
+        const safeProgress = Math.min(Math.max(Number.parseFloat(node.progress) || 0, 0), 100);
+        progressBar.style.width = `${safeProgress}%`;
         progressContainer.appendChild(progressBar);
 
         // Progress text
@@ -260,20 +268,33 @@ document.addEventListener('DOMContentLoaded', function() {
         details.className = 'mb-4';
 
         if (node.type === 'tracker') {
-            details.innerHTML = `
-                <p class="text-sm"><span class="font-medium">Current value:</span> ${node.current_value}</p>
-                <p class="text-sm"><span class="font-medium">Target value:</span> ${node.target_value}</p>
-            `;
-        } else if (node.type === 'course') {
-            details.innerHTML = `
-                <p class="text-sm"><span class="font-medium">Course:</span> ${node.course_title}</p>
-                <a href="/courses/${node.course_slug}" class="text-blue-600 dark:text-blue-400 hover:underline text-sm">View course</a>
-            `;
-        } else if (node.type === 'milestone') {
-            details.innerHTML = `
-                <p class="text-sm"><span class="font-medium">Current value:</span> ${node.current_value}</p>
-                <p class="text-sm"><span class="font-medium">Target value:</span> ${node.target_value}</p>
-            `;
+// Helper function to escape HTML
+function escapeHTML(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+if (node.type === 'tracker') {
+    details.innerHTML = `
+        <p class="text-sm"><span class="font-medium">Current value:</span> ${escapeHTML(node.current_value)}</p>
+        <p class="text-sm"><span class="font-medium">Target value:</span> ${escapeHTML(node.target_value)}</p>
+    `;
+} else if (node.type === 'course') {
+    details.innerHTML = `
+        <p class="text-sm"><span class="font-medium">Course:</span> ${escapeHTML(node.course_title)}</p>
+        <a href="/courses/${encodeURIComponent(node.course_slug)}" class="text-blue-600 dark:text-blue-400 hover:underline text-sm">View course</a>
+    `;
+} else if (node.type === 'milestone') {
+    details.innerHTML = `
+        <p class="text-sm"><span class="font-medium">Current value:</span> ${escapeHTML(node.current_value)}</p>
+        <p class="text-sm"><span class="font-medium">Target value:</span> ${escapeHTML(node.target_value)}</p>
+    `;
+}
 
             // Add update form for milestones if we're the owner
             if (document.getElementById('is-owner-indicator')) {
@@ -338,6 +359,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function getCsrfToken() {
-        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfElement = document.querySelector('[name=csrfmiddlewaretoken]');
+        if (!csrfElement) {
+            console.error('CSRF token not found');
+            return '';
+        }
+        return csrfElement.value;
     }
 });

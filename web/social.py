@@ -2,6 +2,7 @@ import logging
 import random
 import re
 from datetime import datetime
+from urllib.parse import quote
 
 import requests
 from django.conf import settings
@@ -336,7 +337,7 @@ def get_social_stats():
     return stats
 
 
-def get_social_share_links(url, title, summary=None, image_url=None):
+def get_social_share_links(url: str, title: str, summary: str = None, image_url: str = None) -> dict:
     """
     Generate social media sharing links for a given URL, title, and optional summary or image.
 
@@ -349,10 +350,14 @@ def get_social_share_links(url, title, summary=None, image_url=None):
     Returns:
         dict: A dictionary containing sharing links for various platforms.
     """
-    links = {
-        "twitter": f"https://twitter.com/intent/tweet?url={url}&text={title}",
-        "facebook": f"https://www.facebook.com/sharer/sharer.php?u={url}",
-        "linkedin": f"https://www.linkedin.com/shareArticle?mini=true&url={url}&title={title}&summary={summary or ''}",
-        "email": f"mailto:?subject={title}&body=Check out this learning map: {url}",
+    encoded_url = quote(url)
+    encoded_title = quote(title)
+
+    # TODO: Utilize the image_url parameter in sharing links if needed in future updates.
+    return {
+        "twitter": f"https://twitter.com/intent/tweet?url={encoded_url}&text={encoded_title}",
+        "facebook": f"https://www.facebook.com/sharer/sharer.php?u={encoded_url}",
+        "linkedin": f"https://www.linkedin.com/shareArticle?mini=true&url={encoded_url}"
+        "&title={encoded_title}&summary={encoded_summary}",
+        "email": f"mailto:?subject={encoded_title}&body=Check out this content: {url}",
     }
-    return links

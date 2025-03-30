@@ -6,7 +6,14 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.utils import timezone
 
-from web.forms import CourseCreationForm, CourseMaterialForm, ProfileUpdateForm, SessionForm, UserRegistrationForm
+from web.forms import (
+    CourseCreationForm,
+    CourseMaterialForm,
+    ProfileUpdateForm,
+    SessionForm,
+    TeachForm,
+    UserRegistrationForm,
+)
 from web.forms_additional import (
     BlogCommentForm,
     CourseReviewForm,
@@ -564,3 +571,258 @@ class ProfileUpdateFormTests(TestCase):
         }
         form = ProfileUpdateForm(data=form_data, instance=self.user)
         self.assertFalse(form.is_valid())
+
+
+class TeachFormTests(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # Mock CAPTCHA field
+        cls.captcha_patcher = patch(
+            "captcha.fields.CaptchaField.clean",
+            side_effect=forms.ValidationError("Invalid captcha"),
+        )
+        cls.mock_captcha = cls.captcha_patcher.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.captcha_patcher.stop()
+        super().tearDownClass()
+
+    def setUp(self):
+        self.User = get_user_model()
+        # Create a test user
+        self.user = self.User.objects.create_user(
+            username="testuser", email="testuser@example.com", password="testpass123"
+        )
+        # Create a test subject
+        self.subject = Subject.objects.create(
+            name="Programming",
+            slug="programming",
+            description="Programming courses",
+            icon="fas fa-code",
+        )
+
+    def test_valid_form_unauthenticated(self):
+        """Test TeachForm with valid data for an unauthenticated user."""
+        # Allow CAPTCHA to pass for valid test
+        self.mock_captcha.side_effect = lambda x: True
+
+        form_data = {
+            "course_title": "Introduction to Python",
+            "course_description": "A beginner-friendly Python course.",
+            "preferred_session_times": (timezone.now() + timezone.timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"),
+            "flexible_timing": True,
+            "email": "newuser@example.com",
+            "captcha_0": "dummy-hash",
+            "captcha_1": "PASSED",
+        }
+        # Create a small valid GIF file (1x1 transparent pixel)
+        gif_content = (
+            b"GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00!"
+            b"\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;"
+        )
+        test_image = SimpleUploadedFile(name="test_image.gif", content=gif_content, content_type="image/gif")
+        form_files = {"course_image": test_image}
+
+        form = TeachForm(data=form_data, files=form_files)
+        self.assertTrue(form.is_valid(), msg=form.errors)
+
+    def test_valid_form_authenticated(self):
+        """Test TeachForm with valid data for an authenticated user."""
+        # Allow CAPTCHA to pass for valid test
+        self.mock_captcha.side_effect = lambda x: True
+
+        # For an authenticated user, the email must match the user's email
+        # (this is validated in the teach function, not the form)
+        form_data = {
+            "course_title": "Introduction to Python",
+            "course_description": "A beginner-friendly Python course.",
+            "preferred_session_times": (timezone.now() + timezone.timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"),
+            "flexible_timing": True,
+            "email": "testuser@example.com",  # Must match the user's email
+            "captcha_0": "dummy-hash",
+            "captcha_1": "PASSED",
+        }
+        test_image = SimpleUploadedFile(
+            name="test_image.gif",
+            content=(
+                b"GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00!"
+                b"\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01"
+                b"\x00\x00\x02\x02D\x01\x00;"
+            ),
+            content_type="image/gif",
+        )
+        form_files = {"course_image": test_image}
+
+        form = TeachForm(data=form_data, files=form_files)
+        self.assertTrue(form.is_valid(), msg=form.errors)
+
+    def test_invalid_form_missing_required_fields(self):
+        """Test TeachForm with missing required fields."""
+        # Allow CAPTCHA to pass to isolate other validation errors
+        self.mock_captcha.side_effect = lambda x: True
+
+        form_data = {
+            "course_title": "",  # Missing required field
+            "course_description": "",  # Missing required field
+            "preferred_session_times": "",
+            "flexible_timing": False,
+            "email": "",  # Missing required field
+            "captcha_0": "dummy-hash",
+            "captcha_1": "PASSED",
+        }
+        form = TeachForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("course_title", form.errors)
+        self.assertIn("course_description", form.errors)
+        self.assertIn("email", form.errors)
+        self.assertIn("This field is required", str(form.errors))
+
+    def test_invalid_course_title(self):
+        """Test TeachForm with invalid course_title (special characters)."""
+        self.mock_captcha.side_effect = lambda x: True
+
+        form_data = {
+            "course_title": "Introduction@Python!",  # Invalid characters
+            "course_description": "A beginner-friendly Python course.",
+            "preferred_session_times": (timezone.now() + timezone.timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"),
+            "flexible_timing": True,
+            "email": "newuser@example.com",
+            "captcha_0": "dummy-hash",
+            "captcha_1": "PASSED",
+        }
+        form = TeachForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("course_title", form.errors)
+        self.assertIn("Title can only contain letters, numbers, spaces, and hyphens", str(form.errors))
+
+    def test_invalid_course_image_size(self):
+        """Test TeachForm with an image file that exceeds the size limit."""
+        self.mock_captcha.side_effect = lambda x: True
+
+        # Create a large but valid GIF file (6MB, exceeding the 5MB limit)
+        # Start with a valid 1x1 GIF image
+        gif_content = (
+            b"GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00!"
+            b"\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;"
+        )
+        # Pad the content to make it 6MB
+        padding = b"0" * (6 * 1024 * 1024 - len(gif_content))
+        large_gif_content = gif_content + padding
+        large_image = SimpleUploadedFile(name="large_image.gif", content=large_gif_content, content_type="image/gif")
+        form_data = {
+            "course_title": "Introduction to Python",
+            "course_description": "A beginner-friendly Python course.",
+            "preferred_session_times": (timezone.now() + timezone.timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"),
+            "flexible_timing": True,
+            "email": "newuser@example.com",
+            "captcha_0": "dummy-hash",
+            "captcha_1": "PASSED",
+        }
+        form_files = {"course_image": large_image}
+
+        form = TeachForm(data=form_data, files=form_files)
+        self.assertFalse(form.is_valid())
+        self.assertIn("course_image", form.errors)
+        self.assertIn("Image must be less than 5MB", str(form.errors))
+
+    def test_invalid_course_image_extension(self):
+        """Test TeachForm with an image file with an invalid extension."""
+        self.mock_captcha.side_effect = lambda x: True
+
+        # Use a valid GIF image but with an invalid extension (.txt)
+        gif_content = (
+            b"GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00!"
+            b"\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;"
+        )
+        invalid_image = SimpleUploadedFile(name="invalid_image.txt", content=gif_content, content_type="text/plain")
+        form_data = {
+            "course_title": "Introduction to Python",
+            "course_description": "A beginner-friendly Python course.",
+            "preferred_session_times": (timezone.now() + timezone.timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"),
+            "flexible_timing": True,
+            "email": "newuser@example.com",
+            "captcha_0": "dummy-hash",
+            "captcha_1": "PASSED",
+        }
+        form_files = {"course_image": invalid_image}
+
+        form = TeachForm(data=form_data, files=form_files)
+        self.assertFalse(form.is_valid())
+        self.assertIn("course_image", form.errors)
+        self.assertIn("File extension", str(form.errors))
+
+    def test_invalid_captcha(self):
+        """Test TeachForm with invalid CAPTCHA."""
+        # CAPTCHA mock is already set to fail by default
+        form_data = {
+            "course_title": "Introduction to Python",
+            "course_description": "A beginner-friendly Python course.",
+            "preferred_session_times": (timezone.now() + timezone.timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"),
+            "flexible_timing": True,
+            "email": "newuser@example.com",
+            "captcha_0": "dummy-hash",
+            "captcha_1": "PASSED",
+        }
+        form = TeachForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("captcha", form.errors)
+        self.assertIn("Invalid captcha", str(form.errors))
+
+    def test_invalid_email_format(self):
+        """Test TeachForm with invalid email format for unauthenticated user."""
+        self.mock_captcha.side_effect = lambda x: True
+
+        form_data = {
+            "course_title": "Introduction to Python",
+            "course_description": "A beginner-friendly Python course.",
+            "preferred_session_times": (timezone.now() + timezone.timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"),
+            "flexible_timing": True,
+            "email": "invalid-email",  # Invalid email format
+            "captcha_0": "dummy-hash",
+            "captcha_1": "PASSED",
+        }
+        form = TeachForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("email", form.errors)
+        self.assertIn("Enter a valid email address", str(form.errors))
+
+    def test_invalid_preferred_session_times(self):
+        """Test TeachForm with invalid preferred_session_times (past date)."""
+        self.mock_captcha.side_effect = lambda x: True
+
+        form_data = {
+            "course_title": "Introduction to Python",
+            "course_description": "A beginner-friendly Python course.",
+            "preferred_session_times": (timezone.now() - timezone.timedelta(days=1)).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),  # Past date
+            "flexible_timing": True,
+            "email": "newuser@example.com",
+            "captcha_0": "dummy-hash",
+            "captcha_1": "PASSED",
+        }
+        form = TeachForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn("preferred_session_times", form.errors)
+        self.assertIn("Preferred session time cannot be in the past", str(form.errors))
+
+    def test_missing_course_image(self):
+        """Test TeachForm with no course_image provided when required=True."""
+        self.mock_captcha.side_effect = lambda x: True
+
+        form_data = {
+            "course_title": "Introduction to Python",
+            "course_description": "A beginner-friendly Python course.",
+            "preferred_session_times": (timezone.now() + timezone.timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"),
+            "flexible_timing": True,
+            "email": "newuser@example.com",
+            "captcha_0": "dummy-hash",
+            "captcha_1": "PASSED",
+        }
+        # Explicitly no files provided
+        form = TeachForm(data=form_data, files={})
+        self.assertFalse(form.is_valid())
+        self.assertIn("course_image", form.errors)
+        self.assertIn("This field is required", str(form.errors))
