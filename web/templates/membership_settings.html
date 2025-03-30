@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Membership Settings
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto">
+      <h1 class="text-3xl font-bold mb-8">Membership Settings</h1>
+      <!-- Current Plan -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg mb-8">
+        <div class="p-6">
+          <div class="flex justify-between items-start">
+            <div>
+              <h2 class="text-2xl font-semibold mb-2">Current Plan</h2>
+              <p class="text-gray-600 dark:text-gray-400">{{ membership.plan.name }}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-lg font-semibold">
+                {% if membership.billing_period == 'monthly' %}
+                  ${{ membership.plan.monthly_price }}/month
+                {% else %}
+                  ${{ membership.plan.yearly_price }}/year
+                {% endif %}
+              </p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Next billing date: {{ membership.end_date|date:"F j, Y" }}</p>
+            </div>
+          </div>
+          <!-- Status Badge -->
+          <div class="mt-4">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium {% if membership.status == 'active' %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% elif membership.status == 'trialing' %} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 {% elif membership.status == 'past_due' %} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 {% else %} bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200 {% endif %}">
+              {{ membership.get_status_display }}
+            </span>
+            {% if membership.cancel_at_period_end %}
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 ml-2">
+                Cancels at period end
+              </span>
+            {% endif %}
+          </div>
+          <!-- Action Buttons -->
+          <div class="mt-6 space-x-4">
+            {% if membership.cancel_at_period_end %}
+              <form method="post"
+                    action="{% url 'reactivate_membership' %}"
+                    class="inline">
+                {% csrf_token %}
+                <button type="submit"
+                        class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                  <i class="fas fa-redo mr-2"></i>
+                  Reactivate Subscription
+                </button>
+              </form>
+            {% else %}
+              <form method="post" action="{% url 'cancel_membership' %}" class="inline">
+                {% csrf_token %}
+                <button type="submit"
+                        class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                  <i class="fas fa-times mr-2"></i>
+                  Cancel Subscription
+                </button>
+              </form>
+            {% endif %}
+            <button type="button"
+                    onclick="location.href='{% url 'update_payment_method' %}'"
+                    class="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+              <i class="fas fa-credit-card mr-2"></i>
+              Update Payment Method
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Billing History -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+        <div class="p-6">
+          <h2 class="text-2xl font-semibold mb-4">Billing History</h2>
+          {% if invoices %}
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead>
+                  <tr>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Description
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Amount
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      Invoice
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                  {% for invoice in invoices %}
+                    <tr>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                        {{ invoice.created|date:"F j, Y" }}
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                        {{ membership.plan.name }} - {{ membership.billing_period }} subscription
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 dark:text-gray-300">
+                        ${{ invoice.amount|floatformat:2 }}
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if invoice.status == 'paid' %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% elif invoice.status == 'open' %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% else %} bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 {% endif %}">
+                          {{ invoice.status|title }}
+                        </span>
+                      </td>
+                      <td class="px-6 py-4 whitespace-nowrap text-sm">
+                        <a href="{{ invoice.invoice_pdf }}"
+                           target="_blank"
+                           class="text-orange-500 hover:text-orange-600">
+                          <i class="fas fa-download mr-1"></i>
+                          Download
+                        </a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <p class="text-gray-600 dark:text-gray-400">No billing history available.</p>
+          {% endif %}
+        </div>
+      </div>
+      <!-- Subscription Events -->
+      <div class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+        <div class="p-6">
+          <h2 class="text-2xl font-semibold mb-4">Subscription Events</h2>
+          {% if events %}
+            <div class="space-y-4">
+              {% for event in events %}
+                <div class="flex items-start">
+                  <div class="flex-shrink-0">
+                    <span class="inline-flex items-center justify-center h-8 w-8 rounded-full {% if event.event_type == 'created' %} bg-green-100 text-green-500 dark:bg-green-900 {% elif event.event_type == 'updated' %} bg-blue-100 text-blue-500 dark:bg-blue-900 {% elif event.event_type == 'canceled' %} bg-red-100 text-red-500 dark:bg-red-900 {% elif event.event_type == 'reactivated' %} bg-yellow-100 text-yellow-500 dark:bg-yellow-900 {% endif %}">
+                      <i class="fas {% if event.event_type == 'created' %} fa-plus {% elif event.event_type == 'updated' %} fa-sync {% elif event.event_type == 'canceled' %} fa-times {% elif event.event_type == 'reactivated' %} fa-redo {% endif %}"></i>
+                    </span>
+                  </div>
+                  <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-900 dark:text-gray-100">{{ event.get_event_type_display }}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ event.created_at|date:"F j, Y, g:i a" }}</p>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <p class="text-gray-600 dark:text-gray-400">No subscription events available.</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
