@@ -240,7 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const safeColor = safeColors.includes(node.color) ? node.color : 'blue-600';
         progressBar.className = `bg-${safeColor} h-2.5 rounded-full`;
         // Ensure progress is a number between 0-100
-        const safeProgress = Math.min(Math.max(parseFloat(node.progress) || 0, 0), 100);
+        const safeProgress = Math.min(Math.max(Number.parseFloat(node.progress) || 0, 0), 100);
         progressBar.style.width = `${safeProgress}%`;
         progressContainer.appendChild(progressBar);
 
