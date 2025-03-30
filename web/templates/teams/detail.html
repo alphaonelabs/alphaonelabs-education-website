@@ -60,6 +60,50 @@
                 {% trans "Overall Progress" %}: {{ goal.completion_percentage }}%
               </p>
             </div>
+            {% if request.user.is_authenticated %}
+              <div class="proof-section mt-8 p-4 bg-white dark:bg-gray-800 rounded-lg shadow">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">{% trans "Your Completion Proof" %}</h3>
+                {% for member in goal.members.all %}
+                  {% if member.user == request.user %}
+                    <div class="space-y-4">
+                      {% if member.completion_image %}
+                        <div class="mb-4">
+                          <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{% trans "Completion Image" %}:</p>
+                          <img src="{{ member.completion_image.url }}"
+                               alt="{% trans 'Completion proof image' %}"
+                               class="rounded-lg border border-gray-200 dark:border-gray-700 max-w-[300px]" />
+                        </div>
+                      {% endif %}
+                      {% if member.completion_link %}
+                        <div class="mb-4">
+                          <p class="text-sm font-medium  text-gray-600 dark:text-gray-400 mb-2">{% trans "Completion Link" %}:</p>
+                          <a href="{{ member.completion_link }}"
+                             class="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline break-all">
+                            {{ member.completion_link|truncatechars:40 }}
+                          </a>
+                        </div>
+                      {% endif %}
+                      {% if member.completion_notes %}
+                        <div class="mb-4">
+                          <p class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">{% trans "Completion Notes" %}:</p>
+                          <p class="text-gray-800 dark:text-gray-200 whitespace-pre-wrap bg-gray-50 dark:bg-gray-700 p-3 rounded-md">
+                            {{ member.completion_notes }}
+                          </p>
+                        </div>
+                      {% endif %}
+                      <a href="{% url 'submit_team_proof' goal.id %}"
+                         class="inline-block bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-5 py-2 rounded-lg transition duration-200 text-sm font-medium shadow hover:shadow-md transform hover:-translate-y-0.5">
+                        {% if member.completion_image or member.completion_link or member.completion_notes %}
+                          {% trans "Edit Proof" %}
+                        {% else %}
+                          {% trans "Submit Proof" %}
+                        {% endif %}
+                      </a>
+                    </div>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            {% endif %}
           </div>
         </div>
         <!-- Sidebar -->

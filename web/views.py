@@ -89,6 +89,7 @@ from .forms import (
     SuccessStoryForm,
     TeacherSignupForm,
     TeachForm,
+    TeamGoalCompletionForm,
     TeamGoalForm,
     TeamInviteForm,
     UserRegistrationForm,
@@ -294,6 +295,25 @@ def index(request):
                 }
             )
     return render(request, "index.html", context)
+
+
+@login_required
+def submit_team_proof(request, team_goal_id):
+    team_goal = get_object_or_404(TeamGoal, id=team_goal_id)
+    member = get_object_or_404(TeamGoalMember, team_goal=team_goal, user=request.user)
+
+    if request.method == "POST":
+        form = TeamGoalCompletionForm(request.POST, request.FILES, instance=member)
+        if form.is_valid():
+            form.save()
+            if not member.completed:
+                member.mark_completed()
+            return redirect("team_goal_detail", goal_id=team_goal.id)  # Fixed here
+
+    else:
+        form = TeamGoalCompletionForm(instance=member)
+
+    return render(request, "teams/submit_proof.html", {"form": form, "team_goal": team_goal})
 
 
 def signup_view(request):

@@ -1586,6 +1586,9 @@ class TeamGoalMember(models.Model):
     team_goal = models.ForeignKey(TeamGoal, on_delete=models.CASCADE, related_name="members")
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     joined_at = models.DateTimeField(auto_now_add=True)
+    completion_image = models.ImageField(upload_to="proof_images/", blank=True)
+    completion_link = models.URLField(max_length=200, blank=True)
+    completion_notes = models.TextField(blank=True)
     completed = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True, blank=True)
 
