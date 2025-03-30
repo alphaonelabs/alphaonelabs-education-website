@@ -3795,7 +3795,6 @@ class StorefrontDetailView(LoginRequiredMixin, generic.DetailView):
 
 def meetup_list(request: HttpRequest) -> HttpResponse:
     meetups = Meetup.objects.select_related("creator").all().order_by("-created_at")
-
     # Add annotation for user registration status when authenticated
     if request.user.is_authenticated:
         from django.db.models import Exists, OuterRef
@@ -3803,19 +3802,16 @@ def meetup_list(request: HttpRequest) -> HttpResponse:
         meetups = meetups.annotate(
             user_registered=Exists(MeetupRegistration.objects.filter(meetup=OuterRef("pk"), user=request.user))
         )
-
     paginator = Paginator(meetups, 10)  # Show 10 meetups per page
-
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
-
     # Check if the user is registered for each meetup
     user_registered_meetups = []
     if request.user.is_authenticated:
         user_registered_meetups = MeetupRegistration.objects.filter(user=request.user).values_list(
-            "meetup_id", flat=True
+            "meetup_id",
+            flat=True,
         )
-
     return render(
         request,
         "web/meetup_list.html",
@@ -3845,9 +3841,8 @@ def create_meetup(request: HttpRequest) -> HttpResponse:
             meetup.slug = slug
             meetup.save()
             return redirect("meetup_list")
-        else:
             # Add error message when form validation fails
-            messages.error(request, "Please correct the errors below.")
+        messages.error(request, "Please correct the errors below.")
     else:
         form = MeetupForm()
     return render(request, "web/create_meetup.html", {"form": form})
@@ -3877,16 +3872,15 @@ def edit_meetup(request: HttpRequest, slug: str) -> HttpResponse:
                 form.instance.slug = new_slug
             form.save()
             return redirect("meetup_detail", slug=meetup.slug)
-        else:
             # Add error message when form validation fails
-            messages.error(request, "Please correct the errors below.")
+        messages.error(request, "Please correct the errors below.")
     else:
         form = MeetupForm(instance=meetup)
     return render(request, "web/edit_meetup.html", {"form": form})
 
 
 @login_required
-def register_meetup(request, slug):
+def register_meetup(request: HttpRequest, slug: str) -> HttpResponse:
     meetup = get_object_or_404(Meetup, slug=slug)
 
     # Check if the user is already registered
@@ -3906,7 +3900,7 @@ def register_meetup(request, slug):
 
 
 @login_required
-def unregister_meetup(request, slug):
+def unregister_meetup(request: HttpRequest, slug: str) -> HttpResponse:
     meetup = get_object_or_404(Meetup, slug=slug)
     registration = MeetupRegistration.objects.filter(meetup=meetup, user=request.user)
     if registration.exists():

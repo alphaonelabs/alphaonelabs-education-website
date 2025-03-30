@@ -1521,14 +1521,6 @@ class StudentEnrollmentForm(forms.Form):
 
 
 class MeetupForm(forms.ModelForm):
-    title = forms.CharField(max_length=200, required=True)
-    description = forms.CharField(required=True, widget=forms.Textarea)
-    date = forms.DateTimeField(required=True)
-    event_type = forms.ChoiceField(
-        required=True,
-        choices=[("online", "Online"), ("in_person", "In Person")],
-    )
-
     class Meta:
         model = Meetup
         fields: typing.ClassVar[list[str]] = ["title", "description", "date", "link", "location", "event_type"]
@@ -1544,7 +1536,7 @@ class MeetupForm(forms.ModelForm):
             ),
         }
 
-    def clean(self) -> typing.Dict[str, typing.Any]:
+    def clean(self) -> dict[str, typing.Any]:
         cleaned_data = super().clean()
         event_type = cleaned_data.get("event_type")
         location = cleaned_data.get("location")

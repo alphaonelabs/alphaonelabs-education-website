@@ -15,9 +15,9 @@
                class="text-blue-600 dark:text-blue-400 hover:underline">{{ meetup.title }}</a>
           </h2>
           <!-- Truncated Description -->
-          <p class="text-gray-600 dark:text-gray-300 line-clamp-3 overflow-hidden">{{ meetup.description }}</p>
+          <p class="text-gray-600 dark:text-gray-300 line-clamp-3 overflow-hidden">{{ meetup.description|truncatechars:150 }}</p>
           <p class="text-gray-700 dark:text-gray-400 text-sm mt-2">
-            <strong>Date:</strong> {{ meetup.date }}
+            <strong>Date:</strong> {{ meetup.date|date:"F j, Y, g:i a" }}
           </p>
           {% if meetup.event_type == 'in_person' and meetup.location %}
             <p class="text-gray-700 dark:text-gray-400 text-sm">
@@ -42,7 +42,10 @@
               </form>
             {% endif %}
           {% else %}
-            <p class="text-gray-500 mt-2 text-sm">Log in to register for this meetup.</p>
+            <p class="text-gray-500 mt-2 text-sm">
+              <a href="{% url 'account_login' %}?next={{ request.path }}"
+                 class="text-blue-600 hover:underline">Log in</a> to register for this meetup.
+            </p>
           {% endif %}
         </div>
       {% endfor %}

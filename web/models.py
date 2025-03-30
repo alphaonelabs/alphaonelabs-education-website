@@ -4,7 +4,6 @@ import string
 import time
 import uuid
 from io import BytesIO
-from typing import Any
 
 from allauth.account.signals import user_signed_up
 from django.conf import settings
@@ -19,6 +18,7 @@ from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.text import slugify
+from django.utils.timezone import now
 from django.utils.translation import gettext_lazy as _
 from markdownx.models import MarkdownxField
 from PIL import Image
@@ -1778,15 +1778,14 @@ class Meetup(models.Model):
         # Validate that location is provided for in-person meetups
         if self.event_type == "in_person" and not self.location:
             raise ValidationError({"location": "In-person meetups require a location"})
+            # Validate that the date is in the future
+        if self.date < now():
+            raise ValidationError({"date": "Meetup date must be in the future"})
 
     def __str__(self) -> str:
         return self.title
 
-    def can_edit(self, user: User) -> bool:
-        """Check if the given user can edit this meetup."""
-        return user == self.creator or user.is_staff
-
-    def save(self, *args: Any, **kwargs: Any) -> None:
+    def save(self, *args: object, **kwargs: object) -> None:
         self.full_clean()  # Call full_clean to enforce validation
         if not self.slug:
             self.slug = slugify(self.title)
@@ -1794,6 +1793,10 @@ class Meetup(models.Model):
                 suffix = uuid.uuid4().hex[:6]
                 self.slug = f"{self.slug}-{suffix}"
         super().save(*args, **kwargs)
+
+    def can_edit(self, user: User) -> bool:
+        """Check if the given user can edit this meetup."""
+        return user == self.creator or user.is_staff
 
 
 class MeetupRegistration(models.Model):
