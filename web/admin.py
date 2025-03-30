@@ -7,7 +7,7 @@ from django.db import models
 from django.http import HttpResponseRedirect
 from django.urls import path, reverse
 from django.utils.html import format_html
-
+from rangefilter.filters import NumericRangeFilter
 from .models import (
     Achievement,
     Badge,
@@ -140,7 +140,11 @@ class ProfileAdmin(admin.ModelAdmin):
 @admin.register(Points)
 class PointsAdmin(admin.ModelAdmin):
     list_display = ('user', 'amount', 'point_type', 'reason', 'awarded_at')
-    list_filter = ('point_type', 'awarded_at')
+    list_filter = (
+        'point_type',
+        'awarded_at',
+        ('amount', NumericRangeFilter),  # Proper range filter
+    )
     search_fields = ('user__username', 'reason')
     raw_id_fields = ('user', 'challenge')
     readonly_fields = ('awarded_at', 'updated_at')
