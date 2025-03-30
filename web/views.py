@@ -37,6 +37,7 @@ from django.db.models.functions import Coalesce
 from django.http import (
     FileResponse,
     Http404,
+    HttpRequest,
     HttpResponse,
     HttpResponseForbidden,
     JsonResponse,
@@ -6911,23 +6912,32 @@ def delete_post(request, post_id):
 
 
 @login_required
-def learning_map_list(request):
+def learning_map_list(request: HttpRequest) -> HttpResponse:
     """View for listing a user's learning maps"""
     maps = LearningMap.objects.filter(user=request.user)
-
     if request.method == "POST":
         # Handle creation of a new map
         title = request.POST.get("title")
         description = request.POST.get("description", "")
         public = request.POST.get("public") == "on"
-
         if title:
-            new_map = LearningMap.objects.create(user=request.user, title=title, description=description, public=public)
-            messages.success(request, "Learning map created successfully!")
-            return redirect("learning_map_detail", slug=new_map.slug)
+            if len(title) > 100:  # Assuming LearningMap.title has max_length=100
+                messages.error(request, "Title must be 100 characters or less")
+                return redirect("learning_map_list")
+
+            from django.db import transaction
+
+            try:
+                with transaction.atomic():
+                    new_map = LearningMap.objects.create(
+                        user=request.user, title=title, description=description, public=public
+                    )
+                    messages.success(request, "Learning map created successfully!")
+                    return redirect("learning_map_detail", slug=new_map.slug)
+            except Exception as e:
+                messages.error(request, f"Error creating learning map: {str(e)}")
         else:
             messages.error(request, "Title is required")
-
     return render(request, "learning_maps/list.html", {"maps": maps})
 
 
@@ -7099,7 +7109,7 @@ def update_map_node(request, node_id):
 
 
 @login_required
-def get_learning_map_data(request, slug):
+def get_learning_map_data(request: HttpRequest, slug: str) -> JsonResponse:
     """API endpoint to get learning map data for visualization"""
     learning_map = get_object_or_404(LearningMap, slug=slug)
 

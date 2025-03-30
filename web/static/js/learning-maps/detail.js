@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         const arc = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         arc.setAttribute('d', pathData);
-        arc.setAttribute('fill', 'var(--color-green-500, #10b981)');
+        arc.setAttribute('fill', nodeColor);
         group.appendChild(arc);
     }
 

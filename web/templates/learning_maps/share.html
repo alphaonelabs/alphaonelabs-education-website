@@ -133,19 +133,19 @@
           const copyBtn = document.getElementById('copy-btn');
           const shareUrl = document.getElementById('share-url');
           const copyMessage = document.getElementById('copy-message');
-
           if (copyBtn) {
               copyBtn.addEventListener('click', function() {
-                  shareUrl.select();
-                  document.execCommand('copy');
+                  navigator.clipboard.writeText(shareUrl.value).then(function() {
+                      // Show success message
+                      copyMessage.classList.remove('hidden');
 
-                  // Show success message
-                  copyMessage.classList.remove('hidden');
-
-                  // Hide message after 3 seconds
-                  setTimeout(function() {
-                      copyMessage.classList.add('hidden');
-                  }, 3000);
+                      // Hide message after 3 seconds
+                      setTimeout(function() {
+                          copyMessage.classList.add('hidden');
+                      }, 3000);
+                  }).catch(function(err) {
+                      console.error('Could not copy text: ', err);
+                  });
               });
           }
       });

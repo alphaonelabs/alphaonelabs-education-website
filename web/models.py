@@ -1,5 +1,6 @@
 import os
 import random
+import secrets
 import string
 import time
 import uuid
@@ -2802,8 +2803,7 @@ class LearningMap(models.Model):
     def save(self, *args, **kwargs):
         # Generate share token if not exists
         if not self.share_token:
-            self.share_token = "".join(random.choices(string.ascii_letters + string.digits, k=32))
-
+            self.share_token = secrets.token_urlsafe(24)
         # Generate slug if not exists
         if not self.slug:
             base_slug = slugify(self.title)
