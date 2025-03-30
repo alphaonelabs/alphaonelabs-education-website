@@ -93,6 +93,8 @@ __all__ = [
     "GradeableLinkForm",
     "LinkGradeForm",
     "AwardAchievementForm",
+    "NotificationPreferencesForm",
+    "StudyGroupForm",
 ]
 
 
@@ -1641,11 +1643,19 @@ class LinkGradeForm(forms.ModelForm):
 
 class NotificationPreferencesForm(forms.ModelForm):
     class Meta:
-        model = NotificationPreference
-        fields = ["reminder_days_before", "reminder_hours_before", "email_notifications", "in_app_notifications"]
+        model = Profile
+        fields = ["email_notifications", "push_notifications"]
         widgets = {
-            "reminder_days_before": forms.NumberInput(attrs={"min": 1, "max": 14}),
-            "reminder_hours_before": forms.NumberInput(attrs={"min": 1, "max": 72}),
+            "email_notifications": TailwindCheckboxInput(),
+            "push_notifications": TailwindCheckboxInput(),
+        }
+        labels = {
+            "email_notifications": "Receive email notifications",
+            "push_notifications": "Receive push notifications",
+        }
+        help_texts = {
+            "email_notifications": "Get notified via email about course updates, messages, and other important events",
+            "push_notifications": "Get notified via browser push notifications about course updates, messages, and other important events",
         }
 
 

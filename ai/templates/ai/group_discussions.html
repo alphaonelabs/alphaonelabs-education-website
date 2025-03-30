@@ -1,0 +1,336 @@
+{% extends "ai/ai_base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block active_nav %}group-discussions{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="text-sm font-medium mb-4">
+    <ol class="list-none p-0 inline-flex">
+        <li class="flex items-center">
+            <a href="{% url 'home' %}" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">Home</a>
+            <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+        </li>
+        <li class="text-gray-800 dark:text-gray-200">Group Discussions</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Group Discussions</h1>
+        <p class="text-gray-600 dark:text-gray-400">Connect with fellow learners and share your knowledge.</p>
+    </div>
+
+    <!-- Main Grid Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Column: Active Discussions -->
+        <div class="lg:col-span-2">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Active Discussions</h2>
+                    <button onclick="openCreateDiscussionModal()" class="bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200">
+                        <i class="fas fa-plus mr-2"></i>New Discussion
+                    </button>
+                </div>
+
+                <div class="space-y-6">
+                    {% for discussion in active_discussions %}
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-grow">
+                                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ discussion.title }}</h3>
+                                <p class="mt-1 text-gray-600 dark:text-gray-400">{{ discussion.content|truncatechars:200 }}</p>
+                                <div class="mt-2 flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                                    <span>
+                                        <i class="fas fa-user mr-1"></i>
+                                        {{ discussion.user.username }}
+                                    </span>
+                                    <span>
+                                        <i class="fas fa-clock mr-1"></i>
+                                        {{ discussion.created_at|timesince }} ago
+                                    </span>
+                                    <span>
+                                        <i class="fas fa-comments mr-1"></i>
+                                        {{ discussion.replies.count }} replies
+                                    </span>
+                                </div>
+                            </div>
+                            <button onclick="openDiscussionModal({{ discussion.id }})" class="text-teal-300 hover:text-teal-400">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8">
+                        <p class="text-gray-600 dark:text-gray-400">No active discussions. Start a new one!</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Study Groups and Recent Activity -->
+        <div class="space-y-8">
+            <!-- Study Groups -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Your Study Groups</h2>
+                <div class="space-y-4">
+                    {% for group in study_groups %}
+                    <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <h3 class="font-medium text-gray-900 dark:text-gray-100">{{ group.name }}</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ group.description|truncatechars:100 }}</p>
+                        <div class="mt-2 flex justify-between items-center">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">
+                                <i class="fas fa-users mr-1"></i>
+                                {{ group.members.count }} members
+                            </span>
+                            <a href="#" class="text-teal-300 hover:text-teal-400">
+                                <i class="fas fa-arrow-right"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-center text-gray-600 dark:text-gray-400">You haven't joined any study groups yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Recent Contributions -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Recent Contributions</h2>
+                <div class="space-y-4">
+                    {% for reply in recent_contributions %}
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0 w-10 h-10 bg-teal-300 rounded-full flex items-center justify-center">
+                            <i class="fas fa-comment text-white"></i>
+                        </div>
+                        <div class="flex-grow">
+                            <h3 class="text-gray-900 dark:text-gray-100 font-medium">{{ reply.discussion.title }}</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ reply.content|truncatechars:100 }}</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400 mt-1">{{ reply.created_at|timesince }} ago</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-center text-gray-600 dark:text-gray-400">No recent contributions.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Discussion Modal -->
+<div id="createDiscussionModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+        <div class="p-6">
+            <h2 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Create Discussion</h2>
+            <form id="createDiscussionForm" onsubmit="handleCreateDiscussion(event)">
+                <div class="space-y-4">
+                    <div>
+                        <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
+                        <input type="text" id="title" name="title" required
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300">
+                    </div>
+                    <div>
+                        <label for="content" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Content</label>
+                        <textarea id="content" name="content" rows="4" required
+                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300"></textarea>
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" onclick="closeCreateDiscussionModal()"
+                            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-teal-300 hover:bg-teal-400 text-white rounded-lg">
+                        Create Discussion
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Discussion Details Modal -->
+<div id="discussionModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
+        <div class="p-6 flex-grow overflow-y-auto">
+            <div class="mb-8">
+                <h2 id="discussionTitle" class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2"></h2>
+                <p id="discussionContent" class="text-gray-600 dark:text-gray-400"></p>
+                <div class="mt-4 flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-400">
+                    <span id="discussionAuthor">
+                        <i class="fas fa-user mr-1"></i>
+                        <span></span>
+                    </span>
+                    <span id="discussionDate">
+                        <i class="fas fa-clock mr-1"></i>
+                        <span></span>
+                    </span>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-200 dark:border-gray-700 pt-6">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Replies</h3>
+                <div id="discussionReplies" class="space-y-4"></div>
+            </div>
+
+            <div class="mt-6">
+                <form id="replyForm" onsubmit="handleReply(event)">
+                    <input type="hidden" id="discussionId" value="">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="replyContent" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Your Reply</label>
+                            <textarea id="replyContent" name="content" rows="3" required
+                                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300"></textarea>
+                        </div>
+                        <div class="flex justify-end">
+                            <button type="submit"
+                                    class="px-4 py-2 bg-teal-300 hover:bg-teal-400 text-white rounded-lg">
+                                Post Reply
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+            <button onclick="closeDiscussionModal()"
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openCreateDiscussionModal() {
+        document.getElementById('createDiscussionModal').classList.remove('hidden');
+    }
+
+    function closeCreateDiscussionModal() {
+        document.getElementById('createDiscussionModal').classList.add('hidden');
+        document.getElementById('createDiscussionForm').reset();
+    }
+
+    async function handleCreateDiscussion(event) {
+        event.preventDefault();
+        const formData = new FormData(event.target);
+        
+        try {
+            const response = await fetch('/ai/api/group-discussion/create/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: formData
+            });
+
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                throw new Error('Failed to create discussion');
+            }
+        } catch (error) {
+            console.error('Error creating discussion:', error);
+            alert('Failed to create discussion');
+        }
+    }
+
+    async function openDiscussionModal(discussionId) {
+        try {
+            const response = await fetch(`/ai/api/group-discussion/${discussionId}/`);
+            const discussion = await response.json();
+            
+            document.getElementById('discussionId').value = discussionId;
+            document.getElementById('discussionTitle').textContent = discussion.title;
+            document.getElementById('discussionContent').textContent = discussion.content;
+            document.getElementById('discussionAuthor').querySelector('span').textContent = discussion.user.username;
+            document.getElementById('discussionDate').querySelector('span').textContent = discussion.created_at;
+
+            const repliesContainer = document.getElementById('discussionReplies');
+            repliesContainer.innerHTML = '';
+            
+            discussion.replies.forEach(reply => {
+                const replyElement = document.createElement('div');
+                replyElement.className = 'bg-gray-50 dark:bg-gray-700 rounded-lg p-4';
+                replyElement.innerHTML = `
+                    <div class="flex items-start space-x-4">
+                        <div class="flex-shrink-0 w-10 h-10 bg-teal-300 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-white"></i>
+                        </div>
+                        <div class="flex-grow">
+                            <div class="flex items-center justify-between">
+                                <span class="font-medium text-gray-900 dark:text-gray-100">${reply.user.username}</span>
+                                <span class="text-sm text-gray-600 dark:text-gray-400">${reply.created_at}</span>
+                            </div>
+                            <p class="mt-1 text-gray-600 dark:text-gray-400">${reply.content}</p>
+                        </div>
+                    </div>
+                `;
+                repliesContainer.appendChild(replyElement);
+            });
+
+            document.getElementById('discussionModal').classList.remove('hidden');
+        } catch (error) {
+            console.error('Error fetching discussion:', error);
+            alert('Failed to load discussion');
+        }
+    }
+
+    function closeDiscussionModal() {
+        document.getElementById('discussionModal').classList.add('hidden');
+        document.getElementById('replyForm').reset();
+    }
+
+    async function handleReply(event) {
+        event.preventDefault();
+        const discussionId = document.getElementById('discussionId').value;
+        const formData = new FormData(event.target);
+        
+        try {
+            const response = await fetch(`/ai/api/group-discussion/${discussionId}/reply/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: formData
+            });
+
+            if (response.ok) {
+                // Refresh the discussion to show the new reply
+                openDiscussionModal(discussionId);
+                event.target.reset();
+            } else {
+                throw new Error('Failed to post reply');
+            }
+        } catch (error) {
+            console.error('Error posting reply:', error);
+            alert('Failed to post reply');
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %} 

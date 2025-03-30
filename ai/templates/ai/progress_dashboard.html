@@ -1,0 +1,184 @@
+{% extends "ai/ai_base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block active_nav %}progress-dashboard{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="text-sm font-medium mb-4">
+    <ol class="list-none p-0 inline-flex">
+        <li class="flex items-center">
+            <a href="{% url 'home' %}" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">Home</a>
+            <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+        </li>
+        <li class="text-gray-800 dark:text-gray-200">Progress Dashboard</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Learning Progress Dashboard</h1>
+        <p class="text-gray-600 dark:text-gray-400">Track your learning journey and achievements across all subjects.</p>
+    </div>
+
+    <!-- Main Grid Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Overall Progress -->
+        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Overall Progress</h2>
+            
+            <!-- Progress Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
+                    <p class="text-3xl font-bold text-teal-300">{{ completed_hours|floatformat:1 }}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Hours Completed</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
+                    <p class="text-3xl font-bold text-teal-300">{{ completed_tasks }}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Tasks Completed</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
+                    <p class="text-3xl font-bold text-teal-300">{{ study_plans.count }}</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Active Plans</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
+                    <p class="text-3xl font-bold text-teal-300">{{ overall_progress|floatformat:1 }}%</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">Overall Progress</p>
+                </div>
+            </div>
+
+            <!-- Overall Progress Bar -->
+            <div class="mb-6">
+                <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+                    <span>Overall Progress</span>
+                    <span>{{ overall_progress|floatformat:1 }}%</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                    <div class="bg-teal-300 h-2 rounded-full" style="width: {{ overall_progress }}%"></div>
+                </div>
+            </div>
+
+            <!-- Subject Progress -->
+            <div class="space-y-4">
+                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Subject Progress</h3>
+                {% for subject, data in subject_progress.items %}
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-medium text-gray-900 dark:text-gray-100">{{ subject }}</h4>
+                        <span class="text-sm text-gray-600 dark:text-gray-400">{{ data.progress|floatformat:1 }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mb-2">
+                        <div class="bg-teal-300 h-2 rounded-full" style="width: {{ data.progress }}%"></div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
+                        <div>
+                            <p class="font-medium">Hours</p>
+                            <p>{{ data.completed_hours|floatformat:1 }}/{{ data.total_hours|floatformat:1 }} completed</p>
+                        </div>
+                        <div>
+                            <p class="font-medium">Tasks</p>
+                            <p>{{ data.completed_tasks }}/{{ data.total_tasks }} completed</p>
+                        </div>
+                        <div>
+                            <p class="font-medium">Active Plans</p>
+                            <p>{{ data.active_plans }}</p>
+                        </div>
+                        <div>
+                            <p class="font-medium">Upcoming Tasks</p>
+                            <p>{{ data.upcoming_tasks }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center text-gray-600 dark:text-gray-400">No study plans yet. Create your first plan!</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-8">
+            <!-- Recent Activity -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Recent Activity</h2>
+                <div class="space-y-4">
+                    {% for activity in recent_activity %}
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-teal-100 dark:bg-teal-900 rounded-full flex items-center justify-center">
+                                <i class="fas fa-check text-teal-300"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-900 dark:text-gray-100">
+                                Completed task: <span class="font-medium">{{ activity.title }}</span>
+                            </p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">
+                                {{ activity.plan_title }} • {{ activity.subject }} • {{ activity.hours|floatformat:1 }} hours
+                            </p>
+                            <p class="text-xs text-gray-500 dark:text-gray-500">
+                                {{ activity.date|date:"M d, Y H:i" }}
+                            </p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-center text-gray-600 dark:text-gray-400">No recent activity</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Upcoming Tasks -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Upcoming Tasks</h2>
+                <div class="space-y-4">
+                    {% for task in upcoming_tasks %}
+                    <div class="flex items-start space-x-3">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
+                                <i class="fas fa-clock text-yellow-600 dark:text-yellow-400"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-900 dark:text-gray-100">
+                                <span class="font-medium">{{ task.title }}</span>
+                            </p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">
+                                {{ task.plan_title }} • {{ task.subject }} • {{ task.hours|floatformat:1 }} hours
+                            </p>
+                            <p class="text-xs text-gray-500 dark:text-gray-500 line-clamp-2">
+                                {{ task.description }}
+                            </p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-center text-gray-600 dark:text-gray-400">No upcoming tasks</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function startTopic(topicId) {
+        // Implement topic start functionality
+        alert('Topic start functionality coming soon!');
+    }
+
+    // Add any additional JavaScript functionality here
+</script>
+
+<style>
+    .progress-ring {
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+        transition: stroke-dasharray 0.5s ease-in-out;
+    }
+</style>
+{% endblock %} 

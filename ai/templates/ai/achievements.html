@@ -1,0 +1,249 @@
+{% extends "ai/ai_base.html" %}
+{% load static %}
+{% load i18n %}
+{% load ai_filters %}
+
+{% block active_nav %}achievements{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="text-sm font-medium mb-4">
+    <ol class="list-none p-0 inline-flex">
+        <li class="flex items-center">
+            <a href="{% url 'home' %}" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">Home</a>
+            <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+        </li>
+        <li class="text-gray-800 dark:text-gray-200">Achievements</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Achievements</h1>
+        <p class="text-gray-600 dark:text-gray-400">Track your learning milestones and unlock new achievements.</p>
+    </div>
+
+    <!-- Achievement Categories -->
+    <div class="mb-8">
+        <div class="flex flex-wrap gap-4">
+            <button onclick="filterAchievements('all')" class="category-btn active bg-teal-300 text-white px-4 py-2 rounded-lg hover:bg-teal-400 transition duration-200">
+                All
+            </button>
+            {% for category in categories %}
+            <button onclick="filterAchievements('{{ category.type }}')" class="category-btn bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition duration-200">
+                {{ category.type|title }}
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Main Grid Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Achievement Cards -->
+        <div class="lg:col-span-2">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {% for achievement in all_achievements %}
+                <div class="achievement-card" data-category="{{ achievement.type }}">
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 {% if achievement.id in unlocked_achievement_ids %}border-2 border-teal-300{% endif %}">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-shrink-0 w-12 h-12 bg-teal-300 rounded-full flex items-center justify-center">
+                                <i class="fas {{ achievement.icon }} text-white text-xl"></i>
+                            </div>
+                            {% if achievement.id in unlocked_achievement_ids %}
+                            <div class="flex items-center text-teal-300">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                <span class="text-sm">Unlocked</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="mt-4">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ achievement.name }}</h3>
+                            <p class="mt-2 text-gray-600 dark:text-gray-400">{{ achievement.description }}</p>
+                        </div>
+                        {% if achievement.id in unlocked_achievement_ids %}
+                        <div class="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                            Unlocked {{ achievement.earned_at|timesince }} ago
+                        </div>
+                        {% endif %}
+                        {% if achievement.type == 'study_time' %}
+                        <div class="mt-4">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-600 dark:text-gray-400">Progress</span>
+                                <span class="text-teal-300">{{ achievement_progress.study_time.current }}/{{ achievement_progress.study_time.target }} hours</span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                                <div class="bg-teal-300 h-2 rounded-full" style="width: {{ achievement_progress.study_time.percentage }}%"></div>
+                            </div>
+                        </div>
+                        {% elif achievement.type == 'topics_completed' %}
+                        <div class="mt-4">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-600 dark:text-gray-400">Progress</span>
+                                <span class="text-teal-300">{{ achievement_progress.topics_completed.current }}/{{ achievement_progress.topics_completed.target }} topics</span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                                <div class="bg-teal-300 h-2 rounded-full" style="width: {{ achievement_progress.topics_completed.percentage }}%"></div>
+                            </div>
+                        </div>
+                        {% elif achievement.type == 'streak' %}
+                        <div class="mt-4">
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-600 dark:text-gray-400">Progress</span>
+                                <span class="text-teal-300">{{ achievement_progress.streak.current }}/{{ achievement_progress.streak.target }} days</span>
+                            </div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                                <div class="bg-teal-300 h-2 rounded-full" style="width: {{ achievement_progress.streak.percentage }}%"></div>
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-span-2 text-center py-8">
+                    <p class="text-gray-600 dark:text-gray-400">No achievements available.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Progress and Stats -->
+        <div class="space-y-8">
+            <!-- Overall Progress -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Progress</h2>
+                <div class="flex items-center justify-center mb-6">
+                    <div class="relative w-32 h-32">
+                        <svg class="w-full h-full" viewBox="0 0 36 36">
+                            <path d="M18 2.0845
+                                a 15.9155 15.9155 0 0 1 0 31.831
+                                a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none"
+                                stroke="#E2E8F0"
+                                stroke-width="3"
+                                class="dark:stroke-gray-600"
+                            />
+                            <path d="M18 2.0845
+                                a 15.9155 15.9155 0 0 1 0 31.831
+                                a 15.9155 15.9155 0 0 1 0 -31.831"
+                                fill="none"
+                                stroke="#5EEAD4"
+                                stroke-width="3"
+                                stroke-dasharray="{{ achievement_progress_percentage }}, 100"
+                                class="progress-ring"
+                            />
+                            <text x="18" y="20.35" class="text-3xl font-bold text-center fill-gray-900 dark:fill-gray-100" text-anchor="middle">
+                                {{ achievement_progress_percentage|floatformat:0 }}%
+                            </text>
+                        </svg>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4 text-center">
+                    <div>
+                        <p class="text-3xl font-bold text-teal-300">{{ unlocked_count }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Unlocked</p>
+                    </div>
+                    <div>
+                        <p class="text-3xl font-bold text-teal-300">{{ total_count }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Total</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Study Plan Progress -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Study Plan Progress</h2>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-900 dark:text-gray-100">Study Hours</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">{{ completed_hours }}/{{ total_study_hours }}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                            <div class="bg-teal-300 h-2 rounded-full" style="width: {% if total_study_hours > 0 %}{{ completed_hours|div:total_study_hours|mul:100 }}{% else %}0{% endif %}%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-gray-900 dark:text-gray-100">Tasks Completed</span>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">{{ completed_tasks }}/{{ total_tasks }}</span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                            <div class="bg-teal-300 h-2 rounded-full" style="width: {% if total_tasks > 0 %}{{ completed_tasks|div:total_tasks|mul:100 }}{% else %}0{% endif %}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Learning Streak -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Learning Streak</h2>
+                <div class="grid grid-cols-2 gap-4 text-center">
+                    <div>
+                        <p class="text-3xl font-bold text-teal-300">{{ current_streak }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Current Streak</p>
+                    </div>
+                    <div>
+                        <p class="text-3xl font-bold text-teal-300">{{ longest_streak }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Longest Streak</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Unlocks -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">Recent Unlocks</h2>
+                <div class="space-y-4">
+                    {% for achievement in recent_unlocks %}
+                    <div class="flex items-center space-x-4">
+                        <div class="flex-shrink-0 w-10 h-10 bg-teal-300 rounded-full flex items-center justify-center">
+                            <i class="fas {{ achievement.achievement.icon }} text-white"></i>
+                        </div>
+                        <div class="flex-grow">
+                            <h3 class="text-gray-900 dark:text-gray-100 font-medium">{{ achievement.achievement.name }}</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ achievement.earned_at|timesince }} ago</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <p class="text-center text-gray-600 dark:text-gray-400">No achievements unlocked yet.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function filterAchievements(category) {
+        // Update active button
+        document.querySelectorAll('.category-btn').forEach(btn => {
+            btn.classList.remove('bg-teal-300', 'text-white');
+            btn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+        });
+        event.target.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+        event.target.classList.add('bg-teal-300', 'text-white');
+
+        // Filter achievement cards
+        document.querySelectorAll('.achievement-card').forEach(card => {
+            if (category === 'all' || card.dataset.category === category) {
+                card.style.display = 'block';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+</script>
+
+<style>
+    .progress-ring {
+        transform: rotate(-90deg);
+        transform-origin: 50% 50%;
+        transition: stroke-dasharray 0.5s ease-in-out;
+    }
+</style>
+{% endblock %} 

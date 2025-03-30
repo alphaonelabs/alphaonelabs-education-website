@@ -1,124 +1,244 @@
-{% extends "ai/ai_base.html" %}
-{% load static %}
+{% extends "base.html" %}
 
-{% block title %}AI Dashboard{% endblock %}
-
-{% block ai_content %}
-<div class="mb-4 d-flex justify-content-between align-items-center">
-    <h2 class="fw-bold text-primary mb-0">Learning Dashboard</h2>
-    <div class="dropdown">
-        <button class="btn btn-outline-primary dropdown-toggle" type="button" id="timeRangeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-            Last 7 Days
-        </button>
-        <ul class="dropdown-menu shadow-sm" aria-labelledby="timeRangeDropdown">
-            <li><a class="dropdown-item active" href="#">Last 7 Days</a></li>
-            <li><a class="dropdown-item" href="#">Last 30 Days</a></li>
-            <li><a class="dropdown-item" href="#">All Time</a></li>
-        </ul>
-    </div>
-</div>
-
-<div class="row g-4 mb-4">
-    <div class="col-md-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-body text-center">
-                <div class="display-4 fw-bold text-primary mb-2">{{ recent_interactions|default:0 }}</div>
-                <h5 class="card-title fw-normal text-muted">AI Conversations</h5>
-                <div class="progress mt-3" style="height: 6px;">
-                    <div class="progress-bar bg-primary" role="progressbar" style="width: 65%" aria-valuenow="65" aria-valuemin="0" aria-valuemax="100"></div>
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">Your Learning Dashboard</h1>
+        
+        <!-- Overall Progress -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Overall Progress</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-teal-50 dark:bg-teal-900 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-teal-800 dark:text-teal-200">Study Time</h3>
+                    <p id="total-study-time" class="text-2xl font-bold text-teal-600 dark:text-teal-300">0 hours</p>
+                </div>
+                <div class="bg-teal-50 dark:bg-teal-900 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-teal-800 dark:text-teal-200">Topics Completed</h3>
+                    <p id="topics-completed" class="text-2xl font-bold text-teal-600 dark:text-teal-300">0</p>
+                </div>
+                <div class="bg-teal-50 dark:bg-teal-900 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-teal-800 dark:text-teal-200">Average Score</h3>
+                    <p id="average-score" class="text-2xl font-bold text-teal-600 dark:text-teal-300">0%</p>
+                </div>
+                <div class="bg-teal-50 dark:bg-teal-900 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-teal-800 dark:text-teal-200">Completion Rate</h3>
+                    <p id="completion-rate" class="text-2xl font-bold text-teal-600 dark:text-teal-300">0%</p>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-body text-center">
-                <div class="display-4 fw-bold text-success mb-2">{{ subjects_explored|default:0 }}</div>
-                <h5 class="card-title fw-normal text-muted">Subjects Explored</h5>
-                <div class="progress mt-3" style="height: 6px;">
-                    <div class="progress-bar bg-success" role="progressbar" style="width: 40%" aria-valuenow="40" aria-valuemin="0" aria-valuemax="100"></div>
+        
+        <!-- Learning Style Effectiveness -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Learning Style Effectiveness</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Visual</h3>
+                    <div class="relative pt-1">
+                        <div class="flex mb-2 items-center justify-between">
+                            <div>
+                                <span id="visual-score" class="text-xs font-semibold inline-block text-gray-600 dark:text-gray-400">0%</span>
+                            </div>
+                        </div>
+                        <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200 dark:bg-gray-600">
+                            <div id="visual-bar" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-teal-300" style="width: 0%"></div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card shadow-sm h-100">
-            <div class="card-body text-center">
-                <div class="display-4 fw-bold text-warning mb-2">{{ average_mastery|default:"0%" }}</div>
-                <h5 class="card-title fw-normal text-muted">Average Mastery</h5>
-                <div class="progress mt-3" style="height: 6px;">
-                    <div class="progress-bar bg-warning" role="progressbar" style="width: 25%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Auditory</h3>
+                    <div class="relative pt-1">
+                        <div class="flex mb-2 items-center justify-between">
+                            <div>
+                                <span id="auditory-score" class="text-xs font-semibold inline-block text-gray-600 dark:text-gray-400">0%</span>
+                            </div>
+                        </div>
+                        <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200 dark:bg-gray-600">
+                            <div id="auditory-bar" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-teal-300" style="width: 0%"></div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-4">
-    <div class="col-md-7">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                <h5 class="mb-0 fw-bold text-primary">Learning Activity</h5>
-                <button class="btn btn-sm btn-outline-secondary">Export</button>
-            </div>
-            <div class="card-body">
-                <div class="chart-container" style="height: 300px; position: relative;">
-                    <div class="text-center py-5 text-muted">
-                        <i class="fas fa-chart-line fa-3x mb-3 opacity-50"></i>
-                        <p>Learning activity charts will appear here as you use the AI assistant</p>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Reading</h3>
+                    <div class="relative pt-1">
+                        <div class="flex mb-2 items-center justify-between">
+                            <div>
+                                <span id="reading-score" class="text-xs font-semibold inline-block text-gray-600 dark:text-gray-400">0%</span>
+                            </div>
+                        </div>
+                        <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200 dark:bg-gray-600">
+                            <div id="reading-bar" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-teal-300" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Kinesthetic</h3>
+                    <div class="relative pt-1">
+                        <div class="flex mb-2 items-center justify-between">
+                            <div>
+                                <span id="kinesthetic-score" class="text-xs font-semibold inline-block text-gray-600 dark:text-gray-400">0%</span>
+                            </div>
+                        </div>
+                        <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200 dark:bg-gray-600">
+                            <div id="kinesthetic-bar" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-teal-300" style="width: 0%"></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+        
+        <!-- Performance Metrics -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Performance Metrics</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Current Streak</h3>
+                    <p id="current-streak" class="text-2xl font-bold text-gray-600 dark:text-gray-300">0 days</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Longest Streak</h3>
+                    <p id="longest-streak" class="text-2xl font-bold text-gray-600 dark:text-gray-300">0 days</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Last Activity</h3>
+                    <p id="last-activity" class="text-2xl font-bold text-gray-600 dark:text-gray-300">Never</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Response Time</h3>
+                    <p id="response-time" class="text-2xl font-bold text-gray-600 dark:text-gray-300">0s</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Error Rate</h3>
+                    <p id="error-rate" class="text-2xl font-bold text-gray-600 dark:text-gray-300">0%</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Achievements -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Achievements</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="bg-yellow-50 dark:bg-yellow-900 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Unlocked</h3>
+                    <p id="achievements-unlocked" class="text-2xl font-bold text-yellow-600 dark:text-yellow-300">0</p>
+                </div>
+                <div class="bg-yellow-50 dark:bg-yellow-900 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Total</h3>
+                    <p id="total-achievements" class="text-2xl font-bold text-yellow-600 dark:text-yellow-300">0</p>
+                </div>
+                <div class="bg-yellow-50 dark:bg-yellow-900 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-yellow-800 dark:text-yellow-200">Recent</h3>
+                    <p id="recent-achievements" class="text-2xl font-bold text-yellow-600 dark:text-yellow-300">0</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Learning Paths -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Learning Paths</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="bg-blue-50 dark:bg-blue-900 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">Active Paths</h3>
+                    <p id="active-paths" class="text-2xl font-bold text-blue-600 dark:text-blue-300">0</p>
+                </div>
+                <div class="bg-blue-50 dark:bg-blue-900 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">Completed Paths</h3>
+                    <p id="completed-paths" class="text-2xl font-bold text-blue-600 dark:text-blue-300">0</p>
+                </div>
+                <div class="bg-blue-50 dark:bg-blue-900 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-blue-800 dark:text-blue-200">Current Path</h3>
+                    <p id="current-path" class="text-2xl font-bold text-blue-600 dark:text-blue-300">None</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recommendations -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Personalized Recommendations</h2>
+            <div id="recommendations" class="space-y-4">
+                <!-- Recommendations will be populated here -->
+            </div>
+        </div>
     </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    async function updateDashboard() {
+        try {
+            const response = await fetch('/ai/dashboard/');
+            const data = await response.json();
+            
+            if (data.success) {
+                const dashboard = data.dashboard;
+                
+                // Update Overall Progress
+                document.getElementById('total-study-time').textContent = `${dashboard.overall_progress.total_study_time} hours`;
+                document.getElementById('topics-completed').textContent = dashboard.overall_progress.total_topics_completed;
+                document.getElementById('average-score').textContent = `${dashboard.overall_progress.average_score}%`;
+                document.getElementById('completion-rate').textContent = `${dashboard.overall_progress.completion_rate}%`;
+                
+                // Update Learning Style Effectiveness
+                const styleScores = dashboard.learning_style_effectiveness;
+                updateStyleBar('visual', styleScores.visual);
+                updateStyleBar('auditory', styleScores.auditory);
+                updateStyleBar('reading', styleScores.reading);
+                updateStyleBar('kinesthetic', styleScores.kinesthetic);
+                
+                // Update Performance Metrics
+                document.getElementById('current-streak').textContent = `${dashboard.performance_metrics.current_streak} days`;
+                document.getElementById('longest-streak').textContent = `${dashboard.performance_metrics.longest_streak} days`;
+                document.getElementById('last-activity').textContent = formatDate(dashboard.performance_metrics.last_activity);
+                document.getElementById('response-time').textContent = `${dashboard.performance_metrics.average_response_time}s`;
+                document.getElementById('error-rate').textContent = `${dashboard.performance_metrics.error_rate}%`;
+                
+                // Update Achievements
+                document.getElementById('achievements-unlocked').textContent = dashboard.achievements.unlocked;
+                document.getElementById('total-achievements').textContent = dashboard.achievements.total;
+                document.getElementById('recent-achievements').textContent = dashboard.achievements.recent;
+                
+                // Update Learning Paths
+                document.getElementById('active-paths').textContent = dashboard.learning_paths.active;
+                document.getElementById('completed-paths').textContent = dashboard.learning_paths.completed;
+                document.getElementById('current-path').textContent = dashboard.learning_paths.current || 'None';
+                
+                // Update Recommendations
+                const recommendationsContainer = document.getElementById('recommendations');
+                recommendationsContainer.innerHTML = dashboard.recommendations
+                    .map(rec => `
+                        <div class="bg-white dark:bg-gray-700 rounded-lg p-4 shadow">
+                            <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">${rec.title}</h3>
+                            <p class="text-gray-600 dark:text-gray-400">${rec.description}</p>
+                        </div>
+                    `)
+                    .join('');
+            }
+        } catch (error) {
+            console.error('Error updating dashboard:', error);
+        }
+    }
     
-    <div class="col-md-5">
-        <div class="card shadow-sm mb-4">
-            <div class="card-header bg-white py-3">
-                <h5 class="mb-0 fw-bold text-primary">Subject Distribution</h5>
-            </div>
-            <div class="card-body">
-                <div class="chart-container" style="height: 300px; position: relative;">
-                    <div class="text-center py-5 text-muted">
-                        <i class="fas fa-chart-pie fa-3x mb-3 opacity-50"></i>
-                        <p>Subject distribution will appear as you explore different topics</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-4">
-    <div class="col-12">
-        <div class="card shadow-sm">
-            <div class="card-header bg-white py-3">
-                <h5 class="mb-0 fw-bold text-primary">Recent Learning Sessions</h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th>Date</th>
-                                <th>Subject</th>
-                                <th>Questions</th>
-                                <th>Duration</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td colspan="5" class="text-center py-5 text-muted">
-                                    No learning sessions recorded yet.<br>
-                                    Start chatting with the AI assistant to build your learning history.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+    function updateStyleBar(style, score) {
+        const scoreElement = document.getElementById(`${style}-score`);
+        const barElement = document.getElementById(`${style}-bar`);
+        
+        scoreElement.textContent = `${score}%`;
+        barElement.style.width = `${score}%`;
+    }
+    
+    function formatDate(dateString) {
+        if (!dateString) return 'Never';
+        const date = new Date(dateString);
+        return date.toLocaleDateString();
+    }
+    
+    // Initial update
+    updateDashboard();
+    
+    // Update every 5 minutes
+    setInterval(updateDashboard, 5 * 60 * 1000);
+});
+</script>
+{% endblock %}
 {% endblock %}

@@ -3,14 +3,13 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 import environ
+import logging
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv()
 SECRET_KEY = "django-insecure-5kyff0s@l_##j3jawec5@b%!^^e(j7v)ouj4b7q6kru#o#a)o3"
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
-
-
 
 env = environ.Env()
 
@@ -21,7 +20,6 @@ if os.path.exists(env_file):
     environ.Env.read_env(env_file)
 else:
     print("No .env file found.")
-
 
 if "test" in sys.argv:
     TESTING = True
@@ -81,22 +79,22 @@ CSRF_TRUSTED_ORIGINS = [
 handler404 = "web.views.custom_404"
 handler500 = "web.views.custom_500"
 INSTALLED_APPS = [
-    # Django apps
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    
-    # Third-party apps
+    'django.contrib.sites',
     'allauth',
     'allauth.account',
+    'allauth.socialaccount',
+    'courses',  # Courses app
+    'ai',  # AI-powered learning features
     'captcha',  # Add this line
     # Other third-party apps
     
     # Local apps
-    'ai',
     'web',
     # Other project apps
 ]
@@ -139,7 +137,7 @@ TEMPLATES = [
                 "web.context_processors.invitation_notifications",
             ],
             'libraries': {
-                'url_tags': 'ai_assistant.templatetags.url_tags',
+                'ai_url_tags': 'ai.templatetags.ai_url_tags',
             },
         },
     },
@@ -156,7 +154,6 @@ CAPTCHA_2X_IMAGE = True
 CAPTCHA_TEST_MODE = False
 
 WSGI_APPLICATION = "web.wsgi.application"
-
 
 DATABASES = {
     "default": {
@@ -388,7 +385,8 @@ MARKDOWNX_MARKDOWN_EXTENSIONS = [
 MARKDOWNX_URLS_PATH = "/markdownx/markdownify/"
 MARKDOWNX_UPLOAD_URLS_PATH = "/markdownx/upload/"
 MARKDOWNX_MEDIA_PATH = "markdownx/"  # Path within MEDIA_ROOT
-# Add to settings.py if not already present
+
+# Logging configuration
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -414,6 +412,30 @@ LOGGING = {
         },
     },
 }
+
+# AI Settings
+AI_PROVIDER = 'gemini'  # or 'demo'
+AI_TEMPERATURE = 0.7
+AI_MAX_TOKENS = 1024
+GEMINI_MODEL = 'gemini-2.0-flash'  # Using the new flash model
+
+# OpenAI Settings
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')
+
+# Log AI configuration status
+import logging
+logger = logging.getLogger(__name__)
+
+if GEMINI_API_KEY or OPENAI_API_KEY:
+    logger.info("AI provider API keys are configured")
+    if GEMINI_API_KEY:
+        logger.info(f"Using Gemini model: {GEMINI_MODEL}")
+    if OPENAI_API_KEY:
+        logger.info(f"Using OpenAI model: {OPENAI_MODEL}")
+else:
+    logger.warning("AI provider API keys are not configured, will use demo mode")
+
 USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data

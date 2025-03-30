@@ -1,0 +1,421 @@
+{% extends "ai/ai_base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block active_nav %}study-planner{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="text-sm font-medium mb-4">
+    <ol class="list-none p-0 inline-flex">
+        <li class="flex items-center">
+            <a href="{% url 'home' %}" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">Home</a>
+            <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+        </li>
+        <li class="text-gray-800 dark:text-gray-200">Study Planner</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">Study Planner</h1>
+        <p class="text-gray-600 dark:text-gray-400">Organize and track your learning journey with personalized study plans.</p>
+    </div>
+
+    <!-- Main Grid Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Study Plans Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">My Study Plans</h2>
+                <button onclick="openCreatePlanModal()" class="bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200">
+                    <i class="fas fa-plus mr-2"></i>New Plan
+                </button>
+            </div>
+
+            <!-- Study Plans List -->
+            <div class="space-y-4">
+                {% for plan in study_plans %}
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ plan.title }}</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ plan.subject }}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button onclick="generateTasks({{ plan.id }})" class="text-teal-300 hover:text-teal-400" title="Generate AI Tasks">
+                                <i class="fas fa-robot"></i>
+                            </button>
+                            <button onclick="editPlan({{ plan.id }})" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deletePlan({{ plan.id }})" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400">
+                            <span>Progress</span>
+                            <span>{{ plan.progress }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mt-1">
+                            <div class="bg-teal-300 h-2 rounded-full" style="width: {{ plan.progress }}%"></div>
+                        </div>
+                    </div>
+                    <div class="mt-3 flex justify-between text-sm">
+                        <span class="text-gray-600 dark:text-gray-400">{{ plan.start_date }} - {{ plan.end_date }}</span>
+                        <span class="text-gray-600 dark:text-gray-400">{{ plan.total_hours }} hours</span>
+                    </div>
+
+                    <!-- Study Tasks Section -->
+                    <div class="mt-4">
+                        <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Study Tasks</h4>
+                        <div id="tasks-{{ plan.id }}" class="space-y-2">
+                            <!-- Tasks will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="text-center py-8">
+                    <p class="text-gray-600 dark:text-gray-400">No study plans yet. Create your first plan!</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Progress and Suggestions Section -->
+        <div class="space-y-8">
+            <!-- Overall Progress -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Overall Progress</h2>
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div>
+                        <p class="text-3xl font-bold text-teal-300">{{ completed_topics }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Topics Completed</p>
+                    </div>
+                    <div>
+                        <p class="text-3xl font-bold text-teal-300">{{ total_study_hours }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Study Hours</p>
+                    </div>
+                    <div>
+                        <p class="text-3xl font-bold text-teal-300">{{ study_plans.count }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Active Plans</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Suggested Topics -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Suggested Topics</h2>
+                <div class="space-y-3">
+                    {% for topic in suggested_topics %}
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <div>
+                            <h3 class="font-medium text-gray-900 dark:text-gray-100">{{ topic.title }}</h3>
+                            <p class="text-sm text-gray-600 dark:text-gray-400">{{ topic.description|truncatechars:100 }}</p>
+                        </div>
+                        <button onclick="addTopicToPlan({{ topic.id }})" class="text-teal-300 hover:text-teal-400">
+                            <i class="fas fa-plus-circle"></i>
+                        </button>
+                    </div>
+                    {% empty %}
+                    <p class="text-center text-gray-600 dark:text-gray-400">No suggested topics available.</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create/Edit Plan Modal -->
+<div id="planModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
+        <div class="p-6">
+            <h2 id="modalTitle" class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Create Study Plan</h2>
+            <form id="planForm" onsubmit="handlePlanSubmit(event)">
+                <input type="hidden" id="planId" value="">
+                <div class="space-y-4">
+                    <div>
+                        <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
+                        <input type="text" id="title" name="title" required
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300">
+                    </div>
+                    <div>
+                        <label for="subject" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Subject</label>
+                        <input type="text" id="subject" name="subject" required
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300">
+                    </div>
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                        <textarea id="description" name="description" rows="3" required
+                                  class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300"></textarea>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="startDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
+                            <input type="date" id="startDate" name="start_date" required
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300">
+                        </div>
+                        <div>
+                            <label for="endDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
+                            <input type="date" id="endDate" name="end_date" required
+                                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="totalHours" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Total Hours</label>
+                        <input type="number" id="totalHours" name="total_hours" min="1" required
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300">
+                    </div>
+                </div>
+                <div class="mt-6 flex justify-end space-x-3">
+                    <button type="button" onclick="closePlanModal()"
+                            class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-teal-300 hover:bg-teal-400 text-white rounded-lg">
+                        Save Plan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 flex flex-col items-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-300 mb-4"></div>
+        <p class="text-gray-700 dark:text-gray-300">Generating study tasks...</p>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function openCreatePlanModal() {
+        document.getElementById('modalTitle').textContent = 'Create Study Plan';
+        document.getElementById('planId').value = '';
+        document.getElementById('planForm').reset();
+        document.getElementById('planModal').classList.remove('hidden');
+    }
+
+    function closePlanModal() {
+        document.getElementById('planModal').classList.add('hidden');
+    }
+
+    async function editPlan(planId) {
+        try {
+            const response = await fetch(`/ai/api/study-plan/${planId}/`);
+            const plan = await response.json();
+            
+            document.getElementById('modalTitle').textContent = 'Edit Study Plan';
+            document.getElementById('planId').value = planId;
+            document.getElementById('title').value = plan.title;
+            document.getElementById('subject').value = plan.subject;
+            document.getElementById('description').value = plan.description;
+            document.getElementById('startDate').value = plan.start_date;
+            document.getElementById('endDate').value = plan.end_date;
+            document.getElementById('totalHours').value = plan.total_hours;
+            
+            document.getElementById('planModal').classList.remove('hidden');
+        } catch (error) {
+            console.error('Error fetching plan:', error);
+            alert('Failed to load plan details');
+        }
+    }
+
+    async function deletePlan(planId) {
+        if (!confirm('Are you sure you want to delete this study plan?')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/ai/api/study-plan/${planId}/delete/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                throw new Error('Failed to delete plan');
+            }
+        } catch (error) {
+            console.error('Error deleting plan:', error);
+            alert('Failed to delete plan');
+        }
+    }
+
+    async function handlePlanSubmit(event) {
+        event.preventDefault();
+        const planId = document.getElementById('planId').value;
+        const formData = new FormData(event.target);
+        
+        // Convert FormData to JSON
+        const data = {
+            title: formData.get('title'),
+            subject: formData.get('subject'),
+            description: formData.get('description'),
+            start_date: formData.get('start_date'),
+            end_date: formData.get('end_date'),
+            total_hours: parseInt(formData.get('total_hours'))
+        };
+        
+        try {
+            const url = planId
+                ? `/ai/api/study-plan/${planId}/update/`
+                : '/ai/api/study-plan/create/';
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to save plan');
+            }
+        } catch (error) {
+            console.error('Error saving plan:', error);
+            alert(error.message || 'Failed to save plan');
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    async function addTopicToPlan(topicId) {
+        // Implement topic addition logic
+        alert('Topic addition functionality coming soon!');
+    }
+
+    async function generateTasks(planId) {
+        const loadingOverlay = document.getElementById('loading-overlay');
+        try {
+            loadingOverlay.classList.remove('hidden');
+            const response = await fetch(`/ai/api/study-plan/${planId}/generate-tasks/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                loadTasks(planId);
+            } else {
+                throw new Error('Failed to generate tasks');
+            }
+        } catch (error) {
+            console.error('Error generating tasks:', error);
+            alert('Failed to generate tasks');
+        } finally {
+            loadingOverlay.classList.add('hidden');
+        }
+    }
+
+    async function loadTasks(planId) {
+        try {
+            const response = await fetch(`/ai/api/study-plan/${planId}/tasks/`);
+            if (response.ok) {
+                const data = await response.json();
+                const tasksContainer = document.getElementById(`tasks-${planId}`);
+                tasksContainer.innerHTML = '';
+                
+                data.tasks.forEach(task => {
+                    const taskElement = createTaskElement(task);
+                    tasksContainer.appendChild(taskElement);
+                });
+            }
+        } catch (error) {
+            console.error('Error loading tasks:', error);
+        }
+    }
+
+    function createTaskElement(task) {
+        const div = document.createElement('div');
+        div.className = 'flex items-start space-x-3 p-2 bg-white dark:bg-gray-800 rounded-lg';
+        
+        div.innerHTML = `
+            <input type="checkbox" 
+                   id="task-${task.id}"
+                   ${task.completed ? 'checked' : ''}
+                   onchange="toggleTask(${task.id})"
+                   class="mt-1 h-4 w-4 text-teal-300 focus:ring-teal-300 border-gray-300 rounded">
+            <div class="flex-1">
+                <label for="task-${task.id}" class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                    ${task.title}
+                </label>
+                <p class="text-sm text-gray-600 dark:text-gray-400">${task.description}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-500">${task.estimated_hours} hours</p>
+            </div>
+        `;
+        
+        return div;
+    }
+
+    async function toggleTask(taskId) {
+        try {
+            const response = await fetch(`/ai/api/study-task/${taskId}/toggle/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                // Update task checkbox
+                const checkbox = document.querySelector(`#task-${taskId}`);
+                checkbox.checked = data.task.completed;
+                
+                // Update progress bar and percentage
+                const taskElement = checkbox.closest('.bg-gray-50');
+                const progressBar = taskElement.querySelector('.bg-teal-300');
+                const progressText = taskElement.querySelector('.text-sm.text-gray-600 span:last-child');
+                
+                progressBar.style.width = `${data.task.study_plan_progress}%`;
+                progressText.textContent = `${data.task.study_plan_progress}%`;
+            }
+        } catch (error) {
+            console.error('Error toggling task:', error);
+            // Don't show error alert, just log it
+        }
+    }
+
+    // Load tasks for each study plan when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        {% for plan in study_plans %}
+            loadTasks({{ plan.id }});
+        {% endfor %}
+    });
+</script>
+{% endblock %} 

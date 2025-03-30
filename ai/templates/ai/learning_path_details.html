@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <!-- Path Header -->
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 id="path-title" class="text-2xl font-bold text-gray-800 dark:text-gray-200">Loading...</h1>
+                <p id="path-description" class="text-gray-600 dark:text-gray-400 mt-2">Loading...</p>
+            </div>
+            <div class="flex space-x-4">
+                <button id="start-learning" class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+                    Start Learning
+                </button>
+            </div>
+        </div>
+        
+        <!-- Progress Overview -->
+        <div class="mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="bg-teal-50 dark:bg-teal-900 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-teal-800 dark:text-teal-200">Overall Progress</h3>
+                    <div class="mt-2">
+                        <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                            <span>Progress</span>
+                            <span id="progress-percentage">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                            <div id="progress-bar" class="bg-teal-300 h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-teal-50 dark:bg-teal-900 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-teal-800 dark:text-teal-200">Topics Completed</h3>
+                    <p id="topics-completed" class="text-2xl font-bold text-teal-600 dark:text-teal-300">0/0</p>
+                </div>
+                <div class="bg-teal-50 dark:bg-teal-900 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-teal-800 dark:text-teal-200">Time Spent</h3>
+                    <p id="time-spent" class="text-2xl font-bold text-teal-600 dark:text-teal-300">0 hours</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Learning Topics -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Learning Topics</h2>
+            <div id="topics-list" class="space-y-4">
+                <!-- Topics will be populated here -->
+            </div>
+        </div>
+        
+        <!-- Performance Metrics -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Performance Metrics</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Average Score</h3>
+                    <p id="average-score" class="text-2xl font-bold text-gray-600 dark:text-gray-300">0%</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Completion Rate</h3>
+                    <p id="completion-rate" class="text-2xl font-bold text-gray-600 dark:text-gray-300">0%</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Response Time</h3>
+                    <p id="response-time" class="text-2xl font-bold text-gray-600 dark:text-gray-300">0s</p>
+                </div>
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Error Rate</h3>
+                    <p id="error-rate" class="text-2xl font-bold text-gray-600 dark:text-gray-300">0%</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Timeline -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Learning Timeline</h2>
+            <div id="timeline" class="relative">
+                <!-- Timeline will be populated here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const pathId = window.location.pathname.split('/').slice(-2)[0];
+    const startLearningButton = document.getElementById('start-learning');
+    
+    // Load path details
+    async function loadPathDetails() {
+        try {
+            const response = await fetch(`/ai/learning-path/${pathId}/`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const path = data.learning_path;
+                
+                // Update header
+                document.getElementById('path-title').textContent = path.title;
+                document.getElementById('path-description').textContent = path.description;
+                
+                // Update progress
+                document.getElementById('progress-percentage').textContent = `${path.progress}%`;
+                document.getElementById('progress-bar').style.width = `${path.progress}%`;
+                document.getElementById('topics-completed').textContent = `${path.completed_topics}/${path.total_topics}`;
+                document.getElementById('time-spent').textContent = `${path.time_spent} hours`;
+                
+                // Update performance metrics
+                document.getElementById('average-score').textContent = `${path.average_score}%`;
+                document.getElementById('completion-rate').textContent = `${path.completion_rate}%`;
+                document.getElementById('response-time').textContent = `${path.average_response_time}s`;
+                document.getElementById('error-rate').textContent = `${path.error_rate}%`;
+                
+                // Update topics list
+                const topicsList = document.getElementById('topics-list');
+                topicsList.innerHTML = path.topics
+                    .map(topic => createTopicCard(topic))
+                    .join('');
+                
+                // Update timeline
+                const timeline = document.getElementById('timeline');
+                timeline.innerHTML = createTimeline(path.timeline);
+                
+                // Update start learning button
+                startLearningButton.addEventListener('click', () => {
+                    if (path.current_topic) {
+                        window.location.href = `/ai/learn/${path.current_topic.id}/`;
+                    }
+                });
+            } else {
+                alert('Error loading path details: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while loading path details');
+        }
+    }
+    
+    // Create topic card
+    function createTopicCard(topic) {
+        const statusColor = topic.completed ? 'bg-green-300' : 'bg-teal-300';
+        const statusText = topic.completed ? 'Completed' : 'In Progress';
+        
+        return `
+            <div class="bg-white dark:bg-gray-700 rounded-lg shadow-lg p-4">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">${topic.title}</h3>
+                        <p class="text-gray-600 dark:text-gray-400 mt-1">${topic.description}</p>
+                    </div>
+                    <span class="px-3 py-1 rounded-full text-sm font-medium ${statusColor} text-white">
+                        ${statusText}
+                    </span>
+                </div>
+                
+                <div class="mt-4">
+                    <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        <span>Progress</span>
+                        <span>${topic.progress}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                        <div class="bg-teal-300 h-2 rounded-full" style="width: ${topic.progress}%"></div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 flex justify-end">
+                    <button onclick="startTopic(${topic.id})" class="bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200">
+                        ${topic.completed ? 'Review' : 'Start Learning'}
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    // Create timeline
+    function createTimeline(events) {
+        return events
+            .map(event => `
+                <div class="relative pl-8 pb-8 last:pb-0">
+                    <div class="absolute left-0 top-0 w-4 h-4 bg-teal-300 rounded-full"></div>
+                    <div class="absolute left-1.5 top-4 w-0.5 h-full bg-gray-200 dark:bg-gray-600 last:hidden"></div>
+                    <div class="bg-white dark:bg-gray-700 rounded-lg shadow p-4">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">${event.title}</h3>
+                                <p class="text-gray-600 dark:text-gray-400 mt-1">${event.description}</p>
+                            </div>
+                            <span class="text-sm text-gray-500 dark:text-gray-400">${formatDate(event.date)}</span>
+                        </div>
+                    </div>
+                </div>
+            `)
+            .join('');
+    }
+    
+    // Start topic
+    window.startTopic = function(topicId) {
+        window.location.href = `/ai/learn/${topicId}/`;
+    };
+    
+    function formatDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString();
+    }
+    
+    // Initial load
+    loadPathDetails();
+});
+</script>
+{% endblock %}
+{% endblock %} 

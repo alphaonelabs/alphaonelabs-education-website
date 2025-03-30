@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">Learning Style Assessment</h1>
+        
+        <div class="space-y-6">
+            <!-- Learning Style Quiz -->
+            <div id="quiz-container" class="space-y-4">
+                <div class="text-gray-600 dark:text-gray-300 mb-4">
+                    <p>Answer these questions to help us identify your preferred learning style:</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="question" data-question="1">
+                        <p class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">When learning something new, do you prefer to:</p>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-2">
+                                <input type="radio" name="q1" value="visual" class="form-radio text-teal-300">
+                                <span class="text-gray-700 dark:text-gray-300">See diagrams, charts, or visual aids</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="radio" name="q1" value="auditory" class="form-radio text-teal-300">
+                                <span class="text-gray-700 dark:text-gray-300">Listen to explanations or discussions</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="radio" name="q1" value="reading" class="form-radio text-teal-300">
+                                <span class="text-gray-700 dark:text-gray-300">Read written materials</span>
+                            </label>
+                            <label class="flex items-center space-x-2">
+                                <input type="radio" name="q1" value="kinesthetic" class="form-radio text-teal-300">
+                                <span class="text-gray-700 dark:text-gray-300">Practice hands-on activities</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- Add more questions here -->
+                </div>
+                
+                <div class="flex justify-end mt-6">
+                    <button id="submit-quiz" class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+                        Submit Assessment
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Results Section -->
+            <div id="results-container" class="hidden">
+                <div class="bg-teal-50 dark:bg-teal-900 rounded-lg p-4">
+                    <h2 class="text-xl font-bold text-teal-800 dark:text-teal-200 mb-4">Your Learning Style</h2>
+                    <div id="learning-style-result" class="text-gray-700 dark:text-gray-300"></div>
+                    <div id="learning-style-description" class="mt-4 text-gray-600 dark:text-gray-400"></div>
+                </div>
+                
+                <div class="mt-6">
+                    <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Recommended Learning Strategies</h3>
+                    <div id="recommendations" class="space-y-2 text-gray-600 dark:text-gray-400"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const quizContainer = document.getElementById('quiz-container');
+    const resultsContainer = document.getElementById('results-container');
+    const submitButton = document.getElementById('submit-quiz');
+    const learningStyleResult = document.getElementById('learning-style-result');
+    const learningStyleDescription = document.getElementById('learning-style-description');
+    const recommendations = document.getElementById('recommendations');
+    
+    submitButton.addEventListener('click', async function() {
+        const answers = [];
+        document.querySelectorAll('.question').forEach(question => {
+            const selected = question.querySelector('input[type="radio"]:checked');
+            if (selected) {
+                answers.push(selected.value);
+            }
+        });
+        
+        if (answers.length === 0) {
+            alert('Please answer at least one question');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/ai/identify-learning-style/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    interaction_data: answers
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                quizContainer.classList.add('hidden');
+                resultsContainer.classList.remove('hidden');
+                
+                learningStyleResult.textContent = `Your learning style: ${data.learning_style}`;
+                
+                // Add descriptions and recommendations based on learning style
+                const styleInfo = {
+                    visual: {
+                        description: 'You learn best through visual aids like diagrams, charts, and videos.',
+                        recommendations: [
+                            'Use mind maps and diagrams to organize information',
+                            'Watch educational videos and animations',
+                            'Create visual flashcards for memorization',
+                            'Use color coding for different concepts'
+                        ]
+                    },
+                    auditory: {
+                        description: 'You learn best through listening and verbal communication.',
+                        recommendations: [
+                            'Record and listen to lectures',
+                            'Participate in group discussions',
+                            'Use audio books and podcasts',
+                            'Read aloud to yourself'
+                        ]
+                    },
+                    reading: {
+                        description: 'You learn best through reading and writing.',
+                        recommendations: [
+                            'Take detailed notes while reading',
+                            'Create written summaries of concepts',
+                            'Use textbooks and written materials',
+                            'Write practice questions and answers'
+                        ]
+                    },
+                    kinesthetic: {
+                        description: 'You learn best through hands-on activities and physical movement.',
+                        recommendations: [
+                            'Practice with physical models or manipulatives',
+                            'Take frequent breaks for movement',
+                            'Use role-playing or simulations',
+                            'Create physical flashcards or study aids'
+                        ]
+                    }
+                };
+                
+                const style = data.learning_style.toLowerCase();
+                learningStyleDescription.textContent = styleInfo[style].description;
+                
+                recommendations.innerHTML = styleInfo[style].recommendations
+                    .map(rec => `<p>• ${rec}</p>`)
+                    .join('');
+            } else {
+                alert('Error identifying learning style: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while identifying your learning style');
+        }
+    });
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}
+{% endblock %} 

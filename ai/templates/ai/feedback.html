@@ -1,0 +1,223 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">Learning Feedback</h1>
+        
+        <!-- Feedback Form -->
+        <div class="mb-8">
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Submit Your Response</h2>
+                <form id="feedback-form" class="space-y-4">
+                    <div>
+                        <label for="interaction-id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Interaction ID</label>
+                        <input type="text" id="interaction-id" name="interaction_id" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div>
+                        <label for="response" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Your Response</label>
+                        <textarea id="response" name="response" rows="4" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500"></textarea>
+                    </div>
+                    <div>
+                        <label for="time-spent" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Time Spent (seconds)</label>
+                        <input type="number" id="time-spent" name="time_spent" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+                            Submit Response
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Feedback Display -->
+        <div id="feedback-display" class="hidden">
+            <div class="mb-8">
+                <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Feedback</h2>
+                <div id="feedback-content" class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                    <!-- Feedback content will be populated here -->
+                </div>
+                
+                <!-- Feedback Rating -->
+                <div class="mt-4 flex justify-end">
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-600 dark:text-gray-400">Was this feedback helpful?</span>
+                        <div class="flex space-x-2">
+                            <button onclick="rateFeedback(1)" class="p-2 text-gray-400 hover:text-red-500 transition duration-200">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 011.789 2.894l-3.5 7A2 2 0 0113.736 14H10z"></path>
+                                </svg>
+                            </button>
+                            <button onclick="rateFeedback(5)" class="p-2 text-gray-400 hover:text-green-500 transition duration-200">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Learning Style Adaptation -->
+            <div class="mb-8">
+                <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Learning Style Adaptation</h2>
+                <div id="style-adaptation" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <!-- Learning style adaptation will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Performance Impact -->
+            <div class="mb-8">
+                <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Performance Impact</h2>
+                <div id="performance-impact" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Performance impact will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const feedbackForm = document.getElementById('feedback-form');
+    const feedbackDisplay = document.getElementById('feedback-display');
+    const feedbackContent = document.getElementById('feedback-content');
+    const styleAdaptation = document.getElementById('style-adaptation');
+    const performanceImpact = document.getElementById('performance-impact');
+    
+    // Submit feedback
+    feedbackForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(feedbackForm);
+        const data = {
+            interaction_id: formData.get('interaction_id'),
+            student_response: {
+                content: formData.get('response'),
+                time_spent: parseInt(formData.get('time_spent')),
+                timestamp: new Date().toISOString()
+            }
+        };
+        
+        try {
+            const response = await fetch('/ai/provide-feedback/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Show feedback display
+                feedbackDisplay.classList.remove('hidden');
+                
+                // Update feedback content
+                feedbackContent.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0">
+                                <span class="inline-flex items-center justify-center h-8 w-8 rounded-full bg-teal-100 dark:bg-teal-900">
+                                    <span class="text-teal-600 dark:text-teal-300">✓</span>
+                                </span>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300">${result.feedback.type}</h3>
+                                <p class="mt-1 text-gray-600 dark:text-gray-400">${result.feedback.content}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Update learning style adaptation
+                styleAdaptation.innerHTML = `
+                    <div class="bg-white dark:bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Visual Elements</h3>
+                        <p id="visual-elements" class="text-2xl font-bold text-gray-600 dark:text-gray-300">0</p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Audio Elements</h3>
+                        <p id="audio-elements" class="text-2xl font-bold text-gray-600 dark:text-gray-300">0</p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Text Elements</h3>
+                        <p id="text-elements" class="text-2xl font-bold text-gray-600 dark:text-gray-300">0</p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Interactive Elements</h3>
+                        <p id="interactive-elements" class="text-2xl font-bold text-gray-600 dark:text-gray-300">0</p>
+                    </div>
+                `;
+                
+                // Update performance impact
+                performanceImpact.innerHTML = `
+                    <div class="bg-white dark:bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Improvement Observed</h3>
+                        <p id="improvement-observed" class="text-2xl font-bold text-gray-600 dark:text-gray-300">No</p>
+                    </div>
+                    <div class="bg-white dark:bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Time to Improvement</h3>
+                        <p id="time-to-improvement" class="text-2xl font-bold text-gray-600 dark:text-gray-300">-</p>
+                    </div>
+                `;
+            } else {
+                alert('Error providing feedback: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while providing feedback');
+        }
+    });
+    
+    // Rate feedback
+    window.rateFeedback = async function(rating) {
+        try {
+            const response = await fetch('/ai/rate-feedback/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({
+                    feedback_id: document.getElementById('interaction-id').value,
+                    rating: rating
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('Thank you for your feedback!');
+            } else {
+                alert('Error rating feedback: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while rating the feedback');
+        }
+    };
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+{% endblock %}
+{% endblock %} 

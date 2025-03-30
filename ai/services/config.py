@@ -1,45 +1,43 @@
 import os
-from pathlib import Path
-from dotenv import load_dotenv
 import logging
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-# Load environment variables from .env file
-env_file = Path(__file__).resolve().parent.parent.parent / '.env'
-if env_file.exists():
-    load_dotenv(env_file)
+def get_ai_settings():
+    """Get AI settings from Django settings."""
+    return {
+        'provider': getattr(settings, 'AI_PROVIDER', 'demo'),
+        'temperature': getattr(settings, 'AI_TEMPERATURE', 0.7),
+        'max_tokens': getattr(settings, 'AI_MAX_TOKENS', 1024),
+        'gemini': {
+            'api_key': getattr(settings, 'GEMINI_API_KEY', None),
+            'model': getattr(settings, 'GEMINI_MODEL', 'gemini-pro'),
+        },
+        'openai': {
+            'api_key': getattr(settings, 'OPENAI_API_KEY', None),
+            'model': getattr(settings, 'OPENAI_MODEL', 'gpt-3.5-turbo'),
+        }
+    }
 
-# Gemini AI Settings
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
-GEMINI_MODEL = os.environ.get('GEMINI_MODEL', 'gemini-2.0-flash')  # Correct format: gemini-2.0-flash (not gemini-flash-2.0)
+def is_ai_configured():
+    """Check if any AI provider is properly configured."""
+    ai_settings = get_ai_settings()
+    
+    if ai_settings['provider'] == 'gemini' and ai_settings['gemini']['api_key']:
+        return True
+    elif ai_settings['provider'] == 'openai' and ai_settings['openai']['api_key']:
+        return True
+    
+    return False
 
-# OpenAI Settings
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
-OPENAI_MODEL = os.environ.get('OPENAI_MODEL', 'gpt-3.5-turbo')
-
-# Temperature for AI responses (0.0 = deterministic, 1.0 = creative)
-AI_TEMPERATURE = float(os.environ.get('AI_TEMPERATURE', '0.7'))
-
-# Model configuration
-AI_MAX_TOKENS = int(os.environ.get('AI_MAX_TOKENS', 1000))
-
-# Check if API keys are configured
-def is_gemini_configured():
-    return bool(GEMINI_API_KEY)
-
-def is_openai_configured():
-    return bool(OPENAI_API_KEY)
-
-# Get the proper provider to use based on configuration
-API_KEYS_CONFIGURED = is_gemini_configured() or is_openai_configured()
-
-# Log configuration status (without exposing the keys)
-if API_KEYS_CONFIGURED:
-    logger.info("AI provider API keys are configured")
-    if is_gemini_configured():
-        logger.info(f"Using Gemini model: {GEMINI_MODEL}")
-    if is_openai_configured():
-        logger.info(f"Using OpenAI model: {OPENAI_MODEL}")
-else:
-    logger.warning("AI provider API keys are not configured, will use demo mode")
+def log_ai_configuration():
+    """Log AI configuration status without exposing sensitive data."""
+    ai_settings = get_ai_settings()
+    
+    if is_ai_configured():
+        provider = ai_settings['provider']
+        model = ai_settings[provider]['model']
+        logger.info(f"AI configured with {provider} provider using {model} model")
+    else:
+        logger.warning("No AI provider configured, using demo mode")

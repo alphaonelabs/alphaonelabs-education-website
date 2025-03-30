@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% load static %}
+{% load i18n %}
+
+{% block title %}AI Learning Assistant{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -61,47 +64,82 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
-    <div class="ai-container">
-        <div class="row">
-            <div class="col-12">
-                <div class="ai-main-content">
-                    {% block ai_content %}{% endblock %}
+<div class="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <!-- Navigation -->
+    <nav class="bg-white dark:bg-gray-800 shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo and Title -->
+                <div class="flex items-center">
+                    <a href="{% url 'index' %}" class="flex items-center space-x-2">
+                        <i class="fas fa-robot text-teal-300 text-2xl"></i>
+                        <span class="text-xl font-bold text-gray-900 dark:text-gray-100">AI Learning Assistant</span>
+                    </a>
+                </div>
+
+                <!-- Dark Mode Toggle -->
+                <div class="flex items-center space-x-4">
+                    <button id="darkModeToggle" class="text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                        <i class="fas fa-moon dark:hidden"></i>
+                        <i class="fas fa-sun hidden dark:block"></i>
+                    </button>
                 </div>
             </div>
         </div>
-    </div>
-</div>
+    </nav>
 
-{% if not request.path == '/ai/chat/' %}
-<!-- Sidebar without headers and navigation items -->
-<div id="sidebar" class="sidebar">
-  <!-- Sidebar content removed -->
+    <!-- Sub Navigation -->
+    <div class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+        <div class="container mx-auto px-4">
+            <div class="flex space-x-8 overflow-x-auto">
+                <a href="{% url 'ai:chat' %}" class="py-4 px-2 border-b-2 {% block active_nav %}{% endblock %} text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                    <i class="fas fa-comments mr-2"></i>AI Assistant
+                </a>
+                <a href="{% url 'ai:study_planner' %}" class="py-4 px-2 border-b-2 {% if request.resolver_match.url_name == 'study_planner' %}border-teal-300 text-teal-300{% else %}border-transparent{% endif %} text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                    <i class="fas fa-calendar-alt mr-2"></i>Study Planner
+                </a>
+                <a href="{% url 'ai:progress_dashboard' %}" class="py-4 px-2 border-b-2 {% if request.resolver_match.url_name == 'progress_dashboard' %}border-teal-300 text-teal-300{% else %}border-transparent{% endif %} text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                    <i class="fas fa-chart-line mr-2"></i>Progress
+                </a>
+                <a href="{% url 'ai:achievements' %}" class="py-4 px-2 border-b-2 {% if request.resolver_match.url_name == 'achievements' %}border-teal-300 text-teal-300{% else %}border-transparent{% endif %} text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                    <i class="fas fa-trophy mr-2"></i>Achievements
+                </a>
+                <a href="{% url 'ai:group_discussions' %}" class="py-4 px-2 border-b-2 {% if request.resolver_match.url_name == 'group_discussions' %}border-teal-300 text-teal-300{% else %}border-transparent{% endif %} text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200">
+                    <i class="fas fa-users mr-2"></i>Group Discussions
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Breadcrumbs -->
+    <div class="container mx-auto px-4 py-4">
+        {% block breadcrumbs %}{% endblock %}
+    </div>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        {% block ai_content %}{% endblock %}
+    </main>
 </div>
-{% endif %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
+    // Dark mode toggle functionality
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const html = document.documentElement;
 
-// Sidebar functionality removed since it's not needed in this theme.
-document.addEventListener('DOMContentLoaded', function() {
-    // No additional JavaScript needed.
-});
+    // Check for saved dark mode preference
+    if (localStorage.getItem('darkMode') === 'true' || 
+        (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+        html.classList.add('dark');
+    }
+
+    darkModeToggle.addEventListener('click', () => {
+        html.classList.toggle('dark');
+        localStorage.setItem('darkMode', html.classList.contains('dark'));
+    });
+
+    // Add any additional JavaScript functionality here
 </script>
-{% block ai_extra_js %}{% endblock %}
 {% endblock %}

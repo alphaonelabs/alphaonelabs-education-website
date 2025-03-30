@@ -449,16 +449,15 @@ def profile(request):
 
 @login_required
 def notification_preferences(request):
-    if request.method == "POST":
-        # Handle notification preference updates
-        user = request.user
-        user.profile.email_notifications = request.POST.get("email_notifications", False)
-        user.profile.push_notifications = request.POST.get("push_notifications", False)
-        user.profile.save()
-        messages.success(request, "Notification preferences updated successfully.")
-        return redirect("profile")
-    
-    return render(request, "notification_preferences.html")
+    if request.method == 'POST':
+        form = NotificationPreferencesForm(request.POST, instance=request.user.profile)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Your notification preferences have been updated.')
+            return redirect('notification_preferences')
+    else:
+        form = NotificationPreferencesForm(instance=request.user.profile)
+    return render(request, 'notification_preferences.html', {'form': form})
 
 @login_required
 def create_course(request):

@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Learning Path</h1>
+            <div class="flex space-x-4">
+                <button id="create-path" class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+                    Create New Path
+                </button>
+            </div>
+        </div>
+        
+        <!-- Learning Path Creation Form -->
+        <div id="create-path-form" class="hidden mb-8">
+            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Create New Learning Path</h2>
+                <form id="path-form" class="space-y-4">
+                    <div>
+                        <label for="subject" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Subject</label>
+                        <select id="subject" name="subject" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500">
+                            <!-- Subjects will be populated here -->
+                        </select>
+                    </div>
+                    <div>
+                        <label for="target-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Target Completion Date</label>
+                        <input type="date" id="target-date" name="target_date" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div class="flex justify-end">
+                        <button type="submit" class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+                            Create Path
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Active Learning Paths -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Active Learning Paths</h2>
+            <div id="active-paths" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Active paths will be populated here -->
+            </div>
+        </div>
+        
+        <!-- Completed Learning Paths -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold text-gray-700 dark:text-gray-300 mb-4">Completed Learning Paths</h2>
+            <div id="completed-paths" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Completed paths will be populated here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const createPathButton = document.getElementById('create-path');
+    const createPathForm = document.getElementById('create-path-form');
+    const pathForm = document.getElementById('path-form');
+    const activePathsContainer = document.getElementById('active-paths');
+    const completedPathsContainer = document.getElementById('completed-paths');
+    
+    // Toggle create path form
+    createPathButton.addEventListener('click', () => {
+        createPathForm.classList.toggle('hidden');
+    });
+    
+    // Load subjects for the form
+    async function loadSubjects() {
+        try {
+            const response = await fetch('/api/subjects/');
+            const data = await response.json();
+            
+            if (data.success) {
+                const subjectSelect = document.getElementById('subject');
+                subjectSelect.innerHTML = data.subjects
+                    .map(subject => `<option value="${subject.id}">${subject.name}</option>`)
+                    .join('');
+            }
+        } catch (error) {
+            console.error('Error loading subjects:', error);
+        }
+    }
+    
+    // Create new learning path
+    pathForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const formData = new FormData(pathForm);
+        const data = {
+            subject_id: formData.get('subject'),
+            target_completion_date: formData.get('target_date')
+        };
+        
+        try {
+            const response = await fetch('/ai/create-learning-path/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                createPathForm.classList.add('hidden');
+                pathForm.reset();
+                loadLearningPaths();
+            } else {
+                alert('Error creating learning path: ' + result.error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while creating the learning path');
+        }
+    });
+    
+    // Load learning paths
+    async function loadLearningPaths() {
+        try {
+            const response = await fetch('/ai/dashboard/');
+            const data = await response.json();
+            
+            if (data.success) {
+                const paths = data.dashboard.learning_paths;
+                
+                // Update active paths
+                activePathsContainer.innerHTML = paths.active
+                    .map(path => createPathCard(path, 'active'))
+                    .join('');
+                
+                // Update completed paths
+                completedPathsContainer.innerHTML = paths.completed
+                    .map(path => createPathCard(path, 'completed'))
+                    .join('');
+            }
+        } catch (error) {
+            console.error('Error loading learning paths:', error);
+        }
+    }
+    
+    // Create path card
+    function createPathCard(path, status) {
+        const progressColor = status === 'active' ? 'bg-teal-300' : 'bg-green-300';
+        const statusColor = status === 'active' ? 'text-teal-600' : 'text-green-600';
+        
+        return `
+            <div class="bg-white dark:bg-gray-700 rounded-lg shadow-lg p-4">
+                <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">${path.title}</h3>
+                <p class="text-gray-600 dark:text-gray-400 mb-4">${path.description}</p>
+                
+                <div class="mb-4">
+                    <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-1">
+                        <span>Progress</span>
+                        <span>${path.progress}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                        <div class="${progressColor} h-2 rounded-full" style="width: ${path.progress}%"></div>
+                    </div>
+                </div>
+                
+                <div class="space-y-2 text-sm">
+                    <p class="text-gray-600 dark:text-gray-400">
+                        <span class="font-medium">Status:</span>
+                        <span class="${statusColor}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>
+                    </p>
+                    <p class="text-gray-600 dark:text-gray-400">
+                        <span class="font-medium">Topics:</span>
+                        ${path.completed_topics}/${path.total_topics} completed
+                    </p>
+                    <p class="text-gray-600 dark:text-gray-400">
+                        <span class="font-medium">Target Date:</span>
+                        ${formatDate(path.target_completion_date)}
+                    </p>
+                </div>
+                
+                <div class="mt-4 flex justify-end">
+                    <button onclick="viewPath(${path.id})" class="bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200">
+                        View Details
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+    
+    // View path details
+    window.viewPath = async function(pathId) {
+        try {
+            const response = await fetch(`/ai/learning-path/${pathId}/`);
+            const data = await response.json();
+            
+            if (data.success) {
+                // Navigate to path details page
+                window.location.href = `/ai/learning-path/${pathId}/details/`;
+            } else {
+                alert('Error loading path details: ' + data.error);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            alert('An error occurred while loading path details');
+        }
+    };
+    
+    function formatDate(dateString) {
+        if (!dateString) return 'Not set';
+        const date = new Date(dateString);
+        return date.toLocaleDateString();
+    }
+    
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    // Initial load
+    loadSubjects();
+    loadLearningPaths();
+});
+</script>
+{% endblock %}
+{% endblock %} 
