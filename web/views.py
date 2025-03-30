@@ -3865,9 +3865,10 @@ def edit_meetup(request: HttpRequest, slug: str) -> HttpResponse:
                 # Update the slug
                 form.instance.slug = new_slug
             form.save()
-            return redirect("meetup_detail", slug=meetup.slug)
+            return redirect("meetup_detail", slug=form.instance.slug)
+        else:
             # Add error message when form validation fails
-        messages.error(request, "Please correct the errors below.")
+            messages.error(request, "Please correct the errors below.")
     else:
         form = MeetupForm(instance=meetup)
     return render(request, "web/edit_meetup.html", {"form": form})
