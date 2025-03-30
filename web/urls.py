@@ -418,6 +418,19 @@ urlpatterns += i18n_patterns(
     path("pdf-submissions/", views.pdf_submission_list, name="pdf_submission_list"),
     path("pdf-submissions/upload/", views.upload_pdf_submission, name="upload_pdf_submission"),
     path("pdf-submissions/<int:submission_id>/", views.pdf_submission_detail, name="pdf_submission_detail"),
+    # Membership URLs
+    path("membership/checkout/<int:plan_id>/", views.membership_checkout, name="membership_checkout"),
+    path(
+        "membership/create-subscription/",
+        views.create_membership_subscription,
+        name="create_membership_subscription",
+    ),
+    path("membership/success/", views.membership_success, name="membership_success"),
+    path("membership/settings/", views.membership_settings, name="membership_settings"),
+    path("membership/cancel/", views.cancel_membership, name="cancel_membership"),
+    path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
+    path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
+    path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
     prefix_default_language=True,
 )
 
