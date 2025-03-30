@@ -6510,7 +6510,10 @@ def create_membership_subscription(request) -> JsonResponse:
 
         # Create subscription using helper function
         result = create_subscription(
-            user=request.user, plan_id=plan_id, payment_method_id=payment_method_id, billing_period=billing_period
+            user=request.user,
+            plan_id=plan_id,
+            payment_method_id=payment_method_id,
+            billing_period=billing_period,
         )
 
         if not result["success"]:
@@ -6542,8 +6545,8 @@ def create_membership_subscription(request) -> JsonResponse:
         return JsonResponse({"error": f"Payment processing error: {str(e)}"}, status=500)
     except KeyError as e:
         return JsonResponse({"error": f"Missing key: {str(e)}"}, status=400)
-    except Exception as e:
-        logger.error(f"Unexpected error in create_membership_subscription: {str(e)}")
+    except Exception:
+        logger.exception("Unexpected error in create_membership_subscription")
         return JsonResponse({"error": "An unexpected error occurred"}, status=500)
 
 
