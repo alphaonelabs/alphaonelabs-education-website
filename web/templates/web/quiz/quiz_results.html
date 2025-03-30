@@ -164,7 +164,6 @@
                     {% for option in answer.question.options.all %}
                       <div class="flex items-center">
                         <span class="w-5 mr-2">
-                          {{option.is_correct}}
                           {% if option.id|stringformat:"i" == answer.user_answer %}
                             {% if option.is_correct %}
                               <i class="fas fa-check-circle text-green-500"></i>
@@ -180,8 +179,7 @@
                             {% if option.is_correct %}text-green-700 dark:text-green-400 
                             {% else %}text-red-700 dark:text-red-400{% endif %} 
                           {% elif option.is_correct %}font-medium text-green-700 dark:text-green-400{% endif %}">
-                          {{ option.text }} - test
-                          {{option}} -- {{answer.user_answer}}
+                          {{ option.text }}
                           {% if option.id|stringformat:"i" == answer.user_answer %}
                             <span class="text-blue-500 ml-2">(Your selection)</span>
                           {% endif %}
@@ -260,193 +258,6 @@
         </div>
       </div>
     {% endif %}
-    <!-- Detailed Results -->
-    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
-      <div class="p-6">
-        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Detailed Results</h2>
-        <div class="space-y-8">
-          {% for answer in user_answers %}
-            <div class="border-b border-gray-200 dark:border-gray-700 pb-6 last:border-b-0 last:pb-0">
-              <div class="flex items-center mb-3">
-                <span class="inline-flex items-center justify-center h-8 w-8 rounded-full mr-3 {% if answer.is_correct %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 {% else %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300{% endif %}">
-                  {% if answer.is_correct %}
-                    <i class="fas fa-check"></i>
-                  {% else %}
-                    <i class="fas fa-times"></i>
-                  {% endif %}
-                </span>
-                <span class="font-medium text-lg text-gray-800 dark:text-white">Question {{ forloop.counter }}</span>
-              </div>
-              <div class="ml-11">
-                <p class="text-gray-800 dark:text-white mb-3">{{ answer.question.text }}</p>
-                {% if answer.question.type == 'multiple_choice' %}
-                  <div class="space-y-2 mt-2">
-                    {% for option in answer.question.options.all %}
-                      <div class="flex items-center">
-                        <span class="w-5 mr-2">
-                          {% if option.id == answer.user_answer %}
-                            {% if option.is_correct %}
-                              <i class="fas fa-check-circle text-green-500"></i>
-                            {% else %}
-                              <i class="fas fa-times-circle text-red-500"></i>
-                            {% endif %}
-                          {% elif option.is_correct %}
-                            <i class="fas fa-check-circle text-green-500"></i>
-                          {% endif %}
-                        </span>
-                        <span class="text-gray-700 dark:text-gray-300 {% if option.id == answer.user_answer %}font-medium {% if option.is_correct %}text-green-700 dark:text-green-400 {% else %}text-red-700 dark:text-red-400{% endif %} {% elif option.is_correct %}font-medium text-green-700 dark:text-green-400{% endif %}">
-                          {{ option.text }}
-                        </span>
-                      </div>
-                    {% endfor %}
-                  </div>
-                {% elif answer.question.type == 'true_false' %}
-                  <div class="space-y-2 mt-2">
-                    <div class="flex items-center">
-                      <span class="w-5 mr-2">
-                        {% if answer.user_answer == 'true' %}
-                          {% if answer.question.options.first.is_correct %}
-                            <i class="fas fa-check-circle text-green-500"></i>
-                          {% else %}
-                            <i class="fas fa-times-circle text-red-500"></i>
-                          {% endif %}
-                        {% elif answer.question.options.first.is_correct %}
-                          <i class="fas fa-check-circle text-green-500"></i>
-                        {% endif %}
-                      </span>
-                      <span class="text-gray-700 dark:text-gray-300 {% if answer.user_answer == 'true' %}font-medium {% if answer.question.options.first.is_correct %}text-green-700 dark:text-green-400 {% else %}text-red-700 dark:text-red-400{% endif %} {% elif answer.question.options.first.is_correct %}font-medium text-green-700 dark:text-green-400{% endif %}">
-                        True
-                      </span>
-                    </div>
-                    <div class="flex items-center">
-                      <span class="w-5 mr-2">
-                        {% if answer.user_answer == 'false' %}
-                          {% if answer.question.options.last.is_correct %}
-                            <i class="fas fa-check-circle text-green-500"></i>
-                          {% else %}
-                            <i class="fas fa-times-circle text-red-500"></i>
-                          {% endif %}
-                        {% elif answer.question.options.last.is_correct %}
-                          <i class="fas fa-check-circle text-green-500"></i>
-                        {% endif %}
-                      </span>
-                      <span class="text-gray-700 dark:text-gray-300 {% if answer.user_answer == 'false' %}font-medium {% if answer.question.options.last.is_correct %}text-green-700 dark:text-green-400 {% else %}text-red-700 dark:text-red-400{% endif %} {% elif answer.question.options.last.is_correct %}font-medium text-green-700 dark:text-green-400{% endif %}">
-                        False
-                      </span>
-                    </div>
-                  </div>
-                {% elif answer.question.type == 'short_answer' %}
-                  <div class="space-y-4 mt-2">
-                    <div>
-                      <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Your Answer:</h3>
-                      <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-gray-800 dark:text-white">
-                        {{ answer.user_answer|default:"No answer provided" }}
-                      </div>
-                    </div>
-                    {% if user_quiz.quiz.show_answers or is_creator %}
-                      <div>
-                        <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Correct Answer:</h3>
-                        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-gray-800 dark:text-white">
-                          {{ answer.question.correct_answer }}
-                        </div>
-                      </div>
-                    {% endif %}
-                    {% if answer.question.status == 'grading' and is_creator %}
-                      <div class="mt-4">
-                        <form action="{% url 'grade_short_answer' user_quiz.id answer.question.id %}"
-                              method="post">
-                          {% csrf_token %}
-                          <div class="mb-3">
-                            <label for="grade"
-                                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                              Grade Answer:
-                            </label>
-                            <select name="grade"
-                                    id="grade"
-                                    class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-white py-2 px-3">
-                              <option value="correct">Correct</option>
-                              <option value="partial">Partially Correct (0.5 points)</option>
-                              <option value="incorrect">Incorrect</option>
-                            </select>
-                          </div>
-                          <div class="mb-3">
-                            <label for="feedback"
-                                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                              Feedback (Optional):
-                            </label>
-                            <textarea name="feedback"
-                                      id="feedback"
-                                      rows="2"
-                                      class="w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-white py-2 px-3"
-                                      placeholder="Provide feedback to the student..."></textarea>
-                          </div>
-                          <button type="submit"
-                                  class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg">
-                            Submit Grade
-                          </button>
-                        </form>
-                      </div>
-                    {% endif %}
-                    {% if answer.feedback %}
-                      <div>
-                        <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Instructor Feedback:</h3>
-                        <div class="bg-blue-50 dark:bg-blue-900 p-3 rounded-lg text-gray-800 dark:text-white">{{ answer.feedback }}</div>
-                      </div>
-                    {% endif %}
-                  </div>
-                {% endif %}
-                {% if user_quiz.quiz.show_answers or is_creator %}
-                  <div class="mt-4 text-gray-600 dark:text-gray-400">
-                    <p>
-                      {% if answer.points == 1 %}
-                        <span class="text-green-600 dark:text-green-400 font-medium">+1 point</span>
-                      {% elif answer.points == 0.5 %}
-                        <span class="text-yellow-600 dark:text-yellow-400 font-medium">+0.5 points</span>
-                      {% else %}
-                        <span class="text-red-600 dark:text-red-400 font-medium">+0 points</span>
-                      {% endif %}
-                    </p>
-                  </div>
-                {% endif %}
-              </div>
-            </div>
-          {% endfor %}
-        </div>
-        <!-- Action Buttons -->
-        <div class="mt-8 flex flex-wrap justify-between gap-4">
-          <div>
-            <a href="{% url 'quiz_detail' user_quiz.quiz.id %}"
-               class="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 py-2 px-4 rounded-lg inline-flex items-center">
-              <i class="fas fa-arrow-left mr-2"></i> Back to Quiz
-            </a>
-          </div>
-          <div class="space-x-2">
-            {% if user.is_authenticated and challenge_invitation %}
-              {% if challenge_invitation.status == 'completed' %}
-                <a href="{% url 'challenge_leaderboard' challenge_invitation.challenge.id %}"
-                   class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
-                  <i class="fas fa-trophy mr-2"></i> See Challenge Leaderboard
-                </a>
-              {% else %}
-                <a href="{% url 'submit_to_leaderboard' user_quiz.id %}"
-                   class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
-                  <i class="fas fa-trophy mr-2"></i> Submit to Challenge Leaderboard
-                </a>
-              {% endif %}
-            {% endif %}
-            {% if user_quiz.user == request.user and user_quiz.quiz.max_attempts > 0 and user_attempts < user_quiz.quiz.max_attempts %}
-              <a href="{% url 'take_quiz' user_quiz.quiz.id %}"
-                 class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
-                <i class="fas fa-redo mr-2"></i> Retake Quiz
-              </a>
-            {% endif %}
-            <button onclick="window.print()"
-                    class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
-              <i class="fas fa-print mr-2"></i> Print Results
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+
   </div>
 {% endblock content %}

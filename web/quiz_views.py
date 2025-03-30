@@ -462,6 +462,7 @@ def take_quiz(request, quiz_id):
 
 def _process_quiz_taking(request, quiz):
     """Helper function to process quiz taking for both routes."""
+    from .services.AI.ai_model import ai_quiz_corrector
     # Check if the quiz has questions
     if not quiz.questions.exists():
         messages.error(request, "This quiz does not have any questions yet.")
@@ -518,7 +519,7 @@ def _process_quiz_taking(request, quiz):
     user_quiz = UserQuiz(quiz=quiz, user=user)
     if request.method == "POST":
         form = TakeQuizForm(request.POST, quiz=quiz)
-
+        # print("%%%%%%%%%%%", request.POST,)
         if form.is_valid():
             # Process answers
             answers = {}
@@ -526,13 +527,17 @@ def _process_quiz_taking(request, quiz):
             total_points = 0
             correction_status = "completed"
 
+            # print("!!!!!!!!!!!!!!", prepared_questions)
+            AI_data = {}
             for question in prepared_questions:
                 q_id = str(question["id"])
                 question_obj = QuizQuestion.objects.get(id=question["id"])
                 total_points += question_obj.points
+                print("============", q_id, question_obj.text, question_obj.explanation,  question_obj.points)
 
+                user_answer = form.cleaned_data.get(f"question_{q_id}", None)
+                User_answer_true_or_false = "Correction needed"
                 if question_obj.question_type == "multiple":
-                    user_answer = form.cleaned_data.get(f"question_{q_id}", None)
 
                     # Handle case when user_answer is a list (multiple selections)
                     if isinstance(user_answer, list):
@@ -547,6 +552,7 @@ def _process_quiz_taking(request, quiz):
                             # For strict checking: all correct options must be selected and no incorrect ones
                             is_correct = set(user_answer_ids) == set(correct_options)
 
+                        User_answer_true_or_false = is_correct
                         answers[q_id] = {
                             "user_answer": user_answer,
                             "correct_answer": correct_options,
@@ -572,12 +578,12 @@ def _process_quiz_taking(request, quiz):
                         score += question_obj.points
 
                 elif question_obj.question_type == "true_false":
-                    user_answer = form.cleaned_data.get(f"question_{q_id}", None)
                     correct_answer = question_obj.options.filter(is_correct=True).first()
 
                     # For true/false, the view is receiving the option ID, not the text
                     correct_id = str(correct_answer.id) if correct_answer else None
 
+                    User_answer_true_or_false = user_answer == correct_answer if user_answer else False
                     answers[q_id] = {
                         "user_answer": user_answer,
                         "correct_answer": correct_id,
@@ -589,24 +595,37 @@ def _process_quiz_taking(request, quiz):
                         score += question_obj.points
 
                 else :
-                    user_answer = form.cleaned_data.get(f"question_{q_id}", "")
                     answers[q_id] = {
                         "user_answer": user_answer,
                         "is_graded": False,  # need manual grading
                     }
                     correction_status = 'in_progress'
 
+                AI_data[q_id] = {
+                    "question_title": question_obj.text,
+                    "question_explanation": question_obj.explanation,
+                    "question_max_point": question_obj.points,
+                    "question_type": question_obj.question_type,
+                    "user_answer": user_answer,
+                    "User_answer_true_or_false": User_answer_true_or_false,
+                    "Subject": quiz.subject,
+                }
+
+            # print("@@@@@@@@@@@@@", AI_data)
+            print("########", ai_quiz_corrector(AI_data))
+            print("&&&&&&&&&&&&&", json.dumps(answers))
+
             # Calculate percentage score
             percentage = (score / total_points * 100) if total_points > 0 else 0
 
             # Update the UserQuiz record
-            user_quiz.answers = json.dumps(answers)
-            if correction_status == 'completed':
-                user_quiz.score = percentage
-            user_quiz.correction_status = correction_status
-            user_quiz.end_time = timezone.now()
-            user_quiz.completed = True
-            user_quiz.save()
+            # user_quiz.answers = json.dumps(answers)
+            # if correction_status == 'completed':
+            #     user_quiz.score = percentage
+            # user_quiz.correction_status = correction_status
+            # user_quiz.end_time = timezone.now()
+            # user_quiz.completed = True
+            # user_quiz.save()
 
             # Redirect to results page
             return redirect("quiz_results", user_quiz_id=user_quiz.id)
@@ -752,6 +771,7 @@ def quiz_results(request, user_quiz_id):
                 "feedback": answer_data.get("feedback", ""),
             }
             user_answers.append(user_answer_obj)
+
 
     context = {
         "user_quiz": user_quiz,
