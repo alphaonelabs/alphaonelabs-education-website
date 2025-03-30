@@ -19,7 +19,7 @@
                 <h1 class="text-4xl font-extrabold mb-4 text-gradient">Subscription Successful!</h1>
                 <p class="text-green-600 dark:text-green-400 text-xl mb-8 animate-fadeIn" style="animation-delay: 0.3s">Your membership subscription has been processed successfully.</p>
             </div>
-            
+
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden mb-8 transform transition-all duration-500 hover:shadow-xl border border-gray-200 dark:border-gray-700 animate-fadeInUp" style="animation-delay: 0.5s">
                 <div class="bg-gradient-to-r from-blue-500 to-indigo-600 p-6">
                     <h2 class="text-xl font-bold text-white flex items-center">
@@ -64,7 +64,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden mb-10 transform transition-all duration-500 hover:shadow-xl border border-gray-200 dark:border-gray-700 animate-fadeInUp" style="animation-delay: 0.7s">
                 <div class="bg-gradient-to-r from-purple-500 to-indigo-600 p-6">
                     <h2 class="text-xl font-bold text-white flex items-center">
@@ -86,7 +86,7 @@
                     </ul>
                 </div>
             </div>
-            
+
             <div class="flex flex-col sm:flex-row justify-center gap-4 animate-fadeInUp" style="animation-delay: 0.9s">
                 <a href="{% url 'index' %}" class="inline-flex justify-center items-center px-6 py-3 border border-transparent rounded-lg shadow-md text-base font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:outline-none transition-all duration-300 transform hover:scale-[1.02]">
                     <i class="fas fa-home mr-2"></i> Return to Homepage
@@ -95,7 +95,7 @@
                     <i class="fas fa-cog mr-2"></i> Manage Your Membership
                 </a>
             </div>
-            
+
             <div class="text-center mt-10 text-gray-500 dark:text-gray-400 text-sm animate-fadeIn" style="animation-delay: 1.2s">
                 <p>A confirmation email has been sent to your registered email address.</p>
             </div>
@@ -108,7 +108,7 @@
         from { opacity: 0; }
         to { opacity: 1; }
     }
-    
+
     @keyframes fadeInUp {
         from {
             opacity: 0;
@@ -119,31 +119,31 @@
             transform: translateY(0);
         }
     }
-    
+
     @keyframes bounceSlight {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-10px); }
     }
-    
+
     .animate-fadeIn {
         animation: fadeIn 0.8s ease forwards;
     }
-    
+
     .animate-fadeInUp {
         opacity: 0;
         animation: fadeInUp 0.8s ease forwards;
     }
-    
+
     .animate-bounce-subtle {
         animation: bounceSlight 2s ease-in-out infinite;
     }
-    
+
     .text-gradient {
         background: linear-gradient(to right, #10b981, #3b82f6);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
-    
+
     @media (prefers-color-scheme: dark) {
         .text-gradient {
             background: linear-gradient(to right, #22c58b, #4f90f3);
@@ -151,7 +151,7 @@
             -webkit-text-fill-color: transparent;
         }
     }
-    
+
     /* Confetti styling */
     .confetti-container {
         position: absolute;
@@ -161,7 +161,7 @@
         left: 0;
         pointer-events: none;
     }
-    
+
     .confetti {
         position: absolute;
         z-index: 1;
@@ -177,30 +177,30 @@
         const colors = ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ec4899'];
         const darkModeColors = ['#60a5fa', '#34d399', '#a78bfa', '#fbbf24', '#f472b6'];
         const shapes = ['circle', 'square', 'triangle'];
-        
+
         // Check if user prefers dark mode
         const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
         const confettiColors = prefersDarkMode ? darkModeColors : colors;
-        
+
         // Create confetti elements
         for (let i = 0; i < 80; i++) {
             createConfetti(confettiContainer, confettiColors, shapes);
         }
-        
+
         function createConfetti(container, colors, shapes) {
             const confetti = document.createElement('div');
             confetti.classList.add('confetti');
-            
+
             // Random position, color, shape, and animation
             const color = colors[Math.floor(Math.random() * colors.length)];
             const shape = shapes[Math.floor(Math.random() * shapes.length)];
             const left = Math.random() * 100;
-            
+
             confetti.style.backgroundColor = color;
             confetti.style.left = `${left}%`;
             confetti.style.top = '-20px';
             confetti.style.opacity = Math.random() + 0.4;
-            
+
             if (shape === 'circle') {
                 confetti.style.borderRadius = '50%';
             } else if (shape === 'triangle') {
@@ -211,13 +211,13 @@
                 confetti.style.borderRight = '5px solid transparent';
                 confetti.style.borderBottom = `10px solid ${color}`;
             }
-            
+
             // Animation with random duration and delay
             const duration = Math.random() * 3 + 2;
             const delay = Math.random() * 2;
-            
+
             confetti.style.animation = `fall ${duration}s ease-in ${delay}s forwards`;
-            
+
             // Add keyframe animation dynamically
             if (!document.querySelector('#confetti-animation')) {
                 const style = document.createElement('style');
@@ -236,22 +236,22 @@
                 `;
                 document.head.appendChild(style);
             }
-            
+
             container.appendChild(confetti);
-            
+
             // Remove after animation completes
             setTimeout(() => {
                 confetti.remove();
             }, (duration + delay) * 1000);
         }
-        
+
         // Listen for dark mode changes
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
             const newColors = e.matches ? darkModeColors : colors;
-            
+
             // Clear existing confetti
             confettiContainer.innerHTML = '';
-            
+
             // Create new confetti with appropriate colors
             for (let i = 0; i < 40; i++) {
                 createConfetti(confettiContainer, newColors, shapes);
@@ -259,4 +259,4 @@
         });
     });
 </script>
-{% endblock %} 
+{% endblock %}

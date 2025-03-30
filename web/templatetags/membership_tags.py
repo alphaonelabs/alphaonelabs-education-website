@@ -22,4 +22,4 @@ def get_membership_plan_name(user):
     """Get the name of a user's membership plan."""
     if hasattr(user, 'membership') and user.membership.is_active:
         return user.membership.plan.name
-    return None 
+    return None

@@ -7,13 +7,13 @@
 <div class="container mx-auto px-4 py-12">
     <div class="max-w-2xl mx-auto">
         <h1 class="text-3xl font-bold mb-8 text-center">Subscribe to {{ plan.name }}</h1>
-        
+
         <div class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
             <div class="p-6">
                 <div class="mb-6">
                     <h2 class="font-bold text-xl mb-3">Plan Details</h2>
                     <p class="text-gray-600 mb-4">{{ plan.description }}</p>
-                    
+
                     <div class="flex items-center justify-between mb-4 border-b pb-4">
                         <div>
                             <span class="text-lg font-semibold">Billing Period:</span>
@@ -32,7 +32,7 @@
                             </label>
                         </div>
                     </div>
-                    
+
                     <div class="flex items-center justify-between">
                         <div>
                             <span class="text-lg font-semibold">Price:</span>
@@ -47,7 +47,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="mb-8">
                     <h2 class="font-bold text-xl mb-3">Plan Features</h2>
                     <ul class="space-y-3">
@@ -61,13 +61,13 @@
                         {% endfor %}
                     </ul>
                 </div>
-                
+
                 <a href="{% url 'checkout_membership' plan.slug billing_period %}" class="block w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-md text-center transition-colors duration-200">
                     Continue to Checkout
                 </a>
             </div>
         </div>
-        
+
         <div class="text-center">
             <a href="{% url 'membership_plans' %}" class="inline-flex items-center text-blue-600 hover:text-blue-800">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,7 +85,7 @@
         const yearlyPriceDiv = document.getElementById('yearly-price');
         const radioBtns = document.querySelectorAll('input[name="billing_period"]');
         const continueBtn = document.querySelector('a[href*="checkout_membership"]');
-        
+
         // Handle billing period change
         radioBtns.forEach(function(radio) {
             radio.addEventListener('change', function() {
@@ -97,7 +97,7 @@
                     monthlyPriceDiv.classList.add('hidden');
                     yearlyPriceDiv.classList.remove('hidden');
                 }
-                
+
                 // Update checkout URL
                 const planSlug = '{{ plan.slug }}';
                 continueBtn.href = "{% url 'checkout_membership' plan_slug='placeholder' billing_period='placeholder' %}".replace('placeholder', planSlug).replace('placeholder', this.value);
@@ -105,4 +105,4 @@
         });
     });
 </script>
-{% endblock %} 
+{% endblock %}
