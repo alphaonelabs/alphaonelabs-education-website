@@ -32,29 +32,46 @@
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">My Study Plans</h2>
-                <button onclick="openCreatePlanModal()" class="bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200">
-                    <i class="fas fa-plus mr-2"></i>New Plan
-                </button>
+                <div class="flex space-x-2">
+                    <button onclick="openCreatePlanModal()" class="bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        New Plan
+                    </button>
+                    <button onclick="generateAIPlan()" class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg transition duration-200 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                        </svg>
+                        AI Plan
+                    </button>
+                </div>
             </div>
 
             <!-- Study Plans List -->
             <div class="space-y-4">
                 {% for plan in study_plans %}
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:shadow-md transition duration-200">
                     <div class="flex justify-between items-start">
                         <div>
                             <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">{{ plan.title }}</h3>
                             <p class="text-sm text-gray-600 dark:text-gray-400">{{ plan.subject }}</p>
                         </div>
                         <div class="flex space-x-2">
-                            <button onclick="generateTasks({{ plan.id }})" class="text-teal-300 hover:text-teal-400" title="Generate AI Tasks">
-                                <i class="fas fa-robot"></i>
+                            <button onclick="generateTasks({{ plan.id }})" class="text-teal-300 hover:text-teal-400 p-2 rounded-full hover:bg-teal-50 dark:hover:bg-teal-900" title="Generate AI Tasks">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                                </svg>
                             </button>
-                            <button onclick="editPlan({{ plan.id }})" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">
-                                <i class="fas fa-edit"></i>
+                            <button onclick="editPlan({{ plan.id }})" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600" title="Edit Plan">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
                             </button>
-                            <button onclick="deletePlan({{ plan.id }})" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200">
-                                <i class="fas fa-trash"></i>
+                            <button onclick="deletePlan({{ plan.id }})" class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200 p-2 rounded-full hover:bg-red-50 dark:hover:bg-red-900" title="Delete Plan">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
                             </button>
                         </div>
                     </div>
@@ -64,7 +81,7 @@
                             <span>{{ plan.progress }}%</span>
                         </div>
                         <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mt-1">
-                            <div class="bg-teal-300 h-2 rounded-full" style="width: {{ plan.progress }}%"></div>
+                            <div class="bg-teal-300 h-2 rounded-full transition-all duration-500" style="width: {{ plan.progress }}%"></div>
                         </div>
                     </div>
                     <div class="mt-3 flex justify-between text-sm">
@@ -74,7 +91,15 @@
 
                     <!-- Study Tasks Section -->
                     <div class="mt-4">
-                        <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Study Tasks</h4>
+                        <div class="flex justify-between items-center mb-2">
+                            <h4 class="text-sm font-medium text-gray-900 dark:text-gray-100">Study Tasks</h4>
+                            <button onclick="addTask({{ plan.id }})" class="text-teal-300 hover:text-teal-400 text-sm flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/>
+                                </svg>
+                                Add Task
+                            </button>
+                        </div>
                         <div id="tasks-{{ plan.id }}" class="space-y-2">
                             <!-- Tasks will be loaded here -->
                         </div>
@@ -82,7 +107,11 @@
                 </div>
                 {% empty %}
                 <div class="text-center py-8">
-                    <p class="text-gray-600 dark:text-gray-400">No study plans yet. Create your first plan!</p>
+                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
+                    <p class="mt-2 text-gray-600 dark:text-gray-400">No study plans yet. Create your first plan!</p>
+                    <button onclick="openCreatePlanModal()" class="mt-4 text-teal-300 hover:text-teal-400">Create a new plan</button>
                 </div>
                 {% endfor %}
             </div>
@@ -94,17 +123,37 @@
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
                 <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Overall Progress</h2>
                 <div class="grid grid-cols-3 gap-4 text-center">
-                    <div>
+                    <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <p class="text-3xl font-bold text-teal-300">{{ completed_topics }}</p>
                         <p class="text-sm text-gray-600 dark:text-gray-400">Topics Completed</p>
                     </div>
-                    <div>
+                    <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <p class="text-3xl font-bold text-teal-300">{{ total_study_hours }}</p>
                         <p class="text-sm text-gray-600 dark:text-gray-400">Study Hours</p>
                     </div>
-                    <div>
+                    <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
                         <p class="text-3xl font-bold text-teal-300">{{ study_plans.count }}</p>
                         <p class="text-sm text-gray-600 dark:text-gray-400">Active Plans</p>
+                    </div>
+                </div>
+                <!-- Weekly Progress Chart -->
+                <div class="mt-6">
+                    <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Weekly Progress</h3>
+                    <div class="h-32 flex items-end space-x-2">
+                        {% for day in weekly_progress %}
+                        <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-t-lg" style="height: {{ day }}%">
+                            <div class="bg-teal-300 w-full rounded-t-lg transition-all duration-500" style="height: {{ day }}%"></div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <span>Mon</span>
+                        <span>Tue</span>
+                        <span>Wed</span>
+                        <span>Thu</span>
+                        <span>Fri</span>
+                        <span>Sat</span>
+                        <span>Sun</span>
                     </div>
                 </div>
             </div>
@@ -114,17 +163,24 @@
                 <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Suggested Topics</h2>
                 <div class="space-y-3">
                     {% for topic in suggested_topics %}
-                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition duration-200">
                         <div>
                             <h3 class="font-medium text-gray-900 dark:text-gray-100">{{ topic.title }}</h3>
                             <p class="text-sm text-gray-600 dark:text-gray-400">{{ topic.description|truncatechars:100 }}</p>
                         </div>
-                        <button onclick="addTopicToPlan({{ topic.id }})" class="text-teal-300 hover:text-teal-400">
-                            <i class="fas fa-plus-circle"></i>
+                        <button onclick="addTopicToPlan({{ topic.id }})" class="text-teal-300 hover:text-teal-400 p-2 rounded-full hover:bg-teal-50 dark:hover:bg-teal-900">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"/>
+                            </svg>
                         </button>
                     </div>
                     {% empty %}
-                    <p class="text-center text-gray-600 dark:text-gray-400">No suggested topics available.</p>
+                    <div class="text-center py-4">
+                        <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/>
+                        </svg>
+                        <p class="mt-2 text-gray-600 dark:text-gray-400">No suggested topics available.</p>
+                    </div>
                     {% endfor %}
                 </div>
             </div>
@@ -136,7 +192,14 @@
 <div id="planModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md">
         <div class="p-6">
-            <h2 id="modalTitle" class="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4">Create Study Plan</h2>
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="modalTitle" class="text-2xl font-bold text-gray-900 dark:text-gray-100">Create Study Plan</h2>
+                <button onclick="closePlanModal()" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
             <form id="planForm" onsubmit="handlePlanSubmit(event)">
                 <input type="hidden" id="planId" value="">
                 <div class="space-y-4">
@@ -147,8 +210,15 @@
                     </div>
                     <div>
                         <label for="subject" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Subject</label>
-                        <input type="text" id="subject" name="subject" required
-                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300">
+                        <select id="subject" name="subject" required
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300">
+                            <option value="">Select a subject</option>
+                            <option value="mathematics">Mathematics</option>
+                            <option value="science">Science</option>
+                            <option value="programming">Programming</option>
+                            <option value="history">History</option>
+                            <option value="languages">Languages</option>
+                        </select>
                     </div>
                     <div>
                         <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
@@ -171,6 +241,15 @@
                         <label for="totalHours" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Total Hours</label>
                         <input type="number" id="totalHours" name="total_hours" min="1" required
                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300">
+                    </div>
+                    <div>
+                        <label for="difficulty" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Difficulty Level</label>
+                        <select id="difficulty" name="difficulty" required
+                                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300">
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
                     </div>
                 </div>
                 <div class="mt-6 flex justify-end space-x-3">
@@ -224,6 +303,7 @@
             document.getElementById('startDate').value = plan.start_date;
             document.getElementById('endDate').value = plan.end_date;
             document.getElementById('totalHours').value = plan.total_hours;
+            document.getElementById('difficulty').value = plan.difficulty;
             
             document.getElementById('planModal').classList.remove('hidden');
         } catch (error) {
@@ -248,7 +328,7 @@
             if (response.ok) {
                 window.location.reload();
             } else {
-                throw new Error('Failed to delete plan');
+                alert('Failed to delete plan');
             }
         } catch (error) {
             console.error('Error deleting plan:', error);
@@ -256,19 +336,175 @@
         }
     }
 
+    async function generateTasks(planId) {
+        document.getElementById('loading-overlay').classList.remove('hidden');
+        try {
+            const response = await fetch(`/ai/api/study-plan/${planId}/generate-tasks/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+
+            if (response.ok) {
+                const tasks = await response.json();
+                const tasksContainer = document.getElementById(`tasks-${planId}`);
+                tasksContainer.innerHTML = tasks.map(task => `
+                    <div class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg shadow">
+                        <div class="flex items-center">
+                            <input type="checkbox" class="w-4 h-4 text-teal-300 rounded focus:ring-teal-300"
+                                   onchange="toggleTask(${task.id}, this.checked)">
+                            <span class="ml-3 text-sm text-gray-900 dark:text-gray-100">${task.title}</span>
+                        </div>
+                        <span class="text-sm text-gray-500 dark:text-gray-400">${task.duration} min</span>
+                    </div>
+                `).join('');
+            } else {
+                alert('Failed to generate tasks');
+            }
+        } catch (error) {
+            console.error('Error generating tasks:', error);
+            alert('Failed to generate tasks');
+        } finally {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+    }
+
+    async function addTask(planId) {
+        const taskTitle = prompt('Enter task title:');
+        if (!taskTitle) return;
+
+        try {
+            const response = await fetch(`/ai/api/study-plan/${planId}/add-task/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ title: taskTitle })
+            });
+
+            if (response.ok) {
+                const task = await response.json();
+                const tasksContainer = document.getElementById(`tasks-${planId}`);
+                const taskElement = document.createElement('div');
+                taskElement.className = 'flex items-center justify-between p-3 bg-white dark:bg-gray-800 rounded-lg shadow';
+                taskElement.innerHTML = `
+                    <div class="flex items-center">
+                        <input type="checkbox" class="w-4 h-4 text-teal-300 rounded focus:ring-teal-300"
+                               onchange="toggleTask(${task.id}, this.checked)">
+                        <span class="ml-3 text-sm text-gray-900 dark:text-gray-100">${task.title}</span>
+                    </div>
+                    <span class="text-sm text-gray-500 dark:text-gray-400">${task.duration} min</span>
+                `;
+                tasksContainer.appendChild(taskElement);
+            } else {
+                alert('Failed to add task');
+            }
+        } catch (error) {
+            console.error('Error adding task:', error);
+            alert('Failed to add task');
+        }
+    }
+
+    async function toggleTask(taskId, completed) {
+        try {
+            const response = await fetch(`/ai/api/study-task/${taskId}/toggle/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to toggle task');
+            }
+        } catch (error) {
+            console.error('Error toggling task:', error);
+            alert('Failed to update task status');
+        }
+    }
+
+    async function generateAIPlan() {
+        const subject = prompt('Enter the subject for your AI-generated study plan:');
+        if (!subject) return;
+
+        document.getElementById('loading-overlay').classList.remove('hidden');
+        try {
+            const response = await fetch('/ai/api/generate-study-plan/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ subject })
+            });
+
+            if (response.ok) {
+                const plan = await response.json();
+                window.location.reload();
+            } else {
+                alert('Failed to generate study plan');
+            }
+        } catch (error) {
+            console.error('Error generating study plan:', error);
+            alert('Failed to generate study plan');
+        } finally {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        }
+    }
+
+    async function addTopicToPlan(topicId) {
+        const planId = prompt('Enter the ID of the study plan to add this topic to:');
+        if (!planId) return;
+
+        try {
+            const response = await fetch(`/ai/api/study-plan/${planId}/add-topic/${topicId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken')
+                }
+            });
+
+            if (response.ok) {
+                window.location.reload();
+            } else {
+                alert('Failed to add topic to plan');
+            }
+        } catch (error) {
+            console.error('Error adding topic to plan:', error);
+            alert('Failed to add topic to plan');
+        }
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
     async function handlePlanSubmit(event) {
         event.preventDefault();
         const planId = document.getElementById('planId').value;
         const formData = new FormData(event.target);
         
-        // Convert FormData to JSON
         const data = {
             title: formData.get('title'),
             subject: formData.get('subject'),
             description: formData.get('description'),
             start_date: formData.get('start_date'),
             end_date: formData.get('end_date'),
-            total_hours: parseInt(formData.get('total_hours'))
+            total_hours: parseInt(formData.get('total_hours')),
+            difficulty: formData.get('difficulty')
         };
         
         try {
@@ -296,126 +532,5 @@
             alert(error.message || 'Failed to save plan');
         }
     }
-
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-
-    async function addTopicToPlan(topicId) {
-        // Implement topic addition logic
-        alert('Topic addition functionality coming soon!');
-    }
-
-    async function generateTasks(planId) {
-        const loadingOverlay = document.getElementById('loading-overlay');
-        try {
-            loadingOverlay.classList.remove('hidden');
-            const response = await fetch(`/ai/api/study-plan/${planId}/generate-tasks/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                loadTasks(planId);
-            } else {
-                throw new Error('Failed to generate tasks');
-            }
-        } catch (error) {
-            console.error('Error generating tasks:', error);
-            alert('Failed to generate tasks');
-        } finally {
-            loadingOverlay.classList.add('hidden');
-        }
-    }
-
-    async function loadTasks(planId) {
-        try {
-            const response = await fetch(`/ai/api/study-plan/${planId}/tasks/`);
-            if (response.ok) {
-                const data = await response.json();
-                const tasksContainer = document.getElementById(`tasks-${planId}`);
-                tasksContainer.innerHTML = '';
-                
-                data.tasks.forEach(task => {
-                    const taskElement = createTaskElement(task);
-                    tasksContainer.appendChild(taskElement);
-                });
-            }
-        } catch (error) {
-            console.error('Error loading tasks:', error);
-        }
-    }
-
-    function createTaskElement(task) {
-        const div = document.createElement('div');
-        div.className = 'flex items-start space-x-3 p-2 bg-white dark:bg-gray-800 rounded-lg';
-        
-        div.innerHTML = `
-            <input type="checkbox" 
-                   id="task-${task.id}"
-                   ${task.completed ? 'checked' : ''}
-                   onchange="toggleTask(${task.id})"
-                   class="mt-1 h-4 w-4 text-teal-300 focus:ring-teal-300 border-gray-300 rounded">
-            <div class="flex-1">
-                <label for="task-${task.id}" class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                    ${task.title}
-                </label>
-                <p class="text-sm text-gray-600 dark:text-gray-400">${task.description}</p>
-                <p class="text-xs text-gray-500 dark:text-gray-500">${task.estimated_hours} hours</p>
-            </div>
-        `;
-        
-        return div;
-    }
-
-    async function toggleTask(taskId) {
-        try {
-            const response = await fetch(`/ai/api/study-task/${taskId}/toggle/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken')
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                // Update task checkbox
-                const checkbox = document.querySelector(`#task-${taskId}`);
-                checkbox.checked = data.task.completed;
-                
-                // Update progress bar and percentage
-                const taskElement = checkbox.closest('.bg-gray-50');
-                const progressBar = taskElement.querySelector('.bg-teal-300');
-                const progressText = taskElement.querySelector('.text-sm.text-gray-600 span:last-child');
-                
-                progressBar.style.width = `${data.task.study_plan_progress}%`;
-                progressText.textContent = `${data.task.study_plan_progress}%`;
-            }
-        } catch (error) {
-            console.error('Error toggling task:', error);
-            // Don't show error alert, just log it
-        }
-    }
-
-    // Load tasks for each study plan when the page loads
-    document.addEventListener('DOMContentLoaded', function() {
-        {% for plan in study_plans %}
-            loadTasks({{ plan.id }});
-        {% endfor %}
-    });
 </script>
 {% endblock %} 

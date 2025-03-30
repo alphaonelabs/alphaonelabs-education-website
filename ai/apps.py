@@ -1,4 +1,5 @@
 from django.apps import AppConfig
+from django.conf import settings
 
 class AIConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
@@ -6,16 +7,19 @@ class AIConfig(AppConfig):
 
     def ready(self):
         """Perform initialization when the app is ready."""
-        # Import and check AI service configuration
-        from .services.config import API_KEYS_CONFIGURED
         import logging
         
         logger = logging.getLogger(__name__)
         
-        if not API_KEYS_CONFIGURED:
+        # Check AI service configuration
+        if not (settings.GEMINI_API_KEY or settings.OPENAI_API_KEY):
             logger.warning("AI service API keys not properly configured. Using demo mode.")
         else:
             logger.info("AI service API keys configured successfully.")
+            if settings.GEMINI_API_KEY:
+                logger.info(f"Using Gemini model: {settings.GEMINI_MODEL}")
+            if settings.OPENAI_API_KEY:
+                logger.info(f"Using OpenAI model: {settings.OPENAI_MODEL}")
             
         # Initialize NLTK for text processing if needed
         try:

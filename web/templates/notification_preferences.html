@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 
+{% block title %}Notification Preferences{% endblock %}
+
 {% block content %}
 <div class="container mx-auto px-4 py-8">
     <div class="max-w-2xl mx-auto">
@@ -9,40 +11,41 @@
             <form method="post" class="space-y-6">
                 {% csrf_token %}
                 
-                <!-- Email Notifications -->
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Email Notifications</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Receive updates and notifications via email</p>
+                {% if form.errors %}
+                <div class="bg-red-50 dark:bg-red-900 text-red-700 dark:text-red-200 p-4 rounded-lg mb-6">
+                    <h2 class="text-lg font-semibold mb-2">Please correct the errors below:</h2>
+                    <ul class="list-disc list-inside">
+                        {% for field, errors in form.errors.items %}
+                            {% for error in errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <div class="space-y-4">
+                    {% for field in form %}
+                    <div class="flex items-start">
+                        <div class="flex items-center h-5">
+                            {{ field }}
+                        </div>
+                        <div class="ml-3">
+                            <label for="{{ field.id_for_label }}" class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                {{ field.label }}
+                            </label>
+                            {% if field.help_text %}
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                                {{ field.help_text }}
+                            </p>
+                            {% endif %}
+                        </div>
                     </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" 
-                               name="email_notifications" 
-                               class="sr-only peer"
-                               {% if user.profile.email_notifications %}checked{% endif %}>
-                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-teal-300 dark:peer-focus:ring-teal-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-teal-600"></div>
-                    </label>
+                    {% endfor %}
                 </div>
 
-                <!-- Push Notifications -->
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Push Notifications</h3>
-                        <p class="text-sm text-gray-500 dark:text-gray-400">Receive push notifications in your browser</p>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" 
-                               name="push_notifications" 
-                               class="sr-only peer"
-                               {% if user.profile.push_notifications %}checked{% endif %}>
-                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-teal-300 dark:peer-focus:ring-teal-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-teal-600"></div>
-                    </label>
-                </div>
-
-                <!-- Save Button -->
                 <div class="flex justify-end">
-                    <button type="submit" 
-                            class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+                    <button type="submit" class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
                         Save Preferences
                     </button>
                 </div>

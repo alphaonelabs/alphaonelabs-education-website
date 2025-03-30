@@ -197,6 +197,26 @@
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-video mr-2 text-teal-500"></i>Videos
                   </a>
+                  <a href="{% url 'ai:chat' %}"
+                     class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
+                    <i class="fas fa-robot mr-2 text-teal-500"></i>AI Assistant
+                  </a>
+                  <a href="{% url 'ai:study_planner' %}"
+                     class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
+                    <i class="fas fa-calendar-check mr-2 text-teal-500"></i>Study Planner
+                  </a>
+                  <a href="{% url 'ai:progress_dashboard' %}"
+                     class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
+                    <i class="fas fa-chart-bar mr-2 text-teal-500"></i>Progress Dashboard
+                  </a>
+                  <a href="{% url 'ai:achievements' %}"
+                     class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
+                    <i class="fas fa-trophy mr-2 text-teal-500"></i>Achievements
+                  </a>
+                  <a href="{% url 'ai:group_discussions' %}"
+                     class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
+                    <i class="fas fa-comments mr-2 text-teal-500"></i>Group Discussions
+                  </a>
                   <a href="{% url 'challenge_list' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-trophy mr-2 text-teal-500"></i>Challenges
@@ -412,7 +432,7 @@
                     </div>
                   </div>
                 {% elif user.profile.avatar %}
-                  <img src="{{ user.profile.avatar.url }}"
+                  <img src="{{ user.profile.avatar.url }}" 
                        alt="User Avatar"
                        class="h-8 w-8 rounded-full object-cover border-2 border-white"
                        height="32"
@@ -541,6 +561,31 @@
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-video mr-2 text-teal-500"></i>
                       <span>Videos</span>
+                    </a>
+                    <a href="{% url 'ai:chat' %}"
+                       class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                      <i class="fas fa-robot mr-2 text-teal-500"></i>
+                      <span>AI Assistant</span>
+                    </a>
+                    <a href="{% url 'ai:study_planner' %}"
+                       class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                      <i class="fas fa-calendar-check mr-2 text-teal-500"></i>
+                      <span>Study Planner</span>
+                    </a>
+                    <a href="{% url 'ai:progress_dashboard' %}"
+                       class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                      <i class="fas fa-chart-bar mr-2 text-teal-500"></i>
+                      <span>Progress Dashboard</span>
+                    </a>
+                    <a href="{% url 'ai:achievements' %}"
+                       class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                      <i class="fas fa-trophy mr-2 text-teal-500"></i>
+                      <span>Achievements</span>
+                    </a>
+                    <a href="{% url 'ai:group_discussions' %}"
+                       class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                      <i class="fas fa-comments mr-2 text-teal-500"></i>
+                      <span>Group Discussions</span>
                     </a>
                     <a href="{% url 'challenge_list' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
@@ -694,32 +739,33 @@
                     </a>
                   </div>
                 </div>
-                <!-- Cart Link -->
-                <a href="{% url 'cart_view' %}"
+              </div>
+              <!-- Cart Link -->
+              <a href="{% url 'cart_view' %}"
                    class="flex items-center justify-between py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
                   <div class="flex items-center">
                     <i class="fa-solid fa-shopping-cart mr-2 text-teal-500"></i>
-                    <span>Cart</span>
+                <span>Cart</span>
                   </div>
-                  {% if request.user.cart.item_count > 0 or request.session.session_key and request.session.session_key|get_cart_item_count > 0 %}
+                {% if request.user.cart.item_count > 0 or request.session.session_key and request.session.session_key|get_cart_item_count > 0 %}
                     <span class="bg-orange-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                      {% if request.user.is_authenticated %}
-                        {{ request.user.cart.item_count }}
-                      {% else %}
-                        {{ request.session.session_key|get_cart_item_count }}
-                      {% endif %}
-                    </span>
-                  {% endif %}
-                </a>
+                    {% if request.user.is_authenticated %}
+                      {{ request.user.cart.item_count }}
+                    {% else %}
+                      {{ request.session.session_key|get_cart_item_count }}
+                    {% endif %}
+                  </span>
+                {% endif %}
+              </a>
                 <!-- User Account Section -->
-                {% if user.is_authenticated %}
+              {% if user.is_authenticated %}
                   <div class="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
                     <div class="px-3 py-2 text-sm font-semibold text-gray-700 dark:text-gray-200">Your Account</div>
-                    <a href="{% url 'profile' %}"
+                <a href="{% url 'profile' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-user-circle mr-2 text-teal-500"></i>
-                      <span>Profile</span>
-                    </a>
+                  <span>Profile</span>
+                </a>
                     <a href="{% url 'notification_preferences' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-bell mr-2 text-teal-500"></i>
@@ -740,35 +786,35 @@
                       <i class="fas fa-chart-line mr-2 text-teal-500"></i>
                       <span>Progress Chart</span>
                     </a>
-                    <form method="post" action="{% url 'account_logout' %}" class="block">
-                      {% csrf_token %}
-                      <button type="submit"
+                <form method="post" action="{% url 'account_logout' %}" class="block">
+                  {% csrf_token %}
+                  <button type="submit"
                               class="w-full flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                         <i class="fas fa-sign-out-alt mr-2 text-teal-500"></i>
-                        <span>Logout</span>
-                      </button>
-                    </form>
+                    <span>Logout</span>
+                  </button>
+                </form>
                   </div>
-                {% else %}
+              {% else %}
                   <div class="flex flex-col space-y-2 mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
-                    <a href="{% url 'account_login' %}"
+                  <a href="{% url 'account_login' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fa-solid fa-right-to-bracket mr-2 text-teal-500"></i>
-                      <span>Login</span>
-                    </a>
-                    <a href="{% url 'account_signup' %}"
+                    <span>Login</span>
+                  </a>
+                  <a href="{% url 'account_signup' %}"
                        class="flex items-center py-2 px-3 bg-orange-500 hover:bg-orange-600 text-white font-semibold rounded-md">
                       <i class="fa-solid fa-user-plus mr-2"></i>
-                      <span>Signup</span>
-                    </a>
-                  </div>
-                {% endif %}
-                <!-- Dark Mode Toggle -->
-                <button onclick="toggleDarkMode()"
+                    <span>Signup</span>
+                  </a>
+                </div>
+              {% endif %}
+              <!-- Dark Mode Toggle -->
+              <button onclick="toggleDarkMode()"
                         class="w-full flex items-center py-2 px-3 mt-4 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                   <i id="darkModeIconMobile" class="fas fa-moon mr-2 text-teal-500"></i>
-                  <span>Toggle Dark Mode</span>
-                </button>
+                <span>Toggle Dark Mode</span>
+              </button>
               </div>
             </div>
           </div>
@@ -853,7 +899,7 @@
             <h3 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-200">COMMUNITY</h3>
             <ul class="space-y-2">
               <li>
-                <a href="{% url 'forum_categories' %}"
+            <a href="{% url 'forum_categories' %}"
                    class="text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 flex items-center">
                   <i class="fas fa-comments mr-2 text-teal-500 w-5 text-center"></i>Forum
                 </a>
@@ -885,9 +931,9 @@
             <h3 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-200">RESOURCES & INFO</h3>
             <ul class="space-y-2">
               <li>
-                <a href="https://github.com/alphaonelabs/education-website/wiki/GSOC-2025-Ideas"
-                   target="_blank"
-                   rel="noopener"
+            <a href="https://github.com/alphaonelabs/education-website/wiki/GSOC-2025-Ideas"
+               target="_blank"
+               rel="noopener"
                    class="text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 flex items-center">
                   <i class="fas fa-code mr-2 text-teal-500 w-5 text-center"></i>GSOC'25
                 </a>
@@ -905,10 +951,10 @@
                 </a>
               </li>
               <li>
-                <a href="{% url 'terms' %}"
+            <a href="{% url 'terms' %}"
                    class="text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 flex items-center">
                   <i class="fas fa-file-contract mr-2 text-teal-500 w-5 text-center"></i>Terms
-                </a>
+            </a>
               </li>
             </ul>
           </div>
@@ -916,40 +962,40 @@
           <div>
             <h3 class="text-lg font-bold mb-4 text-gray-700 dark:text-gray-200">CONNECT WITH US</h3>
             <div class="flex flex-wrap gap-4">
-              <a href="https://twitter.com/alphaonelabs"
-                 target="_blank"
-                 rel="noopener"
+            <a href="https://twitter.com/alphaonelabs"
+               target="_blank"
+               rel="noopener"
                  class="flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
-                <img src="{% static 'images/x-logo.svg' %}"
-                     alt="X (Twitter) Logo"
+              <img src="{% static 'images/x-logo.svg' %}"
+                   alt="X (Twitter) Logo"
                      class="w-5 h-5"
-                     width="20"
-                     height="20" />
-              </a>
+                   width="20"
+                   height="20" />
+            </a>
               <a href="https://instagram.com/alphaonelabs1"
-                 target="_blank"
-                 rel="noopener"
+               target="_blank"
+               rel="noopener"
                  class="flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
-                <i class="fab fa-instagram text-xl"></i>
-              </a>
-              <a href="https://facebook.com/alphaonelabs"
-                 target="_blank"
-                 rel="noopener"
+              <i class="fab fa-instagram text-xl"></i>
+            </a>
+            <a href="https://facebook.com/alphaonelabs"
+               target="_blank"
+               rel="noopener"
                  class="flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
-                <i class="fab fa-facebook text-xl"></i>
-              </a>
-              <a href="https://youtube.com/alphaonelabs"
-                 target="_blank"
-                 rel="noopener"
+              <i class="fab fa-facebook text-xl"></i>
+            </a>
+            <a href="https://youtube.com/alphaonelabs"
+               target="_blank"
+               rel="noopener"
                  class="flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
-                <i class="fab fa-youtube text-xl"></i>
-              </a>
-              <a href="https://github.com/AlphaOneLabs"
-                 target="_blank"
-                 rel="noopener"
+              <i class="fab fa-youtube text-xl"></i>
+            </a>
+            <a href="https://github.com/AlphaOneLabs"
+               target="_blank"
+               rel="noopener"
                  class="flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
-                <i class="fab fa-github text-xl"></i>
-              </a>
+              <i class="fab fa-github text-xl"></i>
+            </a>
             </div>
             <div class="mt-6">
               <h4 class="font-medium text-sm mb-2 text-gray-700 dark:text-gray-300">SUBSCRIBE TO NEWSLETTER</h4>
@@ -969,8 +1015,8 @@
         <div class="mt-12 pt-8 border-t border-gray-200 dark:border-gray-700">
           <div class="flex flex-col md:flex-row justify-between items-center gap-4">
             <div class="text-sm text-gray-500 dark:text-gray-400">
-              <p>© {% now "Y" %} Alpha One Labs. All rights reserved.</p>
-              <p class="mt-1">Last updated: {{ last_modified|date:"m/d/Y h:ia" }}</p>
+          <p>© {% now "Y" %} Alpha One Labs. All rights reserved.</p>
+          <p class="mt-1">Last updated: {{ last_modified|date:"m/d/Y h:ia" }}</p>
             </div>
             <div class="flex space-x-4 text-sm text-gray-500 dark:text-gray-400">
               <a href="{% url 'about' %}"
