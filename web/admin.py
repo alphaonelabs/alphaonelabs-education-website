@@ -149,14 +149,14 @@ class PointsAdmin(admin.ModelAdmin):
     
     fieldsets = (
         (None, {
-            'fields': ('user', 'challenge', 'amount')
+            'fields': ('user', 'challenge', 'amount'),
         }),
         ('Details', {
-            'fields': ('point_type', 'reason', 'current_streak')
+            'fields': ('point_type', 'reason', 'current_streak'),
         }),
         ('Timestamps', {
             'fields': ('awarded_at', 'updated_at'),
-            'classes': ('collapse',)
+            'classes': ('collapse',),
         }),
     )
 class EmailVerifiedFilter(admin.SimpleListFilter):
