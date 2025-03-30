@@ -27,7 +27,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.core.exceptions import PermissionDenied, ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.core.mail import send_mail
 from django.core.management import call_command
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
@@ -6737,7 +6737,8 @@ def pdf_submission_detail(request: HttpRequest, submission_id: int) -> HttpRespo
         "status_choices": submission.get_status_choices(),
     }
     return render(request, "web/pdf/submission_detail.html", context)
-  
+
+
 @login_required
 def membership_checkout(request, plan_id: int) -> HttpResponse:
     """Display the membership checkout page."""
