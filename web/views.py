@@ -3835,8 +3835,9 @@ def create_meetup(request: HttpRequest) -> HttpResponse:
             meetup.slug = slug
             meetup.save()
             return redirect("meetup_list")
+        else:
             # Add error message when form validation fails
-        messages.error(request, "Please correct the errors below.")
+            messages.error(request, "Please correct the errors below.")
     else:
         form = MeetupForm()
     return render(request, "web/create_meetup.html", {"form": form})
