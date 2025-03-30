@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const menuButton = event.target.closest('[onclick="toggleMobileMenu()"]');
         const menuContent = event.target.closest('.mobile-menu-content');
 
-        if (languageDropdown && !languageButton && !languageDropdown.contains(event.target)) {
+        if (languageDropdown && !languageButton && event.target && !languageDropdown.contains(event.target)) {
             languageDropdown.classList.add('hidden');
         }
 
