@@ -2822,7 +2822,10 @@ class LearningMap(models.Model):
 
 
 class LearningMapNode(models.Model):
-    NODE_TYPES = [
+from typing import ClassVar, List, Tuple
+
+class LearningMapNode(models.Model):
+    NODE_TYPES: ClassVar[List[Tuple[str, str]]] = [
         ("tracker", "Progress Tracker"),
         ("course", "Course"),
         ("milestone", "Custom Milestone"),
