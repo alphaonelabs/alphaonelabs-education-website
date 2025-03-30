@@ -8,6 +8,7 @@ from django.http import HttpResponseRedirect
 from django.urls import path, reverse
 from django.utils.html import format_html
 from rangefilter.filters import NumericRangeFilter
+
 from .models import (
     Achievement,
     Badge,
@@ -35,9 +36,9 @@ from .models import (
     Payment,
     PeerChallenge,
     PeerChallengeInvitation,
+    Points,
     ProductImage,
     Profile,
-    Points,
     ProgressTracker,
     Quiz,
     QuizOption,
@@ -103,29 +104,28 @@ class WaitingRoomAdmin(admin.ModelAdmin):
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
     list_display = (
-        "user", 
-        "is_teacher", 
-        "expertise", 
-        "created_at", 
+        "user",
+        "is_teacher",
+        "expertise",
+        "created_at",
         "updated_at",
     )
     list_filter = (
-        "is_teacher", 
-        "created_at", 
+        "is_teacher",
+        "created_at",
         "updated_at",
     )
     search_fields = (
-        "user__username", 
-        "user__email", 
-        "expertise", 
+        "user__username",
+        "user__email",
+        "expertise",
         "bio",
-
     )
     ordering = ("-created_at",)
     raw_id_fields = ("user",)
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
-        (None, {"fields": ("user", "is_teacher")}),  
+        (None, {"fields": ("user", "is_teacher")}),
         (
             "Profile Information",
             {"fields": ("bio", "expertise", "avatar", "is_profile_public", "how_did_you_hear_about_us")},
@@ -136,33 +136,46 @@ class ProfileAdmin(admin.ModelAdmin):
             {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
         ),
     )
+
+
 # NEW PointsAdmin configuration
 @admin.register(Points)
 class PointsAdmin(admin.ModelAdmin):
-    list_display = ('user', 'amount', 'point_type', 'reason', 'awarded_at')
+    list_display = ("user", "amount", "point_type", "reason", "awarded_at")
     list_filter = (
-        'point_type',
-        'awarded_at',
-        ('amount', NumericRangeFilter),  # Proper range filter
+        "point_type",
+        "awarded_at",
+        ("amount", NumericRangeFilter),  # Proper range filter
     )
-    search_fields = ('user__username', 'reason')
-    raw_id_fields = ('user', 'challenge')
-    readonly_fields = ('awarded_at', 'updated_at')
-    date_hierarchy = 'awarded_at'
-    ordering = ('-awarded_at',)
-    
+    search_fields = ("user__username", "reason")
+    raw_id_fields = ("user", "challenge")
+    readonly_fields = ("awarded_at", "updated_at")
+    date_hierarchy = "awarded_at"
+    ordering = ("-awarded_at",)
+
     fieldsets = (
-        (None, {
-            'fields': ('user', 'challenge', 'amount'),
-        }),
-        ('Details', {
-            'fields': ('point_type', 'reason', 'current_streak'),
-        }),
-        ('Timestamps', {
-            'fields': ('awarded_at', 'updated_at'),
-            'classes': ('collapse',),
-        }),
+        (
+            None,
+            {
+                "fields": ("user", "challenge", "amount"),
+            },
+        ),
+        (
+            "Details",
+            {
+                "fields": ("point_type", "reason", "current_streak"),
+            },
+        ),
+        (
+            "Timestamps",
+            {
+                "fields": ("awarded_at", "updated_at"),
+                "classes": ("collapse",),
+            },
+        ),
     )
+
+
 class EmailVerifiedFilter(admin.SimpleListFilter):
     title = "Email Verification"
     parameter_name = "email_verified"
