@@ -3800,24 +3800,18 @@ def meetup_list(request: HttpRequest) -> HttpResponse:
         from django.db.models import Exists, OuterRef
 
         meetups = meetups.annotate(
-            user_registered=Exists(MeetupRegistration.objects.filter(meetup=OuterRef("pk"), user=request.user))
+            user_registered=Exists(MeetupRegistration.objects.filter(
+                meetup=OuterRef("pk"), user=request.user,
+            ))
         )
     paginator = Paginator(meetups, 10)  # Show 10 meetups per page
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
-    # Check if the user is registered for each meetup
-    user_registered_meetups = []
-    if request.user.is_authenticated:
-        user_registered_meetups = MeetupRegistration.objects.filter(user=request.user).values_list(
-            "meetup_id",
-            flat=True,
-        )
     return render(
         request,
         "web/meetup_list.html",
         {
             "page_obj": page_obj,
-            "user_registered_meetups": user_registered_meetups,
         },
     )
 
