@@ -29,74 +29,134 @@
     <!-- Main Grid Layout -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <!-- Overall Progress -->
-        <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-            <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Overall Progress</h2>
-            
-            <!-- Progress Stats -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-                    <p class="text-3xl font-bold text-teal-300">{{ completed_hours|floatformat:1 }}</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Hours Completed</p>
+        <div class="lg:col-span-2 space-y-8">
+            <!-- Progress Overview -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Overall Progress</h2>
+                    <div class="flex space-x-2">
+                        <button onclick="exportProgress()" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                        </button>
+                        <button onclick="refreshProgress()" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                        </button>
+                    </div>
                 </div>
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-                    <p class="text-3xl font-bold text-teal-300">{{ completed_tasks }}</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Tasks Completed</p>
+                
+                <!-- Progress Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center hover:shadow-md transition duration-200">
+                        <p class="text-3xl font-bold text-teal-300">{{ completed_hours|floatformat:1 }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Hours Completed</p>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center hover:shadow-md transition duration-200">
+                        <p class="text-3xl font-bold text-teal-300">{{ completed_tasks }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Tasks Completed</p>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center hover:shadow-md transition duration-200">
+                        <p class="text-3xl font-bold text-teal-300">{{ study_plans.count }}</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Active Plans</p>
+                    </div>
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center hover:shadow-md transition duration-200">
+                        <p class="text-3xl font-bold text-teal-300">{{ overall_progress|floatformat:1 }}%</p>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Overall Progress</p>
+                    </div>
                 </div>
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-                    <p class="text-3xl font-bold text-teal-300">{{ study_plans.count }}</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Active Plans</p>
-                </div>
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center">
-                    <p class="text-3xl font-bold text-teal-300">{{ overall_progress|floatformat:1 }}%</p>
-                    <p class="text-sm text-gray-600 dark:text-gray-400">Overall Progress</p>
-                </div>
-            </div>
 
-            <!-- Overall Progress Bar -->
-            <div class="mb-6">
-                <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    <span>Overall Progress</span>
-                    <span>{{ overall_progress|floatformat:1 }}%</span>
+                <!-- Overall Progress Bar -->
+                <div class="mb-6">
+                    <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        <span>Overall Progress</span>
+                        <span>{{ overall_progress|floatformat:1 }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                        <div class="bg-teal-300 h-2 rounded-full transition-all duration-500" style="width: {{ overall_progress }}%"></div>
+                    </div>
                 </div>
-                <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
-                    <div class="bg-teal-300 h-2 rounded-full" style="width: {{ overall_progress }}%"></div>
+
+                <!-- Weekly Progress Chart -->
+                <div class="mb-6">
+                    <h3 class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">Weekly Progress</h3>
+                    <div class="h-32 flex items-end space-x-2">
+                        {% for day in weekly_progress %}
+                        <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-t-lg" style="height: {{ day }}%">
+                            <div class="bg-teal-300 w-full rounded-t-lg transition-all duration-500" style="height: {{ day }}%"></div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        <span>Mon</span>
+                        <span>Tue</span>
+                        <span>Wed</span>
+                        <span>Thu</span>
+                        <span>Fri</span>
+                        <span>Sat</span>
+                        <span>Sun</span>
+                    </div>
                 </div>
             </div>
 
             <!-- Subject Progress -->
-            <div class="space-y-4">
-                <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Subject Progress</h3>
-                {% for subject, data in subject_progress.items %}
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <div class="flex justify-between items-center mb-2">
-                        <h4 class="font-medium text-gray-900 dark:text-gray-100">{{ subject }}</h4>
-                        <span class="text-sm text-gray-600 dark:text-gray-400">{{ data.progress|floatformat:1 }}%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mb-2">
-                        <div class="bg-teal-300 h-2 rounded-full" style="width: {{ data.progress }}%"></div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <div>
-                            <p class="font-medium">Hours</p>
-                            <p>{{ data.completed_hours|floatformat:1 }}/{{ data.total_hours|floatformat:1 }} completed</p>
-                        </div>
-                        <div>
-                            <p class="font-medium">Tasks</p>
-                            <p>{{ data.completed_tasks }}/{{ data.total_tasks }} completed</p>
-                        </div>
-                        <div>
-                            <p class="font-medium">Active Plans</p>
-                            <p>{{ data.active_plans }}</p>
-                        </div>
-                        <div>
-                            <p class="font-medium">Upcoming Tasks</p>
-                            <p>{{ data.upcoming_tasks }}</p>
-                        </div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Subject Progress</h2>
+                    <div class="flex space-x-2">
+                        <button onclick="filterSubjects('all')" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 px-3 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">All</button>
+                        <button onclick="filterSubjects('active')" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 px-3 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">Active</button>
+                        <button onclick="filterSubjects('completed')" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 px-3 py-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-sm">Completed</button>
                     </div>
                 </div>
-                {% empty %}
-                <p class="text-center text-gray-600 dark:text-gray-400">No study plans yet. Create your first plan!</p>
-                {% endfor %}
+                <div class="space-y-4">
+                    {% for subject, data in subject_progress.items %}
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:shadow-md transition duration-200">
+                        <div class="flex justify-between items-center mb-2">
+                            <div class="flex items-center space-x-2">
+                                <div class="w-8 h-8 bg-teal-100 dark:bg-teal-900 rounded-full flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-teal-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                                    </svg>
+                                </div>
+                                <h4 class="font-medium text-gray-900 dark:text-gray-100">{{ subject }}</h4>
+                            </div>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">{{ data.progress|floatformat:1 }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2 mb-2">
+                            <div class="bg-teal-300 h-2 rounded-full transition-all duration-500" style="width: {{ data.progress }}%"></div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-400">
+                            <div>
+                                <p class="font-medium">Hours</p>
+                                <p>{{ data.completed_hours|floatformat:1 }}/{{ data.total_hours|floatformat:1 }} completed</p>
+                            </div>
+                            <div>
+                                <p class="font-medium">Tasks</p>
+                                <p>{{ data.completed_tasks }}/{{ data.total_tasks }} completed</p>
+                            </div>
+                            <div>
+                                <p class="font-medium">Active Plans</p>
+                                <p>{{ data.active_plans }}</p>
+                            </div>
+                            <div>
+                                <p class="font-medium">Upcoming Tasks</p>
+                                <p>{{ data.upcoming_tasks }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-8">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <p class="mt-2 text-gray-600 dark:text-gray-400">No study plans yet. Create your first plan!</p>
+                        <a href="{% url 'study_planner' %}" class="mt-4 text-teal-300 hover:text-teal-400">Create a new plan</a>
+                    </div>
+                    {% endfor %}
+                </div>
             </div>
         </div>
 
@@ -104,13 +164,22 @@
         <div class="space-y-8">
             <!-- Recent Activity -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Recent Activity</h2>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Recent Activity</h2>
+                    <button onclick="refreshActivity()" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </button>
+                </div>
                 <div class="space-y-4">
                     {% for activity in recent_activity %}
-                    <div class="flex items-start space-x-3">
+                    <div class="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:shadow-md transition duration-200">
                         <div class="flex-shrink-0">
                             <div class="w-8 h-8 bg-teal-100 dark:bg-teal-900 rounded-full flex items-center justify-center">
-                                <i class="fas fa-check text-teal-300"></i>
+                                <svg class="w-4 h-4 text-teal-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
                             </div>
                         </div>
                         <div>
@@ -126,20 +195,34 @@
                         </div>
                     </div>
                     {% empty %}
-                    <p class="text-center text-gray-600 dark:text-gray-400">No recent activity</p>
+                    <div class="text-center py-4">
+                        <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="mt-2 text-gray-600 dark:text-gray-400">No recent activity</p>
+                    </div>
                     {% endfor %}
                 </div>
             </div>
 
             <!-- Upcoming Tasks -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Upcoming Tasks</h2>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Upcoming Tasks</h2>
+                    <button onclick="refreshTasks()" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                        </svg>
+                    </button>
+                </div>
                 <div class="space-y-4">
                     {% for task in upcoming_tasks %}
-                    <div class="flex items-start space-x-3">
+                    <div class="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:shadow-md transition duration-200">
                         <div class="flex-shrink-0">
                             <div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
-                                <i class="fas fa-clock text-yellow-600 dark:text-yellow-400"></i>
+                                <svg class="w-4 h-4 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
                             </div>
                         </div>
                         <div>
@@ -152,33 +235,189 @@
                             <p class="text-xs text-gray-500 dark:text-gray-500 line-clamp-2">
                                 {{ task.description }}
                             </p>
+                            <div class="mt-2 flex items-center space-x-2">
+                                <button onclick="startTask({{ task.id }})" class="text-teal-300 hover:text-teal-400 text-xs flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Start Task
+                                </button>
+                                <button onclick="scheduleTask({{ task.id }})" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 text-xs flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                    </svg>
+                                    Schedule
+                                </button>
+                            </div>
                         </div>
                     </div>
                     {% empty %}
-                    <p class="text-center text-gray-600 dark:text-gray-400">No upcoming tasks</p>
+                    <div class="text-center py-4">
+                        <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <p class="mt-2 text-gray-600 dark:text-gray-400">No upcoming tasks</p>
+                    </div>
                     {% endfor %}
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 flex flex-col items-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-300 mb-4"></div>
+        <p class="text-gray-700 dark:text-gray-300">Loading...</p>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
-    function startTopic(topicId) {
-        // Implement topic start functionality
-        alert('Topic start functionality coming soon!');
+    function refreshProgress() {
+        document.getElementById('loading-overlay').classList.remove('hidden');
+        window.location.reload();
     }
 
-    // Add any additional JavaScript functionality here
+    function refreshActivity() {
+        document.getElementById('loading-overlay').classList.remove('hidden');
+        fetch('/ai/api/recent-activity/')
+            .then(response => response.json())
+            .then(data => {
+                // Update activity section
+                const activityContainer = document.querySelector('.space-y-4');
+                if (data.length === 0) {
+                    activityContainer.innerHTML = `
+                        <div class="text-center py-4">
+                            <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            <p class="mt-2 text-gray-600 dark:text-gray-400">No recent activity</p>
+                        </div>
+                    `;
+                } else {
+                    activityContainer.innerHTML = data.map(activity => `
+                        <div class="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:shadow-md transition duration-200">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-teal-100 dark:bg-teal-900 rounded-full flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-teal-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-900 dark:text-gray-100">
+                                    Completed task: <span class="font-medium">${activity.title}</span>
+                                </p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">
+                                    ${activity.plan_title} • ${activity.subject} • ${activity.hours} hours
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-500">
+                                    ${new Date(activity.date).toLocaleString()}
+                                </p>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            })
+            .catch(error => console.error('Error refreshing activity:', error))
+            .finally(() => {
+                document.getElementById('loading-overlay').classList.add('hidden');
+            });
+    }
+
+    function refreshTasks() {
+        document.getElementById('loading-overlay').classList.remove('hidden');
+        fetch('/ai/api/upcoming-tasks/')
+            .then(response => response.json())
+            .then(data => {
+                // Update tasks section
+                const tasksContainer = document.querySelector('.space-y-4');
+                if (data.length === 0) {
+                    tasksContainer.innerHTML = `
+                        <div class="text-center py-4">
+                            <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            <p class="mt-2 text-gray-600 dark:text-gray-400">No upcoming tasks</p>
+                        </div>
+                    `;
+                } else {
+                    tasksContainer.innerHTML = data.map(task => `
+                        <div class="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:shadow-md transition duration-200">
+                            <div class="flex-shrink-0">
+                                <div class="w-8 h-8 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
+                                    <svg class="w-4 h-4 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-900 dark:text-gray-100">
+                                    <span class="font-medium">${task.title}</span>
+                                </p>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">
+                                    ${task.plan_title} • ${task.subject} • ${task.hours} hours
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-500 line-clamp-2">
+                                    ${task.description}
+                                </p>
+                                <div class="mt-2 flex items-center space-x-2">
+                                    <button onclick="startTask(${task.id})" class="text-teal-300 hover:text-teal-400 text-xs flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        Start Task
+                                    </button>
+                                    <button onclick="scheduleTask(${task.id})" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 text-xs flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                        </svg>
+                                        Schedule
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            })
+            .catch(error => console.error('Error refreshing tasks:', error))
+            .finally(() => {
+                document.getElementById('loading-overlay').classList.add('hidden');
+            });
+    }
+
+    function filterSubjects(filter) {
+        const subjects = document.querySelectorAll('.bg-gray-50.dark\\:bg-gray-700');
+        subjects.forEach(subject => {
+            const progress = parseFloat(subject.querySelector('.text-sm.text-gray-600').textContent);
+            if (filter === 'all' || 
+                (filter === 'active' && progress < 100) || 
+                (filter === 'completed' && progress === 100)) {
+                subject.style.display = 'block';
+            } else {
+                subject.style.display = 'none';
+            }
+        });
+    }
+
+    function startTask(taskId) {
+        window.location.href = `/ai/study-task/${taskId}/start/`;
+    }
+
+    function scheduleTask(taskId) {
+        // Implement task scheduling functionality
+        alert('Task scheduling functionality coming soon!');
+    }
+
+    function exportProgress() {
+        // Implement progress export functionality
+        alert('Progress export functionality coming soon!');
+    }
 </script>
-
-<style>
-    .progress-ring {
-        transform: rotate(-90deg);
-        transform-origin: 50% 50%;
-        transition: stroke-dasharray 0.5s ease-in-out;
-    }
-</style>
 {% endblock %} 
