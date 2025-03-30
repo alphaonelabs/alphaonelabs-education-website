@@ -6841,7 +6841,7 @@ def membership_cancel(request):
 
 
 @login_required
-def cancel_subscription(request):
+def cancel_subscription_view(request):
     """Cancel the user's subscription."""
     if request.method != "POST":
         return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
@@ -6858,7 +6858,7 @@ def cancel_subscription(request):
 
 
 @login_required
-def reactivate_subscription(request):
+def reactivate_subscription_view(request):
     """Reactivate a cancelled subscription."""
     if request.method != "POST":
         return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
@@ -7064,53 +7064,6 @@ def checkout_membership(request, plan_slug, billing_period):
     return render(request, "membership/checkout.html", context)
 
 
-@login_required
-def create_membership_subscription(request):
-    """Create a new membership subscription."""
-    if request.method != "POST":
-        return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
-
-    try:
-        data = json.loads(request.body)
-        plan_id = data.get("plan_id")
-        payment_method_id = data.get("payment_method_id")
-        billing_period = data.get("billing_period", "monthly")
-
-        if not plan_id or not payment_method_id:
-            return JsonResponse({"success": False, "error": "Missing required fields"}, status=400)
-
-        # Create subscription
-        result = create_subscription(
-            user=request.user, plan_id=plan_id, payment_method_id=payment_method_id, billing_period=billing_period
-        )
-
-        return JsonResponse(result)
-
-    except json.JSONDecodeError:
-        return JsonResponse({"success": False, "error": "Invalid JSON data"}, status=400)
-    except Exception as e:
-        logger.error(f"Error creating subscription: {str(e)}")
-        return JsonResponse({"success": False, "error": "An unexpected error occurred"}, status=500)
-
-
-@login_required
-def membership_success(request):
-    """Display the success page after subscription."""
-    # Check if user has a membership
-    if not hasattr(request.user, "membership"):
-        messages.info(request, "You do not have an active membership.")
-        return redirect("membership_plans")
-
-    membership = request.user.membership
-
-    context = {
-        "membership": membership,
-    }
-
-    return render(request, "membership/success.html", context)
-
-
-@login_required
 def change_membership_plan(request):
     """Redirect to membership plans page for changing plans."""
     return redirect("membership_plans")
