@@ -5301,8 +5301,16 @@ def send_nft_badge(request, achievement_id):
                 return redirect("achievement_detail", achievement_id=achievement_id)
             else:
                 messages.error(request, "Failed to mint NFT badge. Please try again later.")
+        except ImportError:
+            messages.error(request, "NFT service module not available. Please contact technical support.")
+        except ValueError as e:
+            messages.error(request, f"Invalid data format: {str(e)}")
+        except ConnectionError:
+            messages.error(request, "Failed to connect to blockchain network. Please try again later.")
         except Exception as e:
             messages.error(request, f"Error minting NFT badge: {str(e)}")
+            # Log unexpected errors for debugging
+            logger.exception(f"Unexpected error during NFT minting: {achievement_id}, {wallet_address}")
 
         return render(
             request, "achievements/send_nft_badge.html", {"achievement": achievement, "student_wallet": student_wallet}

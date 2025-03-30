@@ -18,11 +18,6 @@ if os.path.exists(env_file):
 else:
     print("No .env file found.")
 
-# serve media files only in dev.
-
-MEDIA_URL = "/media/"  # URL prefix for accessing media files
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")  # Actual directory where files are stored
-
 
 if "test" in sys.argv:
     TESTING = True
@@ -224,7 +219,7 @@ SITE_DOMAIN = "alphaonelabs.com"
 # Allauth settings
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False  # Since we're using email authentication
-ACCOUNT_EMAIL_VERIFICATION = "optional"  # Require email verification
+ACCOUNT_EMAIL_VERIFICATION = "mandatory"  # Require email verification
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_PREVENT_ENUMERATION = True  # Prevent user enumeration
