@@ -166,16 +166,40 @@
           // Form validation before submission
           document.querySelector('form').addEventListener('submit', function(event) {
               const nodeType = nodeTypeSelect.value;
-
+    
+              // Clear previous validation messages
+              const errorMsgs = document.querySelectorAll('.validation-error');
+              errorMsgs.forEach(msg => msg.remove());
+    
+              let isValid = true;
+    
               if (nodeType === 'tracker' && document.getElementById('tracker_id').value === '') {
                   event.preventDefault();
-                  alert('Please select a progress tracker');
+                  isValid = false;
+                  const errorMsg = document.createElement('p');
+                  errorMsg.className = 'validation-error text-red-500 text-sm mt-1';
+                  errorMsg.textContent = 'Please select a progress tracker';
+                  document.getElementById('tracker_id').parentNode.appendChild(errorMsg);
               } else if (nodeType === 'course' && document.getElementById('enrollment_id').value === '') {
                   event.preventDefault();
-                  alert('Please select a course');
+                  isValid = false;
+                  const errorMsg = document.createElement('p');
+                  errorMsg.className = 'validation-error text-red-500 text-sm mt-1';
+                  errorMsg.textContent = 'Please select a course';
+                  document.getElementById('enrollment_id').parentNode.appendChild(errorMsg);
               } else if (nodeType === 'milestone' && titleInput.value.trim() === '') {
                   event.preventDefault();
-                  alert('Please provide a title for your milestone');
+                  isValid = false;
+                  const errorMsg = document.createElement('p');
+                  errorMsg.className = 'validation-error text-red-500 text-sm mt-1';
+                  errorMsg.textContent = 'Please provide a title for your milestone';
+                  titleInput.parentNode.appendChild(errorMsg);
+              }
+    
+              // Focus the first invalid field
+              if (!isValid) {
+                  const firstErrorField = document.querySelector('.validation-error').previousElementSibling;
+                  if (firstErrorField) firstErrorField.focus();
               }
           });
       });
