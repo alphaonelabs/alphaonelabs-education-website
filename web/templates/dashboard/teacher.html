@@ -3,7 +3,6 @@
 {% block title %}
   Teacher Dashboard - {{ user.get_full_name|default:user.username }}
 {% endblock title %}
-
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <!-- Header with gradient background -->
@@ -21,7 +20,6 @@
         </a>
       </div>
     </div>
-
     <!-- Overview Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
       <!-- Total Courses -->
@@ -29,40 +27,43 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Courses</p>
-            <h3 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">{{ courses.count }}</h3>
+            <h3 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-purple-600">
+              {{ courses.count }}
+            </h3>
           </div>
           <div class="bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full p-3 shadow-lg transform transition-all duration-500 hover:rotate-12">
             <i class="fas fa-book text-white text-xl"></i>
           </div>
         </div>
       </div>
-
       <!-- Total Students -->
       <div class="bg-gradient-to-br from-white to-orange-50 dark:from-gray-800 dark:to-orange-900 rounded-xl shadow-lg p-6 border border-orange-100 dark:border-orange-700 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Students</p>
-            <h3 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-pink-600">{{ total_students|default:"0" }}</h3>
+            <h3 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-pink-600">
+              {{ total_students|default:"0" }}
+            </h3>
           </div>
           <div class="bg-gradient-to-r from-orange-400 to-orange-600 rounded-full p-3 shadow-lg transform transition-all duration-500 hover:rotate-12">
             <i class="fas fa-users text-white text-xl"></i>
           </div>
         </div>
       </div>
-
       <!-- Total Earnings -->
       <div class="bg-gradient-to-br from-white to-green-50 dark:from-gray-800 dark:to-green-900 rounded-xl shadow-lg p-6 border border-green-100 dark:border-green-700 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
         <div class="flex items-center justify-between">
           <div>
             <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Total Earnings</p>
-            <h3 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-teal-600">${{ total_earnings|default:"0.00" }}</h3>
+            <h3 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-teal-600">
+              ${{ total_earnings|default:"0.00" }}
+            </h3>
           </div>
           <div class="bg-gradient-to-r from-green-400 to-green-600 rounded-full p-3 shadow-lg transform transition-all duration-500 hover:rotate-12">
             <i class="fas fa-dollar-sign text-white text-xl"></i>
           </div>
         </div>
       </div>
-
       <!-- Average Completion Rate -->
       <div class="bg-gradient-to-br from-white to-blue-50 dark:from-gray-800 dark:to-blue-900 rounded-xl shadow-lg p-6 border border-blue-100 dark:border-blue-700 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
         <div class="flex items-center justify-between">
@@ -90,7 +91,6 @@
         </div>
       </div>
     </div>
-
     <!-- Award Achievements Button -->
     <div class="flex justify-center mb-8">
       <a href="{% url 'award_achievement' %}"
@@ -98,7 +98,6 @@
         <i class="fas fa-award text-xl mr-3 animate-pulse"></i> Award Achievement to Students
       </a>
     </div>
-
     <!-- Rest of the content continues below -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <!-- Course List -->
@@ -180,7 +179,6 @@
           </div>
         </div>
       </div>
-
       <!-- Upcoming Sessions -->
       <div>
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden border border-gray-100 dark:border-gray-700 transform transition-all duration-300 hover:shadow-xl">
@@ -222,7 +220,8 @@
                   <i class="fas fa-calendar-alt text-xl"></i>
                 </div>
                 <p class="text-gray-500 dark:text-gray-400">No upcoming sessions scheduled.</p>
-                <a href="#" class="inline-block mt-3 text-orange-500 hover:text-orange-600 dark:text-orange-400 font-medium">
+                <a href="#"
+                   class="inline-block mt-3 text-orange-500 hover:text-orange-600 dark:text-orange-400 font-medium">
                   <i class="fas fa-plus-circle mr-1"></i> Schedule a Session
                 </a>
               </div>
@@ -249,20 +248,22 @@
           {% endif %}
         </div>
       </div>
-
       {% if subscription %}
         <div class="p-6">
           <div class="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/30 dark:to-indigo-900/30 rounded-xl p-6 mb-6 border border-purple-100 dark:border-purple-800 shadow-inner transform transition-all duration-300">
             <div class="flex flex-col sm:flex-row items-start">
               <div class="mr-6 mb-4 sm:mb-0 relative">
-                <div class="absolute inset-0 bg-gradient-to-r from-purple-400 to-indigo-500 rounded-full opacity-25 animate-ping"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-purple-400 to-indigo-500 rounded-full opacity-25 animate-ping">
+                </div>
                 <div class="relative w-16 h-16 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center shadow-lg">
                   <i class="fas fa-crown text-yellow-300 text-2xl animate-pulse"></i>
                 </div>
               </div>
               <div>
                 <div class="flex items-center mb-3">
-                  <h3 class="font-bold text-2xl bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400">{{ subscription.plan.name }}</h3>
+                  <h3 class="font-bold text-2xl bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-indigo-600 dark:from-purple-400 dark:to-indigo-400">
+                    {{ subscription.plan.name }}
+                  </h3>
                   <span class="ml-3 px-3 py-1 bg-gradient-to-r from-purple-100 to-indigo-100 dark:from-purple-900 dark:to-indigo-900 text-purple-800 dark:text-purple-300 text-xs font-semibold rounded-full">Premium</span>
                 </div>
                 <p class="text-gray-600 dark:text-indigo-300 flex items-center mb-4">
@@ -301,7 +302,6 @@
                     {% endif %}
                   </div>
                 </div>
-
                 <!-- Premium features summary -->
                 <div class="mt-4 grid grid-cols-2 gap-3">
                   <div class="flex items-center">
@@ -324,7 +324,6 @@
               </div>
             </div>
           </div>
-
           <div class="flex flex-wrap gap-3">
             <a href="{% url 'manage_membership' %}"
                class="inline-flex items-center bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white px-5 py-2 rounded-lg text-sm font-medium shadow transform transition-all duration-300 hover:scale-105 hover:shadow-lg">
@@ -348,22 +347,23 @@
           <div class="relative overflow-hidden bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-xl p-6 border border-indigo-100 dark:border-indigo-800 shadow-inner">
             <!-- Animated background pattern -->
             <div class="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-              <div class="absolute top-10 left-10 w-40 h-40 bg-indigo-300 opacity-10 rounded-full filter blur-3xl animate-pulse"></div>
-              <div class="absolute bottom-10 right-10 w-60 h-60 bg-purple-300 opacity-10 rounded-full filter blur-3xl animate-pulse" style="animation-delay: 1s;"></div>
+              <div class="absolute top-10 left-10 w-40 h-40 bg-indigo-300 opacity-10 rounded-full filter blur-3xl animate-pulse">
+              </div>
+              <div class="absolute bottom-10 right-10 w-60 h-60 bg-purple-300 opacity-10 rounded-full filter blur-3xl animate-pulse"
+                   style="animation-delay: 1s"></div>
             </div>
-
             <div class="relative">
               <div class="flex items-center mb-6">
                 <div class="bg-gradient-to-r from-indigo-500 to-purple-500 p-4 rounded-xl shadow-lg mr-4">
                   <i class="fas fa-rocket text-white text-2xl"></i>
                 </div>
-                <h3 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">Unlock Premium Teaching Tools</h3>
+                <h3 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
+                  Unlock Premium Teaching Tools
+                </h3>
               </div>
-
               <p class="text-gray-700 dark:text-gray-300 text-lg mb-6">
                 Upgrade to a premium teacher membership to unlock advanced features and increase your teaching potential.
               </p>
-
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
                 <div class="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-md border border-indigo-100 dark:border-indigo-800 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
                   <div class="flex items-center mb-3">
@@ -372,9 +372,10 @@
                     </span>
                     <h3 class="font-semibold text-indigo-700 dark:text-indigo-300">Unlimited Courses</h3>
                   </div>
-                  <p class="text-gray-600 dark:text-gray-300 text-sm">Create and manage an unlimited number of courses with premium features.</p>
+                  <p class="text-gray-600 dark:text-gray-300 text-sm">
+                    Create and manage an unlimited number of courses with premium features.
+                  </p>
                 </div>
-
                 <div class="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-md border border-purple-100 dark:border-purple-800 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
                   <div class="flex items-center mb-3">
                     <span class="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-purple-100 to-purple-200 dark:from-purple-800 dark:to-purple-700 text-purple-600 dark:text-purple-300 mr-3 shadow group-hover:scale-110 transition-transform duration-300">
@@ -382,9 +383,10 @@
                     </span>
                     <h3 class="font-semibold text-purple-700 dark:text-purple-300">Advanced Analytics</h3>
                   </div>
-                  <p class="text-gray-600 dark:text-gray-300 text-sm">Gain insights with detailed student engagement and revenue reporting tools.</p>
+                  <p class="text-gray-600 dark:text-gray-300 text-sm">
+                    Gain insights with detailed student engagement and revenue reporting tools.
+                  </p>
                 </div>
-
                 <div class="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-md border border-blue-100 dark:border-blue-800 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
                   <div class="flex items-center mb-3">
                     <span class="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-blue-100 to-blue-200 dark:from-blue-800 dark:to-blue-700 text-blue-600 dark:text-blue-300 mr-3 shadow group-hover:scale-110 transition-transform duration-300">
@@ -392,9 +394,10 @@
                     </span>
                     <h3 class="font-semibold text-blue-700 dark:text-blue-300">Search Priority</h3>
                   </div>
-                  <p class="text-gray-600 dark:text-gray-300 text-sm">Your courses will rank higher in search results, increasing visibility to students.</p>
+                  <p class="text-gray-600 dark:text-gray-300 text-sm">
+                    Your courses will rank higher in search results, increasing visibility to students.
+                  </p>
                 </div>
-
                 <div class="bg-white dark:bg-gray-700 rounded-xl p-4 shadow-md border border-green-100 dark:border-green-800 transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg group">
                   <div class="flex items-center mb-3">
                     <span class="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-r from-green-100 to-green-200 dark:from-green-800 dark:to-green-700 text-green-600 dark:text-green-300 mr-3 shadow group-hover:scale-110 transition-transform duration-300">
@@ -402,11 +405,12 @@
                     </span>
                     <h3 class="font-semibold text-green-700 dark:text-green-300">Lower Fees</h3>
                   </div>
-                  <p class="text-gray-600 dark:text-gray-300 text-sm">Enjoy reduced platform fees on all course sales, increasing your earnings.</p>
+                  <p class="text-gray-600 dark:text-gray-300 text-sm">
+                    Enjoy reduced platform fees on all course sales, increasing your earnings.
+                  </p>
                 </div>
               </div>
             </div>
-
             <div class="mt-8 flex justify-center">
               <a href="{% url 'membership_plans' %}"
                  class="inline-flex items-center bg-gradient-to-r from-indigo-500 via-purple-500 to-violet-500 hover:from-indigo-600 hover:via-purple-600 hover:to-violet-600 text-white font-medium px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
@@ -429,7 +433,6 @@
           </h2>
           <p class="text-teal-100 mt-2">Manage your digital storefront, products, and sales analytics</p>
         </div>
-
         <div class="p-6">
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <!-- Add New Product -->
@@ -441,7 +444,6 @@
               <h3 class="font-bold text-teal-700 dark:text-teal-300 mb-1">New Product</h3>
               <p class="text-sm text-gray-600 dark:text-gray-400">Add a new product to your store</p>
             </a>
-
             <!-- Product Management -->
             <a href="{% url 'goods_list' %}"
                class="flex flex-col items-center bg-gradient-to-br from-white to-emerald-50 dark:from-gray-800 dark:to-emerald-900/20 rounded-xl p-5 border border-emerald-100 dark:border-emerald-800 shadow-md hover:shadow-lg transform transition-all duration-300 hover:-translate-y-1 text-center">
@@ -451,7 +453,6 @@
               <h3 class="font-bold text-emerald-700 dark:text-emerald-300 mb-1">Manage Products</h3>
               <p class="text-sm text-gray-600 dark:text-gray-400">Edit and manage existing products</p>
             </a>
-
             <!-- Order Management -->
             <a href="{% url 'store_order_management' store_slug=storefront.store_slug %}"
                class="flex flex-col items-center bg-gradient-to-br from-white to-orange-50 dark:from-gray-800 dark:to-orange-900/20 rounded-xl p-5 border border-orange-100 dark:border-orange-800 shadow-md hover:shadow-lg transform transition-all duration-300 hover:-translate-y-1 text-center">
@@ -461,7 +462,6 @@
               <h3 class="font-bold text-orange-700 dark:text-orange-300 mb-1">View Orders</h3>
               <p class="text-sm text-gray-600 dark:text-gray-400">Manage customer orders</p>
             </a>
-
             <!-- Analytics -->
             <a href="{% url 'store_analytics' store_slug=storefront.store_slug %}"
                class="flex flex-col items-center bg-gradient-to-br from-white to-blue-50 dark:from-gray-800 dark:to-blue-900/20 rounded-xl p-5 border border-blue-100 dark:border-blue-800 shadow-md hover:shadow-lg transform transition-all duration-300 hover:-translate-y-1 text-center">
@@ -471,7 +471,6 @@
               <h3 class="font-bold text-blue-700 dark:text-blue-300 mb-1">Sales Analytics</h3>
               <p class="text-sm text-gray-600 dark:text-gray-400">View detailed sales reports</p>
             </a>
-
             <!-- Storefront Settings -->
             <a href="{% url 'storefront_update' store_slug=storefront.store_slug %}"
                class="flex flex-col items-center bg-gradient-to-br from-white to-purple-50 dark:from-gray-800 dark:to-purple-900/20 rounded-xl p-5 border border-purple-100 dark:border-purple-800 shadow-md hover:shadow-lg transform transition-all duration-300 hover:-translate-y-1 text-center">
@@ -481,7 +480,6 @@
               <h3 class="font-bold text-purple-700 dark:text-purple-300 mb-1">Store Settings</h3>
               <p class="text-sm text-gray-600 dark:text-gray-400">Customize your storefront</p>
             </a>
-
             <!-- Preview Store -->
             <a href="{% url 'storefront_detail' store_slug=storefront.store_slug %}"
                class="flex flex-col items-center bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-700/20 rounded-xl p-5 border border-gray-100 dark:border-gray-700 shadow-md hover:shadow-lg transform transition-all duration-300 hover:-translate-y-1 text-center">
@@ -504,7 +502,6 @@
             Create Your Storefront
           </h2>
         </div>
-
         <div class="p-8 text-center">
           <div class="mb-6 inline-block">
             <div class="w-24 h-24 mx-auto bg-gradient-to-r from-teal-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg mb-4">
@@ -512,11 +509,9 @@
             </div>
             <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-3">Start Selling Merchandise</h3>
           </div>
-
           <p class="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto mb-8">
             Create your own digital storefront to sell merchandise, downloads, and other products to your students and audience.
           </p>
-
           <a href="{% url 'storefront_create' %}"
              class="inline-flex items-center bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-600 hover:to-emerald-600 text-white font-medium px-6 py-3 rounded-lg shadow-lg transform transition-all duration-300 hover:scale-105 hover:shadow-xl">
             <i class="fas fa-plus-circle mr-2"></i> Create Storefront
@@ -525,45 +520,50 @@
       </div>
     {% endif %}
   </div>
-
   <!-- Add animations script -->
   <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Animate cards on scroll
-      const cards = document.querySelectorAll('.bg-white, .bg-gradient-to-br');
+      document.addEventListener('DOMContentLoaded', function() {
+          // Animate cards on scroll
+          const cards = document.querySelectorAll('.bg-white, .bg-gradient-to-br');
 
-      const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-      };
+          const observerOptions = {
+              threshold: 0.1,
+              rootMargin: '0px 0px -50px 0px'
+          };
 
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            setTimeout(() => {
-              entry.target.classList.add('motion-safe:animate-fadeIn');
-              entry.target.style.opacity = 1;
-            }, 100);
-            observer.unobserve(entry.target);
-          }
-        });
-      }, observerOptions);
+          const observer = new IntersectionObserver((entries) => {
+              entries.forEach(entry => {
+                  if (entry.isIntersecting) {
+                      setTimeout(() => {
+                          entry.target.classList.add('motion-safe:animate-fadeIn');
+                          entry.target.style.opacity = 1;
+                      }, 100);
+                      observer.unobserve(entry.target);
+                  }
+              });
+          }, observerOptions);
 
-      cards.forEach((card, index) => {
-        card.style.opacity = 0;
-        observer.observe(card);
+          cards.forEach((card, index) => {
+              card.style.opacity = 0;
+              observer.observe(card);
+          });
       });
-    });
   </script>
-
   <style>
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+      @keyframes fadeIn {
+          from {
+              opacity: 0;
+              transform: translateY(10px);
+          }
 
-    .motion-safe\:animate-fadeIn {
-      animation: fadeIn 0.6s ease-out forwards;
-    }
+          to {
+              opacity: 1;
+              transform: translateY(0);
+          }
+      }
+
+      .motion-safe\:animate-fadeIn {
+          animation: fadeIn 0.6s ease-out forwards;
+      }
   </style>
 {% endblock content %}
