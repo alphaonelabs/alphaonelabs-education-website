@@ -5268,6 +5268,8 @@ def send_nft_badge(request, achievement_id):
 
     if request.method == "POST":
         wallet_address = request.POST.get("wallet_address", student_wallet)
+        contract_address = request.POST.get("contract_address", "")
+        admin_private_key = request.POST.get("private_key", "")
         icon_url = request.POST.get("icon_url")  # Retrieve icon URL from form
 
         if not wallet_address:
@@ -5292,7 +5294,7 @@ def send_nft_badge(request, achievement_id):
             achievement.save()
 
             # Pass achievement ID, wallet address, and icon URL to NFT minting service
-            nft_badge = mint_nft_badge(achievement_id, wallet_address)
+            nft_badge = mint_nft_badge(achievement_id, wallet_address, contract_address, admin_private_key)
 
             if nft_badge:
                 messages.success(request, f"NFT badge successfully minted and sent to {wallet_address}!")

@@ -20,6 +20,7 @@
     <form method="post"
           class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6">
       {% csrf_token %}
+      <!-- Student's Wallet Address -->
       <div class="mb-4">
         <label for="wallet_address"
                class="block text-gray-800 dark:text-gray-300 font-semibold mb-2">Student's Wallet Address:</label>
@@ -34,6 +35,30 @@
           This is the Ethereum wallet address where the NFT badge will be sent.
         </small>
       </div>
+      <!-- NFT Contract Address -->
+      <div class="mb-4">
+        <label for="contract_address"
+               class="block text-gray-800 dark:text-gray-300 font-semibold mb-2">NFT Contract Address:</label>
+        <input type="text"
+               name="contract_address"
+               id="contract_address"
+               required
+               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+               placeholder="Enter the NFT contract address" />
+        <small class="text-gray-500 dark:text-gray-400">The smart contract address where the NFT will be minted.</small>
+      </div>
+      <!-- Teacher's Private Key -->
+      <div class="mb-4">
+        <label for="private_key"
+               class="block text-gray-800 dark:text-gray-300 font-semibold mb-2">Teacher's Private Key:</label>
+        <input type="password"
+               name="private_key"
+               id="private_key"
+               required
+               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 dark:bg-gray-700 dark:text-white"
+               placeholder="Enter your private key securely" />
+        <small class="text-red-500 dark:text-red-400">Ensure your private key is **not shared** or saved in the system.</small>
+      </div>
       <!-- Hidden field for icon URL -->
       <input type="hidden" name="icon_url" id="icon_url" />
       <button type="submit"
@@ -45,7 +70,7 @@
   <script>
       document.addEventListener("DOMContentLoaded", function() {
           const walletInput = document.getElementById("wallet_address");
-          if (!walletInput.value) { // Only set if it's empty
+          if (!walletInput.value) {
               walletInput.value = "{{ student_wallet|default:'' }}";
           }
       });

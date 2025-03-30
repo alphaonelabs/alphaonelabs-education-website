@@ -28,10 +28,6 @@ urlpatterns = [
     path("captcha/", include("captcha.urls")),  # CAPTCHA URLs should not be language-prefixed
 ]
 
-if settings.DEBUG:
-    urlpatterns.append(path("__reload__/", include("django_browser_reload.urls")))  # Browser reload URLs
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)  # Add this line
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  # Add this line
 
 # Language-prefixed URLs
 urlpatterns += i18n_patterns(
@@ -436,6 +432,11 @@ urlpatterns += i18n_patterns(
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
     prefix_default_language=True,
 )
+
+if settings.DEBUG:
+    urlpatterns.append(path("__reload__/", include("django_browser_reload.urls")))  # Browser reload URLs
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)  # Add this line
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  # Add this line
 
 handler404 = "web.views.custom_404"
 handler500 = "web.views.custom_500"
