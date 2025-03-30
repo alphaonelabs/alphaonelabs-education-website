@@ -129,6 +129,91 @@
       </div>
     </div>
     <!-- Additional Sections (Learning Streak, Achievements, Certificates) -->
+    <!-- Membership Section -->
+    <div class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+      <div class="flex justify-between items-center">
+        <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Your Membership</h2>
+        {% if not subscription %}
+          <a href="{% url 'membership_plans' %}"
+             class="bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded-lg flex items-center">
+            <i class="fas fa-crown mr-2"></i> Upgrade to Premium
+          </a>
+        {% endif %}
+      </div>
+      {% if subscription %}
+        <div class="bg-teal-50 dark:bg-teal-900 rounded-lg p-4 mb-4">
+          <div class="flex items-start">
+            <div class="mr-4">
+              <i class="fas fa-crown text-teal-500 dark:text-teal-300 text-3xl"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-teal-700 dark:text-teal-300">{{ subscription.plan.name }}</h3>
+              <p class="text-sm text-gray-600 dark:text-teal-400">
+                {% if subscription.plan.billing_period == 'monthly' %}
+                  Monthly Plan - ${{ subscription.plan.monthly_price }}/month
+                {% else %}
+                  Annual Plan - ${{ subscription.plan.yearly_price }}/year
+                {% endif %}
+              </p>
+              <p class="text-sm text-gray-600 dark:text-teal-400 mt-1">
+                {% if subscription.status == 'active' %}
+                  <span class="inline-block bg-green-100 dark:bg-green-700 text-green-700 dark:text-green-200 px-2 py-1 rounded-full text-xs font-semibold">
+                    Active
+                  </span>
+                {% elif subscription.status == 'canceled' %}
+                  <span class="inline-block bg-orange-100 dark:bg-orange-700 text-orange-700 dark:text-orange-200 px-2 py-1 rounded-full text-xs font-semibold">
+                    Canceled
+                  </span>
+                  <span class="text-xs ml-2">Access until {{ subscription.ends_at|date:"F d, Y" }}</span>
+                {% else %}
+                  <span class="inline-block bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-2 py-1 rounded-full text-xs font-semibold">
+                    {{ subscription.status|title }}
+                  </span>
+                {% endif %}
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="flex space-x-3">
+          <a href="{% url 'manage_membership' %}"
+             class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm flex items-center">
+            <i class="fas fa-cog mr-2"></i> Manage Subscription
+          </a>
+          {% if subscription.status == 'active' %}
+            <a href="{% url 'change_membership_plan' %}"
+               class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg text-sm flex items-center">
+              <i class="fas fa-exchange-alt mr-2"></i> Change Plan
+            </a>
+          {% elif subscription.status == 'canceled' %}
+            <a href="{% url 'reactivate_subscription' %}"
+               class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm flex items-center">
+              <i class="fas fa-redo mr-2"></i> Reactivate
+            </a>
+          {% endif %}
+        </div>
+      {% else %}
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+          <p class="text-gray-700 dark:text-gray-300">
+            Get unlimited access to premium features and content with our membership plans.
+          </p>
+          <ul class="mt-2 space-y-1 text-sm text-gray-600 dark:text-gray-400">
+            <li class="flex items-center">
+              <i class="fas fa-check text-green-500 mr-2"></i> Unlimited course access
+            </li>
+            <li class="flex items-center">
+              <i class="fas fa-check text-green-500 mr-2"></i> Exclusive tutorials and resources
+            </li>
+            <li class="flex items-center">
+              <i class="fas fa-check text-green-500 mr-2"></i> Priority support
+            </li>
+            <li class="flex items-center">
+              <i class="fas fa-check text-green-500 mr-2"></i> No ads experience
+            </li>
+          </ul>
+        </div>
+      {% endif %}
+    </div>
+    <!-- Learning Streak Section -->
     <div class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow p-6">
       <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">Your Learning Streak</h2>
       {% if streak %}

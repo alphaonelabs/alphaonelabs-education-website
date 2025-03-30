@@ -152,6 +152,7 @@ from .models import (
     TeamInvite,
     TimeSlot,
     UserBadge,
+    UserMembership,
     WaitingRoom,
     WebRequest,
 )
@@ -2189,6 +2190,13 @@ def student_dashboard(request):
     # Query achievements for the user.
     achievements = Achievement.objects.filter(student=request.user).order_by("-awarded_at")
 
+    # Get user's membership subscription
+    subscription = None
+    try:
+        subscription = UserMembership.objects.get(user=request.user)
+    except UserMembership.DoesNotExist:
+        pass
+
     context = {
         "enrollments": enrollments,
         "upcoming_sessions": upcoming_sessions,
@@ -2196,6 +2204,7 @@ def student_dashboard(request):
         "avg_progress": avg_progress,
         "streak": streak,
         "achievements": achievements,
+        "subscription": subscription,
     }
     return render(request, "dashboard/student.html", context)
 
@@ -2236,6 +2245,13 @@ def teacher_dashboard(request):
     # Get the teacher's storefront if it exists
     storefront = Storefront.objects.filter(teacher=request.user).first()
 
+    # Get user's membership subscription
+    subscription = None
+    try:
+        subscription = UserMembership.objects.get(user=request.user)
+    except UserMembership.DoesNotExist:
+        pass
+
     context = {
         "courses": courses,
         "upcoming_sessions": upcoming_sessions,
@@ -2244,6 +2260,7 @@ def teacher_dashboard(request):
         "completion_rate": (total_completed / total_students * 100) if total_students > 0 else 0,
         "total_earnings": round(total_earnings, 2),
         "storefront": storefront,
+        "subscription": subscription,
     }
     return render(request, "dashboard/teacher.html", context)
 
