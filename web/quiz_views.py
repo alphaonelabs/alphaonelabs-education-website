@@ -619,13 +619,13 @@ def _process_quiz_taking(request, quiz):
             percentage = (score / total_points * 100) if total_points > 0 else 0
 
             # Update the UserQuiz record
-            # user_quiz.answers = json.dumps(answers)
-            # if correction_status == 'completed':
-            #     user_quiz.score = percentage
-            # user_quiz.correction_status = correction_status
-            # user_quiz.end_time = timezone.now()
-            # user_quiz.completed = True
-            # user_quiz.save()
+            user_quiz.answers = json.dumps(answers)
+            if correction_status == 'completed':
+                user_quiz.score = percentage
+            user_quiz.correction_status = correction_status
+            user_quiz.end_time = timezone.now()
+            user_quiz.completed = True
+            user_quiz.save()
 
             # Redirect to results page
             return redirect("quiz_results", user_quiz_id=user_quiz.id)
