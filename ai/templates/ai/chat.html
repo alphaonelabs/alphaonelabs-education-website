@@ -17,19 +17,45 @@
         <!-- Chat Interface -->
         <div class="lg:col-span-2">
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                <!-- Subject Selection -->
-                <div class="mb-4">
-                    <label for="subject" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Subject</label>
-                    <select id="subject" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300">
-                        {% for subject in subjects %}
-                        <option value="{{ subject.value }}">{{ subject.label }}</option>
-                        {% endfor %}
-                    </select>
+                <!-- Subject Selection and Tools -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div class="flex-1">
+                        <label for="subject" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Subject</label>
+                        <select id="subject" class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300">
+                            {% for subject in subjects %}
+                            <option value="{{ subject.value }}">{{ subject.label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="clear-chat" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition duration-200 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                            Clear Chat
+                        </button>
+                        <button id="export-chat" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition duration-200 flex items-center">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Export
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Chat Messages -->
-                <div id="chat-messages" class="space-y-4 mb-4 h-[500px] overflow-y-auto">
-                    <!-- Messages will be inserted here -->
+                <div id="chat-messages" class="space-y-4 mb-4 h-[500px] overflow-y-auto p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <!-- Welcome Message -->
+                    <div class="flex justify-start">
+                        <div class="max-w-[80%] rounded-lg p-4 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                            <p>Hello! I'm your AI tutor. How can I help you today?</p>
+                            <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                                <p>• Select a subject from the dropdown</p>
+                                <p>• Type your question in the input box</p>
+                                <p>• I'll provide personalized help based on your learning style</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Loading Animation -->
@@ -42,9 +68,17 @@
                 <!-- Input Form -->
                 <form id="chat-form" class="flex space-x-4">
                     {% csrf_token %}
-                    <input type="text" id="message-input" 
-                           class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300"
-                           placeholder="Type your message here...">
+                    <div class="flex-1 relative">
+                        <input type="text" id="message-input" 
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300 pr-12"
+                               placeholder="Type your message here...">
+                        <button type="button" id="voice-input" 
+                                class="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 text-gray-500 hover:text-teal-300">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                            </svg>
+                        </button>
+                    </div>
                     <button type="submit" 
                             class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200 flex items-center">
                         <span>Send</span>
@@ -56,13 +90,14 @@
             </div>
         </div>
 
-        <!-- Recent Interactions -->
-        <div class="lg:col-span-1">
+        <!-- Recent Interactions and Tools -->
+        <div class="lg:col-span-1 space-y-6">
+            <!-- Recent Interactions -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
                 <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Recent Interactions</h2>
                 <div class="space-y-4">
                     {% for interaction in recent_interactions %}
-                    <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                    <div class="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition duration-200 cursor-pointer">
                         <div class="flex items-center justify-between mb-2">
                             <span class="text-sm font-medium text-teal-300">{{ interaction.subject }}</span>
                             <span class="text-xs text-gray-500 dark:text-gray-400">{{ interaction.created_at|date:"M d, Y" }}</span>
@@ -72,6 +107,31 @@
                     {% empty %}
                     <p class="text-gray-500 dark:text-gray-400 text-center">No recent interactions</p>
                     {% endfor %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Quick Actions</h2>
+                <div class="space-y-3">
+                    <button class="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition duration-200 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        Save to Notes
+                    </button>
+                    <button class="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition duration-200 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        Schedule Review
+                    </button>
+                    <button class="w-full px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition duration-200 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Mark as Complete
+                    </button>
                 </div>
             </div>
         </div>
@@ -90,6 +150,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatMessages = document.getElementById('chat-messages');
     const loadingAnimation = document.getElementById('loading-animation');
     const subjectSelect = document.getElementById('subject');
+    const clearChatBtn = document.getElementById('clear-chat');
+    const exportChatBtn = document.getElementById('export-chat');
+    const voiceInputBtn = document.getElementById('voice-input');
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
     // Function to add a message to the chat
@@ -167,6 +230,48 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('Enter key pressed');
             sendMessage(messageInput.value);
         }
+    });
+
+    // Clear chat
+    clearChatBtn.addEventListener('click', function() {
+        if (confirm('Are you sure you want to clear the chat history?')) {
+            chatMessages.innerHTML = `
+                <div class="flex justify-start">
+                    <div class="max-w-[80%] rounded-lg p-4 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                        <p>Hello! I'm your AI tutor. How can I help you today?</p>
+                        <div class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                            <p>• Select a subject from the dropdown</p>
+                            <p>• Type your question in the input box</p>
+                            <p>• I'll provide personalized help based on your learning style</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    });
+
+    // Export chat
+    exportChatBtn.addEventListener('click', function() {
+        const messages = Array.from(chatMessages.children).map(msg => {
+            const content = msg.querySelector('div').innerText;
+            const isUser = msg.classList.contains('justify-end');
+            return `${isUser ? 'You' : 'AI'}: ${content}`;
+        }).join('\n\n');
+
+        const blob = new Blob([messages], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `chat-export-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+    });
+
+    // Voice input (placeholder for future implementation)
+    voiceInputBtn.addEventListener('click', function() {
+        alert('Voice input feature coming soon!');
     });
 });
 </script>
