@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Update Payment Method
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto">
+      <h1 class="text-3xl font-bold mb-8">Update Payment Method</h1>
+      <!-- Current Plan Info -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg mb-8">
+        <div class="p-6">
+          <div class="flex justify-between items-start">
+            <div>
+              <h2 class="text-2xl font-semibold mb-2">Current Plan</h2>
+              <p class="text-gray-600 dark:text-gray-400">{{ membership.plan.name }}</p>
+            </div>
+            <div class="text-right">
+              <p class="text-lg font-semibold">
+                {% if membership.billing_period == 'monthly' %}
+                  ${{ membership.plan.monthly_price }}/month
+                {% else %}
+                  ${{ membership.plan.yearly_price }}/year
+                {% endif %}
+              </p>
+              <p class="text-sm text-gray-600 dark:text-gray-400">Next billing date: {{ membership.end_date|date:"F j, Y" }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Payment Method Form -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+        <div class="p-6">
+          <h2 class="text-xl font-semibold mb-4">Update Card Information</h2>
+          <form id="payment-form" class="space-y-6">
+            {% csrf_token %}
+            <!-- Card Element -->
+            <div>
+              <label for="card-element"
+                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Credit or debit card
+              </label>
+              <div id="card-element" class="p-3 border rounded-lg bg-white">
+                <!-- Stripe Elements will be inserted here -->
+              </div>
+              <div id="card-errors" class="mt-2 text-sm text-red-600" role="alert"></div>
+            </div>
+            <!-- Submit Button -->
+            <button type="submit"
+                    id="submit-button"
+                    class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center">
+              <i class="fas fa-credit-card mr-2"></i>
+              <span id="button-text">Update Payment Method</span>
+              <span id="spinner" class="hidden ml-2">
+                <i class="fas fa-spinner fa-spin"></i>
+              </span>
+            </button>
+            <div id="payment-message" class="mt-4 text-sm text-center"></div>
+          </form>
+        </div>
+      </div>
+      <!-- Current Payment Method -->
+      {% if current_payment_method %}
+        <div class="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+          <div class="p-6">
+            <h2 class="text-xl font-semibold mb-4">Current Payment Method</h2>
+            <div class="flex items-center justify-between">
+              <div class="flex items-center">
+                <i class="fas fa-credit-card text-gray-400 mr-3"></i>
+                <div>
+                  <p class="font-medium">•••• •••• •••• {{ current_payment_method.last4 }}</p>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">
+                    Expires {{ current_payment_method.exp_month }}/{{ current_payment_method.exp_year }}
+                  </p>
+                </div>
+              </div>
+              <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                Default
+              </span>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+      // Initialize Stripe
+      const stripe = Stripe('{{ stripe_public_key }}');
+      const elements = stripe.elements();
+
+      // Create card Element
+      const card = elements.create('card');
+      card.mount('#card-element');
+
+      // Handle form submission
+      const form = document.getElementById('payment-form');
+      const submitButton = document.getElementById('submit-button');
+      const buttonText = document.getElementById('button-text');
+      const spinner = document.getElementById('spinner');
+      const messageContainer = document.getElementById('payment-message');
+
+      form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+
+          // Disable form submission
+          submitButton.disabled = true;
+          buttonText.textContent = 'Processing...';
+          spinner.classList.remove('hidden');
+
+          try {
+              // Create payment method
+              const {
+                  paymentMethod,
+                  error
+              } = await stripe.createPaymentMethod({
+                  type: 'card',
+                  card: card,
+              });
+
+              if (error) {
+                  throw error;
+              }
+
+              // Update payment method
+              const response = await fetch('{% url "update_payment_method_api" %}', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'X-CSRFToken': '{{ csrf_token }}',
+                  },
+                  body: JSON.stringify({
+                      payment_method_id: paymentMethod.id,
+                  }),
+              });
+
+              const data = await response.json();
+
+              if (!response.ok) {
+                  throw new Error(data.error || 'An error occurred');
+              }
+
+              // Show success message
+              messageContainer.textContent = 'Payment method updated successfully!';
+              messageContainer.classList.add('text-green-500');
+
+              // Reload page after a short delay
+              setTimeout(() => {
+                  window.location.reload();
+              }, 1500);
+
+          } catch (error) {
+              // Display error message
+              messageContainer.textContent = error.message;
+              messageContainer.classList.add('text-red-500');
+
+              // Re-enable form submission
+              submitButton.disabled = false;
+              buttonText.textContent = 'Update Payment Method';
+              spinner.classList.add('hidden');
+          }
+      });
+
+      // Handle card Element errors
+      card.addEventListener('change', (event) => {
+          const displayError = document.getElementById('card-errors');
+          if (event.error) {
+              displayError.textContent = event.error.message;
+          } else {
+              displayError.textContent = '';
+          }
+      });
+  </script>
+{% endblock extra_js %}
