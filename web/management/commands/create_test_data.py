@@ -756,8 +756,8 @@ class Command(BaseCommand):
         elif question.question_type == "true_false":
             # Create true/false options
             is_true_correct = random.choice([True, False])
-            QuizOption.objects.create(question=question, text="True", is_correct=is_true_correct, order=1)
-            QuizOption.objects.create(question=question, text="False", is_correct=not is_true_correct, order=2)
+            QuizOption.objects.create(question=question, text="True", is_correct=True, order=1)
+            QuizOption.objects.create(question=question, text="False", is_correct=not True, order=2)
 
     def generate_mock_answers(self, quiz):
         """Generate mock answers for a quiz submission."""

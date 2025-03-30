@@ -737,8 +737,21 @@ def quiz_results(request, user_quiz_id):
     if request.user.is_authenticated:
         user_attempts = UserQuiz.objects.filter(quiz=quiz, user=request.user).count()
 
-
-
+    # Process user answers for display in the detailed results section
+    user_answers = []
+    for question in quiz.questions.order_by("order"):
+        q_id = str(question.id)
+        if q_id in answers:
+            answer_data = answers[q_id]
+            user_answer_obj = {
+                "question": question,
+                "user_answer": answer_data.get("user_answer", ""),
+                "is_correct": answer_data.get("is_correct", False),
+                "is_graded": answer_data.get("is_graded", False),
+                "points": answer_data.get("points_awarded", 0) if answer_data.get("is_graded", False) else (question.points if answer_data.get("is_correct", False) else 0),
+                "feedback": answer_data.get("feedback", ""),
+            }
+            user_answers.append(user_answer_obj)
 
     context = {
         "user_quiz": user_quiz,
@@ -746,7 +759,7 @@ def quiz_results(request, user_quiz_id):
         "questions": questions,
         "all_quiz_questions": all_quiz_questions,
         "show_answers": quiz.creator == request.user,
-        "is_owner": quiz.creator == request.user,
+        "is_owner": user_quiz.user == request.user,
         "is_creator": quiz.creator == request.user,
         "total_questions": total_questions,
         "questions_attempted": questions_attempted,
@@ -755,7 +768,9 @@ def quiz_results(request, user_quiz_id):
         "answers": answers,
         "challenge_invitation": challenge_invitation,
         "user_attempts": user_attempts,
+        "user_answers":user_answers
     }
+    print("44444444", answers)
 
     return render(request, "web/quiz/quiz_results.html", context)
 
