@@ -10,7 +10,7 @@ import socket
 import subprocess
 import time
 from collections import Counter, defaultdict
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from urllib.parse import urlparse
 
@@ -6772,3 +6772,492 @@ def delete_post(request, post_id):
     if request.method == "POST":
         post.delete()
     return redirect("social_media_dashboard")
+
+
+@login_required
+def manage_membership(request):
+    """Display the membership management page."""
+    # Check if user has a membership
+    if not hasattr(request.user, "membership"):
+        messages.info(request, "You do not have an active membership.")
+        return redirect("membership_plans")
+
+    membership = request.user.membership
+
+    # Update membership data from Stripe if needed
+    if membership.stripe_subscription_id:
+        try:
+            setup_stripe()
+            subscription = stripe.Subscription.retrieve(membership.stripe_subscription_id)
+            update_membership_from_subscription(request.user, subscription)
+
+            # Refresh membership data
+            membership.refresh_from_db()
+        except Exception as e:
+            logger.error(f"Error refreshing membership for user {request.user.email}: {str(e)}")
+
+    # Get invoices if customer ID exists
+    invoices = []
+    if membership.stripe_customer_id:
+        try:
+            setup_stripe()
+            invoice_list = stripe.Invoice.list(customer=membership.stripe_customer_id, limit=10)
+            invoices = invoice_list.data
+        except Exception as e:
+            logger.error(f"Error retrieving invoices for user {request.user.email}: {str(e)}")
+
+    # Get subscription events
+    events = MembershipSubscriptionEvent.objects.filter(user=request.user).order_by("-created_at")[:10]
+
+    context = {
+        "membership": membership,
+        "invoices": invoices,
+        "events": events,
+    }
+
+    return render(request, "membership/manage.html", context)
+
+
+@login_required
+def membership_cancel(request):
+    """Display the page for canceling membership."""
+    # Check if user has a membership
+    if not hasattr(request.user, "membership"):
+        messages.info(request, "You do not have an active membership.")
+        return redirect("membership_plans")
+
+    membership = request.user.membership
+
+    # Check if membership is already canceled
+    if membership.is_canceled:
+        messages.info(request, "Your membership is already scheduled for cancellation.")
+        return redirect("manage_membership")
+
+    context = {
+        "membership": membership,
+    }
+
+    return render(request, "membership/cancel.html", context)
+
+
+@login_required
+def cancel_subscription(request):
+    """Cancel the user's subscription."""
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
+
+    # Call to utility function
+    result = cancel_user_subscription(request.user)
+
+    if result["success"]:
+        messages.success(request, "Your subscription has been cancelled and will end at the current billing period.")
+    else:
+        messages.error(request, result.get("error", "An error occurred while cancelling your subscription."))
+
+    return redirect("manage_membership")
+
+
+@login_required
+def reactivate_subscription(request):
+    """Reactivate a cancelled subscription."""
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
+
+    # Call to utility function
+    result = reactivate_user_subscription(request.user)
+
+    if result["success"]:
+        messages.success(request, "Your subscription has been reactivated.")
+    else:
+        messages.error(request, result.get("error", "An error occurred while reactivating your subscription."))
+
+    return redirect("manage_membership")
+
+
+def membership_benefits(request):
+    """Display the membership benefits page."""
+    return render(request, "membership/benefits.html")
+
+
+def update_membership_from_subscription(user, subscription):
+    """Update the user's membership status based on Stripe subscription data."""
+    if not hasattr(user, "membership"):
+        logger.error(f"User {user.email} has no membership to update")
+        return
+
+    membership = user.membership
+    membership.stripe_subscription_id = subscription.id
+    membership.status = subscription.status
+
+    # Update current period dates
+    if hasattr(subscription, "current_period_start"):
+        membership.start_date = datetime.fromtimestamp(subscription.current_period_start, tz=timezone.utc)
+    if hasattr(subscription, "current_period_end"):
+        membership.end_date = datetime.fromtimestamp(subscription.current_period_end, tz=timezone.utc)
+
+    # Update cancellation info
+    membership.cancel_at_period_end = subscription.cancel_at_period_end
+
+    # Save changes
+    membership.save()
+
+    # Log event
+    MembershipSubscriptionEvent.objects.create(
+        user=user,
+        membership=membership,
+        event_type="subscription_updated",
+        data={
+            "subscription_id": subscription.id,
+            "status": subscription.status,
+            "cancel_at_period_end": subscription.cancel_at_period_end,
+        },
+    )
+
+    return membership
+
+
+def cancel_user_subscription(user):
+    """Cancel the user's subscription at the end of the billing period."""
+    if not hasattr(user, "membership") or not user.membership.stripe_subscription_id:
+        return {"success": False, "error": "No active subscription found"}
+
+    try:
+        setup_stripe()
+        subscription = stripe.Subscription.modify(user.membership.stripe_subscription_id, cancel_at_period_end=True)
+
+        # Update local membership data
+        update_membership_from_subscription(user, subscription)
+
+        return {"success": True}
+
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error cancelling subscription: {str(e)}")
+        return {"success": False, "error": str(e.user_message if hasattr(e, "user_message") else e)}
+    except Exception as e:
+        logger.error(f"Error cancelling subscription: {str(e)}")
+        return {"success": False, "error": "An unexpected error occurred"}
+
+
+def reactivate_user_subscription(user):
+    """Reactivate a cancelled subscription."""
+    if not hasattr(user, "membership") or not user.membership.stripe_subscription_id:
+        return {"success": False, "error": "No subscription found"}
+
+    if not user.membership.cancel_at_period_end:
+        return {"success": False, "error": "Subscription is not cancelled"}
+
+    try:
+        setup_stripe()
+        subscription = stripe.Subscription.modify(user.membership.stripe_subscription_id, cancel_at_period_end=False)
+
+        # Update local membership data
+        update_membership_from_subscription(user, subscription)
+
+        return {"success": True}
+
+    except stripe.error.StripeError as e:
+        logger.error(f"Stripe error reactivating subscription: {str(e)}")
+        return {"success": False, "error": str(e.user_message if hasattr(e, "user_message") else e)}
+    except Exception as e:
+        logger.error(f"Error reactivating subscription: {str(e)}")
+        return {"success": False, "error": "An unexpected error occurred"}
+
+
+@login_required
+def membership_plans(request):
+    """Display the available membership plans."""
+    plans = MembershipPlan.objects.filter(is_active=True).order_by("order")
+
+    # Check if user already has a membership
+    user_has_membership = False
+    if hasattr(request.user, "membership"):
+        user_has_membership = request.user.membership.is_active
+
+    # Get billing period from URL parameter or default to monthly
+    billing_period = request.GET.get("billing", "monthly")
+    if billing_period not in ["monthly", "yearly"]:
+        billing_period = "monthly"
+
+    # Check for messages
+    messages_list = []
+    if "payment_success" in request.GET:
+        messages_list.append(
+            {"type": "success", "text": "Your payment was successful. Welcome to your new membership!"}
+        )
+    elif "payment_canceled" in request.GET:
+        messages_list.append({"type": "info", "text": "Your payment was canceled. No charges were made."})
+
+    context = {
+        "plans": plans,
+        "user_has_membership": user_has_membership,
+        "billing_period": billing_period,
+        "messages": messages_list,
+    }
+
+    return render(request, "membership/plans.html", context)
+
+
+@login_required
+def subscribe_membership(request, plan_slug):
+    """Display the subscription page for a specific membership plan."""
+    try:
+        plan = MembershipPlan.objects.get(slug=plan_slug, is_active=True)
+    except MembershipPlan.DoesNotExist:
+        messages.error(request, "This membership plan is no longer available.")
+        return redirect("membership_plans")
+
+    # Check if user already has an active membership
+    if hasattr(request.user, "membership") and request.user.membership.is_active:
+        messages.info(request, "You already have an active membership. Please manage it from your account.")
+        return redirect("manage_membership")
+
+    # Get billing period from URL parameter or default to monthly
+    billing_period = request.GET.get("billing", "monthly")
+    if billing_period not in ["monthly", "yearly"]:
+        billing_period = "monthly"
+
+    context = {
+        "plan": plan,
+        "billing_period": billing_period,
+    }
+
+    return render(request, "membership/subscribe.html", context)
+
+
+@login_required
+def checkout_membership(request, plan_slug, billing_period):
+    """Display the checkout page for a membership plan."""
+    if billing_period not in ["monthly", "yearly"]:
+        return redirect("subscribe_membership", plan_slug=plan_slug)
+
+    try:
+        plan = MembershipPlan.objects.get(slug=plan_slug, is_active=True)
+    except MembershipPlan.DoesNotExist:
+        messages.error(request, "This membership plan is no longer available.")
+        return redirect("membership_plans")
+
+    # Get the price based on billing period
+    if billing_period == "monthly":
+        price = plan.price_monthly
+        price_id = plan.stripe_monthly_price_id
+    else:
+        price = plan.price_yearly
+        price_id = plan.stripe_yearly_price_id
+
+    if not price_id:
+        messages.error(request, f"This plan is not available for {billing_period} billing.")
+        return redirect("subscribe_membership", plan_slug=plan_slug)
+
+    # Setup Stripe
+    stripe_key = settings.STRIPE_PUBLISHABLE_KEY
+    if not stripe_key:
+        messages.error(request, "Payment processing is currently unavailable.")
+        return redirect("membership_plans")
+
+    context = {
+        "plan": plan,
+        "billing_period": billing_period,
+        "price": price,
+        "stripe_key": stripe_key,
+    }
+
+    return render(request, "membership/checkout.html", context)
+
+
+@login_required
+def create_membership_subscription(request):
+    """Create a new membership subscription."""
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+        plan_id = data.get("plan_id")
+        payment_method_id = data.get("payment_method_id")
+        billing_period = data.get("billing_period", "monthly")
+
+        if not plan_id or not payment_method_id:
+            return JsonResponse({"success": False, "error": "Missing required fields"}, status=400)
+
+        # Create subscription
+        result = create_subscription(
+            user=request.user, plan_id=plan_id, payment_method_id=payment_method_id, billing_period=billing_period
+        )
+
+        return JsonResponse(result)
+
+    except json.JSONDecodeError:
+        return JsonResponse({"success": False, "error": "Invalid JSON data"}, status=400)
+    except Exception as e:
+        logger.error(f"Error creating subscription: {str(e)}")
+        return JsonResponse({"success": False, "error": "An unexpected error occurred"}, status=500)
+
+
+@login_required
+def membership_success(request):
+    """Display the success page after subscription."""
+    # Check if user has a membership
+    if not hasattr(request.user, "membership"):
+        messages.info(request, "You do not have an active membership.")
+        return redirect("membership_plans")
+
+    membership = request.user.membership
+
+    context = {
+        "membership": membership,
+    }
+
+    return render(request, "membership/success.html", context)
+
+
+@login_required
+def change_membership_plan(request):
+    """Redirect to membership plans page for changing plans."""
+    return redirect("membership_plans")
+
+
+@csrf_exempt
+def membership_webhook(request):
+    """Handle Stripe webhooks for membership events."""
+    if request.method != "POST":
+        return HttpResponse(status=405)
+
+    payload = request.body
+    sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
+    webhook_secret = settings.STRIPE_MEMBERSHIP_WEBHOOK_SECRET
+
+    if not webhook_secret:
+        logger.error("Webhook secret not configured")
+        return HttpResponse(status=400)
+
+    try:
+        setup_stripe()
+        event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+    except ValueError as e:
+        logger.error(f"Invalid webhook payload: {str(e)}")
+        return HttpResponse(status=400)
+    except stripe.error.SignatureVerificationError as e:
+        logger.error(f"Invalid webhook signature: {str(e)}")
+        return HttpResponse(status=400)
+
+    # Log the event
+    logger.info(f"Received webhook: {event['type']} - {event['id']}")
+
+    # Handle different event types
+    event_handlers = {
+        "customer.subscription.updated": handle_subscription_updated,
+        "customer.subscription.deleted": handle_subscription_deleted,
+        "invoice.payment_succeeded": handle_invoice_payment_succeeded,
+        "invoice.payment_failed": handle_invoice_payment_failed,
+    }
+
+    handler = event_handlers.get(event["type"])
+    if handler:
+        try:
+            handler(event["data"]["object"])
+        except Exception as e:
+            logger.error(f"Error handling webhook {event['type']}: {str(e)}")
+
+    return HttpResponse(status=200)
+
+
+def handle_subscription_deleted(subscription):
+    """Handle subscription deleted webhook event."""
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+
+    try:
+        user = User.objects.get(membership__stripe_customer_id=subscription["customer"])
+        membership = user.membership
+
+        # Update membership status
+        membership.status = "canceled"
+        membership.end_date = (
+            timezone.datetime.fromtimestamp(subscription["current_period_end"], tz=timezone.utc)
+            if subscription.get("current_period_end")
+            else timezone.now()
+        )
+        membership.save()
+
+        # Record event
+        MembershipSubscriptionEvent.objects.create(
+            user=user,
+            membership=membership,
+            event_type="canceled",
+            stripe_event_id=subscription.get("id", ""),
+            data={"subscription_id": subscription.get("id", ""), "canceled_at": timezone.now().isoformat()},
+        )
+
+        logger.info(f"Subscription deleted for user {user.email} via webhook")
+    except User.DoesNotExist:
+        logger.error(f"No user found for customer {subscription['customer']}")
+    except Exception as e:
+        logger.error(f"Error handling subscription.deleted: {str(e)}")
+
+
+def handle_invoice_payment_succeeded(invoice):
+    """Handle invoice payment succeeded webhook event."""
+    if invoice.get("subscription"):
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+
+        try:
+            user = User.objects.get(membership__stripe_customer_id=invoice["customer"])
+            membership = user.membership
+
+            # Record payment event
+            MembershipSubscriptionEvent.objects.create(
+                user=user,
+                membership=membership,
+                event_type="payment_succeeded",
+                stripe_event_id=invoice.get("id", ""),
+                data={
+                    "invoice_id": invoice.get("id", ""),
+                    "amount_paid": str(invoice.get("amount_paid", 0)),
+                    "subscription_id": invoice.get("subscription", ""),
+                },
+            )
+
+            logger.info(f"Payment succeeded for user {user.email} via webhook")
+        except User.DoesNotExist:
+            logger.error(f"No user found for customer {invoice['customer']}")
+        except Exception as e:
+            logger.error(f"Error handling invoice.payment_succeeded: {str(e)}")
+
+
+def handle_invoice_payment_failed(invoice):
+    """Handle invoice payment failed webhook event."""
+    if invoice.get("subscription"):
+        from django.contrib.auth import get_user_model
+
+        User = get_user_model()
+
+        try:
+            user = User.objects.get(membership__stripe_customer_id=invoice["customer"])
+            membership = user.membership
+
+            # Update membership status if needed
+            if membership.status == "active":
+                membership.status = "past_due"
+                membership.save(update_fields=["status"])
+
+            # Record payment event
+            MembershipSubscriptionEvent.objects.create(
+                user=user,
+                membership=membership,
+                event_type="payment_failed",
+                stripe_event_id=invoice.get("id", ""),
+                data={
+                    "invoice_id": invoice.get("id", ""),
+                    "subscription_id": invoice.get("subscription", ""),
+                    "attempt_count": invoice.get("attempt_count", 0),
+                },
+            )
+
+            logger.info(f"Payment failed for user {user.email} via webhook")
+        except User.DoesNotExist:
+            logger.error(f"No user found for customer {invoice['customer']}")
+        except Exception as e:
+            logger.error(f"Error handling invoice.payment_failed: {str(e)}")
