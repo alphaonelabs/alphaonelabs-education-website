@@ -612,8 +612,44 @@ def _process_quiz_taking(request, quiz):
                 }
 
             # print("@@@@@@@@@@@@@", AI_data)
-            print("########", ai_quiz_corrector(AI_data))
-            print("&&&&&&&&&&&&&", json.dumps(answers))
+            ai_correction_results = json.loads(ai_quiz_corrector(AI_data) )
+            print("########", ai_correction_results)
+            user_quiz.ai_correction = json.dumps(ai_correction_results)  
+
+            # Alternatively, if you want to use the AI scores for grading:
+            if correction_status == 'completed':
+                # You can choose to use either the original calculation or AI-based scoring
+                if ai_correction_results and 'correction' in ai_correction_results:
+                    # Calculate score based on AI correction
+                    ai_score = 0
+                    for item in ai_correction_results['correction']:
+                        question_id = item['question_id']
+                        degree = item['degree']
+                        # Update the answers with AI feedback
+                        if question_id in answers:
+                            answers[question_id]['ai_degree'] = degree
+                            answers[question_id]['ai_student_feedback'] = item['student_feedback']
+                            answers[question_id]['ai_teacher_feedback'] = item['teacher_feedback']
+                            # Add points based on AI degree
+                            if question_id in answers and 'is_graded' in answers[question_id] and not answers[question_id]['is_graded']:
+                                q_obj = QuizQuestion.objects.get(id=int(question_id))
+                                ai_score += degree * q_obj.points  # Assuming degree is a percentage (0-1)
+                    
+                    # Update user_quiz with AI scoring for non-auto-graded questions
+                    user_quiz.answers = json.dumps(answers)
+                    if ai_score > 0:
+                        # Add AI score to auto-graded score
+                        combined_score = score + ai_score
+                        user_quiz.score = (combined_score / total_points * 100) if total_points > 0 else 0
+                    else:
+                        user_quiz.score = percentage
+                else:
+                    user_quiz.score = percentage
+
+            # Also save overall feedback if available
+            if ai_correction_results and 'over_all_feedback' in ai_correction_results:
+                print("|||||||||||||||", ai_correction_results['over_all_feedback'])
+                user_quiz.overall_feedback = json.dumps(ai_correction_results['over_all_feedback'])
 
             # Calculate percentage score
             percentage = (score / total_points * 100) if total_points > 0 else 0
@@ -622,9 +658,11 @@ def _process_quiz_taking(request, quiz):
             user_quiz.answers = json.dumps(answers)
             if correction_status == 'completed':
                 user_quiz.score = percentage
-            user_quiz.correction_status = correction_status
+            # user_quiz.correction_status = correction_status
+            user_quiz.correction_status =  "completed"
             user_quiz.end_time = timezone.now()
             user_quiz.completed = True
+            print("%%%%%%%%%%%%%%%", user_quiz)
             user_quiz.save()
 
             # Redirect to results page
