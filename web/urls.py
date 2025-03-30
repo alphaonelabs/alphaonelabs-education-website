@@ -26,12 +26,6 @@ from .views import (
 urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs
     path("captcha/", include("captcha.urls")),  # CAPTCHA URLs should not be language-prefixed
-    path("meetups/", views.meetup_list, name="meetup_list"),
-    path("meetups/create/", views.create_meetup, name="create_meetup"),
-    path("meetups/<slug:slug>/", views.meetup_detail, name="meetup_detail"),
-    path("meetups/<slug:slug>/edit/", views.edit_meetup, name="edit_meetup"),
-    path("meetups/<slug:slug>/register/", views.register_meetup, name="register_meetup"),
-    path("meetups/<slug:slug>/unregister/", views.unregister_meetup, name="unregister_meetup"),
     path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
     path("certificate/generate/<int:enrollment_id>/", views.generate_certificate, name="generate_certificate"),
 ]
@@ -48,6 +42,12 @@ urlpatterns += i18n_patterns(
     path("learn/", views.learn, name="learn"),
     path("waiting-rooms/", views.waiting_rooms, name="waiting_rooms"),
     path("teach/", views.teach, name="teach"),
+    path("meetups/", views.meetup_list, name="meetup_list"),
+    path("meetups/create/", views.create_meetup, name="create_meetup"),
+    path("meetups/<slug:slug>/", views.meetup_detail, name="meetup_detail"),
+    path("meetups/<slug:slug>/edit/", views.edit_meetup, name="edit_meetup"),
+    path("meetups/<slug:slug>/register/", views.register_meetup, name="register_meetup"),
+    path("meetups/<slug:slug>/unregister/", views.unregister_meetup, name="unregister_meetup"),
     path("about/", views.about, name="about"),
     path("profile/<str:username>/", views.public_profile, name="public_profile"),
     path("graphing_calculator/", views.graphing_calculator, name="graphing_calculator"),

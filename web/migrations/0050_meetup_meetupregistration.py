@@ -26,7 +26,12 @@ class Migration(migrations.Migration):
                 (
                     "event_type",
                     models.CharField(
-                        choices=[("online", "Online"), ("in_person", "In Person")], default="online", max_length=10
+                        choices=[
+                            ("online", "Online"),
+                            ("in_person", "In Person"),
+                        ],
+                        default="online",
+                        max_length=10,
                     ),
                 ),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
@@ -42,8 +47,20 @@ class Migration(migrations.Migration):
             fields=[
                 ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
                 ("registered_at", models.DateTimeField(auto_now_add=True)),
-                ("meetup", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="web.meetup")),
-                ("user", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
+                (
+                    "meetup",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, to="web.meetup", related_name="registrations"
+                    ),
+                ),
+                (
+                    "user",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        to=settings.AUTH_USER_MODEL,
+                        related_name="meetup_registrations",
+                    ),
+                ),
             ],
             options={
                 "ordering": ["-registered_at"],

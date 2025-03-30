@@ -4,6 +4,7 @@ import string
 import time
 import uuid
 from io import BytesIO
+from typing import Any
 
 from allauth.account.signals import user_signed_up
 from django.conf import settings
@@ -1771,23 +1772,12 @@ class Meetup(models.Model):
 
     def clean(self) -> None:
         super().clean()
-
         # Validate that link is provided for online meetups
         if self.event_type == "online" and not self.link:
-            raise ValidationError("Online meetups require a meeting link")
-
+            raise ValidationError({"link": "Online meetups require a meeting link"})
         # Validate that location is provided for in-person meetups
         if self.event_type == "in_person" and not self.location:
-            raise ValidationError("In-person meetups require a location")
-
-    def save(self, *args, **kwargs) -> None:
-        self.full_clean()  # Call full_clean to enforce validation
-        if not self.slug:
-            self.slug = slugify(self.title)
-            if Meetup.objects.filter(slug=self.slug).exists():
-                suffix = uuid.uuid4().hex[:6]
-                self.slug = f"{self.slug}-{suffix}"
-        super().save(*args, **kwargs)
+            raise ValidationError({"location": "In-person meetups require a location"})
 
     def __str__(self) -> str:
         return self.title
@@ -1795,6 +1785,15 @@ class Meetup(models.Model):
     def can_edit(self, user: User) -> bool:
         """Check if the given user can edit this meetup."""
         return user == self.creator or user.is_staff
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()  # Call full_clean to enforce validation
+        if not self.slug:
+            self.slug = slugify(self.title)
+            if Meetup.objects.filter(slug=self.slug).exists():
+                suffix = uuid.uuid4().hex[:6]
+                self.slug = f"{self.slug}-{suffix}"
+        super().save(*args, **kwargs)
 
 
 class MeetupRegistration(models.Model):

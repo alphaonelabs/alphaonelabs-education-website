@@ -19,18 +19,27 @@
           <p class="text-gray-700 dark:text-gray-400 text-sm mt-2">
             <strong>Date:</strong> {{ meetup.date }}
           </p>
-          <p class="text-gray-700 dark:text-gray-400 text-sm">
-            <strong>Location:</strong> {{ meetup.location }}
-          </p>
+          {% if meetup.event_type == 'in_person' and meetup.location %}
+            <p class="text-gray-700 dark:text-gray-400 text-sm">
+              <strong>Location:</strong> {{ meetup.location }}
+            </p>
+          {% elif meetup.event_type == 'online' %}
+            <p class="text-gray-700 dark:text-gray-400 text-sm">
+              <strong>Type:</strong> {{ meetup.get_event_type_display }}
+            </p>
+          {% endif %}
           <!-- Register Button -->
           {% if user.is_authenticated %}
             {% if meetup.id in user_registered_meetups %}
               <p class="text-green-600 font-semibold mt-3 text-sm">You are already registered</p>
             {% else %}
-              <a href="{% url 'register_meetup' meetup.slug %}"
-                 class="block text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 mt-3 rounded-lg transition-all duration-200 text-sm">
-                Register
-              </a>
+              <form method="post" action="{% url 'register_meetup' meetup.slug %}">
+                {% csrf_token %}
+                <button type="submit"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 mt-3 rounded-lg transition-all duration-200 text-sm">
+                  Register
+                </button>
+              </form>
             {% endif %}
           {% else %}
             <p class="text-gray-500 mt-2 text-sm">Log in to register for this meetup.</p>

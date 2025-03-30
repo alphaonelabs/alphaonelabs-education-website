@@ -1,4 +1,5 @@
 import re
+import typing
 
 from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
@@ -1519,9 +1520,15 @@ class StudentEnrollmentForm(forms.Form):
     )
 
 
-import typing
-
 class MeetupForm(forms.ModelForm):
+    title = forms.CharField(max_length=200, required=True)
+    description = forms.CharField(required=True, widget=forms.Textarea)
+    date = forms.DateTimeField(required=True)
+    event_type = forms.ChoiceField(
+        required=True,
+        choices=[("online", "Online"), ("in_person", "In Person")],
+    )
+
     class Meta:
         model = Meetup
         fields: typing.ClassVar[list[str]] = ["title", "description", "date", "link", "location", "event_type"]
@@ -1537,6 +1544,16 @@ class MeetupForm(forms.ModelForm):
             ),
         }
 
+    def clean(self) -> typing.Dict[str, typing.Any]:
+        cleaned_data = super().clean()
+        event_type = cleaned_data.get("event_type")
+        location = cleaned_data.get("location")
+        link = cleaned_data.get("link")
+        if event_type == "in_person" and not location:
+            self.add_error("location", "Location is required for in-person events.")
+        if event_type == "online" and not link:
+            self.add_error("link", "Link is required for online events.")
+        return cleaned_data
 
 
 class QuizForm(forms.ModelForm):
