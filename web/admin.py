@@ -35,6 +35,7 @@ from .models import (
     Payment,
     PeerChallenge,
     PeerChallengeInvitation,
+    Points,
     ProductImage,
     Profile,
     ProgressTracker,
@@ -770,3 +771,11 @@ class MembershipSubscriptionEventAdmin(admin.ModelAdmin):
     search_fields = ("user__email", "user__username", "stripe_event_id")
     raw_id_fields = ("user", "membership")
     readonly_fields = ("created_at",)
+
+# Register Points model with a customized admin interface.
+@admin.register(Points)
+class PointsAdmin(admin.ModelAdmin):
+    list_display = ("user", "points", "created_at")
+    list_filter = ("created_at",)
+    search_fields = ("user__username", "user__email")
+    readonly_fields = ("created_at", "updated_at")
