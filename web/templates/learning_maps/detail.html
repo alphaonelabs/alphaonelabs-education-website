@@ -146,7 +146,12 @@
               {% if node.description %}<p class="text-gray-600 dark:text-gray-400 mt-1">{{ node.description }}</p>{% endif %}
               <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mt-3">
                 <div class=" {% if node.is_completed %} bg-green-600 {% else %} {% if node.node_type == 'tracker' %} bg-purple-600 {% elif node.node_type == 'course' %} bg-blue-600 {% else %} bg-yellow-600 {% endif %} {% endif %} h-2.5 rounded-full"
+                     role="progressbar"
+                     aria-valuenow="{{ node.progress_percentage }}"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
                      style="width: {{ node.progress_percentage }}%"></div>
+              </div>
               </div>
               <!-- Node-specific details -->
               <div class="mt-2 text-sm">
