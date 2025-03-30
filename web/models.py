@@ -2895,6 +2895,7 @@ class LearningMapNode(models.Model):
         return 0
 
     @property
-    def is_completed(self):
+    @property
+    def is_completed(self) -> bool:
         """Return whether this node is completed (100% progress)"""
         return self.progress_percentage >= 100
