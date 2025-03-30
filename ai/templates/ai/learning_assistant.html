@@ -1,0 +1,443 @@
+{% extends "ai/ai_base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block active_nav %}learning-assistant{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="text-sm font-medium mb-4">
+    <ol class="list-none p-0 inline-flex">
+        <li class="flex items-center">
+            <a href="{% url 'home' %}" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200">Home</a>
+            <svg class="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+        </li>
+        <li class="text-gray-800 dark:text-gray-200">AI Learning Assistant</li>
+    </ol>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">AI Learning Assistant</h1>
+        <p class="text-gray-600 dark:text-gray-400">Your personalized AI tutor for interactive learning and practice.</p>
+    </div>
+
+    <!-- Main Grid Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-8">
+            <!-- Subject Selection -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Select Subject</h2>
+                    <div class="flex space-x-2">
+                        <button onclick="refreshTopics()" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                    {% for subject in subjects %}
+                    <button onclick="selectSubject('{{ subject.id }}')" class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 text-center hover:shadow-md transition duration-200">
+                        <div class="w-12 h-12 bg-teal-100 dark:bg-teal-900 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <svg class="w-6 h-6 text-teal-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                            </svg>
+                        </div>
+                        <h3 class="font-medium text-gray-900 dark:text-gray-100">{{ subject.name }}</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">{{ subject.topic_count }} topics</p>
+                    </button>
+                    {% empty %}
+                    <div class="col-span-full text-center py-8">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <p class="mt-2 text-gray-600 dark:text-gray-400">No subjects available</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Topic Selection -->
+            <div id="topic-section" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">Select Topic</h2>
+                    <button onclick="backToSubjects()" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% for topic in topics %}
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:shadow-md transition duration-200">
+                        <div class="flex justify-between items-start mb-3">
+                            <h3 class="font-medium text-gray-900 dark:text-gray-100">{{ topic.title }}</h3>
+                            <span class="text-sm text-gray-600 dark:text-gray-400">{{ topic.difficulty }}</span>
+                        </div>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ topic.description }}</p>
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm text-gray-600 dark:text-gray-400">Estimated time:</span>
+                                <span class="text-sm font-medium text-teal-300">{{ topic.estimated_hours }} hours</span>
+                            </div>
+                            <button onclick="startTopic('{{ topic.id }}')" class="text-teal-300 hover:text-teal-400 text-sm flex items-center">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Start Learning
+                            </button>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col-span-full text-center py-8">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <p class="mt-2 text-gray-600 dark:text-gray-400">No topics available</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Learning Session -->
+            <div id="learning-section" class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <div>
+                        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100" id="topic-title"></h2>
+                        <p class="text-sm text-gray-600 dark:text-gray-400" id="topic-description"></p>
+                    </div>
+                    <div class="flex space-x-2">
+                        <button onclick="toggleVoiceInput()" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/>
+                            </svg>
+                        </button>
+                        <button onclick="endSession()" class="text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="mb-6">
+                    <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        <span>Learning Progress</span>
+                        <span id="progress-percentage">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                        <div id="progress-bar" class="bg-teal-300 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Learning Content -->
+                <div id="learning-content" class="space-y-6">
+                    <!-- Content will be dynamically loaded here -->
+                </div>
+
+                <!-- User Input -->
+                <div class="mt-6">
+                    <form id="user-input-form" class="flex space-x-4">
+                        <input type="text" id="user-input" class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-100" placeholder="Ask a question or type your response...">
+                        <button type="submit" class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+                            Send
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-8">
+            <!-- Learning Stats -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Learning Stats</h2>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600 dark:text-gray-400">Topics Completed</span>
+                        <span class="font-medium text-gray-900 dark:text-gray-100">{{ completed_topics }}</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600 dark:text-gray-400">Total Learning Time</span>
+                        <span class="font-medium text-gray-900 dark:text-gray-100">{{ total_learning_time }} hours</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600 dark:text-gray-400">Average Score</span>
+                        <span class="font-medium text-gray-900 dark:text-gray-100">{{ average_score }}%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Topics -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Recent Topics</h2>
+                <div class="space-y-4">
+                    {% for topic in recent_topics %}
+                    <div class="flex items-center space-x-3 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg hover:shadow-md transition duration-200">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-teal-100 dark:bg-teal-900 rounded-full flex items-center justify-center">
+                                <svg class="w-4 h-4 text-teal-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-sm text-gray-900 dark:text-gray-100">{{ topic.title }}</p>
+                            <p class="text-xs text-gray-600 dark:text-gray-400">{{ topic.subject }}</p>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="text-center py-4">
+                        <svg class="mx-auto h-8 w-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/>
+                        </svg>
+                        <p class="mt-2 text-gray-600 dark:text-gray-400">No recent topics</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Quick Actions</h2>
+                <div class="space-y-3">
+                    <button onclick="generatePracticeQuestions()" class="w-full flex items-center justify-center space-x-2 bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                        <span>Generate Practice Questions</span>
+                    </button>
+                    <button onclick="scheduleReview()" class="w-full flex items-center justify-center space-x-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg transition duration-200">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                        <span>Schedule Review</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 flex flex-col items-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-300 mb-4"></div>
+        <p class="text-gray-700 dark:text-gray-300">Loading...</p>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentSubject = null;
+    let currentTopic = null;
+    let currentProgress = 0;
+    let voiceInputEnabled = false;
+
+    function refreshTopics() {
+        document.getElementById('loading-overlay').classList.remove('hidden');
+        fetch('/ai/api/topics/')
+            .then(response => response.json())
+            .then(data => {
+                // Update topics section
+                const topicsContainer = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-2');
+                if (data.length === 0) {
+                    topicsContainer.innerHTML = `
+                        <div class="col-span-full text-center py-8">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                            <p class="mt-2 text-gray-600 dark:text-gray-400">No topics available</p>
+                        </div>
+                    `;
+                } else {
+                    topicsContainer.innerHTML = data.map(topic => `
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 hover:shadow-md transition duration-200">
+                            <div class="flex justify-between items-start mb-3">
+                                <h3 class="font-medium text-gray-900 dark:text-gray-100">${topic.title}</h3>
+                                <span class="text-sm text-gray-600 dark:text-gray-400">${topic.difficulty}</span>
+                            </div>
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">${topic.description}</p>
+                            <div class="flex justify-between items-center">
+                                <div class="flex items-center space-x-2">
+                                    <span class="text-sm text-gray-600 dark:text-gray-400">Estimated time:</span>
+                                    <span class="text-sm font-medium text-teal-300">${topic.estimated_hours} hours</span>
+                                </div>
+                                <button onclick="startTopic('${topic.id}')" class="text-teal-300 hover:text-teal-400 text-sm flex items-center">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    Start Learning
+                                </button>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            })
+            .catch(error => console.error('Error refreshing topics:', error))
+            .finally(() => {
+                document.getElementById('loading-overlay').classList.add('hidden');
+            });
+    }
+
+    function selectSubject(subjectId) {
+        currentSubject = subjectId;
+        document.getElementById('topic-section').classList.remove('hidden');
+        document.querySelector('.grid.grid-cols-2.md\\:grid-cols-3').classList.add('hidden');
+        refreshTopics();
+    }
+
+    function backToSubjects() {
+        currentSubject = null;
+        document.getElementById('topic-section').classList.add('hidden');
+        document.querySelector('.grid.grid-cols-2.md\\:grid-cols-3').classList.remove('hidden');
+    }
+
+    function startTopic(topicId) {
+        currentTopic = topicId;
+        document.getElementById('topic-section').classList.add('hidden');
+        document.getElementById('learning-section').classList.remove('hidden');
+        loadTopicContent();
+    }
+
+    function loadTopicContent() {
+        document.getElementById('loading-overlay').classList.remove('hidden');
+        fetch(`/ai/api/topic/${currentTopic}/content/`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('topic-title').textContent = data.title;
+                document.getElementById('topic-description').textContent = data.description;
+                document.getElementById('learning-content').innerHTML = data.content;
+                updateProgress(data.progress);
+            })
+            .catch(error => console.error('Error loading topic content:', error))
+            .finally(() => {
+                document.getElementById('loading-overlay').classList.add('hidden');
+            });
+    }
+
+    function updateProgress(progress) {
+        currentProgress = progress;
+        document.getElementById('progress-percentage').textContent = `${progress}%`;
+        document.getElementById('progress-bar').style.width = `${progress}%`;
+    }
+
+    function toggleVoiceInput() {
+        voiceInputEnabled = !voiceInputEnabled;
+        const button = document.querySelector('button[onclick="toggleVoiceInput()"]');
+        if (voiceInputEnabled) {
+            button.classList.add('text-teal-300');
+            startVoiceRecognition();
+        } else {
+            button.classList.remove('text-teal-300');
+            stopVoiceRecognition();
+        }
+    }
+
+    function startVoiceRecognition() {
+        // Implement voice recognition functionality
+        alert('Voice recognition functionality coming soon!');
+    }
+
+    function stopVoiceRecognition() {
+        // Implement stop voice recognition functionality
+    }
+
+    function endSession() {
+        if (confirm('Are you sure you want to end this learning session?')) {
+            document.getElementById('learning-section').classList.add('hidden');
+            document.getElementById('topic-section').classList.remove('hidden');
+            currentTopic = null;
+            currentProgress = 0;
+            updateProgress(0);
+        }
+    }
+
+    function generatePracticeQuestions() {
+        // Implement practice questions generation
+        alert('Practice questions generation coming soon!');
+    }
+
+    function scheduleReview() {
+        // Implement review scheduling
+        alert('Review scheduling functionality coming soon!');
+    }
+
+    // Handle form submission
+    document.getElementById('user-input-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const input = document.getElementById('user-input');
+        const message = input.value.trim();
+        if (message) {
+            // Send message to AI
+            sendMessage(message);
+            input.value = '';
+        }
+    });
+
+    function sendMessage(message) {
+        document.getElementById('loading-overlay').classList.remove('hidden');
+        fetch('/ai/api/chat/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                message: message,
+                topic_id: currentTopic
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Add AI response to chat
+            appendMessage('ai', data.response);
+            updateProgress(data.progress);
+        })
+        .catch(error => console.error('Error sending message:', error))
+        .finally(() => {
+            document.getElementById('loading-overlay').classList.add('hidden');
+        });
+    }
+
+    function appendMessage(sender, message) {
+        const content = document.getElementById('learning-content');
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`;
+        messageDiv.innerHTML = `
+            <div class="max-w-[80%] ${sender === 'user' ? 'bg-teal-300 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'} rounded-lg px-4 py-2">
+                <p class="text-sm">${message}</p>
+            </div>
+        `;
+        content.appendChild(messageDiv);
+        content.scrollTop = content.scrollHeight;
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+</script>
+{% endblock %} 
