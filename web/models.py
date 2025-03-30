@@ -1808,9 +1808,8 @@ class MeetupRegistration(models.Model):
         unique_together = ["user", "meetup"]
         ordering = ["-registered_at"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.user.username} registered for {self.meetup.title}"
-
 
 class Badge(models.Model):
     BADGE_TYPES = [
