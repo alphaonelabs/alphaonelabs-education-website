@@ -3890,7 +3890,7 @@ def register_meetup(request: HttpRequest, slug: str) -> HttpResponse:
 
     # Check if the meetup has a capacity limit and if it's reached
     registrations_count = MeetupRegistration.objects.filter(meetup=meetup).count()
-    if hasattr(meetup, "max_attendees") and meetup.max_attendees and registrations_count >= meetup.max_attendees:
+    if meetup.max_attendees and registrations_count >= meetup.max_attendees:
         messages.error(request, "This meetup has reached its maximum capacity.")
         return redirect("meetup_detail", slug=meetup.slug)
 
