@@ -71,10 +71,7 @@ urlpatterns += i18n_patterns(
     # Authentication URLs
     path("accounts/signup/", views.signup_view, name="account_signup"),  # Our custom signup view
     path("accounts/profile/", views.profile, name="accounts_profile"),
-<<<<<<< HEAD
     path("notification-preferences/", views.notification_preferences, name="notification_preferences"),
-=======
->>>>>>> origin/main
     path("accounts/delete/", views.delete_account, name="delete_account"),
     # Dashboard URLs
     path("dashboard/student/", views.student_dashboard, name="student_dashboard"),
@@ -90,7 +87,6 @@ urlpatterns += i18n_patterns(
     path("courses/<slug:slug>/toggle-status/", views.toggle_course_status, name="toggle_course_status"),
     path("sessions/<int:session_id>/edit/", views.edit_session, name="edit_session"),
     path("courses/<slug:slug>/delete/", views.delete_course, name="delete_course"),
-    path("courses/<slug:slug>/add-session/", views.add_session, name="add_session"),
     path("courses/<slug:slug>/confirm-rolled-sessions/", views.confirm_rolled_sessions, name="confirm_rolled_sessions"),
     path("courses/<slug:slug>/message-students/", views.message_enrolled_students, name="message_students"),
     path("courses/<slug:slug>/add-student/", views.add_student_to_course, name="add_student_to_course"),
@@ -412,9 +408,6 @@ urlpatterns += i18n_patterns(
         name="update_teacher_notes",
     ),
     path("award-badge/", views.award_badge, name="award_badge"),
-    # Map Urls
-    path("classes-map/", views.classes_map, name="classes_map"),
-    path("api/map-data/", views.map_data_api, name="map_data_api"),
     # Features page
     path("features/", features_page, name="features"),
     path("features/vote/", feature_vote, name="feature_vote"),
