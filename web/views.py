@@ -12,6 +12,7 @@ import time
 from collections import Counter, defaultdict
 from datetime import datetime, timedelta
 from decimal import Decimal
+from typing import Optional
 from urllib.parse import urlparse
 
 import requests
@@ -1108,7 +1109,7 @@ def teach(request):
                 # For unauthenticated users, check if the email exists or create a new user
                 try:
                     user = User.objects.get(email=email)
-                    # User exists but isn’t logged in; check if email is verified
+                    # User exists but isn't logged in; check if email is verified
                     email_address = EmailAddress.objects.filter(user=user, email=email, primary=True).first()
                     if email_address and email_address.verified:
                         messages.info(
@@ -6926,7 +6927,7 @@ def delete_post(request, post_id):
 
 
 @login_required
-def manage_membership(request):
+def manage_membership(request) -> HttpResponse:
     """Display the membership management page."""
     # Check if user has a membership
     if not hasattr(request.user, "membership"):
@@ -6944,8 +6945,10 @@ def manage_membership(request):
 
             # Refresh membership data
             membership.refresh_from_db()
+        except stripe.error.StripeError as e:
+            logger.exception("Error refreshing membership for user %s: %s", request.user.email, e)
         except Exception as e:
-            logger.error(f"Error refreshing membership for user {request.user.email}: {str(e)}")
+            logger.exception("Unexpected error refreshing membership for user %s: %s", request.user.email, e)
 
     # Get invoices if customer ID exists
     invoices = []
@@ -6954,8 +6957,10 @@ def manage_membership(request):
             setup_stripe()
             invoice_list = stripe.Invoice.list(customer=membership.stripe_customer_id, limit=10)
             invoices = invoice_list.data
+        except stripe.error.StripeError as e:
+            logger.exception("Error retrieving invoices for user %s: %s", request.user.email, e)
         except Exception as e:
-            logger.error(f"Error retrieving invoices for user {request.user.email}: {str(e)}")
+            logger.exception("Unexpected error retrieving invoices for user %s: %s", request.user.email, e)
 
     # Get subscription events
     events = MembershipSubscriptionEvent.objects.filter(user=request.user).order_by("-created_at")[:10]
@@ -6970,7 +6975,7 @@ def manage_membership(request):
 
 
 @login_required
-def membership_cancel(request):
+def membership_cancel(request) -> HttpResponse:
     """Display the page for canceling membership."""
     # Check if user has a membership
     if not hasattr(request.user, "membership"):
@@ -7030,7 +7035,7 @@ def membership_benefits(request):
     return render(request, "membership/benefits.html")
 
 
-def update_membership_from_subscription(user, subscription):
+def update_membership_from_subscription(user: "User", subscription: dict) -> Optional["UserMembership"]:
     """Update the user's membership status based on Stripe subscription data."""
     if not hasattr(user, "membership"):
         logger.error(f"User {user.email} has no membership to update")
@@ -7082,10 +7087,10 @@ def cancel_user_subscription(user):
         return {"success": True}
 
     except stripe.error.StripeError as e:
-        logger.error(f"Stripe error cancelling subscription: {str(e)}")
+        logger.exception("Stripe error cancelling subscription: %s", e)
         return {"success": False, "error": str(e.user_message if hasattr(e, "user_message") else e)}
     except Exception as e:
-        logger.error(f"Error cancelling subscription: {str(e)}")
+        logger.exception("Unexpected error cancelling subscription: %s", e)
         return {"success": False, "error": "An unexpected error occurred"}
 
 
@@ -7107,10 +7112,10 @@ def reactivate_user_subscription(user):
         return {"success": True}
 
     except stripe.error.StripeError as e:
-        logger.error(f"Stripe error reactivating subscription: {str(e)}")
+        logger.exception("Stripe error reactivating subscription: %s", e)
         return {"success": False, "error": str(e.user_message if hasattr(e, "user_message") else e)}
     except Exception as e:
-        logger.error(f"Error reactivating subscription: {str(e)}")
+        logger.exception("Unexpected error reactivating subscription: %s", e)
         return {"success": False, "error": "An unexpected error occurred"}
 
 
@@ -7221,7 +7226,7 @@ def change_membership_plan(request):
 
 
 @csrf_exempt
-def membership_webhook(request):
+def membership_webhook(request) -> HttpResponse:
     """Handle Stripe webhooks for membership events."""
     if request.method != "POST":
         return HttpResponse(status=405)
@@ -7238,14 +7243,14 @@ def membership_webhook(request):
         setup_stripe()
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
     except ValueError as e:
-        logger.error(f"Invalid webhook payload: {str(e)}")
+        logger.exception("Invalid webhook payload: %s", e)
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError as e:
-        logger.error(f"Invalid webhook signature: {str(e)}")
+        logger.exception("Invalid webhook signature: %s", e)
         return HttpResponse(status=400)
 
     # Log the event
-    logger.info(f"Received webhook: {event['type']} - {event['id']}")
+    logger.info("Received webhook: %s - %s", event["type"], event["id"])
 
     # Handle different event types
     event_handlers = {
@@ -7260,12 +7265,12 @@ def membership_webhook(request):
         try:
             handler(event["data"]["object"])
         except Exception as e:
-            logger.error(f"Error handling webhook {event['type']}: {str(e)}")
+            logger.exception("Error handling webhook %s: %s", event["type"], e)
 
     return HttpResponse(status=200)
 
 
-def handle_subscription_deleted(subscription):
+def handle_subscription_deleted(subscription: dict) -> None:
     """Handle subscription deleted webhook event."""
     from django.contrib.auth import get_user_model
 
@@ -7293,11 +7298,11 @@ def handle_subscription_deleted(subscription):
             data={"subscription_id": subscription.get("id", ""), "canceled_at": timezone.now().isoformat()},
         )
 
-        logger.info(f"Subscription deleted for user {user.email} via webhook")
+        logger.info("Subscription deleted for user %s via webhook", user.email)
     except User.DoesNotExist:
-        logger.error(f"No user found for customer {subscription['customer']}")
+        logger.error("No user found for customer %s", subscription["customer"])
     except Exception as e:
-        logger.error(f"Error handling subscription.deleted: {str(e)}")
+        logger.exception("Error handling subscription.deleted: %s", e)
 
 
 def handle_invoice_payment_succeeded(invoice):

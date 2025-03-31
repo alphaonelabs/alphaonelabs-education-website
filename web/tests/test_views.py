@@ -525,31 +525,27 @@ class CourseDetailTests(TestCase):
         # Get the future session's month and year
         session_date = self.future_session.start_time.date()
         response = self.client.get(f"{self.detail_url}?month={session_date.month}&year={session_date.year}")
-        # Request the calendar for the month containing the session
-        session_month = self.future_session.start_time.month
-        session_year = self.future_session.start_time.year
-        response = self.client.get(f"{self.detail_url}?month={session_month}&year={session_year}")
 
-        # Test calendar context
-        self.assertTrue("calendar_weeks" in response.context)
-        self.assertTrue("today" in response.context)
+        # Assert response status code
+        self.assertEqual(response.status_code, 200)
 
-        # Test session dates are marked
-        calendar_weeks = response.context["calendar_weeks"]
-        session_date = self.future_session.start_time.date()
+        # Assert calendar context is present
+        self.assertIn("calendar_weeks", response.context)
+        self.assertIn("current_month", response.context)
 
-        # Find the day in calendar that matches the session date
-        session_day_found = False
-        for week in calendar_weeks:
+        # Find the day with the future session
+        session_day = session_date.day
+        session_found = False
+        for week in response.context["calendar_weeks"]:
             for day in week:
-                if day["date"] and day["date"] == session_date:
-                    self.assertTrue(day["has_session"])
-                    session_day_found = True
+                if day["date"] and day["date"].day == session_day:
+                    self.assertTrue(day["has_session"], "Future session should be marked in calendar")
+                    session_found = True
                     break
-            if session_day_found:
+            if session_found:
                 break
 
-        self.assertTrue(session_day_found, "Session date not found in calendar")
+        self.assertTrue(session_found, "Future session date should be present in calendar")
 
     def test_session_completion_form(self):
         """Test session completion form for enrolled students"""
