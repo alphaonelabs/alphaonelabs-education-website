@@ -37,7 +37,7 @@ if settings.DEBUG:
 urlpatterns += i18n_patterns(
     path("", views.index, name="index"),
     path("ai/chat/", views.ai_chat, name="ai_chat"),
-    path("ai/chat/send/", views.chat, name="ai_chat_send"),
+    path("ai/chat/send/", views.send_message, name="ai_chat_send"),
     path("ai/chat/sessions/", views.get_chat_sessions, name="ai_chat_sessions"),
     path("ai/chat/<int:session_id>/", views.get_chat_history, name="ai_chat_history"),
     path("ai/chat/create/", views.create_chat_session, name="ai_chat_create"),

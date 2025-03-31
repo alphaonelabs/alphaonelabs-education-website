@@ -29,6 +29,7 @@
             <!-- Input Area -->
             <div class="border-t border-gray-200 dark:border-gray-700 p-4">
                 <form id="chat-form" class="flex space-x-4" onsubmit="return false;">
+                    {% csrf_token %}
                     <div class="flex-1">
                         <textarea 
                             id="user-input" 
@@ -154,48 +155,49 @@ document.addEventListener('DOMContentLoaded', function() {
 
         try {
             // Show loading state
-            const loadingMessage = addMessage('<div class="flex items-center space-x-2"><div class="animate-spin rounded-full h-4 w-4 border-b-2 border-teal-300"></div><span>Thinking...</span></div>');
+            const loadingMessageElement = document.createElement('div');
+            loadingMessageElement.className = 'message loading-message';
+            loadingMessageElement.innerHTML = '<div class="flex items-center space-x-2"><div class="animate-spin rounded-full h-4 w-4 border-b-2 border-teal-300"></div><span>Thinking...</span></div>';
+            messagesContainer.appendChild(loadingMessageElement);
+
+            // Add timeout handling
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
             // Send message to server
             const response = await fetch('{% url "ai_chat" %}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken')
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
                 },
-                body: JSON.stringify({ message })
+                body: JSON.stringify({ message }),
+                signal: controller.signal
             });
+
+            clearTimeout(timeoutId);
 
             if (!response.ok) throw new Error('Network response was not ok');
 
             const data = await response.json();
             
             // Remove loading message
-            loadingMessage.remove();
+            document.querySelector('.loading-message').remove();
             
             // Add AI response
             addMessage(data.response);
         } catch (error) {
             console.error('Error:', error);
-            addMessage('Sorry, I encountered an error. Please try again.');
-        }
-    });
-
-    // Helper function to get CSRF token
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
+            // Remove loading message
+            document.querySelector('.loading-message').remove();
+            
+            if (error.name === 'AbortError') {
+                addMessage('Request timed out. Please try again.');
+            } else {
+                addMessage('Sorry, I encountered an error. Please try again.');
             }
         }
-        return cookieValue;
-    }
+    });
 
     // Handle Enter key
     userInput.addEventListener('keydown', function(e) {

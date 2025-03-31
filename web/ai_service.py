@@ -2,6 +2,7 @@ import os
 import signal
 import sys
 import time
+import types
 from typing import Optional, Dict, Any
 from django.conf import settings
 import google.generativeai as genai
@@ -14,6 +15,7 @@ from pygments.lexers import get_lexer_by_name
 from pygments.formatters import HtmlFormatter
 import threading
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
+import google.api_core.exceptions
 
 class AIService:
     def __init__(self):
@@ -25,16 +27,26 @@ class AIService:
         self._initialize_services()
         self._setup_signal_handlers()
 
-    def _setup_signal_handlers(self):
-        """Setup signal handlers for graceful interruption."""
-        def signal_handler(signum, frame):
+    def _setup_signal_handlers(self) -> None:
+        """Setup signal handlers for graceful interruption.
+        
+        This method registers signal handlers for SIGINT and SIGTERM to ensure
+        graceful cleanup of AI service resources when interrupted.
+        """
+        def signal_handler(signum: int, frame: Optional[types.FrameType]) -> None:
+            """Handle interrupt signals.
+            
+            Args:
+                signum: The signal number (unused)
+                frame: The current stack frame (unused)
+            """
             print("\nReceived interrupt signal. Cleaning up...")
             with self._request_lock:
                 if self._current_request:
                     print("Cancelling current request...")
                     self._current_request = None
                 print("AI service cleanup complete")
-            
+
             # Only raise KeyboardInterrupt if we're in the main thread
             if threading.current_thread() is threading.main_thread():
                 raise KeyboardInterrupt("AI service interrupted by user")
@@ -205,30 +217,56 @@ class AIService:
                 self._current_request = None
 
     def _get_gemini_response(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Optional[str]:
-        """Get response from Gemini Flash 2.0."""
+        """Get response from Gemini Flash 2.0.
+        
+        Args:
+            prompt: The user's prompt/question
+            context: Optional dictionary of context information
+            
+        Returns:
+            Optional[str]: The AI response text or None if there was an error
+            
+        Raises:
+            KeyboardInterrupt: If the request is interrupted by the user
+            google.api_core.exceptions.ServiceUnavailable: If the Gemini service is unavailable
+            google.api_core.exceptions.Unauthenticated: If there are authentication issues
+            google.api_core.exceptions.InvalidArgument: If the prompt is invalid
+        """
         try:
             # Configure the model
             model = genai.GenerativeModel('gemini-2.0-flash')
-            
+
             # Prepare the prompt with context if provided
             full_prompt = prompt
             if context:
                 context_str = "\n".join([f"{k}: {v}" for k, v in context.items()])
                 full_prompt = f"Context:\n{context_str}\n\nQuestion:\n{prompt}"
-            
+
             # Generate response
             response = model.generate_content(full_prompt)
-            
+
             # Process and return the response
             if response and response.text:
                 return response.text
             return None
-            
+
         except KeyboardInterrupt:
             print("\nGemini API request interrupted")
             return None
+        except google.api_core.exceptions.ServiceUnavailable as e:
+            print(f"Gemini service unavailable: {str(e)}")
+            return None
+        except google.api_core.exceptions.Unauthenticated as e:
+            print(f"Gemini authentication error: {str(e)}")
+            return None
+        except google.api_core.exceptions.InvalidArgument as e:
+            print(f"Invalid prompt argument: {str(e)}")
+            return None
+        except google.api_core.exceptions.DeadlineExceeded as e:
+            print(f"Gemini request timed out: {str(e)}")
+            return None
         except Exception as e:
-            print(f"Gemini API error: {str(e)}")
+            print(f"Unexpected Gemini API error: {str(e)}")
             return None
 
     def _get_openai_response(self, prompt: str, context: Optional[Dict[str, Any]] = None) -> Optional[str]:

@@ -42,6 +42,7 @@ from django.http import (
     JsonResponse,
     HttpResponseNotFound,
     HttpResponseServerError,
+    HttpRequest,
 )
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
@@ -2927,14 +2928,14 @@ def get_course_calendar(request, slug):
 
     # Get previous and next month for navigation
     if month == 1:
-        prev_month = {"year": year - 1, "month": 12}
+        prev_month = current_month.replace(year=current_month.year - 1, month=12)
     else:
-        prev_month = {"year": year, "month": month - 1}
+        prev_month = current_month.replace(month=current_month.month - 1)
 
     if month == 12:
-        next_month = {"year": year + 1, "month": 1}
+        next_month = current_month.replace(year=current_month.year + 1, month=1)
     else:
-        next_month = {"year": year, "month": month + 1}
+        next_month = current_month.replace(month=current_month.month + 1)
 
     # Get sessions for the current month
     month_sessions = course.sessions.filter(start_time__year=year, start_time__month=month).order_by("start_time")
@@ -6969,23 +6970,24 @@ def create_chat_session(request):
 def get_chat_sessions(request):
     """Get all chat sessions for the current user."""
     try:
-        sessions = AIChatSession.objects.filter(user=request.user).order_by('-updated_at')
-        sessions_data = [{
-            'id': session.id,
-            'title': session.title,
-            'subject': session.subject.name if session.subject else None,
-            'last_message': session.messages.last().content if session.messages.exists() else None,
-            'updated_at': session.updated_at.isoformat()
-        } for session in sessions]
-        
+        sessions = AIChatSession.objects.filter(user=request.user).order_by("-created_at")
         return JsonResponse({
-            'status': 'success',
-            'sessions': sessions_data
+            "status": "success",
+            "sessions": [
+                {
+                    "id": str(session.id),
+                    "title": session.title or f"Chat {session.id}",
+                    "subject": session.subject.name if session.subject else None,
+                    "updated_at": session.updated_at.isoformat(),
+                    "last_message": session.messages.order_by("-created_at").first().content if session.messages.exists() else None
+                }
+                for session in sessions
+            ]
         })
     except Exception as e:
         return JsonResponse({
-            'status': 'error',
-            'message': str(e)
+            "status": "error",
+            "message": str(e)
         }, status=400)
 
 @login_required
@@ -7033,8 +7035,11 @@ def create_study_plan(request):
         end_date = request.POST.get('end_date')
         
         if not all([subject_id, title, start_date, end_date]):
-            raise ValidationError("Missing required fields")
-            
+            return JsonResponse({
+                'status': 'error',
+                'message': 'Missing required fields'
+            }, status=400)
+
         study_plan = StudyPlan.objects.create(
             user=request.user,
             title=title,
@@ -7197,9 +7202,9 @@ def send_message(request):
                 }
             })
         except Exception as e:
-            logger.error(f"AI service error: {str(e)}")
+            logger.error(f"Error getting AI response: {str(e)}")
             return JsonResponse({
-                "error": "AI service error",
+                "error": "Failed to get AI response",
                 "status": "error",
                 "details": str(e)
             }, status=500)
@@ -7208,12 +7213,12 @@ def send_message(request):
         return JsonResponse({
             "error": "Invalid JSON data",
             "status": "error",
-            "details": "The request body must be valid JSON"
+            "details": "The request body must contain valid JSON data"
         }, status=400)
     except Exception as e:
-        logger.error(f"Error in send_message view: {str(e)}")
+        logger.error(f"Unexpected error in send_message: {str(e)}")
         return JsonResponse({
-            "error": "Unexpected error",
+            "error": "Internal server error",
             "status": "error",
             "details": str(e)
         }, status=500)
