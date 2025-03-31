@@ -36,6 +36,8 @@ if settings.DEBUG:
 # Language-prefixed URLs
 urlpatterns += i18n_patterns(
     path("", views.index, name="index"),
+    # In web/urls.py, add this to urlpatterns
+    path('test/', views.test, name='test'),  # This is the URL for the test media view
     path("create-test-data/", views.run_create_test_data, name="create_test_data"),
     path("learn/", views.learn, name="learn"),
     path("waiting-rooms/", views.waiting_rooms, name="waiting_rooms"),
