@@ -525,6 +525,10 @@ class CourseDetailTests(TestCase):
         # Get the future session's month and year
         session_date = self.future_session.start_time.date()
         response = self.client.get(f"{self.detail_url}?month={session_date.month}&year={session_date.year}")
+        # Request the calendar for the month containing the session
+        session_month = self.future_session.start_time.month
+        session_year = self.future_session.start_time.year
+        response = self.client.get(f"{self.detail_url}?month={session_month}&year={session_year}")
 
         # Test calendar context
         self.assertTrue("calendar_weeks" in response.context)
