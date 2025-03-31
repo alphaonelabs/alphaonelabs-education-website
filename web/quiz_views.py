@@ -527,13 +527,12 @@ def _process_quiz_taking(request, quiz):
             total_points = 0
             correction_status = "completed"
 
-            # print("!!!!!!!!!!!!!!", prepared_questions)
+            # print("!!!!!!!!!!!!!! >> prepared_questions >>", prepared_questions)
             AI_data = {}
             for question in prepared_questions:
                 q_id = str(question["id"])
                 question_obj = QuizQuestion.objects.get(id=question["id"])
                 total_points += question_obj.points
-                print("============", q_id, question_obj.text, question_obj.explanation,  question_obj.points)
 
                 user_answer = form.cleaned_data.get(f"question_{q_id}", None)
                 User_answer_true_or_false = "Correction needed"
@@ -599,7 +598,7 @@ def _process_quiz_taking(request, quiz):
                         "user_answer": user_answer,
                         "is_graded": False,  # need manual grading
                     }
-                    correction_status = 'in_progress'
+                    # correction_status = 'in_progress'
 
                 AI_data[q_id] = {
                     "question_title": question_obj.text,
@@ -611,48 +610,32 @@ def _process_quiz_taking(request, quiz):
                     "Subject": quiz.subject,
                 }
 
-            # print("@@@@@@@@@@@@@", AI_data)
+
             ai_correction_results = json.loads(ai_quiz_corrector(AI_data) )
-            print("########", ai_correction_results)
-            user_quiz.ai_correction = json.dumps(ai_correction_results)  
+            print("######## <<ai_correction_results>>", ai_correction_results)
 
-            # Alternatively, if you want to use the AI scores for grading:
-            if correction_status == 'completed':
-                # You can choose to use either the original calculation or AI-based scoring
-                if ai_correction_results and 'correction' in ai_correction_results:
-                    # Calculate score based on AI correction
-                    ai_score = 0
-                    for item in ai_correction_results['correction']:
-                        question_id = item['question_id']
-                        degree = item['degree']
-                        # Update the answers with AI feedback
-                        if question_id in answers:
-                            answers[question_id]['ai_degree'] = degree
-                            answers[question_id]['ai_student_feedback'] = item['student_feedback']
-                            answers[question_id]['ai_teacher_feedback'] = item['teacher_feedback']
-                            # Add points based on AI degree
-                            if question_id in answers and 'is_graded' in answers[question_id] and not answers[question_id]['is_graded']:
-                                q_obj = QuizQuestion.objects.get(id=int(question_id))
-                                ai_score += degree * q_obj.points  # Assuming degree is a percentage (0-1)
-                    
-                    # Update user_quiz with AI scoring for non-auto-graded questions
-                    user_quiz.answers = json.dumps(answers)
-                    if ai_score > 0:
-                        # Add AI score to auto-graded score
-                        combined_score = score + ai_score
-                        user_quiz.score = (combined_score / total_points * 100) if total_points > 0 else 0
-                    else:
-                        user_quiz.score = percentage
-                else:
-                    user_quiz.score = percentage
+            # Loop through each question in prepared_questions
+            print("`" * 50)
+            for question in prepared_questions:
+                # Extract the question id
+                question_id = question.get('id')
+                
+                # Convert id to string if necessary because AI_data keys are strings
+                question_id_str = str(question_id)
+                
+                # Retrieve corresponding AI data safely using .get()
+                ai_question_data = AI_data.get(question_id_str)
 
-            # Also save overall feedback if available
-            if ai_correction_results and 'over_all_feedback' in ai_correction_results:
-                print("|||||||||||||||", ai_correction_results['over_all_feedback'])
-                user_quiz.overall_feedback = json.dumps(ai_correction_results['over_all_feedback'])
+                student_answer = ai_question_data.get('user_answer', 'No answer provided')
+                answers[question_id_str]['user_answer'] = student_answer
+                answers[question_id_str]['points_awarded'] = ai_correction_results["correction"][question_id_str]["degree"]
+                answers[question_id_str]['student_feedback'] = ai_correction_results["correction"][question_id_str]["student_feedback"]
+                answers[question_id_str]['teacher_feedback'] = ai_correction_results["correction"][question_id_str]["teacher_feedback"]
+                answers[question_id_str]['is_graded'] = True
+                answers[question_id_str]['is_correct'] = True
+                score += ai_correction_results["correction"][question_id_str]["degree"]
 
-            # Calculate percentage score
-            percentage = (score / total_points * 100) if total_points > 0 else 0
+            percentage = (score) / total_points * 100
 
             # Update the UserQuiz record
             user_quiz.answers = json.dumps(answers)
@@ -662,8 +645,9 @@ def _process_quiz_taking(request, quiz):
             user_quiz.correction_status =  "completed"
             user_quiz.end_time = timezone.now()
             user_quiz.completed = True
-            print("%%%%%%%%%%%%%%%", user_quiz)
             user_quiz.save()
+
+
 
             # Redirect to results page
             return redirect("quiz_results", user_quiz_id=user_quiz.id)
@@ -729,7 +713,7 @@ def quiz_results(request, user_quiz_id):
         duration = "N/A"
 
     # Get the questions with their correct answers
-    questions = []
+    questions = {}
     for question in quiz.questions.order_by("order"):
         q_dict = {
             "id": question.id,
@@ -753,10 +737,11 @@ def quiz_results(request, user_quiz_id):
             q_dict["user_answer"] = answers[q_id].get("user_answer")
             q_dict["is_correct"] = answers[q_id].get("is_correct", False)
 
-        questions.append(q_dict)
+        # questions.append(q_dict)
+        questions[question.id] = q_dict
 
     # Get all questions for the quiz to display in the questions section
-    all_quiz_questions = []
+    all_quiz_questions = {}
     for question in quiz.questions.order_by("order"):
         q_info = {
             "id": question.id,
@@ -766,7 +751,7 @@ def quiz_results(request, user_quiz_id):
             "explanation": question.explanation,
             "options": list(question.options.all()) if question.question_type != "short" else None,
         }
-        all_quiz_questions.append(q_info)
+        all_quiz_questions[question.id] = q_info
 
     # Update quiz completion status and score
     user_quiz.completed = True
@@ -810,12 +795,13 @@ def quiz_results(request, user_quiz_id):
             }
             user_answers.append(user_answer_obj)
 
+    for id, data in answers.items():
+        answers[id]["question_title"] = all_quiz_questions[int(id)]['text']
+        answers[id]["type_display"] = all_quiz_questions[int(id)]['type_display']
+        answers[id]["original_points"] = questions[int(id)]['points']
 
     context = {
         "user_quiz": user_quiz,
-        "quiz": quiz,
-        "questions": questions,
-        "all_quiz_questions": all_quiz_questions,
         "show_answers": quiz.creator == request.user,
         "is_owner": user_quiz.user == request.user,
         "is_creator": quiz.creator == request.user,
@@ -824,11 +810,13 @@ def quiz_results(request, user_quiz_id):
         "correct_count": correct_count,
         "duration": duration,
         "answers": answers,
-        "challenge_invitation": challenge_invitation,
         "user_attempts": user_attempts,
-        "user_answers":user_answers
+        # "quiz": quiz,
+        # "questions": questions,
+        # "all_quiz_questions": all_quiz_questions,
+        # "challenge_invitation": challenge_invitation,
+        # "user_answers":user_answers
     }
-    print("44444444", answers)
 
     return render(request, "web/quiz/quiz_results.html", context)
 

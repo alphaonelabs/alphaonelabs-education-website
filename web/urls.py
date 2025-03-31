@@ -332,13 +332,13 @@ urlpatterns += i18n_patterns(
     path("quizzes/<int:quiz_id>/take/", quiz_views.take_quiz, name="take_quiz"),
     path("quizzes/shared/<str:share_code>/", quiz_views.take_quiz_shared, name="quiz_take_shared"),
     path("quizzes/results/<int:user_quiz_id>/", quiz_views.quiz_results, name="quiz_results"),
+    path("quizzes/<int:quiz_id>/analytics/", quiz_views.quiz_analytics, name="quiz_analytics"),
     path('courses/<int:course_id>/exams/<int:quiz_id>/student/<int:user_quiz_id>/', quiz_views.student_exam_correction, name='student_exam_correction'),
     path(
         "quizzes/results/<int:user_quiz_id>/grade/<int:question_id>/",
         quiz_views.grade_short_answer,
         name="grade_short_answer",
     ),
-    path("quizzes/<int:quiz_id>/analytics/", quiz_views.quiz_analytics, name="quiz_analytics"),
     # Grade-a-Link URLs
     path("grade-links/", GradeableLinkListView.as_view(), name="gradeable_link_list"),
     path("grade-links/submit/", GradeableLinkCreateView.as_view(), name="gradeable_link_create"),

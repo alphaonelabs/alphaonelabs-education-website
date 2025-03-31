@@ -159,7 +159,7 @@ def ai_quiz_corrector(Exam_data):
     try:
         response = model.generate_content(user_input)
         # print(",,,,,,,,,,,,,,,,,,,,,", response.text)
-        print(",,,,,,,,,,,,,,,,,,,,,", response.text[7:-4])
+        # print(",,,,,,,,,,,,,,,,,,,,,", response.text[7:-4])
         # Try to extract JSON from the response
         # json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
         # if json_match:
