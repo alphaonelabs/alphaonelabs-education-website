@@ -42,7 +42,8 @@ TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 
 # Production settings
 if not DEBUG:
-    SECURE_SSL_REDIRECT = True
+    # SECURE_SSL_REDIRECT = True
+    # adding this to prevent redirect loop
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -147,8 +148,8 @@ CAPTCHA_TEST_MODE = False
 
 WSGI_APPLICATION = "web.wsgi.application"
 
+# Add ASGI application configuration
 ASGI_APPLICATION = "web.asgi.application"
-
 
 DATABASES = {
     "default": {
@@ -156,48 +157,6 @@ DATABASES = {
         "NAME": BASE_DIR / "db.sqlite3",
     }
 }
-
-# Override database settings if DATABASE_URL is provided
-database_url = os.environ.get("DATABASE_URL")
-if database_url:
-    try:
-        # Parse the database URL
-        db_from_env = env.db("DATABASE_URL")
-        DATABASES["default"] = db_from_env
-
-        engine = DATABASES["default"].get("ENGINE", "")
-
-        # Configure PostgreSQL-specific settings
-        if "postgresql" in engine:
-            # Ensure NAME is set for PostgreSQL
-            if "NAME" not in DATABASES["default"] or not DATABASES["default"]["NAME"]:
-                DATABASES["default"]["NAME"] = "education_website_db"
-
-        # Configure MySQL-specific settings
-        elif "mysql" in engine:
-            DATABASES["default"]["OPTIONS"] = {
-                "charset": "utf8mb4",
-                "sql_mode": (
-                    "STRICT_TRANS_TABLES,"
-                    "NO_ZERO_IN_DATE,"
-                    "NO_ZERO_DATE,"
-                    "ERROR_FOR_DIVISION_BY_ZERO,"
-                    "NO_ENGINE_SUBSTITUTION"
-                ),
-                "init_command": "SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'",
-            }
-
-        print(f"Using database engine: {engine}")
-    except Exception as e:
-        print(f"Error configuring database from URL: {e}")
-        print("Falling back to SQLite database")
-        # Ensure we have a valid default database configuration
-        DATABASES = {
-            "default": {
-                "ENGINE": "django.db.backends.sqlite3",
-                "NAME": BASE_DIR / "db.sqlite3",
-            }
-        }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -346,26 +305,45 @@ LOCALE_PATHS = [
 
 USE_L10N = True
 
-# Google Cloud Storage settings for media files in production
-if os.environ.get("GS_BUCKET_NAME"):
-    DEFAULT_FILE_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
-    GS_BUCKET_NAME = os.environ.get("GS_BUCKET_NAME")
-    GS_PROJECT_ID = os.environ.get("GS_PROJECT_ID")
+if os.environ.get("DATABASE_URL"):
+    DEBUG = False
+    DATABASES = {"default": env.db()}
 
-    # Get service account file path from .env
-    service_account_filename = env.str("SERVICE_ACCOUNT_FILE")
-    SERVICE_ACCOUNT_FILE = os.path.join(BASE_DIR, service_account_filename)
-    if os.path.exists(SERVICE_ACCOUNT_FILE):
-        from google.oauth2 import service_account
+    # Only add MySQL-specific options if using MySQL
+    if DATABASES["default"]["ENGINE"] == "django.db.backends.mysql":
+        DATABASES["default"]["OPTIONS"] = {
+            "charset": "utf8mb4",
+            "sql_mode": (
+                "STRICT_TRANS_TABLES,"
+                "NO_ZERO_IN_DATE,"
+                "NO_ZERO_DATE,"
+                "ERROR_FOR_DIVISION_BY_ZERO,"
+                "NO_ENGINE_SUBSTITUTION"
+            ),
+            "init_command": "SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'",
+        }
 
-        GS_CREDENTIALS = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE)
-    else:
-        print(f"Warning: Service account file not found at {SERVICE_ACCOUNT_FILE}")
-        GS_CREDENTIALS = None
+    # Google Cloud Storage settings for media files in production
+    if os.environ.get("GS_BUCKET_NAME"):
+        DEFAULT_FILE_STORAGE = "storages.backends.gcloud.GoogleCloudStorage"
+        GS_BUCKET_NAME = os.environ.get("GS_BUCKET_NAME")
+        GS_PROJECT_ID = os.environ.get("GS_PROJECT_ID")
 
-    GS_DEFAULT_ACL = "publicRead"
-    GS_QUERYSTRING_AUTH = False
-    GS_LOCATION = "media"  # Store files in a media directory in the bucket
+        # Get service account file path from .env
+        service_account_filename = env.str("SERVICE_ACCOUNT_FILE")
+        SERVICE_ACCOUNT_FILE = os.path.join(BASE_DIR, service_account_filename)
+        if os.path.exists(SERVICE_ACCOUNT_FILE):
+            from google.oauth2 import service_account
+
+            GS_CREDENTIALS = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE)
+        else:
+            print(f"Warning: Service account file not found at {SERVICE_ACCOUNT_FILE}")
+            GS_CREDENTIALS = None
+
+        GS_DEFAULT_ACL = "publicRead"
+        GS_QUERYSTRING_AUTH = False
+        GS_LOCATION = "media"  # Store files in a media directory in the bucket
+
 
 # Admin URL Configuration
 ADMIN_URL = env.str("ADMIN_URL", default="a-dmin-url123")

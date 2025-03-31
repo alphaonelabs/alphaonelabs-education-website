@@ -207,10 +207,9 @@ def main():
                 assigned_issues = issues_response.json()
                 print(f"User {user_login} has {len(assigned_issues)} open assigned issues.")
 
-                # Check if ALL issues have open PRs
-                all_issues_have_prs = True
+                # Filter issues without open PRs
+                issues_without_prs = []
                 for assigned_issue in assigned_issues:
-                    # Skip checking the current issue being assigned
                     if assigned_issue.get("number") == issue_number:
                         continue
 
@@ -224,20 +223,18 @@ def main():
                     print(f"Search response status: {search_response.status_code}")
                     search_data = search_response.json()
 
-                    # If no open PRs found for this issue, set flag to False
                     if search_data.get("total_count", 0) == 0:
                         print(f"Issue #{assigned_issue.get('number')} lacks an open PR")
-                        all_issues_have_prs = False
-                        break
+                        issues_without_prs.append(assigned_issue.get("number"))
 
-                # If not all issues have PRs, block the assignment
-                if not all_issues_have_prs:
-                    issue_without_pr = assigned_issue.get("number")  # Get the issue number missing a PR
+                if issues_without_prs:
+                    # User has uncompleted issues
+                    issues_list = ", #".join(str(num) for num in issues_without_prs)
                     comment_body = (
-                        f"You can't take this task yet. Issue #{issue_without_pr} does not have an open PR. "
-                        "Please complete your existing issues before requesting a new assignment."
+                        f"You can't take this task yet. You still have uncompleted issues: "
+                        f"#{issues_list}. Please complete them before requesting another."
                     )
-                    print(f"User {user_login} blocked due to uncompleted issue #{issue_without_pr}")
+                    print(f"User {user_login} blocked due to uncompleted issues: {issues_list}")
                     requests.post(f"{issue_url}/comments", headers=headers, json={"body": comment_body})
                     return
 
