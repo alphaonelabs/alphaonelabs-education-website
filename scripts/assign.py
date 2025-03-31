@@ -207,32 +207,101 @@ def main():
                 assigned_issues = issues_response.json()
                 print(f"User {user_login} has {len(assigned_issues)} open assigned issues.")
 
-                # Check if ALL issues have open PRs
+                # Improved check for open PRs
                 all_issues_have_prs = True
+                issue_without_pr = None  # Initialize outside the loop
+                
                 for assigned_issue in assigned_issues:
                     # Skip checking the current issue being assigned
                     if assigned_issue.get("number") == issue_number:
                         continue
+                        
+                    current_issue_number = assigned_issue.get("number")
+                    print(f"Checking for open PRs referencing issue #{current_issue_number}")
+                    
+                    # First check using GraphQL for more reliable detection
+                    has_pr = False
+                    try:
+                        # GraphQL query to check for PRs linked in the Development section
+                        query = """
+                            query($owner:String!, $repo:String!, $issue_number:Int!) {
+                              repository(owner:$owner, name:$repo) {
+                                issue(number:$issue_number) {
+                                  timelineItems(itemTypes: [CROSS_REFERENCED_EVENT], first: 10) {
+                                    nodes {
+                                      ... on CrossReferencedEvent {
+                                        source {
+                                          ... on PullRequest {
+                                            number
+                                            state
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                        """
 
-                    print(f"Checking for open PRs referencing issue #{assigned_issue.get('number')}")
-                    # Search for PRs referencing this issue
-                    search_url = "https://api.github.com/search/issues"
-                    search_query = f"type:pr state:open repo:{owner}/{repo} {assigned_issue.get('number')} in:body"
-                    search_params = {"q": search_query}
-                    print(f"Searching PRs with query: {search_query}")
-                    search_response = requests.get(search_url, headers=headers, params=search_params)
-                    print(f"Search response status: {search_response.status_code}")
-                    search_data = search_response.json()
+                        graphql_headers = headers.copy()
+                        graphql_headers["Accept"] = "application/vnd.github.v4+json"
+                        graphql_url = "https://api.github.com/graphql"
+
+                        variables = {"owner": owner, "repo": repo, "issue_number": current_issue_number}
+
+                        print(f"Checking for linked PRs via GraphQL for issue #{current_issue_number}")
+                        graphql_response = requests.post(
+                            graphql_url, headers=graphql_headers, json={"query": query, "variables": variables}
+                        )
+
+                        if graphql_response.status_code == 200:
+                            graphql_data = graphql_response.json()
+                            timeline_items = (
+                                graphql_data.get("data", {})
+                                .get("repository", {})
+                                .get("issue", {})
+                                .get("timelineItems", {})
+                                .get("nodes", [])
+                            )
+
+                            for item in timeline_items:
+                                source = item.get("source", {})
+                                if source and "state" in source and source["state"] == "OPEN":
+                                    pr_number = source.get("number")
+                                    print(f"Found open PR #{pr_number} linked to issue #{current_issue_number}")
+                                    has_pr = True
+                                    break
+                    except Exception as e:
+                        print(f"Error checking for linked PRs via GraphQL: {str(e)}")
+                    
+                    # If no PRs found via GraphQL, try REST API fallback
+                    if not has_pr:
+                        try:
+                            # Check title and body references for linked PRs
+                            search_url = "https://api.github.com/search/issues"
+                            search_query = f"type:pr state:open repo:{owner}/{repo} {current_issue_number} in:title,body"
+                            search_params = {"q": search_query}
+                            print(f"Searching PRs with REST API query: {search_query}")
+                            search_response = requests.get(search_url, headers=headers, params=search_params)
+                            search_data = search_response.json()
+
+                            if search_data.get("total_count", 0) > 0:
+                                pr_number = search_data.get("items", [])[0].get("number")
+                                print(f"Found open PR #{pr_number} linked to issue #{current_issue_number} via REST API search")
+                                has_pr = True
+                        except Exception as e:
+                            print(f"Error checking for linked PRs via REST API: {str(e)}")
 
                     # If no open PRs found for this issue, set flag to False
-                    if search_data.get("total_count", 0) == 0:
-                        print(f"Issue #{assigned_issue.get('number')} lacks an open PR")
+                    if not has_pr:
+                        print(f"Issue #{current_issue_number} lacks an open PR")
                         all_issues_have_prs = False
+                        issue_without_pr = current_issue_number
                         break
 
                 # If not all issues have PRs, block the assignment
-                if not all_issues_have_prs:
-                    issue_without_pr = assigned_issue.get("number")  # Get the issue number missing a PR
+                if not all_issues_have_prs and issue_without_pr:
                     comment_body = (
                         f"You can't take this task yet. Issue #{issue_without_pr} does not have an open PR. "
                         "Please complete your existing issues before requesting a new assignment."
@@ -390,12 +459,12 @@ def main():
                 except Exception as e:
                     print(f"Error checking for linked PRs via GraphQL: {str(e)}")
 
-                # If no PRs found via GraphQL, try REST API fallback
+                # If no PRs found via GraphQL, try REST API fallback with expanded search
                 if not has_linked_pr:
                     try:
-                        # Search for PRs referencing this issue
+                        # Search for PRs referencing this issue in title or body
                         search_url = "https://api.github.com/search/issues"
-                        search_query = f"type:pr state:open repo:{owner}/{repo} {issue_number} in:body"
+                        search_query = f"type:pr state:open repo:{owner}/{repo} {issue_number} in:title,body"
                         search_params = {"q": search_query}
                         print(f"Searching PRs with REST API query: {search_query}")
                         search_response = requests.get(search_url, headers=headers, params=search_params)
