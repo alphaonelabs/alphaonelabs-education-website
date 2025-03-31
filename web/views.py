@@ -3934,9 +3934,12 @@ def meetup_list(request: HttpRequest) -> HttpResponse:
         from django.db.models import Exists, OuterRef
 
         meetups = meetups.annotate(
-            user_registered=Exists(MeetupRegistration.objects.filter(
-                meetup=OuterRef("pk"), user=request.user,
-            ))
+            user_registered=Exists(
+                MeetupRegistration.objects.filter(
+                    meetup=OuterRef("pk"),
+                    user=request.user,
+                )
+            )
         )
     paginator = Paginator(meetups, 10)  # Show 10 meetups per page
     page_number = request.GET.get("page")

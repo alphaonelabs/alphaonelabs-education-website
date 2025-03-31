@@ -631,6 +631,8 @@ class OrderItemAdmin(admin.ModelAdmin):
 # Unregister the default User admin and register our custom one
 admin.site.unregister(User)
 admin.site.register(User, CustomUserAdmin)
+
+
 @admin.register(Meetup)
 class MeetupAdmin(admin.ModelAdmin):
     list_display = ("title", "creator", "event_type", "date", "created_at")
