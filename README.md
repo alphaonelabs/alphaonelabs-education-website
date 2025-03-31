@@ -79,8 +79,8 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/education-website.git
-   cd education-website
+   git clone https://github.com/yourusername/alphaonelabs-education-website.git
+   cd alphaonelabs-education-website
    ```
 
 2. Set up a virtual environment:

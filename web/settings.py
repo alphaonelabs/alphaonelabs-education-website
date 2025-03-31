@@ -11,7 +11,6 @@ OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
 
 
-
 env = environ.Env()
 
 env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
@@ -45,7 +44,8 @@ TWITTER_ACCESS_TOKEN_SECRET = os.getenv("TWITTER_ACCESS_TOKEN_SECRET")
 
 # Production settings
 if not DEBUG:
-    SECURE_SSL_REDIRECT = True
+    # SECURE_SSL_REDIRECT = True
+    # adding this to prevent redirect loop
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
@@ -63,7 +63,7 @@ ALLOWED_HOSTS = [
     "127.0.0.1",
     "localhost",
     "alphaonelabs.com",
-    "www.alphaonelabs.com",
+    "*.alphaonelabs.com",
 ]
 
 # Timezone settings
@@ -157,6 +157,8 @@ CAPTCHA_TEST_MODE = False
 
 WSGI_APPLICATION = "web.wsgi.application"
 
+# Add ASGI application configuration
+ASGI_APPLICATION = "web.asgi.application"
 
 DATABASES = {
     "default": {
@@ -417,5 +419,4 @@ LOGGING = {
 USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data
-# Use empty string as default to avoid errors when the token is not set
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")

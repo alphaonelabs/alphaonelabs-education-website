@@ -281,7 +281,38 @@ class CourseAdmin(admin.ModelAdmin):
 
 @admin.register(Session)
 class SessionAdmin(admin.ModelAdmin):
-    list_display = ("title", "course", "start_time", "end_time", "is_virtual")
+    fieldsets = (
+        (None, {"fields": ("course", "title", "description", "start_time", "end_time")}),
+        (
+            "Location Information",
+            {
+                "fields": ("is_virtual", "meeting_link", "meeting_id", "location", "latitude", "longitude"),
+                "classes": ("collapse",),
+            },
+        ),
+        (
+            "Pricing",
+            {
+                "fields": ("price",),
+                "classes": ("collapse",),
+            },
+        ),
+        (
+            "Rollover Settings",
+            {
+                "fields": (
+                    "enable_rollover",
+                    "rollover_pattern",
+                    "original_start_time",
+                    "original_end_time",
+                    "is_rolled_over",
+                    "teacher_confirmed",
+                ),
+                "classes": ("collapse",),
+            },
+        ),
+    )
+    list_display = ("title", "course", "start_time", "end_time", "is_virtual", "teaching_style")
     list_filter = ("is_virtual", "start_time")
     search_fields = ("title", "description", "course__title")
 
