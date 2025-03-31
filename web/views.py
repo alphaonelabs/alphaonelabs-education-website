@@ -2834,7 +2834,6 @@ def create_forum_category(request):
     if request.method == "POST":
         form = ForumCategoryForm(request.POST)
         if form.is_valid():
-            print("here")
             category = form.save()
             if not category.slug:
                 category.slug = slugify(category.name)
