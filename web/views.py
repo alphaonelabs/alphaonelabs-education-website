@@ -17,6 +17,8 @@ from urllib.parse import urlparse
 import requests
 import stripe
 import tweepy
+from allauth.account.models import EmailAddress
+from allauth.account.utils import send_email_confirmation
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.utils import NestedObjects
@@ -25,6 +27,7 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.core.management import call_command
 from django.core.paginator import Paginator
@@ -122,6 +125,8 @@ from .models import (
     GradeableLink,
     LearningStreak,
     LinkGrade,
+    MembershipPlan,
+    MembershipSubscriptionEvent,
     Meme,
     NoteHistory,
     Notification,
@@ -163,13 +168,17 @@ from .notifications import (
 from .referrals import send_referral_reward_email
 from .social import get_social_stats
 from .utils import (
+    cancel_subscription,
     create_leaderboard_context,
+    create_subscription,
     geocode_address,
     get_cached_challenge_entries,
     get_cached_leaderboard_data,
     get_leaderboard,
     get_or_create_cart,
     get_user_points,
+    reactivate_subscription,
+    setup_stripe,
 )
 
 logger = logging.getLogger(__name__)
@@ -1062,46 +1071,178 @@ def learn(request):
 
 
 def teach(request):
+    """Handles the course creation process for both authenticated and unauthenticated users."""
     if request.method == "POST":
-        form = TeachForm(request.POST)
+        form = TeachForm(request.POST, request.FILES)
         if form.is_valid():
-            subject = form.cleaned_data["subject"]
+            # Extract cleaned data
             email = form.cleaned_data["email"]
-            expertise = form.cleaned_data["expertise"]
+            course_title = form.cleaned_data["course_title"]
+            course_description = form.cleaned_data["course_description"]
+            course_image = form.cleaned_data.get("course_image")
+            preferred_session_times = form.cleaned_data["preferred_session_times"]
+            _ = form.cleaned_data.get("flexible_timing", False)
 
-            # Prepare email content
-            email_subject = f"Teaching Application: {subject}"
-            email_body = render_to_string(
-                "emails/teach_application.html",
-                {
-                    "subject": subject,
-                    "email": email,
-                    "expertise": expertise,
-                },
+            # Determine the user for the course
+            user = None
+            is_new_user = False
+
+            if request.user.is_authenticated:
+                # For authenticated users, always use the logged-in user
+                user = request.user
+
+                # Validate that the provided email matches the logged-in user's email
+                if email != user.email:
+                    form.add_error(
+                        "email",
+                        "The provided email does not match your account email. Please use your account email.",
+                    )
+                    return render(request, "teach.html", {"form": form})
+
+                # Backend validation: Check for duplicate course titles for the logged-in user
+                if Course.objects.filter(title__iexact=course_title, teacher=user).exists():
+                    form.add_error("course_title", "You already have a course with this title.")
+                    return render(request, "teach.html", {"form": form})
+            else:
+                # For unauthenticated users, check if the email exists or create a new user
+                try:
+                    user = User.objects.get(email=email)
+                    # User exists but isn’t logged in; check if email is verified
+                    email_address = EmailAddress.objects.filter(user=user, email=email, primary=True).first()
+                    if email_address and email_address.verified:
+                        messages.info(
+                            request,
+                            "An account with this email exists. Please login to finalize your course.",
+                        )
+                    else:
+                        # Email not verified, resend verification email
+                        send_email_confirmation(request, user, signup=False)
+                        messages.info(
+                            request,
+                            "An account with this email exists. Please verify your email to continue.",
+                        )
+                except User.DoesNotExist:
+                    # Create a new user account
+                    with transaction.atomic():
+                        # Generate a unique username
+                        email_prefix = email.split("@")[0]
+                        username = email_prefix
+                        counter = 1
+                        while User.objects.filter(username=username).exists():
+                            username = f"{email_prefix}_{get_random_string(4)}_{counter}"
+                            counter += 1
+
+                        temp_password = get_random_string(length=8)
+
+                        # Create user with temporary password
+                        user = User.objects.create_user(username=username, email=email, password=temp_password)
+
+                        # Update profile to be a teacher
+                        profile, created = Profile.objects.get_or_create(user=user)
+                        profile.is_teacher = True
+                        profile.save()
+
+                        # Add email address for allauth verification
+                        EmailAddress.objects.create(user=user, email=email, primary=True, verified=False)
+
+                        # Send verification email via allauth
+                        send_email_confirmation(request, user, signup=True)
+                        # Send welcome email with username, email, and temp password
+                        try:
+                            send_welcome_teach_course_email(request, user, temp_password)
+                        except Exception:
+                            messages.error(request, "Failed to send welcome email. Please try again.")
+                            return render(request, "teach.html", {"form": form})
+
+                        is_new_user = True
+
+                # Backend validation: Check for duplicate course titles for unauthenticated users
+                if Course.objects.filter(title__iexact=course_title, teacher=user).exists():
+                    email_address = EmailAddress.objects.filter(user=user, email=email, primary=True).first()
+                    if email_address and not email_address.verified:
+                        # If the user is unverified, delete the existing draft and allow a new one
+                        Course.objects.filter(title__iexact=course_title, teacher=user).delete()
+                    else:
+                        form.add_error("course_title", "You already have a course with this title.")
+                        return render(request, "teach.html", {"form": form})
+
+            # Create a draft course
+            course = Course.objects.create(
+                title=course_title,
+                description=course_description,
+                teacher=user,
+                price=0,
+                max_students=12,
+                status="draft",
+                subject=Subject.objects.first() or Subject.objects.create(name="General"),
+                level="beginner",
             )
 
-            # Send email
-            try:
-                send_mail(
-                    email_subject,
-                    email_body,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [settings.DEFAULT_FROM_EMAIL],
-                    html_message=email_body,
-                    fail_silently=False,
+            # Handle course image if uploaded
+            if course_image:
+                course.image = course_image
+                course.save()
+
+            # Create initial session if preferred time provided
+            if preferred_session_times:
+                Session.objects.create(
+                    course=course,
+                    title=f"{course_title} - Session 1",
+                    description="First session of the course",
+                    start_time=preferred_session_times,
+                    end_time=preferred_session_times + timezone.timedelta(hours=1),
+                    is_virtual=True,
                 )
-                messages.success(request, "Thank you for your application! We'll review it and get back to you soon.")
-                return redirect("index")
-            except Exception as e:
-                print(f"Error sending email: {e}")
-                messages.error(request, "Sorry, there was an error sending your application. Please try again later.")
+
+            # Handle redirection based on authentication status
+            if request.user.is_authenticated:
+                # If authenticated, mark as teacher and redirect to course setup
+                request.user.profile.is_teacher = True
+                request.user.profile.save()
+                messages.success(
+                    request, f"Welcome! Your course '{course_title}' has been created. Please complete your setup."
+                )
+                return redirect("course_detail", slug=course.slug)
+            else:
+                # Store course primary key in session for post-verification redirect
+                request.session["pending_course_id"] = course.pk
+                if is_new_user:
+                    messages.success(
+                        request,
+                        "Your course has been created! "
+                        "Please check your email for your username, password, and verification link to continue.",
+                    )
+                    return redirect("account_email_verification_sent")
+                else:
+                    # For existing users, redirect to login page
+                    return redirect("account_login")
+
     else:
         initial_data = {}
         if request.GET.get("subject"):
-            initial_data["subject"] = request.GET.get("subject")
+            initial_data["course_title"] = request.GET.get("subject")
         form = TeachForm(initial=initial_data)
 
     return render(request, "teach.html", {"form": form})
+
+
+def send_welcome_teach_course_email(request, user, temp_password):
+    """Send welcome email with account and password setup instructions."""
+    reset_url = request.build_absolute_uri(reverse("account_reset_password"))
+
+    email_context = {"user": user, "reset_url": reset_url, "temp_password": temp_password}
+
+    html_message = render_to_string("emails/welcome_teach_course.html", email_context)
+    text_message = render_to_string("emails/welcome_teach_course.txt", email_context)
+
+    send_mail(
+        subject="Welcome to Your New Teaching Account.",
+        message=text_message,
+        html_message=html_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        fail_silently=False,
+    )
 
 
 def course_search(request):
@@ -6059,7 +6200,7 @@ def classes_map(request):
     teaching_style = request.GET.get("teaching_style")
     # Apply filters
     if course_id:
-        sessions = sessions.filter(course_id=course_id)
+        sessions = sessions.filter(course_id=course_id, status="published")
     if teaching_style:
         sessions = sessions.filter(teaching_style=teaching_style)
     # Fetch only necessary course fields
@@ -6086,7 +6227,7 @@ def map_data_api(request):
     age_group = request.GET.get("age_group")
 
     if course_id:
-        sessions = sessions.filter(course__id=course_id)
+        sessions = sessions.filter(course__id=course_id, status="published")
     if age_group:
         sessions = sessions.filter(course__level=age_group)
 
@@ -6467,6 +6608,239 @@ def all_study_groups(request):
             "enrolled_courses": enrolled_courses,
         },
     )
+
+
+@login_required
+def membership_checkout(request, plan_id: int) -> HttpResponse:
+    """Display the membership checkout page."""
+    plan = get_object_or_404(MembershipPlan, id=plan_id)
+
+    # Default to monthly billing
+    billing_period = request.GET.get("billing_period", "monthly")
+
+    context = {
+        "plan": plan,
+        "billing_period": billing_period,
+        "stripe_public_key": settings.STRIPE_PUBLISHABLE_KEY,
+    }
+
+    return render(request, "checkout.html", context)
+
+
+@login_required
+def create_membership_subscription(request) -> JsonResponse:
+    """Create a new membership subscription."""
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        plan_id = data.get("plan_id")
+        payment_method_id = data.get("payment_method_id")
+        billing_period = data.get("billing_period", "monthly")
+
+        if not all([plan_id, payment_method_id, billing_period]):
+            return JsonResponse({"error": "Missing required fields"}, status=400)
+
+        # Create subscription using helper function
+        result = create_subscription(
+            user=request.user,
+            plan_id=plan_id,
+            payment_method_id=payment_method_id,
+            billing_period=billing_period,
+        )
+
+        if not result["success"]:
+            return JsonResponse({"error": result["error"]}, status=400)
+
+        # Helper function to extract client_secret
+        def get_client_secret(subscription):
+            """Extract client_secret safely from a subscription object."""
+            if (
+                hasattr(subscription, "latest_invoice")
+                and subscription.latest_invoice
+                and hasattr(subscription.latest_invoice, "payment_intent")
+            ):
+                return subscription.latest_invoice.payment_intent.client_secret
+            return None
+
+        return JsonResponse(
+            {
+                "subscription": result["subscription"],
+                "client_secret": get_client_secret(result["subscription"]),
+            },
+        )
+
+    except json.JSONDecodeError as e:
+        return JsonResponse({"error": f"Invalid JSON: {str(e)}"}, status=400)
+    except stripe.error.CardError as e:
+        return JsonResponse({"error": f"Card error: {str(e)}"}, status=400)
+    except stripe.error.StripeError as e:
+        return JsonResponse({"error": f"Payment processing error: {str(e)}"}, status=500)
+    except KeyError as e:
+        return JsonResponse({"error": f"Missing key: {str(e)}"}, status=400)
+    except Exception:
+        logger.exception("Unexpected error in create_membership_subscription")
+        return JsonResponse({"error": "An unexpected error occurred"}, status=500)
+
+
+@login_required
+def membership_success(request) -> HttpResponse:
+    """Display the membership success page."""
+    try:
+        membership = request.user.membership
+        context = {
+            "membership": membership,
+        }
+        return render(request, "membership_success.html", context)
+    except (AttributeError, ObjectDoesNotExist):
+        messages.info(request, "You don't have an active membership subscription.")
+        return redirect("index")
+
+
+@login_required
+def membership_settings(request) -> HttpResponse:
+    """Display the membership settings page."""
+    try:
+        membership = request.user.membership
+
+        # Get Stripe invoices
+        if membership.stripe_customer_id:
+            setup_stripe()
+            invoices = stripe.Invoice.list(customer=membership.stripe_customer_id, limit=12)
+        else:
+            invoices = []
+
+        # Get subscription events
+        events = MembershipSubscriptionEvent.objects.filter(user=request.user).order_by("-created_at")[:10]
+
+        context = {
+            "membership": membership,
+            "invoices": invoices.data if invoices else [],
+            "events": events,
+        }
+        return render(request, "membership_settings.html", context)
+    except (AttributeError, ObjectDoesNotExist):
+        return redirect("index")
+
+
+@login_required
+def cancel_membership(request) -> HttpResponse:
+    """Cancel the user's membership subscription."""
+    if request.method != "POST":
+        return redirect("membership_settings")
+
+    try:
+        result = cancel_subscription(request.user)
+
+        if result["success"]:
+            messages.success(
+                request,
+                "Your subscription has been cancelled and will end at the current billing period.",
+            )
+        else:
+            messages.error(request, result["error"])
+
+    except stripe.error.StripeError as e:
+        messages.error(request, f"Stripe error: {str(e)}")
+    except ObjectDoesNotExist:
+        messages.error(request, "No membership found for your account.")
+    except Exception as e:
+        logger.error(f"Unexpected error in cancel_membership: {str(e)}")
+        messages.error(request, str(e))
+
+    return redirect("membership_settings")
+
+
+@login_required
+def reactivate_membership(request) -> HttpResponse:
+    """Reactivate a cancelled membership subscription."""
+    if request.method != "POST":
+        return redirect("membership_settings")
+
+    try:
+        result = reactivate_subscription(request.user)
+
+        if result["success"]:
+            messages.success(request, "Your subscription has been reactivated.")
+        else:
+            messages.error(request, result["error"])
+
+    except stripe.error.StripeError as e:
+        messages.error(request, f"Stripe error: {str(e)}")
+    except ObjectDoesNotExist:
+        messages.error(request, "No membership found for your account.")
+    except Exception as e:
+        logger.error(f"Unexpected error in reactivate_membership: {str(e)}")
+        messages.error(request, str(e))
+
+    return redirect("membership_settings")
+
+
+@login_required
+def update_payment_method(request) -> HttpResponse:
+    """Display the update payment method page."""
+    try:
+        membership = request.user.membership
+
+        # Get current payment method
+        if membership.stripe_customer_id:
+            setup_stripe()
+            payment_methods = stripe.PaymentMethod.list(customer=membership.stripe_customer_id, type="card")
+            current_payment_method = payment_methods.data[0] if payment_methods.data else None
+        else:
+            current_payment_method = None
+
+        context = {
+            "membership": membership,
+            "current_payment_method": current_payment_method,
+            "stripe_public_key": settings.STRIPE_PUBLISHABLE_KEY,
+        }
+        return render(request, "update_payment_method.html", context)
+    except (AttributeError, ObjectDoesNotExist):
+        return redirect("membership_settings")
+
+
+@login_required
+def update_payment_method_api(request) -> JsonResponse:
+    """Update the payment method for a subscription."""
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        payment_method_id = data.get("payment_method_id")
+
+        if not payment_method_id:
+            return JsonResponse({"error": "Missing payment method ID"}, status=400)
+
+        membership = request.user.membership
+
+        if not membership.stripe_customer_id:
+            return JsonResponse({"error": "No active subscription found"}, status=400)
+
+        setup_stripe()
+
+        # Attach payment method to customer
+        stripe.PaymentMethod.attach(payment_method_id, customer=membership.stripe_customer_id)
+
+        # Set as default payment method
+        stripe.Customer.modify(
+            membership.stripe_customer_id,
+            invoice_settings={"default_payment_method": payment_method_id},
+        )
+
+        return JsonResponse({"success": True})
+
+    except stripe.error.CardError as e:
+        return JsonResponse({"error": f"Card error: {str(e)}"}, status=400)
+    except stripe.error.InvalidRequestError as e:
+        return JsonResponse({"error": f"Invalid request: {str(e)}"}, status=400)
+    except stripe.error.StripeError as e:
+        return JsonResponse({"error": f"Payment processing error: {str(e)}"}, status=500)
+    except Exception as e:
+        logger.error(f"Unexpected error in update_payment_method_api: {str(e)}")
+        return JsonResponse({"error": str(e)}, status=400)
 
 
 def social_media_manager_required(user):
