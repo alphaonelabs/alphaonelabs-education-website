@@ -1,0 +1,238 @@
+<div x-data="liveCounters()"
+     class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Active Users Counter -->
+    <div class="bg-white dark:bg-gray-700 rounded-lg shadow-md p-4">
+      <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300">Total Learners</h3>
+      <div class="flex items-center mt-2">
+        <i class="fas fa-users text-teal-500 dark:text-teal-300 text-2xl mr-3"></i>
+        <div class="text-3xl font-bold text-gray-800 dark:text-gray-200"
+             x-text="formatNumber(counters.total_learners)">0</div>
+        <div class="ml-2 text-gray-600 dark:text-gray-400">registered</div>
+      </div>
+    </div>
+    <!-- Enrollments Today Counter -->
+    <div class="bg-white dark:bg-gray-700 rounded-lg shadow-md p-4">
+      <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300">Total Enrollments</h3>
+      <div class="flex items-center mt-2">
+        <i class="fas fa-user-graduate text-green-500 dark:text-green-300 text-2xl mr-3"></i>
+        <div class="text-3xl font-bold text-gray-800 dark:text-gray-200"
+             x-text="formatNumber(counters.total_enrollments)">0</div>
+        <div class="ml-2 text-gray-600 dark:text-gray-400">courses</div>
+      </div>
+    </div>
+    <!-- Courses Completed Counter -->
+    <div class="bg-white dark:bg-gray-700 rounded-lg shadow-md p-4">
+      <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300">Courses Completed</h3>
+      <div class="flex items-center mt-2">
+        <i class="fas fa-trophy text-yellow-500 dark:text-yellow-300 text-2xl mr-3"></i>
+        <div class="text-3xl font-bold text-gray-800 dark:text-gray-200"
+             x-text="formatNumber(counters.total_courses_completed)">0</div>
+        <div class="ml-2 text-gray-600 dark:text-gray-400">completed</div>
+      </div>
+    </div>
+    <!-- Quizzes Completed Counter -->
+    <div class="bg-white dark:bg-gray-700 rounded-lg shadow-md p-4">
+      <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300">Total Quizzes Taken</h3>
+      <div class="flex items-center mt-2">
+        <i class="fas fa-tasks text-blue-500 dark:text-blue-300 text-2xl mr-3"></i>
+        <div class="text-3xl font-bold text-gray-800 dark:text-gray-200"
+             x-text="formatNumber(counters.total_quizzes_taken)">0</div>
+        <div class="ml-2 text-gray-600 dark:text-gray-400">completed</div>
+      </div>
+    </div>
+  </div>
+  <!-- Recent Activity Feed -->
+  <div class="mt-8 bg-white dark:bg-gray-700 rounded-lg shadow-md p-4">
+    <h3 class="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">Recent Activity</h3>
+    <div class="recent-activities mt-3 space-y-3" x-html="activitiesHtml">
+      <!-- Activity items will be rendered here -->
+    </div>
+  </div>
+  <!-- Alpine.js script for live counter functionality -->
+  <script>
+      function liveCounters() {
+          return {
+              counters: {
+                  total_learners: 0,
+                  total_enrollments: 0,
+                  total_courses_completed: 0,
+                  total_quizzes_taken: 0
+              },
+              activitiesHtml: '',
+              lastUpdate: null,
+
+              // Initialize with data fetch
+              init() {
+                  this.fetchCounterData();
+
+                  // Set up polling for data updates
+                  setInterval(() => {
+                      this.fetchCounterData();
+                  }, 30000); // Update every 30 seconds
+              },
+
+              // Fetch counter data from API
+              fetchCounterData() {
+                  fetch('/api/counter-data/')
+                      .then(response => response.json())
+                      .then(data => {
+                          // Add animation effect by transitioning values
+                          this.animateCounterChange('total_learners', data.counters.total_learners);
+                          this.animateCounterChange('total_enrollments', data.counters.total_enrollments);
+                          this.animateCounterChange('total_courses_completed', data.counters.total_courses_completed);
+                          this.animateCounterChange('total_quizzes_taken', data.counters.total_quizzes_taken);
+
+                          // Update activities with animation
+                          const oldHtml = this.activitiesHtml;
+                          this.activitiesHtml = this.formatActivities(data.activities);
+
+                          // If this isn't the first load, highlight new activities
+                          if (oldHtml && this.activitiesHtml !== oldHtml) {
+                              this.$nextTick(() => {
+                                  this.highlightNewActivities();
+                              });
+                          }
+
+                          this.lastUpdate = new Date();
+                      })
+                      .catch(error => {
+                          console.error('Error fetching counter data:', error);
+                      });
+              },
+
+              // Format activities with fun messages
+              formatActivities(activities) {
+                  return activities.map(activity => {
+                      const emoji = this.getActivityEmoji(activity.activity_type);
+                      const message = this.getActivityMessage(activity);
+                      const timeAgo = this.getTimeAgo(activity.timestamp);
+
+                      return `
+                        <div class="activity-item new flex items-start space-x-3 p-3 rounded-lg transition-all duration-300 hover:bg-gray-50 dark:hover:bg-gray-600">
+                            <div class="text-2xl">${emoji}</div>
+                            <div class="flex-1">
+                                <p class="text-gray-700 dark:text-gray-300">${message}</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">${timeAgo}</p>
+                            </div>
+                        </div>
+                    `;
+                  }).join('');
+              },
+
+              // Get appropriate emoji for activity type
+              getActivityEmoji(type) {
+                  const emojis = {
+                      'enrollment': '🎓',
+                      'course_completion': '🏆',
+                      'quiz_completion': '🎯',
+                      'challenge_completion': '🌟'
+                  };
+                  return emojis[type] || '✨';
+              },
+
+              // Get fun message for activity
+              getActivityMessage(activity) {
+                  const user = activity.user_display_name;
+                  const type = activity.activity_type;
+
+                  const messages = {
+                      'enrollment': [
+                          `${user} just joined the learning adventure! 🚀`,
+                          `${user} is ready to conquer new knowledge! 📚`,
+                          `${user} has embarked on their learning journey! 🌟`
+                      ],
+                      'course_completion': [
+                          `${user} has mastered the course! 🎉`,
+                          `${user} just crushed it! 💪`,
+                          `${user} is officially a course champion! 🏆`
+                      ],
+                      'quiz_completion': [
+                          `${user} aced the quiz! 🎯`,
+                          `${user} just rocked that quiz! 🎸`,
+                          `${user} is on fire! 🔥`
+                      ],
+                      'challenge_completion': [
+                          `${user} conquered the challenge! ⚔️`,
+                          `${user} just leveled up! ⬆️`,
+                          `${user} is unstoppable! 💫`
+                      ]
+                  };
+
+                  const typeMessages = messages[type] || [`${user} completed an activity!`];
+                  return typeMessages[Math.floor(Math.random() * typeMessages.length)];
+              },
+
+              // Get time ago string
+              getTimeAgo(timestamp) {
+                  const date = new Date(timestamp);
+                  const now = new Date();
+                  const diff = Math.floor((now - date) / 1000);
+
+                  if (diff < 60) return 'Just now';
+                  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+                  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+                  return `${Math.floor(diff / 86400)}d ago`;
+              },
+
+              // Animate counter changes
+              animateCounterChange(counterKey, newValue) {
+                  const oldValue = this.counters[counterKey];
+                  if (oldValue === newValue) return;
+
+                  // Animate the counter change
+                  const duration = 1000; // Animation duration in ms
+                  const start = performance.now();
+                  const updateCounter = (timestamp) => {
+                      const elapsed = timestamp - start;
+                      const progress = Math.min(elapsed / duration, 1);
+
+                      if (newValue > oldValue) {
+                          this.counters[counterKey] = Math.floor(oldValue + (newValue - oldValue) * progress);
+                      } else {
+                          this.counters[counterKey] = Math.ceil(oldValue - (oldValue - newValue) * progress);
+                      }
+
+                      if (progress < 1) {
+                          requestAnimationFrame(updateCounter);
+                      } else {
+                          this.counters[counterKey] = newValue;
+                      }
+                  };
+
+                  requestAnimationFrame(updateCounter);
+              },
+
+              // Highlight new activities
+              highlightNewActivities() {
+                  document.querySelectorAll('.activity-item.new').forEach(el => {
+                      el.classList.add('highlight-new');
+                      setTimeout(() => {
+                          el.classList.remove('highlight-new', 'new');
+                      }, 3000);
+                  });
+              },
+
+              // Format numbers with commas
+              formatNumber(num) {
+                  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+              }
+          };
+      }
+  </script>
+  <style>
+      .activity-item.highlight-new {
+          animation: highlightFade 3s ease-in-out;
+      }
+
+      @keyframes highlightFade {
+          0% {
+              background-color: rgba(94, 234, 212, 0.2);
+          }
+
+          100% {
+              background-color: transparent;
+          }
+      }
+  </style>
+</div>
