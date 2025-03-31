@@ -1,6 +1,6 @@
 import html
 import json
-from typing import Any, Dict
+from typing import Any
 
 from captcha.fields import CaptchaTextInput
 from django import forms
@@ -144,7 +144,7 @@ class TailwindCaptchaTextInput(CaptchaTextInput):
 class TailwindJSONWidget(forms.Widget):
     """A custom widget for editing JSON arrays of strings as a list of inputs with drag-and-drop reordering."""
 
-    def __init__(self, attrs: Dict = None) -> None:
+    def __init__(self, attrs: dict | None = None) -> None:
         default_attrs = {
             "class": "json-features-widget",
         }
@@ -152,7 +152,7 @@ class TailwindJSONWidget(forms.Widget):
             default_attrs.update(attrs)
         super().__init__(default_attrs)
 
-    def render(self, name: str, value: Any, attrs: Dict = None, renderer=None) -> str:
+    def render(self, name: str, value: Any, attrs: dict | None = None, renderer: Any = None) -> str:
         """
         Render the widget.
 
@@ -172,7 +172,7 @@ class TailwindJSONWidget(forms.Widget):
         # Generate feature items HTML
         feature_items = []
         for i, feature in enumerate(decoded_value):
-            item_html = """
+            item_html = f"""
             <div class="flex items-center mb-2 bg-white dark:bg-gray-800 rounded-lg p-2 shadow-sm border
                  border-gray-200 dark:border-gray-700 hover:shadow-md transition-shadow duration-200" data-index="{i}">
                 <div class="cursor-move mr-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300
@@ -180,7 +180,7 @@ class TailwindJSONWidget(forms.Widget):
                     <i class="fas fa-grip-vertical"></i>
                 </div>
                 <div class="flex-grow">
-                    <input type="text" value="{escaped_feature}"
+                    <input type="text" value="{html.escape(str(feature))}"
                            class="w-full border-none p-1 focus:outline-none focus:ring-1
                                   focus:ring-teal-300 bg-transparent" />
                 </div>
@@ -190,31 +190,29 @@ class TailwindJSONWidget(forms.Widget):
                     <i class="fas fa-trash-alt"></i>
                 </button>
             </div>
-            """.format(
-                i=i, escaped_feature=html.escape(str(feature))
-            )
+            """
             feature_items.append(item_html)
 
         # Render the complete widget
-        return """
+        return f"""
         <div class="mb-4">
-            <input type="hidden" name="{0}" id="{0}" value='{2}' />
-            <div id="{0}-items" class="mb-3">
-                {1}
+            <input type="hidden" name="{name}" id="{name}" value='{json.dumps(decoded_value)}' />
+            <div id="{name}-items" class="mb-3">
+                {"".join(feature_items)}
             </div>
             <button type="button"
-                    id="{0}-add"
+                    id="{name}-add"
                     class="bg-teal-500 hover:bg-teal-600 text-white py-1 px-3 rounded-md text-sm flex items-center">
                 <i class="fas fa-plus mr-1"></i> Add Item
             </button>
             <script>
                 document.addEventListener('DOMContentLoaded', function() {{
-                    const input = document.getElementById('{0}');
-                    const itemsContainer = document.getElementById('{0}-items');
-                    const addButton = document.getElementById('{0}-add');
+                    const input = document.getElementById('{name}');
+                    const itemsContainer = document.getElementById('{name}-items');
+                    const addButton = document.getElementById('{name}-add');
 
                     // Parse the initial features
-                    let features = {2};
+                    let features = {json.dumps(decoded_value)};
 
                     // Function to update the hidden input with the current features
                     function updateInput() {{
@@ -252,7 +250,7 @@ class TailwindJSONWidget(forms.Widget):
                         }});
 
                         // Add event listeners for delete buttons
-                        document.querySelectorAll('#{0}-items .delete-btn').forEach(button => {{
+                        document.querySelectorAll('#{name}-items .delete-btn').forEach(button => {{
                             button.addEventListener('click', function() {{
                                 const item = this.closest('[data-index]');
                                 const index = parseInt(item.dataset.index);
@@ -262,7 +260,7 @@ class TailwindJSONWidget(forms.Widget):
                             }});
                         }});
                         // Add event listeners for input changes
-                        document.querySelectorAll('#{0}-items input').forEach(input => {{
+                        document.querySelectorAll('#{name}-items input').forEach(input => {{
                             input.addEventListener('input', function() {{
                                 const index = parseInt(this.closest('[data-index]').dataset.index);
                                 features[index] = this.value;
@@ -287,7 +285,7 @@ class TailwindJSONWidget(forms.Widget):
                                         draggedItem.classList.add('opacity-50');
                                         // Find the item to swap with
                                         const hoveredItem = document.elementFromPoint(e.clientX, e.clientY)
-                                            .closest('#{{0}}-items [data-index]');
+                                            .closest('#{name}-items [data-index]');
                                         if (hoveredItem && hoveredItem !== draggedItem) {{
                                             const hoverIndex = parseInt(hoveredItem.dataset.index);
                                             // Swap in the UI
@@ -336,11 +334,7 @@ class TailwindJSONWidget(forms.Widget):
                 }});
             </script>
         </div>
-        """.format(
-            name,
-            "".join(feature_items),
-            json.dumps(decoded_value),  # {0}  # {1}  # {2}
-        )
+        """
 
     def value_from_datadict(self, data: dict, files: dict, name: str) -> list:
         """
@@ -357,6 +351,8 @@ class TailwindJSONWidget(forms.Widget):
             # Filter out empty strings
             if isinstance(value, list):
                 value = [item for item in value if item.strip()]
-            return value
+                return value
+            else:
+                return []
         except (ValueError, TypeError):
             return []
