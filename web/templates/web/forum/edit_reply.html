@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Edit Reply
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-3xl mx-auto">
+      <!-- Breadcrumbs -->
+      <nav class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 mb-6">
+        <a href="{% url 'forum_categories' %}" class="hover:text-teal-300">Forum</a>
+        <span class="text-gray-400 dark:text-gray-600">/</span>
+        <a href="{% url 'forum_category' reply.topic.category.slug %}"
+           class="hover:text-teal-300">{{ reply.topic.category.name }}</a>
+        <span class="text-gray-400 dark:text-gray-600">/</span>
+        <a href="{% url 'forum_topic' reply.topic.category.slug reply.topic.id %}"
+           class="hover:text-teal-300">{{ reply.topic.title }}</a>
+        <span class="text-gray-400 dark:text-gray-600">/</span>
+        <span class="text-gray-800 dark:text-gray-200">Edit Reply</span>
+      </nav>
+      <div class="mb-8">
+        <h1 class="text-2xl font-bold mb-4 text-gray-800 dark:text-gray-100">Edit Reply</h1>
+        <p class="text-gray-600 dark:text-gray-300">Update your reply to the topic "{{ reply.topic.title }}"</p>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <form method="post" class="space-y-6">
+          {% csrf_token %}
+          <div>
+            <label for="content"
+                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Content</label>
+            <textarea id="content"
+                      name="content"
+                      rows="6"
+                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
+                      required>{{ reply.content }}</textarea>
+          </div>
+          <div class="flex justify-end space-x-4">
+            <a href="{% url 'forum_topic' reply.topic.category.slug reply.topic.id %}"
+               class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+              Cancel
+            </a>
+            <button type="submit"
+                    class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+              Update Reply
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
