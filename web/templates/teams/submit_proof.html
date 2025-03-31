@@ -28,7 +28,7 @@
                 <!-- Styled Form Fields -->
                 <div class="relative group">
                   {% if field.name == 'completion_image' %}
-                    <div class="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center hover:border-blue-400 dark:hover:border-blue-500 group-focus-within:border-blue-500 transition-colors">
+                    <div class="border-2 border-gray-300 dark:border-gray-600 rounded-lg p-4 text-center hover:border-blue-500 transition-colors">
                       <div class="space-y-2">
                         <svg class="mx-auto h-12 w-12 text-gray-400"
                              stroke="currentColor"
@@ -40,154 +40,41 @@
                           <label for="{{ field.id_for_label }}"
                                  class="relative cursor-pointer bg-blue-100 dark:bg-blue-900 rounded-md font-medium text-blue-600 dark:text-blue-300 hover:text-blue-500 focus-within:outline-none">
                             <span class="px-4 py-2 block">Upload Image</span>
+                            <span class="sr-only">{{ field.label }}</span>
                             <span class="relative left-[10%] top-[-2%] ">{{ field }}</span>
+                            <input id="{{ field.id_for_label }}"
+                                   name="{{ field.name }}"
+                                   type="file"
+                                   class="sr-only"
+                                   {% if field.value %}value="{{ field.value }}"{% endif %} />
                           </label>
                         </div>
-                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">Maximum file size: 5MB</p>
                       </div>
                     </div>
                   {% elif field.name == 'completion_link' %}
                     <div class="flex rounded-md shadow-sm">
                       <span class="inline-flex items-center px-3 rounded-l-md border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                             class="h-4 w-4 mr-1"
-                             fill="none"
-                             viewBox="0 0 24 24"
-                             stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                        </svg>
                         URL
                       </span>
-                      <div class="flex-grow relative">
-                        <div class="w-full">{{ field }}</div>
-                        <style>
-                            #{{ field.id_for_label }
-                            }
-
-                                {
-                                width: 100%;
-                                border-radius: 0 0.375rem 0.375rem 0;
-                                border: 1px solid #d1d5db;
-                                padding: 0.5rem 0.75rem;
-                                color: #1f2937;
-                                box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-                                outline: none;
-                            }
-
-                            #{{ field.id_for_label }
-                            }
-
-                            :focus {
-                                border-color: #3b82f6;
-                                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-                            }
-
-                            .dark #{{ field.id_for_label }
-                            }
-
-                                {
-                                border-color: #4b5563;
-                                background-color: #1f2937;
-                                color: #f9fafb;
-                            }
-
-                            .dark #{{ field.id_for_label }
-                            }
-
-                            :focus {
-                                border-color: #3b82f6;
-                                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-                            }
-                        </style>
-                      </div>
+                      <input type="text"
+                             name="{{ field.name }}"
+                             id="{{ field.id_for_label }}"
+                             {% if field.value %}value="{{ field.value }}"{% endif %}
+                             class="flex-1 min-w-0 block w-full px-3 py-2 rounded-r-md border-2 border-gray-300 dark:border-gray-600 focus:ring-0 focus:outline-none focus:border-blue-500 dark:focus:border-blue-500 sm:text-sm"
+                             placeholder="https://" />
                     </div>
                   {% elif field.name == 'completion_notes' %}
-                    <div class="rounded-md shadow-sm">
-                      <div class="w-full">{{ field }}</div>
-                      <style>
-                          #{{ field.id_for_label }
-                          }
-
-                              {
-                              width: 100%;
-                              border-radius: 0.375rem;
-                              border: 1px solid #d1d5db;
-                              padding: 0.75rem;
-                              color: #1f2937;
-                              min-height: 120px;
-                              box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-                              outline: none;
-                          }
-
-                          #{{ field.id_for_label }
-                          }
-
-                          :focus {
-                              border-color: #3b82f6;
-                              box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-                          }
-
-                          .dark #{{ field.id_for_label }
-                          }
-
-                              {
-                              border-color: #4b5563;
-                              background-color: #1f2937;
-                              color: #f9fafb;
-                          }
-
-                          .dark #{{ field.id_for_label }
-                          }
-
-                          :focus {
-                              border-color: #3b82f6;
-                              box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-                          }
-                      </style>
-                    </div>
+                    <textarea name="{{ field.name }}"
+                              id="{{ field.id_for_label }}"
+                              rows="4"
+                              class="block w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-0 focus:border-blue-500 dark:focus:border-blue-500 sm:text-sm"
+                              placeholder="Add your notes here...">{% if field.value %}{{ field.value }}{% endif %}</textarea>
                   {% else %}
-                    <div class="rounded-md shadow-sm">
-                      <div class="w-full">{{ field }}</div>
-                      <style>
-                          #{{ field.id_for_label }
-                          }
-
-                              {
-                              width: 100%;
-                              border-radius: 0.375rem;
-                              border: 1px solid #d1d5db;
-                              padding: 0.5rem 0.75rem;
-                              color: #1f2937;
-                              box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-                              outline: none;
-                          }
-
-                          #{{ field.id_for_label }
-                          }
-
-                          :focus {
-                              border-color: #3b82f6;
-                              box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-                          }
-
-                          .dark #{{ field.id_for_label }
-                          }
-
-                              {
-                              border-color: #4b5563;
-                              background-color: #1f2937;
-                              color: #f9fafb;
-                          }
-
-                          .dark #{{ field.id_for_label }
-                          }
-
-                          :focus {
-                              border-color: #3b82f6;
-                              box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-                          }
-                      </style>
-                    </div>
+                    <input type="text"
+                           name="{{ field.name }}"
+                           id="{{ field.id_for_label }}"
+                           {% if field.value %}value="{{ field.value }}"{% endif %}
+                           class="block w-full px-3 py-2 border-2 border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-0 focus:border-blue-500 dark:focus:border-blue-500 sm:text-sm" />
                   {% endif %}
                 </div>
                 {% if field.help_text %}<p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>{% endif %}
@@ -216,6 +103,7 @@
 {% endblock %}
 {% block scripts %}
   <script>
+      // Optional: Add file name display when user selects a file
       document.addEventListener('DOMContentLoaded', function() {
           const fileInput = document.querySelector('input[type="file"]');
           if (fileInput) {
@@ -225,10 +113,12 @@
                       const fileNameElem = document.createElement('p');
                       fileNameElem.className = 'mt-2 text-sm text-gray-600 dark:text-gray-400 text-center';
                       fileNameElem.textContent = `Selected: ${fileName}`;
-                      const existingFileNames = this.parentElement.parentElement.querySelectorAll('.text-gray-600.text-center');
+
+                      // Remove any existing filename display
+                      const existingFileNames = this.parentElement.parentElement.parentElement.parentElement.querySelectorAll('.text-gray-600.text-center');
                       existingFileNames.forEach(elem => elem.remove());
 
-                      this.parentElement.parentElement.appendChild(fileNameElem);
+                      this.parentElement.parentElement.parentElement.appendChild(fileNameElem);
                   }
               });
           }
