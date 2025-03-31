@@ -7,7 +7,6 @@ from django.db import models
 from django.http import HttpResponseRedirect
 from django.urls import path, reverse
 from django.utils.html import format_html
-from rangefilter.filters import NumericRangeFilter
 
 from .models import (
     Achievement,
@@ -63,7 +62,6 @@ class ProfileInline(admin.StackedInline):
     model = Profile
     can_delete = False
     verbose_name_plural = "Profile"
-    fields = (
         "bio",
         "expertise",
         "avatar",
@@ -138,14 +136,13 @@ class ProfileAdmin(admin.ModelAdmin):
     )
 
 
-# NEW PointsAdmin configuration
 @admin.register(Points)
 class PointsAdmin(admin.ModelAdmin):
     list_display = ("user", "amount", "point_type", "reason", "awarded_at")
     list_filter = (
         "point_type",
         "awarded_at",
-        ("amount", NumericRangeFilter),  # Proper range filter
+        "amount",
     )
     search_fields = ("user__username", "reason")
     raw_id_fields = ("user", "challenge")
