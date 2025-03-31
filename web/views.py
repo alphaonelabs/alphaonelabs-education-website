@@ -2896,6 +2896,24 @@ def my_forum_replies(request):
     return render(request, "web/forum/my_replies.html", {"replies": replies, "categories": categories})
 
 
+@login_required
+def edit_reply(request, reply_id):
+    """Edit a forum reply."""
+    reply = get_object_or_404(ForumReply, id=reply_id, author=request.user)
+    topic = reply.topic
+    categories = ForumCategory.objects.all()
+
+    if request.method == "POST":
+        content = request.POST.get("content")
+        if content:
+            reply.content = content
+            reply.save()
+            messages.success(request, "Reply updated successfully.")
+            return redirect("forum_topic", category_slug=topic.category.slug, topic_id=topic.id)
+
+    return render(request, "web/forum/edit_reply.html", {"reply": reply, "categories": categories})
+
+
 def get_course_calendar(request, slug):
     """AJAX endpoint to get calendar data for a course."""
     course = get_object_or_404(Course, slug=slug)
