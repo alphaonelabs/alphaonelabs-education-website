@@ -40,7 +40,7 @@
         </div>
 
         <!-- Messages Container -->
-        <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4 pb-1">
+        <div id="messagesContainer" class="flex-1 overflow-y-auto p-4 space-y-4">
             <!-- Messages will be loaded here -->
         </div>
 
@@ -54,7 +54,7 @@
         </div>
 
         <!-- Message Input -->
-        <div class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4 -mt-0.5">
+        <div class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
             <form id="messageForm" class="flex space-x-4" onsubmit="return false;">
                 {% csrf_token %}
                 <input type="text" 
@@ -155,81 +155,120 @@ function updateChatControls(sessionId) {
 }
 
 async function loadChatSessions() {
-    try {
-        const response = await fetch('/en/ai/chat/sessions/');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    while (retryCount < maxRetries) {
+        try {
+            const response = await fetch('/en/ai/chat/sessions/');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            
+            if (data.status === 'success' && data.sessions && data.sessions.length > 0) {
+                document.getElementById('sessionsList').innerHTML = data.sessions.map(session => `
+                    <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition duration-200 ${currentSessionId === session.id ? 'bg-teal-50 dark:bg-teal-900' : ''}"
+                         onclick="loadChatHistory(${session.id})">
+                        <h3 class="font-medium text-gray-800 dark:text-gray-200 truncate">${session.title || `Chat ${session.id}`}</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 truncate">${session.last_message || 'No messages yet'}</p>
+                    </div>
+                `).join('');
+                return;
+            } else {
+                document.getElementById('sessionsList').innerHTML = `
+                    <div class="p-3 text-gray-500 dark:text-gray-400 text-center">
+                        No chat sessions found
+                    </div>
+                `;
+                return;
+            }
+        } catch (error) {
+            console.error('Error loading chat sessions:', error);
+            retryCount++;
+            if (retryCount === maxRetries) {
+                document.getElementById('sessionsList').innerHTML = `
+                    <div class="p-3 text-red-500 dark:text-red-400 text-center">
+                        Failed to load chat sessions
+                    </div>
+                `;
+            } else {
+                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+            }
         }
-        const data = await response.json();
-        
-        if (data.sessions && data.sessions.length > 0) {
-            document.getElementById('sessionsList').innerHTML = data.sessions.map(session => `
-                <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition duration-200 ${currentSessionId === session.id ? 'bg-teal-50 dark:bg-teal-900' : ''}"
-                     onclick="loadChatHistory(${session.id})">
-                    <h3 class="font-medium text-gray-800 dark:text-gray-200 truncate">${session.title || `Chat ${session.id}`}</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-400 truncate">${session.last_message || 'No messages yet'}</p>
-                </div>
-            `).join('');
-        } else {
-            document.getElementById('sessionsList').innerHTML = `
-                <div class="p-3 text-gray-500 dark:text-gray-400 text-center">
-                    No chat sessions found
-                </div>
-            `;
-        }
-    } catch (error) {
-        console.error('Error loading chat sessions:', error);
-        document.getElementById('sessionsList').innerHTML = `
-            <div class="p-3 text-red-500 dark:text-red-400 text-center">
-                Failed to load chat sessions
-            </div>
-        `;
     }
 }
 
 async function loadChatHistory(sessionId) {
-    try {
-        showLoading();
-        const response = await fetch(`/en/ai/chat/${sessionId}/`);
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const data = await response.json();
-        
-        currentSessionId = sessionId;
-        updateChatControls(sessionId);
-        
-        const messagesContainer = document.getElementById('messagesContainer');
-        messagesContainer.innerHTML = '';
-        
-        if (data.messages && data.messages.length > 0) {
-            messagesContainer.innerHTML = data.messages.map(message => `
-                <div class="flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}">
-                    <div class="max-w-[70%] ${message.role === 'user' ? 'bg-teal-300 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'} rounded-lg p-3">
-                        <div class="text-sm mb-1">${new Date(message.created_at).toLocaleString()}</div>
-                        <div>${message.content}</div>
+    let retryCount = 0;
+    const maxRetries = 3;
+
+    while (retryCount < maxRetries) {
+        try {
+            showLoading();
+            const response = await fetch(`/en/ai/chat/${sessionId}/`);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                currentSessionId = sessionId;
+                updateChatControls(sessionId);
+                
+                const messagesContainer = document.getElementById('messagesContainer');
+                messagesContainer.innerHTML = '';
+                
+                // Update chat title
+                document.getElementById('chatTitle').textContent = data.title || `Chat ${sessionId}`;
+                
+                if (data.messages && data.messages.length > 0) {
+                    messagesContainer.innerHTML = data.messages.map(message => `
+                        <div class="flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}">
+                            <div class="max-w-[70%] ${message.role === 'user' ? 'bg-teal-300 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200'} rounded-lg p-3">
+                                <div class="text-sm mb-1">${new Date(message.created_at).toLocaleString()}</div>
+                                <div>${message.content}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                } else {
+                    messagesContainer.innerHTML = `
+                        <div class="flex justify-center items-center h-full">
+                            <div class="text-gray-500 dark:text-gray-400 text-center">
+                                <p class="text-lg mb-2">No messages yet</p>
+                                <p class="text-sm">Start a conversation by sending a message below</p>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Refresh the sidebar to highlight current session
+                await loadChatSessions();
+                return;
+            } else {
+                throw new Error(data.message || 'Failed to load chat history');
+            }
+        } catch (error) {
+            console.error('Error loading chat history:', error);
+            retryCount++;
+            if (retryCount === maxRetries) {
+                currentSessionId = null;
+                updateChatControls(null);
+                document.getElementById('messagesContainer').innerHTML = `
+                    <div class="flex justify-center items-center h-full">
+                        <div class="text-red-500 dark:text-red-400 text-center">
+                            <p class="text-lg mb-2">Error loading chat history</p>
+                            <p class="text-sm">Please try again or start a new chat</p>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            } else {
+                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+            }
+        } finally {
+            hideLoading();
         }
-        
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        
-        // Update chat title if it exists
-        if (data.title) {
-            document.getElementById('chatTitle').textContent = data.title;
-        }
-        
-        // Refresh the sidebar to highlight current session
-        await loadChatSessions();
-    } catch (error) {
-        console.error('Error loading chat history:', error);
-        alert('Failed to load chat history. Please try again.');
-        currentSessionId = null;
-        updateChatControls(null);
-        document.getElementById('messagesContainer').innerHTML = '';
-    } finally {
-        hideLoading();
     }
 }
 
@@ -360,62 +399,127 @@ document.addEventListener('DOMContentLoaded', function() {
                 })
             });
 
+            const data = await response.json();
+            
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                throw new Error(data.error || data.message || `HTTP error! status: ${response.status}`);
             }
 
-            const data = await response.json();
             const messagesContainer = document.getElementById('messagesContainer');
             
-            // Add user message
-            messagesContainer.innerHTML += `
-                <div class="flex justify-end">
-                    <div class="max-w-[70%] bg-teal-300 text-white rounded-lg p-3">
-                        <div class="text-sm mb-1">${new Date().toLocaleString()}</div>
-                        <div>${message}</div>
-                    </div>
-                </div>
-            `;
+            // Handle both response formats
+            if (data.status === 'success') {
+                // Add user message
+                if (data.user_message) {
+                    messagesContainer.innerHTML += `
+                        <div class="flex justify-end">
+                            <div class="max-w-[70%] bg-teal-300 text-white rounded-lg p-3">
+                                <div class="text-sm mb-1">${new Date(data.user_message.created_at).toLocaleString()}</div>
+                                <div>${data.user_message.content}</div>
+                            </div>
+                        </div>
+                    `;
+                }
 
-            // Add AI response
-            messagesContainer.innerHTML += `
-                <div class="flex justify-start">
-                    <div class="max-w-[70%] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg p-3">
-                        <div class="text-sm mb-1">${new Date().toLocaleString()}</div>
-                        <div>${data.response}</div>
-                    </div>
-                </div>
-            `;
+                // Add AI response
+                if (data.assistant_message) {
+                    messagesContainer.innerHTML += `
+                        <div class="flex justify-start">
+                            <div class="max-w-[70%] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg p-3">
+                                <div class="text-sm mb-1">${new Date(data.assistant_message.created_at).toLocaleString()}</div>
+                                <div>${data.assistant_message.content}</div>
+                            </div>
+                        </div>
+                    `;
+                } else if (data.response) {
+                    // Handle the alternative response format
+                    messagesContainer.innerHTML += `
+                        <div class="flex justify-start">
+                            <div class="max-w-[70%] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg p-3">
+                                <div class="text-sm mb-1">${new Date().toLocaleString()}</div>
+                                <div>${data.response}</div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    throw new Error('No response received from AI service');
+                }
 
-            messageInput.value = '';
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
-            
-            // Update chat title based on first user message
-            if (messagesContainer.children.length === 2) {
-                const title = message.length > 30 ? message.substring(0, 30) + '...' : message;
-                await renameChatSession(currentSessionId, title);
+                messageInput.value = '';
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                
+                // Update chat title based on first user message
+                if (messagesContainer.children.length === 2) {
+                    const title = message.length > 30 ? message.substring(0, 30) + '...' : message;
+                    await renameChatSession(currentSessionId, title);
+                }
+                
+                loadChatSessions();
+                retryCount = 0; // Reset retry count on success
+            } else if (data.response) {
+                // Handle the alternative response format
+                messagesContainer.innerHTML += `
+                    <div class="flex justify-start">
+                        <div class="max-w-[70%] bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg p-3">
+                            <div class="text-sm mb-1">${new Date().toLocaleString()}</div>
+                            <div>${data.response}</div>
+                        </div>
+                    </div>
+                `;
+                messageInput.value = '';
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                retryCount = 0;
+            } else {
+                throw new Error(data.message || 'Failed to send message');
             }
-            
-            loadChatSessions();
-            retryCount = 0; // Reset retry count on success
         } catch (error) {
             console.error('Error sending message:', error);
             if (retryCount < MAX_RETRIES) {
                 retryCount++;
+                // Show retry message to user with more details
+                const messagesContainer = document.getElementById('messagesContainer');
+                messagesContainer.innerHTML += `
+                    <div class="flex justify-center">
+                        <div class="bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 rounded-lg p-3">
+                            <div class="text-sm mb-1">${new Date().toLocaleString()}</div>
+                            <div>Retrying... (Attempt ${retryCount}/${MAX_RETRIES})</div>
+                            <div class="text-xs mt-1">Error: ${error.message}</div>
+                            <div class="text-xs mt-1">Please check your internet connection and try again.</div>
+                        </div>
+                    </div>
+                `;
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 // Retry after a delay
-                setTimeout(() => {
-                    handleMessageSubmit(e);
-                }, 1000 * retryCount);
+                await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+                return handleMessageSubmit(e);
             } else {
-                // Show error message to user
+                // Show detailed error message to user
                 const messagesContainer = document.getElementById('messagesContainer');
                 messagesContainer.innerHTML += `
                     <div class="flex justify-center">
                         <div class="bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg p-3">
-                            Error: Failed to send message. Please try again.
+                            <div class="text-sm mb-1">${new Date().toLocaleString()}</div>
+                            <div class="font-medium">Error: ${error.message || 'Failed to send message'}</div>
+                            <div class="text-xs mt-2 space-y-1">
+                                <p>Possible causes:</p>
+                                <ul class="list-disc list-inside">
+                                    <li>Internet connection issues</li>
+                                    <li>AI service temporarily unavailable</li>
+                                    <li>Server error</li>
+                                </ul>
+                            </div>
+                            <div class="text-xs mt-2">
+                                <p>Please try:</p>
+                                <ul class="list-disc list-inside">
+                                    <li>Starting a new chat</li>
+                                    <li>Checking your internet connection</li>
+                                    <li>Waiting a few minutes and trying again</li>
+                                </ul>
+                            </div>
                         </div>
                     </div>
                 `;
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
             }
         } finally {
             hideTypingIndicator();

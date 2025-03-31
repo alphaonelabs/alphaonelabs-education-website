@@ -85,7 +85,7 @@
 
 <!-- Message Template -->
 <template id="message-template">
-    <div class="message flex space-x-4">
+    <div class="flex space-x-4">
         <div class="flex-shrink-0">
             <div class="w-8 h-8 rounded-full bg-teal-300 flex items-center justify-center">
                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Function to add a message to the chat
     function addMessage(content, isUser = false) {
         const messageElement = messageTemplate.content.cloneNode(true);
-        const messageDiv = messageElement.querySelector('.message');
+        const messageDiv = messageElement.querySelector('.flex');
         const avatarDiv = messageElement.querySelector('.flex-shrink-0');
         const contentDiv = messageElement.querySelector('.prose');
 

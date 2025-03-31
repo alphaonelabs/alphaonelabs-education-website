@@ -6965,73 +6965,6 @@ def create_chat_session(request):
         return JsonResponse({"error": str(e)}, status=400)
 
 @login_required
-@require_http_methods(["POST"])
-def send_message(request):
-    """Handle sending a message to the AI tutor"""
-    try:
-        data = json.loads(request.body)
-        message = data.get("message")
-        session_id = data.get("session_id")
-
-        if not message or not session_id:
-            raise ValidationError("Missing required fields")
-            
-        session = AIChatSession.objects.get(id=session_id, user=request.user)
-        
-        # Save user message
-        user_message = AIChatMessage.objects.create(
-            session=session,
-            role='user',
-            content=message
-        )
-        
-        # Get chat history for context
-        chat_history = AIChatMessage.objects.filter(session=session).order_by('created_at')
-        messages = [{'role': msg.role, 'content': msg.content} for msg in chat_history]
-        
-        # Get user's learning profile for personalization
-        learning_profile = LearningProfile.objects.get_or_create(user=request.user)[0]
-        
-        # Prepare system message with learning preferences
-        system_message = {
-            'role': 'system',
-            'content': f"""You are an AI tutor. The user's learning style is {learning_profile.learning_style}, 
-            preferred difficulty is {learning_profile.difficulty_preference}, and they prefer studying in the 
-            {learning_profile.study_time_preference}. Adjust your responses accordingly."""
-        }
-        
-        # Add system message to the beginning of the conversation
-        messages.insert(0, system_message)
-        
-        # Get response from AI service
-        response = ai_service.get_response(message, context=messages)
-        
-        # Save assistant's response
-        assistant_message = AIChatMessage.objects.create(
-            session=session,
-            role='assistant',
-            content=response,
-            tokens_used=0  # We'll need to implement token counting if needed
-        )
-        
-        return JsonResponse({
-            'status': 'success',
-            'response': assistant_message.content,
-            'tokens_used': assistant_message.tokens_used
-        })
-        
-    except AIChatSession.DoesNotExist:
-        return JsonResponse({
-            'status': 'error',
-            'message': 'Chat session not found'
-        }, status=404)
-    except Exception as e:
-        return JsonResponse({
-            'status': 'error',
-            'message': str(e)
-        }, status=400)
-
-@login_required
 @require_http_methods(["GET"])
 def get_chat_sessions(request):
     """Get all chat sessions for the current user."""
@@ -7073,14 +7006,17 @@ def get_chat_history(request, session_id):
         
         return JsonResponse({
             'status': 'success',
+            'title': session.title or f'Chat {session.id}',
             'messages': messages_data
         })
     except AIChatSession.DoesNotExist:
+        logger.error(f"Chat session {session_id} not found for user {request.user.id}")
         return JsonResponse({
             'status': 'error',
             'message': 'Chat session not found'
         }, status=404)
     except Exception as e:
+        logger.error(f"Error getting chat history for session {session_id}: {str(e)}")
         return JsonResponse({
             'status': 'error',
             'message': str(e)
@@ -7195,29 +7131,60 @@ def send_message(request):
         session_id = data.get("session_id")
 
         if not message or not session_id:
-            return JsonResponse({"error": "Message and session_id are required"}, status=400)
+            return JsonResponse({
+                "error": "Message and session_id are required",
+                "status": "error",
+                "details": "Please provide both a message and a session ID"
+            }, status=400)
 
-        session = AIChatSession.objects.get(id=session_id, user=request.user)
+        try:
+            session = AIChatSession.objects.get(id=session_id, user=request.user)
+        except AIChatSession.DoesNotExist:
+            return JsonResponse({
+                "error": "Chat session not found",
+                "status": "error",
+                "details": f"Session with ID {session_id} does not exist or you don't have access to it"
+            }, status=404)
         
         # Save user message
-        user_message = AIChatMessage.objects.create(
-            session=session,
-            role="user",
-            content=message
-        )
+        try:
+            user_message = AIChatMessage.objects.create(
+                session=session,
+                role='user',
+                content=message
+            )
+        except Exception as e:
+            logger.error(f"Error saving user message: {str(e)}")
+            return JsonResponse({
+                "error": "Failed to save user message",
+                "status": "error",
+                "details": str(e)
+            }, status=500)
 
         # Get AI response
         try:
             ai_response = ai_service.get_response(message)
             
+            if not ai_response:
+                raise Exception("AI service returned empty response")
+            
             # Save AI response
-            assistant_message = AIChatMessage.objects.create(
-                session=session,
-                role="assistant",
-                content=ai_response
-            )
+            try:
+                assistant_message = AIChatMessage.objects.create(
+                    session=session,
+                    role='assistant',
+                    content=ai_response
+                )
+            except Exception as e:
+                logger.error(f"Error saving AI response: {str(e)}")
+                return JsonResponse({
+                    "error": "Failed to save AI response",
+                    "status": "error",
+                    "details": str(e)
+                }, status=500)
 
             return JsonResponse({
+                "status": "success",
                 "user_message": {
                     "id": str(user_message.id),
                     "content": user_message.content,
@@ -7230,12 +7197,26 @@ def send_message(request):
                 }
             })
         except Exception as e:
-            return JsonResponse({"error": f"AI service error: {str(e)}"}, status=500)
+            logger.error(f"AI service error: {str(e)}")
+            return JsonResponse({
+                "error": "AI service error",
+                "status": "error",
+                "details": str(e)
+            }, status=500)
 
-    except AIChatSession.DoesNotExist:
-        return JsonResponse({"error": "Chat session not found"}, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({
+            "error": "Invalid JSON data",
+            "status": "error",
+            "details": "The request body must be valid JSON"
+        }, status=400)
     except Exception as e:
-        return JsonResponse({"error": str(e)}, status=400)
+        logger.error(f"Error in send_message view: {str(e)}")
+        return JsonResponse({
+            "error": "Unexpected error",
+            "status": "error",
+            "details": str(e)
+        }, status=500)
 
 @login_required
 @require_http_methods(["GET"])

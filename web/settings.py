@@ -203,6 +203,19 @@ AUTHENTICATION_BACKENDS = [
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
 
+# AI Service Configuration
+USE_OPENAI = env.bool("USE_OPENAI", default=False)
+USE_GEMINI = env.bool("USE_GEMINI", default=False)
+OPENAI_API_KEY = env.str("OPENAI_API_KEY", default="")
+GEMINI_API_KEY = env.str("GEMINI_API_KEY", default="")
+DEFAULT_AI_SERVICE = env.str("DEFAULT_AI_SERVICE", default="openai")
+
+# Initialize AI service
+ai_service = None
+if USE_OPENAI or USE_GEMINI:
+    from .ai_service import AIService
+    ai_service = AIService()
+
 # Authentication URLs
 LOGIN_URL = "account_login"
 LOGIN_REDIRECT_URL = "index"
@@ -363,12 +376,3 @@ USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
-
-# AI API Settings
-OPENAI_API_KEY = env.str("OPENAI_API_KEY", default="")
-GEMINI_API_KEY = env.str("GEMINI_API_KEY", default="")
-
-# AI Service Configuration
-USE_OPENAI = bool(os.getenv('OPENAI_API_KEY'))
-USE_GEMINI = bool(os.getenv('GEMINI_API_KEY'))
-DEFAULT_AI_SERVICE = os.getenv('DEFAULT_AI_SERVICE', 'gemini' if USE_GEMINI else 'openai')
