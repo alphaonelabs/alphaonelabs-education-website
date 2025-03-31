@@ -4,6 +4,8 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
+from django.views.generic import RedirectView
+from django.utils.translation import gettext_lazy as _
 
 from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
 from .views import (
@@ -24,7 +26,7 @@ from .views import (
 
 # Non-prefixed URLs
 urlpatterns = [
-    path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs
+    path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs 
     path("captcha/", include("captcha.urls")),  # CAPTCHA URLs should not be language-prefixed
 ]
 
@@ -33,9 +35,12 @@ if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)  # Add this line
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  # Add this line
 
-# Language-prefixed URLs
+# Add all language-prefixed URLs
 urlpatterns += i18n_patterns(
     path("", views.index, name="index"),
+    path('ai/', include('ai.urls')),  # AI-powered learning features
+    path("courses/", include('courses.urls')),
+    path("accounts/", include("allauth.urls")),  # Use allauth URLs for authentication
     path("create-test-data/", views.run_create_test_data, name="create_test_data"),
     path("learn/", views.learn, name="learn"),
     path("waiting-rooms/", views.waiting_rooms, name="waiting_rooms"),
@@ -65,10 +70,8 @@ urlpatterns += i18n_patterns(
     path("success-stories/<slug:slug>/delete/", views.delete_success_story, name="delete_success_story"),
     # Authentication URLs
     path("accounts/signup/", views.signup_view, name="account_signup"),  # Our custom signup view
-    path("accounts/", include("allauth.urls")),
-    path("account/notification-preferences/", notification_preferences, name="notification_preferences"),
-    path("profile/", views.profile, name="profile"),
     path("accounts/profile/", views.profile, name="accounts_profile"),
+    path("notification-preferences/", views.notification_preferences, name="notification_preferences"),
     path("accounts/delete/", views.delete_account, name="delete_account"),
     # Dashboard URLs
     path("dashboard/student/", views.student_dashboard, name="student_dashboard"),
@@ -84,7 +87,6 @@ urlpatterns += i18n_patterns(
     path("courses/<slug:slug>/toggle-status/", views.toggle_course_status, name="toggle_course_status"),
     path("sessions/<int:session_id>/edit/", views.edit_session, name="edit_session"),
     path("courses/<slug:slug>/delete/", views.delete_course, name="delete_course"),
-    path("courses/<slug:slug>/add-session/", views.add_session, name="add_session"),
     path("courses/<slug:slug>/confirm-rolled-sessions/", views.confirm_rolled_sessions, name="confirm_rolled_sessions"),
     path("courses/<slug:slug>/message-students/", views.message_enrolled_students, name="message_students"),
     path("courses/<slug:slug>/add-student/", views.add_student_to_course, name="add_student_to_course"),
@@ -407,9 +409,6 @@ urlpatterns += i18n_patterns(
         name="update_teacher_notes",
     ),
     path("award-badge/", views.award_badge, name="award_badge"),
-    # Map Urls
-    path("classes-map/", views.classes_map, name="classes_map"),
-    path("api/map-data/", views.map_data_api, name="map_data_api"),
     # Features page
     path("features/", features_page, name="features"),
     path("features/vote/", feature_vote, name="feature_vote"),

@@ -1,0 +1,396 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Personalized Tutor{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/ai_components.css' %}">
+<style>
+    /* Template-specific variables */
+    :root {
+        --primary-gradient: linear-gradient(135deg, #4b6cb7 0%, #182848 100%);
+        --message-user-gradient: linear-gradient(135deg, #3a7bd5 0%, #3a6073 100%);
+        --message-ai-gradient: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        --blue-dark: #182848;
+        --blue-light: #4b6cb7;
+    }
+
+    /* Template-specific overrides */
+    .chat-header {
+        background: var(--primary-gradient);
+    }
+
+    .chat-messages {
+        background-image: 
+            radial-gradient(rgba(75, 108, 183, 0.03) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(240, 242, 245, 0.5), rgba(255, 255, 255, 0.8));
+        background-size: 20px 20px, 100% 100%;
+    }
+
+    .user-message .message-content {
+        background: var(--message-user-gradient);
+        color: white;
+        border-bottom-right-radius: 5px;
+    }
+
+    .ai-message .message-content {
+        background: var(--message-ai-gradient);
+        color: #343a40;
+        border-bottom-left-radius: 5px;
+        box-shadow: var(--shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    /* Tutor-specific styles */
+    .badge {
+        padding: 5px 10px;
+        border-radius: 10px;
+        font-weight: 500;
+        font-size: 0.75rem;
+        margin-left: 5px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .badge-primary {
+        background: var(--blue-light);
+        color: white;
+    }
+    
+    .thinking {
+        display: flex;
+        align-items: center;
+        padding: 14px 18px;
+        font-style: italic;
+        color: #6c757d;
+        font-size: 0.9rem;
+        max-width: 80%;
+        margin-right: auto;
+        background: rgba(255, 255, 255, 0.5);
+        border-radius: var(--border-radius-xl);
+        border-bottom-left-radius: 5px;
+        box-shadow: var(--shadow-sm);
+        backdrop-filter: blur(5px);
+    }
+
+    /* Tutor typing dots */
+    .typing-dot {
+        background-color: var(--blue-light);
+    }
+
+    /* Tutor-specific form styling */
+    #question-input:focus {
+        border-color: var(--blue-light);
+        box-shadow: 0 0 0 3px rgba(75, 108, 183, 0.15), inset 0 2px 4px rgba(0, 0, 0, 0.02);
+        outline: none;
+    }
+
+    #question-form button {
+        background: var(--primary-gradient);
+    }
+
+    /* Scrollbar thumb color */
+    .chat-messages::-webkit-scrollbar-thumb {
+        background: rgba(75, 108, 183, 0.25);
+    }
+    
+    .chat-messages::-webkit-scrollbar-thumb:hover {
+        background: rgba(75, 108, 183, 0.4);
+    }
+
+    /* Enhanced selectors styling - specific to tutor */
+    .selector-group {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .selector-container {
+        position: relative;
+    }
+    
+    #subject-selector, #difficulty-selector {
+        appearance: none;
+        border-radius: 20px;
+        padding: 7px 28px 7px 14px;
+        border: none;
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s;
+        cursor: pointer;
+        min-width: 120px;
+    }
+    
+    #subject-selector:focus, #difficulty-selector:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.3);
+    }
+    
+    .selector-container:after {
+        content: '▼';
+        font-size: 10px;
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+    }
+    
+    #subject-selector option, #difficulty-selector option {
+        color: #333;
+        background: white;
+    }
+
+    /* Mobile responsive adjustments for tutor selectors */
+    @media (max-width: 768px) {
+        .selector-group {
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        #subject-selector, #difficulty-selector {
+            min-width: auto;
+            width: 100%;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-chalkboard-teacher me-2"></i>
+                        <span>Personalized Tutor</span>
+                    </div>
+                    <div class="selector-group">
+                        <div class="selector-container">
+                            <select id="subject-selector" class="form-control-sm">
+                                <option value="general">General</option>
+                                {% for subject in subjects %}
+                                <option value="{{ subject.value }}">{{ subject.label }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="selector-container">
+                            <select id="difficulty-selector" class="form-control-sm">
+                                <option value="easy">Easy</option>
+                                <option value="moderate" selected>Moderate</option>
+                                <option value="challenging">Challenging</option>
+                                <option value="adaptive">Adaptive</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="chat-messages" id="chat-messages">
+                    <div class="ai-message">
+                        <div class="message-content">
+                            <p>👋 Welcome to your personalized tutor!</p>
+                            <p>I'll adapt my explanations based on your learning profile, current understanding, and previous interactions. How can I help you learn today?</p>
+                        </div>
+                        <div class="message-time">Just now</div>
+                    </div>
+                </div>
+                <div class="chat-input">
+                    <form id="question-form">
+                        <input type="text" id="question-input" placeholder="Ask your learning question..." required>
+                        <button type="submit" aria-label="Send message">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white">
+                    <i class="fas fa-user-graduate me-2"></i> Your Learning Profile
+                </div>
+                <div class="card-body">
+                    <p><strong>Learning Style:</strong> <span class="text-primary">{{ profile.get_learning_style_display }}</span></p>
+                    <p><strong>Current Level:</strong> <span class="text-primary">{{ profile.get_difficulty_preference_display }}</span></p>
+                    <p><strong>Preferred Detail:</strong> <span class="text-primary">{{ profile.get_response_length_display }}</span></p>
+                    <a href="{% url 'ai_settings' %}" class="btn btn-sm btn-outline-primary w-100 mt-2">Update Profile</a>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <i class="fas fa-lightbulb me-2"></i> About Personalized Tutoring
+                </div>
+                <div class="card-body">
+                    <p class="small">Your personalized tutor adapts to:</p>
+                    <ul class="small mb-0">
+                        <li class="mb-2">Your learning history and preferences</li>
+                        <li class="mb-2">Topics you've struggled with previously</li>
+                        <li class="mb-2">Your recent learning activities</li>
+                        <li>Your selected difficulty level</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatMessages = document.getElementById('chat-messages');
+        const questionForm = document.getElementById('question-form');
+        const questionInput = document.getElementById('question-input');
+        const subjectSelector = document.getElementById('subject-selector');
+        const difficultySelector = document.getElementById('difficulty-selector');
+        
+        // Scroll to bottom of chat
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+        
+        // Focus on input field
+        questionInput.focus();
+        
+        // Handle form submission
+        questionForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const question = questionInput.value.trim();
+            const subject = subjectSelector.value;
+            const difficulty = difficultySelector.value;
+            
+            if (!question) return;
+            
+            // Add user message
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.className = 'user-message';
+            userMessageDiv.innerHTML = `
+                <div class="message-content">${escapeHtml(question)}</div>
+                <div class="message-time">Just now</div>
+            `;
+            chatMessages.appendChild(userMessageDiv);
+            
+            // Add thinking indicator
+            const thinkingDiv = document.createElement('div');
+            thinkingDiv.className = 'thinking';
+            thinkingDiv.innerHTML = `
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+                <span>Tutor is thinking...</span>
+            `;
+            chatMessages.appendChild(thinkingDiv);
+            
+            // Smooth scroll to bottom
+            chatMessages.scrollTo({
+                top: chatMessages.scrollHeight,
+                behavior: 'smooth'
+            });
+            
+            // Clear input and keep focus
+            questionInput.value = '';
+            questionInput.focus();
+            
+            // Create a timeout promise
+            const timeout = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Request timed out')), 20000);
+            });
+            
+            // Race the fetch against the timeout
+            Promise.race([
+                fetch('{% url "ask_tutor" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({
+                        message: question,
+                        subject: subject,
+                        difficulty: difficulty
+                    })
+                }), timeout
+            ])
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Server error: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                // Remove thinking indicator
+                chatMessages.removeChild(thinkingDiv);
+                
+                // Process response - convert line breaks and format code
+                let processedAnswer = data.response.text.replace(/\n/g, '<br>');
+                
+                // Simple code block detection and formatting
+                processedAnswer = processedAnswer.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+                processedAnswer = processedAnswer.replace(/`([^`]+)`/g, '<code>$1</code>');
+                
+                // Add AI message
+                const aiMessageDiv = document.createElement('div');
+                aiMessageDiv.className = 'ai-message';
+                aiMessageDiv.innerHTML = `
+                    <div class="message-content">${processedAnswer}</div>
+                    <div class="d-flex align-items-center">
+                        <div class="message-time">
+                            Just now
+                            <span class="badge badge-primary">Personalized</span>
+                        </div>
+                    </div>
+                `;
+                chatMessages.appendChild(aiMessageDiv);
+                
+                // Smooth scroll to bottom
+                chatMessages.scrollTo({
+                    top: chatMessages.scrollHeight,
+                    behavior: 'smooth'
+                });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                
+                // Remove thinking indicator
+                chatMessages.removeChild(thinkingDiv);
+                
+                // Add appropriate error message based on the error type
+                const errorMessageDiv = document.createElement('div');
+                errorMessageDiv.className = 'ai-message';
+                
+                let errorMessage = "Sorry, there was an error processing your request. Please try again.";
+                if (error.message === 'Request timed out') {
+                    errorMessage = "The server took too long to respond. Please try again later.";
+                } else if (error.message.includes('Server error')) {
+                    errorMessage = "The server encountered a problem. Please try again later.";
+                }
+                
+                errorMessageDiv.innerHTML = `
+                    <div class="message-content">
+                        <p>${errorMessage}</p>
+                    </div>
+                    <div class="message-time">Just now</div>
+                `;
+                chatMessages.appendChild(errorMessageDiv);
+                
+                // Smooth scroll to bottom
+                chatMessages.scrollTo({
+                    top: chatMessages.scrollHeight,
+                    behavior: 'smooth'
+                });
+            });
+        });
+        
+        // HTML escaping function for security
+        function escapeHtml(unsafe) {
+            return unsafe
+                 .replace(/&/g, "&amp;")
+                 .replace(/</g, "&lt;")
+                 .replace(/>/g, "&gt;")
+                 .replace(/"/g, "&quot;")
+                 .replace(/'/g, "&#039;");
+        }
+    });
+</script>
+{% endblock %}

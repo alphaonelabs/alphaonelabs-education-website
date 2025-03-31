@@ -1,12 +1,15 @@
 import os
 import sys
 from pathlib import Path
-
+from dotenv import load_dotenv
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
+load_dotenv()
 SECRET_KEY = "django-insecure-5kyff0s@l_##j3jawec5@b%!^^e(j7v)ouj4b7q6kru#o#a)o3"
+OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
+GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY', '')
+
 
 env = environ.Env()
 
@@ -77,21 +80,25 @@ CSRF_TRUSTED_ORIGINS = [
 # Error handling
 handler404 = "web.views.custom_404"
 handler500 = "web.views.custom_500"
-
 INSTALLED_APPS = [
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
-    "django.contrib.sites",
-    "django.contrib.humanize",
-    "allauth",
-    "allauth.account",
-    "captcha",
-    "markdownx",
-    "web",
+    # Django apps
+    'django.contrib.admin',
+    'django.contrib.auth',
+    'django.contrib.contenttypes',
+    'django.contrib.sessions',
+    'django.contrib.messages',
+    'django.contrib.staticfiles',
+    
+    # Third-party apps
+    'allauth',
+    'allauth.account',
+    'captcha',  # Add this line
+    # Other third-party apps
+    
+    # Local apps
+    'ai',
+    'web',
+    # Other project apps
 ]
 
 if DEBUG and not TESTING:
@@ -131,6 +138,9 @@ TEMPLATES = [
                 "web.context_processors.last_modified",
                 "web.context_processors.invitation_notifications",
             ],
+            'libraries': {
+                'url_tags': 'ai_assistant.templatetags.url_tags',
+            },
         },
     },
 ]
@@ -230,23 +240,41 @@ USE_I18N = True
 
 USE_TZ = True
 
-
-STATIC_URL = "static/"
-
-
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'web/static'),
+]
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# Media files
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
+# Media root is conditionally set below
 if not DEBUG:
     MEDIA_ROOT = "/home/alphaonelabs99282llkb/web/media"
 else:
-    MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+    MEDIA_ROOT = BASE_DIR / "media"
 MEDIA_URL = "/media/"
 
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-STATICFILES_DIRS = [BASE_DIR / "static"]
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Email settings
+SENDGRID_API_KEY = env.str("SENDGRID_API_KEY", default="")
+EMAIL_HOST = env.str("EMAIL_HOST", default="smtp.sendgrid.net")
+EMAIL_PORT = env.int("EMAIL_PORT", default=587)
+EMAIL_HOST_USER = env.str("EMAIL_HOST_USER", default="apikey")
+EMAIL_HOST_PASSWORD = SENDGRID_API_KEY
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
+DEFAULT_FROM_EMAIL = env.str("EMAIL_FROM", default="noreply@alphaonelabs.xyz")
+
+# Use console email backend if no SendGrid API key is provided
+if not SENDGRID_API_KEY:
+    EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+    print("WARNING: No SendGrid API key found, using console email backend")
+else:
+    EMAIL_BACKEND = 'web.email_backend.SendgridBackend'
+
 if DEBUG:
     EMAIL_BACKEND = "web.email_backend.SlackNotificationEmailBackend"
     print("Using console email backend with Slack notifications for development")
@@ -286,6 +314,10 @@ TWITTER_USERNAME = env.str("TWITTER_USERNAME", default="alphaonelabs")
 
 # Slack Integration
 SLACK_WEBHOOK_URL = env.str("SLACK_WEBHOOK_URL", default="")
+# Make sure it's a valid URL - if it's a placeholder, set it to empty
+if SLACK_WEBHOOK_URL and (SLACK_WEBHOOK_URL == "your-slack-webhook-url" or ("://" not in SLACK_WEBHOOK_URL)):
+    SLACK_WEBHOOK_URL = ""
+    print("WARNING: Invalid Slack webhook URL, disabling Slack integration")
 
 # Slack webhook for email notifications
 EMAIL_SLACK_WEBHOOK = env.str("EMAIL_SLACK_WEBHOOK", default=SLACK_WEBHOOK_URL)
@@ -358,7 +390,32 @@ MARKDOWNX_MARKDOWN_EXTENSIONS = [
 MARKDOWNX_URLS_PATH = "/markdownx/markdownify/"
 MARKDOWNX_UPLOAD_URLS_PATH = "/markdownx/upload/"
 MARKDOWNX_MEDIA_PATH = "markdownx/"  # Path within MEDIA_ROOT
-
+# Add to settings.py if not already present
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'ai': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
 USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data

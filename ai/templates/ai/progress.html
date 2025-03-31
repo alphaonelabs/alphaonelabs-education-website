@@ -1,0 +1,120 @@
+{% extends "ai/ai_base.html" %}
+{% load static %}
+{% load custom_filters %}
+{% block title %}Learning Progress | {{ block.super }}{% endblock %}
+
+{% block ai_content %}
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light">
+        <h4 class="mb-0">Your Learning Progress</h4>
+    </div>
+    <div class="card-body">
+        {% if subjects %}
+            <ul class="nav nav-tabs mb-4" id="subjectTabs" role="tablist">
+                {% for subject in subjects %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link {% if forloop.first %}active{% endif %}" 
+                            id="tab-{{ subject.subject|slugify }}" 
+                            data-bs-toggle="tab" 
+                            data-bs-target="#content-{{ subject.subject|slugify }}" 
+                            type="button" 
+                            role="tab" 
+                            aria-selected="{% if forloop.first %}true{% else %}false{% endif %}">
+                        {{ subject.subject|title }}
+                    </button>
+                </li>
+                {% endfor %}
+            </ul>
+            
+            <div class="tab-content" id="subjectTabContent">
+                {% for subject in subjects %}
+                <div class="tab-pane fade {% if forloop.first %}show active{% endif %}" 
+                     id="content-{{ subject.subject|slugify }}" 
+                     role="tabpanel" 
+                     aria-labelledby="tab-{{ subject.subject|slugify }}">
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5>{{ subject.subject|title }}</h5>
+                        <div>
+                            <span class="badge bg-info p-2">
+                                {{ subject.topic_count }} Topics
+                            </span>
+                            <span class="badge bg-success p-2">
+                                {{ subject.avg_mastery|floatformat:1 }}/5 Average Mastery
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Topic</th>
+                                    <th>Mastery Level</th>
+                                    <th>Confidence</th>
+                                    <th>Last Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for record in subject.records %}
+                                <tr>
+                                    <td>{{ record.topic }}</td>
+                                    <td>
+                                        <div class="progress">
+                                            <div class="progress-bar bg-success" 
+                                                 role="progressbar" 
+                                                 style="width: {{ record.mastery_level|floatformat:0|mult:20 }}%"
+                                                 aria-valuenow="{{ record.mastery_level }}" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="5">
+                                                {{ record.get_mastery_level_display }}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>{{ record.confidence_score|floatformat:2 }}</td>
+                                    <td>{{ record.updated_at|date:"M d, Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                <p class="mb-0">You haven't interacted with the AI assistant enough to generate progress records yet. 
+                Start asking questions about different subjects to see your learning progress!</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-header bg-light">
+        <h5 class="mb-0">Recommended Next Steps</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">Review Weak Areas</h6>
+                        <p class="card-text">Focus on topics with mastery levels below 3 to solidify your understanding.</p>
+                        <a href="{% url 'ai:chat' %}" class="btn btn-sm btn-outline-primary">Chat with AI</a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">Explore New Topics</h6>
+                        <p class="card-text">Expand your knowledge by asking questions about unfamiliar subjects.</p>
+                        <a href="{% url 'ai:chat' %}" class="btn btn-sm btn-outline-primary">Chat with AI</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

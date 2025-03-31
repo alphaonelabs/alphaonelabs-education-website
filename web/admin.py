@@ -532,11 +532,6 @@ class ChallengeSubmissionAdmin(admin.ModelAdmin):
     list_display = ("user", "challenge", "submitted_at")
 
 
-# Unregister the default User admin and register our custom one
-admin.site.unregister(User)
-admin.site.register(User, CustomUserAdmin)
-
-
 @admin.register(Storefront)
 class StorefrontAdmin(admin.ModelAdmin):
     list_display = ("id", "name", "teacher", "is_active", "created_at")

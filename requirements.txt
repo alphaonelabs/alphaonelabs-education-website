@@ -57,4 +57,13 @@ tzdata==2025.1 ; python_version >= "3.10" and python_version < "4.0" and sys_pla
 uritemplate==4.1.1 ; python_version >= "3.10" and python_version < "4.0"
 urllib3==2.3.0 ; python_version >= "3.10" and python_version < "4.0"
 whitenoise==6.9.0 ; python_version >= "3.10" and python_version < "4.0"
+
+# AI Assistant Dependencies
+openai>=1.0.0
+google-generativeai>=0.3.0
+dotenv
+nltk
+tenacity
+
+# Social Media Dependencies
 tweepy==4.15.0 ; python_version >= "3.10" and python_version < "4.0"

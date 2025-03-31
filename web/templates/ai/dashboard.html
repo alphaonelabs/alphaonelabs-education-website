@@ -1,0 +1,62 @@
+{% extends "ai/base_ai.html" %}
+{% load static %}
+
+{% block title %}AI Dashboard{% endblock %}
+
+{% block dashboard_active %}border-teal-600 text-teal-600 dark:text-teal-500 dark:border-teal-500{% endblock %}
+
+{% block ai_content %}
+<div class="space-y-6">
+  <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Welcome to Your AI Learning Assistant</h2>
+  
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Recent Conversations -->
+    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+      <h3 class="font-semibold text-gray-800 dark:text-white mb-3">Recent Conversations</h3>
+      <div class="space-y-2">
+        {% for conv in recent_conversations %}
+          <div class="text-sm">
+            <a href="{{ conv.url }}" class="text-teal-600 dark:text-teal-400 hover:underline">
+              {{ conv.subject }} – {{ conv.last_message|truncatewords:10 }} <small>({{ conv.updated_at|date:"M d, Y" }})</small>
+            </a>
+          </div>
+        {% empty %}
+          <div class="text-sm text-gray-500">No recent conversations</div>
+        {% endfor %}
+      </div>
+      <a href="{% url 'chat' %}" class="mt-3 inline-block text-sm text-teal-600 dark:text-teal-400 font-medium hover:underline">Start new chat →</a>
+    </div>
+    
+    <!-- Your Learning Progress -->
+    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+      <h3 class="font-semibold text-gray-800 dark:text-white mb-3">Your Learning Progress</h3>
+      <div class="flex items-center mt-2">
+        <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+          <div class="bg-teal-600 h-2.5 rounded-full" style="width: {{ progress_percentage }}%"></div>
+        </div>
+        <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">{{ progress_percentage }}%</span>
+      </div>
+      {% if progress_details %}
+      <div class="text-sm text-gray-600 dark:text-gray-400 mt-2">
+        Completed {{ progress_details.completed }} of {{ progress_details.total }} courses.
+      </div>
+      {% endif %}
+      <a href="{% url 'progress' %}" class="mt-3 inline-block text-sm text-teal-600 dark:text-teal-400 font-medium hover:underline">View progress →</a>
+    </div>
+    
+    <!-- Suggested Topics -->
+    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
+      <h3 class="font-semibold text-gray-800 dark:text-white mb-3">Suggested Topics</h3>
+      <div class="space-y-2">
+        {% for topic in suggested_topics %}
+          <div class="text-sm">
+            <a href="{{ topic.url }}" class="text-teal-600 dark:text-teal-400 hover:underline">{{ topic.title }}</a>
+          </div>
+        {% empty %}
+          <div class="text-sm text-gray-500">No suggestions available</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -503,6 +503,18 @@ def profile(request):
 
     return render(request, "profile.html", context)
 
+@login_required
+def notification_preferences(request):
+    if request.method == "POST":
+        # Handle notification preference updates
+        user = request.user
+        user.profile.email_notifications = request.POST.get("email_notifications", False)
+        user.profile.push_notifications = request.POST.get("push_notifications", False)
+        user.profile.save()
+        messages.success(request, "Notification preferences updated successfully.")
+        return redirect("profile")
+    
+    return render(request, "notification_preferences.html")
 
 @login_required
 def create_course(request):
@@ -909,14 +921,15 @@ def github_update(request):
 
 
 def send_slack_message(message):
-    webhook_url = os.getenv("SLACK_WEBHOOK_URL")
-    if not webhook_url:
-        print("Warning: SLACK_WEBHOOK_URL not configured")
+    """Send a message to the configured Slack webhook if available."""
+    webhook_url = getattr(settings, "SLACK_WEBHOOK_URL", "")
+    if not webhook_url or "://" not in webhook_url:
+        print("Warning: SLACK_WEBHOOK_URL not configured or invalid")
         return
 
     payload = {"text": f"```{message}```"}
     try:
-        response = requests.post(webhook_url, json=payload)
+        response = requests.post(webhook_url, json=payload, timeout=5)  # Added timeout
         response.raise_for_status()  # Raise exception for bad status codes
     except Exception as e:
         print(f"Failed to send Slack message: {e}")
