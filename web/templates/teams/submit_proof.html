@@ -103,7 +103,6 @@
 {% endblock %}
 {% block scripts %}
   <script>
-      // Optional: Add file name display when user selects a file
       document.addEventListener('DOMContentLoaded', function() {
           const fileInput = document.querySelector('input[type="file"]');
           if (fileInput) {
@@ -113,8 +112,6 @@
                       const fileNameElem = document.createElement('p');
                       fileNameElem.className = 'mt-2 text-sm text-gray-600 dark:text-gray-400 text-center';
                       fileNameElem.textContent = `Selected: ${fileName}`;
-
-                      // Remove any existing filename display
                       const existingFileNames = this.parentElement.parentElement.parentElement.parentElement.querySelectorAll('.text-gray-600.text-center');
                       existingFileNames.forEach(elem => elem.remove());
 
