@@ -188,7 +188,6 @@ stripe.api_key = settings.STRIPE_SECRET_KEY
 
 # Test media view for testing purposes
 def test(request):
-    from django.shortcuts import render
     return render(request, 'test.html')
 
 def sitemap(request):
