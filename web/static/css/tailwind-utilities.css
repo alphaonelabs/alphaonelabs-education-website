@@ -1,0 +1,231 @@
+/* Progress Bar Utilities */
+@layer utilities {
+  .progress-bar {
+    @apply w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden;
+  }
+  
+  .progress-bar-fill {
+    @apply h-full bg-teal-300 dark:bg-teal-400 transition-all duration-300;
+  }
+}
+
+/* Animation Utilities */
+@layer utilities {
+  .animate-delay-200 {
+    animation-delay: 200ms;
+  }
+  
+  .animate-delay-400 {
+    animation-delay: 400ms;
+  }
+  
+  .animate-delay-600 {
+    animation-delay: 600ms;
+  }
+  
+  .animate-delay-800 {
+    animation-delay: 800ms;
+  }
+  
+  .animate-delay-1000 {
+    animation-delay: 1000ms;
+  }
+  
+  .animate-delay-1200 {
+    animation-delay: 1200ms;
+  }
+}
+
+/* Display Utilities */
+@layer utilities {
+  .display-none {
+    display: none !important;
+  }
+  
+  .display-block {
+    display: block !important;
+  }
+}
+
+/* Background Image Utilities */
+@layer utilities {
+  .bg-image-cover {
+    @apply bg-cover bg-center bg-no-repeat;
+  }
+}
+
+/* Email Template Utilities */
+@layer utilities {
+  .email-container {
+    @apply max-w-2xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-lg;
+  }
+  
+  .email-heading {
+    @apply text-2xl font-bold text-gray-900 dark:text-white mb-4;
+  }
+  
+  .email-content {
+    @apply text-gray-600 dark:text-gray-300 mb-6;
+  }
+  
+  .email-button {
+    @apply inline-block bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200;
+  }
+  
+  .email-divider {
+    @apply border-t border-gray-200 dark:border-gray-700 my-6;
+  }
+}
+
+/* Message Animation Utilities */
+@layer utilities {
+  .message-appear {
+    @apply opacity-0 transform translate-y-4;
+    animation: messageAppear 0.3s ease-out forwards;
+  }
+}
+
+@keyframes messageAppear {
+  to {
+    @apply opacity-100 transform translate-y-0;
+  }
+}
+
+/* Loading Spinner Utilities */
+@layer utilities {
+  .spinner {
+    @apply w-8 h-8 border-4 border-teal-300 dark:border-teal-400 border-t-transparent rounded-full;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Modal Utilities */
+@layer utilities {
+  .modal-overlay {
+    @apply fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50;
+  }
+  
+  .modal-content {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-lg w-full mx-4;
+  }
+}
+
+/* Form Input Utilities */
+@layer utilities {
+  .form-input {
+    @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white;
+  }
+  
+  .form-button {
+    @apply bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200;
+  }
+}
+
+/* Typography Utilities */
+@layer utilities {
+  .prose-dark {
+    @apply prose dark:prose-invert max-w-none;
+  }
+  
+  .prose-heading {
+    @apply prose-headings:text-gray-900 dark:prose-headings:text-white;
+  }
+  
+  .prose-body {
+    @apply prose-p:text-gray-600 dark:prose-p:text-gray-300;
+  }
+  
+  .prose-link {
+    @apply prose-a:text-teal-600 dark:prose-a:text-teal-400 hover:prose-a:text-teal-700 dark:hover:prose-a:text-teal-300;
+  }
+  
+  .prose-code {
+    @apply prose-code:bg-gray-100 dark:prose-code:bg-gray-800 prose-code:text-gray-800 dark:prose-code:text-gray-200;
+  }
+}
+
+/* Card Utilities */
+@layer utilities {
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6;
+  }
+  
+  .card-title {
+    @apply text-2xl font-bold text-gray-900 dark:text-white mb-4;
+  }
+  
+  .card-content {
+    @apply text-gray-600 dark:text-gray-300;
+  }
+}
+
+/* Button Utilities */
+@layer utilities {
+  .btn-primary {
+    @apply bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-6 py-2 rounded-lg transition duration-200;
+  }
+  
+  .btn-danger {
+    @apply bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-lg transition duration-200;
+  }
+}
+
+/* Navigation Utilities */
+@layer utilities {
+  .nav-link {
+    @apply text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition duration-200;
+  }
+  
+  .nav-link-active {
+    @apply text-teal-600 dark:text-teal-400 font-semibold;
+  }
+  
+  .dropdown-menu {
+    @apply absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-2 z-50;
+  }
+  
+  .dropdown-item {
+    @apply block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700;
+  }
+}
+
+/* Table Utilities */
+@layer utilities {
+  .table-container {
+    @apply overflow-x-auto;
+  }
+  
+  .table {
+    @apply min-w-full divide-y divide-gray-200 dark:divide-gray-700;
+  }
+  
+  .table-header {
+    @apply bg-gray-50 dark:bg-gray-800;
+  }
+  
+  .table-header-cell {
+    @apply px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider;
+  }
+  
+  .table-body {
+    @apply bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700;
+  }
+  
+  .table-row {
+    @apply hover:bg-gray-50 dark:hover:bg-gray-700;
+  }
+  
+  .table-cell {
+    @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-300;
+  }
+} 

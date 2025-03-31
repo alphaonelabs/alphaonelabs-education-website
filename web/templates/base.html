@@ -18,8 +18,8 @@
         Alpha One Labs - Open Source Education Platform
       {% endblock title %}
     </title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tailwind CSS CDN with Typography Plugin -->
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <script src="https://js-de.sentry-cdn.com/ca8bad7e1a5a3012bccae7d9bd4f6d3d.min.js"
             crossorigin="anonymous"></script>
     <script>
@@ -27,8 +27,25 @@
         tailwind.config = {
             darkMode: 'class',
             theme: {
-                extend: {}
-            }
+                extend: {
+                    typography: {
+                        DEFAULT: {
+                            css: {
+                                maxWidth: 'none',
+                                color: 'inherit',
+                            },
+                        },
+                        dark: {
+                            css: {
+                                color: 'inherit',
+                            },
+                        },
+                    },
+                },
+            },
+            plugins: [
+                require('@tailwindcss/typography'),
+            ],
         }
 
         // Debug flag
@@ -90,8 +107,10 @@
           integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA=="
           crossorigin="anonymous"
           referrerpolicy="no-referrer" />
-    <!-- AI Response Styling -->
-    <link rel="stylesheet" href="{% static 'css/ai_response.css' %}" />
+    <!-- Tailwind Components -->
+    <link rel="stylesheet" href="{% static 'css/tailwind-components.css' %}" />
+    <!-- Tailwind Utilities -->
+    <link rel="stylesheet" href="{% static 'css/tailwind-utilities.css' %}" />
     
     <!-- MathJax Configuration -->
     <script>
@@ -165,7 +184,6 @@
     </style>
     {% block extra_head %}
     {% endblock extra_head %}
-    <link rel="stylesheet" href="{% static 'css/markdown.css' %}" />
   </head>
   <body class="min-h-screen flex flex-col bg-white text-gray-900 dark:bg-black dark:text-gray-100 transition-colors duration-300 overflow-x-hidden">
     <!-- HEADER -->
