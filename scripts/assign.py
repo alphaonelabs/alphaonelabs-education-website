@@ -72,10 +72,7 @@ def main():
         # Check for unassign request
         is_unassign = any(keyword in comment_body for keyword in unassign_keywords)
         if is_unassign:
-            user_login = comment.get("user", {}).get("login", "")
             issue_number = issue.get("number")
-            print(f"Unassign request detected. Removing assignment of issue #{issue_number} from {user_login}")
-
             try:
                 # Get issue details
                 issue_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}"
@@ -85,6 +82,14 @@ def main():
                 issue_data = issue_response.json()
                 print("Issue details fetched.")
 
+                actual_assignee_obj = issue_data.get("assignee")
+                if actual_assignee_obj:
+                    actual_assignee = actual_assignee_obj.get("login")
+                    print(f"Unassign request detected. Removing assignment of issue #{issue_number} from {actual_assignee}")
+                else:
+                    print(f"No assignee found on issue #{issue_number}. Unassignment aborted.")
+                    return
+
                 # Check if issue has "assigned" label
                 has_assigned_label = any(label.get("name") == "assigned" for label in issue_data.get("labels", []))
                 print(f"'assigned' label present: {has_assigned_label}")
@@ -92,10 +97,11 @@ def main():
                 if has_assigned_label:
                     # Remove assignee
                     assignees_url = f"{issue_url}/assignees"
-                    print(f"Removing assignee {user_login} via {assignees_url}")
-                    requests.delete(assignees_url, headers=headers, json={"assignees": [user_login]})
+                    print(f"Removing assignee {actual_assignee} via {assignees_url}")
+                    requests.delete(assignees_url, headers=headers, json={"assignees": [actual_assignee]})
                     print("Assignee removed.")
-
+            except Exception as e:
+                print(f"Failed to unassign issue #{issue_number}: {str(e)}")
                     # Remove "assigned" label
                     try:
                         label_url = f"{issue_url}/labels/assigned"
