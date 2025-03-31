@@ -8,70 +8,70 @@
     <h1 class="text-4xl font-bold text-center text-gray-900 dark:text-white mb-10">Meetups & Webinars</h1>
     <!-- Meetup Cards -->
     <div class="flex flex-wrap justify-center gap-6 relative">
-  {% if page_obj %}
-    {% for meetup in page_obj %}
-      <div class="w-full md:w-[320px] h-[250px] bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg transition-transform transform hover:scale-105 group relative">
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
-          <a href="{% url 'meetup_detail' slug=meetup.slug %}"
-             class="text-blue-600 dark:text-blue-400 hover:underline">{{ meetup.title }}</a>
-        </h2>
-        <!-- Truncated Description -->
-        <p class="text-gray-600 dark:text-gray-300 line-clamp-3 overflow-hidden">{{ meetup.description|truncatechars:150 }}</p>
-        <p class="text-gray-700 dark:text-gray-400 text-sm mt-2">
-          <strong>Date:</strong> {{ meetup.date|date:"F j, Y, g:i a" }}
-        </p>
-        {% if meetup.event_type == 'in_person' and meetup.location %}
-          <p class="text-gray-700 dark:text-gray-400 text-sm">
-            <strong>Location:</strong> {{ meetup.location }}
-          </p>
-        {% elif meetup.event_type == 'online' %}
-          <p class="text-gray-700 dark:text-gray-400 text-sm">
-            <strong>Type:</strong> {{ meetup.get_event_type_display }}
-          </p>
-        {% endif %}
-        <!-- Register Button -->
-        {% if user.is_authenticated %}
-          {% if meetup.id in user_registered_meetups %}
-            <p class="text-green-600 font-semibold mt-3 text-sm">You are already registered</p>
-          {% else %}
-            <form method="post" action="{% url 'register_meetup' meetup.slug %}">
-              {% csrf_token %}
-              <button type="submit"
-                      aria-label="Register for meetup"
-                      class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 mt-3 rounded-lg transition-all duration-200 text-sm">
-                Register
-              </button>
-            </form>
-          {% endif %}
-        {% else %}
-          <p class="text-gray-500 mt-2 text-sm">
-            <a href="{% url 'account_login' %}?next={{ request.path }}"
-               class="text-blue-600 hover:underline">Log in</a> to register for this meetup.
-          </p>
-        {% endif %}
-      </div>
-    {% endfor %}
-  {% else %}
-    <div class="text-center py-8">
-      <p class="text-gray-600 dark:text-gray-400">No meetups currently scheduled. Check back later!</p>
-    </div>
-  {% endif %}
-</div>
-    </div>
-    <!-- Pagination -->
-    <div class="flex justify-center items-center space-x-4 mt-10">
-      {% if page_obj.has_previous %}
-        <a href="?page=1" class="text-blue-600 dark:text-blue-400">&laquo; First</a>
-        <a href="?page={{ page_obj.previous_page_number }}"
-           class="text-blue-600 dark:text-blue-400">Previous</a>
-      {% endif %}
-      <span class="text-gray-600 dark:text-gray-400">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.</span>
-      {% if page_obj.has_next %}
-        <a href="?page={{ page_obj.next_page_number }}"
-           class="text-blue-600 dark:text-blue-400">Next</a>
-        <a href="?page={{ page_obj.paginator.num_pages }}"
-           class="text-blue-600 dark:text-blue-400">Last &raquo;</a>
+      {% if page_obj %}
+        {% for meetup in page_obj %}
+          <div class="w-full md:w-[320px] h-[250px] bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-lg transition-transform transform hover:scale-105 group relative">
+            <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-2">
+              <a href="{% url 'meetup_detail' slug=meetup.slug %}"
+                 class="text-blue-600 dark:text-blue-400 hover:underline">{{ meetup.title }}</a>
+            </h2>
+            <!-- Truncated Description -->
+            <p class="text-gray-600 dark:text-gray-300 line-clamp-3 overflow-hidden">{{ meetup.description|truncatechars:150 }}</p>
+            <p class="text-gray-700 dark:text-gray-400 text-sm mt-2">
+              <strong>Date:</strong> {{ meetup.date|date:"F j, Y, g:i a" }}
+            </p>
+            {% if meetup.event_type == 'in_person' and meetup.location %}
+              <p class="text-gray-700 dark:text-gray-400 text-sm">
+                <strong>Location:</strong> {{ meetup.location }}
+              </p>
+            {% elif meetup.event_type == 'online' %}
+              <p class="text-gray-700 dark:text-gray-400 text-sm">
+                <strong>Type:</strong> {{ meetup.get_event_type_display }}
+              </p>
+            {% endif %}
+            <!-- Register Button -->
+            {% if user.is_authenticated %}
+              {% if meetup.id in user_registered_meetups %}
+                <p class="text-green-600 font-semibold mt-3 text-sm">You are already registered</p>
+              {% else %}
+                <form method="post" action="{% url 'register_meetup' meetup.slug %}">
+                  {% csrf_token %}
+                  <button type="submit"
+                          aria-label="Register for meetup"
+                          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 mt-3 rounded-lg transition-all duration-200 text-sm">
+                    Register
+                  </button>
+                </form>
+              {% endif %}
+            {% else %}
+              <p class="text-gray-500 mt-2 text-sm">
+                <a href="{% url 'account_login' %}?next={{ request.path }}"
+                   class="text-blue-600 hover:underline">Log in</a> to register for this meetup.
+              </p>
+            {% endif %}
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="text-center py-8">
+          <p class="text-gray-600 dark:text-gray-400">No meetups currently scheduled. Check back later!</p>
+        </div>
       {% endif %}
     </div>
   </div>
+  <!-- Pagination -->
+  <div class="flex justify-center items-center space-x-4 mt-10">
+    {% if page_obj.has_previous %}
+      <a href="?page=1" class="text-blue-600 dark:text-blue-400">&laquo; First</a>
+      <a href="?page={{ page_obj.previous_page_number }}"
+         class="text-blue-600 dark:text-blue-400">Previous</a>
+    {% endif %}
+    <span class="text-gray-600 dark:text-gray-400">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}.</span>
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}"
+         class="text-blue-600 dark:text-blue-400">Next</a>
+      <a href="?page={{ page_obj.paginator.num_pages }}"
+         class="text-blue-600 dark:text-blue-400">Last &raquo;</a>
+    {% endif %}
+  </div>
+</div>
 {% endblock %}
