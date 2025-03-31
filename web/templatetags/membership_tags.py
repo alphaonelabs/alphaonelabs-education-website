@@ -33,3 +33,9 @@ def get_membership_plan_name(user: "User") -> Optional[str]:
     if hasattr(user, "membership") and user.membership.is_active:
         return user.membership.plan.name
     return None
+
+
+@register.filter
+def format_feature(value: str) -> str:
+    """Format a feature description for display."""
+    return value.strip()

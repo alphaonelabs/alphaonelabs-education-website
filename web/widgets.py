@@ -1,6 +1,6 @@
 import html
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from captcha.fields import CaptchaTextInput
 from django import forms
@@ -180,7 +180,7 @@ class TailwindJSONWidget(forms.Widget):
                     <i class="fas fa-grip-vertical"></i>
                 </div>
                 <div class="flex-grow">
-                    <input type="text" value="{feature}"
+                    <input type="text" value="{escaped_feature}"
                            class="w-full border-none p-1 focus:outline-none focus:ring-1
                                   focus:ring-teal-300 bg-transparent" />
                 </div>
@@ -191,7 +191,7 @@ class TailwindJSONWidget(forms.Widget):
                 </button>
             </div>
             """.format(
-                i=i, feature=html.escape(str(feature))
+                i=i, escaped_feature=html.escape(str(feature))
             )
             feature_items.append(item_html)
 
@@ -237,7 +237,7 @@ class TailwindJSONWidget(forms.Widget):
                                     <i class="fas fa-grip-vertical"></i>
                                 </div>
                                 <div class="flex-grow">
-                                    <input type="text" value="${{feature}}"
+                                    <input type="text" value="${{html.escape(str(feature))}}"
                                            class="w-full border-none p-1 focus:outline-none focus:ring-1
                                                   focus:ring-teal-300 bg-transparent" />
                                 </div>
@@ -342,7 +342,15 @@ class TailwindJSONWidget(forms.Widget):
             json.dumps(decoded_value),  # {0}  # {1}  # {2}
         )
 
-    def value_from_datadict(self, data: Dict, files: Dict, name: str) -> List:
+    def value_from_datadict(self, data: dict, files: dict, name: str) -> list:
+        """
+        Process the form data and return a list of non-empty strings.
+
+        Parameters:
+            data: The form data dictionary
+            files: The files dictionary (unused but required by Django's Widget interface)
+            name: The name of the field
+        """
         json_value = data.get(name, "[]")
         try:
             value = json.loads(json_value)

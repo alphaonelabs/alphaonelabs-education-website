@@ -141,16 +141,26 @@
           const spinner = document.getElementById('spinner');
           const errorElement = document.getElementById('card-errors');
 
+          // Helper function to handle errors
+          function handleError(error, submitButton, buttonText, spinner, errorElement) {
+              errorElement.textContent = error.message;
+              submitButton.disabled = false;
+              buttonText.textContent = 'Update Payment Method';
+              spinner.classList.add('hidden');
+          }
+
+          // Helper function to update button state
+          function updateButtonState(submitButton, buttonText, spinner, isLoading) {
+              submitButton.disabled = isLoading;
+              buttonText.textContent = isLoading ? 'Processing...' : 'Update Payment Method';
+              spinner.classList.toggle('hidden', !isLoading);
+          }
+
           form.addEventListener('submit', async (event) => {
               event.preventDefault();
-
-              // Disable form submission
-              submitButton.disabled = true;
-              buttonText.textContent = 'Processing...';
-              spinner.classList.remove('hidden');
+              updateButtonState(submitButton, buttonText, spinner, true);
 
               try {
-                  // Create payment method
                   const {
                       paymentMethod,
                       error
@@ -163,7 +173,6 @@
                       throw error;
                   }
 
-                  // Update payment method via API
                   const response = await fetch('{% url "update_payment_method_api" %}', {
                       method: 'POST',
                       headers: {
@@ -181,17 +190,10 @@
                       throw new Error(data.error || 'An error occurred');
                   }
 
-                  // Redirect to success page
                   window.location.href = '{% url "manage_membership" %}?payment_updated=true';
 
               } catch (error) {
-                  // Display error message
-                  errorElement.textContent = error.message;
-
-                  // Re-enable form submission
-                  submitButton.disabled = false;
-                  buttonText.textContent = 'Update Payment Method';
-                  spinner.classList.add('hidden');
+                  handleError(error, submitButton, buttonText, spinner, errorElement);
               }
           });
       });

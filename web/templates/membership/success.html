@@ -39,8 +39,8 @@
       <div class="max-w-3xl mx-auto">
         <div class="text-center mb-10 animate-fadeIn">
           <div class="relative inline-block mb-6">
-            <div class="absolute inset-0 rounded-full bg-green-100 animate-pulse"></div>
-            <svg class="h-24 w-24 text-green-500 mx-auto relative z-10 animate-bounce-subtle"
+            <div class="absolute inset-0 rounded-full bg-green-100 animate-pulse motion-reduce:animate-none"></div>
+            <svg class="h-24 w-24 text-green-500 mx-auto relative z-10 animate-bounce-subtle motion-reduce:animate-none"
                  fill="none"
                  viewBox="0 0 24 24"
                  stroke="currentColor"
@@ -50,10 +50,10 @@
               </path>
             </svg>
             <!-- Celebration Elements -->
-            <div class="confetti-container"></div>
+            <div class="confetti-container motion-reduce:hidden"></div>
           </div>
           <h1 class="text-4xl font-extrabold mb-4 text-gradient">Subscription Successful!</h1>
-          <p class="text-green-600 text-xl mb-8 animate-fadeIn"
+          <p class="text-green-600 text-xl mb-8 animate-fadeIn motion-reduce:animate-none"
              style="animation-delay: 0.3s">Your membership subscription has been processed successfully.</p>
         </div>
         <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8 transform transition-all duration-500 hover:shadow-xl border border-gray-100 animate-fadeInUp"
