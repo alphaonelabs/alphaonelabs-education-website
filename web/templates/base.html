@@ -13,6 +13,8 @@
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{% static 'images/logo.png' %}" />
     <link rel="apple-touch-icon" href="{% static 'images/logo.png' %}" />
+    <!-- AI Chat CSS -->
+    <link rel="stylesheet" href="{% static 'css/ai_chat.css' %}" />
     <title>
       {% block title %}
         Alpha One Labs - Open Source Education Platform
@@ -90,6 +92,22 @@
           integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA=="
           crossorigin="anonymous"
           referrerpolicy="no-referrer" />
+    <!-- AI Response Styling -->
+    <link rel="stylesheet" href="{% static 'css/ai_response.css' %}" />
+    
+    <!-- MathJax Configuration -->
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
     <!-- jQuery (required for captcha refresh) -->
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"
             integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
@@ -220,6 +238,10 @@
                   <a href="{% url 'all_study_groups' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-users mr-2 text-teal-500"></i>Study Groups
+                  </a>
+                  <a href="{% url 'chat_interface' %}"
+                     class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
+                    <i class="fas fa-robot mr-2 text-teal-500"></i>AI Chat Assistant
                   </a>
                 </div>
               </div>
@@ -570,6 +592,11 @@
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-users mr-2 text-teal-500"></i>
                       <span>Study Groups</span>
+                    </a>
+                    <a href="{% url 'chat_interface' %}"
+                       class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                      <i class="fas fa-robot mr-2 text-teal-500"></i>
+                      <span>AI Chat Assistant</span>
                     </a>
                   </div>
                 </div>

@@ -248,7 +248,7 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 # Email settings
 if DEBUG:
-    EMAIL_BACKEND = "web.email_backend.SlackNotificationEmailBackend"
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
     print("Using console email backend with Slack notifications for development")
     DEFAULT_FROM_EMAIL = "noreply@example.com"  # Default for development
     SENDGRID_API_KEY = None  # Not needed in development
@@ -262,7 +262,7 @@ else:
     EMAIL_HOST_USER = "apikey"
     EMAIL_HOST_PASSWORD = env.str("SENDGRID_PASSWORD", default="")
     DEFAULT_FROM_EMAIL = env.str("EMAIL_FROM", default="noreply@alphaonelabs.com")
-    EMAIL_FROM = os.getenv("EMAIL_FROM")
+    EMAIL_FROM = env.str('EMAIL_FROM', default='noreply@example.com')
 
 # Stripe settings
 STRIPE_PUBLISHABLE_KEY = env("STRIPE_PUBLISHABLE_KEY", default="")
@@ -363,3 +363,12 @@ USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+
+# AI API Settings
+OPENAI_API_KEY = env.str("OPENAI_API_KEY", default="")
+GEMINI_API_KEY = env.str("GEMINI_API_KEY", default="")
+
+# AI Service Configuration
+USE_OPENAI = bool(os.getenv('OPENAI_API_KEY'))
+USE_GEMINI = bool(os.getenv('GEMINI_API_KEY'))
+DEFAULT_AI_SERVICE = os.getenv('DEFAULT_AI_SERVICE', 'gemini' if USE_GEMINI else 'openai')

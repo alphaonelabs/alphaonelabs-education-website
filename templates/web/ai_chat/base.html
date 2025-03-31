@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex flex-col lg:flex-row gap-6">
+        <!-- Sidebar -->
+        <div class="lg:w-1/4 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200">Chat Sessions</h2>
+                <button id="newChatBtn" class="bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200">
+                    New Chat
+                </button>
+            </div>
+            <div id="chatSessions" class="space-y-2">
+                <!-- Chat sessions will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="lg:w-3/4 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+            <div class="flex flex-col h-[calc(100vh-12rem)]">
+                <!-- Chat Header -->
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h1 id="chatTitle" class="text-xl font-bold text-gray-800 dark:text-gray-200">Start a New Chat</h1>
+                </div>
+
+                <!-- Chat Messages -->
+                <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4">
+                    <!-- Messages will be loaded here -->
+                </div>
+
+                <!-- Chat Input -->
+                <div class="p-4 border-t border-gray-200 dark:border-gray-700">
+                    <form id="messageForm" class="flex gap-2">
+                        <input type="text" id="messageInput" 
+                               class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200"
+                               placeholder="Type your message..." disabled>
+                        <button type="submit" 
+                                class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200 disabled:opacity-50"
+                                disabled>
+                            Send
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Chat Modal -->
+<div id="newChatModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 w-full max-w-md">
+        <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4">Start New Chat</h2>
+        <form id="newChatForm">
+            <div class="mb-4">
+                <label for="subjectSelect" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Select Subject
+                </label>
+                <select id="subjectSelect" 
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200"
+                        required>
+                    <option value="">Choose a subject...</option>
+                    {% for subject in subjects %}
+                    <option value="{{ subject.id }}">{{ subject.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-4">
+                <label for="chatTitleInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Chat Title (Optional)
+                </label>
+                <input type="text" id="chatTitleInput" 
+                       class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200"
+                       placeholder="Enter a title for your chat">
+            </div>
+            <div class="flex justify-end gap-2">
+                <button type="button" id="cancelNewChat" 
+                        class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition duration-200">
+                    Cancel
+                </button>
+                <button type="submit" 
+                        class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+                    Start Chat
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // CSRF token for AJAX requests
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+    // Current chat session ID
+    let currentSessionId = null;
+
+    // DOM Elements
+    const chatSessions = document.getElementById('chatSessions');
+    const chatMessages = document.getElementById('chatMessages');
+    const messageForm = document.getElementById('messageForm');
+    const messageInput = document.getElementById('messageInput');
+    const chatTitle = document.getElementById('chatTitle');
+    const newChatBtn = document.getElementById('newChatBtn');
+    const newChatModal = document.getElementById('newChatModal');
+    const newChatForm = document.getElementById('newChatForm');
+    const cancelNewChat = document.getElementById('cancelNewChat');
+
+    // Load chat sessions
+    async function loadChatSessions() {
+        try {
+            const response = await fetch('/ai/chat/sessions/');
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                chatSessions.innerHTML = data.sessions.map(session => `
+                    <div class="p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition duration-200"
+                         data-session-id="${session.id}">
+                        <h3 class="font-medium text-gray-800 dark:text-gray-200">${session.title || 'Untitled Chat'}</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">${session.subject || 'No Subject'}</p>
+                        <p class="text-xs text-gray-500 dark:text-gray-500">${new Date(session.updated_at).toLocaleString()}</p>
+                    </div>
+                `).join('');
+            }
+        } catch (error) {
+            console.error('Error loading chat sessions:', error);
+        }
+    }
+
+    // Load chat history
+    async function loadChatHistory(sessionId) {
+        try {
+            const response = await fetch(`/ai/chat/sessions/${sessionId}/`);
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                chatMessages.innerHTML = data.messages.map(message => `
+                    <div class="flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}">
+                        <div class="max-w-[70%] ${message.role === 'user' ? 'bg-teal-300 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'} rounded-lg p-3">
+                            <p class="whitespace-pre-wrap">${message.content}</p>
+                            <p class="text-xs mt-1 opacity-75">${new Date(message.created_at).toLocaleString()}</p>
+                        </div>
+                    </div>
+                `).join('');
+                
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                currentSessionId = sessionId;
+                messageInput.disabled = false;
+                messageForm.querySelector('button[type="submit"]').disabled = false;
+            }
+        } catch (error) {
+            console.error('Error loading chat history:', error);
+        }
+    }
+
+    // Send message
+    async function sendMessage(event) {
+        event.preventDefault();
+        
+        const message = messageInput.value.trim();
+        if (!message || !currentSessionId) return;
+        
+        try {
+            const response = await fetch('/ai/chat/send/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: `session_id=${currentSessionId}&message=${encodeURIComponent(message)}`
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                messageInput.value = '';
+                loadChatHistory(currentSessionId);
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+        }
+    }
+
+    // Create new chat session
+    async function createChatSession(event) {
+        event.preventDefault();
+        
+        const subjectId = document.getElementById('subjectSelect').value;
+        const title = document.getElementById('chatTitleInput').value;
+        
+        if (!subjectId) return;
+        
+        try {
+            const response = await fetch('/ai/chat/create/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: `subject_id=${subjectId}&title=${encodeURIComponent(title)}`
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                newChatModal.classList.add('hidden');
+                newChatModal.classList.remove('flex');
+                newChatForm.reset();
+                loadChatSessions();
+                loadChatHistory(data.session_id);
+            }
+        } catch (error) {
+            console.error('Error creating chat session:', error);
+        }
+    }
+
+    // Event Listeners
+    messageForm.addEventListener('submit', sendMessage);
+    newChatForm.addEventListener('submit', createChatSession);
+    
+    newChatBtn.addEventListener('click', () => {
+        newChatModal.classList.remove('hidden');
+        newChatModal.classList.add('flex');
+    });
+    
+    cancelNewChat.addEventListener('click', () => {
+        newChatModal.classList.add('hidden');
+        newChatModal.classList.remove('flex');
+        newChatForm.reset();
+    });
+    
+    chatSessions.addEventListener('click', (event) => {
+        const sessionElement = event.target.closest('[data-session-id]');
+        if (sessionElement) {
+            const sessionId = sessionElement.dataset.sessionId;
+            loadChatHistory(sessionId);
+        }
+    });
+
+    // Initial load
+    loadChatSessions();
+</script>
+{% endblock %} 

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 text-center">
+        <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-200 mb-4">500 - Server Error</h1>
+        <p class="text-gray-600 dark:text-gray-300 mb-6">Something went wrong on our end. Please try again later.</p>
+        <a href="{% url 'index' %}" class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+            Return to Home
+        </a>
+    </div>
+</div>
+{% endblock %} 

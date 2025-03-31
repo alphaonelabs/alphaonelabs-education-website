@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}AI Response{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">AI Response</h1>
+            <div class="flex items-center space-x-4">
+                <button onclick="copyToClipboard()" class="text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300">
+                    <i class="fas fa-copy"></i>
+                </button>
+                <button onclick="downloadResponse()" class="text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="ai-response" class="ai-response">
+            {{ response|safe }}
+        </div>
+    </div>
+</div>
+
+<script>
+function copyToClipboard() {
+    const response = document.getElementById('ai-response').innerText;
+    navigator.clipboard.writeText(response).then(() => {
+        // Show success message
+        const button = event.currentTarget;
+        const originalIcon = button.innerHTML;
+        button.innerHTML = '<i class="fas fa-check"></i>';
+        setTimeout(() => {
+            button.innerHTML = originalIcon;
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy text: ', err);
+    });
+}
+
+function downloadResponse() {
+    const response = document.getElementById('ai-response').innerText;
+    const blob = new Blob([response], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'ai-response.txt';
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+}
+
+// Re-render MathJax when content changes
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof MathJax !== 'undefined') {
+        MathJax.typesetPromise();
+    }
+});
+</script>
+{% endblock %} 

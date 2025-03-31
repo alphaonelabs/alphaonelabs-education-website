@@ -1,0 +1,174 @@
+/* Custom scrollbar for messages container */
+#messages-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+#messages-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#messages-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+#messages-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Dark mode scrollbar */
+.dark #messages-container::-webkit-scrollbar-track {
+    background: #374151;
+}
+
+.dark #messages-container::-webkit-scrollbar-thumb {
+    background: #4B5563;
+}
+
+.dark #messages-container::-webkit-scrollbar-thumb:hover {
+    background: #6B7280;
+}
+
+/* Message animations */
+.message {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: messageAppear 0.3s ease forwards;
+    margin-bottom: 1rem;
+}
+
+@keyframes messageAppear {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Code block styling */
+.prose pre {
+    background-color: #1a1a1a;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin: 1rem 0;
+    overflow-x: auto;
+}
+
+.prose code {
+    background-color: #f3f4f6;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+}
+
+.dark .prose code {
+    background-color: #374151;
+}
+
+/* Math expression styling */
+.prose .math {
+    font-size: 1.1em;
+    padding: 0.2rem 0.4rem;
+    background-color: #f3f4f6;
+    border-radius: 0.25rem;
+}
+
+.dark .prose .math {
+    background-color: #374151;
+}
+
+/* Loading animation */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Message hover effects */
+.message:hover .bg-gray-100,
+.message:hover .bg-blue-100 {
+    transition: background-color 0.2s ease;
+}
+
+/* Input area focus effects */
+#user-input:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(45, 212, 191, 0.2);
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+    .message {
+        flex-direction: column;
+    }
+    
+    .message.flex-row-reverse {
+        flex-direction: column;
+    }
+    
+    .message .flex-shrink-0 {
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* AI Chat Styles */
+.message .prose {
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.message .prose pre {
+    background-color: #1a1a1a;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin: 0.5rem 0;
+    overflow-x: auto;
+}
+
+.message .prose code {
+    background-color: #f3f4f6;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+}
+
+.message .prose pre code {
+    background-color: transparent;
+    padding: 0;
+    color: #e5e7eb;
+}
+
+.message .prose p {
+    margin: 0.5rem 0;
+}
+
+.message .prose ul, 
+.message .prose ol {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.message .prose blockquote {
+    border-left: 4px solid #e5e7eb;
+    margin: 0.5rem 0;
+    padding-left: 1rem;
+    color: #6b7280;
+}
+
+/* Dark mode styles */
+.dark .message .prose code {
+    background-color: #374151;
+    color: #e5e7eb;
+}
+
+.dark .message .prose blockquote {
+    border-left-color: #4b5563;
+    color: #9ca3af;
+} 
