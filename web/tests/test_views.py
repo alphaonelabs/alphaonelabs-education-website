@@ -527,11 +527,14 @@ class CourseDetailTests(TestCase):
         response = self.client.get(f"{self.detail_url}?month={session_date.month}&year={session_date.year}")
 
         # Assert response status code
-        self.assertEqual(response.status_code, 200)
+        assert response.status_code == 200
+
+        # Test session dates are marked
+        session_date = self.future_session.start_time.date()
 
         # Assert calendar context is present
-        self.assertIn("calendar_weeks", response.context)
-        self.assertIn("current_month", response.context)
+        assert "calendar_weeks" in response.context
+        assert "current_month" in response.context
 
         # Find the day with the future session
         session_day = session_date.day
@@ -539,13 +542,13 @@ class CourseDetailTests(TestCase):
         for week in response.context["calendar_weeks"]:
             for day in week:
                 if day["date"] and day["date"].day == session_day:
-                    self.assertTrue(day["has_session"], "Future session should be marked in calendar")
+                    assert day["has_session"], "Future session should be marked in calendar"
                     session_found = True
                     break
             if session_found:
                 break
 
-        self.assertTrue(session_found, "Future session date should be present in calendar")
+        assert session_found, "Future session date should be present in calendar"
 
     def test_session_completion_form(self):
         """Test session completion form for enrolled students"""
