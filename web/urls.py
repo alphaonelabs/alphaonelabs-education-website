@@ -4,8 +4,8 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
-from django.urls import path, include
 from django.views.generic import RedirectView
+from django.utils.translation import gettext_lazy as _
 
 from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
 from .views import (
@@ -27,9 +27,6 @@ from .views import (
 # Non-prefixed URLs
 urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs 
-    path('admin/', admin.site.urls),
-    path('ai/', include('ai.urls')),  # This line already exists - AI app is included
-    path('ai_chat/', RedirectView.as_view(pattern_name='ai:chat'), name='ai_chat'),  # Add redirect for ai_chat
     path("captcha/", include("captcha.urls")),  # CAPTCHA URLs should not be language-prefixed
 ]
 
@@ -38,9 +35,12 @@ if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)  # Add this line
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  # Add this line
 
-# Language-prefixed URLs
+# Add all language-prefixed URLs
 urlpatterns += i18n_patterns(
     path("", views.index, name="index"),
+    path('ai/', include('ai.urls')),  # AI-powered learning features
+    path("courses/", include('courses.urls')),
+    path("accounts/", include("allauth.urls")),  # Use allauth URLs for authentication
     path("create-test-data/", views.run_create_test_data, name="create_test_data"),
     path("learn/", views.learn, name="learn"),
     path("waiting-rooms/", views.waiting_rooms, name="waiting_rooms"),
@@ -70,11 +70,9 @@ urlpatterns += i18n_patterns(
     path("success-stories/<slug:slug>/delete/", views.delete_success_story, name="delete_success_story"),
     # Authentication URLs
     path("accounts/signup/", views.signup_view, name="account_signup"),  # Our custom signup view
-    path("accounts/", include("allauth.urls")),
-    path("account/notification-preferences/", notification_preferences, name="notification_preferences"),
-    path("profile/", views.profile, name="profile"),
     path("accounts/profile/", views.profile, name="accounts_profile"),
     path("notification-preferences/", views.notification_preferences, name="notification_preferences"),
+    path("accounts/delete/", views.delete_account, name="delete_account"),
     # Dashboard URLs
     path("dashboard/student/", views.student_dashboard, name="student_dashboard"),
     path("dashboard/teacher/", views.teacher_dashboard, name="teacher_dashboard"),
@@ -416,7 +414,7 @@ urlpatterns += i18n_patterns(
     path("features/vote/", feature_vote, name="feature_vote"),
     path("features/vote-count/", feature_vote_count, name="feature_vote_count"),
     path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
-    prefix_default_language=True,
+    prefix_default_language=False
 )
 
 handler404 = "web.views.custom_404"
