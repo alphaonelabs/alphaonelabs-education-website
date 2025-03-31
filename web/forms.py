@@ -654,6 +654,21 @@ class ProfileUpdateForm(forms.ModelForm):
         widget=forms.RadioSelect,
         help_text="Select whether your profile details are public or private.",
     )
+    discord_username = forms.CharField(
+        max_length=50,
+        required=False,
+        widget=TailwindInput(),
+        help_text="Discord username (visible if profile is public)",
+    )
+    slack_username = forms.CharField(
+        max_length=50, required=False, widget=TailwindInput(), help_text="Slack username (visible if profile is public)"
+    )
+    github_username = forms.CharField(
+        max_length=50,
+        required=False,
+        widget=TailwindInput(),
+        help_text="GitHub username (visible if profile is public)",
+    )
 
     class Meta:
         model = User
@@ -666,6 +681,9 @@ class ProfileUpdateForm(forms.ModelForm):
                 profile = self.instance.profile
                 self.fields["bio"].initial = profile.bio
                 self.fields["expertise"].initial = profile.expertise
+                self.fields["discord_username"].initial = profile.discord_username
+                self.fields["slack_username"].initial = profile.slack_username
+                self.fields["github_username"].initial = profile.github_username
                 # Set initial value as a string.
                 self.initial["is_profile_public"] = "True" if profile.is_profile_public else "False"
             except Profile.DoesNotExist:
@@ -689,6 +707,9 @@ class ProfileUpdateForm(forms.ModelForm):
 
             # Get the is_profile_public value and ensure it's a boolean
             is_public = self.cleaned_data.get("is_profile_public")
+            profile.discord_username = self.cleaned_data["discord_username"]
+            profile.slack_username = self.cleaned_data["slack_username"]
+            profile.github_username = self.cleaned_data["github_username"]
             profile.is_profile_public = is_public
             profile.save()
         return user
