@@ -210,15 +210,15 @@ def main():
                 # Improved check for open PRs
                 all_issues_have_prs = True
                 issue_without_pr = None  # Initialize outside the loop
-                
+
                 for assigned_issue in assigned_issues:
                     # Skip checking the current issue being assigned
                     if assigned_issue.get("number") == issue_number:
                         continue
-                        
+
                     current_issue_number = assigned_issue.get("number")
                     print(f"Checking for open PRs referencing issue #{current_issue_number}")
-                    
+
                     # First check using GraphQL for more reliable detection
                     has_pr = False
                     try:
@@ -274,13 +274,15 @@ def main():
                                     break
                     except Exception as e:
                         print(f"Error checking for linked PRs via GraphQL: {str(e)}")
-                    
+
                     # If no PRs found via GraphQL, try REST API fallback
                     if not has_pr:
                         try:
                             # Check title and body references for linked PRs
                             search_url = "https://api.github.com/search/issues"
-                            search_query = f"type:pr state:open repo:{owner}/{repo} {current_issue_number} in:title,body"
+                            search_query = (
+                                f"type:pr state:open repo:{owner}/{repo} {current_issue_number} in:title,body"
+                            )
                             search_params = {"q": search_query}
                             print(f"Searching PRs with REST API query: {search_query}")
                             search_response = requests.get(search_url, headers=headers, params=search_params)
@@ -288,7 +290,9 @@ def main():
 
                             if search_data.get("total_count", 0) > 0:
                                 pr_number = search_data.get("items", [])[0].get("number")
-                                print(f"Found open PR #{pr_number} linked to issue #{current_issue_number} via REST API search")
+                                print(
+                                    f"Found open PR #{pr_number} linked to issue #{current_issue_number} via REST API"
+                                )
                                 has_pr = True
                         except Exception as e:
                             print(f"Error checking for linked PRs via REST API: {str(e)}")
