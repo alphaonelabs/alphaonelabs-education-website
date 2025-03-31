@@ -1,9 +1,9 @@
 import html
 import json
-from typing import Any
 
 from captcha.fields import CaptchaTextInput
 from django import forms
+from django.forms.renderers import BaseRenderer
 
 
 class TailwindInput(forms.TextInput):
@@ -152,12 +152,21 @@ class TailwindJSONWidget(forms.Widget):
             default_attrs.update(attrs)
         super().__init__(default_attrs)
 
-    def render(self, name: str, value: Any, attrs: dict | None = None, renderer: Any = None) -> str:
+    def render(
+        self,
+        name: str,
+        value: list[str] | None,
+        attrs: dict[str, str] | None = None,
+        renderer: BaseRenderer | None = None,
+    ) -> str:
         """
         Render the widget.
 
-        Parameters attrs and renderer are part of Django's Widget interface
-        but not used in this implementation.
+        Parameters:
+            name: The name of the field
+            value: List of feature strings or None
+            attrs: Additional HTML attributes
+            renderer: The form renderer (unused but required by Django's Widget interface)
         """
         if value is None:
             decoded_value = []
@@ -274,6 +283,15 @@ class TailwindJSONWidget(forms.Widget):
                         const items = itemsContainer.querySelectorAll('[data-index]');
                         items.forEach(item => {{
                             const handle = item.querySelector('.drag-handle');
+                            // Add ARIA attributes for accessibility
+                            item.setAttribute('role', 'listitem');  # noqa: F821
+                            item.setAttribute(
+                                'aria-label',
+                                `Feature item ${parseInt(item.dataset.index) + 1}`
+                            );  # noqa: F821
+                            handle.setAttribute('aria-label', 'Drag handle');
+
+                            // Mouse drag functionality
                             handle.addEventListener('mousedown', function(e) {{
                                 e.preventDefault();
                                 const draggedItem = item;
@@ -316,6 +334,38 @@ class TailwindJSONWidget(forms.Widget):
                                 document.addEventListener('mousemove', mouseMoveHandler);
                                 document.addEventListener('mouseup', mouseUpHandler);
                             }});
+
+                            // Keyboard navigation
+                            handle.addEventListener('keydown', function(e) {{
+                                const currentIndex = parseInt(item.dataset.index);
+                                let newIndex;
+
+                                switch(e.key) {{
+                                    case 'ArrowUp':
+                                        e.preventDefault();
+                                        newIndex = Math.max(0, currentIndex - 1);
+                                        break;
+                                    case 'ArrowDown':
+                                        e.preventDefault();
+                                        newIndex = Math.min(features.length - 1, currentIndex + 1);
+                                        break;
+                                    default:
+                                        return;
+                                }}
+
+                                if (newIndex !== undefined && newIndex !== currentIndex) {{
+                                    // Swap in the array
+                                    const temp = features[currentIndex];
+                                    features.splice(currentIndex, 1);
+                                    features.splice(newIndex, 0, temp);
+                                    // Update UI
+                                    renderItems();
+                                    updateInput();
+                                    // Focus the moved item
+                                    const newItem = itemsContainer.children[newIndex];
+                                    newItem.querySelector('.drag-handle').focus();
+                                }}
+                            }});
                         }});
                     }}
                     // Add button event listener
@@ -336,7 +386,7 @@ class TailwindJSONWidget(forms.Widget):
         </div>
         """
 
-    def value_from_datadict(self, data: dict, files: dict, name: str) -> list:
+    def value_from_datadict(self, data: dict, files: dict, name: str) -> list[str]:
         """
         Process the form data and return a list of non-empty strings.
 
@@ -350,9 +400,7 @@ class TailwindJSONWidget(forms.Widget):
             value = json.loads(json_value)
             # Filter out empty strings
             if isinstance(value, list):
-                value = [item for item in value if item.strip()]
-                return value
-            else:
-                return []
+                return [item for item in value if item.strip()]
+            return []
         except (ValueError, TypeError):
             return []
