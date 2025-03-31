@@ -154,8 +154,10 @@ class CustomUserAdmin(BaseUserAdmin):
         "is_staff",
         "email_verified",
         "get_enrollment_count",
+        "formatted_date_joined",
+        "formatted_last_login",
     )
-    list_filter = BaseUserAdmin.list_filter + (EmailVerifiedFilter,)
+    list_filter = BaseUserAdmin.list_filter + (EmailVerifiedFilter, "date_joined", "last_login")
 
     # Add email to the add_fieldsets
     add_fieldsets = (
@@ -167,6 +169,30 @@ class CustomUserAdmin(BaseUserAdmin):
             },
         ),
     )
+
+    # Override the fieldsets to include the signup date and last login in a separate section
+    fieldsets = (
+        (None, {"fields": ("username", "password")}),
+        ("Personal info", {"fields": ("first_name", "last_name", "email")}),
+        ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
+        ("Important dates", {"fields": ("last_login", "date_joined")}),
+    )
+
+    def formatted_date_joined(self, obj):
+        if obj.date_joined:
+            return obj.date_joined.strftime("%B %d, %Y %H:%M")
+        return "-"
+
+    formatted_date_joined.short_description = "Signup Date"
+    formatted_date_joined.admin_order_field = "date_joined"
+
+    def formatted_last_login(self, obj):
+        if obj.last_login:
+            return obj.last_login.strftime("%B %d, %Y %H:%M")
+        return "Never logged in"
+
+    formatted_last_login.short_description = "Last Login"
+    formatted_last_login.admin_order_field = "last_login"
 
     def email_verified(self, obj):
         from django.utils.html import format_html
