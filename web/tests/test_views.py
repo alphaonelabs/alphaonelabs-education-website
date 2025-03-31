@@ -532,6 +532,22 @@ class CourseDetailTests(TestCase):
         calendar_weeks = response.context["calendar_weeks"]
         session_date = self.future_session.start_time.date()
 
+        # Debug information
+        print(f"Future session date: {session_date}")
+        print(f"Calendar context: {calendar_weeks}")
+
+        # Make sure the current month in the calendar matches the session month
+        current_month = response.context["current_month"]
+        if current_month.month != session_date.month or current_month.year != session_date.year:
+            print(
+                f"Calendar month ({current_month.month}/{current_month.year}) "
+                f"doesn't match session date month ({session_date.month}/{session_date.year})"
+            )
+            # Force the calendar month to match the session date
+            response = self.client.get(f"{self.detail_url}?year={session_date.year}&month={session_date.month}")
+            calendar_weeks = response.context["calendar_weeks"]
+            print(f"Updated calendar context: {calendar_weeks}")
+
         # Find the day in calendar that matches the session date
         session_day_found = False
         for week in calendar_weeks:

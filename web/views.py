@@ -717,12 +717,8 @@ def course_detail(request, slug):
     # Get the calendar for current month
     cal = calendar.monthcalendar(current_month.year, current_month.month)
 
-    # Get all session dates for this course in current month
-    session_dates = set(
-        session.start_time.date()
-        for session in sessions
-        if session.start_time.year == current_month.year and session.start_time.month == current_month.month
-    )
+    # Get all session dates for this course
+    session_dates = set(session.start_time.date() for session in sessions)
 
     # Prepare calendar weeks data
     calendar_weeks = []
@@ -1108,7 +1104,7 @@ def teach(request):
                 # For unauthenticated users, check if the email exists or create a new user
                 try:
                     user = User.objects.get(email=email)
-                    # User exists but isn’t logged in; check if email is verified
+                    # User exists but isn't logged in; check if email is verified
                     email_address = EmailAddress.objects.filter(user=user, email=email, primary=True).first()
                     if email_address and email_address.verified:
                         messages.info(
@@ -2922,14 +2918,14 @@ def get_course_calendar(request, slug):
 
     # Get previous and next month for navigation
     if month == 1:
-        prev_month = {"year": year - 1, "month": 12}
+        prev_month = current_month.replace(year=current_month.year - 1, month=12)
     else:
-        prev_month = {"year": year, "month": month - 1}
+        prev_month = current_month.replace(month=current_month.month - 1)
 
     if month == 12:
-        next_month = {"year": year + 1, "month": 1}
+        next_month = current_month.replace(year=current_month.year + 1, month=1)
     else:
-        next_month = {"year": year, "month": month + 1}
+        next_month = current_month.replace(month=current_month.month + 1)
 
     # Get sessions for the current month
     month_sessions = course.sessions.filter(start_time__year=year, start_time__month=month).order_by("start_time")
@@ -6659,7 +6655,7 @@ def self_report_attendance(request: HttpRequest, session_id: int) -> HttpRespons
     if existing_attendance and existing_attendance.status == "pending":
         messages.info(
             request, "You have already reported attendance for this session. It is pending teacher verification."
-        )
+        ),
         return redirect("course_detail", slug=session.course.slug)
     if existing_attendance and existing_attendance.status in ["present", "late", "excused"]:
         messages.success(request, "Your attendance for this session has already been verified.")
@@ -6677,8 +6673,11 @@ def self_report_attendance(request: HttpRequest, session_id: int) -> HttpRespons
         subject = f"Pending Attendance Verification - {session.title}"
         message = (
             f"{request.user.get_full_name() or request.user.username} has self-reported attendance for "
-            f"'{session.title}' on {session.start_time.strftime('%Y-%m-%d')} and is pending your verification."
+            f"'{session.title}' on {session.start_time.strftime('%Y-%m-%d')} and is pending your verification.\n\n"
+            "You can verify this attendance at: "
+            f"{request.build_absolute_uri(reverse('mark_session_attendance', args=[session.id]))}"
         )
+
         try:
             send_mail(
                 subject,
@@ -6689,9 +6688,12 @@ def self_report_attendance(request: HttpRequest, session_id: int) -> HttpRespons
             )
         except Exception:
             logger.exception("Failed to send attendance notification email")
+    else:
+        logger.warning(f"No email found for teacher of session {session.id}, skipping attendance notification")
 
     messages.success(request, "Your attendance has been recorded and is pending teacher verification.")
     return redirect("course_detail", slug=session.course.slug)
+
 
 def membership_checkout(request, plan_id: int) -> HttpResponse:
     """Display the membership checkout page."""
@@ -6923,7 +6925,6 @@ def update_payment_method_api(request) -> JsonResponse:
     except Exception as e:
         logger.error(f"Unexpected error in update_payment_method_api: {str(e)}")
         return JsonResponse({"error": str(e)}, status=400)
-
 
 
 def social_media_manager_required(user):
