@@ -1033,11 +1033,23 @@ class ForumCategoryForm(forms.ModelForm):
                     "placeholder": "fa-folder",
                 }
             ),
-            "slug": forms.HiddenInput(),
+            "slug": forms.TextInput(
+                attrs={
+                    "class": "w-full border-gray-300 dark:border-gray-600 rounded p-2 bg-gray-200 cursor-not-allowed",
+                    "readonly": "readonly",
+                }
+            ),
         }
         help_texts = {
             "icon": "Enter a Font Awesome icon class (e.g., fa-folder, fa-book, fa-code)",
         }
+
+        def clean(self):
+            cleaned_data = super().clean()
+            name = cleaned_data.get("name")
+            if name and not cleaned_data.get("slug"):
+                cleaned_data["slug"] = slugify(name)
+            return cleaned_data
 
 
 class PeerChallengeForm(forms.ModelForm):
