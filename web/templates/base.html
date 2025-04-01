@@ -178,7 +178,7 @@
               <a class="nav-link flex flex-1 min-w-[150px] max-w-[50%] items-center space-x-2"
                  href="{% url 'classes_map' %}">
                 <i class="fas fa-map-marker-alt"></i>
-                <span>Classes Near Me</span>
+                <span class="font-medium tracking-tighter ">CLASSES NEAR ME</span>
               </a>
             </div>
             <!-- LEARN Dropdown -->
@@ -531,6 +531,11 @@
                        class="fas fa-chevron-down text-gray-500 dark:text-gray-400 transition-transform duration-200"></i>
                   </div>
                   <div id="learn-accordion" class="hidden mt-2 ml-2 space-y-2">
+                    <a class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                       href="{% url 'classes_map' %}">
+                      <i class="fas text-green-500 fa-map-marker-alt"></i>
+                      <span class="text-black relative left-[10px]">CLASSES NEAR ME</span>
+                    </a>
                     <a href="{% url 'course_search' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-book-open mr-2 text-teal-500"></i>
