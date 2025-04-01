@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("web", "0044_waitingroom_fulfilled_course"),
+        ("web", "0049_session_latitude_session_longitude_and_more"),
     ]
 
     operations = [
