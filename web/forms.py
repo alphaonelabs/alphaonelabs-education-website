@@ -42,6 +42,7 @@ from .models import (
     Subject,
     SuccessStory,
     TeamGoal,
+    TeamGoalMember,
     TeamInvite,
     WaitingRoom,
 )
@@ -1440,6 +1441,24 @@ class StorefrontForm(forms.ModelForm):
             "logo",
             "is_active",
         ]
+
+
+class TeamGoalCompletionForm(forms.ModelForm):
+    class Meta:
+        model = TeamGoalMember
+        fields = ["completion_image", "completion_link", "completion_notes"]
+        widgets = {
+            "completion_notes": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        image = cleaned_data.get("completion_image")
+        link = cleaned_data.get("completion_link")
+        notes = cleaned_data.get("completion_notes")
+        if not image and not link and not notes:
+            raise forms.ValidationError("Please provide at least one form of proof (image, link, or notes).")
+        return cleaned_data
 
 
 class TeamGoalForm(forms.ModelForm):
