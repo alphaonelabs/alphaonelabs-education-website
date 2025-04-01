@@ -1,10 +1,12 @@
 import logging
 from datetime import timedelta
 
+from allauth.account.models import EmailAddress
 from django.conf import settings
 from django.core.mail import send_mail
-from django.db import transaction  # Moved here
+from django.db import transaction
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
 
 from .models import CourseMaterial, Enrollment, Notification, NotificationPreference, Session
@@ -146,6 +148,58 @@ def send_weekly_progress_updates():
             [enrollment.student.email],
             html_message=html_message,
         )
+
+
+def notify_waiting_room_fulfilled(waiting_room, course):
+    """
+    Notify all participants in a waiting room that a course has been created.
+
+    Args:
+        waiting_room (WaitingRoom): The waiting room that was fulfilled
+        course (Course): The course that was created from the waiting room
+    """
+    subject = f"New Course Created: {course.title}"
+
+    # Notify all participants
+    for participant in waiting_room.participants.all():
+        notification_data = {
+            "title": subject,
+            "message": f"A new course has been created based on a waiting room you joined: '{waiting_room.title}'. "
+            f"The course '{course.title}' is now available for enrollment.",
+            "notification_type": "success",
+        }
+
+        # Send notification
+        send_notification(participant, notification_data)
+
+        # Send email with more details
+        html_message = render_to_string(
+            "emails/waiting_room_fulfilled.html",
+            {
+                "user": participant,
+                "waiting_room": waiting_room,
+                "course": course,
+                "site_url": settings.SITE_URL,
+            },
+        )
+
+        send_mail(
+            subject,
+            "",  # Plain text version - we're only sending HTML
+            settings.DEFAULT_FROM_EMAIL,
+            [participant.email],
+            html_message=html_message,
+        )
+
+    # Also notify the creator if they're not already a participant
+    if waiting_room.creator not in waiting_room.participants.all():
+        notification_data = {
+            "title": subject,
+            "message": f"A new course has been created based on your waiting room: '{waiting_room.title}'. "
+            f"The course '{course.title}' is now available.",
+            "notification_type": "success",
+        }
+        send_notification(waiting_room.creator, notification_data)
 
 
 def send_email(subject, message, recipient_list):
@@ -320,3 +374,57 @@ def send_assignment_reminders():
                     )
         assignment.final_reminder_sent = True
         assignment.save()
+
+
+def send_verification_reminders():
+    """Send reminder emails to users who haven’t verified their email after 3 or 7 days."""
+
+    now = timezone.now()
+    three_days_ago_start = now - timedelta(days=3)
+    three_days_ago_end = now - timedelta(days=2)
+    seven_days_ago_start = now - timedelta(days=7)
+    seven_days_ago_end = now - timedelta(days=6)
+
+    # Find unverified email addresses created around 3 or 7 days ago
+    unverified_emails = EmailAddress.objects.filter(
+        verified=False, user__date_joined__gte=seven_days_ago_start, user__date_joined__lt=seven_days_ago_end
+    ) | EmailAddress.objects.filter(
+        verified=False, user__date_joined__gte=three_days_ago_start, user__date_joined__lt=three_days_ago_end
+    )
+
+    for email_address in unverified_emails.distinct():
+        user = email_address.user
+        # Generate a confirmation object without sending the default email
+        confirmation = email_address.send_confirmation(signup=False)
+        # Prevent the default email from being sent by overriding the send method
+        confirmation.send = lambda *args, **kwargs: None  # Disable default email sending
+
+        # Construct the confirmation URL
+        confirmation_url = f"https://{settings.SITE_DOMAIN}{reverse('account_confirm_email', args=[confirmation.key])}"
+
+        # Construct the password reset URL
+        password_reset_url = f"https://{settings.SITE_DOMAIN}{reverse('account_reset_password')}"
+
+        # Send a custom email with the verification link and draft deletion warning
+        subject = "Verify Your Email to Complete Your Course Draft"
+        html_message = render_to_string(
+            "emails/verification_reminder.html",
+            {
+                "user": user,
+                "confirmation_url": confirmation_url,
+                "site_url": settings.SITE_URL,
+                "days_until_deletion": 30,
+                "password_reset_url": password_reset_url,
+            },
+        )
+        try:
+            send_mail(
+                subject,
+                "",
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                html_message=html_message,
+            )
+            logger.info(f"Sent verification reminder to {user.email}")
+        except Exception as e:
+            logger.error(f"Failed to send verification reminder to {user.email}: {str(e)}")

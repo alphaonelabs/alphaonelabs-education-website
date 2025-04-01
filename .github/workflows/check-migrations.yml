@@ -1,0 +1,43 @@
+name: Check Migrations
+
+on:
+  pull_request:
+    paths:
+      - 'web/migrations/**'
+
+jobs:
+  check_migrations:
+    name: Check for multiple migration files fix
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Check for multiple migration files
+        run: |
+          # Get the base branch of the PR
+          BASE_SHA=$(git merge-base ${{ github.event.pull_request.base.sha }} HEAD)
+
+          # Find migration files added in this PR
+          MIGRATION_FILES=$(git diff --name-only --diff-filter=A $BASE_SHA HEAD | grep -E "web/migrations/[0-9]+_.*\.py$" || true)
+
+          # Count migration files
+          MIGRATION_COUNT=$(echo "$MIGRATION_FILES" | grep -c "^" || echo 0)
+
+          echo "Found $MIGRATION_COUNT new migration file(s):"
+          echo "$MIGRATION_FILES"
+
+          # Fail if more than one migration file
+          if [ "$MIGRATION_COUNT" -gt 1 ]; then
+            echo "::error::Multiple migration files detected in this PR. Please limit to one migration file per PR."
+            echo "Files found:"
+            echo "$MIGRATION_FILES"
+            exit 1
+          elif [ "$MIGRATION_COUNT" -eq 1 ]; then
+            echo "✅ Only one migration file detected. Good job!"
+          else
+            echo "No new migration files detected in this PR."
+          fi

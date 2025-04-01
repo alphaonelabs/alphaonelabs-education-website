@@ -58,6 +58,10 @@ class Profile(models.Model):
         "Avatar", on_delete=models.SET_NULL, null=True, blank=True, related_name="profile"
     )
     is_teacher = models.BooleanField(default=False)
+    is_social_media_manager = models.BooleanField(default=False)
+    discord_username = models.CharField(max_length=50, blank=True, help_text="Your Discord username (e.g., User#1234)")
+    slack_username = models.CharField(max_length=50, blank=True, help_text="Your Slack username")
+    github_username = models.CharField(max_length=50, blank=True, help_text="Your GitHub username (without @)")
     referral_code = models.CharField(max_length=20, unique=True, blank=True)
     referred_by = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="referrals")
     referral_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -383,6 +387,34 @@ class Session(models.Model):
     teacher_confirmed = models.BooleanField(
         default=False, help_text="Whether the teacher has confirmed the rolled over dates"
     )
+    latitude = models.DecimalField(
+        blank=True,
+        decimal_places=6,
+        help_text="Latitude coordinate for mapping",
+        max_digits=9,
+        null=True,
+        validators=[MinValueValidator(-90), MaxValueValidator(90)],
+    )
+    longitude = models.DecimalField(
+        blank=True,
+        decimal_places=6,
+        help_text="Longitude coordinate for mapping",
+        max_digits=9,
+        null=True,
+        validators=[MinValueValidator(-180), MaxValueValidator(180)],
+    )
+    teaching_style = models.CharField(
+        max_length=20,
+        choices=[
+            ("lecture", "Lecture Based"),
+            ("student-centered", "Student Centered"),
+            ("hybrid", "Hybrid Learning"),
+            ("practical", "Practical Learning"),
+        ],
+        default="hybrid",
+        blank=True,
+        help_text="What is the teachng style of session",
+    )
 
     class Meta:
         ordering = ["start_time"]
@@ -392,6 +424,11 @@ class Session(models.Model):
 
     def save(self, *args, **kwargs):
         # Store original times when first created
+        # calculate the lat and longitiude dynamically
+
+        if self.location and (self.latitude is None or self.longitude is None):
+            self.fetch_coordinates()
+
         if not self.pk and not self.original_start_time and not self.original_end_time:
             self.original_start_time = self.start_time
             self.original_end_time = self.end_time
@@ -455,6 +492,36 @@ class Session(models.Model):
 
             delete_calendar_event(self)
         super().delete(*args, **kwargs)
+
+    def fetch_coordinates(self):
+        """Fetch latitude and longitude using OpenStreetMap's Nominatim API."""
+        from .utils import geocode_address
+
+        if not self.location:
+            return
+        try:
+            coordinates = geocode_address(self.location)
+            if coordinates:
+                self.latitude, self.longitude = coordinates
+                print("location store:", self.latitude, self.longitude)
+            else:
+                print(
+                    f"Skipping session {self.id} due to invalid coordinates:",
+                    f"lat={self.latitude}, \n lng={self.longitude}",
+                )
+        except Exception as e:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.error("Error geocoding session %s location '%s': %s", self.id, self.location, str(e))
+
+    def is_live(self):
+        """Returns True if the session is live right now."""
+        now = timezone.now()
+        return self.start_time <= now <= self.end_time
+
+    def get_absolute_url(self):
+        return reverse("course_detail", kwargs={"slug": self.course.slug})
 
 
 class CourseMaterial(models.Model):
@@ -672,6 +739,7 @@ class Review(models.Model):
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_featured = models.BooleanField(default=False, db_index=True)
 
     class Meta:
         unique_together = ["student", "course"]
@@ -1307,6 +1375,7 @@ class SearchLog(models.Model):
 
 
 class Challenge(models.Model):
+    # defining two types of models
     CHALLENGE_TYPE_CHOICES = [
         ("weekly", "Weekly Challenge"),
         ("one_time", "One-time Challenge"),
@@ -2172,6 +2241,28 @@ class UserQuiz(models.Model):
         return self.start_time
 
 
+class WaitingRoom(models.Model):
+    """Model for storing waiting room requests for courses on specific subjects."""
+
+    STATUS_CHOICES = [("open", "Open"), ("closed", "Closed"), ("fulfilled", "Fulfilled")]
+
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    subject = models.CharField(max_length=100)
+    topics = models.TextField(help_text="Comma-separated list of topics")
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_waiting_rooms")
+    participants = models.ManyToManyField(User, related_name="joined_waiting_rooms", blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="open")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    fulfilled_course = models.ForeignKey(
+        "Course", on_delete=models.SET_NULL, null=True, blank=True, related_name="fulfilled_waiting_rooms"
+    )
+
+    def __str__(self):
+        return self.title
+
+
 class GradeableLink(models.Model):
     """Model for storing links that users want to get grades on."""
 
@@ -2196,6 +2287,24 @@ class GradeableLink(models.Model):
 
     def __str__(self):
         return self.title
+
+    def participant_count(self):
+        """Return the number of participants in the waiting room."""
+        return self.participants.count()
+
+    def topic_list(self):
+        """Return the list of topics as a list."""
+        return [topic.strip() for topic in self.topics.split(",") if topic.strip()]
+
+    def mark_as_fulfilled(self, course=None):
+        """Mark the waiting room as fulfilled and notify participants."""
+        self.status = "fulfilled"
+        self.save()
+
+        if course:
+            from .notifications import notify_waiting_room_fulfilled
+
+            notify_waiting_room_fulfilled(self, course)
 
     def get_absolute_url(self):
         return reverse("gradeable_link_detail", kwargs={"pk": self.pk})
@@ -2492,3 +2601,214 @@ class NotificationPreference(models.Model):
 
     def __str__(self):
         return f"Notification preferences for {self.user.username}"
+
+
+class FeatureVote(models.Model):
+    VOTE_CHOICES = (
+        ("up", "Thumbs Up"),
+        ("down", "Thumbs Down"),
+    )
+
+    feature_id = models.CharField(max_length=100)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    vote = models.CharField(max_length=4, choices=VOTE_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["feature_id", "user"], name="web_feature_feature_9fbd0b_idx"),
+            models.Index(fields=["feature_id", "ip_address"], name="web_feature_feature_988c48_idx"),
+        ]
+        verbose_name = "Feature Vote"
+        verbose_name_plural = "Feature Votes"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["feature_id", "user"],
+                name="unique_user_feature_vote",
+                condition=models.Q(user__isnull=False),
+            ),
+            models.UniqueConstraint(
+                fields=["feature_id", "ip_address"],
+                name="unique_ip_feature_vote",
+                condition=models.Q(ip_address__isnull=False),
+            ),
+        ]
+
+    def clean(self):
+        """Validate that a user or IP address hasn't already voted on this feature."""
+        if not self.feature_id:
+            raise ValidationError({"feature_id": "Feature ID is required"})
+
+        if not self.vote:
+            raise ValidationError({"vote": "Vote is required"})
+
+        if not self.user and not self.ip_address:
+            raise ValidationError("Either user or IP address must be provided")
+
+        if self.user and self.ip_address:
+            raise ValidationError("Cannot provide both user and IP address")
+
+        if self.user:
+            # Check for existing user vote
+            existing_vote = (
+                FeatureVote.objects.filter(feature_id=self.feature_id, user=self.user).exclude(pk=self.pk).first()
+            )
+            if existing_vote:
+                raise ValidationError(
+                    {"user": f"User has already voted on this feature with a {existing_vote.get_vote_display()}"}
+                )
+        elif self.ip_address:
+            # Check for existing IP vote
+            existing_vote = (
+                FeatureVote.objects.filter(feature_id=self.feature_id, ip_address=self.ip_address, user__isnull=True)
+                .exclude(pk=self.pk)
+                .first()
+            )
+            if existing_vote:
+                raise ValidationError(
+                    {
+                        "ip_address": (
+                            f"IP address has already voted on this feature with a "
+                            f"{existing_vote.get_vote_display()}"
+                        )
+                    }
+                )
+
+    def save(self, *args, **kwargs):
+        """Ensure clean() is called before saving."""
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        voter = self.user.username if self.user else self.ip_address
+        return f"{self.get_vote_display()} for {self.feature_id} by {voter}"
+
+
+class MembershipPlan(models.Model):
+    BILLING_PERIOD_CHOICES = [
+        ("monthly", "Monthly"),
+        ("yearly", "Yearly"),
+    ]
+
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    features = models.JSONField(default=list)
+    price_monthly = models.DecimalField(max_digits=10, decimal_places=2)
+    price_yearly = models.DecimalField(max_digits=10, decimal_places=2)
+    billing_period = models.CharField(max_length=10, choices=BILLING_PERIOD_CHOICES, default="monthly")
+    stripe_monthly_price_id = models.CharField(max_length=100, blank=True)
+    stripe_yearly_price_id = models.CharField(max_length=100, blank=True)
+    is_active = models.BooleanField(default=True)
+    is_popular = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    @property
+    def yearly_savings(self):
+        if self.price_monthly and self.price_yearly:
+            monthly_total = self.price_monthly * 12
+            savings = monthly_total - self.price_yearly
+            if savings > 0:
+                return int((savings / monthly_total) * 100)
+        return 0
+
+    def __str__(self):
+        return f"{self.name} - ${self.price_monthly}/month or ${self.price_yearly}/year"
+
+
+class UserMembership(models.Model):
+    STATUS_CHOICES = [
+        ("active", "Active"),
+        ("past_due", "Past Due"),
+        ("canceled", "Canceled"),
+        ("trialing", "Trialing"),
+        ("unpaid", "Unpaid"),
+        ("incomplete", "Incomplete"),
+        ("expired", "Expired"),
+    ]
+
+    BILLING_PERIOD_CHOICES = [
+        ("monthly", "Monthly"),
+        ("yearly", "Yearly"),
+    ]
+
+    user = models.OneToOneField("auth.User", on_delete=models.CASCADE, related_name="membership")
+    plan = models.ForeignKey(MembershipPlan, on_delete=models.PROTECT, related_name="user_memberships")
+    stripe_customer_id = models.CharField(max_length=100, blank=True)
+    stripe_subscription_id = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
+    billing_period = models.CharField(max_length=10, choices=BILLING_PERIOD_CHOICES, default="monthly")
+    start_date = models.DateTimeField(default=timezone.now)
+    end_date = models.DateTimeField(null=True, blank=True)
+    cancel_at_period_end = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def is_active(self):
+        active_statuses = ["active", "trialing"]
+        return self.status in active_statuses and (self.end_date is None or self.end_date > timezone.now())
+
+    @property
+    def is_canceled(self):
+        return self.status == "canceled" or self.cancel_at_period_end
+
+    @property
+    def days_until_expiration(self):
+        if not self.end_date:
+            return None
+        now = timezone.now()
+        if now > self.end_date:
+            return -1
+        return (self.end_date - now).days
+
+    def get_next_billing_date(self):
+        if self.end_date:
+            return self.end_date
+        return None
+
+    def __str__(self):
+        return f"{self.user.email} - {self.plan.name} ({self.status})"
+
+
+class MembershipSubscriptionEvent(models.Model):
+    EVENT_TYPE_CHOICES = [
+        ("created", "Created"),
+        ("updated", "Updated"),
+        ("canceled", "Canceled"),
+        ("payment_succeeded", "Payment Succeeded"),
+        ("payment_failed", "Payment Failed"),
+        ("reactivated", "Reactivated"),
+    ]
+
+    user = models.ForeignKey("auth.User", on_delete=models.CASCADE, related_name="membership_events")
+    membership = models.ForeignKey(UserMembership, on_delete=models.SET_NULL, null=True, related_name="events")
+    event_type = models.CharField(max_length=50, choices=EVENT_TYPE_CHOICES)
+    stripe_event_id = models.CharField(max_length=100, blank=True)
+    data = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.event_type} - {self.user.email} - {self.created_at}"
+
+
+class ScheduledPost(models.Model):
+    content = models.CharField(max_length=280)
+    image = models.ImageField(upload_to="scheduled_posts/", blank=True)
+    scheduled_time = models.DateTimeField()
+    posted = models.BooleanField(default=False)
+    posted_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return self.content
