@@ -46,10 +46,12 @@
         </div>
         <div class="flex space-x-3">
           <button id="shareButton"
+                  aria-label="Share this meme"
                   class="flex items-center justify-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg">
             <i class="fas fa-share-alt mr-2"></i> Share
           </button>
           <button id="downloadButton"
+                  aria-label="Download this meme"
                   class="flex items-center justify-center px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg">
             <i class="fas fa-download mr-2"></i> Save
           </button>
@@ -75,11 +77,44 @@
           // current url copied and user can share this link
           shareButton.addEventListener('click', function() {
               const url = window.location.href;
-              navigator.clipboard.writeText(url).then(function() {
-                  alert('Meme link copied to clipboard!');
-              }, function() {
-                  alert('Failed to copy link.');
-              });
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                  navigator.clipboard.writeText(url)
+                      .then(() => {
+                          //notification
+                          const notification = document.createElement('div');
+                          notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow-lg transition-all duration-300';
+                          notification.innerHTML = '<div class="flex items-center"><i class="fas fa-check-circle mr-2"></i> Link copied to clipboard!</div>';
+                          notification.style.transform = 'translateY(20px)';
+                          notification.style.opacity = '0';
+                          document.body.appendChild(notification);
+
+                          setTimeout(() => {
+                              notification.style.transform = 'translateY(0)';
+                              notification.style.opacity = '1';
+                              setTimeout(() => {
+                                  notification.style.transform = 'translateY(20px)';
+                                  notification.style.opacity = '0';
+                                  setTimeout(() => notification.remove(), 300);
+                              }, 2500);
+                          }, 10);
+                      })
+                      .catch(() => {
+                          alert('Failed to copy link. Please try again.');
+                      });
+              } else {
+                  //handling old browsers
+                  try {
+                      const tempInput = document.createElement('input');
+                      tempInput.value = url;
+                      document.body.appendChild(tempInput);
+                      tempInput.select();
+                      document.execCommand('copy');
+                      document.body.removeChild(tempInput);
+                      alert('Link copied to clipboard!');
+                  } catch (err) {
+                      alert('Failed to copy link. Please try again.');
+                  }
+              }
           });
       });
   </script>
