@@ -157,6 +157,10 @@ from .models import (
     UserBadge,
     WaitingRoom,
     WebRequest,
+    StudyPlan,
+    StudySession,
+    StudyGoal,
+    StudyReminder,
 )
 from .notifications import (
     notify_session_reminder,
@@ -6929,3 +6933,207 @@ def delete_post(request, post_id):
     if request.method == "POST":
         post.delete()
     return redirect("social_media_dashboard")
+
+
+@login_required
+def study_planner(request):
+    """View for the main study planner dashboard."""
+    study_plans = StudyPlan.objects.filter(user=request.user, is_active=True)
+    upcoming_sessions = StudySession.objects.filter(
+        study_plan__user=request.user,
+        start_time__gte=timezone.now(),
+        completed=False
+    ).order_by('start_time')[:5]
+    
+    context = {
+        'study_plans': study_plans,
+        'upcoming_sessions': upcoming_sessions,
+    }
+    return render(request, 'study_planner/dashboard.html', context)
+
+
+@login_required
+def create_study_plan(request):
+    """View for creating a new study plan."""
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        start_date = request.POST.get('start_date')
+        end_date = request.POST.get('end_date')
+        preferred_times = request.POST.getlist('preferred_times')
+        study_duration = request.POST.get('study_duration')
+        break_duration = request.POST.get('break_duration')
+
+        study_plan = StudyPlan.objects.create(
+            user=request.user,
+            title=title,
+            description=description,
+            start_date=start_date,
+            end_date=end_date,
+            preferred_study_times=preferred_times,
+            study_duration=study_duration,
+            break_duration=break_duration
+        )
+
+        # Create initial study goals
+        goal_titles = request.POST.getlist('goal_titles[]')
+        goal_dates = request.POST.getlist('goal_dates[]')
+        
+        for title, target_date in zip(goal_titles, goal_dates):
+            if title.strip():
+                StudyGoal.objects.create(
+                    study_plan=study_plan,
+                    title=title,
+                    target_date=target_date,
+                    priority=2  # Default to medium priority
+                )
+
+        messages.success(request, 'Study plan created successfully!')
+        return redirect('study_planner')
+
+    return render(request, 'study_planner/create_plan.html')
+
+
+@login_required
+def study_plan_detail(request, plan_id):
+    """View for displaying and managing a specific study plan."""
+    study_plan = get_object_or_404(StudyPlan, id=plan_id, user=request.user)
+    
+    # Get all sessions ordered by start time
+    sessions = study_plan.sessions.all().order_by('start_time')
+    
+    # Get all goals ordered by priority and target date
+    goals = study_plan.goals.all().order_by('-priority', 'target_date')
+    
+    # Check and update goal completion status
+    for goal in goals:
+        goal.check_completion()
+    
+    # Get completed and upcoming sessions
+    completed_sessions = sessions.filter(completed=True)
+    upcoming_sessions = sessions.filter(completed=False, start_time__gte=timezone.now())
+    past_sessions = sessions.filter(completed=False, start_time__lt=timezone.now())
+    
+    # Calculate completion statistics
+    total_sessions = sessions.count()
+    completed_count = completed_sessions.count()
+    completion_rate = (completed_count / total_sessions * 100) if total_sessions > 0 else 0
+    
+    context = {
+        'study_plan': study_plan,
+        'sessions': sessions,
+        'goals': goals,
+        'completed_sessions': completed_sessions,
+        'upcoming_sessions': upcoming_sessions,
+        'past_sessions': past_sessions,
+        'completion_rate': completion_rate,
+        'completed_count': completed_count,
+        'total_sessions': total_sessions,
+    }
+    return render(request, 'study_planner/plan_detail.html', context)
+
+
+@login_required
+def add_study_session(request, plan_id):
+    """View for adding a new study session to a plan."""
+    study_plan = get_object_or_404(StudyPlan, id=plan_id, user=request.user)
+    
+    if request.method == 'POST':
+        title = request.POST.get('title')
+        description = request.POST.get('description')
+        subject_id = request.POST.get('subject')
+        date = request.POST.get('date')
+        time = request.POST.get('time')
+        duration = request.POST.get('duration', 60)  # Default to 60 minutes if not specified
+        
+        subject = get_object_or_404(Subject, id=subject_id)
+        
+        # Combine date and time into a datetime string and make it timezone-aware
+        start_time = timezone.make_aware(timezone.datetime.fromisoformat(f"{date}T{time}"))
+        end_time = start_time + timezone.timedelta(minutes=int(duration))
+        
+        session = StudySession.objects.create(
+            study_plan=study_plan,
+            title=title,
+            description=description,
+            subject=subject,
+            start_time=start_time,
+            end_time=end_time
+        )
+        
+        # Create reminders based on user preferences
+        if request.POST.get('reminder'):
+            reminder_minutes = int(request.POST.get('reminder_time', 15))
+            reminder_type = request.POST.get('reminder_type')
+            
+            # Calculate reminder time based on minutes before start time
+            reminder_time = start_time - timezone.timedelta(minutes=reminder_minutes)
+            
+            StudyReminder.objects.create(
+                study_session=session,
+                reminder_time=reminder_time,
+                reminder_type=reminder_type
+            )
+        
+        messages.success(request, 'Study session added successfully!')
+        return redirect('study_plan_detail', plan_id=plan_id)
+    
+    subjects = Subject.objects.all()
+    context = {
+        'study_plan': study_plan,
+        'subjects': subjects,
+    }
+    return render(request, 'study_planner/add_session.html', context)
+
+
+@login_required
+def mark_session_complete(request, session_id):
+    """View for marking a study session as complete."""
+    session = get_object_or_404(StudySession, id=session_id, study_plan__user=request.user)
+    
+    if request.method == 'POST':
+        session.completed = True
+        session.save()
+        
+        # Update related goals if any
+        for goal in session.study_plan.goals.filter(completed=False):
+            if goal.target_date <= timezone.now().date():
+                goal.mark_completed()
+        
+        messages.success(request, 'Study session marked as complete!')
+        return redirect('study_plan_detail', plan_id=session.study_plan.id)
+    
+    return HttpResponseForbidden()
+
+
+@login_required
+def update_study_goal(request, goal_id):
+    """View for updating a study goal."""
+    goal = get_object_or_404(StudyGoal, id=goal_id, study_plan__user=request.user)
+    
+    if request.method == 'POST':
+        goal.title = request.POST.get('title')
+        goal.description = request.POST.get('description')
+        goal.target_date = request.POST.get('target_date')
+        goal.priority = request.POST.get('priority')
+        goal.save()
+        
+        messages.success(request, 'Study goal updated successfully!')
+        return redirect('study_plan_detail', plan_id=goal.study_plan.id)
+    
+    context = {'goal': goal}
+    return render(request, 'study_planner/update_goal.html', context)
+
+
+@login_required
+def delete_study_plan(request, plan_id):
+    """View for deleting a study plan."""
+    study_plan = get_object_or_404(StudyPlan, id=plan_id, user=request.user)
+    
+    if request.method == 'POST':
+        study_plan.delete()
+        messages.success(request, 'Study plan deleted successfully!')
+        return redirect('study_planner')
+    
+    context = {'study_plan': study_plan}
+    return render(request, 'study_planner/delete_plan.html', context)

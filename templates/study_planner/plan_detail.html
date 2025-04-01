@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200">{{ study_plan.title }}</h1>
+            <p class="text-gray-600 dark:text-gray-400">{{ study_plan.description }}</p>
+            <div class="mt-2">
+                <div class="flex items-center space-x-2">
+                    <div class="w-48 bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+                        <div class="bg-teal-300 h-2.5 rounded-full" style="width: {{ completion_rate }}%"></div>
+                    </div>
+                    <span class="text-sm text-gray-600 dark:text-gray-400">{{ completed_count }}/{{ total_sessions }} sessions completed</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex space-x-4">
+            <a href="{% url 'add_study_session' study_plan.id %}" 
+                class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+                Add Session
+            </a>
+            <a href="{% url 'delete_study_plan' study_plan.id %}"
+                class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition duration-200">
+                Delete Plan
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Study Sessions -->
+        <div class="lg:col-span-2">
+            <!-- Upcoming Sessions -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Upcoming Sessions</h2>
+                
+                {% for session in upcoming_sessions %}
+                <div class="border-b border-gray-200 dark:border-gray-700 last:border-0 py-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ session.title }}</h3>
+                            <p class="text-gray-600 dark:text-gray-400">{{ session.subject.name }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                {{ session.start_time|date:"M d, Y" }} at {{ session.start_time|time:"g:i A" }}
+                            </p>
+                            {% if session.description %}
+                            <p class="mt-2 text-gray-600 dark:text-gray-400">{{ session.description }}</p>
+                            {% endif %}
+                        </div>
+                        <form method="post" action="{% url 'mark_session_complete' session.id %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit"
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition duration-200">
+                                Complete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-600 dark:text-gray-400 text-center py-4">No upcoming sessions scheduled.</p>
+                {% endfor %}
+            </div>
+
+            <!-- Completed Sessions -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Completed Sessions</h2>
+                
+                {% for session in completed_sessions %}
+                <div class="border-b border-gray-200 dark:border-gray-700 last:border-0 py-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ session.title }}</h3>
+                            <p class="text-gray-600 dark:text-gray-400">{{ session.subject.name }}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                {{ session.start_time|date:"M d, Y" }} at {{ session.start_time|time:"g:i A" }}
+                            </p>
+                            {% if session.description %}
+                            <p class="mt-2 text-gray-600 dark:text-gray-400">{{ session.description }}</p>
+                            {% endif %}
+                        </div>
+                        <span class="text-green-600 dark:text-green-400">Completed</span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-600 dark:text-gray-400 text-center py-4">No completed sessions yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Goals -->
+        <div>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Study Goals</h2>
+                
+                {% for goal in goals %}
+                <div class="border-b border-gray-200 dark:border-gray-700 last:border-0 py-4">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ goal.title }}</h3>
+                            {% if goal.description %}
+                            <p class="text-gray-600 dark:text-gray-400">{{ goal.description }}</p>
+                            {% endif %}
+                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                Target: {{ goal.target_date|date:"M d, Y" }}
+                            </p>
+                            <span class="inline-block px-2 py-1 text-xs rounded-full
+                                {% if goal.priority == 3 %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
+                                {% elif goal.priority == 2 %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                                {% else %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% endif %}">
+                                {{ goal.get_priority_display }}
+                            </span>
+                        </div>
+                        {% if not goal.completed %}
+                        <a href="{% url 'update_study_goal' goal.id %}"
+                            class="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300">
+                            Edit
+                        </a>
+                        {% else %}
+                        <span class="text-green-600 dark:text-green-400">Completed</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-gray-600 dark:text-gray-400 text-center py-4">No study goals set yet.</p>
+                {% endfor %}
+            </div>
+
+            <!-- Plan Settings -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mt-6">
+                <h2 class="text-2xl font-semibold text-gray-800 dark:text-gray-200 mb-4">Plan Settings</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Study Duration</h3>
+                        <p class="text-gray-600 dark:text-gray-400">{{ study_plan.study_duration }} minutes</p>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Break Duration</h3>
+                        <p class="text-gray-600 dark:text-gray-400">{{ study_plan.break_duration }} minutes</p>
+                    </div>
+                    
+                    <div>
+                        <h3 class="text-sm font-medium text-gray-700 dark:text-gray-300">Preferred Study Times</h3>
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            {% for time in study_plan.preferred_study_times %}
+                            <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full text-sm text-gray-700 dark:text-gray-300">
+                                {{ time }}
+                            </span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
