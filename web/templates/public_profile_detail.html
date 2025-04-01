@@ -74,6 +74,34 @@
             </div>
           {% endif %}
         </div>
+        {% if profile.is_profile_public %}
+          <!-- Social Media Links -->
+          <div class="mb-4">
+            <h3 class="text-lg font-semibold mb-2">Social Profiles</h3>
+            <div class="flex gap-4">
+              {% if profile.discord_username %}
+                <div class="flex items-center">
+                  <i class="fab fa-discord mr-2"></i>
+                  <span>{{ profile.discord_username }}</span>
+                </div>
+              {% endif %}
+              {% if profile.slack_username %}
+                <div class="flex items-center">
+                  <i class="fab fa-slack mr-2"></i>
+                  <span>{{ profile.slack_username }}</span>
+                </div>
+              {% endif %}
+              {% if profile.github_username %}
+                <div class="flex items-center">
+                  <i class="fab fa-github mr-2"></i>
+                  <a href="https://github.com/{{ profile.github_username }}"
+                     target="_blank"
+                     class="hover:underline">@{{ profile.github_username }}</a>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
       </div>
     </div>
   </div>

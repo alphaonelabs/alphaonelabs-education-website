@@ -1,0 +1,221 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Membership Checkout
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+      <h1 class="text-3xl font-bold mb-8">Membership Checkout</h1>
+      <!-- Plan Details -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg mb-8">
+        <div class="p-6">
+          <h2 class="text-2xl font-semibold mb-4">{{ plan.name }}</h2>
+          <div class="text-gray-600 dark:text-gray-400 mb-4">{{ plan.description }}</div>
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <span class="text-lg font-semibold">Price:</span>
+              <span class="text-2xl font-bold ml-2">
+                {% if billing_period == 'monthly' %}
+                  ${{ plan.monthly_price }}/month
+                {% else %}
+                  ${{ plan.yearly_price }}/year
+                {% endif %}
+              </span>
+            </div>
+            <div class="flex items-center">
+              <label class="mr-4">
+                <input type="radio"
+                       name="billing_period"
+                       value="monthly"
+                       {% if billing_period == 'monthly' %}checked{% endif %}
+                       class="mr-2" />
+                Monthly
+              </label>
+              <label>
+                <input type="radio"
+                       name="billing_period"
+                       value="yearly"
+                       {% if billing_period == 'yearly' %}checked{% endif %}
+                       class="mr-2" />
+                Yearly
+                {% if plan.yearly_discount %}
+                  <span class="text-green-500 text-sm ml-1">(Save {{ plan.yearly_discount }}%)</span>
+                {% endif %}
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Payment Form -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+        <div class="p-6">
+          <form id="payment-form" class="space-y-6">
+            {% csrf_token %}
+            <input type="hidden" name="plan_id" value="{{ plan.id }}" />
+            <input type="hidden" name="billing_period" value="{{ billing_period }}" />
+            <!-- Card Element -->
+            <div>
+              <label for="card-element"
+                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Credit or debit card
+              </label>
+              <div id="card-element" class="p-3 border rounded-lg bg-white">
+                <!-- Stripe Elements will be inserted here -->
+              </div>
+              <div id="card-errors" class="mt-2 text-sm text-red-600" role="alert"></div>
+            </div>
+            <!-- Terms and Conditions -->
+            <div class="flex items-start">
+              <div class="flex items-center h-5">
+                <input id="terms"
+                       name="terms"
+                       type="checkbox"
+                       required
+                       class="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 rounded" />
+              </div>
+              <div class="ml-3">
+                <label for="terms" class="text-sm text-gray-600 dark:text-gray-400">
+                  I agree to the
+                  <a href="{% url 'terms' %}"
+                     class="text-orange-500 hover:text-orange-600">Terms and Conditions</a>
+                </label>
+              </div>
+            </div>
+            <!-- Submit Button -->
+            <button type="submit"
+                    id="submit-button"
+                    class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 flex items-center justify-center">
+              <i class="fas fa-credit-card mr-2"></i>
+              <span id="button-text">Subscribe Now</span>
+              <span id="spinner" class="hidden ml-2">
+                <i class="fas fa-spinner fa-spin"></i>
+              </span>
+            </button>
+            <div id="payment-message" class="mt-4 text-sm text-center"></div>
+          </form>
+        </div>
+      </div>
+      <!-- Features List -->
+      <div class="mt-8">
+        <h3 class="text-xl font-semibold mb-4">Membership Benefits</h3>
+        <ul class="space-y-3">
+          {% for feature in plan.features.all %}
+            <li class="flex items-start">
+              <i class="fas fa-check text-green-500 mt-1 mr-3"></i>
+              <span>{{ feature.description }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+      // Initialize Stripe
+      const stripe = Stripe('{{ stripe_public_key }}');
+      const elements = stripe.elements();
+
+      // Create card Element
+      const card = elements.create('card');
+      card.mount('#card-element');
+
+      // Handle form submission
+      const form = document.getElementById('payment-form');
+      const submitButton = document.getElementById('submit-button');
+      const buttonText = document.getElementById('button-text');
+      const spinner = document.getElementById('spinner');
+      const messageContainer = document.getElementById('payment-message');
+
+      form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+
+          // Disable form submission
+          submitButton.disabled = true;
+          buttonText.textContent = 'Processing...';
+          spinner.classList.remove('hidden');
+
+          // Get billing period
+          const billingPeriod = document.querySelector('input[name="billing_period"]:checked').value;
+
+          try {
+              // Create payment method
+              const {
+                  paymentMethod,
+                  error
+              } = await stripe.createPaymentMethod({
+                  type: 'card',
+                  card: card,
+              });
+
+              if (error) {
+                  throw error;
+              }
+
+              // Create subscription
+              const response = await fetch('{% url "create_membership_subscription" %}', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'X-CSRFToken': '{{ csrf_token }}',
+                  },
+                  body: JSON.stringify({
+                      payment_method_id: paymentMethod.id,
+                      plan_id: '{{ plan.id }}',
+                      billing_period: billingPeriod,
+                  }),
+              });
+
+              const data = await response.json();
+
+              if (!response.ok) {
+                  throw new Error(data.error || 'An error occurred');
+              }
+
+              if (data.subscription.status === 'active') {
+                  // Subscription is active, redirect to success page
+                  window.location.href = '{% url "membership_success" %}';
+              } else {
+                  // Handle additional actions if needed
+                  const {
+                      subscription,
+                      client_secret
+                  } = data;
+
+                  if (client_secret) {
+                      const {
+                          error: confirmError
+                      } = await stripe.confirmCardPayment(client_secret);
+                      if (confirmError) {
+                          throw confirmError;
+                      }
+                      // Payment confirmed, redirect to success page
+                      window.location.href = '{% url "membership_success" %}';
+                  }
+              }
+          } catch (error) {
+              // Display error message
+              messageContainer.textContent = error.message;
+              messageContainer.classList.add('text-red-500');
+
+              // Re-enable form submission
+              submitButton.disabled = false;
+              buttonText.textContent = 'Subscribe Now';
+              spinner.classList.add('hidden');
+          }
+      });
+
+      // Handle billing period change
+      document.querySelectorAll('input[name="billing_period"]').forEach(radio => {
+          radio.addEventListener('change', (event) => {
+              const billingPeriod = event.target.value;
+              const price = billingPeriod === 'monthly' ?
+                  '{{ plan.monthly_price }}/month' :
+                  '{{ plan.yearly_price }}/year';
+              document.querySelector('.text-2xl.font-bold').textContent = '$' + price;
+          });
+      });
+  </script>
+{% endblock extra_js %}

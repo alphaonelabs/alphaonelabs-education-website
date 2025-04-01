@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!-- Email template for sending verification reminder -->
+<html>
+  <head>
+    <title>Verify Your Email</title>
+  </head>
+  <body>
+    <h1>Hello {{ user.username }},</h1>
+    <p>You recently created a course draft on our platform, but your email address has not yet been verified.</p>
+    <p>
+      Please verify your email to complete your draft. If you do not verify your email within {{ days_until_deletion }} days, your draft will be automatically deleted.
+    </p>
+    <p>
+      <a href="{{ confirmation_url }}"
+         style="background-color: #4CAF50;
+                color: white;
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block">Verify Your Email</a>
+    </p>
+    <p>If the button above doesn't work, you can copy and paste the following link into your browser:</p>
+    <p>{{ confirmation_url }}</p>
+    <br />
+    <p>Before resetting your password you must verify your email.</p>
+    <p>
+      <strong>Your Account Details:</strong>
+    </p>
+    <ul>
+      <li>
+        <strong>Username:</strong> {{ user.username }}
+      </li>
+      <li>
+        <strong>Email:</strong> {{ user.email }}
+      </li>
+    </ul>
+    <p>If you have forgotten your password, you can reset it here:</p>
+    <p>
+      <a href="{{ password_reset_url }}"
+         style="background-color: #ff9800;
+                color: white;
+                padding: 10px 20px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block">Reset Password</a>
+    </p>
+    <p>
+      Thank you,
+      <br />
+      The Education Team
+      <br />
+      Alpha One Labs
+    </p>
+    <p>
+      <small>If you did not create a draft, you can ignore this email.</small>
+    </p>
+  </body>
+</html>
