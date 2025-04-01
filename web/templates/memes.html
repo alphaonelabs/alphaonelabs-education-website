@@ -4,7 +4,7 @@
   Educational Memes
 {% endblock title %}
 {% block content %}
-  <div class="container mx-auto mt-8 px-4">
+  <div class="container mx-auto mt-8 mb-16 px-4">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl font-bold">Educational Memes</h1>
       <a href="{% url 'add_meme' %}"
@@ -31,14 +31,8 @@
     <!-- Meme grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {% for meme in memes %}
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl cursor-pointer meme-card"
-             data-meme-id="{{ meme.id }}"
-             data-meme-title="{{ meme.title }}"
-             data-meme-image="{{ meme.image.url }}"
-             data-meme-caption="{{ meme.caption }}"
-             data-meme-subject="{{ meme.subject.name }}"
-             data-meme-uploader="{{ meme.uploader.username }}"
-             data-meme-date="{{ meme.created_at|date:'F j, Y' }}">
+        <a href="{% url 'meme_detail' slug=meme.slug %}"
+           class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden transition-all duration-300 hover:shadow-xl">
           <div class="w-full h-48 overflow-hidden flex items-center justify-center">
             <img src="{{ meme.image.url }}"
                  alt="{{ meme.title }}"
@@ -52,7 +46,7 @@
               <span>By: {{ meme.uploader.username }}</span>
             </div>
           </div>
-        </div>
+        </a>
       {% empty %}
         <div class="col-span-full text-center py-12">
           <p class="text-lg text-gray-600 dark:text-gray-400">No memes found. Be the first to add one!</p>
@@ -89,126 +83,4 @@
       </div>
     {% endif %}
   </div>
-  <!-- Meme Modal -->
-  <div id="memeModal"
-       class="fixed inset-0 bg-black bg-opacity-75 z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white dark:bg-gray-800 max-w-4xl w-full rounded-lg shadow-2xl overflow-hidden relative">
-      <button id="closeModal"
-              class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 z-10">
-        <i class="fas fa-times text-2xl"></i>
-      </button>
-      <div class="flex flex-col md:flex-row">
-        <div class="w-full md:w-2/3 bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-6">
-          <img id="modalImage"
-               src=""
-               alt=""
-               class="max-w-full max-h-[70vh] object-contain rounded" />
-        </div>
-        <div class="w-full md:w-1/3 p-6 overflow-y-auto" style="max-height: 70vh;">
-          <h2 id="modalTitle"
-              class="text-xl font-bold text-gray-900 dark:text-white mb-2"></h2>
-          <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-4">
-            <span id="modalSubject"
-                  class="bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-300 px-2 py-1 rounded-full text-xs"></span>
-            <span class="mx-2">•</span>
-            <span id="modalDate"></span>
-          </div>
-          <div class="border-t border-gray-200 dark:border-gray-700 my-4"></div>
-          <p id="modalCaption" class="text-gray-700 dark:text-gray-300 mb-4"></p>
-          <div class="border-t border-gray-200 dark:border-gray-700 my-4"></div>
-          <div class="flex items-center mb-4">
-            <div class="w-8 h-8 bg-teal-500 rounded-full flex items-center justify-center text-white font-bold">
-              <span id="uploaderInitial"></span>
-            </div>
-            <span id="modalUploader" class="ml-2 text-gray-700 dark:text-gray-300"></span>
-          </div>
-          <div class="flex space-x-2 mt-6">
-            <button id="shareButton"
-                    class="flex items-center justify-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg">
-              <i class="fas fa-share-alt mr-2"></i> Share
-            </button>
-            <button id="downloadButton"
-                    class="flex items-center justify-center px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg">
-              <i class="fas fa-download mr-2"></i> Save
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <script>
-      document.addEventListener('DOMContentLoaded', function() {
-          const memeCards = document.querySelectorAll('.meme-card');
-          const memeModal = document.getElementById('memeModal');
-          const modalImage = document.getElementById('modalImage');
-          const modalTitle = document.getElementById('modalTitle');
-          const modalCaption = document.getElementById('modalCaption');
-          const modalSubject = document.getElementById('modalSubject');
-          const modalUploader = document.getElementById('modalUploader');
-          const modalDate = document.getElementById('modalDate');
-          const uploaderInitial = document.getElementById('uploaderInitial');
-          const closeModal = document.getElementById('closeModal');
-          const downloadButton = document.getElementById('downloadButton');
-          const shareButton = document.getElementById('shareButton');
-
-          // open the modal when clicking on a meme card
-          memeCards.forEach(card => {
-              card.addEventListener('click', function() {
-                  const memeId = this.dataset.memeId;
-                  const memeTitle = this.dataset.memeTitle;
-                  const memeImage = this.dataset.memeImage;
-                  const memeCaption = this.dataset.memeCaption || 'No caption provided.';
-                  const memeSubject = this.dataset.memeSubject;
-                  const memeUploader = this.dataset.memeUploader;
-                  const memeDate = this.dataset.memeDate;
-
-                  modalImage.src = memeImage;
-                  modalImage.alt = memeTitle;
-                  modalTitle.textContent = memeTitle;
-                  modalCaption.textContent = memeCaption;
-                  modalSubject.textContent = memeSubject;
-                  modalUploader.textContent = memeUploader;
-                  modalDate.textContent = memeDate;
-                  uploaderInitial.textContent = memeUploader.charAt(0).toUpperCase();
-
-                  memeModal.classList.remove('hidden');
-                  document.body.style.overflow = 'hidden';
-              });
-          });
-
-          // close the modal when clicking the close button
-          closeModal.addEventListener('click', function() {
-              memeModal.classList.add('hidden');
-              document.body.style.overflow = '';
-          });
-
-          // close the modal when clicking outside the content
-          memeModal.addEventListener('click', function(event) {
-              if (event.target === memeModal) {
-                  memeModal.classList.add('hidden');
-                  document.body.style.overflow = '';
-              }
-          });
-
-          // download meme option
-          downloadButton.addEventListener('click', function() {
-              const link = document.createElement('a');
-              link.href = modalImage.src;
-              link.download = modalTitle.textContent.replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.jpg';
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-          });
-
-          // simple share functionality, copy URL to clipboard
-          shareButton.addEventListener('click', function() {
-              const url = window.location.href;
-              navigator.clipboard.writeText(url).then(function() {
-                  alert('Meme link copied to clipboard!');
-              }, function() {
-                  alert('Failed to copy link.');
-              });
-          });
-      });
-  </script>
 {% endblock content %}
