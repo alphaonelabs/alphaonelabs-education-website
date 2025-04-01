@@ -204,10 +204,15 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 # AI Service Configuration
+# Controls whether to enable OpenAI integration
 USE_OPENAI = env.bool("USE_OPENAI", default=False)
+# Controls whether to enable Google Gemini integration
 USE_GEMINI = env.bool("USE_GEMINI", default=False)
+# API key for OpenAI services
 OPENAI_API_KEY = env.str("OPENAI_API_KEY", default="")
+# API key for Google Gemini services
 GEMINI_API_KEY = env.str("GEMINI_API_KEY", default="")
+# Default AI service to use when both are available ("openai" or "gemini")
 DEFAULT_AI_SERVICE = env.str("DEFAULT_AI_SERVICE", default="openai")
 
 # Initialize AI service
