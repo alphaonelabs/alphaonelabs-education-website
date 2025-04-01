@@ -2877,7 +2877,7 @@ class StudyReminder(models.Model):
         choices=[
             ("email", "Email"),
             ("push", "Push Notification"),
-            ("both", "Both")
+            ("both", "Both"),
         ],
         default="both"
     )
