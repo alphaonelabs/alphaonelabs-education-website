@@ -776,8 +776,14 @@ class QuizOptionAdmin(admin.ModelAdmin):
 
 @admin.register(PDFType)
 class PDFTypeAdmin(admin.ModelAdmin):
-    list_display = ("name", "description")
+    list_display = ("name", "description", "icon_class")
     search_fields = ("name", "description")
+    list_editable = ("icon_class",)
+
+    def get_submissions_count(self, obj):
+        return obj.submissions.count()
+
+    get_submissions_count.short_description = "Submissions"
 
 
 @admin.register(PDFSubmission)
