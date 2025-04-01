@@ -17,6 +17,8 @@ from urllib.parse import urlparse
 import requests
 import stripe
 import tweepy
+from allauth.account.models import EmailAddress
+from allauth.account.utils import send_email_confirmation
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.utils import NestedObjects
@@ -45,6 +47,7 @@ from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.html import strip_tags
+from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from django.views import generic
 from django.views.decorators.clickjacking import xframe_options_exempt
@@ -89,6 +92,7 @@ from .forms import (
     SuccessStoryForm,
     TeacherSignupForm,
     TeachForm,
+    TeamGoalCompletionForm,
     TeamGoalForm,
     TeamInviteForm,
     UserRegistrationForm,
@@ -1069,46 +1073,178 @@ def learn(request):
 
 
 def teach(request):
+    """Handles the course creation process for both authenticated and unauthenticated users."""
     if request.method == "POST":
-        form = TeachForm(request.POST)
+        form = TeachForm(request.POST, request.FILES)
         if form.is_valid():
-            subject = form.cleaned_data["subject"]
+            # Extract cleaned data
             email = form.cleaned_data["email"]
-            expertise = form.cleaned_data["expertise"]
+            course_title = form.cleaned_data["course_title"]
+            course_description = form.cleaned_data["course_description"]
+            course_image = form.cleaned_data.get("course_image")
+            preferred_session_times = form.cleaned_data["preferred_session_times"]
+            _ = form.cleaned_data.get("flexible_timing", False)
 
-            # Prepare email content
-            email_subject = f"Teaching Application: {subject}"
-            email_body = render_to_string(
-                "emails/teach_application.html",
-                {
-                    "subject": subject,
-                    "email": email,
-                    "expertise": expertise,
-                },
+            # Determine the user for the course
+            user = None
+            is_new_user = False
+
+            if request.user.is_authenticated:
+                # For authenticated users, always use the logged-in user
+                user = request.user
+
+                # Validate that the provided email matches the logged-in user's email
+                if email != user.email:
+                    form.add_error(
+                        "email",
+                        "The provided email does not match your account email. Please use your account email.",
+                    )
+                    return render(request, "teach.html", {"form": form})
+
+                # Backend validation: Check for duplicate course titles for the logged-in user
+                if Course.objects.filter(title__iexact=course_title, teacher=user).exists():
+                    form.add_error("course_title", "You already have a course with this title.")
+                    return render(request, "teach.html", {"form": form})
+            else:
+                # For unauthenticated users, check if the email exists or create a new user
+                try:
+                    user = User.objects.get(email=email)
+                    # User exists but isn't logged in; check if email is verified
+                    email_address = EmailAddress.objects.filter(user=user, email=email, primary=True).first()
+                    if email_address and email_address.verified:
+                        messages.info(
+                            request,
+                            "An account with this email exists. Please login to finalize your course.",
+                        )
+                    else:
+                        # Email not verified, resend verification email
+                        send_email_confirmation(request, user, signup=False)
+                        messages.info(
+                            request,
+                            "An account with this email exists. Please verify your email to continue.",
+                        )
+                except User.DoesNotExist:
+                    # Create a new user account
+                    with transaction.atomic():
+                        # Generate a unique username
+                        email_prefix = email.split("@")[0]
+                        username = email_prefix
+                        counter = 1
+                        while User.objects.filter(username=username).exists():
+                            username = f"{email_prefix}_{get_random_string(4)}_{counter}"
+                            counter += 1
+
+                        temp_password = get_random_string(length=8)
+
+                        # Create user with temporary password
+                        user = User.objects.create_user(username=username, email=email, password=temp_password)
+
+                        # Update profile to be a teacher
+                        profile, created = Profile.objects.get_or_create(user=user)
+                        profile.is_teacher = True
+                        profile.save()
+
+                        # Add email address for allauth verification
+                        EmailAddress.objects.create(user=user, email=email, primary=True, verified=False)
+
+                        # Send verification email via allauth
+                        send_email_confirmation(request, user, signup=True)
+                        # Send welcome email with username, email, and temp password
+                        try:
+                            send_welcome_teach_course_email(request, user, temp_password)
+                        except Exception:
+                            messages.error(request, "Failed to send welcome email. Please try again.")
+                            return render(request, "teach.html", {"form": form})
+
+                        is_new_user = True
+
+                # Backend validation: Check for duplicate course titles for unauthenticated users
+                if Course.objects.filter(title__iexact=course_title, teacher=user).exists():
+                    email_address = EmailAddress.objects.filter(user=user, email=email, primary=True).first()
+                    if email_address and not email_address.verified:
+                        # If the user is unverified, delete the existing draft and allow a new one
+                        Course.objects.filter(title__iexact=course_title, teacher=user).delete()
+                    else:
+                        form.add_error("course_title", "You already have a course with this title.")
+                        return render(request, "teach.html", {"form": form})
+
+            # Create a draft course
+            course = Course.objects.create(
+                title=course_title,
+                description=course_description,
+                teacher=user,
+                price=0,
+                max_students=12,
+                status="draft",
+                subject=Subject.objects.first() or Subject.objects.create(name="General"),
+                level="beginner",
             )
 
-            # Send email
-            try:
-                send_mail(
-                    email_subject,
-                    email_body,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [settings.DEFAULT_FROM_EMAIL],
-                    html_message=email_body,
-                    fail_silently=False,
+            # Handle course image if uploaded
+            if course_image:
+                course.image = course_image
+                course.save()
+
+            # Create initial session if preferred time provided
+            if preferred_session_times:
+                Session.objects.create(
+                    course=course,
+                    title=f"{course_title} - Session 1",
+                    description="First session of the course",
+                    start_time=preferred_session_times,
+                    end_time=preferred_session_times + timezone.timedelta(hours=1),
+                    is_virtual=True,
                 )
-                messages.success(request, "Thank you for your application! We'll review it and get back to you soon.")
-                return redirect("index")
-            except Exception as e:
-                print(f"Error sending email: {e}")
-                messages.error(request, "Sorry, there was an error sending your application. Please try again later.")
+
+            # Handle redirection based on authentication status
+            if request.user.is_authenticated:
+                # If authenticated, mark as teacher and redirect to course setup
+                request.user.profile.is_teacher = True
+                request.user.profile.save()
+                messages.success(
+                    request, f"Welcome! Your course '{course_title}' has been created. Please complete your setup."
+                )
+                return redirect("course_detail", slug=course.slug)
+            else:
+                # Store course primary key in session for post-verification redirect
+                request.session["pending_course_id"] = course.pk
+                if is_new_user:
+                    messages.success(
+                        request,
+                        "Your course has been created! "
+                        "Please check your email for your username, password, and verification link to continue.",
+                    )
+                    return redirect("account_email_verification_sent")
+                else:
+                    # For existing users, redirect to login page
+                    return redirect("account_login")
+
     else:
         initial_data = {}
         if request.GET.get("subject"):
-            initial_data["subject"] = request.GET.get("subject")
+            initial_data["course_title"] = request.GET.get("subject")
         form = TeachForm(initial=initial_data)
 
     return render(request, "teach.html", {"form": form})
+
+
+def send_welcome_teach_course_email(request, user, temp_password):
+    """Send welcome email with account and password setup instructions."""
+    reset_url = request.build_absolute_uri(reverse("account_reset_password"))
+
+    email_context = {"user": user, "reset_url": reset_url, "temp_password": temp_password}
+
+    html_message = render_to_string("emails/welcome_teach_course.html", email_context)
+    text_message = render_to_string("emails/welcome_teach_course.txt", email_context)
+
+    send_mail(
+        subject="Welcome to Your New Teaching Account.",
+        message=text_message,
+        html_message=html_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        fail_silently=False,
+    )
 
 
 def course_search(request):
@@ -2700,10 +2836,14 @@ def create_forum_category(request):
         form = ForumCategoryForm(request.POST)
         if form.is_valid():
             category = form.save()
+            if not category.slug:
+                category.slug = slugify(category.name)
+            category.save()
             messages.success(request, f"Forum category '{category.name}' created successfully!")
             return redirect("forum_category", slug=category.slug)
     else:
         form = ForumCategoryForm()
+        print(form.errors)
 
     return render(request, "web/forum/create_category.html", {"form": form})
 
@@ -2744,6 +2884,24 @@ def my_forum_replies(request):
     )
     categories = ForumCategory.objects.all()
     return render(request, "web/forum/my_replies.html", {"replies": replies, "categories": categories})
+
+
+@login_required
+def edit_reply(request, reply_id):
+    """Edit a forum reply."""
+    reply = get_object_or_404(ForumReply, id=reply_id, author=request.user)
+    topic = reply.topic
+    categories = ForumCategory.objects.all()
+
+    if request.method == "POST":
+        content = request.POST.get("content")
+        if content:
+            reply.content = content
+            reply.save()
+            messages.success(request, "Reply updated successfully.")
+            return redirect("forum_topic", category_slug=topic.category.slug, topic_id=topic.id)
+
+    return render(request, "web/forum/edit_reply.html", {"reply": reply, "categories": categories})
 
 
 def get_course_calendar(request, slug):
@@ -4222,6 +4380,25 @@ def remove_team_member(request, goal_id, member_id):
     member.delete()
     messages.success(request, f"{member.user.username} has been removed from the team.")
     return redirect("team_goal_detail", goal_id=goal_id)
+
+
+@login_required
+def submit_team_proof(request, team_goal_id):
+    team_goal = get_object_or_404(TeamGoal, id=team_goal_id)
+    member = get_object_or_404(TeamGoalMember, team_goal=team_goal, user=request.user)
+
+    if request.method == "POST":
+        form = TeamGoalCompletionForm(request.POST, request.FILES, instance=member)
+        if form.is_valid():
+            form.save()
+            if not member.completed:
+                member.mark_completed()
+            return redirect("team_goal_detail", goal_id=team_goal.id)  # Fixed here
+
+    else:
+        form = TeamGoalCompletionForm(instance=member)
+
+    return render(request, "teams/submit_proof.html", {"form": form, "team_goal": team_goal})
 
 
 @login_required

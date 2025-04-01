@@ -1,10 +1,12 @@
 import logging
 from datetime import timedelta
 
+from allauth.account.models import EmailAddress
 from django.conf import settings
 from django.core.mail import send_mail
-from django.db import transaction  # Moved here
+from django.db import transaction
 from django.template.loader import render_to_string
+from django.urls import reverse
 from django.utils import timezone
 
 from .models import CourseMaterial, Enrollment, Notification, NotificationPreference, Session
@@ -372,3 +374,57 @@ def send_assignment_reminders():
                     )
         assignment.final_reminder_sent = True
         assignment.save()
+
+
+def send_verification_reminders():
+    """Send reminder emails to users who haven’t verified their email after 3 or 7 days."""
+
+    now = timezone.now()
+    three_days_ago_start = now - timedelta(days=3)
+    three_days_ago_end = now - timedelta(days=2)
+    seven_days_ago_start = now - timedelta(days=7)
+    seven_days_ago_end = now - timedelta(days=6)
+
+    # Find unverified email addresses created around 3 or 7 days ago
+    unverified_emails = EmailAddress.objects.filter(
+        verified=False, user__date_joined__gte=seven_days_ago_start, user__date_joined__lt=seven_days_ago_end
+    ) | EmailAddress.objects.filter(
+        verified=False, user__date_joined__gte=three_days_ago_start, user__date_joined__lt=three_days_ago_end
+    )
+
+    for email_address in unverified_emails.distinct():
+        user = email_address.user
+        # Generate a confirmation object without sending the default email
+        confirmation = email_address.send_confirmation(signup=False)
+        # Prevent the default email from being sent by overriding the send method
+        confirmation.send = lambda *args, **kwargs: None  # Disable default email sending
+
+        # Construct the confirmation URL
+        confirmation_url = f"https://{settings.SITE_DOMAIN}{reverse('account_confirm_email', args=[confirmation.key])}"
+
+        # Construct the password reset URL
+        password_reset_url = f"https://{settings.SITE_DOMAIN}{reverse('account_reset_password')}"
+
+        # Send a custom email with the verification link and draft deletion warning
+        subject = "Verify Your Email to Complete Your Course Draft"
+        html_message = render_to_string(
+            "emails/verification_reminder.html",
+            {
+                "user": user,
+                "confirmation_url": confirmation_url,
+                "site_url": settings.SITE_URL,
+                "days_until_deletion": 30,
+                "password_reset_url": password_reset_url,
+            },
+        )
+        try:
+            send_mail(
+                subject,
+                "",
+                settings.DEFAULT_FROM_EMAIL,
+                [user.email],
+                html_message=html_message,
+            )
+            logger.info(f"Sent verification reminder to {user.email}")
+        except Exception as e:
+            logger.error(f"Failed to send verification reminder to {user.email}: {str(e)}")
