@@ -69,6 +69,7 @@ urlpatterns += i18n_patterns(
     path("account/notification-preferences/", notification_preferences, name="notification_preferences"),
     path("profile/", views.profile, name="profile"),
     path("accounts/profile/", views.profile, name="accounts_profile"),
+    path("accounts/delete/", views.delete_account, name="delete_account"),
     # Dashboard URLs
     path("dashboard/student/", views.student_dashboard, name="student_dashboard"),
     path("dashboard/teacher/", views.teacher_dashboard, name="teacher_dashboard"),
@@ -192,6 +193,7 @@ urlpatterns += i18n_patterns(
         name="forum_topic",
     ),
     path("forum/topic/<int:topic_id>/edit/", views.edit_topic, name="edit_topic"),
+    path("forum/reply/<int:reply_id>/edit/", views.edit_reply, name="edit_reply"),
     path("forum/my-topics/", views.my_forum_topics, name="my_forum_topics"),
     path("forum/my-replies/", views.my_forum_replies, name="my_forum_replies"),
     path("forum/sync-milestones/", views.sync_github_milestones, name="sync_github_milestones"),
@@ -412,6 +414,9 @@ urlpatterns += i18n_patterns(
         name="update_teacher_notes",
     ),
     path("award-badge/", views.award_badge, name="award_badge"),
+    # Map Urls
+    path("classes-map/", views.classes_map, name="classes_map"),
+    path("api/map-data/", views.map_data_api, name="map_data_api"),
     # Student Feedback URLs
     path("feedback/history/", views.student_feedback_history, name="student_feedback_history"),
     path(
@@ -424,6 +429,19 @@ urlpatterns += i18n_patterns(
     path("features/vote/", feature_vote, name="feature_vote"),
     path("features/vote-count/", feature_vote_count, name="feature_vote_count"),
     path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
+    # Membership URLs
+    path("membership/checkout/<int:plan_id>/", views.membership_checkout, name="membership_checkout"),
+    path(
+        "membership/create-subscription/",
+        views.create_membership_subscription,
+        name="create_membership_subscription",
+    ),
+    path("membership/success/", views.membership_success, name="membership_success"),
+    path("membership/settings/", views.membership_settings, name="membership_settings"),
+    path("membership/cancel/", views.cancel_membership, name="cancel_membership"),
+    path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
+    path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
+    path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
     prefix_default_language=True,
 )
 
