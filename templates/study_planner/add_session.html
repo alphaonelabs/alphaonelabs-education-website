@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">Add Study Session</h1>
+            
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Title -->
+                <div>
+                    <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Session Title
+                    </label>
+                    <input type="text" name="title" id="title" required
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200">
+                </div>
+
+                <!-- Subject -->
+                <div>
+                    <label for="subject" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Subject
+                    </label>
+                    <select name="subject" id="subject" required
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200">
+                        <option value="">Select a subject</option>
+                        {% for subject in subjects %}
+                        <option value="{{ subject.id }}">{{ subject.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Date and Time -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Date
+                        </label>
+                        <input type="date" name="date" id="date" required
+                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200">
+                    </div>
+                    <div>
+                        <label for="time" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            Time
+                        </label>
+                        <input type="time" name="time" id="time" required
+                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200">
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Description (Optional)
+                    </label>
+                    <textarea name="description" id="description" rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200"></textarea>
+                </div>
+
+                <!-- Reminder -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                        Reminder
+                    </label>
+                    <div class="space-y-2">
+                        <div class="flex items-center">
+                            <input type="checkbox" name="reminder" id="reminder" class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded">
+                            <label for="reminder" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                                Enable reminder
+                            </label>
+                        </div>
+                        <div id="reminder-options" class="hidden space-y-2">
+                            <div>
+                                <label for="reminder_time" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Reminder Time
+                                </label>
+                                <select name="reminder_time" id="reminder_time"
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200">
+                                    <option value="15">15 minutes before</option>
+                                    <option value="30">30 minutes before</option>
+                                    <option value="60">1 hour before</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="reminder_type" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Reminder Type
+                                </label>
+                                <select name="reminder_type" id="reminder_type"
+                                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200">
+                                    <option value="email">Email</option>
+                                    <option value="notification">In-app Notification</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex justify-end space-x-4">
+                    <a href="{% url 'study_plan_detail' study_plan.id %}"
+                        class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200">
+                        Cancel
+                    </a>
+                    <button type="submit"
+                        class="px-6 py-2 bg-teal-300 hover:bg-teal-400 text-white rounded-lg transition duration-200">
+                        Add Session
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.getElementById('reminder').addEventListener('change', function() {
+        const reminderOptions = document.getElementById('reminder-options');
+        reminderOptions.classList.toggle('hidden', !this.checked);
+    });
+</script>
+{% endblock %}
+{% endblock %} 

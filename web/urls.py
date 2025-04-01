@@ -55,6 +55,14 @@ urlpatterns += i18n_patterns(
     path("blog/create/", views.create_blog_post, name="create_blog_post"),
     path("blog/tag/<str:tag>/", views.blog_tag, name="blog_tag"),
     path("blog/<slug:slug>/", views.blog_detail, name="blog_detail"),
+    # Study Planner URLs
+    path("study-planner/", views.study_planner, name="study_planner"),
+    path("study-planner/create/", views.create_study_plan, name="create_study_plan"),
+    path("study-planner/<int:plan_id>/", views.study_plan_detail, name="study_plan_detail"),
+    path("study-planner/<int:plan_id>/add-session/", views.add_study_session, name="add_study_session"),
+    path("study-planner/session/<int:session_id>/complete/", views.mark_session_complete, name="mark_session_complete"),
+    path("study-planner/goal/<int:goal_id>/update/", views.update_study_goal, name="update_study_goal"),
+    path("study-planner/<int:plan_id>/delete/", views.delete_study_plan, name="delete_study_plan"),
     # Leaderboard URLs
     path("leaderboards/", views.all_leaderboards, name="leaderboards"),
     # Success Stories URLs
@@ -428,6 +436,14 @@ urlpatterns += i18n_patterns(
     path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
+    # Study Planner URLs
+    path("study-planner/", views.study_planner, name="study_planner"),
+    path("study-planner/create/", views.create_study_plan, name="create_study_plan"),
+    path("study-planner/<int:plan_id>/", views.study_plan_detail, name="study_plan_detail"),
+    path("study-planner/<int:plan_id>/add-session/", views.add_study_session, name="add_study_session"),
+    path("study-planner/session/<int:session_id>/complete/", views.mark_session_complete, name="mark_session_complete"),
+    path("study-planner/goal/<int:goal_id>/update/", views.update_study_goal, name="update_study_goal"),
+    path("study-planner/<int:plan_id>/delete/", views.delete_study_plan, name="delete_study_plan"),
     prefix_default_language=True,
 )
 

@@ -2790,3 +2790,106 @@ class ScheduledPost(models.Model):
 
     def __str__(self):
         return self.content
+
+
+class StudyPlan(models.Model):
+    """Model for storing personalized study plans."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="study_plans")
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_active = models.BooleanField(default=True)
+    start_date = models.DateField()
+    end_date = models.DateField(null=True, blank=True)
+    preferred_study_times = models.JSONField(default=list, help_text="List of preferred study times in 24h format")
+    study_duration = models.IntegerField(default=30, help_text="Preferred study session duration in minutes")
+    break_duration = models.IntegerField(default=10, help_text="Preferred break duration in minutes")
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.title} - {self.user.username}"
+
+class StudySession(models.Model):
+    """Model for storing individual study sessions."""
+    study_plan = models.ForeignKey(StudyPlan, on_delete=models.CASCADE, related_name="sessions")
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    subject = models.ForeignKey(Subject, on_delete=models.PROTECT, related_name="study_sessions")
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    completed = models.BooleanField(default=False)
+    notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["start_time"]
+
+    def __str__(self):
+        return f"{self.title} - {self.study_plan.user.username}"
+
+class StudyGoal(models.Model):
+    """Model for storing study goals and objectives."""
+    study_plan = models.ForeignKey(StudyPlan, on_delete=models.CASCADE, related_name="goals")
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    target_date = models.DateField()
+    completed = models.BooleanField(default=False)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    priority = models.IntegerField(
+        choices=[(1, "Low"), (2, "Medium"), (3, "High")],
+        default=2
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-priority", "target_date"]
+
+    def __str__(self):
+        return f"{self.title} - {self.study_plan.user.username}"
+
+    def mark_completed(self):
+        """Mark the goal as completed and set the completion time."""
+        if not self.completed:
+            self.completed = True
+            self.completed_at = timezone.now()
+            self.save()
+
+    def check_completion(self):
+        """Check if the goal should be marked as completed based on its target date."""
+        if not self.completed and self.target_date <= timezone.now().date():
+            self.mark_completed()
+            return True
+        return False
+
+class StudyReminder(models.Model):
+    """Model for storing study reminders and notifications."""
+    study_session = models.ForeignKey(StudySession, on_delete=models.CASCADE, related_name="reminders")
+    reminder_time = models.DateTimeField()
+    sent = models.BooleanField(default=False)
+    sent_at = models.DateTimeField(null=True, blank=True)
+    reminder_type = models.CharField(
+        max_length=20,
+        choices=[
+            ("email", "Email"),
+            ("push", "Push Notification"),
+            ("both", "Both")
+        ],
+        default="both"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["reminder_time"]
+
+    def __str__(self):
+        return f"Reminder for {self.study_session.title}"
+
+    def mark_sent(self):
+        self.sent = True
+        self.sent_at = timezone.now()
+        self.save()
