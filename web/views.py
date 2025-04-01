@@ -47,6 +47,7 @@ from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.html import strip_tags
+from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from django.views import generic
 from django.views.decorators.clickjacking import xframe_options_exempt
@@ -1108,7 +1109,7 @@ def teach(request):
                 # For unauthenticated users, check if the email exists or create a new user
                 try:
                     user = User.objects.get(email=email)
-                    # User exists but isn’t logged in; check if email is verified
+                    # User exists but isn't logged in; check if email is verified
                     email_address = EmailAddress.objects.filter(user=user, email=email, primary=True).first()
                     if email_address and email_address.verified:
                         messages.info(
@@ -2835,10 +2836,14 @@ def create_forum_category(request):
         form = ForumCategoryForm(request.POST)
         if form.is_valid():
             category = form.save()
+            if not category.slug:
+                category.slug = slugify(category.name)
+            category.save()
             messages.success(request, f"Forum category '{category.name}' created successfully!")
             return redirect("forum_category", slug=category.slug)
     else:
         form = ForumCategoryForm()
+        print(form.errors)
 
     return render(request, "web/forum/create_category.html", {"form": form})
 
@@ -2879,6 +2884,24 @@ def my_forum_replies(request):
     )
     categories = ForumCategory.objects.all()
     return render(request, "web/forum/my_replies.html", {"replies": replies, "categories": categories})
+
+
+@login_required
+def edit_reply(request, reply_id):
+    """Edit a forum reply."""
+    reply = get_object_or_404(ForumReply, id=reply_id, author=request.user)
+    topic = reply.topic
+    categories = ForumCategory.objects.all()
+
+    if request.method == "POST":
+        content = request.POST.get("content")
+        if content:
+            reply.content = content
+            reply.save()
+            messages.success(request, "Reply updated successfully.")
+            return redirect("forum_topic", category_slug=topic.category.slug, topic_id=topic.id)
+
+    return render(request, "web/forum/edit_reply.html", {"reply": reply, "categories": categories})
 
 
 def get_course_calendar(request, slug):

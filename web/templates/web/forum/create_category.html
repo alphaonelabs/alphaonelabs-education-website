@@ -16,16 +16,30 @@
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
         <form method="post" class="space-y-6">
           {% csrf_token %}
-          {% for field in form %}
-            <div>
-              <label for="{{ field.id_for_label }}" class="block text-sm font-medium mb-2">{{ field.label }}</label>
-              {{ field }}
-              {% if field.help_text %}<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ field.help_text }}</p>{% endif %}
-              {% if field.errors %}
-                <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ field.errors|join:", " }}</p>
-              {% endif %}
-            </div>
-          {% endfor %}
+          <!-- Name Field -->
+          <div>
+            <label for="{{ form.name.id_for_label }}"
+                   class="block text-sm font-medium mb-2">Category Name</label>
+            {{ form.name }}
+          </div>
+          <!-- Slug Field (Read-Only) -->
+          <div>
+            <label for="{{ form.slug.id_for_label }}"
+                   class="block text-sm font-medium mb-2">Slug</label>
+            {{ form.slug }}
+          </div>
+          <!-- Description Field -->
+          <div>
+            <label for="{{ form.description.id_for_label }}"
+                   class="block text-sm font-medium mb-2">Description</label>
+            {{ form.description }}
+          </div>
+          <!-- Icon Field -->
+          <div>
+            <label for="{{ form.icon.id_for_label }}"
+                   class="block text-sm font-medium mb-2">Icon</label>
+            {{ form.icon }}
+          </div>
           <div class="flex justify-end space-x-4">
             <a href="{% url 'forum_categories' %}"
                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -40,4 +54,19 @@
       </div>
     </div>
   </main>
+  <script>
+      document.addEventListener("DOMContentLoaded", function() {
+          const nameInput = document.querySelector("#id_name");
+          const slugInput = document.querySelector("#id_slug");
+
+          nameInput.addEventListener("input", function() {
+              const slug = nameInput.value
+                  .toLowerCase()
+                  .trim()
+                  .replace(/\s+/g, "-")
+                  .replace(/[^a-z0-9-]/g, "");
+              slugInput.value = slug;
+          });
+      });
+  </script>
 {% endblock content %}
