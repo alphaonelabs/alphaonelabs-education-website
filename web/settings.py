@@ -209,10 +209,22 @@ USE_OPENAI = env.bool("USE_OPENAI", default=False)
 # Controls whether to enable Google Gemini integration
 USE_GEMINI = env.bool("USE_GEMINI", default=False)
 # API key for OpenAI services
-OPENAI_API_KEY = env.str("OPENAI_API_KEY", default="")
-# API key for Google Gemini services
-GEMINI_API_KEY = env.str("GEMINI_API_KEY", default="")
-# Default AI service to use when both are available ("openai" or "gemini")
+# Initialize AI service
+ai_service = None
+if USE_OPENAI or USE_GEMINI:
+    # Validate API keys are provided when services are enabled
+    if USE_OPENAI and not OPENAI_API_KEY:
+        print("Warning: USE_OPENAI is enabled but OPENAI_API_KEY is not provided")
+    if USE_GEMINI and not GEMINI_API_KEY:
+        print("Warning: USE_GEMINI is enabled but GEMINI_API_KEY is not provided")
+    
+    try:
+        from .ai_service import AIService
+        ai_service = AIService()
+    except ImportError as e:
+        print(f"Error importing AI service: {e}")
+    except Exception as e:
+        print(f"Error initializing AI service: {e}")
 DEFAULT_AI_SERVICE = env.str("DEFAULT_AI_SERVICE", default="openai")
 
 # Initialize AI service
