@@ -418,9 +418,6 @@ urlpatterns += i18n_patterns(
     # Map Urls
     path("classes-map/", views.classes_map, name="classes_map"),
     path("api/map-data/", views.map_data_api, name="map_data_api"),
-    # Map Urls
-    path("classes-map/", views.classes_map, name="classes_map"),
-    path("api/map-data/", views.map_data_api, name="map_data_api"),
     # Student Feedback URLs
     path("feedback/history/", views.student_feedback_history, name="student_feedback_history"),
     path(
