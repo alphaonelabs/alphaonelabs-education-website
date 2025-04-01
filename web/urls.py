@@ -322,6 +322,7 @@ urlpatterns += i18n_patterns(
     path("teams/<int:goal_id>/delete/", views.delete_team_goal, name="delete_team_goal"),
     path("teams/<int:goal_id>/remove-member/<int:member_id>/", views.remove_team_member, name="remove_team_member"),
     path("teams/<int:goal_id>/edit/", views.edit_team_goal, name="edit_team_goal"),
+    path("teams/<int:team_goal_id>/submit_proof/", views.submit_team_proof, name="submit_team_proof"),
     path("trackers/", views.tracker_list, name="tracker_list"),
     path("trackers/create/", views.create_tracker, name="create_tracker"),
     path("trackers/<int:tracker_id>/", views.tracker_detail, name="tracker_detail"),
@@ -414,6 +415,9 @@ urlpatterns += i18n_patterns(
         name="update_teacher_notes",
     ),
     path("award-badge/", views.award_badge, name="award_badge"),
+    # Map Urls
+    path("classes-map/", views.classes_map, name="classes_map"),
+    path("api/map-data/", views.map_data_api, name="map_data_api"),
     # Map Urls
     path("classes-map/", views.classes_map, name="classes_map"),
     path("api/map-data/", views.map_data_api, name="map_data_api"),
