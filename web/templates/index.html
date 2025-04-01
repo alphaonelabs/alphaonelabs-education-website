@@ -975,9 +975,9 @@
             </div>
           </div>
         </div>
-        <!-- GitHub Contributors Section -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-lg">
-          <h3 class="text-lg font-bold mb-4 flex items-center">
+        <!-- GitHub Contributors Section (Now in sidebar) -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+          <h3 class="text-lg font-semibold mb-4 flex items-center">
             <i class="fa-brands fa-github text-gray-800 dark:text-gray-200 mr-2"></i>
             Thank you to our Contributors!
           </h3>
@@ -1021,11 +1021,31 @@
               </div>
             </div>
           </div>
+          <!-- Recent Contributions -->
+          <div class="mb-4">
+            <h4 class="text-sm font-medium mb-3 flex items-center">
+              <i class="fa-solid fa-code-pull-request text-purple-600 dark:text-purple-400 mr-1"></i>
+              Recently Merged PRs
+            </h4>
+            <div class="space-y-2" id="recent-contributors-section">
+              <div class="animate-pulse space-y-2">
+                {% for i in "12345"|make_list %}
+                  <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                    <div class="flex-1">
+                      <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                      <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-1"></div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
           <div class="text-center">
             <a href="https://github.com/AlphaOneLabs/education-website/graphs/contributors"
                target="_blank"
-               class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors duration-300">
-              <i class="fas fa-users mr-2"></i>
+               class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
+              <i class="fas fa-users mr-1"></i>
               View All Contributors
             </a>
           </div>
@@ -1033,72 +1053,6 @@
       </div>
     </div>
   </main>
-  <!-- Add CSS for animations -->
-  <style>
-      /* Fade in animation */
-      .animate-fade-in {
-          animation: fadeIn 0.8s ease-out forwards;
-          opacity: 0;
-      }
-
-      @keyframes fadeIn {
-          from {
-              opacity: 0;
-              transform: translateY(20px);
-          }
-
-          to {
-              opacity: 1;
-              transform: translateY(0);
-          }
-      }
-
-      /* Animation delays */
-      .animation-delay-200 {
-          animation-delay: 0.2s;
-      }
-
-      .animation-delay-400 {
-          animation-delay: 0.4s;
-      }
-
-      /* Floating animation for certain elements */
-      .animate-float {
-          animation: float 6s ease-in-out infinite;
-      }
-
-      @keyframes float {
-          0% {
-              transform: translateY(0px);
-          }
-
-          50% {
-              transform: translateY(-10px);
-          }
-
-          100% {
-              transform: translateY(0px);
-          }
-      }
-
-      /* Pulsing animation */
-      .animate-pulse {
-          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-      }
-
-      @keyframes pulse {
-
-          0%,
-          100% {
-              opacity: 1;
-          }
-
-          50% {
-              opacity: 0.8;
-          }
-      }
-  </style>
-  <!-- GitHub contributors script -->
   <script>
       // Top Contributors - For Current Month
       function fetchTopContributors() {
@@ -1187,10 +1141,10 @@
 
                   if (topContributors.length === 0) {
                       container.innerHTML = `
-            <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
-              No contributions found this month.
-            </div>
-          `;
+          <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
+            No contributions found this month.
+          </div>
+        `;
                       return;
                   }
 
@@ -1222,37 +1176,37 @@
                       }
 
                       div.innerHTML = `
-                          <div class="relative">
-                              <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-8 h-8 rounded-full" loading="lazy" width="32" height="32" />
-                              <div class="absolute -bottom-1 -left-1 w-4 h-4 ${rankBadgeClass} text-white text-xs font-bold flex items-center justify-center rounded-full border-2 border-white dark:border-gray-800">
-                                  ${rankBadgeInner}
-                              </div>
-                          </div>
-                          <div class="flex-1 min-w-0">
-                              <div class="flex items-center justify-between">
-                                  <a href="/contributors/${contributor.username}/" target="_blank" class="text-xs font-medium text-gray-900 dark:text-gray-100 hover:text-blue-500 dark:hover:text-blue-400 truncate">
-                                     ${contributor.username || 'Unknown Contributor'}
-                                  </a>
-                                  <span class="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 text-xs px-1 py-0.5 rounded-full text-[10px]">
-                                      <i class="fas fa-code-pull-request mr-0.5 text-[8px]"></i>${contributor.merged_count}
-                                  </span>
-                              </div>
-                              <p class="text-[9px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                                  Latest: <a href="${contributor.prs[0].url}" class="hover:underline">#${contributor.prs[0].number}</a> · ${new Date(contributor.prs[0].merged_at).toLocaleDateString()}
-                              </p>
-                          </div>
-                      `;
+                        <div class="relative">
+                            <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-8 h-8 rounded-full" loading="lazy" width="32" height="32" />
+                            <div class="absolute -bottom-1 -left-1 w-4 h-4 ${rankBadgeClass} text-white text-xs font-bold flex items-center justify-center rounded-full border-2 border-white dark:border-gray-800">
+                                ${rankBadgeInner}
+                            </div>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between">
+                                <a href="/contributors/${contributor.username}/" target="_blank" class="text-xs font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 truncate">
+                                   ${contributor.username || 'Unknown Contributor'}
+                                </a>
+                                <span class="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 text-xs px-1 py-0.5 rounded-full text-[10px]">
+                                    <i class="fas fa-code-pull-request mr-0.5 text-[8px]"></i>${contributor.merged_count}
+                                </span>
+                            </div>
+                            <p class="text-[9px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                Latest: <a href="${contributor.prs[0].url}" class="hover:underline">#${contributor.prs[0].number}</a> · ${new Date(contributor.prs[0].merged_at).toLocaleDateString()}
+                            </p>
+                        </div>
+                    `;
                       container.appendChild(div);
                   });
               })
               .catch(error => {
                   const container = document.getElementById('top-contributors-section');
                   container.innerHTML = `
-        <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
-          <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
-          Failed to load contributors.
-        </div>
-    `;
+      <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
+        <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
+        Failed to load contributors.
+      </div>
+  `;
                   console.error('Error fetching top contributors:', error);
               });
       }
@@ -1343,10 +1297,10 @@
 
                   if (newContributors.length === 0) {
                       container.innerHTML = `
-                          <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
-                              No new contributors in the last 30 days.
-                          </div>
-                      `;
+                        <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
+                            No new contributors in the last 30 days.
+                        </div>
+                    `;
                       return;
                   }
 
@@ -1358,40 +1312,131 @@
                       const timeLabel = daysAgo === 0 ? 'Today' : daysAgo === 1 ? 'Yesterday' : `${daysAgo} days ago`;
 
                       div.innerHTML = `
-                          <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-8 h-8 rounded-full" loading="lazy" width="32" height="32" />
-                          <div class="flex-1 min-w-0">
-                              <div class="flex items-center justify-between">
-                                  <a href="${contributor.prs_url}" target="_blank" class="text-xs font-medium text-gray-900 dark:text-gray-100 hover:text-blue-500 dark:hover:text-blue-400 truncate">
-                                      ${contributor.username}
-                                  </a>
-                                  <span class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 text-xs px-1 py-0.5 rounded-full text-[10px]">
-                                      New
-                                  </span>
-                              </div>
-                              <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate">
-                                  First PR: ${timeLabel}
-                              </p>
-                          </div>
-                      `;
+                        <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-8 h-8 rounded-full" loading="lazy" width="32" height="32" />
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between">
+                                <a href="${contributor.prs_url}" target="_blank" class="text-xs font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 truncate">
+                                    ${contributor.username}
+                                </a>
+                                <span class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 text-xs px-1 py-0.5 rounded-full text-[10px]">
+                                    New
+                                </span>
+                            </div>
+                            <p class="text-[10px] text-gray-500 dark:text-gray-400 truncate">
+                                First PR: ${timeLabel}
+                            </p>
+                        </div>
+                    `;
                       container.appendChild(div);
                   });
               })
               .catch(error => {
                   const container = document.getElementById('new-contributors-section');
                   container.innerHTML = `
-                      <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
-                          <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
-                          Failed to load new contributors.
-                      </div>
-                  `;
+                    <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
+                        <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
+                        Failed to load new contributors.
+                    </div>
+                `;
                   console.error('Error processing new contributors:', error);
               });
       }
 
-      // Call the contributor functions when the DOM is loaded
+      // Recent Contributors
+      function fetchRecentContributions() {
+          // Create a helper function to fetch paginated data
+          async function fetchPage(page) {
+              const response = await fetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=${page}`);
+              return response.json();
+          }
+
+          // Fetch 2 pages of data
+          Promise.all([fetchPage(1), fetchPage(2)])
+              .then(results => {
+                  // Combine the results from both pages
+                  const pulls = [...results[0], ...results[1]];
+                  const filteredPulls = pulls.filter(pull => {
+                          const username = pull.user.login;
+                          return !username.includes('[bot]') &&
+                              !username.includes('dependabot') &&
+                              username !== 'A1L13N' &&
+                              pull.merged_at !== null;
+                      })
+                      .sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at))
+                      .slice(0, 5); //taking top 5
+
+                  const container = document.getElementById('recent-contributors-section');
+                  container.innerHTML = '';
+
+                  if (filteredPulls.length === 0) {
+                      container.innerHTML = `
+                        <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
+                            No merged pull requests found.
+                        </div>
+                    `;
+                      return;
+                  }
+
+                  filteredPulls.forEach(pull => {
+                      const div = document.createElement('div');
+                      div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
+
+                      // Create the GSoC-style PRs URL for this user
+                      const prs_url = `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${pull.user.login}+is:merged`;
+
+                      // Calculate how long ago the PR was merged
+                      const mergedDate = new Date(pull.merged_at);
+                      const now = new Date();
+                      const diffTime = Math.abs(now - mergedDate);
+                      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                      const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+                      let timeAgo;
+                      if (diffDays > 0) {
+                          timeAgo = diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+                      } else if (diffHours > 0) {
+                          timeAgo = diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
+                      } else {
+                          const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+                          timeAgo = diffMinutes === 0 ? 'just now' :
+                              diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`;
+                      }
+
+                      div.innerHTML = `
+                        <img src="${pull.user.avatar_url}" alt="${pull.user.login}" class="w-8 h-8 rounded-full" loading="lazy" width="32" height="32" />
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between">
+                                <a href="${pull.user.html_url}" target="_blank" class="text-xs font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 truncate">
+                                    ${pull.user.login}
+                                </a>
+                                <span class="text-[8px] text-gray-500 dark:text-gray-400">
+                                    <i class="fas fa-history mr-0.5"></i>${timeAgo}
+                                </span>
+                            </div>
+                            <p class="text-[9px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                PR <a href="${pull.html_url}" class="hover:underline">#${pull.number}</a>: ${pull.title.length > 25 ? pull.title.substring(0, 25) + '...' : pull.title}
+                            </p>
+                        </div>
+                    `;
+                      container.appendChild(div);
+                  });
+              })
+              .catch(error => {
+                  const container = document.getElementById('recent-contributors-section');
+                  container.innerHTML = `
+                    <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
+                        <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
+                        Failed to load contributions.
+                    </div>
+                `;
+                  console.error('Error fetching recent contributions:', error);
+              });
+      }
+
       document.addEventListener('DOMContentLoaded', function() {
           fetchTopContributors();
           fetchNewContributors();
+          fetchRecentContributions();
       });
   </script>
 {% endblock content %}
