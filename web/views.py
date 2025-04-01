@@ -6769,7 +6769,7 @@ def membership_settings(request) -> HttpResponse:
 def cancel_membership(request) -> HttpResponse:
     """Cancel the user's membership subscription."""
     if request.method != "POST":
-        return redirect("membership_settings")
+        return redirect("manage_membership")
 
     try:
         result = cancel_subscription(request.user)
@@ -6790,14 +6790,14 @@ def cancel_membership(request) -> HttpResponse:
         logger.error(f"Unexpected error in cancel_membership: {str(e)}")
         messages.error(request, str(e))
 
-    return redirect("membership_settings")
+    return redirect("manage_membership")
 
 
 @login_required
 def reactivate_membership(request) -> HttpResponse:
     """Reactivate a cancelled membership subscription."""
     if request.method != "POST":
-        return redirect("membership_settings")
+        return redirect("manage_membership")
 
     try:
         result = reactivate_subscription(request.user)
@@ -6815,7 +6815,7 @@ def reactivate_membership(request) -> HttpResponse:
         logger.error(f"Unexpected error in reactivate_membership: {str(e)}")
         messages.error(request, str(e))
 
-    return redirect("membership_settings")
+    return redirect("manage_membership")
 
 
 @login_required
@@ -6839,7 +6839,7 @@ def update_payment_method(request) -> HttpResponse:
         }
         return render(request, "update_payment_method.html", context)
     except (AttributeError, ObjectDoesNotExist):
-        return redirect("membership_settings")
+        return redirect("manage_membership")
 
 
 @login_required

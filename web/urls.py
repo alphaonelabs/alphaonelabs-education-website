@@ -96,7 +96,7 @@ urlpatterns += i18n_patterns(
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
     path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session"),
     # Social media sharing URLs
-    # path("social-media/", views.social_media_dashboard, name="social_media_dashboard"),
+    path("social-media/", views.social_media_dashboard, name="social_media_dashboard"),
     # path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
     # path("social-media/create/", views.create_scheduled_post, name="create_scheduled_post"),
     # path("social-media/delete/<int:post_id>/", views.delete_post, name="delete_post"),
@@ -423,8 +423,6 @@ urlpatterns += i18n_patterns(
         name="create_membership_subscription",
     ),
     path("membership/success/", views.membership_success, name="membership_success"),
-    path("membership/settings/", views.manage_membership, name="membership_settings"),
-    path("membership/cancel/", views.membership_cancel, name="cancel_membership"),
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
     # New membership URLs
@@ -437,7 +435,7 @@ urlpatterns += i18n_patterns(
     ),
     path("membership/manage/", views.manage_membership, name="manage_membership"),
     path("membership/change-plan/", views.change_membership_plan, name="change_membership_plan"),
-    path("membership/cancel-page/", views.membership_cancel, name="membership_cancel"),
+    path("membership/cancel/", views.membership_cancel, name="membership_cancel"),
     path("membership/benefits/", views.membership_benefits, name="membership_benefits"),
     path("membership/webhook/", views.membership_webhook, name="membership_webhook"),
     path("membership/cancel-subscription/", views.cancel_subscription_view, name="cancel_subscription"),
