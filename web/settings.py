@@ -227,12 +227,7 @@ if USE_OPENAI or USE_GEMINI:
         print(f"Error initializing AI service: {e}")
 DEFAULT_AI_SERVICE = env.str("DEFAULT_AI_SERVICE", default="openai")
 
-# Initialize AI service
-ai_service = None
-if USE_OPENAI or USE_GEMINI:
-    from .ai_service import AIService
-    ai_service = AIService()
-
+// (This block intentionally removed as it duplicates the robust AI service initialization logic above)
 # Authentication URLs
 LOGIN_URL = "account_login"
 LOGIN_REDIRECT_URL = "index"
