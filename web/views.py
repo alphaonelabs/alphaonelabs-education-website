@@ -48,6 +48,7 @@ from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.html import strip_tags
+from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from django.views import generic
 from django.views.decorators.clickjacking import xframe_options_exempt
@@ -2852,10 +2853,14 @@ def create_forum_category(request):
         form = ForumCategoryForm(request.POST)
         if form.is_valid():
             category = form.save()
+            if not category.slug:
+                category.slug = slugify(category.name)
+            category.save()
             messages.success(request, f"Forum category '{category.name}' created successfully!")
             return redirect("forum_category", slug=category.slug)
     else:
         form = ForumCategoryForm()
+        print(form.errors)
 
     return render(request, "web/forum/create_category.html", {"form": form})
 
