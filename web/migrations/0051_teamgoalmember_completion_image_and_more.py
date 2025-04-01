@@ -6,23 +6,23 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('web', '0050_profile_discord_username_profile_github_username_and_more'),
+        ("web", "0050_profile_discord_username_profile_github_username_and_more"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='teamgoalmember',
-            name='completion_image',
-            field=models.ImageField(blank=True, null=True, upload_to='proof_images/'),
+            model_name="teamgoalmember",
+            name="completion_image",
+            field=models.ImageField(blank=True, upload_to="proof_images/"),
         ),
         migrations.AddField(
-            model_name='teamgoalmember',
-            name='completion_link',
-            field=models.URLField(blank=True, null=True),
+            model_name="teamgoalmember",
+            name="completion_link",
+            field=models.URLField(blank=True),
         ),
         migrations.AddField(
-            model_name='teamgoalmember',
-            name='completion_notes',
-            field=models.TextField(blank=True, null=True),
+            model_name="teamgoalmember",
+            name="completion_notes",
+            field=models.TextField(blank=True),
         ),
     ]
