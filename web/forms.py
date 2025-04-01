@@ -3,11 +3,14 @@ import re
 from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
 from django import forms
+from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.core.validators import FileExtensionValidator
 from django.db import IntegrityError
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.text import slugify
+from django.utils.translation import gettext_lazy as _
 from markdownx.fields import MarkdownxFormField
 
 from .models import (
@@ -40,6 +43,7 @@ from .models import (
     SuccessStory,
     TeamGoal,
     TeamInvite,
+    WaitingRoom,
 )
 from .referrals import handle_referral
 from .widgets import (
@@ -93,6 +97,25 @@ __all__ = [
     "LinkGradeForm",
     "AwardAchievementForm",
 ]
+
+
+class AccountDeleteForm(forms.Form):
+    password = forms.CharField(
+        label=_("Password"),
+        strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
+        help_text=_("Enter your password to confirm account deletion."),
+    )
+
+    def __init__(self, user, *args, **kwargs):
+        self.user = user
+        super().__init__(*args, **kwargs)
+
+    def clean_password(self):
+        password = self.cleaned_data.get("password")
+        if not authenticate(username=self.user.username, password=password):
+            raise forms.ValidationError(_("Your password was entered incorrectly. Please enter it again."))
+        return password
 
 
 class UserRegistrationForm(SignupForm):
@@ -244,6 +267,13 @@ class UserRegistrationForm(SignupForm):
         if referral_code:
             handle_referral(user, referral_code)
 
+        # Ensure email verification is sent
+        from allauth.account.models import EmailAddress
+
+        email_address = EmailAddress.objects.get_for_user(user, user.email)
+        if not email_address.verified:
+            email_address.send_confirmation(request)
+
         return user
 
 
@@ -283,7 +313,7 @@ class AwardAchievementForm(forms.Form):
             teacher_courses = Course.objects.filter(teacher=teacher)
             student_ids = []
             for course in teacher_courses:
-                student_ids.extend(course.students.values_list("id", flat=True))
+                student_ids.extend(course.enrollments.filter(status="approved").values_list("student_id", flat=True))
 
             self.fields["student"].queryset = User.objects.filter(id__in=student_ids)
             self.fields["course"].queryset = teacher_courses
@@ -349,6 +379,22 @@ class CourseCreationForm(forms.ModelForm):
             msg = "Maximum number of students must be greater than zero"
             raise forms.ValidationError(msg)
         return max_students
+
+    def clean_title(self):
+        title = self.cleaned_data.get("title")
+        if not title:
+            raise forms.ValidationError("Title is required")
+
+        # Check if title contains valid characters for slugification
+        if not re.match(r"^[\w\s-]+$", title):
+            raise forms.ValidationError("Title can only contain letters, numbers, spaces, and hyphens")
+
+        # Check if a course with this slug already exists
+        slug = slugify(title)
+        if Course.objects.filter(slug=slug).exists():
+            raise forms.ValidationError("A course with a similar title already exists.")
+
+        return title
 
 
 class CourseForm(forms.ModelForm):
@@ -427,6 +473,7 @@ class SessionForm(forms.ModelForm):
             "price",
             "enable_rollover",
             "rollover_pattern",
+            "teaching_style",
         ]
         widgets = {
             "title": TailwindInput(),
@@ -436,6 +483,7 @@ class SessionForm(forms.ModelForm):
             "is_virtual": TailwindCheckboxInput(),
             "meeting_link": TailwindInput(attrs={"type": "url"}),
             "location": TailwindInput(),
+            "teaching_style": TailwindSelect(),
             "price": TailwindNumberInput(
                 attrs={
                     "min": "0",
@@ -606,6 +654,21 @@ class ProfileUpdateForm(forms.ModelForm):
         widget=forms.RadioSelect,
         help_text="Select whether your profile details are public or private.",
     )
+    discord_username = forms.CharField(
+        max_length=50,
+        required=False,
+        widget=TailwindInput(),
+        help_text="Discord username (visible if profile is public)",
+    )
+    slack_username = forms.CharField(
+        max_length=50, required=False, widget=TailwindInput(), help_text="Slack username (visible if profile is public)"
+    )
+    github_username = forms.CharField(
+        max_length=50,
+        required=False,
+        widget=TailwindInput(),
+        help_text="GitHub username (visible if profile is public)",
+    )
 
     class Meta:
         model = User
@@ -618,6 +681,9 @@ class ProfileUpdateForm(forms.ModelForm):
                 profile = self.instance.profile
                 self.fields["bio"].initial = profile.bio
                 self.fields["expertise"].initial = profile.expertise
+                self.fields["discord_username"].initial = profile.discord_username
+                self.fields["slack_username"].initial = profile.slack_username
+                self.fields["github_username"].initial = profile.github_username
                 # Set initial value as a string.
                 self.initial["is_profile_public"] = "True" if profile.is_profile_public else "False"
             except Profile.DoesNotExist:
@@ -641,6 +707,9 @@ class ProfileUpdateForm(forms.ModelForm):
 
             # Get the is_profile_public value and ensure it's a boolean
             is_public = self.cleaned_data.get("is_profile_public")
+            profile.discord_username = self.cleaned_data["discord_username"]
+            profile.slack_username = self.cleaned_data["slack_username"]
+            profile.github_username = self.cleaned_data["github_username"]
             profile.is_profile_public = is_public
             profile.save()
         return user
@@ -770,73 +839,131 @@ class SuccessStoryForm(forms.ModelForm):
         }
 
 
-class LearnForm(forms.Form):
-    subject = forms.CharField(
-        max_length=100,
-        widget=TailwindInput(
-            attrs={
-                "placeholder": "What would you like to learn?",
-                "class": "block w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-orange-500",
-            }
-        ),
-    )
-    email = forms.EmailField(
-        widget=TailwindEmailInput(
-            attrs={
-                "placeholder": "Your email address",
-                "class": "block w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-orange-500",
-            }
-        )
-    )
-    message = forms.CharField(
-        widget=TailwindTextarea(
-            attrs={
-                "placeholder": "Tell us more about what you want to learn...",
-                "rows": 4,
-                "class": "block w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-orange-500",
-            }
-        ),
-        required=False,
-    )
-    captcha = CaptchaField(
-        widget=TailwindCaptchaTextInput(
-            attrs={"class": "block w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-orange-500"}
-        )
-    )
+class LearnForm(forms.ModelForm):
+    """Form for creating and editing waiting rooms."""
+
+    class Meta:
+        model = WaitingRoom
+        fields = ["title", "description", "subject", "topics"]
+
+        widgets = {
+            "title": TailwindInput(attrs={"placeholder": "What would you like to learn?"}),
+            "description": TailwindTextarea(attrs={"rows": 4, "placeholder": "Describe what you want to learn"}),
+            "subject": TailwindInput(attrs={"placeholder": "Main subject (e.g., Mathematics, Programming)"}),
+            "topics": TailwindInput(
+                attrs={"placeholder": "e.g., Python, Machine Learning, Data Science", "class": "tag-input"}
+            ),
+        }
+        help_texts = {
+            "title": "Give your waiting room a descriptive title",
+            "subject": "The main subject area for this waiting room",
+            "topics": "Enter topics separated by commas",
+        }
+
+    def clean_topics(self):
+        """Validate and clean the topics field."""
+        topics = self.cleaned_data.get("topics")
+        if not topics:
+            raise forms.ValidationError("Please enter at least one topic.")
+
+        # Ensure we have at least one non-empty topic after splitting
+        topic_list = [t.strip() for t in topics.split(",") if t.strip()]
+        if not topic_list:
+            raise forms.ValidationError("Please enter at least one valid topic.")
+
+        return topics
 
 
 class TeachForm(forms.Form):
-    subject = forms.CharField(
-        max_length=100,
+    """Form for creating course draft by both authenticated and unauthenticated users."""
+
+    course_title = forms.CharField(
+        max_length=200,
+        label="Course Title",
         widget=TailwindInput(
             attrs={
-                "placeholder": "What would you like to teach?",
+                "placeholder": "Enter your course title",
                 "class": "block w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500",
             }
         ),
     )
+    course_image = forms.ImageField(
+        required=True,
+        validators=[FileExtensionValidator(["jpg", "jpeg", "png", "gif"])],
+        widget=TailwindFileInput(
+            attrs={
+                "accept": "image/*",
+                "help_text": "Upload a course image (required)",
+                "class": "block w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500",
+            }
+        ),
+    )
+    course_description = forms.CharField(
+        label="Course Description",
+        widget=TailwindTextarea(
+            attrs={
+                "rows": 4,
+                "placeholder": "Describe what your course will cover...",
+            }
+        ),
+        help_text="Provide a detailed description of your course.",
+    )
+    preferred_session_times = forms.DateTimeField(
+        label="Preferred Session Time",
+        widget=TailwindDateTimeInput(),
+        help_text="Select preferred time for your course sessions.",
+        required=False,
+    )
+    flexible_timing = forms.BooleanField(
+        label="Flexible Timing",
+        required=False,
+        widget=TailwindCheckboxInput(
+            attrs={
+                "class": "h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500",
+            }
+        ),
+        help_text="Check if you're open to scheduling sessions at various times.",
+    )
     email = forms.EmailField(
-        widget=TailwindEmailInput(
+        label="Email Address",
+        widget=TailwindInput(
             attrs={
                 "placeholder": "Your email address",
                 "class": "block w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500",
             }
-        )
-    )
-    expertise = forms.CharField(
-        widget=TailwindTextarea(
-            attrs={
-                "placeholder": "Tell us about your expertise and teaching experience...",
-                "rows": 4,
-                "class": "block w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500",
-            }
-        )
+        ),
+        help_text="We'll use this to create your account or link to an existing one.",
     )
     captcha = CaptchaField(
         widget=TailwindCaptchaTextInput(
             attrs={"class": "block w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"}
         )
     )
+
+    def clean_course_title(self):
+        """Validate and clean the course_title field."""
+        title = self.cleaned_data.get("course_title")
+        # Validate title contains only valid characters
+        if not re.match(r"^[\w\s-]+$", title):
+            raise forms.ValidationError("Title can only contain letters, numbers, spaces, and hyphens")
+
+        return title
+
+    def clean_preferred_session_times(self):
+        """Validate the preferred_session_times."""
+        preferred_time = self.cleaned_data.get("preferred_session_times")
+        if preferred_time and preferred_time < timezone.now():
+            raise forms.ValidationError("Preferred session time cannot be in the past.")
+        return preferred_time
+
+    def clean_course_image(self):
+        """Validate and clean the course_image field."""
+        image = self.cleaned_data.get("course_image")
+        if image:
+            max_size = 5 * 1024 * 1024  # 5MB
+            if image.size > max_size:
+                raise forms.ValidationError("Image must be less than 5MB")
+        return image
 
 
 class InviteStudentForm(forms.Form):
@@ -873,6 +1000,13 @@ class InviteStudentForm(forms.Form):
 class ForumCategoryForm(forms.ModelForm):
     """Form for creating and editing forum categories."""
 
+    def clean(self):
+        cleaned_data = super().clean()
+        name = cleaned_data.get("name")
+        if name and not cleaned_data.get("slug"):
+            cleaned_data["slug"] = slugify(name)
+        return cleaned_data
+
     class Meta:
         model = ForumCategory
         fields = ["name", "description", "icon", "slug"]
@@ -906,7 +1040,12 @@ class ForumCategoryForm(forms.ModelForm):
                     "placeholder": "fa-folder",
                 }
             ),
-            "slug": forms.HiddenInput(),
+            "slug": forms.TextInput(
+                attrs={
+                    "class": "w-full border-gray-300 dark:border-gray-600 rounded p-2 bg-gray-200 cursor-not-allowed",
+                    "readonly": "readonly",
+                }
+            ),
         }
         help_texts = {
             "icon": "Enter a Font Awesome icon class (e.g., fa-folder, fa-book, fa-code)",
@@ -1628,5 +1767,4 @@ class NotificationPreferencesForm(forms.ModelForm):
 class StudyGroupForm(forms.ModelForm):
     class Meta:
         model = StudyGroup
-        # You might exclude fields that are set automatically.
         fields = ["name", "description", "course", "max_members", "is_private"]

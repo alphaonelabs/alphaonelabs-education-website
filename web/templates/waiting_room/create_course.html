@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Create Course from Waiting Room
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="mb-6">
+      <a href="{% url 'waiting_room_detail' waiting_room.id %}"
+         class="text-blue-600 hover:text-blue-800 flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             class="h-5 w-5 mr-1"
+             viewBox="0 0 20 20"
+             fill="currentColor">
+          <path fill-rule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+        </svg>
+        Back to Waiting Room
+      </a>
+    </div>
+    <div class="max-w-4xl mx-auto">
+      <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 mb-8">
+        <div class="p-6">
+          <h1 class="text-2xl font-bold text-gray-800 mb-6">Create Course from Waiting Room</h1>
+          <div class="mb-8 bg-blue-50 border-l-4 border-blue-500 p-4">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-blue-600"
+                     xmlns="http://www.w3.org/2000/svg"
+                     viewBox="0 0 20 20"
+                     fill="currentColor">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm text-blue-700">
+                  You are creating a course based on the waiting room "{{ waiting_room.title }}".
+                  The form has been pre-filled with information from the waiting room.
+                  You can modify any details as needed before creating the course.
+                </p>
+              </div>
+            </div>
+          </div>
+          <div class="mb-8">
+            <h2 class="text-lg font-semibold text-gray-700 mb-2">Waiting Room Details</h2>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <div class="mb-3">
+                <span class="font-medium text-gray-700">Title:</span> {{ waiting_room.title }}
+              </div>
+              <div class="mb-3">
+                <span class="font-medium text-gray-700">Description:</span> {{ waiting_room.description }}
+              </div>
+              <div class="mb-3">
+                <span class="font-medium text-gray-700">Subject:</span> {{ waiting_room.subject }}
+              </div>
+              <div class="mb-3">
+                <span class="font-medium text-gray-700">Topics:</span>
+                <div class="flex flex-wrap gap-2 mt-1">
+                  {% for topic in topics_list %}
+                    <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">{{ topic }}</span>
+                  {% endfor %}
+                </div>
+              </div>
+              <div>
+                <span class="font-medium text-gray-700">Participants:</span> {{ waiting_room.participants.count }}
+              </div>
+            </div>
+          </div>
+          <form method="post" enctype="multipart/form-data" class="space-y-6">
+            {% csrf_token %}
+            <div class="space-y-4">
+              <div>
+                <label for="{{ form.title.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700">Course Title</label>
+                <div class="mt-1">{{ form.title }}</div>
+                {% if form.title.errors %}<p class="mt-2 text-sm text-red-600">{{ form.title.errors.0 }}</p>{% endif %}
+              </div>
+              <div>
+                <label for="{{ form.description.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700">Course Description</label>
+                <div class="mt-1">{{ form.description }}</div>
+                {% if form.description.errors %}<p class="mt-2 text-sm text-red-600">{{ form.description.errors.0 }}</p>{% endif %}
+              </div>
+              <div>
+                <label for="{{ form.subject.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700">Subject</label>
+                <div class="mt-1">{{ form.subject }}</div>
+                {% if form.subject.errors %}<p class="mt-2 text-sm text-red-600">{{ form.subject.errors.0 }}</p>{% endif %}
+              </div>
+              {% if form.image %}
+                <div>
+                  <label for="{{ form.image.id_for_label }}"
+                         class="block text-sm font-medium text-gray-700">Course Image</label>
+                  <div class="mt-1">{{ form.image }}</div>
+                  {% if form.image.errors %}<p class="mt-2 text-sm text-red-600">{{ form.image.errors.0 }}</p>{% endif %}
+                </div>
+              {% endif %}
+              {% if form.price %}
+                <div>
+                  <label for="{{ form.price.id_for_label }}"
+                         class="block text-sm font-medium text-gray-700">Price</label>
+                  <div class="mt-1">{{ form.price }}</div>
+                  {% if form.price.errors %}<p class="mt-2 text-sm text-red-600">{{ form.price.errors.0 }}</p>{% endif %}
+                  <p class="mt-1 text-sm text-gray-500">Leave as 0 for a free course</p>
+                </div>
+              {% endif %}
+              {% if form.max_students %}
+                <div>
+                  <label for="{{ form.max_students.id_for_label }}"
+                         class="block text-sm font-medium text-gray-700">Maximum Students</label>
+                  <div class="mt-1">{{ form.max_students }}</div>
+                  {% if form.max_students.errors %}<p class="mt-2 text-sm text-red-600">{{ form.max_students.errors.0 }}</p>{% endif %}
+                </div>
+              {% endif %}
+            </div>
+            <div class="pt-4">
+              <button type="submit"
+                      class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                Create Course
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}

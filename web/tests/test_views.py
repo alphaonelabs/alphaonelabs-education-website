@@ -522,7 +522,10 @@ class CourseDetailTests(TestCase):
 
     def test_calendar_display(self):
         """Test that the session calendar is correctly displayed"""
-        response = self.client.get(self.detail_url)
+        # Request the calendar for the month containing the session
+        session_month = self.future_session.start_time.month
+        session_year = self.future_session.start_time.year
+        response = self.client.get(f"{self.detail_url}?month={session_month}&year={session_year}")
 
         # Test calendar context
         self.assertTrue("calendar_weeks" in response.context)

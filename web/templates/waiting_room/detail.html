@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {{ waiting_room.title }} - Waiting Room
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="mb-6">
+      <a href="{% url 'waiting_room_list' %}"
+         class="inline-flex items-center text-blue-600 hover:text-blue-800 transition-colors duration-200 font-medium">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             class="h-5 w-5 mr-2"
+             viewBox="0 0 20 20"
+             fill="currentColor">
+          <path fill-rule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+        </svg>
+        Back to Waiting Rooms
+      </a>
+    </div>
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-100 mb-8">
+      <div class="p-8">
+        <div class="flex flex-col sm:flex-row justify-between items-start mb-6 gap-4">
+          <div class="space-y-2">
+            <h1 class="text-3xl font-bold text-gray-900">{{ waiting_room.title }}</h1>
+            <p class="text-gray-600 text-lg">{{ waiting_room.description }}</p>
+          </div>
+          <div class="flex flex-col items-end gap-3">
+            {% if waiting_room.status == 'open' %}
+              <div class="flex items-center bg-green-50 px-4 py-2 rounded-full">
+                <div class="h-2 w-2 bg-green-600 rounded-full mr-2"></div>
+                <span class="text-green-700 font-medium text-sm">Open</span>
+              </div>
+              {% if is_creator %}
+                <a href="{% url 'delete_waiting_room' waiting_room.id %}"
+                   class="px-6 py-3 bg-red-100 text-red-700 hover:bg-red-200 rounded-xl font-medium transition-colors duration-200">
+                  Delete Request
+                </a>
+              {% endif %}
+            {% elif waiting_room.status == 'fulfilled' %}
+              <div class="flex items-center bg-blue-50 px-4 py-2 rounded-full">
+                <div class="h-2 w-2 bg-blue-600 rounded-full mr-2"></div>
+                <span class="text-blue-700 font-medium text-sm">Fulfilled</span>
+              </div>
+            {% elif waiting_room.status == 'closed' %}
+              <div class="flex items-center bg-gray-100 px-4 py-2 rounded-full">
+                <div class="h-2 w-2 bg-gray-500 rounded-full mr-2"></div>
+                <span class="text-gray-700 font-medium text-sm">Closed</span>
+              </div>
+            {% endif %}
+            <div class="text-sm text-gray-500">Created {{ waiting_room.created_at|timesince }} ago</div>
+          </div>
+        </div>
+        {% if waiting_room.status == 'fulfilled' and waiting_room.fulfilled_course %}
+          <div class="mb-8 p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+            <div class="flex items-start gap-4">
+              <div class="bg-blue-100 p-3 rounded-lg">
+                <svg class="w-6 h-6 text-blue-600"
+                     fill="none"
+                     stroke="currentColor"
+                     viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                </svg>
+              </div>
+              <div class="flex-1">
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">Course Available!</h3>
+                <p class="text-gray-700 mb-4">
+                  The course "{{ waiting_room.fulfilled_course.title }}" has been created based on this request.
+                </p>
+                <div class="flex flex-wrap gap-3">
+                  <a href="{% url 'course_detail' slug=waiting_room.fulfilled_course.slug %}"
+                     class="inline-flex items-center px-5 py-2.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    View Course Details
+                  </a>
+                  <a href="{% url 'enroll_course' course_slug=waiting_room.fulfilled_course.slug %}"
+                     class="inline-flex items-center px-5 py-2.5 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200">
+                    Enroll Now
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+        <div class="grid gap-8 md:grid-cols-2 mb-8">
+          <!-- Details Card -->
+          <div class="bg-gray-50 p-6 rounded-xl">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Request Details</h3>
+            <dl class="space-y-4">
+              <div>
+                <dt class="text-sm font-medium text-gray-500">Subject</dt>
+                <dd class="mt-1 text-gray-900">
+                  {{ waiting_room.subject }}
+                </dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-gray-500">Topics</dt>
+                <dd class="mt-1 flex flex-wrap gap-2">
+                  {% for topic in topic_list %}
+                    <span class="px-3 py-1 bg-white border border-gray-200 text-gray-700 text-sm rounded-full shadow-sm">{{ topic }}</span>
+                  {% endfor %}
+                </dd>
+              </div>
+              <div>
+                <dt class="text-sm font-medium text-gray-500">Created By</dt>
+                <dd class="mt-1 text-gray-900 flex items-center">
+                  <span class="bg-purple-100 text-purple-800 text-sm font-medium mr-2 px-2.5 py-0.5 rounded-full">
+                    {{ waiting_room.creator.username }}
+                  </span>
+                </dd>
+              </div>
+            </dl>
+          </div>
+          <!-- Participants Card -->
+          <div class="bg-gray-50 p-6 rounded-xl">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-lg font-semibold text-gray-900">Participants</h3>
+              <span class="bg-gray-200 text-gray-700 px-3 py-1 rounded-full text-sm">{{ participant_count }}</span>
+            </div>
+            {% if waiting_room.participants.all %}
+              <ul class="space-y-3">
+                {% for participant in waiting_room.participants.all %}
+                  <li class="flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm border border-gray-100">
+                    <div class="flex-shrink-0">
+                      <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-blue-600 font-medium">{{ participant.username }}</span>
+                      </div>
+                    </div>
+                    <span class="text-gray-900">{{ participant.username }}</span>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <div class="text-center p-6 bg-white rounded-lg border border-gray-100">
+                <p class="text-gray-500">Be the first to join!</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+        {% if matching_courses %}
+          <div class="mb-8">
+            <h3 class="text-lg font-semibold text-gray-900 mb-6">Related Courses</h3>
+            <div class="grid gap-4 md:grid-cols-2">
+              {% for course in matching_courses %}
+                <div class="group bg-white p-6 rounded-xl border border-gray-200 hover:border-blue-200 transition-colors duration-200">
+                  <div class="flex justify-between items-start mb-3">
+                    <h4 class="text-lg font-medium text-gray-900">{{ course.title }}</h4>
+                    <span class="text-sm text-gray-500">{{ course.enrolled_students.count }} enrolled</span>
+                  </div>
+                  <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ course.description }}</p>
+                  <div class="flex justify-between items-center">
+                    <div class="flex items-center">
+                      <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                        <span class="text-blue-600 text-sm font-medium">{{ course.teacher.username }}</span>
+                      </div>
+                      <span class="text-sm text-gray-600">{{ course.teacher.username }}</span>
+                    </div>
+                    <a href="{% url 'course_detail' slug=course.slug %}"
+                       class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium text-sm">
+                      View Course
+                      <svg class="w-4 h-4 ml-2"
+                           fill="none"
+                           stroke="currentColor"
+                           viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                      </svg>
+                    </a>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+        <div class="pt-8 border-t border-gray-200">
+          {% if waiting_room.status == 'open' %}
+            <div class="flex flex-wrap gap-4">
+              {% if is_participant %}
+                <form action="{% url 'leave_waiting_room' waiting_room.id %}" method="post">
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="px-6 py-3 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg font-medium transition-colors duration-200">
+                    Leave Request
+                  </button>
+                </form>
+              {% else %}
+                <form action="{% url 'join_waiting_room' waiting_room.id %}" method="post">
+                  {% csrf_token %}
+                  <button type="submit"
+                          class="px-6 py-3 bg-blue-600 text-white hover:bg-blue-700 rounded-lg font-medium transition-colors duration-200 shadow-sm">
+                    Join Request
+                  </button>
+                </form>
+              {% endif %}
+              {% if is_teacher %}
+                <a href="{% url 'create_course_from_waiting_room' waiting_room.id %}"
+                   class="px-6 py-3 bg-green-600 text-white hover:bg-green-700 rounded-lg font-medium transition-colors duration-200 shadow-sm">
+                  Create Matching Course
+                </a>
+              {% endif %}
+            </div>
+          {% elif waiting_room.status == 'closed' %}
+            <div class="bg-gray-50 p-4 rounded-lg text-center">
+              <p class="text-gray-600">This request is no longer accepting participants</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
