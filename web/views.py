@@ -16,18 +16,22 @@ from urllib.parse import urlparse
 
 import requests
 import stripe
-from web.services.counter_service import CounterService
+import tweepy
+from allauth.account.models import EmailAddress
+from allauth.account.utils import send_email_confirmation
 from django.conf import settings
 from django.contrib import messages
-from django.contrib.auth import get_user_model, login
+from django.contrib.admin.utils import NestedObjects
+from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.core.management import call_command
 from django.core.paginator import Paginator
-from django.db import IntegrityError, models, transaction
+from django.db import IntegrityError, models, router, transaction
 from django.db.models import Avg, Count, Q, Sum
 from django.db.models.functions import Coalesce
 from django.http import (
@@ -43,6 +47,8 @@ from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.html import strip_tags
+from django.utils.text import slugify
+from django.utils.translation import gettext as _
 from django.views import generic
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
@@ -58,6 +64,7 @@ from django.views.generic import (
 from .calendar_sync import generate_google_calendar_link, generate_ical_feed, generate_outlook_calendar_link
 from .decorators import teacher_required
 from .forms import (
+    AccountDeleteForm,
     AwardAchievementForm,
     BlogPostForm,
     ChallengeSubmissionForm,
@@ -85,6 +92,7 @@ from .forms import (
     SuccessStoryForm,
     TeacherSignupForm,
     TeachForm,
+    TeamGoalCompletionForm,
     TeamGoalForm,
     TeamInviteForm,
     UserRegistrationForm,
@@ -119,6 +127,8 @@ from .models import (
     GradeableLink,
     LearningStreak,
     LinkGrade,
+    MembershipPlan,
+    MembershipSubscriptionEvent,
     Meme,
     NoteHistory,
     Notification,
@@ -131,6 +141,7 @@ from .models import (
     Profile,
     ProgressTracker,
     Review,
+    ScheduledPost,
     SearchLog,
     Session,
     SessionAttendance,
@@ -163,15 +174,20 @@ from .notifications import (
 from .referrals import send_referral_reward_email
 from .social import get_social_stats
 from .utils import (
+    cancel_subscription,
     create_leaderboard_context,
+    create_subscription,
+    geocode_address,
     get_cached_challenge_entries,
     get_cached_leaderboard_data,
     get_leaderboard,
     get_or_create_cart,
     get_user_points,
-    get_student_analytics_data
+    reactivate_subscription,
+    setup_stripe,
 )
-from .services.AI.ai_model import ai_assignment_corrector
+
+logger = logging.getLogger(__name__)
 
 GOOGLE_CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "google_credentials.json")
 
@@ -315,6 +331,47 @@ def signup_view(request):
             "login_url": reverse("account_login"),
         },
     )
+
+
+@login_required
+def delete_account(request):
+    if request.method == "POST":
+        form = AccountDeleteForm(request.user, request.POST)
+        if form.is_valid():
+            if request.POST.get("confirm"):
+                user = request.user
+                user.delete()
+                logout(request)
+                messages.success(request, _("Your account has been successfully deleted."))
+                return redirect("index")
+            else:
+                form.add_error(None, _("You must confirm the account deletion."))
+    else:
+        # Get all related objects that will be deleted
+        deleted_objects_collector = NestedObjects(using=router.db_for_write(request.user.__class__))
+        deleted_objects_collector.collect([request.user])
+
+        # Transform the nested structure into something more user-friendly
+        to_delete = deleted_objects_collector.nested()
+        protected = deleted_objects_collector.protected
+
+        # Format the collected objects in a user-friendly way
+        model_count = {
+            model._meta.verbose_name_plural: len(objs) for model, objs in deleted_objects_collector.model_objs.items()
+        }
+
+        # Format as a list of tuples (model name, count)
+        formatted_count = [(name, count) for name, count in model_count.items()]
+
+        form = AccountDeleteForm(request.user)
+        # Pass the deletion info to the template
+        return render(
+            request,
+            "account/delete_account.html",
+            {"form": form, "deleted_objects": to_delete, "protected": protected, "model_count": formatted_count},
+        )
+
+    return render(request, "account/delete_account.html", {"form": form})
 
 
 @login_required
@@ -1051,58 +1108,212 @@ def learn(request):
                 messages.error(request, "Sorry, there was an error sending your inquiry. Please try again later.")
     else:
         initial_data = {}
-        if request.GET.get("subject"):
+
+        # Handle query parameters
+        query = request.GET.get("query", "")
+        subject_param = request.GET.get("subject", "")
+        level = request.GET.get("level", "")
+
+        # Try to match subject
+        if subject_param:
             try:
-                subject = Subject.objects.get(name=request.GET.get("subject"))
+                subject = Subject.objects.get(name=subject_param)
                 initial_data["subject"] = subject.id
             except Subject.DoesNotExist:
-                pass
-        form = LearnForm(initial=initial_data)
+                # Optionally, you could add the subject name to the description
+                initial_data["description"] = f"Looking for courses in {subject_param}"
 
-    return render(request, "learn.html", {"form": form})
+        # If you want to include other parameters in the description
+        if query or level:
+            title_parts = []
+            description_parts = []
+            if query:
+                title_parts.append(f"{query}")
+            if level:
+                description_parts.append(f"Level: {level}")
+
+            if "description" not in initial_data:
+                initial_data["title"] = " | ".join(title_parts)
+            else:
+                initial_data["description"] += " | " + " | ".join(description_parts)
+
+        form = LearnForm(initial=initial_data)
+        return render(request, "learn.html", {"form": form})
 
 
 def teach(request):
+    """Handles the course creation process for both authenticated and unauthenticated users."""
     if request.method == "POST":
-        form = TeachForm(request.POST)
+        form = TeachForm(request.POST, request.FILES)
         if form.is_valid():
-            subject = form.cleaned_data["subject"]
+            # Extract cleaned data
             email = form.cleaned_data["email"]
-            expertise = form.cleaned_data["expertise"]
+            course_title = form.cleaned_data["course_title"]
+            course_description = form.cleaned_data["course_description"]
+            course_image = form.cleaned_data.get("course_image")
+            preferred_session_times = form.cleaned_data["preferred_session_times"]
+            _ = form.cleaned_data.get("flexible_timing", False)
 
-            # Prepare email content
-            email_subject = f"Teaching Application: {subject}"
-            email_body = render_to_string(
-                "emails/teach_application.html",
-                {
-                    "subject": subject,
-                    "email": email,
-                    "expertise": expertise,
-                },
+            # Determine the user for the course
+            user = None
+            is_new_user = False
+
+            if request.user.is_authenticated:
+                # For authenticated users, always use the logged-in user
+                user = request.user
+
+                # Validate that the provided email matches the logged-in user's email
+                if email != user.email:
+                    form.add_error(
+                        "email",
+                        "The provided email does not match your account email. Please use your account email.",
+                    )
+                    return render(request, "teach.html", {"form": form})
+
+                # Backend validation: Check for duplicate course titles for the logged-in user
+                if Course.objects.filter(title__iexact=course_title, teacher=user).exists():
+                    form.add_error("course_title", "You already have a course with this title.")
+                    return render(request, "teach.html", {"form": form})
+            else:
+                # For unauthenticated users, check if the email exists or create a new user
+                try:
+                    user = User.objects.get(email=email)
+                    # User exists but isn't logged in; check if email is verified
+                    email_address = EmailAddress.objects.filter(user=user, email=email, primary=True).first()
+                    if email_address and email_address.verified:
+                        messages.info(
+                            request,
+                            "An account with this email exists. Please login to finalize your course.",
+                        )
+                    else:
+                        # Email not verified, resend verification email
+                        send_email_confirmation(request, user, signup=False)
+                        messages.info(
+                            request,
+                            "An account with this email exists. Please verify your email to continue.",
+                        )
+                except User.DoesNotExist:
+                    # Create a new user account
+                    with transaction.atomic():
+                        # Generate a unique username
+                        email_prefix = email.split("@")[0]
+                        username = email_prefix
+                        counter = 1
+                        while User.objects.filter(username=username).exists():
+                            username = f"{email_prefix}_{get_random_string(4)}_{counter}"
+                            counter += 1
+
+                        temp_password = get_random_string(length=8)
+
+                        # Create user with temporary password
+                        user = User.objects.create_user(username=username, email=email, password=temp_password)
+
+                        # Update profile to be a teacher
+                        profile, created = Profile.objects.get_or_create(user=user)
+                        profile.is_teacher = True
+                        profile.save()
+
+                        # Add email address for allauth verification
+                        EmailAddress.objects.create(user=user, email=email, primary=True, verified=False)
+
+                        # Send verification email via allauth
+                        send_email_confirmation(request, user, signup=True)
+                        # Send welcome email with username, email, and temp password
+                        try:
+                            send_welcome_teach_course_email(request, user, temp_password)
+                        except Exception:
+                            messages.error(request, "Failed to send welcome email. Please try again.")
+                            return render(request, "teach.html", {"form": form})
+
+                        is_new_user = True
+
+                # Backend validation: Check for duplicate course titles for unauthenticated users
+                if Course.objects.filter(title__iexact=course_title, teacher=user).exists():
+                    email_address = EmailAddress.objects.filter(user=user, email=email, primary=True).first()
+                    if email_address and not email_address.verified:
+                        # If the user is unverified, delete the existing draft and allow a new one
+                        Course.objects.filter(title__iexact=course_title, teacher=user).delete()
+                    else:
+                        form.add_error("course_title", "You already have a course with this title.")
+                        return render(request, "teach.html", {"form": form})
+
+            # Create a draft course
+            course = Course.objects.create(
+                title=course_title,
+                description=course_description,
+                teacher=user,
+                price=0,
+                max_students=12,
+                status="draft",
+                subject=Subject.objects.first() or Subject.objects.create(name="General"),
+                level="beginner",
             )
 
-            # Send email
-            try:
-                send_mail(
-                    email_subject,
-                    email_body,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [settings.DEFAULT_FROM_EMAIL],
-                    html_message=email_body,
-                    fail_silently=False,
+            # Handle course image if uploaded
+            if course_image:
+                course.image = course_image
+                course.save()
+
+            # Create initial session if preferred time provided
+            if preferred_session_times:
+                Session.objects.create(
+                    course=course,
+                    title=f"{course_title} - Session 1",
+                    description="First session of the course",
+                    start_time=preferred_session_times,
+                    end_time=preferred_session_times + timezone.timedelta(hours=1),
+                    is_virtual=True,
                 )
-                messages.success(request, "Thank you for your application! We'll review it and get back to you soon.")
-                return redirect("index")
-            except Exception as e:
-                print(f"Error sending email: {e}")
-                messages.error(request, "Sorry, there was an error sending your application. Please try again later.")
+
+            # Handle redirection based on authentication status
+            if request.user.is_authenticated:
+                # If authenticated, mark as teacher and redirect to course setup
+                request.user.profile.is_teacher = True
+                request.user.profile.save()
+                messages.success(
+                    request, f"Welcome! Your course '{course_title}' has been created. Please complete your setup."
+                )
+                return redirect("course_detail", slug=course.slug)
+            else:
+                # Store course primary key in session for post-verification redirect
+                request.session["pending_course_id"] = course.pk
+                if is_new_user:
+                    messages.success(
+                        request,
+                        "Your course has been created! "
+                        "Please check your email for your username, password, and verification link to continue.",
+                    )
+                    return redirect("account_email_verification_sent")
+                else:
+                    # For existing users, redirect to login page
+                    return redirect("account_login")
+
     else:
         initial_data = {}
         if request.GET.get("subject"):
-            initial_data["subject"] = request.GET.get("subject")
+            initial_data["course_title"] = request.GET.get("subject")
         form = TeachForm(initial=initial_data)
 
     return render(request, "teach.html", {"form": form})
+
+
+def send_welcome_teach_course_email(request, user, temp_password):
+    """Send welcome email with account and password setup instructions."""
+    reset_url = request.build_absolute_uri(reverse("account_reset_password"))
+
+    email_context = {"user": user, "reset_url": reset_url, "temp_password": temp_password}
+
+    html_message = render_to_string("emails/welcome_teach_course.html", email_context)
+    text_message = render_to_string("emails/welcome_teach_course.txt", email_context)
+
+    send_mail(
+        subject="Welcome to Your New Teaching Account.",
+        message=text_message,
+        html_message=html_message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[user.email],
+        fail_silently=False,
+    )
 
 
 def course_search(request):
@@ -1198,6 +1409,7 @@ def course_search(request):
     paginator = Paginator(courses, 12)  # Show 12 courses per page
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
+    is_teacher = getattr(getattr(request.user, "profile", None), "is_teacher", False)
 
     context = {
         "page_obj": page_obj,
@@ -1210,6 +1422,7 @@ def course_search(request):
         "subject_choices": Course._meta.get_field("subject").choices,
         "level_choices": Course._meta.get_field("level").choices,
         "total_results": total_results,
+        "is_teacher": is_teacher,
     }
 
     return render(request, "courses/search.html", context)
@@ -2692,10 +2905,14 @@ def create_forum_category(request):
         form = ForumCategoryForm(request.POST)
         if form.is_valid():
             category = form.save()
+            if not category.slug:
+                category.slug = slugify(category.name)
+            category.save()
             messages.success(request, f"Forum category '{category.name}' created successfully!")
             return redirect("forum_category", slug=category.slug)
     else:
         form = ForumCategoryForm()
+        print(form.errors)
 
     return render(request, "web/forum/create_category.html", {"form": form})
 
@@ -2736,6 +2953,24 @@ def my_forum_replies(request):
     )
     categories = ForumCategory.objects.all()
     return render(request, "web/forum/my_replies.html", {"replies": replies, "categories": categories})
+
+
+@login_required
+def edit_reply(request, reply_id):
+    """Edit a forum reply."""
+    reply = get_object_or_404(ForumReply, id=reply_id, author=request.user)
+    topic = reply.topic
+    categories = ForumCategory.objects.all()
+
+    if request.method == "POST":
+        content = request.POST.get("content")
+        if content:
+            reply.content = content
+            reply.save()
+            messages.success(request, "Reply updated successfully.")
+            return redirect("forum_topic", category_slug=topic.category.slug, topic_id=topic.id)
+
+    return render(request, "web/forum/edit_reply.html", {"reply": reply, "categories": categories})
 
 
 def get_course_calendar(request, slug):
@@ -3451,8 +3686,11 @@ class GoodsDetailView(generic.DetailView):
     template_name = "goods/goods_detail.html"
     context_object_name = "product"
 
-    def get_object(self):
-        return get_object_or_404(Goods, pk=self.kwargs["pk"])
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["product_images"] = self.object.goods_images.all()  # Get all images related to the product
+        context["other_products"] = Goods.objects.exclude(pk=self.object.pk)[:12]  # Fetch other products
+        return context
 
 
 class GoodsCreateView(LoginRequiredMixin, UserPassesTestMixin, generic.CreateView):
@@ -4225,6 +4463,25 @@ def remove_team_member(request, goal_id, member_id):
     member.delete()
     messages.success(request, f"{member.user.username} has been removed from the team.")
     return redirect("team_goal_detail", goal_id=goal_id)
+
+
+@login_required
+def submit_team_proof(request, team_goal_id):
+    team_goal = get_object_or_404(TeamGoal, id=team_goal_id)
+    member = get_object_or_404(TeamGoalMember, team_goal=team_goal, user=request.user)
+
+    if request.method == "POST":
+        form = TeamGoalCompletionForm(request.POST, request.FILES, instance=member)
+        if form.is_valid():
+            form.save()
+            if not member.completed:
+                member.mark_completed()
+            return redirect("team_goal_detail", goal_id=team_goal.id)  # Fixed here
+
+    else:
+        form = TeamGoalCompletionForm(instance=member)
+
+    return render(request, "teams/submit_proof.html", {"form": form, "team_goal": team_goal})
 
 
 @login_required
@@ -6050,6 +6307,123 @@ def prepare_time_series_data(enrollment, total_sessions):
     }
 
 
+# map views
+
+
+@login_required
+def classes_map(request):
+    """View for displaying classes near the user."""
+    now = timezone.now()
+    sessions = (
+        Session.objects.filter(Q(start_time__gte=now) | Q(start_time__lte=now, end_time__gte=now))
+        .filter(is_virtual=False, location__isnull=False)
+        .exclude(location="")
+        .order_by("start_time")
+        .select_related("course", "course__teacher")
+    )
+    # Get filter parameters
+    course_id = request.GET.get("course")
+    teaching_style = request.GET.get("teaching_style")
+    # Apply filters
+    if course_id:
+        sessions = sessions.filter(course_id=course_id, status="published")
+    if teaching_style:
+        sessions = sessions.filter(teaching_style=teaching_style)
+    # Fetch only necessary course fields
+    courses = Course.objects.only("id", "title").order_by("title")
+    age_groups = Course._meta.get_field("level").choices
+    teaching_styles = list(set(Session.objects.values_list("teaching_style", flat=True)))
+    context = {"sessions": sessions, "courses": courses, "age_groups": age_groups, "teaching_style": teaching_styles}
+    return render(request, "web/classes_map.html", context)
+
+
+@login_required
+def map_data_api(request):
+    """API to return all live and ongoing class data in JSON format."""
+    now = timezone.now()
+    sessions = (
+        Session.objects.filter(
+            Q(start_time__gte=now) | Q(start_time__lte=now, end_time__gte=now)  # Future or Live classes
+        )
+        .filter(Q(is_virtual=False) & ~Q(location=""))
+        .select_related("course", "course__teacher")
+    )
+
+    course_id = request.GET.get("course")
+    age_group = request.GET.get("age_group")
+
+    if course_id:
+        sessions = sessions.filter(course__id=course_id, status="published")
+    if age_group:
+        sessions = sessions.filter(course__level=age_group)
+
+    logger.debug(f"API call with filters: course={course_id}, age={age_group}")
+
+    map_data = []
+    sessions_to_update = []
+    # Limit geocoding to a reasonable number per request
+    MAX_GEOCODING_PER_REQUEST = 5
+    geocoding_count = 0
+    geocoding_errors = 0
+    coordinate_errors = 0
+    for session in sessions:
+        if not session.latitude or not session.longitude:
+            if geocoding_count >= MAX_GEOCODING_PER_REQUEST:
+                logger.warning(f"Geocoding limit reached ({MAX_GEOCODING_PER_REQUEST}). Skipping session {session.id}")
+                continue
+            geocoding_count += 1
+            logger.info(f"Geocoding session {session.id} with location: {session.location}")
+            lat, lng = geocode_address(session.location)
+            if lat is not None and lng is not None:
+                session.latitude = lat
+                session.longitude = lng
+                sessions_to_update.append(session)
+            else:
+                geocoding_errors += 1
+                logger.warning(f"Skipping session {session.id} due to failed geocoding")
+                continue
+
+        try:
+            lat = float(session.latitude)
+            lng = float(session.longitude)
+            map_data.append(
+                {
+                    "id": session.id,
+                    "title": session.title,
+                    "course_title": session.course.title,
+                    "teacher": session.course.teacher.get_full_name() or session.course.teacher.username,
+                    "start_time": session.start_time.isoformat(),
+                    "end_time": session.end_time.isoformat(),
+                    "location": session.location,
+                    "lat": lat,
+                    "lng": lng,
+                    "price": str(session.price or session.course.price),
+                    "url": session.get_absolute_url(),
+                    "course": session.course.title,
+                    "level": session.course.get_level_display(),
+                    "is_virtual": session.is_virtual,
+                }
+            )
+        except (ValueError, TypeError):
+            coordinate_errors += 1
+            logger.warning(
+                f"Skipping session {session.id} due to invalid coordinates: "
+                f"lat={session.latitude}, lng={session.longitude}"
+            )
+            continue
+
+    if sessions_to_update:
+        logger.info(f"Batch updating coordinates for {len(sessions_to_update)} sessions")
+        Session.objects.bulk_update(sessions_to_update, ["latitude", "longitude"])  # Batch update
+
+    # Log summary of issues
+    if geocoding_errors > 0 or coordinate_errors > 0:
+        logger.warning(f"Map data issues: {geocoding_errors} geocoding errors, {coordinate_errors} coordinate errors")
+
+    logger.info(f"Found {len(map_data)} sessions with valid coordinates")
+    return JsonResponse({"sessions": map_data})
+
+
 GITHUB_REPO = "alphaonelabs/alphaonelabs-education-website"
 GITHUB_API_BASE = "https://api.github.com"
 
@@ -6360,3 +6734,301 @@ def all_study_groups(request):
             "enrolled_courses": enrolled_courses,
         },
     )
+
+
+@login_required
+def membership_checkout(request, plan_id: int) -> HttpResponse:
+    """Display the membership checkout page."""
+    plan = get_object_or_404(MembershipPlan, id=plan_id)
+
+    # Default to monthly billing
+    billing_period = request.GET.get("billing_period", "monthly")
+
+    context = {
+        "plan": plan,
+        "billing_period": billing_period,
+        "stripe_public_key": settings.STRIPE_PUBLISHABLE_KEY,
+    }
+
+    return render(request, "checkout.html", context)
+
+
+@login_required
+def create_membership_subscription(request) -> JsonResponse:
+    """Create a new membership subscription."""
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        plan_id = data.get("plan_id")
+        payment_method_id = data.get("payment_method_id")
+        billing_period = data.get("billing_period", "monthly")
+
+        if not all([plan_id, payment_method_id, billing_period]):
+            return JsonResponse({"error": "Missing required fields"}, status=400)
+
+        # Create subscription using helper function
+        result = create_subscription(
+            user=request.user,
+            plan_id=plan_id,
+            payment_method_id=payment_method_id,
+            billing_period=billing_period,
+        )
+
+        if not result["success"]:
+            return JsonResponse({"error": result["error"]}, status=400)
+
+        # Helper function to extract client_secret
+        def get_client_secret(subscription):
+            """Extract client_secret safely from a subscription object."""
+            if (
+                hasattr(subscription, "latest_invoice")
+                and subscription.latest_invoice
+                and hasattr(subscription.latest_invoice, "payment_intent")
+            ):
+                return subscription.latest_invoice.payment_intent.client_secret
+            return None
+
+        return JsonResponse(
+            {
+                "subscription": result["subscription"],
+                "client_secret": get_client_secret(result["subscription"]),
+            },
+        )
+
+    except json.JSONDecodeError as e:
+        return JsonResponse({"error": f"Invalid JSON: {str(e)}"}, status=400)
+    except stripe.error.CardError as e:
+        return JsonResponse({"error": f"Card error: {str(e)}"}, status=400)
+    except stripe.error.StripeError as e:
+        return JsonResponse({"error": f"Payment processing error: {str(e)}"}, status=500)
+    except KeyError as e:
+        return JsonResponse({"error": f"Missing key: {str(e)}"}, status=400)
+    except Exception:
+        logger.exception("Unexpected error in create_membership_subscription")
+        return JsonResponse({"error": "An unexpected error occurred"}, status=500)
+
+
+@login_required
+def membership_success(request) -> HttpResponse:
+    """Display the membership success page."""
+    try:
+        membership = request.user.membership
+        context = {
+            "membership": membership,
+        }
+        return render(request, "membership_success.html", context)
+    except (AttributeError, ObjectDoesNotExist):
+        messages.info(request, "You don't have an active membership subscription.")
+        return redirect("index")
+
+
+@login_required
+def membership_settings(request) -> HttpResponse:
+    """Display the membership settings page."""
+    try:
+        membership = request.user.membership
+
+        # Get Stripe invoices
+        if membership.stripe_customer_id:
+            setup_stripe()
+            invoices = stripe.Invoice.list(customer=membership.stripe_customer_id, limit=12)
+        else:
+            invoices = []
+
+        # Get subscription events
+        events = MembershipSubscriptionEvent.objects.filter(user=request.user).order_by("-created_at")[:10]
+
+        context = {
+            "membership": membership,
+            "invoices": invoices.data if invoices else [],
+            "events": events,
+        }
+        return render(request, "membership_settings.html", context)
+    except (AttributeError, ObjectDoesNotExist):
+        return redirect("index")
+
+
+@login_required
+def cancel_membership(request) -> HttpResponse:
+    """Cancel the user's membership subscription."""
+    if request.method != "POST":
+        return redirect("membership_settings")
+
+    try:
+        result = cancel_subscription(request.user)
+
+        if result["success"]:
+            messages.success(
+                request,
+                "Your subscription has been cancelled and will end at the current billing period.",
+            )
+        else:
+            messages.error(request, result["error"])
+
+    except stripe.error.StripeError as e:
+        messages.error(request, f"Stripe error: {str(e)}")
+    except ObjectDoesNotExist:
+        messages.error(request, "No membership found for your account.")
+    except Exception as e:
+        logger.error(f"Unexpected error in cancel_membership: {str(e)}")
+        messages.error(request, str(e))
+
+    return redirect("membership_settings")
+
+
+@login_required
+def reactivate_membership(request) -> HttpResponse:
+    """Reactivate a cancelled membership subscription."""
+    if request.method != "POST":
+        return redirect("membership_settings")
+
+    try:
+        result = reactivate_subscription(request.user)
+
+        if result["success"]:
+            messages.success(request, "Your subscription has been reactivated.")
+        else:
+            messages.error(request, result["error"])
+
+    except stripe.error.StripeError as e:
+        messages.error(request, f"Stripe error: {str(e)}")
+    except ObjectDoesNotExist:
+        messages.error(request, "No membership found for your account.")
+    except Exception as e:
+        logger.error(f"Unexpected error in reactivate_membership: {str(e)}")
+        messages.error(request, str(e))
+
+    return redirect("membership_settings")
+
+
+@login_required
+def update_payment_method(request) -> HttpResponse:
+    """Display the update payment method page."""
+    try:
+        membership = request.user.membership
+
+        # Get current payment method
+        if membership.stripe_customer_id:
+            setup_stripe()
+            payment_methods = stripe.PaymentMethod.list(customer=membership.stripe_customer_id, type="card")
+            current_payment_method = payment_methods.data[0] if payment_methods.data else None
+        else:
+            current_payment_method = None
+
+        context = {
+            "membership": membership,
+            "current_payment_method": current_payment_method,
+            "stripe_public_key": settings.STRIPE_PUBLISHABLE_KEY,
+        }
+        return render(request, "update_payment_method.html", context)
+    except (AttributeError, ObjectDoesNotExist):
+        return redirect("membership_settings")
+
+
+@login_required
+def update_payment_method_api(request) -> JsonResponse:
+    """Update the payment method for a subscription."""
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    try:
+        data = json.loads(request.body)
+        payment_method_id = data.get("payment_method_id")
+
+        if not payment_method_id:
+            return JsonResponse({"error": "Missing payment method ID"}, status=400)
+
+        membership = request.user.membership
+
+        if not membership.stripe_customer_id:
+            return JsonResponse({"error": "No active subscription found"}, status=400)
+
+        setup_stripe()
+
+        # Attach payment method to customer
+        stripe.PaymentMethod.attach(payment_method_id, customer=membership.stripe_customer_id)
+
+        # Set as default payment method
+        stripe.Customer.modify(
+            membership.stripe_customer_id,
+            invoice_settings={"default_payment_method": payment_method_id},
+        )
+
+        return JsonResponse({"success": True})
+
+    except stripe.error.CardError as e:
+        return JsonResponse({"error": f"Card error: {str(e)}"}, status=400)
+    except stripe.error.InvalidRequestError as e:
+        return JsonResponse({"error": f"Invalid request: {str(e)}"}, status=400)
+    except stripe.error.StripeError as e:
+        return JsonResponse({"error": f"Payment processing error: {str(e)}"}, status=500)
+    except Exception as e:
+        logger.error(f"Unexpected error in update_payment_method_api: {str(e)}")
+        return JsonResponse({"error": str(e)}, status=400)
+
+
+def social_media_manager_required(user):
+    """Check if user has social media manager permissions."""
+    return user.is_authenticated and (user.is_staff or getattr(user.profile, "is_social_media_manager", False))
+
+
+@user_passes_test(social_media_manager_required)
+def get_twitter_client():
+    """Initialize the Tweepy client."""
+    auth = tweepy.OAuthHandler(settings.TWITTER_API_KEY, settings.TWITTER_API_SECRET_KEY)
+    auth.set_access_token(settings.TWITTER_ACCESS_TOKEN, settings.TWITTER_ACCESS_TOKEN_SECRET)
+    return tweepy.API(auth)
+
+
+@user_passes_test(social_media_manager_required)
+def social_media_dashboard(request):
+    # Fetch all posts that haven't been posted yet
+    posts = ScheduledPost.objects.filter(posted=False).order_by("-id")
+    return render(request, "social_media_dashboard.html", {"posts": posts})
+
+
+@user_passes_test(social_media_manager_required)
+def post_to_twitter(request, post_id):
+    post = get_object_or_404(ScheduledPost, id=post_id)
+    if request.method == "POST":
+        client = get_twitter_client()
+        try:
+            if post.image:
+                # Upload the image file from disk
+                media = client.media_upload(post.image.path)
+                client.update_status(post.content, media_ids=[media.media_id])
+            else:
+                client.update_status(post.content)
+            post.posted = True
+            post.posted_at = timezone.now()
+            post.save()
+        except Exception as e:
+            print(f"Error posting tweet: {e}")
+        return redirect("social_media_dashboard")
+    return redirect("social_media_dashboard")
+
+
+@user_passes_test(social_media_manager_required)
+def create_scheduled_post(request):
+    if request.method == "POST":
+        content = request.POST.get("content")
+        image = request.FILES.get("image")  # Get the uploaded image, if provided.
+        if not content:
+            messages.error(request, "Post content cannot be empty.")
+            return redirect("social_media_dashboard")
+        ScheduledPost.objects.create(
+            content=content, image=image, scheduled_time=timezone.now()  # This saves the image file.
+        )
+        messages.success(request, "Post created successfully!")
+    return redirect("social_media_dashboard")
+
+
+@user_passes_test(social_media_manager_required)
+def delete_post(request, post_id):
+    """Delete a scheduled post."""
+    post = get_object_or_404(ScheduledPost, id=post_id)
+    if request.method == "POST":
+        post.delete()
+    return redirect("social_media_dashboard")

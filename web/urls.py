@@ -31,7 +31,7 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns.append(path("__reload__/", include("django_browser_reload.urls")))  # Browser reload URLs
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)  # Add this line
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)  # Add this line
 
 # Language-prefixed URLs
 urlpatterns += i18n_patterns(
@@ -71,6 +71,7 @@ urlpatterns += i18n_patterns(
     path("account/notification-preferences/", notification_preferences, name="notification_preferences"),
     path("profile/", views.profile, name="profile"),
     path("accounts/profile/", views.profile, name="accounts_profile"),
+    path("accounts/delete/", views.delete_account, name="delete_account"),
     # Dashboard URLs
     path("dashboard/student/", views.student_dashboard, name="student_dashboard"),
     path("dashboard/teacher/", views.teacher_dashboard, name="teacher_dashboard"),
@@ -100,6 +101,11 @@ urlpatterns += i18n_patterns(
     ),
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
     path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session"),
+    # Social media sharing URLs
+    path("social-media/", views.social_media_dashboard, name="social_media_dashboard"),
+    path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
+    path("social-media/create/", views.create_scheduled_post, name="create_scheduled_post"),
+    path("social-media/delete/<int:post_id>/", views.delete_post, name="delete_post"),
     # Payment URLs
     path(
         "courses/<slug:slug>/create-payment-intent/",
@@ -193,6 +199,7 @@ urlpatterns += i18n_patterns(
         name="forum_topic",
     ),
     path("forum/topic/<int:topic_id>/edit/", views.edit_topic, name="edit_topic"),
+    path("forum/reply/<int:reply_id>/edit/", views.edit_reply, name="edit_reply"),
     path("forum/my-topics/", views.my_forum_topics, name="my_forum_topics"),
     path("forum/my-replies/", views.my_forum_replies, name="my_forum_replies"),
     path("forum/sync-milestones/", views.sync_github_milestones, name="sync_github_milestones"),
@@ -314,6 +321,7 @@ urlpatterns += i18n_patterns(
     path("teams/<int:goal_id>/delete/", views.delete_team_goal, name="delete_team_goal"),
     path("teams/<int:goal_id>/remove-member/<int:member_id>/", views.remove_team_member, name="remove_team_member"),
     path("teams/<int:goal_id>/edit/", views.edit_team_goal, name="edit_team_goal"),
+    path("teams/<int:team_goal_id>/submit_proof/", views.submit_team_proof, name="submit_team_proof"),
     path("trackers/", views.tracker_list, name="tracker_list"),
     path("trackers/create/", views.create_tracker, name="create_tracker"),
     path("trackers/<int:tracker_id>/", views.tracker_detail, name="tracker_detail"),
@@ -407,11 +415,27 @@ urlpatterns += i18n_patterns(
         name="update_teacher_notes",
     ),
     path("award-badge/", views.award_badge, name="award_badge"),
+    # Map Urls
+    path("classes-map/", views.classes_map, name="classes_map"),
+    path("api/map-data/", views.map_data_api, name="map_data_api"),
     # Features page
     path("features/", features_page, name="features"),
     path("features/vote/", feature_vote, name="feature_vote"),
     path("features/vote-count/", feature_vote_count, name="feature_vote_count"),
     path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
+    # Membership URLs
+    path("membership/checkout/<int:plan_id>/", views.membership_checkout, name="membership_checkout"),
+    path(
+        "membership/create-subscription/",
+        views.create_membership_subscription,
+        name="create_membership_subscription",
+    ),
+    path("membership/success/", views.membership_success, name="membership_success"),
+    path("membership/settings/", views.membership_settings, name="membership_settings"),
+    path("membership/cancel/", views.cancel_membership, name="cancel_membership"),
+    path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
+    path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
+    path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
     prefix_default_language=True,
 )
 

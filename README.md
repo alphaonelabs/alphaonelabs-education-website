@@ -79,8 +79,8 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/education-website.git
-   cd education-website
+   git clone https://github.com/yourusername/alphaonelabs-education-website.git
+   cd alphaonelabs-education-website
    ```
 
 2. Set up a virtual environment:
@@ -98,6 +98,13 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 
    # Using poetry
    poetry install
+
+   If you are having isues on windows try;
+   poetry lock
+   poetry install
+   poetry self add poetry-plugin shell
+   poetry shell
+   poetry run pre-commit run --all-files
    ```
 
 4. Set up environment variables:
