@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Compose Message
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-lg mx-auto bg-white dark:bg-gray-800 shadow-xl rounded-xl p-8">
+      <h2 class="text-3xl font-bold text-gray-800 dark:text-gray-200 mb-6 text-center">Compose New Message</h2>
+      <form id="composeMessageForm"
+            method="post"
+            action="{% url 'compose_message' %}"
+            class="space-y-6">
+        {% csrf_token %}
+        <div>
+          <label for="recipient"
+                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Recipient</label>
+          <input type="text"
+                 id="recipient"
+                 name="recipient"
+                 placeholder="Enter recipient username"
+                 class="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                 required />
+        </div>
+        <div>
+          <label for="message"
+                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Message</label>
+          <textarea id="message"
+                    name="message"
+                    rows="5"
+                    placeholder="Type your message here"
+                    class="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                    required></textarea>
+        </div>
+        <button type="submit"
+                class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-full transition-colors">
+          Send Message
+        </button>
+      </form>
+    </div>
+  </div>
+{% endblock content %}

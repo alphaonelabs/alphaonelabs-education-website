@@ -3,56 +3,137 @@
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">Message {{ teacher.username }}</h1>
-      <form method="post" class="space-y-6">
-        {% csrf_token %}
-        {% if not user.is_authenticated %}
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">
+        Message {{ teacher.get_full_name|default:teacher.username }}
+      </h1>
+      <form id="teacherMessageForm" method="post" class="space-y-6">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">Message {{ teacher.username }}</h1>
+        <form method="post" class="space-y-6">
+          {% csrf_token %}
+          {% if not user.is_authenticated %}
+            <div>
+              <label for="id_name"
+                     class="block text-sm font-medium text-gray-700 dark:text-gray-300">Your Name</label>
+              <input type="text"
+                     name="name"
+                     id="id_name"
+                     required
+                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label for="id_email"
+                     class="block text-sm font-medium text-gray-700 dark:text-gray-300">Your Email</label>
+              <input type="email"
+                     name="email"
+                     id="id_email"
+                     required
+                     class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500" />
+            </div>
+            <div>
+              <label for="id_captcha"
+                     class="block text-sm font-medium text-gray-700 dark:text-gray-300">Verification</label>
+              {{ form.captcha }}
+            </div>
+          {% endif %}
           <div>
-            <label for="id_name"
-                   class="block text-sm font-medium text-gray-700 dark:text-gray-300">Your Name</label>
-            <input type="text"
-                   name="name"
-                   id="id_name"
-                   required
-                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500" />
+            <label for="id_message"
+                   class="block text-sm font-medium text-gray-700 dark:text-gray-300">Message</label>
+            <textarea name="message"
+                      id="id_message"
+                      rows="5"
+                      required
+                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
           </div>
-          <div>
-            <label for="id_email"
-                   class="block text-sm font-medium text-gray-700 dark:text-gray-300">Your Email</label>
-            <input type="email"
-                   name="email"
-                   id="id_email"
-                   required
-                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500" />
+          <!-- Hidden input to store the IV for AES-GCM -->
+          <input type="hidden" name="iv" id="id_iv" />
+          {% if form.errors %}<div class="text-red-600 dark:text-red-400">{{ form.errors }}</div>{% endif %}
+          <div class="flex justify-end space-x-4">
+            <a href="#"
+               onclick="window.history.back(); return false;"
+               class="px-6 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition duration-200">
+              Cancel
+            </a>
+            <button type="submit"
+                    class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition duration-200">
+              Send Message
+            </button>
           </div>
-          <div>
-            <label for="id_captcha"
-                   class="block text-sm font-medium text-gray-700 dark:text-gray-300">Verification</label>
-            {{ form.captcha }}
-          </div>
-        {% endif %}
-        <div>
-          <label for="id_message"
-                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">Message</label>
-          <textarea name="message"
-                    id="id_message"
-                    rows="5"
-                    required
-                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
-        </div>
-        {% if form.errors %}<div class="text-red-600 dark:text-red-400">{{ form.errors }}</div>{% endif %}
-        <div class="flex justify-end space-x-4">
-          <a href="#"
-             onclick="window.history.back(); return false;"
-             class="px-6 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg transition duration-200">
-            Cancel
-          </a>
-          <button type="submit"
-                  class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition duration-200">
-            Send Message
-          </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
-  </div>
-{% endblock content %}
+    <script>
+        // Helper function to base64-encode an ArrayBuffer
+        function arrayBufferToBase64(buffer) {
+            var binary = '';
+            var bytes = new Uint8Array(buffer);
+            for (var i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return window.btoa(binary);
+        }
+
+        // Derive an AES-GCM key from the password by hashing it with SHA-256
+        async function deriveKeyFromPassword(password) {
+            const enc = new TextEncoder();
+            const passwordBuffer = enc.encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', passwordBuffer);
+            return crypto.subtle.importKey(
+                "raw",
+                hashBuffer, {
+                    name: "AES-GCM"
+                },
+                false,
+                ["encrypt"]
+            );
+        }
+
+        // Encrypt the plaintext using AES-GCM with a randomly generated IV
+        async function encryptMessage(plaintext, key) {
+            const iv = crypto.getRandomValues(new Uint8Array(12)); // 12 bytes IV for AES-GCM
+            const enc = new TextEncoder();
+            const encodedPlaintext = enc.encode(plaintext);
+            const ciphertextBuffer = await crypto.subtle.encrypt({
+                    name: "AES-GCM",
+                    iv: iv
+                },
+                key,
+                encodedPlaintext
+            );
+            return {
+                ciphertext: arrayBufferToBase64(ciphertextBuffer),
+                iv: arrayBufferToBase64(iv)
+            };
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var form = document.getElementById('teacherMessageForm');
+            if (form) {
+                form.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    var messageField = document.getElementById('id_message');
+                    var plaintext = messageField.value;
+                    // Prompt the user for an encryption key
+                    var encryptionKey = prompt("Enter encryption key to secure your message:");
+                    if (!encryptionKey) {
+                        alert("Encryption key is required to send a secure message.");
+                        return;
+                    }
+                    try {
+                        const key = await deriveKeyFromPassword(encryptionKey);
+                        const encrypted = await encryptMessage(plaintext, key);
+                        // Replace the plaintext with the encrypted message
+                        messageField.value = encrypted.ciphertext;
+                        // Set the IV in the hidden input field
+                        document.getElementById('id_iv').value = encrypted.iv;
+                        // Submit the form
+                        form.submit();
+                    } catch (error) {
+                        console.error("Encryption error:", error);
+                        alert("Encryption failed. Please try again.");
+                    }
+                });
+            }
+        });
+    </script>
+    {% block content %}
+    {% endblock content %}

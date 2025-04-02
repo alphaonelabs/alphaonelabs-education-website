@@ -22,7 +22,8 @@
                 <div class="text-sm mb-1 {% if message.sender == request.user %}text-teal-100{% else %}text-gray-500 dark:text-gray-400{% endif %}">
                   {{ message.sender.get_full_name|default:message.sender.username }}
                 </div>
-                <p>{{ message.content }}</p>
+                <!-- Add message-content class and data-ciphertext attribute -->
+                <p class="message-content" data-ciphertext="{{ message.content }}">{{ message.content }}</p>
                 <div class="text-xs mt-1 {% if message.sender == request.user %}text-teal-100{% else %}text-gray-500 dark:text-gray-400{% endif %}">
                   {{ message.created_at|date:"g:i A" }}
                 </div>
@@ -51,12 +52,37 @@
       </div>
     </div>
   </div>
+  <!-- Load CryptoJS from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
   <script>
-      // Scroll to bottom of messages container
+      // Prompt the user for the decryption key
+      var decryptionKey = prompt("Enter decryption key to view messages:");
+      if (decryptionKey) {
+          // For each element with the 'message-content' class, decrypt the ciphertext
+          var messageElems = document.querySelectorAll('.message-content');
+          messageElems.forEach(function(elem) {
+              var ciphertext = elem.getAttribute('data-ciphertext');
+              try {
+                  var bytes = CryptoJS.AES.decrypt(ciphertext, decryptionKey);
+                  var plaintext = bytes.toString(CryptoJS.enc.Utf8);
+                  // Replace the content with decrypted plaintext if successful
+                  if (plaintext) {
+                      elem.textContent = plaintext;
+                  } else {
+                      elem.textContent = "[Decryption failed]";
+                  }
+              } catch (error) {
+                  console.error("Decryption error:", error);
+                  elem.textContent = "[Error decrypting message]";
+              }
+          });
+      } else {
+          alert("No decryption key provided. Messages will remain encrypted.");
+      }
+
+      // Auto-scroll functionality
       const messagesContainer = document.getElementById('messages-container');
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
-
-      // Auto-scroll on new messages
       const messageForm = document.querySelector('form');
       messageForm.addEventListener('submit', () => {
           setTimeout(() => {

@@ -13,7 +13,8 @@
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
         <div class="p-6">
           <h1 class="text-2xl font-bold mb-6">Message Enrolled Students</h1>
-          <form method="post" class="space-y-6">
+          <!-- Form now includes an id for JavaScript to hook on -->
+          <form id="studentMessageForm" method="post" class="space-y-6">
             {% csrf_token %}
             <div>
               <label for="title"
@@ -51,4 +52,30 @@
       </div>
     </div>
   </div>
+  <!-- Load CryptoJS from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          var form = document.getElementById('studentMessageForm');
+          if (form) {
+              form.addEventListener('submit', function(e) {
+                  e.preventDefault();
+                  var messageField = document.getElementById('message');
+                  var plaintext = messageField.value;
+                  // Prompt the user for an encryption key
+                  var encryptionKey = prompt("Enter encryption key to secure your message:");
+                  if (!encryptionKey) {
+                      alert("Encryption key is required to send a secure message.");
+                      return;
+                  }
+                  // Encrypt the plaintext message using CryptoJS AES encryption
+                  var ciphertext = CryptoJS.AES.encrypt(plaintext, encryptionKey).toString();
+                  // Replace the plaintext with the encrypted message
+                  messageField.value = ciphertext;
+                  // Submit the form with the encrypted content
+                  form.submit();
+              });
+          }
+      });
+  </script>
 {% endblock content %}
