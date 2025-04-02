@@ -96,6 +96,7 @@ from .forms import (
     TeamGoalForm,
     TeamInviteForm,
     UserRegistrationForm,
+    VideoRequestForm,
 )
 from .marketing import (
     generate_social_share_content,
@@ -156,6 +157,7 @@ from .models import (
     TeamInvite,
     TimeSlot,
     UserBadge,
+    VideoRequest,
     WaitingRoom,
     WebRequest,
 )
@@ -4886,7 +4888,7 @@ def donation_cancel(request):
     return redirect("donate")
 
 
-def educational_videos_list(request):
+def uploaded_videos_list(request):
     """View for listing educational videos with optional category filtering."""
     # Get category filter from query params
     selected_category = request.GET.get("category")
@@ -4912,19 +4914,93 @@ def educational_videos_list(request):
     # Get all subjects for the dropdown
     subjects = Subject.objects.all().order_by("order", "name")
 
-    # Paginate results
+    # Paginating results
     paginator = Paginator(videos, 12)  # 12 videos per page
     page_number = request.GET.get("page", 1)
     page_obj = paginator.get_page(page_number)
 
-    context = {
+    return {
         "videos": page_obj,
-        "is_paginated": paginator.num_pages > 1,
-        "page_obj": page_obj,
+        "is_paginated_videos": paginator.num_pages > 1,
+        "videos_page_obj": page_obj,
         "subjects": subjects,
         "selected_category": selected_category,
         "selected_category_display": selected_category_display,
         "category_counts": category_counts,
+    }
+
+
+def requested_videos_list(request):
+    """Helper function to get context for video requests."""
+    # Get category filter from query params
+    selected_category = request.GET.get("category")
+
+    # Base queryset for video requests
+    video_requests = VideoRequest.objects.select_related("requester", "category").order_by("-requested_at")
+
+    # Apply category filter if provided
+    if selected_category:
+        video_requests = video_requests.filter(category__slug=selected_category)
+        selected_category_obj = get_object_or_404(Subject, slug=selected_category)
+        selected_category_display = selected_category_obj.name
+    else:
+        selected_category_display = None
+
+    # Get category counts for sidebar
+    category_counts = dict(
+        VideoRequest.objects.values("category__name", "category__slug")
+        .annotate(count=Count("id"))
+        .values_list("category__slug", "count")
+    )
+
+    # Get all subjects for the sidebar
+    subjects = Subject.objects.all().order_by("order", "name")
+
+    # Paginating results
+    paginator = Paginator(video_requests, 12)  # 12 requests per page
+    page_number = request.GET.get("page_requests", 1)
+    page_obj = paginator.get_page(page_number)
+
+    return {
+        "video_requests": page_obj,
+        "is_paginated_requests": paginator.num_pages > 1,
+        "requests_page_obj": page_obj,
+        "subjects": subjects,
+        "selected_category": selected_category,
+        "selected_category_display": selected_category_display,
+        "category_counts": category_counts,
+    }
+
+
+def educational_videos_list(request):
+    """View that combines uploaded videos and video requests into a single list view."""
+    # Get active tab from query params
+    active_tab = request.GET.get("tab", "uploads")
+
+    # Get context from helper functions
+    uploaded_context = uploaded_videos_list(request)
+    requested_context = requested_videos_list(request)
+
+    # Merge category counts (combine counts from both sources)
+    combined_category_counts = {}
+    for slug in set(uploaded_context["category_counts"].keys()) | set(requested_context["category_counts"].keys()):
+        combined_category_counts[slug] = uploaded_context["category_counts"].get(slug, 0) + requested_context[
+            "category_counts"
+        ].get(slug, 0)
+
+    # Combine contexts, prioritizing consistency
+    context = {
+        "videos": uploaded_context["videos"],
+        "video_requests": requested_context["video_requests"],
+        "is_paginated_videos": uploaded_context["is_paginated_videos"],
+        "is_paginated_requests": requested_context["is_paginated_requests"],
+        "videos_page_obj": uploaded_context["videos_page_obj"],
+        "requests_page_obj": requested_context["requests_page_obj"],
+        "subjects": uploaded_context["subjects"],
+        "selected_category": uploaded_context["selected_category"],
+        "selected_category_display": uploaded_context["selected_category_display"],
+        "category_counts": combined_category_counts,
+        "active_tab": active_tab,
     }
 
     return render(request, "videos/list.html", context)
@@ -4945,6 +5021,23 @@ def upload_educational_video(request):
         form = EducationalVideoForm()
 
     return render(request, "videos/upload.html", {"form": form})
+
+
+@login_required
+def request_video(request):
+    """View for requesting a new educational video."""
+    if request.method == "POST":
+        form = VideoRequestForm(request.POST)
+        if form.is_valid():
+            video_request = form.save(commit=False)
+            video_request.requester = request.user
+            video_request.save()
+
+            return redirect("educational_videos_list")
+    else:
+        form = VideoRequestForm()
+
+    return render(request, "videos/request_video.html", {"form": form})
 
 
 def certificate_detail(request, certificate_id):
