@@ -169,6 +169,7 @@ from .utils import (
     get_leaderboard,
     get_or_create_cart,
     get_user_points,
+    get_student_analytics_data
 )
 from .services.AI.ai_model import ai_assignment_corrector
 
@@ -286,37 +287,6 @@ def index(request):
             )
     return render(request, "index.html", context)
 
-
-# @require_GET
-# def get_counter_data(request):
-#     print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@", "working")
-#     """API view to get the current counter statistics and recent activities."""
-#     # Update active users counter in real-time
-#     CounterService.update_active_users_count()
-
-#     # Get counter values
-#     counter_data = {
-#         'active_users': CounterStatistic.get_counter_value('active_users'),
-#         'enrollments_today': CounterStatistic.get_counter_value('enrollments_today'),
-#         'courses_completed': CounterStatistic.get_counter_value('courses_completed'),
-#         'quizzes_completed': CounterStatistic.get_counter_value('quizzes_completed'),
-#     }
-
-#     # Get recent activities
-#     recent_activities = UserActivity.objects.all()[:10]
-
-#     print("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@", counter_data)
-#     # Render the activity items as HTML
-#     activities_html = render_to_string('templates/components/live_counters.html', {
-#         'activities': recent_activities
-#     })
-
-#     print("```````````````````````````````````", counter_data)
-#     return JsonResponse({
-#         'counters': counter_data,
-#         'activities_html': activities_html,
-#         'timestamp': 000000000000000,
-#     })
 
 
 def signup_view(request):
@@ -786,10 +756,13 @@ def course_detail(request, slug):
             'session': session,
             'exams': session_exam_data,
         })
-    print("%%%%%%%%%", session_data)
     
 
+    student_analytics = None
+    if is_teacher:
+        student_analytics = get_student_analytics_data(course)
 
+    print("@@@@@@@@@@", student_analytics)
 
     context = {
         "course": course,
@@ -815,6 +788,7 @@ def course_detail(request, slug):
         "course_exams": course_exams, 
         "course_exam_data":course_exam_data,
         "session_data": session_data,
+        "student_analytics": student_analytics,
     }
 
 

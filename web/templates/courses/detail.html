@@ -595,7 +595,6 @@
                     My Progress
                   </button>
                 {% endif %}
-                <!-- Tab Buttons - Add this new button after the Materials tab -->
                 <button class="px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800"
                         data-tab="exams"
                         id="tab-exams"
@@ -605,6 +604,16 @@
                   <i class="fas fa-file-alt mr-2 text-teal-300 dark:text-teal-400"></i>
                   Exams
                 </button>
+                <button class="px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800"
+                        data-tab="analytics"
+                        id="tab-analytics"
+                        role="tab"
+                        aria-selected="false"
+                        aria-controls="content-analytics">
+                  <i class="fas fa-chart-line mr-2 text-teal-300 dark:text-teal-400"></i>
+                  Analytics
+                </button>
+
               </div>
               <!-- Tab Content -->
               <div class="p-6">
@@ -1110,11 +1119,7 @@
                     </div>
                   </div>
                 {% endif %}
-
-
-
-                
-                <!-- Tab Content - Add this new section in the Tab Content area -->
+                <!-- Exams -->
                 <div id="content-exams"
                     class="tab-content hidden"
                     role="tabpanel"
@@ -1253,6 +1258,22 @@
                   </div>
                 </div>
 
+                <!-- Chart -->
+                <div id="content-analytics"
+                    class="tab-content hidden"
+                    role="tabpanel"
+                    aria-labelledby="tab-analytics">
+                  <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-4">
+                      <h2 class="text-xl font-bold">Student Analytics</h2>
+                    </div>
+                    
+                    <!-- Canvas element for the chart -->
+                    <div class="w-full">
+                      <canvas id="sectionChart" width="800" height="400"></canvas>
+                    </div>
+                  </div>
+                </div>
 
 
               </div>
@@ -1268,7 +1289,75 @@
     <i class="fas fa-info-circle notification-icon mr-2"></i>
     <span class="notification-message">This is a notification</span>
   </div>
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
+                      
+    document.addEventListener('DOMContentLoaded', function() {
+      // Generate labels for 10 students
+      const labels = Array.from({ length: 10 }, (_, i) => 'Student ' + (i + 1));
+
+      // Helper function to generate random data for a section (range 0-100)
+      const generateData = () => labels.map(() => Math.floor(Math.random() * 100));
+
+      // Data for each section degree
+      const attendanceData = generateData();
+      const examData = generateData();
+      const overallDegreeData = generateData();
+
+      // Initialize the chart
+      const ctx = document.getElementById('sectionChart').getContext('2d');
+      const sectionChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Attendance',
+              data: attendanceData,
+              borderColor: 'rgba(194, 39, 47, 1)',
+              backgroundColor: 'rgba(194, 39, 47, 0.2)',
+              fill: false,
+              tension: 0.2
+            },
+            {
+              label: 'Exams',
+              data: examData,
+              borderColor: 'rgba(127, 255, 0, 1)',
+              backgroundColor: 'rgba(127, 255, 0, 0.2)',
+              fill: false,
+              tension: 0.2
+            },
+            {
+              label: 'Overall Degree',
+              data: overallDegreeData,
+              borderColor: 'rgba(54, 162, 235, 1)',
+              backgroundColor: 'rgba(54, 162, 235, 0.2)',
+              fill: false,
+              tension: 0.2
+            }
+          ]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: 'Student Progress Tracking: Section Degrees'
+            }
+          },
+          responsive: true,
+          maintainAspectRatio: true
+        }
+      });
+    });
+
+
       function loadCalendar(year, month) {
           fetch(`/courses/{{ course.slug }}/calendar/?year=${year}&month=${month}`)
               .then(response => response.json())

@@ -410,3 +410,70 @@ def create_leaderboard_context(
         "user_weekly_points": user_weekly_points,
         "user_monthly_points": user_monthly_points,
     }
+
+
+def get_student_analytics_data(course):
+    """
+    Gather analytics data for students in a course:
+    - Attendance rates
+    - Exam scores
+    - Overall performance
+    """
+    analytics_data = {
+        'labels': [],           # Student names
+        'attendance_data': [],  # Attendance percentages
+        'exam_data': [],        # Exam score percentages
+        'overall_data': []      # Overall performance percentages
+    }
+
+    from .models import Enrollment, SessionAttendance, Quiz, UserQuiz
+    
+    # Get all approved enrollments for the course
+    enrollments = Enrollment.objects.filter(course=course, status="approved")
+    
+    for enrollment in enrollments:
+        student = enrollment.student
+        
+        # Add student label
+        analytics_data['labels'].append(f"Student {student.id}")  # Using ID for privacy
+        
+        # Calculate attendance percentage
+        total_sessions = course.sessions.count()
+        if total_sessions > 0:
+            attended_sessions = SessionAttendance.objects.filter(
+                student=student, 
+                session__course=course,
+                status__in=["present", "late"]
+            ).count()
+            attendance_percentage = (attended_sessions / total_sessions) * 100
+        else:
+            attendance_percentage = 0
+        analytics_data['attendance_data'].append(round(attendance_percentage, 1))
+        
+        # Calculate exam performance
+        course_exams = course.exams.filter(exam_type='course')
+        session_exams = Quiz.objects.filter(session__course=course)
+        all_exams = list(course_exams) + list(session_exams)
+        
+        total_score = 0
+        max_possible = 0
+        
+        for exam in all_exams:
+            user_attempt = UserQuiz.objects.filter(
+                quiz=exam,
+                user=student,
+                completed=True
+            ).first()
+            
+            if user_attempt:
+                total_score += user_attempt.score
+                max_possible += user_attempt.max_score
+        
+        exam_percentage = (total_score / max_possible) * 100 if max_possible > 0 else 0
+        analytics_data['exam_data'].append(round(exam_percentage, 1))
+        
+        # Calculate overall performance (50% attendance, 50% exams)
+        overall_percentage = (attendance_percentage * 0.5) + (exam_percentage * 0.5)
+        analytics_data['overall_data'].append(round(overall_percentage, 1))
+    
+    return analytics_data
