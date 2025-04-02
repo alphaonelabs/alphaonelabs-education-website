@@ -221,17 +221,15 @@ class Subject(models.Model):
         for fact in self.facts:
             if fact.get("text") == fact_text:
                 return False
-        from django.utils import timezone
 
         self.facts.append({"text": fact_text, "generated_at": timezone.now().isoformat()})
         self.save(update_fields=["facts"])
         return True
 
     def get_random_fact(self) -> Optional[str]:
-        import random
-
         if self.facts:
-            return random.choice(self.facts)["text"]
+            selected_fact = random.choice(self.facts)
+            return selected_fact.get("text") if isinstance(selected_fact, dict) else None
         return None
 
 

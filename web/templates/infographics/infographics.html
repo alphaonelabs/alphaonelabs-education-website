@@ -16,57 +16,68 @@
         Click on any card to reveal an interesting fact.
       </p>
     </div>
-    <!-- Loading State -->
-    <div id="loading-indicator" class="flex justify-center items-center py-20">
-      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+    <!-- loading State -->
+    <div id="loading-indicator"
+         class="flex justify-center items-center py-20"
+         aria-busy="true">
+      <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"
+           aria-label="Loading"></div>
     </div>
-    <!-- Error State -->
+    <!-- error State -->
     <div id="error-message"
+         role="alert"
          class="hidden bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-6">
       <p class="font-medium">Something went wrong!</p>
       <p class="text-sm" id="error-details">We couldn't load the facts at this time. Please try again later.</p>
     </div>
     <div id="subjects-grid"
-         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-      <!-- dynamic insertion of cards -->
-    </div>
+         class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+         aria-label="Subject facts grid"></div>
   </main>
   <template id="subject-card-template">
     <div class="subject-card relative overflow-hidden border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg transition-all duration-500 ease-in-out bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 hover:shadow-xl hover:scale-[1.02]">
       <div class="card-front p-6 h-full flex flex-col">
-        <i class="subject-icon text-4xl mb-4"></i>
+        <i class="subject-icon text-4xl mb-4" aria-hidden="true"></i>
         <h3 class="subject-name text-xl font-bold mb-3 text-gray-800 dark:text-gray-100"></h3>
         <p class="text-gray-600 dark:text-gray-300 mb-6">
           Discover surprising facts about <span class="subject-name-inline"></span> that you might not have learned in class.
         </p>
         <!-- reveal button -->
         <div class="mt-auto">
-          <button class="reveal-fact-btn bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md flex items-center justify-center w-full transition-colors duration-200 group">
-            <i class="fas fa-magic mr-2"></i>
+          <button class="reveal-fact-btn bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-md flex items-center justify-center w-full transition-colors duration-200 group"
+                  aria-label="Reveal fact about this subject">
+            <i class="fas fa-magic mr-2" aria-hidden="true"></i>
             Tap to reveal a fact
           </button>
         </div>
       </div>
-      <div class="card-back absolute inset-0 bg-white dark:bg-gray-800 p-6 transform translate-y-full opacity-0 transition-all duration-500 ease-in-out flex flex-col">
+      <div class="card-back absolute inset-0 bg-white dark:bg-gray-800 p-6 transform translate-y-full opacity-0 transition-all duration-500 ease-in-out flex flex-col"
+           aria-live="polite"
+           role="region">
         <div class="flex justify-between items-start mb-4">
           <h3 class="fact-subject text-xl font-bold text-gray-800 dark:text-gray-100"></h3>
-          <button class="close-fact-btn text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
-            <i class="fas fa-times"></i>
+          <button class="close-fact-btn text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                  aria-label="Close fact">
+            <i class="fas fa-times" aria-hidden="true"></i>
           </button>
         </div>
         <div class="flex-1 flex items-center justify-center">
           <div class="fact-content-wrapper">
-            <div class="fact-loading animate-pulse flex flex-col items-center">
+            <div class="fact-loading animate-pulse flex flex-col items-center"
+                 aria-label="Loading fact"
+                 role="status">
               <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
               <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2"></div>
               <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+              <span class="sr-only">Loading fact...</span>
             </div>
             <p class="fact-text hidden text-gray-800 dark:text-gray-200 text-lg font-medium text-center"></p>
           </div>
         </div>
         <div class="mt-4 text-center">
-          <button class="another-fact-btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors duration-200">
-            <i class="fas fa-random mr-2"></i>
+          <button class="another-fact-btn bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md transition-colors duration-200"
+                  aria-label="Show another fact about this subject">
+            <i class="fas fa-random mr-2" aria-hidden="true"></i>
             Another Fact
           </button>
         </div>
@@ -81,7 +92,6 @@
           const errorDetails = document.getElementById('error-details');
           const cardTemplate = document.getElementById('subject-card-template');
 
-          // error handling
           function showError(message) {
               loadingIndicator.classList.add('hidden');
               errorMessage.classList.remove('hidden');
@@ -91,17 +101,30 @@
           // icon for subject, default to lightbulb
           function getSubjectIcon(subjectName) {
               const name = subjectName.toLowerCase();
-              if (name.includes('math')) return 'fa-solid fa-square-root-variable text-indigo-500 dark:text-indigo-400';
-              if (name.includes('physics')) return 'fa-solid fa-atom text-blue-500 dark:text-blue-400';
-              if (name.includes('chem')) return 'fa-solid fa-flask text-purple-500 dark:text-purple-400';
-              if (name.includes('bio')) return 'fa-solid fa-dna text-green-500 dark:text-green-400';
-              if (name.includes('computer') || name.includes('coding') || name.includes('program')) return 'fa-solid fa-code text-teal-500 dark:text-teal-400';
-              if (name.includes('history')) return 'fa-solid fa-landmark text-amber-500 dark:text-amber-400';
-              if (name.includes('business') || name.includes('market')) return 'fa-solid fa-chart-line text-blue-500 dark:text-blue-400';
-              if (name.includes('design') || name.includes('art')) return 'fa-solid fa-paintbrush text-pink-500 dark:text-pink-400';
-              if (name.includes('music')) return 'fa-solid fa-music text-yellow-500 dark:text-yellow-400';
-              if (name.includes('science')) return 'fa-solid fa-flask text-green-500 dark:text-green-400';
-              if (name.includes('language') || name.includes('english') || name.includes('lit')) return 'fa-solid fa-book text-orange-500 dark:text-orange-400';
+              const iconMap = {
+                  'math': 'fa-solid fa-square-root-variable text-indigo-500 dark:text-indigo-400',
+                  'physics': 'fa-solid fa-atom text-blue-500 dark:text-blue-400',
+                  'chem': 'fa-solid fa-flask text-purple-500 dark:text-purple-400',
+                  'bio': 'fa-solid fa-dna text-green-500 dark:text-green-400',
+                  'computer': 'fa-solid fa-code text-teal-500 dark:text-teal-400',
+                  'coding': 'fa-solid fa-code text-teal-500 dark:text-teal-400',
+                  'program': 'fa-solid fa-code text-teal-500 dark:text-teal-400',
+                  'history': 'fa-solid fa-landmark text-amber-500 dark:text-amber-400',
+                  'business': 'fa-solid fa-chart-line text-blue-500 dark:text-blue-400',
+                  'market': 'fa-solid fa-chart-line text-blue-500 dark:text-blue-400',
+                  'design': 'fa-solid fa-paintbrush text-pink-500 dark:text-pink-400',
+                  'art': 'fa-solid fa-paintbrush text-pink-500 dark:text-pink-400',
+                  'music': 'fa-solid fa-music text-yellow-500 dark:text-yellow-400',
+                  'science': 'fa-solid fa-flask text-green-500 dark:text-green-400',
+                  'language': 'fa-solid fa-book text-orange-500 dark:text-orange-400',
+                  'english': 'fa-solid fa-book text-orange-500 dark:text-orange-400',
+                  'lit': 'fa-solid fa-book text-orange-500 dark:text-orange-400'
+              };
+              for (const [keyword, iconClass] of Object.entries(iconMap)) {
+                  if (name.includes(keyword)) {
+                      return iconClass;
+                  }
+              }
               return 'fa-solid fa-lightbulb text-amber-500 dark:text-amber-400';
           }
 
@@ -128,68 +151,62 @@
                       const subjectName = card.querySelector('.subject-name');
                       const subjectNameInline = card.querySelector('.subject-name-inline');
                       const factSubject = card.querySelector('.fact-subject');
+                      const revealBtn = card.querySelector('.reveal-fact-btn');
 
                       subjectIcon.className = `${getSubjectIcon(subject.name)} ${subjectIcon.className}`;
                       subjectName.textContent = subject.name;
                       subjectNameInline.textContent = subject.name;
                       factSubject.textContent = subject.name;
+                      revealBtn.setAttribute('aria-label', `Reveal fact about ${subject.name}`);
+                      card.setAttribute('aria-label', `${subject.name} facts card`);
 
                       card.dataset.subjectId = subject.id;
 
-                      const revealBtn = card.querySelector('.reveal-fact-btn');
                       const closeBtn = card.querySelector('.close-fact-btn');
                       const anotherBtn = card.querySelector('.another-fact-btn');
                       const cardBack = card.querySelector('.card-back');
                       const factLoading = card.querySelector('.fact-loading');
                       const factText = card.querySelector('.fact-text');
+                      anotherBtn.setAttribute('aria-label', `Show another fact about ${subject.name}`);
+                      async function fetchAndDisplayFact(forceNew = false) {
+                          factText.classList.add('hidden');
+                          factLoading.classList.remove('hidden');
+                          cardBack.setAttribute('aria-busy', 'true');
+
+                          try {
+                              const fact = await fetchFactForSubject(subject.id, forceNew);
+                              factLoading.classList.add('hidden');
+                              factText.textContent = fact;
+                              factText.classList.remove('hidden');
+                              cardBack.setAttribute('aria-busy', 'false');
+                          } catch (error) {
+                              factLoading.classList.add('hidden');
+                              factText.textContent = "Couldn't load a fact right now. Please try again.";
+                              factText.classList.remove('hidden');
+                              cardBack.setAttribute('aria-busy', 'false');
+                              console.error('Error fetching fact:', error);
+                          }
+                      }
 
                       revealBtn.addEventListener('click', () => {
                           cardBack.classList.remove('translate-y-full', 'opacity-0');
                           cardBack.classList.add('translate-y-0', 'opacity-100');
-
-                          factLoading.classList.remove('hidden');
-                          factText.classList.add('hidden');
-
-                          // fetch a fact for this subject
-                          fetchFactForSubject(subject.id)
-                              .then(fact => {
-                                  factLoading.classList.add('hidden');
-                                  factText.textContent = fact;
-                                  factText.classList.remove('hidden');
-                              })
-                              .catch(error => {
-                                  factLoading.classList.add('hidden');
-                                  factText.textContent = "Couldn't load a fact right now. Please try again.";
-                                  factText.classList.remove('hidden');
-                                  console.error('Error fetching fact:', error);
-                              });
+                          fetchAndDisplayFact(false);
+                          cardBack.setAttribute('aria-hidden', 'false');
+                          card.querySelector('.card-front').setAttribute('aria-hidden', 'true');
                       });
 
                       closeBtn.addEventListener('click', (e) => {
                           e.stopPropagation();
                           cardBack.classList.add('translate-y-full', 'opacity-0');
                           cardBack.classList.remove('translate-y-0', 'opacity-100');
+                          cardBack.setAttribute('aria-hidden', 'true');
+                          card.querySelector('.card-front').setAttribute('aria-hidden', 'false');
                       });
 
                       anotherBtn.addEventListener('click', (e) => {
                           e.stopPropagation();
-
-                          factText.classList.add('hidden');
-                          factLoading.classList.remove('hidden');
-
-                          // fetch a new fact for this subject
-                          fetchFactForSubject(subject.id, true)
-                              .then(fact => {
-                                  factLoading.classList.add('hidden');
-                                  factText.textContent = fact;
-                                  factText.classList.remove('hidden');
-                              })
-                              .catch(error => {
-                                  factLoading.classList.add('hidden');
-                                  factText.textContent = "Couldn't load a fact right now. Please try again.";
-                                  factText.classList.remove('hidden');
-                                  console.error('Error fetching fact:', error);
-                              });
+                          fetchAndDisplayFact(true);
                       });
 
                       subjectsGrid.appendChild(card);

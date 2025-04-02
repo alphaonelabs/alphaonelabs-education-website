@@ -6974,11 +6974,11 @@ def api_get_subjects(request):
         return JsonResponse({"subjects": list(subjects)})
     except Subject.DoesNotExist:
         return JsonResponse({"error": "No subjects found"}, status=404)
-    except DatabaseError as e:
-        logger.error(f"Database error when fetching subjects: {e}")
+    except DatabaseError:
+        logger.exception("Database error when fetching subjects")
         return JsonResponse({"error": "Database error occurred"}, status=500)
-    except Exception as e:
-        logger.exception(f"Unexpected error when fetching subjects, exception {e}")
+    except Exception:
+        logger.exception("Unexpected error when fetching subjects")
         return JsonResponse({"error": "An unexpected error occurred"}, status=500)
 
 
@@ -7017,8 +7017,8 @@ def api_get_subject_fact(request, subject_id):
         return JsonResponse({"fact": fact})
     except Subject.DoesNotExist:
         return JsonResponse({"error": "Subject not found"}, status=404)
-    except Exception as e:
-        print(f"Error generating fact with Gemini: {str(e)}")
+    except Exception:
+        logger.exception(f"Error generating fact with Gemini for subject_id: {subject_id}")
         return JsonResponse({"fact": get_fallback_fact(subject.name)})
 
 
@@ -7027,6 +7027,8 @@ def generate_fact_for_subject(subject_name):
     try:
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Gemini API key not found, using fallback fact for {subject_name}")
             return get_fallback_fact(subject_name)
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel("gemini-1.5-flash")
@@ -7051,9 +7053,9 @@ def generate_fact_for_subject(subject_name):
         Respond with ONLY the fact, no prefixes like "Did you know:" or similar."""
         response = model.generate_content(prompt, generation_config={"temperature": 0.9})
         return response.text.strip()
-    except Exception as e:
+    except Exception:
         logger = logging.getLogger(__name__)
-        logger.exception(f"Error generating fact with Gemini for subject '{subject_name}, exception {e}'")
+        logger.exception(f"Error generating fact with Gemini for subject '{subject_name}'")
         return get_fallback_fact(subject_name)
 
 
