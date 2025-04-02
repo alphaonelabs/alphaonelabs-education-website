@@ -812,6 +812,23 @@
           <a href="{% if latest_post %}{% url 'blog_detail' latest_post.slug %}{% else %}{% url 'blog_list' %}{% endif %}"
              class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block mt-2">Read More →</a>
         </div>
+        <!-- Infographics Section -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/30 dark:to-purple-900/30">
+          <h2 class="text-lg font-semibold mb-2 flex items-center">
+            <i class="fa-solid fa-brain text-indigo-600 dark:text-indigo-400 mr-2"></i>
+            Fascinating Facts
+          </h2>
+          <p class="text-sm text-gray-700 dark:text-gray-300 mb-3">
+            Explore interesting facts about different subjects that might surprise you!
+          </p>
+          <a href="{% url 'infographics' %}"
+             class="block w-full bg-indigo-500 hover:bg-indigo-600 text-white text-center py-2.5 px-4 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg">
+            <div class="flex items-center justify-center">
+              <i class="fas fa-lightbulb mr-2"></i>
+              <span>Discover Amazing Facts</span>
+            </div>
+          </a>
+        </div>
         <!-- Success Stories -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
           <h2 class="text-lg font-semibold mb-2 flex items-center">

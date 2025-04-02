@@ -4,6 +4,7 @@ import string
 import time
 import uuid
 from io import BytesIO
+from typing import Optional
 
 from allauth.account.signals import user_signed_up
 from django.conf import settings
@@ -201,6 +202,7 @@ class Subject(models.Model):
     order = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    facts = models.JSONField(default=list, blank=True, help_text="List of facts about this subject")
 
     class Meta:
         ordering = ["order", "name"]
@@ -212,6 +214,25 @@ class Subject(models.Model):
         if not self.slug:
             self.slug = slugify(self.name)
         super().save(*args, **kwargs)
+
+    def add_fact(self, fact_text: str) -> bool:
+        if not self.facts:
+            self.facts = []
+        for fact in self.facts:
+            if fact.get("text") == fact_text:
+                return False
+        from django.utils import timezone
+
+        self.facts.append({"text": fact_text, "generated_at": timezone.now().isoformat()})
+        self.save(update_fields=["facts"])
+        return True
+
+    def get_random_fact(self) -> Optional[str]:
+        import random
+
+        if self.facts:
+            return random.choice(self.facts)["text"]
+        return None
 
 
 class WebRequest(models.Model):
