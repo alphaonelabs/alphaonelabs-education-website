@@ -7,6 +7,8 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
+ssh-keygen -R "$PRIMARY_VPS_IP" &> /dev/null
+
 # Load variables from .env.production
 ENV_FILE="$PROJECT_ROOT/.env.production"
 [ -f "$ENV_FILE" ] && source "$ENV_FILE"
