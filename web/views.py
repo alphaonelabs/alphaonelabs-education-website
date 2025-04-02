@@ -4,8 +4,8 @@ import ipaddress
 import json
 import logging
 import os
-import random
 import re
+import secrets
 import shutil
 import socket
 import subprocess
@@ -6956,7 +6956,7 @@ def delete_post(request, post_id):
 # infographics
 
 
-def infographics(request):
+def infographics(request) -> HttpResponse:
     """Display interesting facts about different subjects."""
     subjects = Subject.objects.all().order_by("order", "name")
 
@@ -6982,7 +6982,7 @@ def api_get_subjects(request):
         return JsonResponse({"error": "An unexpected error occurred"}, status=500)
 
 
-def api_get_subject_fact(request, subject_id):
+def api_get_subject_fact(request, subject_id: int) -> JsonResponse:
     """API endpoint to get a fact for a specific subject."""
     try:
         subject = Subject.objects.get(id=subject_id)
@@ -6992,9 +6992,7 @@ def api_get_subject_fact(request, subject_id):
         if not force_new and subject.facts:
             available_facts = [fact for fact in subject.facts if fact["text"] not in recent_facts]
             if available_facts:
-                import random
-
-                chosen_fact = random.choice(available_facts)
+                chosen_fact = available_facts[secrets.randbelow(len(available_facts))]
                 recent_facts.append(chosen_fact["text"])
                 request.session[f"recent_facts_{subject_id}"] = recent_facts[-5:]  # only recent 5
                 request.session.modified = True
@@ -7009,17 +7007,17 @@ def api_get_subject_fact(request, subject_id):
             request.session[f"recent_facts_{subject_id}"] = recent_facts[-5:]
             request.session.modified = True
 
-        except Exception as e:
+        except Exception:
             logger = logging.getLogger(__name__)
-            logger.error(f"Error saving fact: {str(e)}")
+            logger.exception("Error saving fact for subject")
             # Still return the generated fact even if we couldn't save it
 
         return JsonResponse({"fact": fact})
     except Subject.DoesNotExist:
         return JsonResponse({"error": "Subject not found"}, status=404)
     except Exception:
-        logger.exception(f"Error generating fact with Gemini for subject_id: {subject_id}")
-        return JsonResponse({"fact": get_fallback_fact(subject.name)})
+        subject_name = getattr(subject, "name", "General") if "subject" in locals() else "General"
+        return JsonResponse({"fact": get_fallback_fact(subject_name)})
 
 
 def generate_fact_for_subject(subject_name):
@@ -7059,7 +7057,7 @@ def generate_fact_for_subject(subject_name):
         return get_fallback_fact(subject_name)
 
 
-def get_fallback_fact(subject_name):
+def get_fallback_fact(subject_name: str) -> str:
     """Return a fallback fact if the API call fails."""
     # defaults
     subject_facts = {
@@ -7114,7 +7112,7 @@ def get_fallback_fact(subject_name):
     for key in subject_facts:
         if key.lower() in subject_name_lower:
             facts = subject_facts[key]
-            return random.choice(facts)
+            return facts[secrets.randbelow(len(facts))]
 
     # return a random default fact
-    return random.choice(default_facts)
+    return default_facts[secrets.randbelow(len(default_facts))]
