@@ -81,51 +81,11 @@ fi"
 # Django migrations and static files
 run_remote "cd /home/$PRIMARY_VPS_USER/$PROJECT_NAME && \
 source venv/bin/activate && \
-export POSTGRES_DB=$PRIMARY_DB_NAME && \
-export POSTGRES_USER=$PRIMARY_DB_USER && \
-export POSTGRES_PASSWORD=$PRIMARY_DB_PASSWORD && \
-export POSTGRES_HOST=localhost && \
 export DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE && \
-export ALLOWED_HOSTS=\"$PRIMARY_DOMAIN_NAME $PRIMARY_VPS_IP localhost 127.0.0.1\" && \
-export DEBUG=False && \
 export DATABASE_URL=\"postgres://$PRIMARY_DB_USER:$PRIMARY_DB_PASSWORD@localhost:5432/$PRIMARY_DB_NAME\" && \
 
-# Create a local_settings.py file to override settings
-cat > /home/$PRIMARY_VPS_USER/$PROJECT_NAME/web/local_settings.py << 'SETTINGS_EOF'
-import os
-
-DEBUG = False
-
-ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost 127.0.0.1').split()
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('POSTGRES_DB', ''),
-        'USER': os.environ.get('POSTGRES_USER', ''),
-        'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
-        'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
-        'PORT': '5432',
-    }
-}
-
-CSRF_TRUSTED_ORIGINS = ['http://' + host for host in ALLOWED_HOSTS] + ['https://' + host for host in ALLOWED_HOSTS]
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SETTINGS_EOF
-
-# Ensure settings.py imports local_settings.py
-if ! grep -q 'local_settings' /home/$PRIMARY_VPS_USER/$PROJECT_NAME/web/settings.py; then
-    cat >> /home/$PRIMARY_VPS_USER/$PROJECT_NAME/web/settings.py << 'IMPORT_EOF'
-
-# Import local settings (must be at the end of the file)
-try:
-    from .local_settings import *
-except ImportError:
-    pass
-IMPORT_EOF
-fi
-
-python manage.py migrate --noinput && python manage.py collectstatic --noinput"
+python manage.py migrate --noinput
+python manage.py collectstatic --noinput"
 
 # Create Nginx configuration
 run_remote "
@@ -137,7 +97,7 @@ server {
     location = /favicon.ico { access_log off; log_not_found off; }
 
     location /static/ {
-        root PROJECT_ROOT_PLACEHOLDER;
+        alias PROJECT_ROOT_PLACEHOLDER/staticfiles/;
         expires 30d;
     }
 
@@ -182,10 +142,6 @@ Environment=\"DJANGO_SETTINGS_MODULE=DJANGO_SETTINGS_MODULE_PLACEHOLDER\"
 Environment=\"ALLOWED_HOSTS=SERVER_NAME_PLACEHOLDER localhost 127.0.0.1\"
 Environment=\"DEBUG=False\"
 Environment=\"DATABASE_URL=postgres://DB_USER_PLACEHOLDER:DB_PASSWORD_PLACEHOLDER@localhost:5432/DB_NAME_PLACEHOLDER\"
-Environment=\"POSTGRES_DB=DB_NAME_PLACEHOLDER\"
-Environment=\"POSTGRES_USER=DB_USER_PLACEHOLDER\"
-Environment=\"POSTGRES_PASSWORD=DB_PASSWORD_PLACEHOLDER\"
-Environment=\"POSTGRES_HOST=localhost\"
 
 [Install]
 WantedBy=multi-user.target
