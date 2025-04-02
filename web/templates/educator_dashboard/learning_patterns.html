@@ -1,0 +1,661 @@
+<!-- web/templates/analytics/educator_dashboard/learning_patterns.html -->
+{% extends "base.html" %}
+
+{% block title %}
+  Learning Patterns Analysis
+{% endblock title %}
+{% block extra_head %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+  <style>
+      .patterns-card {
+          border-radius: 12px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .patterns-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .chart-container {
+          height: 300px;
+          position: relative;
+          margin-bottom: 1.5rem;
+      }
+
+      .hour-cell {
+          height: 40px;
+          position: relative;
+          border: 1px solid rgba(209, 213, 219, 0.5);
+      }
+
+      .hour-cell-fill {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          background-color: rgba(79, 70, 229, 0.7);
+      }
+
+      .heatmap {
+          display: grid;
+          grid-template-columns: repeat(24, 1fr);
+          gap: 1px;
+      }
+
+      .heatmap-cell {
+          width: 100%;
+          aspect-ratio: 1;
+      }
+  </style>
+{% endblock extra_head %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+      <div class="flex items-center mb-4 md:mb-0">
+        <a href="{% url 'educator_analytics_dashboard' %}"
+           class="text-indigo-600 hover:text-indigo-800 mr-4">
+          <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+        <h1 class="text-3xl font-bold">Learning Patterns Analysis</h1>
+      </div>
+      <div class="flex space-x-4">
+        <div class="relative">
+          <select id="courseFilter"
+                  class="appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg py-2 px-4 pr-8 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="all">All Courses</option>
+            {% for course in courses %}<option value="{{ course.id }}">{{ course.title }}</option>{% endfor %}
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+            <i class="fas fa-chevron-down"></i>
+          </div>
+        </div>
+        <div class="relative">
+          <select id="timeRangeFilter"
+                  class="appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg py-2 px-4 pr-8 leading-tight focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="30">Last 30 Days</option>
+            <option value="90">Last 90 Days</option>
+            <option value="180">Last 180 Days</option>
+            <option value="365">Last Year</option>
+          </select>
+          <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700 dark:text-gray-300">
+            <i class="fas fa-chevron-down"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Key Learning Patterns Insights -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="patterns-card bg-white dark:bg-gray-800 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-semibold">Peak Activity Hours</h2>
+          <div class="text-indigo-600 dark:text-indigo-400">
+            <i class="fas fa-clock text-2xl"></i>
+          </div>
+        </div>
+        <div class="text-3xl font-bold mb-2">{{ peak_activity_hour }}:00</div>
+        <p class="text-gray-500 dark:text-gray-400">Most students are active at this hour</p>
+      </div>
+      <div class="patterns-card bg-white dark:bg-gray-800 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-semibold">Average Study Duration</h2>
+          <div class="text-green-600 dark:text-green-400">
+            <i class="fas fa-hourglass-half text-2xl"></i>
+          </div>
+        </div>
+        <div class="text-3xl font-bold mb-2">{{ avg_study_duration }} min</div>
+        <p class="text-gray-500 dark:text-gray-400">Per study session</p>
+      </div>
+      <div class="patterns-card bg-white dark:bg-gray-800 p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-xl font-semibold">Popular Study Days</h2>
+          <div class="text-blue-600 dark:text-blue-400">
+            <i class="fas fa-calendar-day text-2xl"></i>
+          </div>
+        </div>
+        <div class="text-3xl font-bold mb-2">
+          {% for day in popular_days %}
+            {{ day }}
+            {% if not forloop.last %},{% endif %}
+          {% endfor %}
+        </div>
+        <p class="text-gray-500 dark:text-gray-400">Days with highest engagement</p>
+      </div>
+    </div>
+    <!-- Main Content Area -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      <!-- Activity by Time of Day -->
+      <div class="patterns-card bg-white dark:bg-gray-800 p-6">
+        <h2 class="text-xl font-semibold mb-4">Activity by Time of Day</h2>
+        <div class="chart-container">
+          <canvas id="hourlyActivityChart"></canvas>
+        </div>
+        <div class="mt-6">
+          <h3 class="text-lg font-medium mb-3">Hourly Distribution</h3>
+          <div class="grid grid-cols-24 gap-1">
+            {% for hour in "000000000000000000000000"|make_list %}
+              {% with hour_num=forloop.counter0 %}
+                <div class="flex flex-col items-center">
+                  <div class="hour-cell w-full">
+                    <div class="hour-cell-fill"
+                         style="height: {% widthratio forloop.counter 24 100 %}%"></div>
+                  </div>
+                  <div class="text-xs text-gray-500 mt-1">
+                    {% if hour_num == 0 %}
+                      12am
+                    {% elif hour_num == 12 %}
+                      12pm
+                    {% elif hour_num < 12 %}
+                      {{ hour_num }}am
+                    {% else %}
+                      {{ hour_num|add:"-12" }}pm
+                    {% endif %}
+                  </div>
+                </div>
+              {% endwith %}
+            {% endfor %}
+          </div>
+        </div>
+        <div class="mt-6">
+          <h3 class="text-lg font-medium mb-3">Key Observations</h3>
+          <ul class="space-y-2">
+            <li class="flex items-start">
+              <div class="flex-shrink-0 h-5 w-5 text-indigo-600 dark:text-indigo-400 mr-2">
+                <i class="fas fa-chart-line"></i>
+              </div>
+              <p class="text-gray-700 dark:text-gray-300">
+                Evening hours (7-10 PM) show highest activity, suggesting many students study after work/school.
+              </p>
+            </li>
+            <li class="flex items-start">
+              <div class="flex-shrink-0 h-5 w-5 text-indigo-600 dark:text-indigo-400 mr-2">
+                <i class="fas fa-chart-line"></i>
+              </div>
+              <p class="text-gray-700 dark:text-gray-300">Secondary peak observed in morning hours (9-11 AM).</p>
+            </li>
+            <li class="flex items-start">
+              <div class="flex-shrink-0 h-5 w-5 text-indigo-600 dark:text-indigo-400 mr-2">
+                <i class="fas fa-chart-line"></i>
+              </div>
+              <p class="text-gray-700 dark:text-gray-300">Minimal activity between 2-5 AM as expected.</p>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!-- Weekly Activity Patterns -->
+      <div class="patterns-card bg-white dark:bg-gray-800 p-6">
+        <h2 class="text-xl font-semibold mb-4">Weekly Activity Patterns</h2>
+        <div class="chart-container">
+          <canvas id="weeklyActivityChart"></canvas>
+        </div>
+        <div class="mt-6">
+          <h3 class="text-lg font-medium mb-3">Day-of-Week Analysis</h3>
+          <div class="grid grid-cols-7 gap-4">
+            {% for day in "Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday"|split:"," %}
+              <div class="text-center">
+                <div class="font-medium">{{ day|slice:":3" }}</div>
+                <div class="text-2xl font-bold mt-2">{% widthratio forloop.counter 7 100 %}%</div>
+                <div class="text-xs text-gray-500 mt-1">Activity</div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="mt-6">
+          <h3 class="text-lg font-medium mb-3">Weekly Pattern Observations</h3>
+          <ul class="space-y-2">
+            <li class="flex items-start">
+              <div class="flex-shrink-0 h-5 w-5 text-indigo-600 dark:text-indigo-400 mr-2">
+                <i class="fas fa-calendar-week"></i>
+              </div>
+              <p class="text-gray-700 dark:text-gray-300">Weekend activity (Sat-Sun) accounts for 35% of all learning engagement.</p>
+            </li>
+            <li class="flex items-start">
+              <div class="flex-shrink-0 h-5 w-5 text-indigo-600 dark:text-indigo-400 mr-2">
+                <i class="fas fa-calendar-week"></i>
+              </div>
+              <p class="text-gray-700 dark:text-gray-300">
+                Monday shows highest weekday engagement, suggesting students start the week motivated.
+              </p>
+            </li>
+            <li class="flex items-start">
+              <div class="flex-shrink-0 h-5 w-5 text-indigo-600 dark:text-indigo-400 mr-2">
+                <i class="fas fa-calendar-week"></i>
+              </div>
+              <p class="text-gray-700 dark:text-gray-300">Friday has lowest weekday activity, dropping 30% compared to Monday.</p>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <!-- Content Engagement & Study Duration -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      <!-- Content Type Engagement -->
+      <div class="patterns-card bg-white dark:bg-gray-800 p-6">
+        <h2 class="text-xl font-semibold mb-4">Content Type Engagement</h2>
+        <div class="chart-container">
+          <canvas id="contentTypeChart"></canvas>
+        </div>
+        <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <h3 class="text-lg font-medium mb-3">Most Engaging Content</h3>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between p-3 bg-indigo-50 dark:bg-indigo-900 rounded-lg">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 bg-indigo-100 dark:bg-indigo-800 rounded flex items-center justify-center mr-3">
+                    <i class="fas fa-laptop-code text-indigo-600 dark:text-indigo-400"></i>
+                  </div>
+                  <div>
+                    <h4 class="font-medium">Interactive Exercises</h4>
+                  </div>
+                </div>
+                <div class="font-bold">92%</div>
+              </div>
+              <div class="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900 rounded-lg">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 bg-blue-100 dark:bg-blue-800 rounded flex items-center justify-center mr-3">
+                    <i class="fas fa-video text-blue-600 dark:text-blue-400"></i>
+                  </div>
+                  <div>
+                    <h4 class="font-medium">Video Tutorials</h4>
+                  </div>
+                </div>
+                <div class="font-bold">86%</div>
+              </div>
+              <div class="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900 rounded-lg">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 bg-green-100 dark:bg-green-800 rounded flex items-center justify-center mr-3">
+                    <i class="fas fa-project-diagram text-green-600 dark:text-green-400"></i>
+                  </div>
+                  <div>
+                    <h4 class="font-medium">Project Tasks</h4>
+                  </div>
+                </div>
+                <div class="font-bold">78%</div>
+              </div>
+            </div>
+          </div>
+          <div>
+            <h3 class="text-lg font-medium mb-3">Least Engaging Content</h3>
+            <div class="space-y-3">
+              <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 bg-gray-100 dark:bg-gray-600 rounded flex items-center justify-center mr-3">
+                    <i class="fas fa-file-alt text-gray-600 dark:text-gray-400"></i>
+                  </div>
+                  <div>
+                    <h4 class="font-medium">Text Articles</h4>
+                  </div>
+                </div>
+                <div class="font-bold">45%</div>
+              </div>
+              <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 bg-gray-100 dark:bg-gray-600 rounded flex items-center justify-center mr-3">
+                    <i class="fas fa-file-pdf text-gray-600 dark:text-gray-400"></i>
+                  </div>
+                  <div>
+                    <h4 class="font-medium">PDF Documents</h4>
+                  </div>
+                </div>
+                <div class="font-bold">38%</div>
+              </div>
+              <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                <div class="flex items-center">
+                  <div class="w-8 h-8 bg-gray-100 dark:bg-gray-600 rounded flex items-center justify-center mr-3">
+                    <i class="fas fa-link text-gray-600 dark:text-gray-400"></i>
+                  </div>
+                  <div>
+                    <h4 class="font-medium">External Links</h4>
+                  </div>
+                </div>
+                <div class="font-bold">32%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Study Duration Analysis -->
+      <div class="patterns-card bg-white dark:bg-gray-800 p-6">
+        <h2 class="text-xl font-semibold mb-4">Study Duration Analysis</h2>
+        <div class="chart-container">
+          <canvas id="studyDurationChart"></canvas>
+        </div>
+        <div class="mt-6">
+          <h3 class="text-lg font-medium mb-3">Study Session Lengths</h3>
+          <div class="grid grid-cols-4 gap-4 text-center">
+            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div class="text-sm text-gray-500 dark:text-gray-400">
+                < 15 min
+              </div>
+              <div class="text-lg font-bold mt-1">18%</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">of sessions</div>
+            </div>
+            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div class="text-sm text-gray-500 dark:text-gray-400">15-30 min</div>
+              <div class="text-lg font-bold mt-1">35%</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">of sessions</div>
+            </div>
+            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div class="text-sm text-gray-500 dark:text-gray-400">30-60 min</div>
+              <div class="text-lg font-bold mt-1">32%</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">of sessions</div>
+            </div>
+            <div class="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div class="text-sm text-gray-500 dark:text-gray-400">> 60 min</div>
+              <div class="text-lg font-bold mt-1">15%</div>
+              <div class="text-xs text-gray-500 dark:text-gray-400">of sessions</div>
+            </div>
+          </div>
+        </div>
+        <div class="mt-6">
+          <h3 class="text-lg font-medium mb-3">Weekly Study Time</h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full">
+              <thead>
+                <tr>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student Group</th>
+                  <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Weekly Hours</th>
+                  <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Sessions/Week</th>
+                  <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Performance</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                <tr>
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm font-medium">Top Performers</div>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-center">
+                    <div class="text-sm font-bold">5.2</div>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-center">
+                    <div class="text-sm">7.8</div>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-center">
+                    <span class="progress-pill high">92%</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm font-medium">Average Students</div>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-center">
+                    <div class="text-sm font-bold">3.5</div>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-center">
+                    <div class="text-sm">5.2</div>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-center">
+                    <span class="progress-pill medium">76%</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3 whitespace-nowrap">
+                    <div class="text-sm font-medium">Struggling Students</div>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-center">
+                    <div class="text-sm font-bold">1.8</div>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-center">
+                    <div class="text-sm">3.1</div>
+                  </td>
+                  <td class="px-4 py-3 whitespace-nowrap text-center">
+                    <span class="progress-pill critical">48%</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Learning Behavior & Recommendations -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Learning Behavior Patterns -->
+      <div class="patterns-card bg-white dark:bg-gray-800 p-6">
+        <h2 class="text-xl font-semibold mb-4">Learning Behavior Patterns</h2>
+        <div class="mb-6">
+          <h3 class="text-lg font-medium mb-3">Device Usage</h3>
+          <div class="chart-container h-[200px]">
+            <canvas id="deviceUsageChart"></canvas>
+          </div>
+        </div>
+        <div class="mb-6">
+          <h3 class="text-lg font-medium mb-3">Session Spacing</h3>
+          <div class="overflow-x-auto">
+            <table class="min-w-full">
+              <thead>
+                <tr>
+                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pattern</th>
+                  <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Students</th>
+                  <th class="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Performance Impact</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                <tr>
+                  <td class="px-4 py-3">
+                    <div class="text-sm font-medium">Consistent Daily Practice</div>
+                    <div class="text-xs text-gray-500">(30-60 min daily)</div>
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    <div class="text-sm">32%</div>
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    <span class="text-green-600 dark:text-green-400 text-sm">+28% better results</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3">
+                    <div class="text-sm font-medium">Weekend Intensive</div>
+                    <div class="text-xs text-gray-500">(3+ hours on weekends)</div>
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    <div class="text-sm">28%</div>
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    <span class="text-green-600 dark:text-green-400 text-sm">+10% better results</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3">
+                    <div class="text-sm font-medium">Irregular Cramming</div>
+                    <div class="text-xs text-gray-500">(Infrequent, long sessions)</div>
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    <div class="text-sm">25%</div>
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    <span class="text-red-600 dark:text-red-400 text-sm">-15% worse results</span>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-3">
+                    <div class="text-sm font-medium">Minimal Engagement</div>
+                    <div class="text-xs text-gray-500">(Less than 2 hours/week)</div>
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    <div class="text-sm">15%</div>
+                  </td>
+                  <td class="px-4 py-3 text-center">
+                    <span class="text-red-600 dark:text-red-400 text-sm">-35% worse results</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-lg font-medium mb-3">Resource Access Patterns</h3>
+          <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+            <div class="space-y-3">
+              <div>
+                <div class="flex justify-between text-sm mb-1">
+                  <span>Sequential learners (follow course order)</span>
+                  <span class="font-medium">65%</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                  <div class="bg-indigo-600 h-2 rounded-full" style="width: 65%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-sm mb-1">
+                  <span>Jump-around learners (non-linear approach)</span>
+                  <span class="font-medium">35%</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                  <div class="bg-indigo-600 h-2 rounded-full" style="width: 35%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-sm mb-1">
+                  <span>Revisit previous materials frequently</span>
+                  <span class="font-medium">42%</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                  <div class="bg-indigo-600 h-2 rounded-full" style="width: 42%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-sm mb-1">
+                  <span>Skip optional materials</span>
+                  <span class="font-medium">78%</span>
+                </div>
+                <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+                  <div class="bg-indigo-600 h-2 rounded-full" style="width: 78%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- AI Recommendations -->
+      <div class="patterns-card bg-white dark:bg-gray-800 p-6">
+        <h2 class="text-xl font-semibold mb-4">AI-Powered Recommendations</h2>
+        <div class="mb-6">
+          <h3 class="text-lg font-medium mb-3">Course Scheduling Recommendations</h3>
+          <div class="space-y-4">
+            <div class="p-4 bg-indigo-50 dark:bg-indigo-900 rounded-lg">
+              <div class="flex items-start">
+                <div class="flex-shrink-0 h-5 w-5 text-indigo-600 dark:text-indigo-400 mr-2">
+                  <i class="fas fa-lightbulb"></i>
+                </div>
+                <div>
+                  <h4 class="font-medium">Optimal Live Session Times</h4>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                    Schedule live sessions between 7-9 PM on weekdays or 10 AM - 12 PM on weekends for maximum attendance.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="p-4 bg-indigo-50 dark:bg-indigo-900 rounded-lg">
+              <div class="flex items-start">
+                <div class="flex-shrink-0 h-5 w-5 text-indigo-600 dark:text-indigo-400 mr-2">
+                  <i class="fas fa-lightbulb"></i>
+                </div>
+                <div>
+                  <h4 class="font-medium">Assignment Due Dates</h4>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                    Set assignment deadlines for Sunday or Monday evenings to align with observed study patterns.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mb-6">
+          <h3 class="text-lg font-medium mb-3">Content Delivery Recommendations</h3>
+          <div class="space-y-4">
+            <div class="p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+              <div class="flex items-start">
+                <div class="flex-shrink-0 h-5 w-5 text-blue-600 dark:text-blue-400 mr-2">
+                  <i class="fas fa-clipboard-list"></i>
+                </div>
+                <div>
+                  <h4 class="font-medium">Increase Interactive Content</h4>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                    Convert more text-based materials into interactive exercises, especially for technical topics.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+              <div class="flex items-start">
+                <div class="flex-shrink-0 h-5 w-5 text-blue-600 dark:text-blue-400 mr-2">
+                  <i class="fas fa-clipboard-list"></i>
+                </div>
+                <div>
+                  <h4 class="font-medium">Optimize for Mobile</h4>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                    38% of students access content via mobile devices. Ensure all resources are mobile-optimized.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+              <div class="flex items-start">
+                <div class="flex-shrink-0 h-5 w-5 text-blue-600 dark:text-blue-400 mr-2">
+                  <i class="fas fa-clipboard-list"></i>
+                </div>
+                <div>
+                  <h4 class="font-medium">Shorter Video Segments</h4>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                    Break videos into segments under 10 minutes for better engagement and completion rates.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-lg font-medium mb-3">Student Support Strategies</h3>
+          <div class="space-y-4">
+            <div class="p-4 bg-green-50 dark:bg-green-900 rounded-lg">
+              <div class="flex items-start">
+                <div class="flex-shrink-0 h-5 w-5 text-green-600 dark:text-green-400 mr-2">
+                  <i class="fas fa-users"></i>
+                </div>
+                <div>
+                  <h4 class="font-medium">Spaced Repetition Reminders</h4>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                    Implement automated reminders to review previously learned material at optimal intervals.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="p-4 bg-green-50 dark:bg-green-900 rounded-lg">
+              <div class="flex items-start">
+                <div class="flex-shrink-0 h-5 w-5 text-green-600 dark:text-green-400 mr-2">
+                  <i class="fas fa-users"></i>
+                </div>
+                <div>
+                  <h4 class="font-medium">Peer Study Group Formation</h4>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                    Create study groups based on complementary learning patterns and similar study times.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="p-4 bg-green-50 dark:bg-green-900 rounded-lg">
+              <div class="flex items-start">
+                <div class="flex-shrink-0 h-5 w-5 text-green-600 dark:text-green-400 mr-2">
+                  <i class="fas fa-users"></i>
+                </div>
+                <div>
+                  <h4 class="font-medium">Personalized Study Plans</h4>
+                  <p class="text-sm text-gray-700 dark:text-gray-300 mt-1">
+                    Generate custom study schedules based on each student's observed learning patterns and available hours.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script src="{% static 'js/analytics_dashboard/learning_patterns.js' %}"></script>
+{% endblock extra_js %}

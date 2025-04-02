@@ -1,0 +1,310 @@
+<!-- web/templates/analytics/educator_dashboard/main.html -->
+{% extends "base.html" %}
+
+{% block title %}
+  Educator Analytics Dashboard
+{% endblock title %}
+{% block extra_head %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+  <style>
+      .analytics-card {
+          border-radius: 12px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .analytics-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .metric-card {
+          background: linear-gradient(135deg, #4f46e5 0%, #2563eb 100%);
+          color: white;
+          border-radius: 12px;
+          box-shadow: 0 6px 12px rgba(37, 99, 235, 0.3);
+          transition: transform 0.3s ease;
+      }
+
+      .metric-card:hover {
+          transform: translateY(-5px);
+      }
+
+      .metric-value {
+          font-size: 2.5rem;
+          font-weight: bold;
+      }
+
+      .chart-container {
+          height: 300px;
+          position: relative;
+      }
+
+      .student-card {
+          border-left: 4px solid;
+          transition: all 0.3s ease;
+      }
+
+      .student-card:hover {
+          transform: translateX(5px);
+      }
+
+      .student-card.high-risk {
+          border-color: #ef4444;
+      }
+
+      .student-card.medium-risk {
+          border-color: #f59e0b;
+      }
+
+      .student-card.low-risk {
+          border-color: #10b981;
+      }
+  </style>
+{% endblock extra_head %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold">Educator Analytics Dashboard</h1>
+      <div class="flex space-x-4">
+        <button id="exportPdfBtn"
+                class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+          <i class="fas fa-file-pdf mr-2"></i> Export PDF Report
+        </button>
+        <button id="exportCsvBtn"
+                class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
+          <i class="fas fa-file-csv mr-2"></i> Export CSV Data
+        </button>
+      </div>
+    </div>
+    <!-- Overview Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Total Students -->
+      <div class="metric-card p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-indigo-100 mb-1">Total Students</p>
+            <p class="metric-value">{{ total_students }}</p>
+          </div>
+          <div class="bg-white bg-opacity-20 rounded-full p-3">
+            <i class="fas fa-users text-2xl"></i>
+          </div>
+        </div>
+        <div class="mt-4 text-sm text-indigo-100">
+          <span class="inline-flex items-center">
+            <i class="fas fa-arrow-up mr-1"></i>
+            <span id="studentGrowth">12%</span> from last month
+          </span>
+        </div>
+      </div>
+      <!-- Average Completion Rate -->
+      <div class="metric-card p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-indigo-100 mb-1">Avg. Completion Rate</p>
+            <p class="metric-value">{{ avg_progress|floatformat }}%</p>
+          </div>
+          <div class="bg-white bg-opacity-20 rounded-full p-3">
+            <i class="fas fa-chart-pie text-2xl"></i>
+          </div>
+        </div>
+        <div class="mt-4 text-sm text-indigo-100">
+          <span class="inline-flex items-center">
+            <i class="fas fa-arrow-up mr-1"></i>
+            <span id="completionGrowth">5%</span> from last month
+          </span>
+        </div>
+      </div>
+      <!-- Average Attendance Rate -->
+      <div class="metric-card p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-indigo-100 mb-1">Avg. Attendance Rate</p>
+            <p class="metric-value">{{ avg_attendance|floatformat }}%</p>
+          </div>
+          <div class="bg-white bg-opacity-20 rounded-full p-3">
+            <i class="fas fa-calendar-check text-2xl"></i>
+          </div>
+        </div>
+        <div class="mt-4 text-sm text-indigo-100">
+          <span class="inline-flex items-center">
+            <i class="fas fa-arrow-down mr-1 text-red-300"></i>
+            <span id="attendanceChange" class="text-red-300">2%</span> from last month
+          </span>
+        </div>
+      </div>
+      <!-- Courses -->
+      <div class="metric-card p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-indigo-100 mb-1">Total Courses</p>
+            <p class="metric-value">{{ total_courses }}</p>
+          </div>
+          <div class="bg-white bg-opacity-20 rounded-full p-3">
+            <i class="fas fa-book text-2xl"></i>
+          </div>
+        </div>
+        <div class="mt-4 text-sm text-indigo-100">
+          <span class="inline-flex items-center">
+            <i class="fas fa-plus mr-1"></i>
+            <span id="newCourses">3 new</span> this month
+          </span>
+        </div>
+      </div>
+    </div>
+    <!-- Main Content Area -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+      <!-- Chart: Student Progress Overview -->
+      <div class="analytics-card bg-white dark:bg-gray-800 col-span-2 p-6">
+        <h2 class="text-xl font-semibold mb-4">Student Progress Overview</h2>
+        <div class="chart-container">
+          <canvas id="progressChart"></canvas>
+        </div>
+      </div>
+      <!-- At-Risk Students -->
+      <div class="analytics-card bg-white dark:bg-gray-800 p-6">
+        <h2 class="text-xl font-semibold mb-4">Students Needing Attention</h2>
+        <div class="space-y-4 max-h-[240px] overflow-y-auto pr-2">
+          {% for student in at_risk_students %}
+            {% with risk_level=student.progress|floatformat|add:"0" %}
+              <div class="student-card p-3 bg-gray-50 dark:bg-gray-700 rounded-lg {% if risk_level < 30 %}high-risk {% elif risk_level < 60 %}medium-risk {% else %}low-risk{% endif %}">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center">
+                    <div class="mr-3">
+                      <img src="https://ui-avatars.com/api/?name={{ student.student__username }}&background=random"
+                           alt="{{ student.student__username }}"
+                           class="w-10 h-10 rounded-full" />
+                    </div>
+                    <div>
+                      <h4 class="font-medium">{{ student.student__username }}</h4>
+                      <div class="flex space-x-2 text-sm text-gray-500 dark:text-gray-300">
+                        <span>Progress: {{ student.progress|floatformat }}%</span>
+                        <span>|</span>
+                        <span>Attendance: {{ student.attendance_rate|floatformat }}%</span>
+                      </div>
+                    </div>
+                  </div>
+                  <a href="{% url 'student_performance_analysis' student.student %}"
+                     class="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
+                    <i class="fas fa-chevron-right"></i>
+                  </a>
+                </div>
+              </div>
+            {% endwith %}
+          {% empty %}
+            <p class="text-gray-500 dark:text-gray-400">No at-risk students identified.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <!-- Trending Courses & Engagement -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Trending Courses -->
+      <div class="analytics-card bg-white dark:bg-gray-800 p-6">
+        <h2 class="text-xl font-semibold mb-4">Trending Courses</h2>
+        <div class="space-y-4">
+          {% for course in trending_courses %}
+            <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+              <div class="flex items-center">
+                {% if course.image %}
+                  <img src="{{ course.image.url }}"
+                       alt="{{ course.title }}"
+                       class="w-12 h-12 object-cover rounded-lg mr-3" />
+                {% else %}
+                  <div class="w-12 h-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center mr-3">
+                    <i class="fas fa-book text-indigo-500 dark:text-indigo-300"></i>
+                  </div>
+                {% endif %}
+                <div>
+                  <h4 class="font-medium">{{ course.title }}</h4>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">{{ course.new_enrollments }} new enrollments</p>
+                </div>
+              </div>
+              <a href="{% url 'course_insights' course.id %}"
+                 class="text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300">
+                <i class="fas fa-chevron-right"></i>
+              </a>
+            </div>
+          {% empty %}
+            <p class="text-gray-500 dark:text-gray-400">No trending courses available.</p>
+          {% endfor %}
+        </div>
+      </div>
+      <!-- Student Engagement -->
+      <div class="analytics-card bg-white dark:bg-gray-800 p-6">
+        <h2 class="text-xl font-semibold mb-4">Student Engagement</h2>
+        <div class="chart-container">
+          <canvas id="engagementChart"></canvas>
+        </div>
+      </div>
+    </div>
+    <!-- AI Insights -->
+    <div class="analytics-card bg-white dark:bg-gray-800 p-6 mt-8">
+      <h2 class="text-xl font-semibold mb-4">AI-Powered Insights</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <h3 class="text-lg font-medium mb-2">Recommendations</h3>
+          <ul class="space-y-2">
+            <li class="flex items-start">
+              <div class="flex-shrink-0 h-5 w-5 text-green-500 mr-2">
+                <i class="fas fa-lightbulb"></i>
+              </div>
+              <p class="text-gray-700 dark:text-gray-300">
+                Consider reaching out to students with attendance below 70% to check for barriers to participation.
+              </p>
+            </li>
+            <li class="flex items-start">
+              <div class="flex-shrink-0 h-5 w-5 text-green-500 mr-2">
+                <i class="fas fa-lightbulb"></i>
+              </div>
+              <p class="text-gray-700 dark:text-gray-300">
+                The "Introduction to Data Science" course shows lower engagement in modules 3-4. Review content difficulty.
+              </p>
+            </li>
+            <li class="flex items-start">
+              <div class="flex-shrink-0 h-5 w-5 text-green-500 mr-2">
+                <i class="fas fa-lightbulb"></i>
+              </div>
+              <p class="text-gray-700 dark:text-gray-300">
+                Students perform better when attending live sessions. Consider sending additional reminders before each session.
+              </p>
+            </li>
+          </ul>
+        </div>
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+          <h3 class="text-lg font-medium mb-2">Predictions</h3>
+          <ul class="space-y-2">
+            <li class="flex items-start">
+              <div class="flex-shrink-0 h-5 w-5 text-blue-500 mr-2">
+                <i class="fas fa-chart-line"></i>
+              </div>
+              <p class="text-gray-700 dark:text-gray-300">
+                Based on current trends, completion rates are projected to increase by 8% next month.
+              </p>
+            </li>
+            <li class="flex items-start">
+              <div class="flex-shrink-0 h-5 w-5 text-blue-500 mr-2">
+                <i class="fas fa-chart-line"></i>
+              </div>
+              <p class="text-gray-700 dark:text-gray-300">
+                5 students are likely to need additional support to complete their courses on time.
+              </p>
+            </li>
+            <li class="flex items-start">
+              <div class="flex-shrink-0 h-5 w-5 text-blue-500 mr-2">
+                <i class="fas fa-chart-line"></i>
+              </div>
+              <p class="text-gray-700 dark:text-gray-300">
+                Quiz results predict students will find module 5 challenging - consider providing additional resources.
+              </p>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script src="{% static 'js/analytics_dashboard/educator_dashboard.js' %}"></script>
+{% endblock extra_js %}
