@@ -39,6 +39,7 @@ from django.db.models.functions import Coalesce
 from django.http import (
     FileResponse,
     Http404,
+    HttpRequest,
     HttpResponse,
     HttpResponseForbidden,
     JsonResponse,
@@ -6954,9 +6955,7 @@ def delete_post(request, post_id):
 
 
 # infographics
-
-
-def infographics(request) -> HttpResponse:
+def infographics(_request: HttpRequest) -> HttpResponse:
     """Display interesting facts about different subjects."""
     subjects = Subject.objects.all().order_by("order", "name")
 
@@ -6964,10 +6963,10 @@ def infographics(request) -> HttpResponse:
         "subjects": subjects,
     }
 
-    return render(request, "infographics/infographics.html", context)
+    return render(_request, "infographics/infographics.html", context)
 
 
-def api_get_subjects(request):
+def api_get_subjects(_request: HttpRequest) -> JsonResponse:
     """API endpoint to get all subject names."""
     try:
         subjects = Subject.objects.all().order_by("order", "name").values("id", "name")
@@ -6982,20 +6981,20 @@ def api_get_subjects(request):
         return JsonResponse({"error": "An unexpected error occurred"}, status=500)
 
 
-def api_get_subject_fact(request, subject_id: int) -> JsonResponse:
+def api_get_subject_fact(_request: HttpRequest, subject_id: int) -> JsonResponse:
     """API endpoint to get a fact for a specific subject."""
     try:
         subject = Subject.objects.get(id=subject_id)
-        force_new = request.GET.get("new", "false").lower() == "true"
-        recent_facts = request.session.get(f"recent_facts_{subject_id}", [])
+        force_new = _request.GET.get("new", "false").lower() == "true"
+        recent_facts = _request.session.get(f"recent_facts_{subject_id}", [])
         # if not forcing new, try to get an unused fact from the database first
         if not force_new and subject.facts:
             available_facts = [fact for fact in subject.facts if fact["text"] not in recent_facts]
             if available_facts:
                 chosen_fact = available_facts[secrets.randbelow(len(available_facts))]
                 recent_facts.append(chosen_fact["text"])
-                request.session[f"recent_facts_{subject_id}"] = recent_facts[-5:]  # only recent 5
-                request.session.modified = True
+                _request.session[f"recent_facts_{subject_id}"] = recent_facts[-5:]  # only recent 5
+                _request.session.modified = True
                 return JsonResponse({"fact": chosen_fact["text"]})
 
         # new fact generated
@@ -7004,8 +7003,8 @@ def api_get_subject_fact(request, subject_id: int) -> JsonResponse:
         try:
             subject.add_fact(fact)
             recent_facts.append(fact)
-            request.session[f"recent_facts_{subject_id}"] = recent_facts[-5:]
-            request.session.modified = True
+            _request.session[f"recent_facts_{subject_id}"] = recent_facts[-5:]
+            _request.session.modified = True
 
         except Exception:
             logger = logging.getLogger(__name__)
@@ -7020,13 +7019,13 @@ def api_get_subject_fact(request, subject_id: int) -> JsonResponse:
         return JsonResponse({"fact": get_fallback_fact(subject_name)})
 
 
-def generate_fact_for_subject(subject_name):
+def generate_fact_for_subject(subject_name: str) -> str:
     """Generate a fact for a subject using Google's Gemini API."""
     try:
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             logger = logging.getLogger(__name__)
-            logger.warning(f"Gemini API key not found, using fallback fact for {subject_name}")
+            logger.warning("Gemini API key not found, using fallback fact for '%s'", subject_name)
             return get_fallback_fact(subject_name)
         genai.configure(api_key=api_key)
         model = genai.GenerativeModel("gemini-1.5-flash")
@@ -7053,7 +7052,7 @@ def generate_fact_for_subject(subject_name):
         return response.text.strip()
     except Exception:
         logger = logging.getLogger(__name__)
-        logger.exception(f"Error generating fact with Gemini for subject '{subject_name}'")
+        logger.exception("Error generating fact with Gemini for subject '%s'", subject_name)
         return get_fallback_fact(subject_name)
 
 
