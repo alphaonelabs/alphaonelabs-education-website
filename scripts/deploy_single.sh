@@ -92,7 +92,7 @@ sudo rm -f /etc/nginx/sites-enabled/default"
 # Create systemd service with direct variable interpolation
 run_remote "cat > /tmp/systemd_service << EOF
 [Unit]
-Description=uvicorn daemon for $PROJECT_NAME
+Description=uvicorn
 After=network.target postgresql.service
 
 [Service]
@@ -101,17 +101,14 @@ Group=www-data
 WorkingDirectory=$PROJECT_PATH
 ExecStart=$PROJECT_PATH/venv/bin/uvicorn --host 0.0.0.0 --port $APP_PORT --workers 2 web.asgi:application
 Restart=always
-Environment=DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE
-Environment=DATABASE_URL=postgres://$PRIMARY_DB_USER:$PRIMARY_DB_PASSWORD@localhost:5432/$PRIMARY_DB_NAME
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-sudo mv /tmp/systemd_service /etc/systemd/system/uvicorn_$PROJECT_NAME.service && \
-sudo mkdir -p $PROJECT_PATH/media $PROJECT_PATH/static && \
+sudo mv /tmp/systemd_service /etc/systemd/system/uvicorn.service && \
+sudo mkdir -p $PROJECT_PATH/static && \
 sudo chown -R root:www-data $PROJECT_PATH && \
-sudo chmod -R g+w $PROJECT_PATH/media && \
 sudo chmod -R g+w $PROJECT_PATH/static && \
 sudo chmod -R 755 $PROJECT_PATH/venv"
 
@@ -119,8 +116,8 @@ sudo chmod -R 755 $PROJECT_PATH/venv"
 run_remote "sudo systemctl daemon-reload && \
 sudo systemctl restart postgresql && \
 sudo systemctl enable postgresql && \
-sudo systemctl start uvicorn_$PROJECT_NAME && \
-sudo systemctl enable uvicorn_$PROJECT_NAME && \
+sudo systemctl start uvicorn && \
+sudo systemctl enable uvicorn && \
 sudo systemctl restart nginx && \
 sudo systemctl enable nginx"
 
