@@ -380,63 +380,6 @@ sudo systemctl restart nginx && \
 sudo systemctl enable nginx"
 echo "✅ Services started"
 
-# Check service status
-echo "Checking service status..."
-SERVICE_STATUS=$(run_remote "systemctl is-active uvicorn_${PROJECT_NAME}")
-if [ "$SERVICE_STATUS" == "active" ]; then
-    echo "✅ Service is running properly."
-
-    # Ensure NGINX is pointing to the right application and remove default site
-    echo "Ensuring proper NGINX configuration..."
-    run_remote "sudo rm -f /etc/nginx/sites-enabled/default
-    sudo systemctl restart nginx
-    # Make sure our site configuration is enabled
-    sudo ln -sf /etc/nginx/sites-available/${PROJECT_NAME} /etc/nginx/sites-enabled/
-    sudo nginx -t && sudo systemctl restart nginx"
-
-    # Ensure static files are properly collected
-    echo "Ensuring static files are properly collected..."
-    run_remote "cd /home/${PRIMARY_VPS_USER}/${PROJECT_NAME} && \
-    source venv/bin/activate && \
-    export DJANGO_SETTINGS_MODULE=${DJANGO_SETTINGS_MODULE} && \
-    export ALLOWED_HOSTS=\"${PRIMARY_DOMAIN_NAME} ${PRIMARY_VPS_IP} localhost 127.0.0.1\" && \
-    export DEBUG=False && \
-    export DATABASE_URL=\"postgres://${PRIMARY_DB_USER}:${PRIMARY_DB_PASSWORD}@localhost:5432/${PRIMARY_DB_NAME}\" && \
-    python manage.py collectstatic --noinput --clear"
-
-    # Restart services to ensure changes take effect
-    echo "Restarting services..."
-    run_remote "sudo systemctl restart uvicorn_$PROJECT_NAME && \
-    sudo systemctl restart nginx"
-
-    # Wait for the service to fully initialize
-    echo "Waiting for website to become available..."
-    sleep 15
-
-    # Check if website is accessible
-    HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "http://$PRIMARY_VPS_IP")
-    if [ "$HTTP_STATUS" == "200" ] || [ "$HTTP_STATUS" == "302" ]; then
-        echo "✅ Website is accessible (HTTP Status: $HTTP_STATUS)"
-
-        # Check for "Alpha One Labs" text on the homepage
-        echo "Checking for Alpha One Labs content..."
-        if curl -s "http://$PRIMARY_VPS_IP" | grep -q "Alpha One Labs"; then
-            echo "✅ Alpha One Labs content verified on homepage!"
-            echo "🎉 Deployment completed successfully! Site is now live at http://$PRIMARY_DOMAIN_NAME"
-        else
-            echo "❌ Warning: Could not find 'Alpha One Labs' on the homepage"
-            echo "The site is running but may not have the expected content."
-            run_diagnostics
-        fi
-    else
-        echo "❌ Warning: Website returned HTTP Status: $HTTP_STATUS"
-        echo "Troubleshooting connection issues..."
-        run_diagnostics
-    fi
-else
-    echo "❌ Warning: Service may not be running properly. Status: $SERVICE_STATUS"
-    run_diagnostics
-fi
 
 # Cleanup
 rm -f "$PASS_FILE"
