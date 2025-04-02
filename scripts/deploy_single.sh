@@ -16,51 +16,28 @@ run_remote() {
     sshpass -f "$PASS_FILE" ssh -o StrictHostKeyChecking=no "$PRIMARY_VPS_USER@$PRIMARY_VPS_IP" "$1"
 }
 
-# Copy required files to server
 sshpass -f "$PASS_FILE" scp -o StrictHostKeyChecking=no "$PROJECT_ROOT/.env.production" "$PRIMARY_VPS_USER@$PRIMARY_VPS_IP:/tmp/.env"
-sshpass -f "$PASS_FILE" scp -o StrictHostKeyChecking=no "$PROJECT_ROOT/requirements.txt" "$PRIMARY_VPS_USER@$PRIMARY_VPS_IP:/tmp/requirements.txt"
 
-# Create project directory and copy .env file
-run_remote "mkdir -p /home/$PRIMARY_VPS_USER/$PROJECT_NAME"
-run_remote "cp /tmp/.env /home/$PRIMARY_VPS_USER/$PROJECT_NAME/.env"
-run_remote "chmod 600 /home/$PRIMARY_VPS_USER/$PROJECT_NAME/.env"
-
-# Install required packages
 run_remote "apt-get update -y && apt-get install -y python3 python3-pip python3-venv postgresql postgresql-contrib nginx git ufw openssl curl"
 
 # Configure firewall
 run_remote "ufw allow 'Nginx Full' && ufw allow ssh && ufw --force enable"
 
-# Set up repository - Improved handling of non-empty directories
-run_remote "cd /home/$PRIMARY_VPS_USER/$PROJECT_NAME && \
-if [ -d \".git\" ]; then \
-    # Directory is already a git repository
-    git fetch origin && git reset --hard origin/main || git reset --hard origin/master; \
-else \
-    # Directory exists but not a git repository
-    # Save .env file if it exists
-    if [ -f \".env\" ]; then \
-        cp .env /tmp/.env.backup; \
-    fi; \
-    # Clear directory but keep hidden files that start with .env
-    find . -mindepth 1 -not -name '.env*' -delete; \
-    # Clone repository
-    git clone $REPO_URL /tmp/repo_temp && \
-    cp -a /tmp/repo_temp/. . && \
-    rm -rf /tmp/repo_temp; \
-    # Restore .env file if we backed it up
-    if [ -f \"/tmp/.env.backup\" ]; then \
-        cp /tmp/.env.backup .env; \
-    fi; \
-fi"
+# Create an empty project directory and clone the repository
+run_remote "rm -rf /home/$PRIMARY_VPS_USER/$PROJECT_NAME && \
+mkdir -p /home/$PRIMARY_VPS_USER/$PROJECT_NAME && \
+cd /home/$PRIMARY_VPS_USER/$PROJECT_NAME && \
+git clone $REPO_URL . && \
+cp /tmp/.env /home/$PRIMARY_VPS_USER/$PROJECT_NAME/.env && \
+chmod 600 /home/$PRIMARY_VPS_USER/$PROJECT_NAME/.env"
 
 # Set up Python environment
 run_remote "cd /home/$PRIMARY_VPS_USER/$PROJECT_NAME && \
 python3 -m venv venv && \
 source venv/bin/activate && \
 pip install --upgrade pip && \
-pip install -r /tmp/requirements.txt && \
-pip install uvicorn psycopg2-binary"
+pip install -r requirements.txt && \
+pip install psycopg2-binary"
 
 # Configure PostgreSQL
 run_remote "sudo -u postgres psql -c \"CREATE DATABASE $PRIMARY_DB_NAME;\" 2>/dev/null || true && \
@@ -84,7 +61,7 @@ source venv/bin/activate && \
 export DJANGO_SETTINGS_MODULE=$DJANGO_SETTINGS_MODULE && \
 export DATABASE_URL=\"postgres://$PRIMARY_DB_USER:$PRIMARY_DB_PASSWORD@localhost:5432/$PRIMARY_DB_NAME\" && \
 
-python manage.py migrate --noinput
+python manage.py migrate --noinput && \
 python manage.py collectstatic --noinput"
 
 # Create Nginx configuration
