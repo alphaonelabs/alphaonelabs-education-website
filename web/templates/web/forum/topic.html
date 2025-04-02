@@ -107,7 +107,8 @@
               <!-- Author Info -->
               <div class="flex items-center mt-3 mb-4">
                 {% if topic.author.profile.avatar %}
-                  <img src="{{ topic.author.profile.avatar.url }}"
+                  <img loading="lazy"
+                       src="{{ topic.author.profile.avatar.url }}"
                        alt="{{ topic.author.username }}"
                        class="w-8 h-8 rounded-full object-cover mr-3"
                        width="32"
@@ -156,7 +157,8 @@
                   <div class="flex">
                     <div class="mr-3 hidden sm:block">
                       {% if reply.author.profile.avatar %}
-                        <img src="{{ reply.author.profile.avatar.url }}"
+                        <img loading="lazy"
+                             src="{{ reply.author.profile.avatar.url }}"
                              alt="{{ reply.author.username }}"
                              class="w-8 h-8 rounded-full object-cover"
                              width="32"

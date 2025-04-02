@@ -117,7 +117,8 @@
                   <!-- User Avatar -->
                   <div class="mr-4 hidden sm:block">
                     {% if topic.author.profile.avatar %}
-                      <img src="{{ topic.author.profile.avatar.url }}"
+                      <img loading="lazy"
+                           src="{{ topic.author.profile.avatar.url }}"
                            alt="{{ topic.author.username }}"
                            class="w-10 h-10 rounded-full object-cover"
                            width="40"

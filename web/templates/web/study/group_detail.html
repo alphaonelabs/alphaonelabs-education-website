@@ -130,13 +130,15 @@
               <div class="p-4">
                 <div class="flex items-center">
                   {% if member.profile.avatar %}
-                    <img src="{{ member.profile.avatar.url }}"
+                    <img loading="lazy"
+                         src="{{ member.profile.avatar.url }}"
                          alt="{{ member.get_full_name|default:member.username }}"
                          class="h-8 w-8 rounded-full mr-3"
                          width="32"
                          height="32" />
                   {% else %}
-                    <img src="{% static 'images/default_teacher.png' %}"
+                    <img loading="lazy"
+                         src="{% static 'images/default_teacher.png' %}"
                          alt="{{ member.get_full_name|default:member.username }}"
                          class="h-8 w-8 rounded-full mr-3"
                          width="32"

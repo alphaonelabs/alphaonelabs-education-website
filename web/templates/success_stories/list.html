@@ -25,7 +25,8 @@
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
             {% if story.featured_image %}
               <div class="aspect-w-16 aspect-h-9 bg-gray-100 dark:bg-gray-700">
-                <img src="{{ story.featured_image.url }}"
+                <img loading="lazy"
+                     src="{{ story.featured_image.url }}"
                      alt="{{ story.title }}"
                      class="object-cover w-full h-full" />
               </div>

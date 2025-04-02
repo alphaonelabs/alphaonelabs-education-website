@@ -71,12 +71,14 @@
                  class="mt-1 w-full text-gray-700" />
           <p class="text-sm text-gray-500">Recommended size: 200x200px</p>
           {% if form.logo.value %}
-            <img id="logoPreview"
+            <img loading="lazy"
+                 id="logoPreview"
                  src="{{ form.logo.value.url }}"
                  alt="Store Logo"
                  class="mt-3 w-24 h-24 object-cover rounded-lg" />
           {% else %}
-            <img id="logoPreview"
+            <img loading="lazy"
+                 id="logoPreview"
                  class="hidden mt-3 w-24 h-24 object-cover rounded-lg" />
           {% endif %}
         </div>

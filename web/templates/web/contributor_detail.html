@@ -9,7 +9,8 @@
       <!-- Basic Info Card -->
       <div class="bg-white dark:bg-gray-800 shadow-lg rounded-xl p-6 transition-all hover:shadow-xl">
         <div class="flex items-center space-x-4">
-          <img src="{{ user.avatar_url }}"
+          <img loading="lazy"
+               src="{{ user.avatar_url }}"
                alt="{{ user.login }}"
                class="h-16 w-16 rounded-full border-4 border-blue-100 dark:border-gray-600" />
           <div>
