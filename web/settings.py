@@ -92,6 +92,7 @@ INSTALLED_APPS = [
     "captcha",
     "markdownx",
     "web",
+    "web.analytics",
 ]
 
 if DEBUG and not TESTING:

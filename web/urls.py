@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
-from web import views as analytics_views
+from web.analytics import views as analytics_views
 
 from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
 from .views import (
@@ -38,24 +38,18 @@ if settings.DEBUG:
 # Language-prefixed URLs
 urlpatterns += i18n_patterns(
     # GSoC- educator Dashboard urls
-    path("analytics/dashboard/", views.educator_analytics_dashboard, name="educator_analytics_dashboard"),
-    path(
-        "analytics/student/<int:student_id>/", views.student_performance_analysis, name="student_performance_analysis"
-    ),
-    path("analytics/student/", views.student_performance_analysis, name="student_performance_overview"),
-    path("analytics/course/<int:course_id>/", views.course_insights, name="course_insights"),
-    path("analytics/learning-patterns/", views.learning_patterns_analysis, name="learning_patterns_analysis"),
+    # Analytics Dashboard Views
+    path('analytics/dashboard/', analytics_views.educator_analytics_dashboard, name='educator_analytics_dashboard'),
+    path('analytics/student/<int:student_id>/', analytics_views.student_performance_analysis, name='student_performance_analysis'),
+    path('analytics/student/', analytics_views.student_performance_analysis, name='student_performance_overview'),
+    path('analytics/course/<int:course_id>/', analytics_views.course_insights, name='course_insights'),
+    path('analytics/learning-patterns/', analytics_views.learning_patterns_analysis, name='learning_patterns_analysis'),
+    
     # Export Endpoints
-    path(
-        "analytics/export/<str:export_format>/<str:analytics_type>/<int:obj_id>/",
-        analytics_views.export_analytics,
-        name="export_analytics_with_id",
-    ),
-    path(
-        "analytics/export/<str:export_format>/<str:analytics_type>/",
-        analytics_views.export_analytics,
-        name="export_analytics",
-    ),
+    path('analytics/export/<str:export_format>/<str:analytics_type>/<int:obj_id>/', 
+         analytics_views.export_analytics, name='export_analytics_with_id'),
+    path('analytics/export/<str:export_format>/<str:analytics_type>/', 
+         analytics_views.export_analytics, name='export_analytics'),
     path("", views.index, name="index"),
     path("create-test-data/", views.run_create_test_data, name="create_test_data"),
     path("learn/", views.learn, name="learn"),
