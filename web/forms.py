@@ -42,6 +42,7 @@ from .models import (
     Subject,
     SuccessStory,
     TeamGoal,
+    TeamGoalMember,
     TeamInvite,
     WaitingRoom,
 )
@@ -654,6 +655,21 @@ class ProfileUpdateForm(forms.ModelForm):
         widget=forms.RadioSelect,
         help_text="Select whether your profile details are public or private.",
     )
+    discord_username = forms.CharField(
+        max_length=50,
+        required=False,
+        widget=TailwindInput(),
+        help_text="Discord username (visible if profile is public)",
+    )
+    slack_username = forms.CharField(
+        max_length=50, required=False, widget=TailwindInput(), help_text="Slack username (visible if profile is public)"
+    )
+    github_username = forms.CharField(
+        max_length=50,
+        required=False,
+        widget=TailwindInput(),
+        help_text="GitHub username (visible if profile is public)",
+    )
 
     class Meta:
         model = User
@@ -666,6 +682,9 @@ class ProfileUpdateForm(forms.ModelForm):
                 profile = self.instance.profile
                 self.fields["bio"].initial = profile.bio
                 self.fields["expertise"].initial = profile.expertise
+                self.fields["discord_username"].initial = profile.discord_username
+                self.fields["slack_username"].initial = profile.slack_username
+                self.fields["github_username"].initial = profile.github_username
                 # Set initial value as a string.
                 self.initial["is_profile_public"] = "True" if profile.is_profile_public else "False"
             except Profile.DoesNotExist:
@@ -689,6 +708,9 @@ class ProfileUpdateForm(forms.ModelForm):
 
             # Get the is_profile_public value and ensure it's a boolean
             is_public = self.cleaned_data.get("is_profile_public")
+            profile.discord_username = self.cleaned_data["discord_username"]
+            profile.slack_username = self.cleaned_data["slack_username"]
+            profile.github_username = self.cleaned_data["github_username"]
             profile.is_profile_public = is_public
             profile.save()
         return user
@@ -979,6 +1001,13 @@ class InviteStudentForm(forms.Form):
 class ForumCategoryForm(forms.ModelForm):
     """Form for creating and editing forum categories."""
 
+    def clean(self):
+        cleaned_data = super().clean()
+        name = cleaned_data.get("name")
+        if name and not cleaned_data.get("slug"):
+            cleaned_data["slug"] = slugify(name)
+        return cleaned_data
+
     class Meta:
         model = ForumCategory
         fields = ["name", "description", "icon", "slug"]
@@ -1012,7 +1041,12 @@ class ForumCategoryForm(forms.ModelForm):
                     "placeholder": "fa-folder",
                 }
             ),
-            "slug": forms.HiddenInput(),
+            "slug": forms.TextInput(
+                attrs={
+                    "class": "w-full border-gray-300 dark:border-gray-600 rounded p-2 bg-gray-200 cursor-not-allowed",
+                    "readonly": "readonly",
+                }
+            ),
         }
         help_texts = {
             "icon": "Enter a Font Awesome icon class (e.g., fa-folder, fa-book, fa-code)",
@@ -1407,6 +1441,24 @@ class StorefrontForm(forms.ModelForm):
             "logo",
             "is_active",
         ]
+
+
+class TeamGoalCompletionForm(forms.ModelForm):
+    class Meta:
+        model = TeamGoalMember
+        fields = ["completion_image", "completion_link", "completion_notes"]
+        widgets = {
+            "completion_notes": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        image = cleaned_data.get("completion_image")
+        link = cleaned_data.get("completion_link")
+        notes = cleaned_data.get("completion_notes")
+        if not image and not link and not notes:
+            raise forms.ValidationError("Please provide at least one form of proof (image, link, or notes).")
+        return cleaned_data
 
 
 class TeamGoalForm(forms.ModelForm):

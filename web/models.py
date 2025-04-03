@@ -59,6 +59,9 @@ class Profile(models.Model):
     )
     is_teacher = models.BooleanField(default=False)
     is_social_media_manager = models.BooleanField(default=False)
+    discord_username = models.CharField(max_length=50, blank=True, help_text="Your Discord username (e.g., User#1234)")
+    slack_username = models.CharField(max_length=50, blank=True, help_text="Your Slack username")
+    github_username = models.CharField(max_length=50, blank=True, help_text="Your GitHub username (without @)")
     referral_code = models.CharField(max_length=20, unique=True, blank=True)
     referred_by = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="referrals")
     referral_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -1588,7 +1591,9 @@ class TeamGoalMember(models.Model):
     joined_at = models.DateTimeField(auto_now_add=True)
     completed = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True, blank=True)
-
+    completion_image = models.ImageField(upload_to="proof_images/", blank=True)
+    completion_link = models.URLField(max_length=200, blank=True)
+    completion_notes = models.TextField(blank=True)
     ROLE_CHOICES = [("leader", "Team Leader"), ("member", "Team Member")]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="member")
 
