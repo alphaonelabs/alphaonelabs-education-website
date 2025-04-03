@@ -4153,6 +4153,11 @@ def meme_list(request):
     return render(request, "memes.html", {"memes": page_obj, "subjects": subjects, "selected_subject": subject_filter})
 
 
+def meme_detail(request: HttpRequest, slug: str) -> HttpResponse:
+    meme = get_object_or_404(Meme, slug=slug)
+    return render(request, "meme_detail.html", {"meme": meme})
+
+
 @login_required
 def add_meme(request):
     if request.method == "POST":
