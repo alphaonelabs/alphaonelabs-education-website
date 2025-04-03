@@ -7087,8 +7087,8 @@ def membership_benefits(request: HttpRequest) -> HttpResponse:
 def update_membership_from_subscription(user: "User", subscription: dict) -> Optional["UserMembership"]:
     """Update the user's membership status based on Stripe subscription data."""
     if not hasattr(user, "membership"):
-        logger.error(f"User {user.email} has no membership to update")
-        return
+        logger.error("User %s has no membership to update", user.email)
+        return None
 
     membership = user.membership
     membership.stripe_subscription_id = subscription.id
@@ -7121,7 +7121,7 @@ def update_membership_from_subscription(user: "User", subscription: dict) -> Opt
     return membership
 
 
-def cancel_user_subscription(user):
+def cancel_user_subscription(user: "User") -> dict:
     """Cancel the user's subscription at the end of the billing period."""
     if not hasattr(user, "membership") or not user.membership.stripe_subscription_id:
         return {"success": False, "error": "No active subscription found"}
@@ -7134,12 +7134,11 @@ def cancel_user_subscription(user):
         update_membership_from_subscription(user, subscription)
 
         return {"success": True}
-
-    except stripe.error.StripeError as e:
-        logger.exception("Stripe error cancelling subscription: %s", e)
-        return {"success": False, "error": str(e.user_message if hasattr(e, "user_message") else e)}
-    except Exception as e:
-        logger.exception("Unexpected error cancelling subscription: %s", e)
+    except stripe.error.StripeError:
+        logger.exception("Stripe error cancelling subscription")
+        return {"success": False, "error": "Error processing subscription cancellation"}
+    except Exception:
+        logger.exception("Unexpected error cancelling subscription")
         return {"success": False, "error": "An unexpected error occurred"}
 
 
@@ -7203,7 +7202,7 @@ def membership_plans(request):
 
 
 @login_required
-def subscribe_membership(request, plan_slug):
+def subscribe_membership(request: HttpRequest, plan_slug: str) -> HttpResponse:
     """Display the subscription page for a specific membership plan."""
     try:
         plan = MembershipPlan.objects.get(slug=plan_slug, is_active=True)
@@ -7321,33 +7320,37 @@ def membership_webhook(request) -> HttpResponse:
 
 def handle_subscription_deleted(subscription: dict) -> None:
     """Handle subscription deleted webhook event."""
-    if subscription.get("customer"):
-        from django.contrib.auth import get_user_model
+    from django.contrib.auth import get_user_model
 
-        User = get_user_model()
+    User = get_user_model()
 
-        try:
-            user = User.objects.get(membership__stripe_customer_id=subscription["customer"])
-            membership = user.membership
+    try:
+        user = User.objects.get(membership__stripe_customer_id=subscription["customer"])
+        membership = user.membership
 
-            # Update membership status
-            membership.status = "canceled"
-            membership.save(update_fields=["status"])
+        # Update membership status
+        membership.status = "canceled"
+        membership.end_date = (
+            timezone.datetime.fromtimestamp(subscription["current_period_end"], tz=timezone.utc)
+            if subscription.get("current_period_end")
+            else timezone.now()
+        )
+        membership.save()
 
-            # Record subscription event
-            MembershipSubscriptionEvent.objects.create(
-                user=user,
-                membership=membership,
-                event_type="canceled",
-                stripe_event_id=subscription.get("id", ""),
-                data={"subscription_id": subscription.get("id", ""), "canceled_at": timezone.now().isoformat()},
-            )
+        # Record event
+        MembershipSubscriptionEvent.objects.create(
+            user=user,
+            membership=membership,
+            event_type="canceled",
+            stripe_event_id=subscription.get("id", ""),
+            data={"subscription_id": subscription.get("id", ""), "canceled_at": timezone.now().isoformat()},
+        )
 
-            logger.info("Subscription deleted for user %s via webhook", user.email)
-        except User.DoesNotExist:
-            logger.exception("No user found for customer %s", subscription["customer"])
-        except Exception:
-            logger.exception("Error handling subscription.deleted")
+        logger.info("Subscription deleted for user %s via webhook", user.email)
+    except User.DoesNotExist:
+        logger.exception("No user found for customer %s", subscription["customer"])
+    except Exception:
+        logger.exception("Error handling subscription.deleted")
 
 
 def handle_invoice_payment_succeeded(invoice):
@@ -7405,13 +7408,13 @@ def handle_invoice_payment_failed(invoice):
                 stripe_event_id=invoice.get("id", ""),
                 data={
                     "invoice_id": invoice.get("id", ""),
+                    "amount_due": str(invoice.get("amount_due", 0)),
                     "subscription_id": invoice.get("subscription", ""),
-                    "attempt_count": invoice.get("attempt_count", 0),
                 },
             )
 
             logger.info("Payment failed for user %s via webhook", user.email)
         except User.DoesNotExist:
-            logger.error("No user found for customer %s", invoice["customer"])
+            logger.exception("No user found for customer %s", invoice["customer"])
         except Exception as e:
             logger.error("Error handling invoice.payment_failed: %s", str(e))
