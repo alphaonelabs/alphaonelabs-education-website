@@ -1,8 +1,18 @@
 {% extends "base.html" %}
 
+{% load static %}
+
 {% block title %}
-  Page Not Found - Alpha One Labs
+  Page Not Found | Alpha One Labs
 {% endblock title %}
+{% block meta_description %}
+  Sorry, the page you're looking for cannot be found. Return to the Alpha One Labs homepage to continue exploring our educational resources.
+{% endblock %}
+{% block meta_keywords %}page not found, 404 error, Alpha One Labs, missing page{% endblock %}
+{% block og_title %}Page Not Found | Alpha One Labs{% endblock %}
+{% block og_description %}
+  Sorry, the page you're looking for cannot be found. Return to the Alpha One Labs homepage to continue exploring our educational resources.
+{% endblock %}
 {% block content %}
   <div class="flex flex-col items-center justify-center min-h-[60vh] px-4">
     <!-- Error Code -->

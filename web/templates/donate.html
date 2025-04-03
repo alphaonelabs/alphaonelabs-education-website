@@ -1,10 +1,21 @@
 {% extends "base.html" %}
 
 {% load i18n %}
+{% load static %}
 
 {% block title %}
-  {% trans "Donate" %} | {{ block.super }}
+  Support Alpha One Labs | Donate to Open Source Education
 {% endblock title %}
+{% block meta_description %}
+  Support our mission to provide free, accessible education through your donation to Alpha One Labs. Every contribution helps us create more open-source educational resources.
+{% endblock %}
+{% block meta_keywords %}
+  donate, support, contribution, open source education, Alpha One Labs, educational funding, sponsor
+{% endblock %}
+{% block og_title %}Support Alpha One Labs | Donate to Open Source Education{% endblock %}
+{% block og_description %}
+  Support our mission to provide free, accessible education through your donation to Alpha One Labs. Every contribution helps us create more open-source educational resources.
+{% endblock %}
 {% block content %}
   <div class="container mx-auto px-4 py-12">
     <div class="max-w-5xl mx-auto">

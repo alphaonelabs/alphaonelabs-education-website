@@ -1,0 +1,27 @@
+{% load static %}
+
+<meta name="description"
+      content="{% block meta_description %}Alpha One Labs - Open Source Education Platform for interactive learning and teaching in tech, science, and engineering.{% endblock %}" />
+<meta name="keywords"
+      content="{% block meta_keywords %}education, open source, courses, learning, Alpha One Labs{% endblock %}" />
+<!-- Open Graph / Social Media Meta Tags -->
+<meta property="og:type" content="{% block og_type %}website{% endblock %}" />
+<meta property="og:url"
+      content="{% block og_url %}{{ request.build_absolute_uri }}{% endblock %}" />
+<meta property="og:title"
+      content="{% block og_title %}Alpha One Labs - Open Source Education Platform{% endblock %}" />
+<meta property="og:description"
+      content="{% block og_description %}Alpha One Labs - Open Source Education Platform for interactive learning and teaching in tech, science, and engineering.{% endblock %}" />
+<meta property="og:image"
+      content="{% block og_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/logo.png' %}{% endblock %}" />
+<!-- Twitter Card data -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title"
+      content="{% block twitter_title %}Alpha One Labs - Open Source Education Platform{% endblock %}" />
+<meta name="twitter:description"
+      content="{% block twitter_description %}Alpha One Labs - Open Source Education Platform for interactive learning and teaching in tech, science, and engineering.{% endblock %}" />
+<meta name="twitter:image"
+      content="{% block twitter_image %}{{ request.scheme }}://{{ request.get_host }}{% static 'images/logo.png' %}{% endblock %}" />
+<!-- Canonical URL -->
+<link rel="canonical"
+      href="{% block canonical_url %}{{ request.build_absolute_uri }}{% endblock %}" />

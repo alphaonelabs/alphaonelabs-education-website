@@ -6,7 +6,10 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    {% include "includes/seo_meta.html" %}
+    <meta name="description"
+          content="Alpha One Labs - Open Source Education Platform" />
+    <meta name="keywords"
+          content="education, open source, courses, learning, Alpha One Labs" />
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{% static 'images/logo.png' %}" />
     <link rel="apple-touch-icon" href="{% static 'images/logo.png' %}" />

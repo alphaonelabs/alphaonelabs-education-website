@@ -5,8 +5,22 @@
 {% load string_filters %}
 
 {% block title %}
-  {{ post.title }}
+  {{ post.title }} | Alpha One Labs Blog
 {% endblock title %}
+{% block meta_description %}{{ post.summary|default:post.content|truncatechars:160 }}{% endblock %}
+{% block meta_keywords %}
+  {{ post.title }}, {{ post.category }}, blog, article, Alpha One Labs, education, {{ post.tags|join:", " }}
+{% endblock %}
+{% block og_title %}{{ post.title }} | Alpha One Labs Blog{% endblock %}
+{% block og_description %}{{ post.summary|default:post.content|truncatechars:160 }}{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_image %}
+  {% if post.featured_image %}
+    {{ request.scheme }}://{{ request.get_host }}{{ post.featured_image.url }}
+  {% else %}
+    {{ request.scheme }}://{{ request.get_host }}{% static 'images/default-blog.jpg' %}
+  {% endif %}
+{% endblock %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <div class="max-w-3xl mx-auto">
