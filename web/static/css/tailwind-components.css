@@ -1,0 +1,227 @@
+/* Scrollbar Styles */
+@layer utilities {
+  .scrollbar-custom {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.gray.400') theme('colors.gray.100');
+  }
+  
+  .dark .scrollbar-custom {
+    scrollbar-color: theme('colors.gray.600') theme('colors.gray.800');
+  }
+  
+  .scrollbar-custom::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .scrollbar-custom::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800 rounded;
+  }
+  
+  .scrollbar-custom::-webkit-scrollbar-thumb {
+    @apply bg-gray-400 dark:bg-gray-600 rounded hover:bg-gray-500 dark:hover:bg-gray-500;
+  }
+}
+
+/* Message Styles */
+.message {
+  @apply opacity-0 translate-y-5 animate-[messageAppear_0.3s_ease_forwards] mb-4;
+}
+
+@keyframes messageAppear {
+  to {
+    @apply opacity-100 translate-y-0;
+  }
+}
+
+/* Code Block Styles */
+.prose pre {
+  @apply bg-gray-900 rounded-lg p-4 my-4 overflow-x-auto;
+}
+
+.prose code {
+  @apply bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm;
+}
+
+.prose pre code {
+  @apply bg-transparent p-0 text-gray-200;
+}
+
+/* Math Expression Styles */
+.prose .math {
+  @apply text-lg px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded;
+}
+
+/* Message Content Styles */
+.message .prose {
+  @apply text-[0.95rem] leading-relaxed;
+}
+
+.message .prose p {
+  @apply my-2;
+}
+
+.message .prose ul,
+.message .prose ol {
+  @apply my-2 pl-6;
+}
+
+.message .prose blockquote {
+  @apply border-l-4 border-gray-200 dark:border-gray-700 my-2 pl-4 text-gray-600 dark:text-gray-400;
+}
+
+/* AI Response Styles */
+.ai-response {
+  @apply text-base leading-relaxed text-gray-700 dark:text-gray-300;
+}
+
+.ai-response pre {
+  @apply bg-gray-900 rounded-lg p-4 my-4 overflow-x-auto;
+}
+
+.ai-response code {
+  @apply font-mono text-sm leading-relaxed;
+}
+
+.ai-response p code {
+  @apply bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm;
+}
+
+.ai-response .math {
+  @apply text-lg leading-relaxed;
+}
+
+.ai-response .math-inline {
+  @apply inline-block;
+}
+
+.ai-response .math-display {
+  @apply block my-4 text-center;
+}
+
+.ai-response ul,
+.ai-response ol {
+  @apply my-4 pl-6;
+}
+
+.ai-response li {
+  @apply my-2;
+}
+
+.ai-response blockquote {
+  @apply border-l-4 border-gray-200 dark:border-gray-700 my-4 px-4 py-2 text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800;
+}
+
+.ai-response table {
+  @apply w-full border-collapse my-4;
+}
+
+.ai-response th,
+.ai-response td {
+  @apply border border-gray-200 dark:border-gray-700 p-3 text-left;
+}
+
+.ai-response th {
+  @apply bg-gray-100 dark:bg-gray-800 font-semibold;
+}
+
+.ai-response a {
+  @apply text-blue-600 dark:text-blue-400 underline hover:text-blue-700 dark:hover:text-blue-300;
+}
+
+.ai-response hr {
+  @apply my-8 border-gray-300 dark:border-gray-600;
+}
+
+.ai-response img {
+  @apply max-w-full h-auto rounded-lg my-4;
+}
+
+.ai-response input[type="checkbox"] {
+  @apply mr-2;
+}
+
+.ai-response .footnotes {
+  @apply mt-8 pt-4 border-t border-gray-300 dark:border-gray-600;
+}
+
+.ai-response dt {
+  @apply font-bold mt-4;
+}
+
+.ai-response dd {
+  @apply ml-6 mb-4;
+}
+
+/* Markdown Content Styles */
+.markdown-content {
+  @apply leading-relaxed;
+}
+
+.markdown-content p {
+  @apply mb-4;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  @apply ml-6 mb-4;
+}
+
+.markdown-content ul {
+  @apply list-disc;
+}
+
+.markdown-content ol {
+  @apply list-decimal;
+}
+
+.markdown-content li {
+  @apply mb-2;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4 {
+  @apply font-semibold mt-6 mb-4;
+}
+
+.markdown-content h1 {
+  @apply text-3xl leading-9;
+}
+
+.markdown-content h2 {
+  @apply text-2xl leading-8;
+}
+
+.markdown-content h3 {
+  @apply text-xl leading-7;
+}
+
+.markdown-content a {
+  @apply text-teal-600 dark:text-teal-400 underline hover:text-teal-700 dark:hover:text-teal-300;
+}
+
+.markdown-content code {
+  @apply bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono;
+}
+
+.markdown-content pre {
+  @apply bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-x-auto my-4;
+}
+
+.markdown-content blockquote {
+  @apply border-l-4 border-gray-200 dark:border-gray-700 pl-4 my-4 text-gray-600 dark:text-gray-400;
+}
+
+.markdown-content img {
+  @apply rounded-lg my-4 max-w-full h-auto;
+}
+
+.markdown-content table {
+  @apply w-full border-collapse my-4;
+}
+
+.markdown-content th,
+.markdown-content td {
+  @apply border border-gray-200 dark:border-gray-700 p-2 text-left;
+} 
