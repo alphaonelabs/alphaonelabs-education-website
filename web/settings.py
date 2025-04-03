@@ -25,7 +25,7 @@ else:
     TESTING = False
 
 # Debug settings
-DEBUG = env.bool("DJANGO_DEBUG", default=False)
+DEBUG = env.bool("DEBUG", default=False)
 
 PA_USER = "alphaonelabs99282llkb"
 PA_HOST = PA_USER + ".pythonanywhere.com"
