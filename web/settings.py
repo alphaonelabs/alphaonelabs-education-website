@@ -27,7 +27,7 @@ DEBUG = False
 
 # Only enable DEBUG in local environment and only if DJANGO_DEBUG is True
 if ENVIRONMENT == "local":
-    DEBUG = env.bool("DJANGO_DEBUG", default=True)
+    DEBUG = env.bool("DJANGO_DEBUG", default=False)
 
 # Detect test environment and set DEBUG=True to use local media path
 if "test" in sys.argv:
