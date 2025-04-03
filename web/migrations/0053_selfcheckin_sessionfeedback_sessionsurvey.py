@@ -9,7 +9,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("web", "0051_teamgoalmember_completion_image_and_more"),
+        ("web", "0052_add_meme_slug"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
