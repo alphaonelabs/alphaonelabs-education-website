@@ -207,9 +207,9 @@ def main():
                 assigned_issues = issues_response.json()
                 print(f"User {user_login} has {len(assigned_issues)} open assigned issues.")
 
-                # Improved check for open PRs
-                all_issues_have_prs = True
-                issue_without_pr = None  # Initialize outside the loop
+                # Check if all assigned issues have open PRs
+                issue_without_pr = None
+                block_assignment = False
 
                 for assigned_issue in assigned_issues:
                     # Skip checking the current issue being assigned
@@ -297,56 +297,57 @@ def main():
                         except Exception as e:
                             print(f"Error checking for linked PRs via REST API: {str(e)}")
 
-                    # If no open PRs found for this issue, set flag to False
+                    # If this issue doesn't have an open PR, make note of it and block new assignment
                     if not has_pr:
                         print(f"Issue #{current_issue_number} lacks an open PR")
-                        all_issues_have_prs = False
                         issue_without_pr = current_issue_number
-                        break
+                        block_assignment = True
+                        break  # No need to check further issues
 
-                # If not all issues have PRs, block the assignment
-                if not all_issues_have_prs and issue_without_pr:
-                    comment_body = (
-                        f"You can't take this task yet. Issue #{issue_without_pr} does not have an open PR. "
-                        "Please complete your existing issues before requesting a new assignment."
+                # If any previously assigned issue doesn't have a PR, deny the assignment
+                if block_assignment:
+                    rejection_msg = (
+                        f"@{user_login} Your request to be assigned to this issue has been denied. "
+                        f"Your previously assigned issue #{issue_without_pr} doesn't have an open PR yet. "
+                        f"Please submit a PR for issue #{issue_without_pr} before taking on new issues."
                     )
-                    print(f"User {user_login} blocked due to uncompleted issue #{issue_without_pr}")
-                    requests.post(f"{issue_url}/comments", headers=headers, json={"body": comment_body})
-                    return
-
-                # Assign the issue
-                assignees_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}/assignees"
-                print(f"Assigning issue via {assignees_url}")
-                assign_response = requests.post(assignees_url, headers=headers, json={"assignees": [user_login]})
-                if assign_response.status_code >= 400:
-                    print(f"Error assigning issue: {assign_response.status_code} - {assign_response.text}")
-                    return
+                    print(f"Denying assignment due to issue #{issue_without_pr} without PR")
+                    requests.post(f"{issue_url}/comments", headers=headers, json={"body": rejection_msg})
+                    print(f"Assignment to issue #{issue_number} denied for {user_login}")
                 else:
-                    print(f"Issue #{issue_number} assigned to {user_login}")
+                    # Assign the issue
+                    assignees_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}/assignees"
+                    print(f"Assigning issue via {assignees_url}")
+                    assign_response = requests.post(assignees_url, headers=headers, json={"assignees": [user_login]})
+                    if assign_response.status_code >= 400:
+                        print(f"Error assigning issue: {assign_response.status_code} - {assign_response.text}")
+                        return
+                    else:
+                        print(f"Issue #{issue_number} assigned to {user_login}")
 
-                # Add "assigned" label
-                labels_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}/labels"
-                print(f"Adding 'assigned' label via {labels_url}")
-                label_response = requests.post(labels_url, headers=headers, json={"labels": ["assigned"]})
-                if label_response.status_code >= 400:
-                    print(f"Error adding label: {label_response.status_code} - {label_response.text}")
-                else:
-                    print(f"'assigned' label added to issue #{issue_number}")
+                    # Add "assigned" label
+                    labels_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}/labels"
+                    print(f"Adding 'assigned' label via {labels_url}")
+                    label_response = requests.post(labels_url, headers=headers, json={"labels": ["assigned"]})
+                    if label_response.status_code >= 400:
+                        print(f"Error adding label: {label_response.status_code} - {label_response.text}")
+                    else:
+                        print(f"'assigned' label added to issue #{issue_number}")
 
-                # Add assignment comment
-                assignment_msg = (
-                    f"Hey @{user_login}! You're now assigned to this issue. " f"Please finish your PR within 1 day."
-                )
-                print("Posting assignment comment.")
-                comment_response = requests.post(
-                    f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}/comments",
-                    headers=headers,
-                    json={"body": assignment_msg},
-                )
-                if comment_response.status_code >= 400:
-                    print(f"Error posting comment: {comment_response.status_code} - {comment_response.text}")
-                else:
-                    print("Assignment comment posted successfully.")
+                    # Add assignment comment
+                    assignment_msg = (
+                        f"Hey @{user_login}! You're now assigned to this issue. " f"Please finish your PR within 1 day."
+                    )
+                    print("Posting assignment comment.")
+                    comment_response = requests.post(
+                        f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}/comments",
+                        headers=headers,
+                        json={"body": assignment_msg},
+                    )
+                    if comment_response.status_code >= 400:
+                        print(f"Error posting comment: {comment_response.status_code} - {comment_response.text}")
+                    else:
+                        print("Assignment comment posted successfully.")
             except Exception as e:
                 print(f"Failed to assign issue #{issue_number}: {str(e)}")
 
