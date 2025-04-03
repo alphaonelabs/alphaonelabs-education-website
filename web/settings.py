@@ -363,3 +363,6 @@ USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+
+# Gemini API Configuration
+GEMINI_API_KEY = env.str("GEMINI_API_KEY", default="")

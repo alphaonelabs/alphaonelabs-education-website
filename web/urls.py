@@ -430,6 +430,10 @@ urlpatterns += i18n_patterns(
     path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
+    # infographics
+    path("infographics/", views.infographics, name="infographics"),
+    path("api/subjects/", views.api_get_subjects, name="api_get_subjects"),
+    path("api/subject-fact/<int:subject_id>/", views.api_get_subject_fact, name="api_get_subject_fact"),
     prefix_default_language=True,
 )
 

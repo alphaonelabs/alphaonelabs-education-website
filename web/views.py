@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import re
+import secrets
 import shutil
 import socket
 import subprocess
@@ -14,6 +15,7 @@ from datetime import timedelta
 from decimal import Decimal
 from urllib.parse import urlparse
 
+import google.generativeai as genai
 import requests
 import stripe
 import tweepy
@@ -31,7 +33,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
 from django.core.management import call_command
 from django.core.paginator import Paginator
-from django.db import IntegrityError, models, router, transaction
+from django.db import DatabaseError, IntegrityError, models, router, transaction
 from django.db.models import Avg, Count, Q, Sum
 from django.db.models.functions import Coalesce
 from django.http import (
@@ -6955,3 +6957,166 @@ def delete_post(request, post_id):
     if request.method == "POST":
         post.delete()
     return redirect("social_media_dashboard")
+
+
+# infographics
+def infographics(_request: HttpRequest) -> HttpResponse:
+    """Display interesting facts about different subjects."""
+    subjects = Subject.objects.all().order_by("order", "name")
+
+    context = {
+        "subjects": subjects,
+    }
+
+    return render(_request, "infographics/infographics.html", context)
+
+
+def api_get_subjects(_request: HttpRequest) -> JsonResponse:
+    """API endpoint to get all subject names."""
+    try:
+        subjects = Subject.objects.all().order_by("order", "name").values("id", "name")
+        return JsonResponse({"subjects": list(subjects)})
+    except Subject.DoesNotExist:
+        return JsonResponse({"error": "No subjects found"}, status=404)
+    except DatabaseError:
+        logger.exception("Database error when fetching subjects")
+        return JsonResponse({"error": "Database error occurred"}, status=500)
+    except Exception:
+        logger.exception("Unexpected error when fetching subjects")
+        return JsonResponse({"error": "An unexpected error occurred"}, status=500)
+
+
+def api_get_subject_fact(_request: HttpRequest, subject_id: int) -> JsonResponse:
+    """API endpoint to get a fact for a specific subject."""
+    try:
+        subject = Subject.objects.get(id=subject_id)
+        force_new = _request.GET.get("new", "false").lower() == "true"
+        recent_facts = _request.session.get(f"recent_facts_{subject_id}", [])
+        # if not forcing new, try to get an unused fact from the database first
+        if not force_new and subject.facts:
+            available_facts = [fact for fact in subject.facts if fact["text"] not in recent_facts]
+            if available_facts:
+                chosen_fact = available_facts[secrets.randbelow(len(available_facts))]
+                recent_facts.append(chosen_fact["text"])
+                _request.session[f"recent_facts_{subject_id}"] = recent_facts[-5:]  # only recent 5
+                _request.session.modified = True
+                return JsonResponse({"fact": chosen_fact["text"]})
+
+        # new fact generated
+        fact = generate_fact_for_subject(subject.name)
+
+        try:
+            subject.add_fact(fact)
+            recent_facts.append(fact)
+            _request.session[f"recent_facts_{subject_id}"] = recent_facts[-5:]
+            _request.session.modified = True
+
+        except Exception:
+            logger = logging.getLogger(__name__)
+            logger.exception("Error saving fact for subject")
+            # Still return the generated fact even if we couldn't save it
+
+        return JsonResponse({"fact": fact})
+    except Subject.DoesNotExist:
+        return JsonResponse({"error": "Subject not found"}, status=404)
+    except Exception:
+        subject_name = getattr(subject, "name", "General") if "subject" in locals() else "General"
+        return JsonResponse({"fact": get_fallback_fact(subject_name)})
+
+
+def generate_fact_for_subject(subject_name: str) -> str:
+    """Generate a fact for a subject using Google's Gemini API."""
+    try:
+        api_key = os.environ.get("GEMINI_API_KEY")
+        if not api_key:
+            logger = logging.getLogger(__name__)
+            logger.warning("Gemini API key not found, using fallback fact for '%s'", subject_name)
+            return get_fallback_fact(subject_name)
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel("gemini-1.5-flash")
+        # take existing facts for this subject to explicitly avoid them
+        try:
+            subject = Subject.objects.get(name=subject_name)
+            existing_facts = [fact["text"] for fact in subject.facts]
+        except Subject.DoesNotExist:
+            existing_facts = []
+        existing_facts_text = "\n".join(existing_facts[:10])  # limit to 10 most recent to keep prompt size reasonable
+        prompt = f"""Generate ONE fascinating and educational fact about {subject_name}.
+        AVOID repeating these existing facts:
+        {existing_facts_text}
+        The fact should be:
+        - Completely unique and different from the examples above
+        - Surprising or not commonly known
+        - Educational and thought-provoking
+        - Appropriate for all ages
+        - Scientifically accurate (if applicable)
+        - 22 words or less
+        - Include one relevant emoji
+        Respond with ONLY the fact, no prefixes like "Did you know:" or similar."""
+        response = model.generate_content(prompt, generation_config={"temperature": 0.9})
+        return response.text.strip()
+    except Exception:
+        logger = logging.getLogger(__name__)
+        logger.exception("Error generating fact with Gemini for subject '%s'", subject_name)
+        return get_fallback_fact(subject_name)
+
+
+def get_fallback_fact(subject_name: str) -> str:
+    """Return a fallback fact if the API call fails."""
+    # defaults
+    subject_facts = {
+        "Mathematics": [
+            "The concept of zero as a number didn't appear in Europe until the 12th century.",
+            "There are more ways to arrange a deck of 52 cards than there are atoms on Earth.",
+            "The symbol for division (÷) is called an obelus.",
+            "If you write out pi to two decimal places, backwards it spells 'pie'.",
+            "The Fibonacci sequence appears throughout nature, from pinecones to galaxies.",
+        ],
+        "Physics": [
+            "If you could fold a piece of paper 42 times, it would reach the moon.",
+            "Lightning strikes the Earth about 8.6 million times per day.",
+            "Time passes faster at your face than at your feet due to gravitational time dilation.",
+            "Neutron stars are so dense that a teaspoon would weigh about 10 million tons.",
+            "Black holes aren't actually black - they emit radiation called Hawking radiation.",
+        ],
+        "Chemistry": [
+            "If you remove all empty space from atoms, the entire human race would fit in the volume of a sugar cube.",
+            "The only letter not on the periodic table is the letter J.",
+            "Helium is the only element discovered in space before being found on Earth.",
+            "Gold is so malleable that a single ounce can be beaten into a sheet covering 100 square feet.",
+            "Water can exist in three states at once - the triple point.",
+        ],
+        "Biology": [
+            "Humans share about 50% of their DNA with bananas.",
+            "There are more bacteria in your mouth than there are people on Earth.",
+            "Octopuses have three hearts, nine brains, and blue blood.",
+            "The human body contains enough fat to make 7 bars of soap.",
+            "A single red blood cell can complete one circuit of your body in just 20 seconds.",
+        ],
+        "Computer Science": [
+            "The first computer bug was an actual bug - a moth trapped in a Harvard Mark II computer in 1947.",
+            "The first computer programmer was a woman, Ada Lovelace, in the 1840s.",
+            "The average person types about 7,000 keystrokes per hour.",
+            "The first computer mouse was made of wood.",
+            "All modern encryption is based on mathematical problems that are easy to state but hard to solve.",
+        ],
+    }
+
+    # defaults
+    default_facts = [
+        f"{subject_name} has been studied for hundreds of years across many different cultures.",
+        f"The field of {subject_name} continues to evolve with new discoveries every year.",
+        f"Students of {subject_name} develop critical thinking and problem-solving skills.",
+        f"Many career opportunities are available for those who study {subject_name}.",
+        f"Interdisciplinary research connecting {subject_name} with other fields is expanding rapidly.",
+    ]
+
+    # get facts for the subject or use default facts if subject not in dictionary
+    subject_name_lower = subject_name.lower()
+    for key in subject_facts:
+        if key.lower() in subject_name_lower:
+            facts = subject_facts[key]
+            return facts[secrets.randbelow(len(facts))]
+
+    # return a random default fact
+    return default_facts[secrets.randbelow(len(default_facts))]
