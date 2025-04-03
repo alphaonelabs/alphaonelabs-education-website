@@ -55,8 +55,6 @@ urlpatterns += i18n_patterns(
     path("blog/create/", views.create_blog_post, name="create_blog_post"),
     path("blog/tag/<str:tag>/", views.blog_tag, name="blog_tag"),
     path("blog/<slug:slug>/", views.blog_detail, name="blog_detail"),
-    # # Add to urlpatterns
-    # path('api/counter-data/', views.get_counter_data, name='counter_data'),
     # Leaderboard URLs
     path("leaderboards/", views.all_leaderboards, name="leaderboards"),
     # Success Stories URLs
@@ -76,10 +74,18 @@ urlpatterns += i18n_patterns(
     path("dashboard/student/", views.student_dashboard, name="student_dashboard"),
     path("dashboard/teacher/", views.teacher_dashboard, name="teacher_dashboard"),
     path("dashboard/content/", views.content_dashboard, name="content_dashboard"),
-    # Add these to your web/urls.py file
-    path('quizzes/course/<int:course_id>/create/', quiz_views.create_course_exam, name='create_course_exam'),
-    path('quizzes/course/<int:course_id>/session/<int:session_id>/create/', quiz_views.create_course_exam, name='create_session_exam'),
-    path('quizzes/<int:quiz_id>/add-specialized-question/', quiz_views.add_question_specialized, name='add_question_specialized'),
+    # Quizzes URLs
+    path("quizzes/course/<int:course_id>/create/", quiz_views.create_course_exam, name="create_course_exam"),
+    path(
+        "quizzes/course/<int:course_id>/session/<int:session_id>/create/",
+        quiz_views.create_course_exam,
+        name="create_session_exam",
+    ),
+    path(
+        "quizzes/<int:quiz_id>/add-specialized-question/",
+        quiz_views.add_question_specialized,
+        name="add_question_specialized",
+    ),
     # Course Management
     path("courses/create/", views.create_course, name="create_course"),
     path("courses/search/", views.course_search, name="course_search"),
@@ -341,7 +347,11 @@ urlpatterns += i18n_patterns(
     path("quizzes/shared/<str:share_code>/", quiz_views.take_quiz_shared, name="quiz_take_shared"),
     path("quizzes/results/<int:user_quiz_id>/", quiz_views.quiz_results, name="quiz_results"),
     path("quizzes/<int:quiz_id>/analytics/", quiz_views.quiz_analytics, name="quiz_analytics"),
-    path('courses/<int:course_id>/exams/<int:quiz_id>/student/<int:user_quiz_id>/', quiz_views.student_exam_correction, name='student_exam_correction'),
+    path(
+        "courses/<int:course_id>/exams/<int:quiz_id>/student/<int:user_quiz_id>/",
+        quiz_views.student_exam_correction,
+        name="student_exam_correction",
+    ),
     path(
         "quizzes/results/<int:user_quiz_id>/grade/<int:question_id>/",
         quiz_views.grade_short_answer,

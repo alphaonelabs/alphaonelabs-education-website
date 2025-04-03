@@ -10,39 +10,40 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django.http import HttpRequest, HttpResponse
 
 from .forms import (
     QuizForm,
     QuizOptionFormSet,
     QuizQuestionForm,
-    TakeQuizForm,
     QuizQuestionSpecializedForm,
+    TakeQuizForm,
 )
-from .models import Quiz, QuizQuestion, UserQuiz, Course, Session
+from .models import Course, Quiz, QuizQuestion, Session, UserQuiz
 
 
 @login_required
-def create_course_exam(request, course_id=None, session_id=None):
+def create_course_exam(request: HttpRequest, course_id: int | None = None, session_id: int | None = None) -> HttpResponse:
     """Create a new exam for a course or session."""
     course = None
     session = None
-    
+
     if course_id:
         course = get_object_or_404(Course, id=course_id)
         # Check if user is the teacher
         if course.teacher != request.user:
             return HttpResponseForbidden("You don't have permission to create exams for this course.")
-    
+
     if session_id:
         session = get_object_or_404(Session, id=session_id)
         course = session.course
         # Check if user is the teacher
         if course.teacher != request.user:
             return HttpResponseForbidden("You don't have permission to create exams for this session.")
-    
+
     # Default exam type
     exam_type = "course" if not session else "session"
-    
+
     # Handle request
     if request.method == "POST":
         form = QuizForm(request.POST)
@@ -54,20 +55,20 @@ def create_course_exam(request, course_id=None, session_id=None):
             quiz.course = course
             quiz.session = session
             quiz.save()
-            
+
             messages.success(request, "Exam created successfully. Now add some questions!")
             return redirect("quiz_detail", quiz_id=quiz.id)
     else:
         # Pre-populate form with values from course
         initial_data = {
-            'subject': course.subject,
-            'time_limit': 60 if exam_type == "session" else 120,
-            'title': f"Quiz - {session.title}" if session else f"Final Exam - {course.title}",
-            'description': f"Quiz for {session.title}" if session else f"Final comprehensive exam for {course.title}",
-            'status': 'draft',
+            "subject": course.subject,
+            "time_limit": 60 if exam_type == "session" else 120,
+            "title": f"Quiz - {session.title}" if session else f"Final Exam - {course.title}",
+            "description": f"Quiz for {session.title}" if session else f"Final comprehensive exam for {course.title}",
+            "status": "draft",
         }
         form = QuizForm(initial=initial_data)
-    
+
     return render(
         request,
         "web/quiz/quiz_form.html",
@@ -80,29 +81,30 @@ def create_course_exam(request, course_id=None, session_id=None):
         },
     )
 
+
 @login_required
 def add_question_specialized(request, quiz_id):
     """Add a specialized question to a quiz based on question type."""
     quiz = get_object_or_404(Quiz, id=quiz_id)
-    
+
     # Check if user can edit this quiz
     if quiz.creator != request.user:
         return HttpResponseForbidden("You don't have permission to edit this quiz.")
-    
+
     # Calculate the next order value
     next_order = 1
     if quiz.questions.exists():
         next_order = quiz.questions.order_by("-order").first().order + 1
-    
+
     if request.method == "POST":
         form = QuizQuestionSpecializedForm(request.POST, request.FILES)
         # Set the quiz ID explicitly in the form data
         form.instance.quiz_id = quiz.id
-        
-        question_type = request.POST.get('question_type')
-        
+
+        question_type = request.POST.get("question_type")
+
         # Different handling based on question type
-        if question_type in ['multiple', 'true_false']:
+        if question_type in ["multiple", "true_false"]:
             # Use the standard option formset
             formset = QuizOptionFormSet(request.POST, request.FILES, prefix="options")
             formset_valid = formset.is_valid()
@@ -110,10 +112,10 @@ def add_question_specialized(request, quiz_id):
             # No options needed for other question types
             formset = None
             formset_valid = True
-        
+
         # Validate the form
         form_valid = form.is_valid()
-        
+
         if form_valid and formset_valid:
             try:
                 with transaction.atomic():
@@ -121,27 +123,24 @@ def add_question_specialized(request, quiz_id):
                     question = form.save(commit=False)
                     question.quiz = quiz
                     question.order = next_order
-                    
+
                     # Handle specialized fields based on question type
-                    if question_type == 'fill_blank':
+                    if question_type == "fill_blank":
                         # Extract the blank parts
-                        blank_text = form.cleaned_data.get('text', '')
+                        blank_text = form.cleaned_data.get("text", "")
                         question.text = blank_text
-                    elif question_type == 'matching':
+                    elif question_type == "matching":
                         # Get matching items from form
-                        items = request.POST.getlist('matching_item[]')
-                        matches = request.POST.getlist('matching_match[]')
-                        question.matching_items = {
-                            'items': items,
-                            'matches': matches
-                        }
-                    elif question_type == 'coding':
+                        items = request.POST.getlist("matching_item[]")
+                        matches = request.POST.getlist("matching_match[]")
+                        question.matching_items = {"items": items, "matches": matches,}
+                    elif question_type == "coding":
                         # Get code starter and expected output
-                        question.code_starter = form.cleaned_data.get('code_starter', '')
-                        question.expected_output = form.cleaned_data.get('expected_output', '')
-                    
+                        question.code_starter = form.cleaned_data.get("code_starter", "")
+                        question.expected_output = form.cleaned_data.get("expected_output", "")
+
                     question.save()
-                    
+
                     # Save options if applicable
                     if formset:
                         formset.instance = question
@@ -151,9 +150,9 @@ def add_question_specialized(request, quiz_id):
                                 option.question = question
                                 option.order = i
                                 option.save()
-                
+
                 messages.success(request, "Question added successfully.")
-                
+
                 # Redirect based on the button clicked
                 if "save_and_add" in request.POST:
                     return redirect("add_question_specialized", quiz_id=quiz.id)
@@ -166,7 +165,7 @@ def add_question_specialized(request, quiz_id):
     else:
         form = QuizQuestionSpecializedForm()
         formset = QuizOptionFormSet(prefix="options")
-    
+
     return render(
         request,
         "web/quiz/question_specialized_form.html",
@@ -269,7 +268,7 @@ def quiz_detail(request, quiz_id):
     if is_owner:
         total_attempts = UserQuiz.objects.filter(quiz=quiz).count()
         average_score = UserQuiz.objects.filter(quiz=quiz).exclude(score=None).values_list("score", flat=True)
-        print("!!!!!!!!!!!!!!!", UserQuiz.objects.filter(quiz=quiz).values_list('correction_status', flat=True))
+
         if average_score:
             average_score = sum(average_score) / len(average_score)
         else:
@@ -339,8 +338,6 @@ def add_question(request, quiz_id):
                 # Redirect based on the button clicked
                 if "save_and_add" in request.POST:
                     return redirect("add_question", quiz_id=quiz.id)
-                else:
-                    return redirect("quiz_detail", quiz_id=quiz.id)
             except Exception as e:
                 print(e)
                 # Re-raise the exception
@@ -463,6 +460,7 @@ def take_quiz(request, quiz_id):
 def _process_quiz_taking(request, quiz):
     """Helper function to process quiz taking for both routes."""
     from .services.AI.ai_model import ai_quiz_corrector
+
     # Check if the quiz has questions
     if not quiz.questions.exists():
         messages.error(request, "This quiz does not have any questions yet.")
@@ -479,7 +477,6 @@ def _process_quiz_taking(request, quiz):
     user = request.user if request.user.is_authenticated else None
 
     # Check if user has already reached max attempts
-    attempt_count = UserQuiz.objects.filter(quiz=quiz, user=user).count()
     if user and quiz.max_attempts > 0:
         attempt_count = UserQuiz.objects.filter(quiz=quiz, user=user).count()
         if attempt_count >= quiz.max_attempts:
@@ -519,7 +516,7 @@ def _process_quiz_taking(request, quiz):
     user_quiz = UserQuiz(quiz=quiz, user=user)
     if request.method == "POST":
         form = TakeQuizForm(request.POST, quiz=quiz)
-        # print("%%%%%%%%%%%", request.POST,)
+
         if form.is_valid():
             # Process answers
             answers = {}
@@ -527,7 +524,6 @@ def _process_quiz_taking(request, quiz):
             total_points = 0
             correction_status = "completed"
 
-            # print("!!!!!!!!!!!!!! >> prepared_questions >>", prepared_questions)
             AI_data = {}
             for question in prepared_questions:
                 q_id = str(question["id"])
@@ -570,7 +566,7 @@ def _process_quiz_taking(request, quiz):
                             "user_answer": user_answer,
                             "correct_answer": correct_options[0] if correct_options else None,
                             "is_correct": user_answer_id in correct_options if user_answer_id is not None else False,
-                            "is_graded": True
+                            "is_graded": True,
                         }
 
                     if answers[q_id]["is_correct"]:
@@ -587,13 +583,13 @@ def _process_quiz_taking(request, quiz):
                         "user_answer": user_answer,
                         "correct_answer": correct_id,
                         "is_correct": user_answer == correct_answer if user_answer else False,
-                        "is_graded": True
+                        "is_graded": True,
                     }
 
                     if answers[q_id]["is_correct"]:
                         score += question_obj.points
 
-                else :
+                else:
                     answers[q_id] = {
                         "user_answer": user_answer,
                         "is_graded": False,  # need manual grading
@@ -610,44 +606,47 @@ def _process_quiz_taking(request, quiz):
                     "Subject": quiz.subject,
                 }
 
-
-            ai_correction_results = json.loads(ai_quiz_corrector(AI_data) )
+            ai_correction_results = json.loads(ai_quiz_corrector(AI_data))
             print("######## <<ai_correction_results>>", ai_correction_results)
 
             # Loop through each question in prepared_questions
             print("`" * 50)
             for question in prepared_questions:
                 # Extract the question id
-                question_id = question.get('id')
-                
+                question_id = question.get("id")
+
                 # Convert id to string if necessary because AI_data keys are strings
                 question_id_str = str(question_id)
-                
+
                 # Retrieve corresponding AI data safely using .get()
                 ai_question_data = AI_data.get(question_id_str)
 
-                student_answer = ai_question_data.get('user_answer', 'No answer provided')
-                answers[question_id_str]['user_answer'] = student_answer
-                answers[question_id_str]['points_awarded'] = ai_correction_results["correction"][question_id_str]["degree"]
-                answers[question_id_str]['student_feedback'] = ai_correction_results["correction"][question_id_str]["student_feedback"]
-                answers[question_id_str]['teacher_feedback'] = ai_correction_results["correction"][question_id_str]["teacher_feedback"]
-                answers[question_id_str]['is_graded'] = True
-                answers[question_id_str]['is_correct'] = True
+                student_answer = ai_question_data.get("user_answer", "No answer provided")
+                answers[question_id_str]["user_answer"] = student_answer
+                answers[question_id_str]["points_awarded"] = ai_correction_results["correction"][question_id_str][
+                    "degree"
+                ]
+                answers[question_id_str]["student_feedback"] = ai_correction_results["correction"][question_id_str][
+                    "student_feedback"
+                ]
+                answers[question_id_str]["teacher_feedback"] = ai_correction_results["correction"][question_id_str][
+                    "teacher_feedback"
+                ]
+                answers[question_id_str]["is_graded"] = True
+                answers[question_id_str]["is_correct"] = True
                 score += ai_correction_results["correction"][question_id_str]["degree"]
 
             percentage = (score) / total_points * 100
 
             # Update the UserQuiz record
             user_quiz.answers = json.dumps(answers)
-            if correction_status == 'completed':
+            if correction_status == "completed":
                 user_quiz.score = percentage
             # user_quiz.correction_status = correction_status
-            user_quiz.correction_status =  "completed"
+            user_quiz.correction_status = "completed"
             user_quiz.end_time = timezone.now()
             user_quiz.completed = True
             user_quiz.save()
-
-
 
             # Redirect to results page
             return redirect("quiz_results", user_quiz_id=user_quiz.id)
@@ -790,15 +789,19 @@ def quiz_results(request, user_quiz_id):
                 "user_answer": answer_data.get("user_answer", ""),
                 "is_correct": answer_data.get("is_correct", False),
                 "is_graded": answer_data.get("is_graded", False),
-                "points": answer_data.get("points_awarded", 0) if answer_data.get("is_graded", False) else (question.points if answer_data.get("is_correct", False) else 0),
+                "points": (
+                    answer_data.get("points_awarded", 0)
+                    if answer_data.get("is_graded", False)
+                    else (question.points if answer_data.get("is_correct", False) else 0)
+                ),
                 "feedback": answer_data.get("feedback", ""),
             }
             user_answers.append(user_answer_obj)
 
-    for id, data in answers.items():
-        answers[id]["question_title"] = all_quiz_questions[int(id)]['text']
-        answers[id]["type_display"] = all_quiz_questions[int(id)]['type_display']
-        answers[id]["original_points"] = questions[int(id)]['points']
+    for id, _data in answers.items():
+        answers[id]["question_title"] = all_quiz_questions[int(id)]["text"]
+        answers[id]["type_display"] = all_quiz_questions[int(id)]["type_display"]
+        answers[id]["original_points"] = questions[int(id)]["points"]
 
     context = {
         "user_quiz": user_quiz,
@@ -1091,119 +1094,124 @@ def student_exam_correction(request, course_id, quiz_id, user_quiz_id):
     course = get_object_or_404(Course, id=course_id)
     quiz = get_object_or_404(Quiz, id=quiz_id, course=course)
     user_quiz = get_object_or_404(UserQuiz, id=user_quiz_id, quiz=quiz)
-    
+
     # Check if user is the teacher
     if course.teacher != request.user:
         return HttpResponseForbidden("You don't have permission to grade exams for this course.")
-    
+
     # Check if the exam is completed
     if not user_quiz.completed:
         messages.error(request, "This exam is not completed yet.")
         # return redirect('course_exam_analytics', course_id=course.id)
-        return quiz_analytics(request,  course_id=course.id)
-    
+        return quiz_analytics(request, course_id=course.id)
+
     # Parse answers JSON
     answers = json.loads(user_quiz.answers) if user_quiz.answers else {}
-    
+
     # If user is submitting a grade
-    if request.method == 'POST':
+    if request.method == "POST":
         # Get question ID and points from POST data
-        question_id = request.POST.get('question_id')
-        points_awarded = float(request.POST.get('points_awarded', 0))
-        
+        question_id = request.POST.get("question_id")
+        points_awarded = float(request.POST.get("points_awarded", 0))
+
         # Get the question
         question = quiz.questions.filter(id=question_id).first()
-        
+
         if question:
             # Validate points
             if points_awarded < 0:
                 points_awarded = 0
             if points_awarded > question.points:
                 points_awarded = question.points
-            
+
             # Update the answer
             if question_id in answers:
-                answers[question_id]['is_graded'] = True
-                answers[question_id]['points_awarded'] = points_awarded
-                answers[question_id]['is_correct'] = points_awarded == question.points
-                
+                answers[question_id]["is_graded"] = True
+                answers[question_id]["points_awarded"] = points_awarded
+                answers[question_id]["is_correct"] = points_awarded == question.points
+
                 # Calculate new total score
                 total_points = sum(q.points for q in quiz.questions.all())
                 current_score = 0
-                
+
                 for q in quiz.questions.all():
                     q_id = str(q.id)
                     if q_id in answers:
-                        if answers[q_id].get('is_graded', False):
+                        if answers[q_id].get("is_graded", False):
                             # Use awarded points for manually graded answers
-                            current_score += answers[q_id].get('points_awarded', 0)
-                        elif answers[q_id].get('is_correct', False):
+                            current_score += answers[q_id].get("points_awarded", 0)
+                        elif answers[q_id].get("is_correct", False):
                             # Use full points for auto-graded correct answers
                             current_score += q.points
-                
-                # Update user quiz 
+
+                # Update user quiz
                 user_quiz.answers = json.dumps(answers)
                 user_quiz.score = (current_score / total_points * 100) if total_points > 0 else 0
-                
+
                 # Check if all questions are graded
                 all_graded = True
                 for q in quiz.questions.all():
                     q_id = str(q.id)
-                    if q_id in answers:
-                        if not answers[q_id].get('is_graded', False) and not answers[q_id].get('is_correct', False):
+                    if q_id in answers and not answers[q_id].get('is_graded', False) and not answers[q_id].get('is_correct', False):
                             all_graded = False
                             break
-                
+
                 if all_graded:
-                    user_quiz.correction_status = 'completed'
+                    user_quiz.correction_status = "completed"
                 else:
-                    user_quiz.correction_status = 'in_progress'
-                
+                    user_quiz.correction_status = "in_progress"
+
                 user_quiz.save()
-                
+
                 messages.success(request, f"Question graded successfully. Awarded {points_awarded} points.")
-            
+
             # Redirect to avoid resubmission
-            return redirect('student_exam_correction', course_id=course.id, quiz_id=quiz.id, user_quiz_id=user_quiz.id)
-    
+            return redirect("student_exam_correction", course_id=course.id, quiz_id=quiz.id, user_quiz_id=user_quiz.id)
+
     # Prepare questions and answers for display
     questions = []
     for question in quiz.questions.all():
         q_dict = {
-            'id': question.id,
-            'text': question.text,
-            'question_type': question.question_type,
-            'points': question.points,
-            'explanation': question.explanation,
+            "id": question.id,
+            "text": question.text,
+            "question_type": question.question_type,
+            "points": question.points,
+            "explanation": question.explanation,
         }
 
         # Get options if applicable
-        if question.question_type in ['multiple', 'true_false']:
-            q_dict['options'] = list(question.options.all())
-        
+        if question.question_type in ["multiple", "true_false"]:
+            q_dict["options"] = list(question.options.all())
+
         # Get user's answer
         q_id = str(question.id)
         if q_id in answers:
             answer_data = answers[q_id]
-            q_dict['user_answer'] = answer_data.get('user_answer', '')
-            q_dict['is_correct'] = answer_data.get('is_correct', False)
-            q_dict['is_graded'] = answer_data.get('is_graded', False)
-            q_dict['points_awarded'] = answer_data.get('points_awarded', 0)
-            q_dict['needs_grading'] = question.question_type not in ['multiple', 'true_false'] and not answer_data.get('is_graded', False)
+            q_dict["user_answer"] = answer_data.get("user_answer", "")
+            q_dict["is_correct"] = answer_data.get("is_correct", False)
+            q_dict["is_graded"] = answer_data.get("is_graded", False)
+            q_dict["points_awarded"] = answer_data.get("points_awarded", 0)
+            q_dict["needs_grading"] = question.question_type not in ["multiple", "true_false"] and not answer_data.get(
+                "is_graded", False
+            )
         else:
-            q_dict['user_answer'] = ''
-            q_dict['is_correct'] = False
-            q_dict['is_graded'] = False
-            q_dict['points_awarded'] = 0
-            q_dict['needs_grading'] = False
-        
+            q_dict["user_answer"] = ""
+            q_dict["is_correct"] = False
+            q_dict["is_graded"] = False
+            q_dict["points_awarded"] = 0
+            q_dict["needs_grading"] = False
+
         questions.append(q_dict)
-    
+
     print("Done #########", request)
-    return render(request, 'web/quiz/student_exam_correction.html', {
-        'course': course,
-        'quiz': quiz,
-        'user_quiz': user_quiz,
-        'questions': questions,
-        'student': user_quiz.user,
-    })
+    return render(
+        request,
+        "web/quiz/student_exam_correction.html",
+        {
+            "course": course,
+            "quiz": quiz,
+            "user_quiz": user_quiz,
+            "questions": questions,
+            "student": user_quiz.user,
+        },
+    )

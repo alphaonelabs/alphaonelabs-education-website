@@ -10,7 +10,7 @@ import socket
 import subprocess
 import time
 from collections import Counter, defaultdict
-from datetime import timedelta, datetime
+from datetime import timedelta
 from decimal import Decimal
 from urllib.parse import urlparse
 
@@ -103,7 +103,7 @@ from .marketing import (
     get_promotion_recommendations,
     send_course_promotion_email,
 )
-from .models import (
+from .models import (  
     Achievement,
     Badge,
     BlogComment,
@@ -158,10 +158,6 @@ from .models import (
     UserBadge,
     WaitingRoom,
     WebRequest,
-    CounterStatistic,
-    UserActivity,
-    # QuizSubmission,
-    # Quiz
 )
 from .notifications import (
     notify_session_reminder,
@@ -172,6 +168,7 @@ from .notifications import (
     send_enrollment_confirmation,
 )
 from .referrals import send_referral_reward_email
+from .services.AI.ai_model import ai_assignment_corrector
 from .social import get_social_stats
 from .utils import (
     cancel_subscription,
@@ -302,7 +299,6 @@ def index(request):
                 }
             )
     return render(request, "index.html", context)
-
 
 
 def signup_view(request):
@@ -762,15 +758,13 @@ def course_detail(request, slug):
     for item in rating_counts:
         rating_distribution[item["rating"]] = item["count"]
 
-
     #  # Get materials
     # materials = Material.objects.filter(course=course)
-    
+
     # NEW CODE: Prepare exam data in the view
     # 1. Get course-level exams (not associated with specific sessions)
-    course_exams = course.exams.filter(exam_type='course', session__isnull=True)
-    print("@@@@@@@", course_exams)
-    
+    course_exams = course.exams.filter(exam_type="course", session__isnull=True)
+
     # 2. Process each course exam (with user attempts and submission counts)
     course_exam_data = []
     for exam in course_exams:
@@ -778,48 +772,50 @@ def course_detail(request, slug):
         user_attempt = None
         if request.user.is_authenticated:
             user_attempt = exam.user_quizzes.filter(user=request.user).first()
-        
+
         # Get submission count for teachers
         submission_count = 0
         if is_teacher:
             submission_count = exam.user_quizzes.filter(completed=True).count()
-        
-        course_exam_data.append({
-            'exam': exam,
-            'user_attempt': user_attempt,
-            'submission_count': submission_count,
-        })
-    print("#######", course_exam_data)
-    
+
+        course_exam_data.append(
+            {
+                "exam": exam,
+                "user_attempt": user_attempt,
+                "submission_count": submission_count,
+            }
+        )
+
     # 3. Process each session with its exams
     session_data = []
     for session in sessions:
         # Get all exams for this session
         session_exams = session.exams.all()
         session_exam_data = []
-        
+
         # Process each exam in this session
         for exam in session_exams:
             user_attempt = None
             if request.user.is_authenticated:
                 user_attempt = exam.user_quizzes.filter(user=request.user).first()
-            
-            session_exam_data.append({
-                'exam': exam,
-                'user_attempt': user_attempt,
-            })
-        
-        session_data.append({
-            'session': session,
-            'exams': session_exam_data,
-        })
-    
+
+            session_exam_data.append(
+                {
+                    "exam": exam,
+                    "user_attempt": user_attempt,
+                }
+            )
+
+        session_data.append(
+            {
+                "session": session,
+                "exams": session_exam_data,
+            }
+        )
 
     student_analytics = None
     if is_teacher:
         student_analytics = get_student_analytics_data(course)
-
-    print("@@@@@@@@@@", student_analytics)
 
     context = {
         "course": course,
@@ -842,12 +838,11 @@ def course_detail(request, slug):
         "user_review": user_review,
         "rating_distribution": rating_distribution,
         "reviews_num": reviews_num,
-        "course_exams": course_exams, 
-        "course_exam_data":course_exam_data,
+        "course_exams": course_exams,
+        "course_exam_data": course_exam_data,
         "session_data": session_data,
         "student_analytics": student_analytics,
     }
-
 
     return render(request, "courses/detail.html", context)
 
@@ -3544,13 +3539,12 @@ def challenge_submit(request, challenge_id):
 
         if form.is_valid():
             ai_response = ai_assignment_corrector(challenge_detail)
-            print("..", ai_response["student_feed_back"], " // ", ai_response["teacher_feed_back"])
 
             submission = form.save(commit=False)
             submission.user = request.user
             submission.challenge = challenge
-            submission.student_feedback = ai_response["student_feed_back"]
-            submission.teacher_feedback = ai_response["teacher_feed_back"]
+            submission.student_feedback = ai_response["student_feedback"]
+            submission.teacher_feedback = ai_response["teacher_feedback"]
             submission.points_awarded = ai_response["degree"]
             submission.save()
             messages.success(request, "Your submission has been recorded!")

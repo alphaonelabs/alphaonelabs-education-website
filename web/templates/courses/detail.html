@@ -613,7 +613,6 @@
                   <i class="fas fa-chart-line mr-2 text-teal-300 dark:text-teal-400"></i>
                   Analytics
                 </button>
-
               </div>
               <!-- Tab Content -->
               <div class="p-6">
@@ -1121,20 +1120,19 @@
                 {% endif %}
                 <!-- Exams -->
                 <div id="content-exams"
-                    class="tab-content hidden"
-                    role="tabpanel"
-                    aria-labelledby="tab-exams">
+                     class="tab-content hidden"
+                     role="tabpanel"
+                     aria-labelledby="tab-exams">
                   <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
                     <div class="flex justify-between items-center mb-4">
                       <h2 class="text-xl font-bold">Course Exams and Quizzes</h2>
                       {% if user == course.teacher %}
                         <a href="{% url 'create_quiz' %}?course={{ course.id }}&exam_type=course"
-                          class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg transition duration-200 text-sm">
+                           class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg transition duration-200 text-sm">
                           <i class="fas fa-plus mr-1"></i>Add Course Exam
                         </a>
                       {% endif %}
                     </div>
-                    
                     <!-- Final Course Exam Section -->
                     <div>
                       <h3 class="text-lg font-semibold mb-2">Final Course Exam</h3>
@@ -1158,37 +1156,34 @@
                                     </span>
                                   </div>
                                 </div>
-                                
                                 <div>
                                   {% if is_teacher %}
-                                    <a href="{% url 'quiz_detail' item.exam.id %}" 
-                                      class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
+                                    <a href="{% url 'quiz_detail' item.exam.id %}"
+                                       class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm">
                                       <i class="fas fa-cog mr-1"></i>Manage
                                     </a>
                                   {% elif is_enrolled %}
                                     {% if item.user_attempt %}
-                                      <a href="{% url 'quiz_results' item.user_attempt.id %}" 
-                                        class="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
+                                      <a href="{% url 'quiz_results' item.user_attempt.id %}"
+                                         class="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
                                         <i class="fas fa-check-circle mr-1"></i>View Results
                                       </a>
                                     {% else %}
-                                      <a href="{% url 'take_quiz' item.exam.id %}" 
-                                        class="inline-flex items-center px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm">
+                                      <a href="{% url 'take_quiz' item.exam.id %}"
+                                         class="inline-flex items-center px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm">
                                         <i class="fas fa-pencil-alt mr-1"></i>Take Exam
                                       </a>
                                     {% endif %}
                                   {% endif %}
                                 </div>
                               </div>
-                              
                               {% if is_teacher %}
                                 <div class="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
                                   <h5 class="text-sm font-medium mb-1">Student Progress</h5>
                                   <div class="flex items-center justify-between text-xs">
                                     <span>{{ item.submission_count }} submissions</span>
-                                    <a href="{% url 'quiz_analytics' item.exam.id %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                      View Analytics
-                                    </a>
+                                    <a href="{% url 'quiz_analytics' item.exam.id %}"
+                                       class="text-blue-600 hover:text-blue-800 dark:text-blue-400">View Analytics</a>
                                   </div>
                                 </div>
                               {% endif %}
@@ -1199,7 +1194,6 @@
                         <!-- Empty state code here -->
                       {% endif %}
                     </div>
-
                     <!-- Session Exams Section -->
                     <div class="mb-6">
                       <h3 class="text-lg font-semibold mb-2">Session Quizzes</h3>
@@ -1208,7 +1202,6 @@
                           {% for item in session_data %}
                             <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
                               <h4 class="font-medium">{{ item.session.title }}</h4>
-                              
                               {% if item.exams %}
                                 <div class="mt-2 space-y-2">
                                   {% for exam_item in item.exams %}
@@ -1220,22 +1213,25 @@
                                             <!-- Exam details -->
                                           </div>
                                         </div>
-                                        
                                         <div class="flex gap-<2> items-center">
                                           {% if is_teacher %}
-                                            <a href="{% url 'quiz_analytics' exam_item.exam.id %}" class="text-sm mr-4 text-green-600 hover:text-blue-800 dark:text-blue-400">
+                                            <a href="{% url 'quiz_analytics' exam_item.exam.id %}"
+                                               class="text-sm mr-4 text-green-600 hover:text-blue-800 dark:text-blue-400">
                                               View Analytics
                                             </a>
-                                            <a href="{% url 'quiz_detail' exam_item.exam.id %}" class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                            <a href="{% url 'quiz_detail' exam_item.exam.id %}"
+                                               class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
                                               <i class="fas fa-edit"></i>
                                             </a>
                                           {% elif is_enrolled %}
                                             {% if exam_item.user_attempt %}
-                                              <a href="{% url 'quiz_results' exam_item.user_attempt.id %}" class="text-green-600 hover:text-green-800 dark:text-green-400">
+                                              <a href="{% url 'quiz_results' exam_item.user_attempt.id %}"
+                                                 class="text-green-600 hover:text-green-800 dark:text-green-400">
                                                 <i class="fas fa-check-circle"></i> View Results
                                               </a>
                                             {% else %}
-                                              <a href="{% url 'take_quiz' exam_item.exam.id %}" class="text-orange-600 hover:text-orange-800 dark:text-orange-400">
+                                              <a href="{% url 'take_quiz' exam_item.exam.id %}"
+                                                 class="text-orange-600 hover:text-orange-800 dark:text-orange-400">
                                                 <i class="fas fa-pencil-alt"></i> Take Quiz
                                               </a>
                                             {% endif %}
@@ -1253,29 +1249,23 @@
                         </div>
                       {% endif %}
                     </div>
-
-
                   </div>
                 </div>
-
                 <!-- Chart -->
                 <div id="content-analytics"
-                    class="tab-content hidden"
-                    role="tabpanel"
-                    aria-labelledby="tab-analytics">
+                     class="tab-content hidden"
+                     role="tabpanel"
+                     aria-labelledby="tab-analytics">
                   <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
                     <div class="flex justify-between items-center mb-4">
                       <h2 class="text-xl font-bold">Student Analytics</h2>
                     </div>
-                    
                     <!-- Canvas element for the chart -->
                     <div class="w-full">
                       <canvas id="sectionChart" width="800" height="400"></canvas>
                     </div>
                   </div>
                 </div>
-
-
               </div>
             </div>
           </div>
@@ -1289,73 +1279,69 @@
     <i class="fas fa-info-circle notification-icon mr-2"></i>
     <span class="notification-message">This is a notification</span>
   </div>
-  
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
-                      
-    document.addEventListener('DOMContentLoaded', function() {
-      // Generate labels for 10 students
-      const labels = Array.from({ length: 10 }, (_, i) => 'Student ' + (i + 1));
+      document.addEventListener('DOMContentLoaded', function() {
+          // Generate labels for 10 students
+          const labels = Array.from({
+              length: 10
+          }, (_, i) => 'Student ' + (i + 1));
 
-      // Helper function to generate random data for a section (range 0-100)
-      const generateData = () => labels.map(() => Math.floor(Math.random() * 100));
+          // Helper function to generate random data for a section (range 0-100)
+          const generateData = () => labels.map(() => Math.floor(Math.random() * 100));
 
-      // Data for each section degree
-      const attendanceData = generateData();
-      const examData = generateData();
-      const overallDegreeData = generateData();
+          // Data for each section degree
+          const attendanceData = generateData();
+          const examData = generateData();
+          const overallDegreeData = generateData();
 
-      // Initialize the chart
-      const ctx = document.getElementById('sectionChart').getContext('2d');
-      const sectionChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [
-            {
-              label: 'Attendance',
-              data: attendanceData,
-              borderColor: 'rgba(194, 39, 47, 1)',
-              backgroundColor: 'rgba(194, 39, 47, 0.2)',
-              fill: false,
-              tension: 0.2
-            },
-            {
-              label: 'Exams',
-              data: examData,
-              borderColor: 'rgba(127, 255, 0, 1)',
-              backgroundColor: 'rgba(127, 255, 0, 0.2)',
-              fill: false,
-              tension: 0.2
-            },
-            {
-              label: 'Overall Degree',
-              data: overallDegreeData,
-              borderColor: 'rgba(54, 162, 235, 1)',
-              backgroundColor: 'rgba(54, 162, 235, 0.2)',
-              fill: false,
-              tension: 0.2
-            }
-          ]
-        },
-        options: {
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 100
-            }
-          },
-          plugins: {
-            title: {
-              display: true,
-              text: 'Student Progress Tracking: Section Degrees'
-            }
-          },
-          responsive: true,
-          maintainAspectRatio: true
-        }
+          // Initialize the chart
+          const ctx = document.getElementById('sectionChart').getContext('2d');
+          const sectionChart = new Chart(ctx, {
+              type: 'line',
+              data: {
+                  labels: labels,
+                  datasets: [{
+                      label: 'Attendance',
+                      data: attendanceData,
+                      borderColor: 'rgba(194, 39, 47, 1)',
+                      backgroundColor: 'rgba(194, 39, 47, 0.2)',
+                      fill: false,
+                      tension: 0.2
+                  }, {
+                      label: 'Exams',
+                      data: examData,
+                      borderColor: 'rgba(127, 255, 0, 1)',
+                      backgroundColor: 'rgba(127, 255, 0, 0.2)',
+                      fill: false,
+                      tension: 0.2
+                  }, {
+                      label: 'Overall Degree',
+                      data: overallDegreeData,
+                      borderColor: 'rgba(54, 162, 235, 1)',
+                      backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                      fill: false,
+                      tension: 0.2
+                  }]
+              },
+              options: {
+                  scales: {
+                      y: {
+                          beginAtZero: true,
+                          max: 100
+                      }
+                  },
+                  plugins: {
+                      title: {
+                          display: true,
+                          text: 'Student Progress Tracking: Section Degrees'
+                      }
+                  },
+                  responsive: true,
+                  maintainAspectRatio: true
+              }
+          });
       });
-    });
 
 
       function loadCalendar(year, month) {

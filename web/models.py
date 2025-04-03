@@ -5,11 +5,11 @@ import time
 import uuid
 from io import BytesIO
 
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
 from allauth.account.signals import user_signed_up
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.mail import send_mail
@@ -193,87 +193,6 @@ class Avatar(models.Model):
         # Save SVG string
         self.svg = avatar.render()
         super().save(*args, **kwargs)
-
-
-class CounterStatistic(models.Model):
-    """Model to store statistics for live counters."""
-
-    COUNTER_TYPES = [
-        ("active_users", "Active Users"),
-        ("enrollments_today", "Enrollments Today"),
-        ("courses_completed", "Courses Completed"),
-        ("quizzes_completed", "Quizzes Completed"),
-    ]
-
-    counter_type = models.CharField(max_length=30, choices=COUNTER_TYPES, unique=True)
-    value = models.IntegerField(default=0)
-    last_updated = models.DateTimeField(auto_now=True)
-
-    def __str__(self):
-        return f"{self.get_counter_type_display()}: {self.value}"
-
-    @classmethod
-    def get_counter_value(cls, counter_type):
-        """Get the current value for a specific counter type."""
-        counter, created = cls.objects.get_or_create(counter_type=counter_type)
-        return counter.value
-
-    @classmethod
-    def increment_counter(cls, counter_type, increment=1):
-        """Increment a counter by the specified amount."""
-        counter, created = cls.objects.get_or_create(counter_type=counter_type)
-        counter.value += increment
-        counter.save()
-        return counter.value
-
-
-class UserActivity(models.Model):
-    """Model to track recent user activities for live notifications."""
-
-    ACTIVITY_TYPES = [
-        ("enrollment", "Course Enrollment"),
-        ("quiz_completion", "Quiz Completion"),
-        ("course_completion", "Course Completion"),
-        ("challenge_completion", "Challenge Completion"),
-    ]
-
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="activities")
-    activity_type = models.CharField(max_length=30, choices=ACTIVITY_TYPES)
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object_id = models.PositiveIntegerField()
-    content_object = GenericForeignKey("content_type", "object_id")
-    timestamp = models.DateTimeField(auto_now_add=True)
-    # For privacy, make this optional
-    show_full_name = models.BooleanField(default=False)
-    # Store location info if available
-    location = models.CharField(max_length=100, blank=True)
-
-    class Meta:
-        ordering = ["-timestamp"]
-        verbose_name_plural = "User Activities"
-
-    def __str__(self):
-        return f"{self.user.username} - {self.get_activity_type_display()}"
-
-    @property
-    def user_display_name(self):
-        """Return the user name according to privacy settings."""
-        if self.show_full_name:
-            return self.user.get_full_name() or self.user.username
-        return f"{self.user.first_name} from {self.location}" if self.location else self.user.first_name or "Someone"
-
-    @classmethod
-    def record_activity(cls, user, activity_type, content_object, show_full_name=False, location=""):
-        """Create a new activity record."""
-        activity = cls.objects.create(
-            user=user,
-            activity_type=activity_type,
-            content_type=ContentType.objects.get_for_model(content_object),
-            object_id=content_object.id,
-            show_full_name=show_full_name,
-            location=location,
-        )
-        return activity
 
 
 class Subject(models.Model):
@@ -1475,8 +1394,8 @@ class ChallengeSubmission(models.Model):
     submission_text = models.TextField()
     submitted_at = models.DateTimeField(auto_now_add=True)
     points_awarded = models.PositiveIntegerField(default=10)
-    student_feedback = models.TextField(default=None)
-    teacher_feedback = models.TextField(default=None)
+    student_feedback = models.TextField(null=True, blank=True)
+    teacher_feedback = models.TextField(null=True, blank=True)
 
     class Meta:
         unique_together = ["user", "challenge"]
@@ -2100,14 +2019,14 @@ class Quiz(models.Model):
     show_correct_answers = models.BooleanField(default=False, help_text="Show correct answers after quiz completion")
     randomize_questions = models.BooleanField(default=False, help_text="Randomize the order of questions")
     time_limit = models.PositiveIntegerField(null=True, blank=True, help_text="Time limit in minutes (optional)")
-    
+
     # New fields for exam functionality
     exam_type = models.CharField(max_length=10, choices=EXAM_TYPES, default="quiz")
-    course = models.ForeignKey('Course', on_delete=models.CASCADE, related_name="exams", null=True, blank=True)
-    session = models.ForeignKey('Session', on_delete=models.CASCADE, related_name="exams", null=True, blank=True)
+    course = models.ForeignKey("Course", on_delete=models.CASCADE, related_name="exams", null=True, blank=True)
+    session = models.ForeignKey("Session", on_delete=models.CASCADE, related_name="exams", null=True, blank=True)
     passing_score = models.PositiveIntegerField(default=60, help_text="Minimum score to pass the exam (percentage)")
     max_attempts = models.PositiveIntegerField(default=1, help_text="Maximum attempts allowed 1")
-    
+
     def __str__(self):
         return self.title
 
@@ -2116,8 +2035,8 @@ class QuizQuestion(models.Model):
     """Model for storing quiz questions."""
 
     QUESTION_TYPES = [
-        ("multiple", "Multiple Choice"), 
-        ("true_false", "True/False"), 
+        ("multiple", "Multiple Choice"),
+        ("true_false", "True/False"),
         ("short", "Short Answer"),
         ("fill_blank", "Fill in the Blanks"),
         ("open_ended", "Open-Ended Questions"),
@@ -2135,13 +2054,13 @@ class QuizQuestion(models.Model):
     points = models.PositiveIntegerField(default=1)
     order = models.PositiveIntegerField(default=0)
     image = models.ImageField(upload_to="quiz_questions/", blank=True, default="")
-    
+
     # New fields for specialized question types
     code_starter = models.TextField(blank=True, help_text="Starter code for coding questions")
     expected_output = models.TextField(blank=True, help_text="Expected output for coding questions")
     diagram_data = models.JSONField(null=True, blank=True, help_text="Data for diagram questions")
     matching_items = models.JSONField(null=True, blank=True, help_text="Items to match")
-    
+
     class Meta:
         ordering = ["order"]
 
@@ -2168,10 +2087,10 @@ class UserQuiz(models.Model):
     """Model for tracking user quiz attempts and responses"""
 
     CORRECTION_STATUS = [
-        ('not_needed', 'No Correction Needed'),
-        ('pending', 'Correction Pending'),
-        ('in_progress', 'Correction In Progress'),
-        ('completed', 'Correction Completed')
+        ("not_needed", "No Correction Needed"),
+        ("pending", "Correction Pending"),
+        ("in_progress", "Correction In Progress"),
+        ("completed", "Correction Completed"),
     ]
 
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="user_quizzes")
@@ -2188,10 +2107,10 @@ class UserQuiz(models.Model):
     student_feedback = models.TextField(null=True, blank=True, default=None)
     teacher_feedback = models.TextField(null=True, blank=True, default=None)
     correction_status = models.CharField(
-        max_length=15, 
-        choices=CORRECTION_STATUS, 
-        default='not_needed',
-        help_text="Status of manual correction for text questions"
+        max_length=15,
+        choices=CORRECTION_STATUS,
+        default="not_needed",
+        help_text="Status of manual correction for text questions",
     )
 
     class Meta:

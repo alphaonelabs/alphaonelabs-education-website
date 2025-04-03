@@ -1,4 +1,5 @@
 import re
+from typing import Any
 
 from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
@@ -529,45 +530,45 @@ class SessionForm(forms.ModelForm):
 
 class QuizQuestionSpecializedForm(forms.ModelForm):
     """Form for creating specialized quiz questions."""
-    
+
     class Meta:
         model = QuizQuestion
-        fields = ['text', 'question_type', 'explanation', 'points', 'image']
+        fields = ["text", "question_type", "explanation", "points", "image"]
         widgets = {
-            'text': TailwindTextarea(attrs={'rows': 3, 'placeholder': 'Question text'}),
-            'question_type': TailwindSelect(),
-            'explanation': TailwindTextarea(attrs={'rows': 2, 'placeholder': 'Explanation for the correct answer'}),
-            'points': TailwindNumberInput(attrs={'min': '1', 'value': '1'}),
-            'image': TailwindFileInput(attrs={'accept': 'image/*'}),
+            "text": TailwindTextarea(attrs={"rows": 3, "placeholder": "Question text"}),
+            "question_type": TailwindSelect(),
+            "explanation": TailwindTextarea(attrs={"rows": 2, "placeholder": "Explanation for the correct answer"}),
+            "points": TailwindNumberInput(attrs={"min": "1", "value": "1"}),
+            "image": TailwindFileInput(attrs={"accept": "image/*"}),
         }
-    
+
     # Additional fields for specialized question types
     code_starter = forms.CharField(
-        widget=TailwindTextarea(attrs={'rows': 5, 'placeholder': 'Starter code for coding questions'}),
+        widget=TailwindTextarea(attrs={"rows": 5, "placeholder": "Starter code for coding questions"}),
         required=False,
-        help_text="Starter code for coding questions"
+        help_text="Starter code for coding questions",
     )
-    
+
     expected_output = forms.CharField(
-        widget=TailwindTextarea(attrs={'rows': 3, 'placeholder': 'Expected output for coding questions'}),
+        widget=TailwindTextarea(attrs={"rows": 3, "placeholder": "Expected output for coding questions"}),
         required=False,
-        help_text="Expected output for coding questions"
+        help_text="Expected output for coding questions",
     )
-    
-    def __init__(self, *args, **kwargs):
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
-        self.fields['question_type'].widget.attrs.update({'class': 'form-control'})
-        
+        self.fields["question_type"].widget.attrs.update({"class": "form-control"})
+
     def clean(self):
         cleaned_data = super().clean()
-        question_type = cleaned_data.get('question_type')
-        
-        if question_type == 'coding':
-            if not cleaned_data.get('code_starter'):
-                self.add_error('code_starter', 'Code starter is required for coding questions')
-            if not cleaned_data.get('expected_output'):
-                self.add_error('expected_output', 'Expected output is required for coding questions')
-                
+        question_type = cleaned_data.get("question_type")
+
+        if question_type == "coding":
+            if not cleaned_data.get("code_starter"):
+                self.add_error("code_starter", "Code starter is required for coding questions")
+            if not cleaned_data.get("expected_output"):
+                self.add_error("expected_output", "Expected output is required for coding questions")
+
         return cleaned_data
 
 
@@ -1753,16 +1754,20 @@ class TakeQuizForm(forms.Form):
                     options = question.options.all().order_by("order")
                     choices = [(str(option.id), option.text) for option in options]
                     self.fields[f"question_{question.id}"] = forms.MultipleChoiceField(
-                        label=question.text, choices=choices, widget=forms.CheckboxSelectMultiple, required=False
+                        label=question.text,
+                        choices=[("true", "True"), ("false", "False")],
+                        widget=forms.RadioSelect,
+                        required=True,
+                        error_messages={"required": "Please select an answer for this question"},
                     )
                 elif question.question_type == "true_false":
                     # For true/false, use hardcoded true/false values to match the template
                     self.fields[f"question_{question.id}"] = forms.ChoiceField(
-                        label=question.text, 
-                        choices=[("true", "True"), ("false", "False")], 
-                        widget=forms.RadioSelect, 
+                        label=question.text,
+                        choices=[("true", "True"), ("false", "False")],
+                        widget=forms.RadioSelect,
                         required=True,
-                        error_messages={'required': 'Please select an answer for this question'}
+                        error_messages={"required": "Please select an answer for this question"},
                     )
                 else:
                     # For short answer, add a text field
