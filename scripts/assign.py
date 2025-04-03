@@ -322,8 +322,7 @@ def main():
                     if assign_response.status_code >= 400:
                         print(f"Error assigning issue: {assign_response.status_code} - {assign_response.text}")
                         return
-                    else:
-                        print(f"Issue #{issue_number} assigned to {user_login}")
+                    print(f"Issue #{issue_number} assigned to {user_login}")
 
                     # Add "assigned" label
                     labels_url = f"https://api.github.com/repos/{owner}/{repo}/issues/{issue_number}/labels"
@@ -336,7 +335,7 @@ def main():
 
                     # Add assignment comment
                     assignment_msg = (
-                        f"Hey @{user_login}! You're now assigned to this issue. " f"Please finish your PR within 1 day."
+                        f"Hey @{user_login}! You're now assigned to this issue. Please finish your PR within 1 day."
                     )
                     print("Posting assignment comment.")
                     comment_response = requests.post(
