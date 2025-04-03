@@ -7024,7 +7024,7 @@ def manage_membership(request) -> HttpResponse:
 
 
 @login_required
-def membership_cancel(request) -> HttpResponse:
+def membership_cancel(request: HttpRequest) -> HttpResponse:
     """Display the page for canceling membership."""
     # Check if user has a membership
     if not hasattr(request.user, "membership"):
@@ -7046,7 +7046,7 @@ def membership_cancel(request) -> HttpResponse:
 
 
 @login_required
-def cancel_subscription_view(request):
+def cancel_subscription_view(request: HttpRequest) -> HttpResponse:
     """Cancel the user's subscription."""
     if request.method != "POST":
         return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
@@ -7229,7 +7229,7 @@ def subscribe_membership(request: HttpRequest, plan_slug: str) -> HttpResponse:
 
 
 @login_required
-def checkout_membership(request, plan_slug, billing_period):
+def checkout_membership(request: HttpRequest, plan_slug: str, billing_period: str) -> HttpResponse:
     """Display the checkout page for a membership plan."""
     if billing_period not in ["monthly", "yearly"]:
         return redirect("subscribe_membership", plan_slug=plan_slug)
@@ -7268,7 +7268,7 @@ def checkout_membership(request, plan_slug, billing_period):
     return render(request, "membership/checkout.html", context)
 
 
-def change_membership_plan(request):
+def change_membership_plan(request: HttpRequest) -> HttpResponse:
     """Redirect to membership plans page for changing plans."""
     return redirect("membership_plans")
 

@@ -1795,6 +1795,18 @@ class StudyGroupForm(forms.ModelForm):
 
 
 class MembershipPlanForm(forms.ModelForm):
+    def clean_stripe_monthly_price_id(self):
+        price_id = self.cleaned_data.get("stripe_monthly_price_id")
+        if price_id and not price_id.startswith("price_"):
+            raise forms.ValidationError("Stripe price IDs should start with 'price_'")
+        return price_id
+
+    def clean_stripe_yearly_price_id(self):
+        price_id = self.cleaned_data.get("stripe_yearly_price_id")
+        if price_id and not price_id.startswith("price_"):
+            raise forms.ValidationError("Stripe price IDs should start with 'price_'")
+        return price_id
+
     class Meta:
         model = MembershipPlan
         fields = [
@@ -1825,7 +1837,7 @@ class MembershipPlanForm(forms.ModelForm):
             "is_popular": TailwindCheckboxInput(),
             "order": TailwindNumberInput(attrs={"min": "0"}),
         }
-        help_texts = {
+        help_texts: ClassVar[dict[str, str]] = {
             "features": "Enter the features for this membership plan, one per line.",
             "is_popular": "Mark this plan as popular to highlight it on the pricing page.",
             "stripe_monthly_price_id": "Stripe Price ID for monthly billing",
