@@ -152,7 +152,7 @@ class Command(BaseCommand):
             )
             one_time_challenges.append(challenge)
             self.stdout.write(
-                f"Created one-time challenge: {challenge.title}, {challenge.start_date} - {challenge.end_date}"
+                f"Created one-time challenge: {challenge.title}, {challenge.start_date} - {challenge.end_date}",
             )
 
         if not challenges:
@@ -579,7 +579,7 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("Successfully created test data"))
 
-    def create_exams_and_quizzes(self, courses, sessions, students, teachers):
+    def create_exams_and_quizzes(self, courses: list, sessions: list, students: list, teachers: list) -> None:
         """Create exams, quizzes, and student submissions for testing."""
         self.stdout.write("Creating exams and quizzes...")
 
@@ -723,33 +723,27 @@ class Command(BaseCommand):
                     )
                     self.stdout.write(f"Created submission for {student.username} - {session_exam.title}")
 
-    def get_question_text(self, question_type):
+    def get_question_text(self, question_type: str) -> str:
         """Generate appropriate question text based on question type."""
-        if question_type == "multiple":
-            return "Which of the following options is correct?"
-        elif question_type == "true_false":
-            return "Is the following statement true or false?"
-        elif question_type == "short":
-            return "Provide a short answer to the following question."
-        elif question_type == "fill_blank":
-            return "Complete the following sentence: The capital of France is _____."
-        elif question_type == "open_ended":
-            return "Explain the concept of machine learning in your own words."
-        elif question_type == "problem_solving":
-            return (
-                "Solve the following problem: If a train travels at 60 mph, how long will it take to travel 240 miles?"
-            )
-        elif question_type == "scenario":
-            long_string = (
-                "You are a software developer working on a critical project."
+        question_map = {
+            "multiple": "Which of the following options is correct?",
+            "true_false": "Is the following statement true or false?",
+            "short": "Provide a short answer to the following question.",
+            "fill_blank": "Complete the following sentence: The capital of France is _____.",
+            "open_ended": "Explain the concept of machine learning in your own words.",
+            "problem_solving": (
+                "Solve the following problem: If a train travels at 60 mph, "
+                "how long will it take to travel 240 miles?"
+            ),
+            "scenario": (
+                "You are a software developer working on a critical project. "
                 "The deadline is approaching, but you've discovered a major bug. What do you do?"
-            )
-            return long_string
-        elif question_type == "coding":
-            return "Write a function that returns the sum of two numbers."
-        return "Sample question text."
+            ),
+            "coding": "Write a function that returns the sum of two numbers.",
+        }
+        return question_map.get(question_type, "Sample question text.")
 
-    def create_question_options(self, question):
+    def create_question_options(self, question: QuizQuestion) -> None:
         """Create options for a question based on its type."""
         if question.question_type == "multiple":
             # Create 4 options with one correct answer
@@ -766,7 +760,7 @@ class Command(BaseCommand):
             QuizOption.objects.create(question=question, text="True", is_correct=True, order=1)
             QuizOption.objects.create(question=question, text="False", is_correct=not True, order=2)
 
-    def generate_mock_answers(self, quiz):
+    def generate_mock_answers(self, quiz: Quiz) -> dict:
         """Generate mock answers for a quiz submission."""
         answers = {}
         questions = quiz.questions.all()

@@ -3534,7 +3534,16 @@ def challenge_submit(request, challenge_id):
         }
 
         if form.is_valid():
-            ai_response = ai_assignment_corrector(challenge_detail)
+            try:
+                ai_response = ai_assignment_corrector(challenge_detail)
+            except Exception as e:
+                # Log the error but continue with default values
+                logger.error(f"AI correction failed: {str(e)}")
+                ai_response = {
+                    "student_feedback": "Automatic feedback unavailable at this time.",
+                    "teacher_feedback": "AI evaluation service encountered an error.",
+                    "degree": 0,  # Default score
+                }
 
             submission = form.save(commit=False)
             submission.user = request.user

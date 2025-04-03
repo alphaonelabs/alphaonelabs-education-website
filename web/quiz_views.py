@@ -84,7 +84,7 @@ def create_course_exam(
 
 
 @login_required
-def add_question_specialized(request, quiz_id):
+def add_question_specialized(request: HttpRequest, quiz_id: int) -> HttpResponse:
     """Add a specialized question to a quiz based on question type."""
     quiz = get_object_or_404(Quiz, id=quiz_id)
 
@@ -160,8 +160,7 @@ def add_question_specialized(request, quiz_id):
                 # Redirect based on the button clicked
                 if "save_and_add" in request.POST:
                     return redirect("add_question_specialized", quiz_id=quiz.id)
-                else:
-                    return redirect("quiz_detail", quiz_id=quiz.id)
+                return redirect("quiz_detail", quiz_id=quiz.id)
             except Exception as e:
                 print(e)
                 # Re-raise the exception
@@ -1093,7 +1092,12 @@ def quiz_analytics(request, quiz_id):
 
 
 @login_required
-def student_exam_correction(request, course_id, quiz_id, user_quiz_id):
+def student_exam_correction(
+    request: HttpRequest,
+    course_id: int,
+    quiz_id: int,
+    user_quiz_id: int,
+) -> HttpResponse:
     """View and grade a specific student's exam"""
     course = get_object_or_404(Course, id=course_id)
     quiz = get_object_or_404(Quiz, id=quiz_id, course=course)
@@ -1200,7 +1204,8 @@ def student_exam_correction(request, course_id, quiz_id, user_quiz_id):
             q_dict["is_graded"] = answer_data.get("is_graded", False)
             q_dict["points_awarded"] = answer_data.get("points_awarded", 0)
             q_dict["needs_grading"] = question.question_type not in ["multiple", "true_false"] and not answer_data.get(
-                "is_graded", False
+                "is_graded",
+                False,
             )
         else:
             q_dict["user_answer"] = ""

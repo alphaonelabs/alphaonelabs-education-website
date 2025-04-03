@@ -1,6 +1,7 @@
 import json
 import os
 import re
+from typing import Union
 
 import google.generativeai as genai
 
@@ -93,7 +94,7 @@ def ai_assignment_corrector(challenge_form: dict) -> dict:
         }
 
 
-def ai_quiz_corrector(quiz_data: dict) -> str:
+def ai_quiz_corrector(quiz_data: dict) -> Union[str, dict]:
 
     AI_prompt_ai_quiz_corrector = """
     You are an AI-powered assignment corrector. Your task is to evaluate student assignments and provide feedback in a

@@ -4,6 +4,7 @@ import string
 import time
 import uuid
 from io import BytesIO
+from typing import ClassVar, List, Tuple
 
 from allauth.account.signals import user_signed_up
 from django.conf import settings
@@ -2010,8 +2011,23 @@ class LearningStreak(models.Model):
 class Quiz(models.Model):
     """Model for storing custom quizzes created by users."""
 
+    class ExamType(models.TextChoices):
+        SESSION = "session", "Session Exam"
+        COURSE = "course", "Course Exam"
+        QUIZ = "quiz", "Quiz"
+
+    exam_type = models.CharField(
+        max_length=10,
+        choices=ExamType.choices,
+        default=ExamType.QUIZ,
+    )
+
     STATUS_CHOICES = [("draft", "Draft"), ("published", "Published"), ("private", "Private")]
-    EXAM_TYPES = [("session", "Session Exam"), ("course", "Course Exam"), ("quiz", "Quiz")]
+    EXAM_TYPES: ClassVar[List[Tuple[str, str]]] = [
+        ("session", "Session Exam"),
+        ("course", "Course Exam"),
+        ("quiz", "Quiz"),
+    ]
 
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
@@ -2035,7 +2051,7 @@ class Quiz(models.Model):
     course = models.ForeignKey("Course", on_delete=models.CASCADE, related_name="exams", null=True, blank=True)
     session = models.ForeignKey("Session", on_delete=models.CASCADE, related_name="exams", null=True, blank=True)
     passing_score = models.PositiveIntegerField(default=60, help_text="Minimum score to pass the exam (percentage)")
-    max_attempts = models.PositiveIntegerField(default=1, help_text="Maximum attempts allowed 1")
+    max_attempts = models.PositiveIntegerField(default=1, help_text="Maximum attempts allowed")
 
     def __str__(self):
         return self.title
@@ -2044,7 +2060,7 @@ class Quiz(models.Model):
 class QuizQuestion(models.Model):
     """Model for storing quiz questions."""
 
-    QUESTION_TYPES = [
+    QUESTION_TYPES: ClassVar[List[Tuple[str, str]]] = [
         ("multiple", "Multiple Choice"),
         ("true_false", "True/False"),
         ("short", "Short Answer"),
