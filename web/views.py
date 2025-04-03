@@ -6976,7 +6976,7 @@ def delete_post(request, post_id):
 
 
 @login_required
-def manage_membership(request) -> HttpResponse:
+def manage_membership(request: HttpRequest) -> HttpResponse:
     """Display the membership management page."""
     # Check if user has a membership
     if not hasattr(request.user, "membership"):
@@ -6994,10 +6994,10 @@ def manage_membership(request) -> HttpResponse:
 
             # Refresh membership data
             membership.refresh_from_db()
-        except stripe.error.StripeError as e:
-            logger.exception("Error refreshing membership for user %s: %s", request.user.email, e)
-        except Exception as e:
-            logger.exception("Unexpected error refreshing membership for user %s: %s", request.user.email, e)
+        except stripe.error.StripeError:
+            logger.exception("Error refreshing membership for user %s", request.user.email)
+        except Exception:
+            logger.exception("Unexpected error refreshing membership for user %s", request.user.email)
 
     # Get invoices if customer ID exists
     invoices = []
@@ -7396,7 +7396,7 @@ def handle_invoice_payment_failed(invoice):
             membership = user.membership
 
             # Update membership status if needed
-            if membership.status == "active":
+            if membership.status != "past_due":
                 membership.status = "past_due"
                 membership.save(update_fields=["status"])
 
@@ -7416,5 +7416,5 @@ def handle_invoice_payment_failed(invoice):
             logger.info("Payment failed for user %s via webhook", user.email)
         except User.DoesNotExist:
             logger.exception("No user found for customer %s", invoice["customer"])
-        except Exception as e:
-            logger.error("Error handling invoice.payment_failed: %s", str(e))
+        except Exception:
+            logger.error("Error handling invoice.payment_failed")

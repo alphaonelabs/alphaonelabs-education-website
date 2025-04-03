@@ -1809,6 +1809,20 @@ class MembershipPlanForm(forms.ModelForm):
             raise forms.ValidationError(self.STRIPE_PRICE_ID_ERROR)
         return price_id
 
+    def clean(self):
+        cleaned_data = super().clean()
+        price_monthly = cleaned_data.get("price_monthly")
+        price_yearly = cleaned_data.get("price_yearly")
+
+        if price_monthly and price_yearly:
+            yearly_equivalent = price_monthly * 12
+            if price_yearly >= yearly_equivalent:
+                self.add_error(
+                    "price_yearly", "Yearly price should offer a discount compared to paying monthly for 12 months."
+                )
+
+        return cleaned_data
+
     class Meta:
         model = MembershipPlan
         fields = [
