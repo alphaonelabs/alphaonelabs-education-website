@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}
+  {{ meme.title }} - Educational Meme
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto mt-8 mb-16 px-4 max-w-5xl">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div class="p-6">
+        <div class="flex justify-between items-start mb-6">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">{{ meme.title }}</h1>
+            <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mt-2">
+              <span class="bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-300 px-2 py-1 rounded-full text-xs">
+                {{ meme.subject.name }}
+              </span>
+              <span class="mx-2">•</span>
+              <span>{{ meme.created_at|date:'F j, Y' }}</span>
+            </div>
+          </div>
+          <a href="{% url 'meme_list' %}"
+             class="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300">
+            <i class="fas fa-arrow-left mr-2"></i> Back to memes
+          </a>
+        </div>
+        <div class="bg-gray-100 dark:bg-gray-900 rounded-lg p-6 mb-6 flex items-center justify-center">
+          <img src="{{ meme.image.url }}"
+               alt="{{ meme.title }}"
+               class="max-w-full max-h-[70vh] object-contain rounded"
+               onerror="handleImageError(this)" />
+        </div>
+        {% if meme.caption %}
+          <div class="mb-6">
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">Caption</h2>
+            <p class="text-gray-700 dark:text-gray-300">{{ meme.caption }}</p>
+          </div>
+        {% endif %}
+        <div class="border-t border-gray-200 dark:border-gray-700 my-6"></div>
+        <div class="flex items-center mb-6">
+          <div class="w-10 h-10 bg-teal-500 rounded-full flex items-center justify-center text-white font-bold">
+            <span>{{ meme.uploader.username|first|upper }}</span>
+          </div>
+          <div class="ml-3">
+            <p class="text-gray-700 dark:text-gray-300 font-medium">{{ meme.uploader.username }}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Uploaded on {{ meme.created_at|date:'F j, Y' }}</p>
+          </div>
+        </div>
+        <div class="flex space-x-3">
+          <button id="shareButton"
+                  aria-label="Share this meme"
+                  class="flex items-center justify-center px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg">
+            <i class="fas fa-share-alt mr-2"></i> Share
+          </button>
+          <button id="downloadButton"
+                  aria-label="Download this meme"
+                  class="flex items-center justify-center px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-white rounded-lg">
+            <i class="fas fa-download mr-2"></i> Save
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          const downloadButton = document.getElementById('downloadButton');
+          const shareButton = document.getElementById('shareButton');
+
+          function showNotification(message, isSuccess = true) {
+              const notification = createNotificationElement(message, isSuccess);
+              document.body.appendChild(notification);
+              setTimeout(() => animateNotificationIn(notification), 10);
+              setTimeout(() => dismissNotification(notification), 2510);
+          }
+
+          function createNotificationElement(message, isSuccess) {
+              const notification = document.createElement('div');
+              const bgColor = isSuccess ? 'bg-green-500' : 'bg-red-500';
+              const icon = isSuccess ? 'fa-check-circle' : 'fa-exclamation-circle';
+
+              notification.className = `fixed bottom-4 right-4 ${bgColor} text-white px-4 py-2 rounded shadow-lg transition-all duration-300`;
+              notification.innerHTML = `<div class="flex items-center"><i class="fas ${icon} mr-2"></i> ${message}</div>`;
+              notification.style.transform = 'translateY(20px)';
+              notification.style.opacity = '0';
+
+              return notification;
+          }
+
+          function animateNotificationIn(notification) {
+              notification.style.transform = 'translateY(0)';
+              notification.style.opacity = '1';
+          }
+
+          function dismissNotification(notification) {
+              notification.style.transform = 'translateY(20px)';
+              notification.style.opacity = '0';
+              setTimeout(() => notification.remove(), 300);
+          }
+
+          async function handleDownload() {
+              const link = document.createElement('a');
+              const imageUrl = "{{ meme.image.url }}";
+              link.href = imageUrl;
+              const filename = imageUrl.split('/').pop().split('?')[0];
+              const extension = filename.includes('.') ? '.' + filename.split('.').pop() : '.png';
+              link.download = "{{ meme.title|slugify }}" + extension;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+          }
+
+          async function handleShare() {
+              const url = window.location.href;
+              try {
+                  if (navigator.clipboard && navigator.clipboard.writeText) {
+                      await navigator.clipboard.writeText(url);
+                      showNotification('Link copied to clipboard!', true);
+                  } else {
+                      const tempInput = document.createElement('input');
+                      tempInput.value = url;
+                      document.body.appendChild(tempInput);
+                      tempInput.select();
+                      document.execCommand('copy');
+                      document.body.removeChild(tempInput);
+                      showNotification('Link copied to clipboard!', true);
+                  }
+              } catch {
+                  showNotification('Failed to copy link. Please try again.', false);
+              }
+          }
+
+          function handleImageError(img) {
+              img.outerHTML = `
+                <div class="text-center w-full">
+                    <i class="fas fa-image-slash text-gray-400 dark:text-gray-600 text-4xl mb-3"></i>
+                    <p class="text-gray-700 dark:text-gray-300">Image could not be loaded</p>
+                </div>`;
+          }
+
+          downloadButton.addEventListener('click', handleDownload);
+          shareButton.addEventListener('click', handleShare);
+      });
+  </script>
+{% endblock content %}
