@@ -7063,7 +7063,7 @@ def cancel_subscription_view(request):
 
 
 @login_required
-def reactivate_subscription_view(request):
+def reactivate_subscription_view(request: HttpRequest) -> HttpResponse:
     """Reactivate a cancelled subscription."""
     if request.method != "POST":
         return JsonResponse({"success": False, "error": "Invalid request method"}, status=405)
@@ -7079,7 +7079,7 @@ def reactivate_subscription_view(request):
     return redirect("manage_membership")
 
 
-def membership_benefits(request):
+def membership_benefits(request: HttpRequest) -> HttpResponse:
     """Display the membership benefits page."""
     return render(request, "membership/benefits.html")
 
@@ -7321,37 +7321,33 @@ def membership_webhook(request) -> HttpResponse:
 
 def handle_subscription_deleted(subscription: dict) -> None:
     """Handle subscription deleted webhook event."""
-    from django.contrib.auth import get_user_model
+    if subscription.get("customer"):
+        from django.contrib.auth import get_user_model
 
-    User = get_user_model()
+        User = get_user_model()
 
-    try:
-        user = User.objects.get(membership__stripe_customer_id=subscription["customer"])
-        membership = user.membership
+        try:
+            user = User.objects.get(membership__stripe_customer_id=subscription["customer"])
+            membership = user.membership
 
-        # Update membership status
-        membership.status = "canceled"
-        membership.end_date = (
-            timezone.datetime.fromtimestamp(subscription["current_period_end"], tz=timezone.utc)
-            if subscription.get("current_period_end")
-            else timezone.now()
-        )
-        membership.save()
+            # Update membership status
+            membership.status = "canceled"
+            membership.save(update_fields=["status"])
 
-        # Record event
-        MembershipSubscriptionEvent.objects.create(
-            user=user,
-            membership=membership,
-            event_type="canceled",
-            stripe_event_id=subscription.get("id", ""),
-            data={"subscription_id": subscription.get("id", ""), "canceled_at": timezone.now().isoformat()},
-        )
+            # Record subscription event
+            MembershipSubscriptionEvent.objects.create(
+                user=user,
+                membership=membership,
+                event_type="canceled",
+                stripe_event_id=subscription.get("id", ""),
+                data={"subscription_id": subscription.get("id", ""), "canceled_at": timezone.now().isoformat()},
+            )
 
-        logger.info("Subscription deleted for user %s via webhook", user.email)
-    except User.DoesNotExist:
-        logger.error("No user found for customer %s", subscription["customer"])
-    except Exception as e:
-        logger.exception("Error handling subscription.deleted: %s", e)
+            logger.info("Subscription deleted for user %s via webhook", user.email)
+        except User.DoesNotExist:
+            logger.exception("No user found for customer %s", subscription["customer"])
+        except Exception:
+            logger.exception("Error handling subscription.deleted")
 
 
 def handle_invoice_payment_succeeded(invoice):
@@ -7378,11 +7374,11 @@ def handle_invoice_payment_succeeded(invoice):
                 },
             )
 
-            logger.info(f"Payment succeeded for user {user.email} via webhook")
+            logger.info("Payment succeeded for user %s via webhook", user.email)
         except User.DoesNotExist:
-            logger.error(f"No user found for customer {invoice['customer']}")
-        except Exception as e:
-            logger.error(f"Error handling invoice.payment_succeeded: {str(e)}")
+            logger.exception("No user found for customer %s", invoice["customer"])
+        except Exception:
+            logger.exception("Error handling invoice.payment_succeeded")
 
 
 def handle_invoice_payment_failed(invoice):
@@ -7414,8 +7410,8 @@ def handle_invoice_payment_failed(invoice):
                 },
             )
 
-            logger.info(f"Payment failed for user {user.email} via webhook")
+            logger.info("Payment failed for user %s via webhook", user.email)
         except User.DoesNotExist:
-            logger.error(f"No user found for customer {invoice['customer']}")
+            logger.error("No user found for customer %s", invoice["customer"])
         except Exception as e:
-            logger.error(f"Error handling invoice.payment_failed: {str(e)}")
+            logger.error("Error handling invoice.payment_failed: %s", str(e))
