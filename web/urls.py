@@ -430,6 +430,7 @@ urlpatterns += i18n_patterns(
     path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
+    path("add-custom-badge/", views.add_custom_badge, name="add_custom_badge"),
     prefix_default_language=True,
 )
 

@@ -1770,17 +1770,39 @@ class Donation(models.Model):
 
 
 class Badge(models.Model):
-    BADGE_TYPES = [
-        ("challenge", "Challenge Completion"),
-        ("course", "Course Completion"),
+    """Model representing badges awarded for various achievements."""
+
+    BADGE_TYPE_CHOICES = [
+        ("perfect_attendance", "Perfect Attendance"),
+        ("participation", "Outstanding Participation"),
+        ("completion", "Course Completion"),
         ("achievement", "Special Achievement"),
-        ("teacher_awarded", "Teacher Awarded"),
+        ("challenge", "Challenge Completion"),
     ]
     name = models.CharField(max_length=100)
-    description = models.TextField()
-    image = models.ImageField(upload_to="badges/")
-    badge_type = models.CharField(max_length=20, choices=BADGE_TYPES)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True, related_name="badges")
+    badge_type = models.CharField(
+        max_length=50,
+        choices=BADGE_TYPE_CHOICES,
+        default="perfect_attendance",
+    )
+    custom_type = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Custom badge type (optional, overrides predefined types)",
+    )
+    description = models.TextField(blank=True)
+    image = models.ImageField(
+        upload_to="badge_images/",
+        blank=True,
+        help_text="Upload an image for the badge (200x200 recommended)",
+    )
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name="badges",
+        null=True,
+        blank=True,
+    )
     challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, null=True, blank=True, related_name="badges")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_badges")
     is_active = models.BooleanField(default=True)
@@ -1858,7 +1880,7 @@ def award_challenge_badge(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Enrollment)
 def award_course_completion_badge(sender, instance, **kwargs):
     if instance.status == "completed":
-        course_badges = Badge.objects.filter(course=instance.course, badge_type="course", is_active=True)
+        course_badges = Badge.objects.filter(course=instance.course, badge_type="completion", is_active=True)
         for badge in course_badges:
             if not UserBadge.objects.filter(user=instance.student, badge=badge).exists():
                 UserBadge.objects.create(
