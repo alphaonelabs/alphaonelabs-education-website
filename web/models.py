@@ -1392,8 +1392,8 @@ class ChallengeSubmission(models.Model):
     submission_text = models.TextField()
     submitted_at = models.DateTimeField(auto_now_add=True)
     points_awarded = models.PositiveIntegerField(default=10)
-    student_feedback = models.TextField(null=True, blank=True)
-    teacher_feedback = models.TextField(null=True, blank=True)
+    student_feedback = models.TextField(blank=True, default="")
+    teacher_feedback = models.TextField(blank=True, default="")
 
     class Meta:
         unique_together = ["user", "challenge"]
@@ -2114,8 +2114,8 @@ class UserQuiz(models.Model):
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
     answers = models.JSONField(default=dict, blank=True, help_text="JSON storing the user's answers and question IDs")
-    student_feedback = models.TextField(null=True, blank=True, default=None)
-    teacher_feedback = models.TextField(null=True, blank=True, default=None)
+    student_feedback = models.TextField(blank=True, default="")
+    teacher_feedback = models.TextField(blank=True, default="")
     correction_status = models.CharField(
         max_length=15,
         choices=CORRECTION_STATUS,

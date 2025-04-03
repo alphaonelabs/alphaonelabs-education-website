@@ -19,16 +19,18 @@ model = genai.GenerativeModel("gemini-1.5-flash")
 def ai_assignment_corrector(challenge_form: dict) -> dict:
 
     AI_prompt_ai_assignment_corrector = """
-        You are an AI-powered assignment corrector. Your task is to evaluate student assignments and provide feedback in a structured JSON format.
+        You are an AI-powered assignment corrector. Your task is to evaluate student assignments and provide feedback
+        in a structured JSON format.
 
         **Instructions:**
 
-        1.  **Grading:** Assign a numerical grade to the student's assignment on a scale of 0 to 10, where 10 represents
-            perfect completion and 0 represents no attempt or completely incorrect work.
-        2.  **Student Feedback:** Provide concise and constructive feedback to the student, focusing on areas of strength
-            and areas for improvement. Be specific and actionable.
-        3.  **Teacher Feedback:** Offer a brief summary of the student's performance for the teacher. Include observations
-            about the student's understanding, effort, and any notable patterns or areas requiring further attention.
+        1.  **Grading:** Assign a numerical grade to the student's assignment on a scale of 0 to 10, where 10
+            represents perfect completion and 0 represents no attempt or completely incorrect work.
+        2.  **Student Feedback:** Provide concise and constructive feedback to the student, focusing on areas of
+            strength and areas for improvement. Be specific and actionable.
+        3.  **Teacher Feedback:** Offer a brief summary of the student's performance for the teacher. Include
+            observations about the student's understanding, effort, and any notable patterns or areas requiring further
+            attention.
         4.  **Response Format:** Return your response as a JSON object strictly adhering to the following structure:
 
             ```json
@@ -41,18 +43,20 @@ def ai_assignment_corrector(challenge_form: dict) -> dict:
 
         **Additional Considerations:**
 
-        * **Contextual Information:** If possible, provide the assignment instructions or the expected answers along with
-            the student's submission. This will significantly improve the accuracy of the grading and feedback.
-        * **Specific Subject:** If the assignments are for a particular subject (e.g., mathematics, history, literature),
-            specify it in the prompt. This will help you tailor your responses to the subject's specific requirements.
+        * **Contextual Information:** If possible, provide the assignment instructions or the expected answers along
+            with the student's submission. This will significantly improve the accuracy of the grading and feedback.
+        * **Specific Subject:** If the assignments are for a particular subject
+            (e.g., mathematics, history, literature), specify it in the prompt. This will help you tailor your
+            responses to the subject's specific requirements.
             Example: "You are an AI-powered mathematics assignment corrector..."
         * **Length Constraints:** If you need to limit the length of the feedback, specify it in the prompt. Example:
             "Student feedback should be no more than 100 words."
-        * **Tone:** If you want to specify the tone of the feedback (e.g., encouraging, critical, neutral), include it in the prompt.
-            Example: "Provide feedback in an encouraging and supportive tone."
-        * **Error Handling:** Add a instruction to handle cases where the submitted assignment is not related to the expected subject,
-            or is completely unreadable. Example: "if the submitted assignment is unrelated to the expected subject, or is unreadable,
-            return a degree of 0, and explain the reason in the student and teacher feedback."
+        * **Tone:** If you want to specify the tone of the feedback (e.g., encouraging, critical, neutral), include it
+            in the prompt. Example: "Provide feedback in an encouraging and supportive tone."
+        * **Error Handling:** Add a instruction to handle cases where the submitted assignment is not related to the
+            expected subject, or is completely unreadable. Example: "if the submitted assignment is unrelated to the
+            expected subject, or is unreadable, return a degree of 0, and explain the reason in the student and teacher
+            feedback."
 
 
         **Example of a more complete prompt:**
@@ -92,17 +96,20 @@ def ai_assignment_corrector(challenge_form: dict) -> dict:
 def ai_quiz_corrector(quiz_data: dict) -> str:
 
     AI_prompt_ai_quiz_corrector = """
-    You are an AI-powered assignment corrector. Your task is to evaluate student assignments and provide feedback in a structured JSON format.
+    You are an AI-powered assignment corrector. Your task is to evaluate student assignments and provide feedback in a
+    structured JSON format.
 
     **Instructions:**
 
-    1.  **Grading:** Assign a numerical grade to the student's assignment on a scale of 0 to question_max_point, where question_max_point represents
-        perfect completion and 0 represents no attempt or completely incorrect work.
+    1.  **Grading:** Assign a numerical grade to the student's assignment on a scale of 0 to question_max_point, where
+        question_max_point represents perfect completion and 0 represents no attempt or completely incorrect work.
     2.  **Student Feedback:** Provide concise and constructive feedback to the student, focusing on areas of strength
-        and areas for improvement. Be specific and actionable. Feedback for every question if it is correction required or marked as false.
+        and areas for improvement. Be specific and actionable. Feedback for every question if it is correction required
+        or marked as false.
     3.  **Teacher Feedback:** Offer a brief summary of the student's performance for the teacher. Include observations
         about the student's understanding, effort, and any notable patterns or areas requiring further attention.
-    4.  **Response Format:** correction: section must have every question, over all feedback: will be one only for all exam . Return your response as a JSON object strictly adhering to the following structure:
+    4.  **Response Format:** correction: section must have every question, over all feedback: will be one only for all
+        exam. Return your response as a JSON object strictly adhering to the following structure:
 
         ```json
         correction:
@@ -131,11 +138,12 @@ def ai_quiz_corrector(quiz_data: dict) -> str:
         Example: "You are an AI-powered mathematics assignment corrector..."
     * **Length Constraints:** If you need to limit the length of the feedback, specify it in the prompt. Example:
         "Student feedback should be no more than 100 words."
-    * **Tone:** If you want to specify the tone of the feedback (e.g., encouraging, critical, neutral), include it in the prompt.
-        Example: "Provide feedback in an encouraging and supportive tone."
-    * **Error Handling:** Add a instruction to handle cases where the submitted assignment is not related to the expected subject,
-        or is completely unreadable. Example: "if the submitted assignment is unrelated to the expected subject, or is unreadable,
-        return a degree of 0, and explain the reason in the student and teacher feedback."
+    * **Tone:** If you want to specify the tone of the feedback (e.g., encouraging, critical, neutral), include it in
+        the prompt. Example: "Provide feedback in an encouraging and supportive tone."
+    * **Error Handling:** Add a instruction to handle cases where the submitted assignment is not related to the
+        expected subject, or is completely unreadable. Example: "if the submitted assignment is unrelated to the
+        expected subject, or is unreadable, return a degree of 0, and explain the reason in the student and teacher
+        feedback."
 
 
     **User exam data:**

@@ -693,9 +693,9 @@ class Command(BaseCommand):
 
                 question = QuizQuestion.objects.create(
                     quiz=session_exam,
-                    text=f"Question {i+1}: {question_text} - {question_type}",
+                    text=f"Question {i + 1}: {question_text} - {question_type}",
                     question_type=question_type,
-                    explanation=f"Explanation for question {i+1}",
+                    explanation=f"Explanation for question {i + 1}",
                     points=1,
                     order=i + 1,
                 )
@@ -740,7 +740,11 @@ class Command(BaseCommand):
                 "Solve the following problem: If a train travels at 60 mph, how long will it take to travel 240 miles?"
             )
         elif question_type == "scenario":
-            return "You are a software developer working on a critical project. The deadline is approaching, but you've discovered a major bug. What do you do?"
+            long_string = (
+                "You are a software developer working on a critical project."
+                "The deadline is approaching, but you've discovered a major bug. What do you do?"
+            )
+            return long_string
         elif question_type == "coding":
             return "Write a function that returns the sum of two numbers."
         return "Sample question text."
@@ -751,7 +755,10 @@ class Command(BaseCommand):
             # Create 4 options with one correct answer
             for i in range(4):
                 QuizOption.objects.create(
-                    question=question, text=f"Option {i+1}", is_correct=(i == 0), order=i + 1  # First option is correct
+                    question=question,
+                    text=f"Option {i + 1}",
+                    is_correct=(i == 0),
+                    order=i + 1,  # First option is correct
                 )
         elif question.question_type == "true_false":
             # Create true/false options
