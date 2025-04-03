@@ -305,7 +305,6 @@ LOCALE_PATHS = [
 USE_L10N = True
 
 if os.environ.get("DATABASE_URL"):
-    DEBUG = False
     DATABASES = {"default": env.db()}
 
     # Only add MySQL-specific options if using MySQL
