@@ -7006,10 +7006,10 @@ def manage_membership(request) -> HttpResponse:
             setup_stripe()
             invoice_list = stripe.Invoice.list(customer=membership.stripe_customer_id, limit=10)
             invoices = invoice_list.data
-        except stripe.error.StripeError as e:
-            logger.exception("Error retrieving invoices for user %s: %s", request.user.email, e)
-        except Exception as e:
-            logger.exception("Unexpected error retrieving invoices for user %s: %s", request.user.email, e)
+        except stripe.error.StripeError:
+            logger.exception("Error retrieving invoices for user %s", request.user.email)
+        except Exception:
+            logger.exception("Unexpected error retrieving invoices for user %s", request.user.email)
 
     # Get subscription events
     events = MembershipSubscriptionEvent.objects.filter(user=request.user).order_by("-created_at")[:10]

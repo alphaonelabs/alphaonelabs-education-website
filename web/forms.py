@@ -1795,16 +1795,18 @@ class StudyGroupForm(forms.ModelForm):
 
 
 class MembershipPlanForm(forms.ModelForm):
+    STRIPE_PRICE_ID_ERROR = "Invalid format: Stripe price IDs must start with 'price_'"
+
     def clean_stripe_monthly_price_id(self) -> str:
         price_id = self.cleaned_data.get("stripe_monthly_price_id")
         if price_id and not price_id.startswith("price_"):
-            raise forms.ValidationError("Invalid format: Stripe price IDs must start with 'price_'")
+            raise forms.ValidationError(self.STRIPE_PRICE_ID_ERROR)
         return price_id
 
     def clean_stripe_yearly_price_id(self) -> str:
         price_id = self.cleaned_data.get("stripe_yearly_price_id")
         if price_id and not price_id.startswith("price_"):
-            raise forms.ValidationError("Invalid format: Stripe price IDs must start with 'price_'")
+            raise forms.ValidationError(self.STRIPE_PRICE_ID_ERROR)
         return price_id
 
     class Meta:
