@@ -1,9 +1,10 @@
+from datetime import timedelta
+
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
-from datetime import timedelta
 
-from web.models import CounterStatistic, UserActivity, Enrollment, CourseProgress, WebRequest
+from web.models import CounterStatistic, CourseProgress, Enrollment, UserActivity, WebRequest
 
 
 class CounterService:

@@ -1751,8 +1751,9 @@ class TakeQuizForm(forms.Form):
             for question in quiz.questions.all().order_by("order"):
                 if question.question_type == "multiple":
                     # For multiple choice, add a multi-select field
-                    options = question.options.all().order_by("order")
-                    choices = [(str(option.id), option.text) for option in options]
+                    # todo solve this to get true answer by id
+                    # options = question.options.all().order_by("order")
+                    # choices = [(str(option.id), option.text) for option in options]
                     self.fields[f"question_{question.id}"] = forms.MultipleChoiceField(
                         label=question.text,
                         choices=[("true", "True"), ("false", "False")],

@@ -1,35 +1,37 @@
-{% for activity in activities %} <div class="activity-item {% if activity.is_new %}new{% endif %} py-2 px-1 border-b border-gray-200 last:border-0">
+{% for activity in activities %}
+  <div class="activity-item {% if activity.is_new %}new{% endif %} py-2 px-1 border-b border-gray-200 last:border-0">
     <div class="flex items-center">
-        <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
-            {% if activity.activity_type == 'enrollment' %}
-                <i class="fas fa-user-graduate text-indigo-500"></i>
-            {% elif activity.activity_type == 'quiz_completion' %}
-                <i class="fas fa-check-circle text-green-500"></i>
-            {% elif activity.activity_type == 'course_completion' %}
-                <i class="fas fa-trophy text-yellow-500"></i>
-            {% else %}
-                <i class="fas fa-star text-blue-500"></i>
-            {% endif %}
-        </div>
-        <div>
-            <p class="text-sm">
-                <span class="font-medium">{{ activity.user_display_name }}</span>
-                {% if activity.activity_type == 'enrollment' %}
-                    just enrolled in
-                    <span class="font-medium">{{ activity.content_object.title }}</span>
-                {% elif activity.activity_type == 'quiz_completion' %}
-                    completed a quiz in
-                    <span class="font-medium">{{ activity.content_object.course.title }}</span>
-                {% elif activity.activity_type == 'course_completion' %}
-                    finished the course
-                    <span class="font-medium">{{ activity.content_object.title }}</span>
-                {% else %}
-                    {{ activity.get_activity_type_display|lower }}
-                {% endif %}
-            </p>
-            <p class="text-xs text-gray-500">{{ activity.timestamp|timesince }} ago</p>
-        </div>
+      <div class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center mr-3">
+        {% if activity.activity_type == 'enrollment' %}
+          <i class="fas fa-user-graduate text-indigo-500"></i>
+        {% elif activity.activity_type == 'quiz_completion' %}
+          <i class="fas fa-check-circle text-green-500"></i>
+        {% elif activity.activity_type == 'course_completion' %}
+          <i class="fas fa-trophy text-yellow-500"></i>
+        {% else %}
+          <i class="fas fa-star text-blue-500"></i>
+        {% endif %}
+      </div>
+      <div>
+        <p class="text-sm">
+          <span class="font-medium">{{ activity.user_display_name }}</span>
+          {% if activity.activity_type == 'enrollment' %}
+            just enrolled in
+            <span class="font-medium">{{ activity.content_object.title }}</span>
+          {% elif activity.activity_type == 'quiz_completion' %}
+            completed a quiz in
+            <span class="font-medium">{{ activity.content_object.course.title }}</span>
+          {% elif activity.activity_type == 'course_completion' %}
+            finished the course
+            <span class="font-medium">{{ activity.content_object.title }}</span>
+          {% else %}
+            {{ activity.get_activity_type_display|lower }}
+          {% endif %}
+        </p>
+        <p class="text-xs text-gray-500">{{ activity.timestamp|timesince }} ago</p>
+      </div>
     </div>
-</div> {% empty %} <div class="py-3 text-center text-gray-500">
-    No recent activity to display yet.
-</div> {% endfor %}
+  </div>
+{% empty %}
+  <div class="py-3 text-center text-gray-500">No recent activity to display yet.</div>
+{% endfor %}

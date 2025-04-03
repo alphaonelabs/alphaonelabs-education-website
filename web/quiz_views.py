@@ -5,12 +5,11 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Count, Q
-from django.http import HttpResponseForbidden
+from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import get_random_string
-from django.http import HttpRequest, HttpResponse
 
 from .forms import (
     QuizForm,
@@ -23,7 +22,9 @@ from .models import Course, Quiz, QuizQuestion, Session, UserQuiz
 
 
 @login_required
-def create_course_exam(request: HttpRequest, course_id: int | None = None, session_id: int | None = None) -> HttpResponse:
+def create_course_exam(
+    request: HttpRequest, course_id: int | None = None, session_id: int | None = None
+) -> HttpResponse:
     """Create a new exam for a course or session."""
     course = None
     session = None
@@ -133,7 +134,10 @@ def add_question_specialized(request, quiz_id):
                         # Get matching items from form
                         items = request.POST.getlist("matching_item[]")
                         matches = request.POST.getlist("matching_match[]")
-                        question.matching_items = {"items": items, "matches": matches,}
+                        question.matching_items = {
+                            "items": items,
+                            "matches": matches,
+                        }
                     elif question_type == "coding":
                         # Get code starter and expected output
                         question.code_starter = form.cleaned_data.get("code_starter", "")
@@ -1152,9 +1156,13 @@ def student_exam_correction(request, course_id, quiz_id, user_quiz_id):
                 all_graded = True
                 for q in quiz.questions.all():
                     q_id = str(q.id)
-                    if q_id in answers and not answers[q_id].get('is_graded', False) and not answers[q_id].get('is_correct', False):
-                            all_graded = False
-                            break
+                    if (
+                        q_id in answers
+                        and not answers[q_id].get("is_graded", False)
+                        and not answers[q_id].get("is_correct", False)
+                    ):
+                        all_graded = False
+                        break
 
                 if all_graded:
                     user_quiz.correction_status = "completed"

@@ -103,7 +103,7 @@ from .marketing import (
     get_promotion_recommendations,
     send_course_promotion_email,
 )
-from .models import (  
+from .models import (
     Achievement,
     Badge,
     BlogComment,
@@ -813,10 +813,6 @@ def course_detail(request, slug):
             }
         )
 
-    student_analytics = None
-    if is_teacher:
-        student_analytics = get_student_analytics_data(course)
-
     context = {
         "course": course,
         "sessions": sessions,
@@ -841,7 +837,6 @@ def course_detail(request, slug):
         "course_exams": course_exams,
         "course_exam_data": course_exam_data,
         "session_data": session_data,
-        "student_analytics": student_analytics,
     }
 
     return render(request, "courses/detail.html", context)

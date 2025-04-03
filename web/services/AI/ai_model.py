@@ -4,13 +4,17 @@ import re
 
 import google.generativeai as genai
 
+api_key = os.getenv("GOOGLE_API_KEY")
+
 if not api_key:
     raise ValueError("GOOGLE_API_KEY not found in environment variables")
+
 
 genai.configure(api_key=api_key)
 
 # Initialize the model with 'gemini-1.5-flash'
 model = genai.GenerativeModel("gemini-1.5-flash")
+
 
 def ai_assignment_corrector(challenge_form: dict) -> dict:
 

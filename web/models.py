@@ -8,8 +8,6 @@ from io import BytesIO
 from allauth.account.signals import user_signed_up
 from django.conf import settings
 from django.contrib.auth.models import User
-from django.contrib.contenttypes.fields import GenericForeignKey
-from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.mail import send_mail

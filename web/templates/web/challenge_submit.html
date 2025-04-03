@@ -6,7 +6,8 @@
       <!-- Title -->
       <h1 class="text-3xl font-bold text-gray-900 dark:text-white text-center mb-6">
         Submit for
-        {% if challenge.challenge_type == 'weekly' %} - Test
+        {% if challenge.challenge_type == 'weekly' %}
+          - Test
           Week
           {{ challenge.week_number }}
         {% endif %}
