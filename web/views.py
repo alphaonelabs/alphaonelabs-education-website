@@ -48,6 +48,7 @@ from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.html import strip_tags
+from django.utils.text import slugify
 from django.utils.translation import gettext as _
 from django.views import generic
 from django.views.decorators.clickjacking import xframe_options_exempt
@@ -92,6 +93,7 @@ from .forms import (
     SuccessStoryForm,
     TeacherSignupForm,
     TeachForm,
+    TeamGoalCompletionForm,
     TeamGoalForm,
     TeamInviteForm,
     UserRegistrationForm,
@@ -2859,10 +2861,14 @@ def create_forum_category(request):
         form = ForumCategoryForm(request.POST)
         if form.is_valid():
             category = form.save()
+            if not category.slug:
+                category.slug = slugify(category.name)
+            category.save()
             messages.success(request, f"Forum category '{category.name}' created successfully!")
             return redirect("forum_category", slug=category.slug)
     else:
         form = ForumCategoryForm()
+        print(form.errors)
 
     return render(request, "web/forum/create_category.html", {"form": form})
 
@@ -2903,6 +2909,24 @@ def my_forum_replies(request):
     )
     categories = ForumCategory.objects.all()
     return render(request, "web/forum/my_replies.html", {"replies": replies, "categories": categories})
+
+
+@login_required
+def edit_reply(request, reply_id):
+    """Edit a forum reply."""
+    reply = get_object_or_404(ForumReply, id=reply_id, author=request.user)
+    topic = reply.topic
+    categories = ForumCategory.objects.all()
+
+    if request.method == "POST":
+        content = request.POST.get("content")
+        if content:
+            reply.content = content
+            reply.save()
+            messages.success(request, "Reply updated successfully.")
+            return redirect("forum_topic", category_slug=topic.category.slug, topic_id=topic.id)
+
+    return render(request, "web/forum/edit_reply.html", {"reply": reply, "categories": categories})
 
 
 def get_course_calendar(request, slug):
@@ -4381,6 +4405,25 @@ def remove_team_member(request, goal_id, member_id):
     member.delete()
     messages.success(request, f"{member.user.username} has been removed from the team.")
     return redirect("team_goal_detail", goal_id=goal_id)
+
+
+@login_required
+def submit_team_proof(request, team_goal_id):
+    team_goal = get_object_or_404(TeamGoal, id=team_goal_id)
+    member = get_object_or_404(TeamGoalMember, team_goal=team_goal, user=request.user)
+
+    if request.method == "POST":
+        form = TeamGoalCompletionForm(request.POST, request.FILES, instance=member)
+        if form.is_valid():
+            form.save()
+            if not member.completed:
+                member.mark_completed()
+            return redirect("team_goal_detail", goal_id=team_goal.id)  # Fixed here
+
+    else:
+        form = TeamGoalCompletionForm(instance=member)
+
+    return render(request, "teams/submit_proof.html", {"form": form, "team_goal": team_goal})
 
 
 @login_required
