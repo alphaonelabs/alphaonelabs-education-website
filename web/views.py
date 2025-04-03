@@ -7084,7 +7084,7 @@ def membership_benefits(request: HttpRequest) -> HttpResponse:
     return render(request, "membership/benefits.html")
 
 
-def update_membership_from_subscription(user: "User", subscription: dict) -> Optional["UserMembership"]:
+def update_membership_from_subscription(user: "User", subscription: stripe.Subscription) -> Optional["UserMembership"]:
     """Update the user's membership status based on Stripe subscription data."""
     if not hasattr(user, "membership"):
         logger.error("User %s has no membership to update", user.email)
