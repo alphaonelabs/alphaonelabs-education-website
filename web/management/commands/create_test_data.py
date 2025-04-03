@@ -625,7 +625,7 @@ class Command(BaseCommand):
                     quiz=course_exam,
                     text=f"Question {i + 1}: {question_text} - {question_type}",
                     question_type=question_type,
-                    explanation=f"Explanation for question {i+1}",
+                    explanation=f"Explanation for question {i + 1}",
                     points=random.randint(1, 5),
                     order=i + 1,
                 )
