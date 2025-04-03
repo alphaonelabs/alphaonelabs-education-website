@@ -19,14 +19,22 @@ else:
     print("No .env file found.")
 
 
+# Debug settings
+ENVIRONMENT = env.str("ENVIRONMENT", default="production")
+
+# Default DEBUG to False for security
+DEBUG = False
+
+# Only enable DEBUG in local environment and only if DJANGO_DEBUG is True
+if ENVIRONMENT == "local":
+    DEBUG = env.bool("DJANGO_DEBUG", default=True)
+
+# Detect test environment and set DEBUG=True to use local media path
 if "test" in sys.argv:
     TESTING = True
+    DEBUG = True
 else:
     TESTING = False
-
-# Debug settings
-ENVT = env("ENVIRONMENT", default="PRODUCTION")
-DEBUG = True if ENVT == "LOCAL" else False
 
 PA_USER = "alphaonelabs99282llkb"
 PA_HOST = PA_USER + ".pythonanywhere.com"
@@ -130,7 +138,6 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "web.context_processors.last_modified",
-                "web.context_processors.invitation_notifications",
             ],
         },
     },
