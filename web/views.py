@@ -37,6 +37,7 @@ from django.db.models.functions import Coalesce
 from django.http import (
     FileResponse,
     Http404,
+    HttpRequest,
     HttpResponse,
     HttpResponseForbidden,
     JsonResponse,
@@ -4215,6 +4216,11 @@ def meme_list(request):
     page_obj = paginator.get_page(page_number)
 
     return render(request, "memes.html", {"memes": page_obj, "subjects": subjects, "selected_subject": subject_filter})
+
+
+def meme_detail(request: HttpRequest, slug: str) -> HttpResponse:
+    meme = get_object_or_404(Meme, slug=slug)
+    return render(request, "meme_detail.html", {"meme": meme})
 
 
 @login_required
