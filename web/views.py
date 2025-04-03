@@ -169,6 +169,7 @@ from .notifications import (
     send_enrollment_confirmation,
 )
 from .referrals import send_referral_reward_email
+from .services.AI.ai_model import ai_assignment_corrector
 from .social import get_social_stats
 from .utils import (
     cancel_subscription,
@@ -758,6 +759,61 @@ def course_detail(request, slug):
     for item in rating_counts:
         rating_distribution[item["rating"]] = item["count"]
 
+    #  # Get materials
+    # materials = Material.objects.filter(course=course)
+
+    # NEW CODE: Prepare exam data in the view
+    # 1. Get course-level exams (not associated with specific sessions)
+    course_exams = course.exams.filter(exam_type="course", session__isnull=True)
+
+    # 2. Process each course exam (with user attempts and submission counts)
+    course_exam_data = []
+    for exam in course_exams:
+        # Get user's attempts for this exam
+        user_attempt = None
+        if request.user.is_authenticated:
+            user_attempt = exam.user_quizzes.filter(user=request.user).first()
+
+        # Get submission count for teachers
+        submission_count = 0
+        if is_teacher:
+            submission_count = exam.user_quizzes.filter(completed=True).count()
+
+        course_exam_data.append(
+            {
+                "exam": exam,
+                "user_attempt": user_attempt,
+                "submission_count": submission_count,
+            }
+        )
+
+    # 3. Process each session with its exams
+    session_data = []
+    for session in sessions:
+        # Get all exams for this session
+        session_exams = session.exams.all()
+        session_exam_data = []
+
+        # Process each exam in this session
+        for exam in session_exams:
+            user_attempt = None
+            if request.user.is_authenticated:
+                user_attempt = exam.user_quizzes.filter(user=request.user).first()
+
+            session_exam_data.append(
+                {
+                    "exam": exam,
+                    "user_attempt": user_attempt,
+                }
+            )
+
+        session_data.append(
+            {
+                "session": session,
+                "exams": session_exam_data,
+            }
+        )
+
     context = {
         "course": course,
         "sessions": sessions,
@@ -779,6 +835,9 @@ def course_detail(request, slug):
         "user_review": user_review,
         "rating_distribution": rating_distribution,
         "reviews_num": reviews_num,
+        "course_exams": course_exams,
+        "course_exam_data": course_exam_data,
+        "session_data": session_data,
     }
 
     return render(request, "courses/detail.html", context)
@@ -3468,13 +3527,35 @@ def challenge_submit(request, challenge_id):
 
     if request.method == "POST":
         form = ChallengeSubmissionForm(request.POST)
+        challenge_detail = {
+            "title": challenge.title,
+            "description": challenge.description,
+            "student_answer": request.POST.get("submission_text"),
+        }
+
         if form.is_valid():
+            try:
+                ai_response = ai_assignment_corrector(challenge_detail)
+            except Exception as e:
+                # Log the error but continue with default values
+                logger.error(f"AI correction failed: {str(e)}")
+                ai_response = {
+                    "student_feedback": "Automatic feedback unavailable at this time.",
+                    "teacher_feedback": "AI evaluation service encountered an error.",
+                    "degree": 0,  # Default score
+                }
+
             submission = form.save(commit=False)
             submission.user = request.user
             submission.challenge = challenge
+            submission.student_feedback = ai_response["student_feedback"]
+            submission.teacher_feedback = ai_response["teacher_feedback"]
+            submission.points_awarded = ai_response["degree"]
             submission.save()
             messages.success(request, "Your submission has been recorded!")
-            return redirect("challenge_detail", challenge_id=challenge_id)
+            # return redirect("challenge_detail", challenge_id=challenge_id)
+            base_url = reverse("challenge_detail", kwargs={"challenge_id": challenge_id})
+            return redirect(f"{base_url}#{request.user.username}")
     else:
         form = ChallengeSubmissionForm()
 

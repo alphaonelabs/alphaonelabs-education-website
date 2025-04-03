@@ -1,0 +1,165 @@
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+  <!-- Active Users Counter -->
+  <div class="bg-white rounded-lg shadow-md p-4">
+    <h3 class="text-lg font-semibold text-gray-700">Active Learners</h3>
+    <div class="flex items-center mt-2">
+      <i class="fas fa-users text-indigo-500 text-2xl mr-3"></i>
+      <div class="text-3xl font-bold"
+           x-text="formatNumber(counters.active_users)">0</div>
+      <div class="ml-2 text-gray-600">right now</div>
+    </div>
+  </div>
+  <!-- Enrollments Today Counter -->
+  <div class="bg-white rounded-lg shadow-md p-4">
+    <h3 class="text-lg font-semibold text-gray-700">New Enrollments</h3>
+    <div class="flex items-center mt-2">
+      <i class="fas fa-user-graduate text-green-500 text-2xl mr-3"></i>
+      <div class="text-3xl font-bold"
+           x-text="formatNumber(counters.enrollments_today)">0</div>
+      <div class="ml-2 text-gray-600">today</div>
+    </div>
+  </div>
+  <!-- Courses Completed Counter -->
+  <div class="bg-white rounded-lg shadow-md p-4">
+    <h3 class="text-lg font-semibold text-gray-700">Courses Completed</h3>
+    <div class="flex items-center mt-2">
+      <i class="fas fa-trophy text-yellow-500 text-2xl mr-3"></i>
+      <div class="text-3xl font-bold"
+           x-text="formatNumber(counters.courses_completed)">0</div>
+      <div class="ml-2 text-gray-600">completed</div>
+    </div>
+  </div>
+  <!-- Quizzes Completed Counter -->
+  <div class="bg-white rounded-lg shadow-md p-4">
+    <h3 class="text-lg font-semibold text-gray-700">Quizzes Taken</h3>
+    <div class="flex items-center mt-2">
+      <i class="fas fa-tasks text-blue-500 text-2xl mr-3"></i>
+      <div class="text-3xl font-bold"
+           x-text="formatNumber(counters.quizzes_completed)">0</div>
+      <div class="ml-2 text-gray-600">completed</div>
+    </div>
+  </div>
+</div>
+<!-- Recent Activity Feed -->
+<div class="mt-8 bg-white rounded-lg shadow-md p-4">
+  <h3 class="text-lg font-semibold text-gray-700">Recent Activity</h3>
+  <div class="recent-activities mt-3" x-html="activitiesHtml">
+    <!-- Activity items will be rendered here -->
+  </div>
+</div>
+</div>
+<!-- Alpine.js script for live counter functionality -->
+<script>
+    const countersInstance = function liveCounters() {
+        return {
+            counters: {
+                active_users: 0,
+                enrollments_today: 0,
+                courses_completed: 0,
+                quizzes_completed: 0
+            },
+            activitiesHtml: '',
+            lastUpdate: null,
+
+            // Initialize with data fetch
+            init() {
+                this.fetchCounterData();
+
+                // Set up polling for data updates
+                setInterval(() => {
+                    this.fetchCounterData();
+                }, 30000); // Update every 30 seconds
+            },
+
+            // Fetch counter data from API
+            fetchCounterData() {
+                fetch('/api/counter-data/')
+                    .then(response => response.json())
+                    .then(data => {
+                        // Add animation effect by transitioning values
+                        this.animateCounterChange('active_users', data.counters.active_users);
+                        this.animateCounterChange('enrollments_today', data.counters.enrollments_today);
+                        this.animateCounterChange('courses_completed', data.counters.courses_completed);
+                        this.animateCounterChange('quizzes_completed', data.counters.quizzes_completed);
+
+                        // Update activities with animation
+                        const oldHtml = this.activitiesHtml;
+                        this.activitiesHtml = data.activities_html;
+
+                        // If this isn't the first load, highlight new activities
+                        if (oldHtml && this.activitiesHtml !== oldHtml) {
+                            this.$nextTick(() => {
+                                this.highlightNewActivities();
+                            });
+                        }
+
+                        this.lastUpdate = new Date();
+                    })
+                    .catch(error => {
+                        console.error('Error fetching counter data:', error);
+                    });
+            },
+
+            // Animate counter changes
+            animateCounterChange(counterKey, newValue) {
+                const oldValue = this.counters[counterKey];
+                if (oldValue === newValue) return;
+
+                // Animate the counter change
+                const duration = 1000; // Animation duration in ms
+                const start = performance.now();
+                const updateCounter = (timestamp) => {
+                    const elapsed = timestamp - start;
+                    const progress = Math.min(elapsed / duration, 1);
+
+                    if (newValue > oldValue) {
+                        this.counters[counterKey] = Math.floor(oldValue + (newValue - oldValue) * progress);
+                    } else {
+                        this.counters[counterKey] = Math.ceil(oldValue - (oldValue - newValue) * progress);
+                    }
+
+                    if (progress < 1) {
+                        requestAnimationFrame(updateCounter);
+                    } else {
+                        this.counters[counterKey] = newValue;
+                    }
+                };
+
+                requestAnimationFrame(updateCounter);
+            },
+
+            // Highlight new activities
+            highlightNewActivities() {
+                document.querySelectorAll('.activity-item.new').forEach(el => {
+                    el.classList.add('highlight-new');
+                    setTimeout(() => {
+                        el.classList.remove('highlight-new', 'new');
+                    }, 3000);
+                });
+            },
+
+            // Format numbers with commas
+            formatNumber(num) {
+                return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+            }
+        };
+    }
+    // Create an instance and call init
+    const counter = countersInstance(); // First create the instance
+    counter.init(); // Then call init on the instance
+</script>
+<style>
+    .activity-item.highlight-new {
+        animation: highlightFade 3s ease-in-out;
+    }
+
+    @keyframes highlightFade {
+        0% {
+            background-color: rgba(79, 70, 229, 0.2);
+        }
+
+        100% {
+            background-color: transparent;
+        }
+    }
+</style>

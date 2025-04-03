@@ -4,6 +4,7 @@ import string
 import time
 import uuid
 from io import BytesIO
+from typing import ClassVar, List, Tuple
 
 from allauth.account.signals import user_signed_up
 from django.conf import settings
@@ -1392,6 +1393,8 @@ class ChallengeSubmission(models.Model):
     submission_text = models.TextField()
     submitted_at = models.DateTimeField(auto_now_add=True)
     points_awarded = models.PositiveIntegerField(default=10)
+    student_feedback = models.TextField(blank=True, default="")
+    teacher_feedback = models.TextField(blank=True, default="")
 
     class Meta:
         unique_together = ["user", "challenge"]
@@ -2008,7 +2011,23 @@ class LearningStreak(models.Model):
 class Quiz(models.Model):
     """Model for storing custom quizzes created by users."""
 
+    class ExamType(models.TextChoices):
+        SESSION = "session", "Session Exam"
+        COURSE = "course", "Course Exam"
+        QUIZ = "quiz", "Quiz"
+
+    exam_type = models.CharField(
+        max_length=10,
+        choices=ExamType.choices,
+        default=ExamType.QUIZ,
+    )
+
     STATUS_CHOICES = [("draft", "Draft"), ("published", "Published"), ("private", "Private")]
+    EXAM_TYPES: ClassVar[List[Tuple[str, str]]] = [
+        ("session", "Session Exam"),
+        ("course", "Course Exam"),
+        ("quiz", "Quiz"),
+    ]
 
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
@@ -2026,57 +2045,47 @@ class Quiz(models.Model):
     show_correct_answers = models.BooleanField(default=False, help_text="Show correct answers after quiz completion")
     randomize_questions = models.BooleanField(default=False, help_text="Randomize the order of questions")
     time_limit = models.PositiveIntegerField(null=True, blank=True, help_text="Time limit in minutes (optional)")
-    max_attempts = models.PositiveIntegerField(
-        null=True, blank=True, help_text="Maximum number of attempts allowed (leave blank for unlimited)"
-    )
-    passing_score = models.PositiveIntegerField(default=70, help_text="Minimum percentage required to pass the quiz")
 
-    class Meta:
-        verbose_name_plural = "Quizzes"
-        ordering = ["-created_at"]
+    # New fields for exam functionality
+    exam_type = models.CharField(max_length=10, choices=EXAM_TYPES, default="quiz")
+    course = models.ForeignKey("Course", on_delete=models.CASCADE, related_name="exams", null=True, blank=True)
+    session = models.ForeignKey("Session", on_delete=models.CASCADE, related_name="exams", null=True, blank=True)
+    passing_score = models.PositiveIntegerField(default=60, help_text="Minimum score to pass the exam (percentage)")
+    max_attempts = models.PositiveIntegerField(default=1, help_text="Maximum attempts allowed")
 
     def __str__(self):
         return self.title
-
-    def save(self, *args, **kwargs):
-        # Generate a unique share code if not provided
-        if not self.share_code:
-            import random
-            import string
-
-            while True:
-                code = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
-                if not Quiz.objects.filter(share_code=code).exists():
-                    self.share_code = code
-                    break
-        super().save(*args, **kwargs)
-
-    def get_absolute_url(self):
-        from django.urls import reverse
-
-        return reverse("quiz_detail", kwargs={"pk": self.pk})
-
-    @property
-    def question_count(self):
-        return self.questions.count()
-
-    @property
-    def completion_count(self):
-        return self.user_quizzes.filter(completed=True).count()
 
 
 class QuizQuestion(models.Model):
     """Model for storing quiz questions."""
 
-    QUESTION_TYPES = [("multiple", "Multiple Choice"), ("true_false", "True/False"), ("short", "Short Answer")]
+    QUESTION_TYPES: ClassVar[List[Tuple[str, str]]] = [
+        ("multiple", "Multiple Choice"),
+        ("true_false", "True/False"),
+        ("short", "Short Answer"),
+        ("fill_blank", "Fill in the Blanks"),
+        ("open_ended", "Open-Ended Questions"),
+        ("matching", "Matching Questions"),
+        ("problem_solving", "Problem-Solving Questions"),
+        ("scenario", "Scenario-Based Questions"),
+        ("diagram", "Diagram-Based Questions"),
+        ("coding", "Coding Questions"),
+    ]
 
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="questions")
     text = models.TextField()
-    question_type = models.CharField(max_length=10, choices=QUESTION_TYPES, default="multiple")
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPES, default="multiple")
     explanation = models.TextField(blank=True, help_text="Explanation of the correct answer")
     points = models.PositiveIntegerField(default=1)
     order = models.PositiveIntegerField(default=0)
     image = models.ImageField(upload_to="quiz_questions/", blank=True, default="")
+
+    # New fields for specialized question types
+    code_starter = models.TextField(blank=True, help_text="Starter code for coding questions")
+    expected_output = models.TextField(blank=True, help_text="Expected output for coding questions")
+    diagram_data = models.JSONField(null=True, blank=True, help_text="Data for diagram questions")
+    matching_items = models.JSONField(null=True, blank=True, help_text="Items to match")
 
     class Meta:
         ordering = ["order"]
@@ -2103,6 +2112,13 @@ class QuizOption(models.Model):
 class UserQuiz(models.Model):
     """Model for tracking user quiz attempts and responses"""
 
+    CORRECTION_STATUS = [
+        ("not_needed", "No Correction Needed"),
+        ("pending", "Correction Pending"),
+        ("in_progress", "Correction In Progress"),
+        ("completed", "Correction Completed"),
+    ]
+
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="user_quizzes")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="quiz_attempts", null=True, blank=True)
     anonymous_id = models.CharField(
@@ -2114,6 +2130,14 @@ class UserQuiz(models.Model):
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
     answers = models.JSONField(default=dict, blank=True, help_text="JSON storing the user's answers and question IDs")
+    student_feedback = models.TextField(blank=True, default="")
+    teacher_feedback = models.TextField(blank=True, default="")
+    correction_status = models.CharField(
+        max_length=15,
+        choices=CORRECTION_STATUS,
+        default="not_needed",
+        help_text="Status of manual correction for text questions",
+    )
 
     class Meta:
         ordering = ["-start_time"]
