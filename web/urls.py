@@ -303,6 +303,7 @@ urlpatterns += i18n_patterns(
     path("analytics/data/", sales_data, name="sales_data"),
     path("memes/", views.meme_list, name="meme_list"),
     path("memes/add/", views.add_meme, name="add_meme"),
+    path("memes/<slug:slug>/", views.meme_detail, name="meme_detail"),
     path("whiteboard/", views.whiteboard, name="whiteboard"),
     path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
     # Team Collaboration URLs
@@ -315,6 +316,7 @@ urlpatterns += i18n_patterns(
     path("teams/<int:goal_id>/delete/", views.delete_team_goal, name="delete_team_goal"),
     path("teams/<int:goal_id>/remove-member/<int:member_id>/", views.remove_team_member, name="remove_team_member"),
     path("teams/<int:goal_id>/edit/", views.edit_team_goal, name="edit_team_goal"),
+    path("teams/<int:team_goal_id>/submit_proof/", views.submit_team_proof, name="submit_team_proof"),
     path("trackers/", views.tracker_list, name="tracker_list"),
     path("trackers/create/", views.create_tracker, name="create_tracker"),
     path("trackers/<int:tracker_id>/", views.tracker_detail, name="tracker_detail"),

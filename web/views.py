@@ -38,6 +38,7 @@ from django.db.models.functions import Coalesce
 from django.http import (
     FileResponse,
     Http404,
+    HttpRequest,
     HttpResponse,
     HttpResponseForbidden,
     JsonResponse,
@@ -93,6 +94,7 @@ from .forms import (
     SuccessStoryForm,
     TeacherSignupForm,
     TeachForm,
+    TeamGoalCompletionForm,
     TeamGoalForm,
     TeamInviteForm,
     UserRegistrationForm,
@@ -4167,6 +4169,11 @@ def meme_list(request):
     return render(request, "memes.html", {"memes": page_obj, "subjects": subjects, "selected_subject": subject_filter})
 
 
+def meme_detail(request: HttpRequest, slug: str) -> HttpResponse:
+    meme = get_object_or_404(Meme, slug=slug)
+    return render(request, "meme_detail.html", {"meme": meme})
+
+
 @login_required
 def add_meme(request):
     if request.method == "POST":
@@ -4397,6 +4404,25 @@ def remove_team_member(request, goal_id, member_id):
     member.delete()
     messages.success(request, f"{member.user.username} has been removed from the team.")
     return redirect("team_goal_detail", goal_id=goal_id)
+
+
+@login_required
+def submit_team_proof(request, team_goal_id):
+    team_goal = get_object_or_404(TeamGoal, id=team_goal_id)
+    member = get_object_or_404(TeamGoalMember, team_goal=team_goal, user=request.user)
+
+    if request.method == "POST":
+        form = TeamGoalCompletionForm(request.POST, request.FILES, instance=member)
+        if form.is_valid():
+            form.save()
+            if not member.completed:
+                member.mark_completed()
+            return redirect("team_goal_detail", goal_id=team_goal.id)  # Fixed here
+
+    else:
+        form = TeamGoalCompletionForm(instance=member)
+
+    return render(request, "teams/submit_proof.html", {"form": form, "team_goal": team_goal})
 
 
 @login_required
