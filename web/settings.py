@@ -147,7 +147,6 @@ CAPTCHA_2X_IMAGE = True
 CAPTCHA_TEST_MODE = False
 
 WSGI_APPLICATION = "web.wsgi.application"
-ASGI_APPLICATION = "web.asgi.application"
 
 # Add ASGI application configuration
 ASGI_APPLICATION = "web.asgi.application"
