@@ -288,7 +288,7 @@ def get_leaderboard(current_user=None, period=None, limit=10):
         # Get global leaderboard
         leaderboard_entries = (
             Points.objects.filter(
-                user__profile__is_teacher=False, user__profile__is_profile_public=True
+                user__profile__is_teacher=False,
             )
             .values("user")
             .annotate(points=Sum("amount"))
