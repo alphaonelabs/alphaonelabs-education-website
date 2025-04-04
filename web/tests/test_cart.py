@@ -23,5 +23,4 @@ class CartPageTest(TestCase):
         url = reverse("cart_view")
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        # Adjust the expected text to match what your cart template renders for an empty cart.
         self.assertContains(response, "Your cart is empty")
