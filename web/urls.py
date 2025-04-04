@@ -41,9 +41,16 @@ urlpatterns += i18n_patterns(
     path("waiting-rooms/", views.waiting_rooms, name="waiting_rooms"),
     path("teach/", views.teach, name="teach"),
     path("about/", views.about, name="about"),
-    path("profile/<str:username>/", views.public_profile, name="public_profile"),
+    path("users/", views.users_list, name="users_list"),
+    path("profile/ <str:username>/", views.public_profile, name="public_profile"),
     path("graphing_calculator/", views.graphing_calculator, name="graphing_calculator"),
     path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
+    path("certificate/generate/<int:enrollment_id>/", views.generate_certificate, name="generate_certificate"),
+    path("donate/", views.donate, name="donate"),
+    path("donate/payment-intent/", views.create_donation_payment_intent, name="create_donation_payment_intent"),
+    path("donate/subscription/", views.create_donation_subscription, name="create_donation_subscription"),
+)
+
     path("certificate/generate/<int:enrollment_id>/", views.generate_certificate, name="generate_certificate"),
     path("donate/", views.donate, name="donate"),
     path("donate/payment-intent/", views.create_donation_payment_intent, name="create_donation_payment_intent"),

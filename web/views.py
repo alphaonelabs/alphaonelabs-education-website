@@ -98,6 +98,32 @@ from .forms import (
     TeamInviteForm,
     UserRegistrationForm,
 )
+@login_required
+def public_profiles(request):
+    """View for displaying a list of public user profiles."""
+    # Get all profiles that are public and order by updated_at
+    profiles = Profile.objects.filter(is_profile_public=True).order_by('-updated_at')
+    
+    # Paginate the results
+    paginator = Paginator(profiles, 12)  # Show 12 profiles per page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    # Get course and achievement counts for each profile
+    for profile in page_obj:
+        if profile.is_teacher:
+            profile.course_count = Course.objects.filter(teacher=profile.user).count()
+        else:
+            profile.course_count = Enrollment.objects.filter(student=profile.user, status="approved").count()
+            profile.achievement_count = Achievement.objects.filter(student=profile.user).count()
+    
+    context = {
+        'profiles': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': paginator.num_pages > 1,
+    }
+    
+    return render(request, 'public_profiles.html', context)
 from .marketing import (
     generate_social_share_content,
     get_course_analytics,
@@ -147,6 +173,127 @@ from .models import (
     Session,
     SessionAttendance,
     SessionEnrollment,
+    def users_list(request):
+    """
+    Display a list of users who have their profile set to public,
+    ordered by most recent updates.
+    """
+    profiles = Profile.objects.filter(is_profile_public=True).order_by('-updated_at')
+    
+    # Add statistics for each user to create fun scorecards
+    for profile in profiles:
+        if profile.user.is_teacher:
+            # Teacher stats
+            courses = Course.objects.filter(teacher=profile.user)
+            profile.total_courses = courses.count()
+            profile.total_students = sum(
+                course.enrollments.filter(status="approved").count() for course in courses
+            )
+            # Get average rating across all courses
+            course_ratings = [course.average_rating for course in courses if course.average_rating > 0]
+            profile.avg_rating = round(sum(course_ratings) / len(course_ratings), 1) if course_ratings else 0
+        else:
+            # Student stats
+            enrollments = Enrollment.objects.filter(student=profile.user)
+            profile.total_courses = enrollments.count()
+            completed_enrollments = enrollments.filter(status="completed")
+            profile.total_completed = completed_enrollments.count()
+            
+            # Calculate average progress across all courses
+            total_progress = 0
+            progress_count = 0
+            for enrollment in enrollments:
+                progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+                total_progress += progress.completion_percentage
+                progress_count += 1
+            profile.avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+            
+            # Add achievements count
+            profile.achievements_count = Achievement.objects.filter(student=profile.user).count()
+    
+    # Pagination: 12 profiles per page
+    paginator = Paginator(profiles, 12)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+    }
+    
+    return render(request, 'users_list.html', context)
+    def users_list(request):
+    """View for displaying a list of users with public profiles."""
+    # Get users with public profiles
+    users = User.objects.filter(profile__is_profile_public=True).select_related('profile')
+    
+    # Calculate additional statistics
+    for user in users:
+        # For teachers, count courses and students
+        if user.profile.is_teacher:
+            user.courses_count = Course.objects.filter(teacher=user).count()
+            user.students_count = Enrollment.objects.filter(course__teacher=user, status="approved").count()
+        # For students, count enrollments and completed courses
+        else:
+            user.enrollments_count = Enrollment.objects.filter(student=user).count()
+            user.completed_courses = Enrollment.objects.filter(student=user, status="completed").count()
+            
+        # Get achievements
+        user.achievements_count = Achievement.objects.filter(student=user).count()
+    
+    # Paginate results
+    paginator = Paginator(users, 20)  # 20 users per page
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'users_list.html', {
+        'users': page_obj,
+        'page_obj': page_obj,
+        'is_paginated': paginator.num_pages > 1,
+    })
+    def users_list(request):
+    """
+    Display a list of users who have their profile set to public,
+    ordered by most recent updates.
+    """
+    # Query profiles with a public setting and order them with the most recent updates first.
+    profiles = Profile.objects.filter(is_profile_public=True).order_by('-updated_at')
+    
+    # Annotate each profile with additional statistics.
+    for profile in profiles:
+        if profile.user.is_teacher:
+            # Calculate statistics for teachers.
+            courses = Course.objects.filter(teacher=profile.user)
+            profile.total_courses = courses.count()
+            profile.total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
+            course_ratings = [course.average_rating for course in courses if course.average_rating > 0]
+            profile.avg_rating = round(sum(course_ratings) / len(course_ratings), 1) if course_ratings else 0
+        else:
+            # Calculate statistics for students.
+            enrollments = Enrollment.objects.filter(student=profile.user)
+            profile.total_courses = enrollments.count()
+            completed_enrollments = enrollments.filter(status="completed")
+            profile.total_completed = completed_enrollments.count()
+            
+            total_progress = 0
+            progress_count = 0
+            for enrollment in enrollments:
+                progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+                total_progress += progress.completion_percentage
+                progress_count += 1
+            profile.avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+            
+            profile.achievements_count = Achievement.objects.filter(student=profile.user).count()
+    
+    # Set up pagination with 12 profiles per page.
+    paginator = Paginator(profiles, 12)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+    }
+    
+    return render(request, 'users_list.html', context)
     Storefront,
     StudyGroup,
     StudyGroupInvite,
@@ -197,7 +344,195 @@ def sitemap(request):
 
 
 def index(request):
+    from django.core.paginator import Paginator
+    from django.shortcuts import render
+    from web.models import Profile, Course, Enrollment, CourseProgress, Achievement
+
+    def users_list(request):
+    """
+    Display a list of users who have their profile set to public,
+    ordered by most recent updates, along with fun scorecards.
+    """
+    profiles = Profile.objects.filter(is_profile_public=True).order_by('-updated_at')
+    
+    # Add statistics for each user to create fun scorecards
+    for profile in profiles:
+        if profile.user.is_teacher:
+            # Teacher stats
+            courses = Course.objects.filter(teacher=profile.user)
+            profile.total_courses = courses.count()
+            profile.total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
+            # Get average rating across all courses
+            course_ratings = [course.average_rating for course in courses if course.average_rating > 0]
+            profile.avg_rating = round(sum(course_ratings) / len(course_ratings), 1) if course_ratings else 0
+        else:
+            # Student stats
+            enrollments = Enrollment.objects.filter(student=profile.user)
+            profile.total_courses = enrollments.count()
+            completed_enrollments = enrollments.filter(status="completed")
+            profile.total_completed = completed_enrollments.count()
+            
+            # Calculate average progress across all courses
+            total_progress = 0
+            progress_count = 0
+            for enrollment in enrollments:
+                progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+                total_progress += progress.completion_percentage
+                progress_count += 1
+            profile.avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+            
+            # Add achievements count
+            profile.achievements_count = Achievement.objects.filter(student=profile.user).count()
+    
+    # Pagination: 12 profiles per page
+    paginator = Paginator(profiles, 12)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+    }
+    
+    return render(request, 'users_list.html', context)
+    from django.shortcuts import render
+    from django.core.paginator import Paginator
+    from .models import Profile, Course, Enrollment, CourseProgress, Achievement
+
+    def users_list(request):
+    """
+    Display a list of users who have their profile set to public,
+    ordered by most recent updates.
+    """
+    profiles = Profile.objects.filter(is_profile_public=True).order_by('-updated_at')
+    
+    # Add statistics for each profile based on user type
+    for profile in profiles:
+        if profile.user.is_teacher:
+            courses = Course.objects.filter(teacher=profile.user)
+            profile.total_courses = courses.count()
+            profile.total_students = sum(
+                course.enrollments.filter(status="approved").count() for course in courses
+            )
+            # Compute average rating across all courses with a positive rating
+            course_ratings = [course.average_rating for course in courses if course.average_rating > 0]
+            profile.avg_rating = round(sum(course_ratings) / len(course_ratings), 1) if course_ratings else 0
+        else:
+            enrollments = Enrollment.objects.filter(student=profile.user)
+            profile.total_courses = enrollments.count()
+            completed_enrollments = enrollments.filter(status="completed")
+            profile.total_completed = completed_enrollments.count()
+            
+            # Calculate average progress across all courses
+            total_progress = 0
+            progress_count = 0
+            for enrollment in enrollments:
+                progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+                total_progress += progress.completion_percentage
+                progress_count += 1
+            profile.avg_progress = round(total_progress / progress_count, 1) if progress_count > 0 else 0
+            
+            # Add achievements count
+            profile.achievements_count = Achievement.objects.filter(student=profile.user).count()
+    
+    # Pagination: 12 profiles per page
+    paginator = Paginator(profiles, 12)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    return render(request, 'users_list.html', {'page_obj': page_obj})
     """Homepage view."""
+    def users_list(request):
+    """
+    Display a list of users who have their profile set to public,
+    ordered by most recent updates.
+    """
+    profiles = Profile.objects.filter(is_profile_public=True).order_by('-updated_at')
+    
+    # Add statistics for each user to create fun scorecards
+    for profile in profiles:
+        if profile.user.is_teacher:
+            # Teacher stats
+            courses = Course.objects.filter(teacher=profile.user)
+            profile.total_courses = courses.count()
+            profile.total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
+            # Get average rating across all courses
+            course_ratings = [course.average_rating for course in courses if course.average_rating > 0]
+            profile.avg_rating = round(sum(course_ratings) / len(course_ratings), 1) if course_ratings else 0
+        else:
+            # Student stats
+            enrollments = Enrollment.objects.filter(student=profile.user)
+            profile.total_courses = enrollments.count()
+            completed_enrollments = enrollments.filter(status="completed")
+            profile.total_completed = completed_enrollments.count()
+            
+            # Calculate average progress across all courses
+            total_progress = 0
+            progress_count = 0
+            for enrollment in enrollments:
+                progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+                total_progress += progress.completion_percentage
+                progress_count += 1
+            profile.avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+            
+            # Add achievements count for the student
+            profile.achievements_count = Achievement.objects.filter(student=profile.user).count()
+    
+    # Pagination: show 12 profiles per page.
+    paginator = Paginator(profiles, 12)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+    }
+    
+    return render(request, 'users_list.html', context)
+    def users_list(request):
+    """
+    Display a list of users who have their profile set to public,
+    ordered by most recent updates.
+    """
+    profiles = Profile.objects.filter(is_profile_public=True).order_by('-updated_at')
+    
+    # Add statistics for each user to create fun scorecards
+    for profile in profiles:
+        if profile.user.is_teacher:
+            # Teacher stats
+            courses = Course.objects.filter(teacher=profile.user)
+            profile.total_courses = courses.count()
+            profile.total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
+            # Get average rating across all courses
+            course_ratings = [course.average_rating for course in courses if course.average_rating > 0]
+            profile.avg_rating = round(sum(course_ratings) / len(course_ratings), 1) if course_ratings else 0
+        else:
+            # Student stats
+            enrollments = Enrollment.objects.filter(student=profile.user)
+            profile.total_courses = enrollments.count()
+            completed_enrollments = enrollments.filter(status="completed")
+            profile.total_completed = completed_enrollments.count()
+            
+            # Calculate average progress across all courses
+            total_progress = 0
+            progress_count = 0
+            for enrollment in enrollments:
+                progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+                total_progress += progress.completion_percentage
+                progress_count += 1
+            profile.avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+            
+            # Add achievements count
+            profile.achievements_count = Achievement.objects.filter(student=profile.user).count()
+    
+    # Pagination: Show 12 profiles per page
+    paginator = Paginator(profiles, 12)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    context = {
+        'page_obj': page_obj,
+    }
+    
+    return render(request, 'users_list.html', context)
     from django.conf import settings
 
     # Store referral code in session if present in URL
@@ -297,6 +632,104 @@ def index(request):
                 {
                     "teaching_courses": teaching_courses,
                 }
+            def users_list(request):
+            """
+            Display a list of users who have their profile set to public,
+            ordered by most recent updates.
+            """
+            profiles = Profile.objects.filter(is_profile_public=True).order_by('-updated_at')
+    
+            # Add statistics for each user to create fun scorecards
+            for profile in profiles:
+            if profile.user.is_teacher:
+            # Teacher stats
+            courses = Course.objects.filter(teacher=profile.user)
+            profile.total_courses = courses.count()
+            profile.total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
+            # Get average rating across all courses
+            course_ratings = [course.average_rating for course in courses if course.average_rating > 0]
+            profile.avg_rating = round(sum(course_ratings) / len(course_ratings), 1) if course_ratings else 0
+            else:
+            # Student stats
+            enrollments = Enrollment.objects.filter(student=profile.user)
+            profile.total_courses = enrollments.count()
+            completed_enrollments = enrollments.filter(status="completed")
+            profile.total_completed = completed_enrollments.count()
+            
+            # Calculate average progress across all courses
+            total_progress = 0
+            progress_count = 0
+            for enrollment in enrollments:
+                progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+                total_progress += progress.completion_percentage
+                progress_count += 1
+            profile.avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+            
+            # Add achievements count
+            profile.achievements_count = Achievement.objects.filter(student=profile.user).count()
+    
+            # Pagination: Show 12 profiles per page
+            paginator = Paginator(profiles, 12)
+            page_number = request.GET.get('page')
+            page_obj = paginator.get_page(page_number)
+    
+            context = {
+            'page_obj': page_obj,
+            }
+    
+            return render(request, 'users_list.html', context)
+            def users_list(request):
+            """Display all public user profiles with their scorecards."""
+            profiles = Profile.objects.filter(is_profile_public=True).order_by('-updated_at')
+    
+            # Prepare user statistics
+            for profile in profiles:
+            if profile.is_teacher:
+            # Teacher statistics
+            courses = Course.objects.filter(teacher=profile.user)
+            total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
+            avg_rating = 0
+            total_ratings = 0
+            
+            for course in courses:
+                course_ratings = course.reviews.all()
+                if course_ratings:
+                    avg_rating += sum(review.rating for review in course_ratings)
+                    total_ratings += len(course_ratings)
+            
+            profile.stats = {
+                'total_courses': courses.count(),
+                'total_students': total_students,
+                'avg_rating': round(avg_rating / total_ratings, 1) if total_ratings > 0 else 0
+            }
+            else:
+            # Student statistics
+            enrollments = Enrollment.objects.filter(student=profile.user)
+            completed_courses = enrollments.filter(status="completed").count()
+            total_progress = 0
+            progress_count = 0
+            
+            for enrollment in enrollments:
+                progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+                if progress.completion_percentage is not None:
+                    total_progress += progress.completion_percentage
+                    progress_count += 1
+            
+            achievements_count = Achievement.objects.filter(student=profile.user).count()
+            
+            profile.stats = {
+                'total_courses': enrollments.count(),
+                'total_completed': completed_courses,
+                'avg_progress': round(total_progress / progress_count) if progress_count > 0 else 0,
+                'achievements_count': achievements_count
+            }
+    
+            # Pagination
+            paginator = Paginator(profiles, 12)  # 12 profiles per page
+            page = request.GET.get('page')
+            page_obj = paginator.get_page(page)
+    
+            return render(request, 'users_list.html', {'page_obj': page_obj})
             )
     return render(request, "index.html", context)
 
