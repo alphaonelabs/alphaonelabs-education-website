@@ -2807,7 +2807,7 @@ class ScheduledPost(models.Model):
         return self.content
 
 
-def default_valid_until():
+def default_valid_until() -> datetime:
     return timezone.now() + timedelta(days=30)
 
 
