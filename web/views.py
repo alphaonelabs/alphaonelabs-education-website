@@ -766,9 +766,10 @@ def course_detail(request, slug):
         rating_distribution[item["rating"]] = item["count"]
 
     # Build the absolute discount URL using the discount view's URL name.
-    discount_relative = reverse("apply_discount_via_referrer")
-    discount_url = request.build_absolute_uri(discount_relative) + "?course_id=" + str(course.id)
-
+from urllib.parse import urlencode
+discount_relative = reverse("apply_discount_via_referrer")
+discount_params = urlencode({'course_id': course.id})
+discount_url = request.build_absolute_uri(f"{discount_relative}?{discount_params}")
     context = {
         "course": course,
         "sessions": sessions,
