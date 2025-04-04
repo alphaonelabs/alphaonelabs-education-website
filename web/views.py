@@ -27,10 +27,10 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.core.mail import send_mail
 from django.core.management import call_command
-from django.core.paginator import Paginator
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError, models, router, transaction
 from django.db.models import Avg, Count, Q, Sum
 from django.db.models.functions import Coalesce
@@ -83,6 +83,7 @@ from .forms import (
     MemeForm,
     MessageTeacherForm,
     NotificationPreferencesForm,
+    PDFSubmissionForm,
     ProfileUpdateForm,
     ProgressTrackerForm,
     ReviewForm,
@@ -136,6 +137,8 @@ from .models import (
     NotificationPreference,
     Order,
     OrderItem,
+    PDFSubmission,
+    PDFType,
     PeerConnection,
     PeerMessage,
     ProductImage,
@@ -6661,6 +6664,131 @@ def all_study_groups(request):
             "enrolled_courses": enrolled_courses,
         },
     )
+
+
+# PDF submission views
+
+
+@login_required
+def upload_pdf_submission(request: HttpRequest) -> HttpResponse:
+    """View for students to upload their PDF documents."""
+    if request.method == "POST":
+        form = PDFSubmissionForm(request.POST, request.FILES)
+        if form.is_valid():
+            submission = form.save(commit=False)
+            submission.student = request.user
+            submission.save()
+            # Create notification for user
+            Notification.objects.create(
+                user=request.user,
+                title="PDF Submission Received",
+                message=f"Your {submission.pdf_type.name} has been submitted successfully and is pending review.",
+                notification_type="success",
+            )
+            # Create notifications for teachers
+            admin_users = User.objects.filter(profile__is_teacher=True)
+            notifications = []
+            for admin in admin_users:
+                notifications.append(
+                    Notification(
+                        user=admin,
+                        title="New PDF Submission",
+                        message=(
+                            f"A new {submission.pdf_type.name} has been submitted by "
+                            f"{request.user.username} and needs review."
+                        ),
+                        notification_type="info",
+                    )
+                )
+            Notification.objects.bulk_create(notifications)
+            messages.success(request, "Your submission has been received and will be reviewed soon.")
+            return redirect("pdf_submission_list")
+    else:
+        form = PDFSubmissionForm()
+    return render(request, "web/pdf/upload_submission.html", {"form": form})
+
+
+@login_required
+def pdf_submission_list(request: HttpRequest) -> HttpResponse:
+    """View to see all submitted PDF documents."""
+    viewing_as = "student"
+    if request.user.profile.is_teacher:
+        viewing_as = "reviewer"
+        submissions_list = PDFSubmission.objects.select_related("student", "pdf_type").all().order_by("-submitted_at")
+    else:
+        submissions_list = (
+            PDFSubmission.objects.select_related("pdf_type").filter(student=request.user).order_by("-submitted_at")
+        )
+
+    # Pagination logic
+    paginator = Paginator(submissions_list, 10)
+    page = request.GET.get("page")
+
+    try:
+        submissions = paginator.page(page)
+    except PageNotAnInteger:
+        submissions = paginator.page(1)
+        messages.info(request, "Page number not valid. Showing first page of results.")
+    except EmptyPage:
+        submissions = paginator.page(paginator.num_pages)
+        messages.info(request, "Requested page is empty. Showing last page of results.")
+
+    context = {
+        "submissions": submissions,
+        "viewing_as": viewing_as,
+        "pdf_types": PDFType.objects.all(),
+    }
+    return render(request, "web/pdf/submission_list.html", context)
+
+
+@login_required
+def pdf_submission_detail(request: HttpRequest, submission_id: int) -> HttpResponse:
+    """View to see the details of a specific PDF submission and provide feedback."""
+    submission = get_object_or_404(PDFSubmission, pk=submission_id)
+
+    # Determine user role
+    is_student = request.user == submission.student
+    is_reviewer = hasattr(request.user, "profile") and (
+        getattr(request.user.profile, "is_teacher", False) or getattr(request.user.profile, "is_reviewer", False)
+    )
+    # Access control
+    if not (is_student or is_reviewer):
+        raise PermissionDenied("You do not have permission to view this submission.")
+
+    if request.method == "POST" and is_reviewer:
+        feedback = request.POST.get("feedback", "")
+        new_status = request.POST.get("status", "")
+        if feedback or new_status:
+            with transaction.atomic():
+                if feedback:
+                    submission.feedback = feedback
+                if new_status:
+                    if new_status in dict(PDFSubmission.STATUS_CHOICES):
+                        submission.status = new_status
+                    else:
+                        messages.error(request, f"Invalid status: {new_status}")
+                        return redirect("pdf_submission_detail", submission_id=submission.id)
+                submission.reviewed_by = request.user
+                submission.reviewed_at = timezone.now()
+                submission.save()
+                print(submission)
+                # Create notification for student
+                Notification.objects.create(
+                    user=submission.student,
+                    title="Your PDF Submission Has Been Reviewed",
+                    message=f"Your {submission.pdf_type.name} has been reviewed. Check the feedback for details.",
+                    notification_type="info",
+                )
+                messages.success(request, "Feedback and status updated successfully.")
+            return redirect("pdf_submission_list")
+
+    context = {
+        "submission": submission,  # Rename to match template
+        "is_reviewer": is_reviewer,
+        "is_student": is_student,
+        "status_choices": submission.get_status_choices(),
+    }
+    return render(request, "web/pdf/submission_detail.html", context)
 
 
 @login_required

@@ -348,7 +348,7 @@
             <i class="fas fa-arrow-right ml-2"></i>
           </a>
         </div>
-        <!-- GSoC Announcement -->
+        <!-- Initial GSoC Announcement -->
         <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white shadow-lg my-8">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-4">
@@ -372,6 +372,39 @@
               <span>Get Started with GSoC</span>
               <i class="fas fa-arrow-right ml-2"></i>
             </a>
+          </div>
+        </div>
+        <!-- PDF Submission/Review Announcement -->
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white shadow-lg my-8 relative">
+          <!-- GSOC Proposal CTA -->
+          <div class="absolute top-0 right-0 m-2 bg-yellow-400 text-blue-900 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider transform rotate-6 shadow-lg">
+            GSOC Proposals Open!
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+              <div>
+                {% if user.profile.is_teacher %}
+                  <h3 class="text-xl font-bold mb-2">Review Student Documents 🔍</h3>
+                  <p class="text-blue-100">Review student submitted PDF documents and provide timely feedback.</p>
+                {% else %}
+                  <h3 class="text-xl font-bold mb-2">Submit Your Documents 📝</h3>
+                  <p class="text-blue-100">Submit your assignments, essays, reports, and other documents for review.</p>
+                {% endif %}
+              </div>
+            </div>
+            {% if user.profile.is_teacher %}
+              <a href="{% url 'pdf_submission_list' %}"
+                 class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
+                <span>Review Documents</span>
+                <i class="fas fa-clipboard-list ml-2"></i>
+              </a>
+            {% else %}
+              <a href="{% url 'pdf_submission_list' %}"
+                 class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
+                <span>Upload Document</span>
+                <i class="fas fa-upload ml-2"></i>
+              </a>
+            {% endif %}
           </div>
         </div>
         <!-- Two cards next to each other: For Learners & For Teachers -->

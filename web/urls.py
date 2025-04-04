@@ -417,6 +417,10 @@ urlpatterns += i18n_patterns(
     path("features/vote/", feature_vote, name="feature_vote"),
     path("features/vote-count/", feature_vote_count, name="feature_vote_count"),
     path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
+    # file review urls
+    path("pdf-submissions/", views.pdf_submission_list, name="pdf_submission_list"),
+    path("pdf-submissions/upload/", views.upload_pdf_submission, name="upload_pdf_submission"),
+    path("pdf-submissions/<int:submission_id>/", views.pdf_submission_detail, name="pdf_submission_detail"),
     # Membership URLs
     path("membership/checkout/<int:plan_id>/", views.membership_checkout, name="membership_checkout"),
     path(

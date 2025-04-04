@@ -27,6 +27,8 @@ from .models import (
     LinkGrade,
     Meme,
     NotificationPreference,
+    PDFSubmission,
+    PDFType,
     PeerChallenge,
     PeerChallengeInvitation,
     ProductImage,
@@ -1787,3 +1789,42 @@ class StudyGroupForm(forms.ModelForm):
     class Meta:
         model = StudyGroup
         fields = ["name", "description", "course", "max_members", "is_private"]
+
+
+class PDFSubmissionForm(forms.ModelForm):
+    """Form for submitting PDF documents."""
+
+    pdf_type = forms.ModelChoiceField(
+        queryset=PDFType.objects.all(),
+        empty_label="Select PDF Type",
+        widget=forms.Select(
+            attrs={
+                "class": "bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 "
+                "dark:border-gray-600 rounded-md p-2 focus:border-blue-500 focus:outline-none focus:ring-2 "
+                "focus:ring-blue-500 w-full"
+            }
+        ),
+        help_text="Choose the type of PDF submission",
+    )
+
+    pdf_file = forms.FileField(
+        validators=[FileExtensionValidator(allowed_extensions=["pdf"])],
+        help_text="Upload your PDF document (max 10MB)",
+        widget=forms.FileInput(attrs={"accept": "application/pdf"}),
+    )
+
+    class Meta:
+        model = PDFSubmission
+        fields = ["title", "pdf_type", "subject", "assignment", "due_date", "description", "pdf_file"]
+
+        def clean_pdf_file(self):
+            uploaded_file = self.cleaned_data.get("pdf_file")
+            if uploaded_file:
+                # 10MB maximum file size
+                max_size = 10 * 1024 * 1024
+                if uploaded_file.size > max_size:
+                    raise forms.ValidationError("File size must not exceed 10MB.")
+                # Verify file is actually a PDF
+                if uploaded_file.content_type.lower() not in ["application/pdf", "application/x-pdf"]:
+                    raise forms.ValidationError("File must be a PDF document.")
+            return uploaded_file
