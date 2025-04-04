@@ -3,7 +3,7 @@ import random
 import string
 import time
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 from io import BytesIO
 
 from allauth.account.signals import user_signed_up

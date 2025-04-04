@@ -6984,10 +6984,10 @@ def generate_discount_code(length=8):
 @login_required
 def apply_discount_via_referrer(request) -> HttpResponse:
     """Apply a discount code when a user shares a course on Twitter.
-    
+
     Args:
         request: The HTTP request object
-        
+
     Returns:
         HttpResponse: A redirect to the profile page or an error response
     """
@@ -7002,7 +7002,7 @@ def apply_discount_via_referrer(request) -> HttpResponse:
         referrer = request.META.get("HTTP_REFERER", "").lower()
         valid_twitter_domains = ["twitter.com", "t.co", "x.com"]
         is_valid_referrer = any(domain in referrer for domain in valid_twitter_domains)
-        
+
         # Skip the referrer check in development environment for testing
         if settings.DEBUG:
             logger.warning("Bypassing Twitter referrer check in DEBUG mode")
