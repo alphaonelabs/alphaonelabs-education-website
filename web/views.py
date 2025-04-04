@@ -4,9 +4,11 @@ import ipaddress
 import json
 import logging
 import os
+import random
 import re
 import shutil
 import socket
+import string
 import subprocess
 import time
 from collections import Counter, defaultdict
@@ -39,6 +41,7 @@ from django.http import (
     Http404,
     HttpRequest,
     HttpResponse,
+    HttpResponseBadRequest,
     HttpResponseForbidden,
     JsonResponse,
 )
@@ -116,6 +119,7 @@ from .models import (
     Course,
     CourseMaterial,
     CourseProgress,
+    Discount,
     Donation,
     EducationalVideo,
     Enrollment,
@@ -159,6 +163,7 @@ from .models import (
     UserBadge,
     WaitingRoom,
     WebRequest,
+    default_valid_until,
 )
 from .notifications import (
     notify_session_reminder,
@@ -442,8 +447,8 @@ def profile(request):
     if request.method == "POST":
         form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
-            form.save()  # Save the form data including the is_profile_public field
-            request.user.profile.refresh_from_db()  # Refresh the instance so updated Profile is loaded
+            form.save()  # Save the form data
+            request.user.profile.refresh_from_db()  # Refresh to load updated profile
             messages.success(request, "Profile updated successfully!")
             return redirect("profile")
         else:
@@ -451,7 +456,6 @@ def profile(request):
                 for error in errors:
                     messages.error(request, f"Error in {field}: {error}")
     else:
-        # Use the instance so the form loads all updated fields from the database.
         form = ProfileUpdateForm(instance=request.user)
 
     badges = UserBadge.objects.filter(user=request.user).select_related("badge")
@@ -480,7 +484,6 @@ def profile(request):
                 "avg_rating": avg_rating,
             }
         )
-    # Student-specific stats
     else:
         enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
         completed_courses = enrollments.filter(status="completed").count()
@@ -500,9 +503,13 @@ def profile(request):
             }
         )
 
-    # Add created calendars with time slots if applicable
+    # Get created calendars if applicable
     created_calendars = request.user.created_calendars.prefetch_related("time_slots").order_by("-created_at")
     context["created_calendars"] = created_calendars
+
+    # *** Add Discount Codes ***
+    discount_codes = Discount.objects.filter(user=request.user, used=False, valid_until__gte=timezone.now())
+    context["discount_codes"] = discount_codes
 
     return render(request, "profile.html", context)
 
@@ -758,6 +765,10 @@ def course_detail(request, slug):
     for item in rating_counts:
         rating_distribution[item["rating"]] = item["count"]
 
+    # Build the absolute discount URL using the discount view's URL name.
+    discount_relative = reverse("apply_discount_via_referrer")
+    discount_url = request.build_absolute_uri(discount_relative) + "?course_id=" + str(course.id)
+
     context = {
         "course": course,
         "sessions": sessions,
@@ -779,6 +790,7 @@ def course_detail(request, slug):
         "user_review": user_review,
         "rating_distribution": rating_distribution,
         "reviews_num": reviews_num,
+        "discount_url": discount_url,
     }
 
     return render(request, "courses/detail.html", context)
@@ -2569,21 +2581,33 @@ def checkout_success(request):
         # Process enrollments
         for item in cart.items.all():
             if item.course:
-                # Create enrollment for full course
+                # Check for an active discount coupon for this course
+                discount = Discount.objects.filter(
+                    user=user, course=item.course, used=False, valid_until__gte=timezone.now()
+                ).first()
+                if discount:
+                    # Calculate the discounted price
+                    discount_amount = (discount.discount_percentage / 100) * item.course.price
+                    effective_price = item.course.price - discount_amount
+                    # Mark the coupon as used
+                    discount.used = True
+                    discount.save()
+                else:
+                    effective_price = item.course.price
+
+                # Create enrollment for the course
                 enrollment = Enrollment.objects.create(
                     student=user, course=item.course, status="approved", payment_intent_id=payment_intent_id
                 )
-                # Create progress tracker
-                CourseProgress.objects.create(enrollment=enrollment)
                 enrollments.append(enrollment)
-                total_amount += item.course.price
+                total_amount += effective_price
 
-                # Send confirmation emails
+                # Optionally, you can send confirmation emails with discount details
                 send_enrollment_confirmation(enrollment)
                 notify_teacher_new_enrollment(enrollment)
 
             elif item.session:
-                # Create enrollment for individual session
+                # Process individual session enrollments (no discount logic here)
                 session_enrollment = SessionEnrollment.objects.create(
                     student=user, session=item.session, status="approved", payment_intent_id=payment_intent_id
                 )
@@ -2591,11 +2615,8 @@ def checkout_success(request):
                 total_amount += item.session.price
 
             elif item.goods:
-                # Track goods items for the receipt
                 goods_items.append(item)
                 total_amount += item.final_price
-
-                # Create order item for goods
                 OrderItem.objects.create(
                     order=order,
                     goods=item.goods,
@@ -2603,7 +2624,6 @@ def checkout_success(request):
                     price_at_purchase=item.goods.price,
                     discounted_price_at_purchase=item.goods.discount_price,
                 )
-                # Capture storefront from the first goods item
                 if not storefront:
                     storefront = item.goods.storefront
 
@@ -6955,3 +6975,41 @@ def delete_post(request, post_id):
     if request.method == "POST":
         post.delete()
     return redirect("social_media_dashboard")
+
+
+def generate_discount_code(length=8):
+    return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+
+@login_required
+def apply_discount_via_referrer(request):
+    if request.method == "GET":
+        course_id = request.GET.get("course_id")
+        if not course_id:
+            return HttpResponseBadRequest("Course ID not provided.")
+
+        course = get_object_or_404(Course, id=course_id)
+
+        # Temporarily disable the referrer check for local testing:
+        referrer = request.META.get("HTTP_REFERER", "").lower()
+        if not (("twitter.com" in referrer) or ("t.co" in referrer)):
+            messages.error(request, "You must click the link from Twitter to claim your discount.")
+            return redirect("profile")
+
+        # Create or retrieve an existing discount record.
+        discount = Discount.objects.filter(user=request.user, course=course, used=False).first()
+        if discount is None:
+            discount = Discount.objects.create(
+                user=request.user,
+                course=course,
+                code=generate_discount_code(),
+                discount_percentage=5.00,
+                valid_from=timezone.now(),
+                valid_until=default_valid_until(),
+            )
+
+        messages.success(request, "Thank you for sharing! Your discount code is now available in your profile.")
+        # Redirect user to their profile where discount codes are rendered.
+        return redirect("profile")
+    else:
+        return HttpResponseBadRequest("Invalid request method.")

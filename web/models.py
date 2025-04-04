@@ -3,6 +3,7 @@ import random
 import string
 import time
 import uuid
+from datetime import timedelta
 from io import BytesIO
 
 from allauth.account.signals import user_signed_up
@@ -2804,3 +2805,20 @@ class ScheduledPost(models.Model):
 
     def __str__(self):
         return self.content
+
+
+def default_valid_until():
+    return timezone.now() + timedelta(days=30)
+
+
+class Discount(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    code = models.CharField(max_length=20, unique=True)
+    discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=5.00)
+    valid_from = models.DateTimeField(default=timezone.now)
+    valid_until = models.DateTimeField(default=default_valid_until)
+    used = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.code} for {self.user.username} on {self.course.title}"

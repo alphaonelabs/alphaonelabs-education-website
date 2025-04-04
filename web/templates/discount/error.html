@@ -1,0 +1,22 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Discount Error</title>
+    <link rel="stylesheet" href="{% static 'css/your_styles.css' %}" />
+  </head>
+  <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+    <div class="container mx-auto p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h1 class="text-2xl font-bold mb-4">Error</h1>
+        <p class="mb-4">{{ error }}</p>
+        <p>
+          <a href="{{ request.build_absolute_uri }}"
+             class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded">Return to Home</a>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

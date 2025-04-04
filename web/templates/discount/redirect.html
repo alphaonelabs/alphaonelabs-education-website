@@ -1,0 +1,23 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Discount Available</title>
+    <link rel="stylesheet" href="{% static 'css/your_styles.css' %}" />
+  </head>
+  <body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+    <div class="container mx-auto p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+        <h1 class="text-2xl font-bold mb-4">Thank You for Sharing!</h1>
+        <p class="mb-4">Your discount code is now available in your profile.</p>
+        <p>Click the button below to go to our main website:</p>
+        <p class="mt-4">
+          <a href="{{ main_website_url }}"
+             class="bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded">Go to Main Website</a>
+        </p>
+      </div>
+    </div>
+  </body>
+</html>
