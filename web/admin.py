@@ -559,15 +559,14 @@ class StorefrontAdmin(admin.ModelAdmin):
 
 @admin.register(Goods)
 class GoodsAdmin(admin.ModelAdmin):
-    list_display = ("name", "storefront", "price", "stock_status", "product_type", "is_available")
-    list_filter = ("product_type", "is_available", "created_at")
+    list_display = ("name", "storefront", "price", "stock_status", "product_type", "is_available", "featured")
+    list_filter = ("product_type", "is_available", "featured", "created_at")
     search_fields = ("name", "description", "sku", "storefront__store_name")
     readonly_fields = ("sku", "created_at", "updated_at")
     raw_id_fields = ("storefront",)
-    list_editable = ("is_available",)
-    date_hierarchy = "created_at"
+    list_editable = ("is_available", "featured")
     fieldsets = (
-        (None, {"fields": ("name", "storefront", "is_available")}),
+        (None, {"fields": ("name", "storefront", "is_available", "featured")}),
         ("Pricing", {"fields": ("price", "discount_price")}),
         ("Inventory", {"fields": ("product_type", "stock", "sku", "file")}),
         ("Content", {"fields": ("description", "category", "images")}),

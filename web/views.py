@@ -37,6 +37,7 @@ from django.db.models.functions import Coalesce
 from django.http import (
     FileResponse,
     Http404,
+    HttpRequest,
     HttpResponse,
     HttpResponseForbidden,
     JsonResponse,
@@ -227,6 +228,9 @@ def index(request):
     # Get featured courses
     featured_courses = Course.objects.filter(status="published", is_featured=True).order_by("-created_at")[:3]
 
+    # Get featured goods
+    featured_goods = Goods.objects.filter(featured=True, is_available=True).order_by("-created_at")[:3]
+
     # Get current challenge
     current_challenge_obj = Challenge.objects.filter(
         start_date__lte=timezone.now(), end_date__gte=timezone.now()
@@ -255,6 +259,7 @@ def index(request):
     context = {
         "profile": profile,
         "featured_courses": featured_courses,
+        "featured_products": featured_goods,
         "current_challenge": current_challenge,
         "latest_post": latest_post,
         "latest_success_story": latest_success_story,
@@ -4148,6 +4153,11 @@ def meme_list(request):
     page_obj = paginator.get_page(page_number)
 
     return render(request, "memes.html", {"memes": page_obj, "subjects": subjects, "selected_subject": subject_filter})
+
+
+def meme_detail(request: HttpRequest, slug: str) -> HttpResponse:
+    meme = get_object_or_404(Meme, slug=slug)
+    return render(request, "meme_detail.html", {"meme": meme})
 
 
 @login_required
