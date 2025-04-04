@@ -263,7 +263,9 @@ def get_leaderboard(current_user=None, period=None, limit=10):
     if period == "weekly":
         # Get weekly leaderboard
         leaderboard_entries = (
-            Points.objects.filter(awarded_at__gte=one_week_ago, user__profile__is_teacher=False)
+            Points.objects.filter(
+                awarded_at__gte=one_week_ago, user__profile__is_teacher=False, user__profile__is_profile_public=True
+            )
             .values("user")
             .annotate(points=Sum("amount"))
             .filter(points__gt=0)
@@ -273,7 +275,9 @@ def get_leaderboard(current_user=None, period=None, limit=10):
     elif period == "monthly":
         # Get monthly leaderboard
         leaderboard_entries = (
-            Points.objects.filter(awarded_at__gte=one_month_ago, user__profile__is_teacher=False)
+            Points.objects.filter(
+                awarded_at__gte=one_month_ago, user__profile__is_teacher=False, user__profile__is_profile_public=True
+            )
             .values("user")
             .annotate(points=Sum("amount"))
             .filter(points__gt=0)
@@ -283,7 +287,7 @@ def get_leaderboard(current_user=None, period=None, limit=10):
     else:  # Global leaderboard
         # Get global leaderboard
         leaderboard_entries = (
-            Points.objects.filter(user__profile__is_teacher=False)
+            Points.objects.filter(user__profile__is_teacher=False, user__profile__is_profile_public=True)
             .values("user")
             .annotate(points=Sum("amount"))
             .filter(points__gt=0)
