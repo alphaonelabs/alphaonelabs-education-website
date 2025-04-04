@@ -433,6 +433,7 @@ urlpatterns += i18n_patterns(
     path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
+    path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
     prefix_default_language=True,
 )
 

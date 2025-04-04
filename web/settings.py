@@ -3,10 +3,15 @@ import sys
 from pathlib import Path
 
 import environ
+import sentry_sdk
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "django-insecure-5kyff0s@l_##j3jawec5@b%!^^e(j7v)ouj4b7q6kru#o#a)o3"
+# Initialize Sentry SDK for error reporting
+sentry_sdk.init(
+    dsn=os.environ.get("SENTRY_DSN", ""),
+    send_default_pii=True,
+)
 
 env = environ.Env()
 
@@ -18,14 +23,23 @@ if os.path.exists(env_file):
 else:
     print("No .env file found.")
 
+SECRET_KEY = env.str("SECRET_KEY", default="django-insecure-5kyff0s@l_##j3jawec5@b%!^^e(j7v)ouj4b7q6kru#o#a)o3")
+# Debug settings
+ENVIRONMENT = env.str("ENVIRONMENT", default="development")
 
+# Default DEBUG to False for security
+DEBUG = False
+
+# Only enable DEBUG in local environment and only if DJANGO_DEBUG is True
+if ENVIRONMENT == "local":
+    DEBUG = env.bool("DJANGO_DEBUG", default=False)
+
+# Detect test environment and set DEBUG=True to use local media path
 if "test" in sys.argv:
     TESTING = True
+    DEBUG = True
 else:
     TESTING = False
-
-# Debug settings
-DEBUG = env.bool("DJANGO_DEBUG", default=False)
 
 PA_USER = "alphaonelabs99282llkb"
 PA_HOST = PA_USER + ".pythonanywhere.com"
@@ -109,7 +123,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "web.middleware.WebRequestMiddleware",
-    "web.middleware.GlobalExceptionMiddleware",
+    # "web.middleware.GlobalExceptionMiddleware",
 ]
 
 if DEBUG and not TESTING:
@@ -304,7 +318,6 @@ LOCALE_PATHS = [
 USE_L10N = True
 
 if os.environ.get("DATABASE_URL"):
-    DEBUG = False
     DATABASES = {"default": env.db()}
 
     # Only add MySQL-specific options if using MySQL

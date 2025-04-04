@@ -1164,6 +1164,7 @@ class Goods(models.Model):
     storefront = models.ForeignKey(Storefront, on_delete=models.CASCADE, related_name="goods")
     is_available = models.BooleanField(default=True, help_text="Show/hide product from store")
     is_reward = models.BooleanField(default=False, help_text="Can be unlocked as achievement reward")
+    featured = models.BooleanField(default=False, help_text="Mark this product as featured")  # New field
     points_required = models.PositiveIntegerField(
         blank=True, null=True, help_text="Points needed to unlock this reward"
     )
