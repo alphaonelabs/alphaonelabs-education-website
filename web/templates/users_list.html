@@ -11,10 +11,13 @@
     {% if page_obj %}
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for user in page_obj %}
-          <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-300">
+          <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-300"
+               role="article"
+               aria-labelledby="user-{{ user.id }}">
             <div class="p-6">
               <div class="flex justify-between items-start">
-                <h3 class="text-xl font-semibold text-gray-800 mb-2">{{ user.username }}</h3>
+                <h3 id="user-{{ user.id }}"
+                    class="text-xl font-semibold text-gray-800 mb-2">{{ user.username }}</h3>
                 <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">{{ user.role }}</span>
               </div>
               <p class="text-gray-600 mb-4">Joined: {{ user.date_joined|date:"F d, Y" }}</p>
@@ -33,7 +36,11 @@
                 </div>
               {% endif %}
               <div class="flex justify-between items-center">
-                <span class="text-sm text-gray-500">{{ user.groups.count }} group{{ user.groups.count|pluralize }}</span>
+                {% if user.groups.exists %}
+                  <span class="text-sm text-gray-500">{{ user.groups.count }} group{{ user.groups.count|pluralize }}</span>
+                {% else %}
+                  <span class="text-sm text-gray-500">0 groups</span>
+                {% endif %}
                 <a href="{% url 'public_profile' user.username %}"
                    class="text-blue-600 hover:text-blue-800 font-medium">View Profile</a>
               </div>
@@ -58,7 +65,10 @@
         </nav>
       </div>
     {% else %}
-      <p class="text-gray-600">No users found.</p>
+      <div class="text-center py-8">
+        <p class="text-gray-600 mb-2">No public profiles found</p>
+        <p class="text-sm text-gray-500">Users need to set their profiles to public to appear in this list.</p>
+      </div>
     {% endif %}
   </div>
 {% endblock content %}
