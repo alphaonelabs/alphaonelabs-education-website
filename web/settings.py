@@ -363,3 +363,6 @@ USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+
+# Encryption settings for django-encrypted-model-fields
+FIELD_ENCRYPTION_KEY = "g0ntA8pdi7ZwZ8R3ixa5e7c9evTPDn27CPPW-3ErfFk="

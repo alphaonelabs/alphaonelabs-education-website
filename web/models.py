@@ -22,6 +22,7 @@ from django.utils.translation import gettext_lazy as _
 from markdownx.models import MarkdownxField
 from PIL import Image
 
+from web.crypto_utils import EncryptedCharField, EncryptedEmailField, EncryptedTextField
 from web.utils import calculate_and_update_user_streak
 
 
@@ -50,8 +51,8 @@ class Notification(models.Model):
 
 class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    bio = models.TextField(max_length=500, blank=True)
-    expertise = models.CharField(max_length=200, blank=True)
+    bio = EncryptedTextField(max_length=500, blank=True)
+    expertise = EncryptedCharField(max_length=200, blank=True)
     # Avatar fields
     avatar = models.ImageField(upload_to="avatars", blank=True, default="")
     custom_avatar = models.OneToOneField(
@@ -59,9 +60,11 @@ class Profile(models.Model):
     )
     is_teacher = models.BooleanField(default=False)
     is_social_media_manager = models.BooleanField(default=False)
-    discord_username = models.CharField(max_length=50, blank=True, help_text="Your Discord username (e.g., User#1234)")
-    slack_username = models.CharField(max_length=50, blank=True, help_text="Your Slack username")
-    github_username = models.CharField(max_length=50, blank=True, help_text="Your GitHub username (without @)")
+    discord_username = EncryptedCharField(
+        max_length=50, blank=True, help_text="Your Discord username (e.g., User#1234)"
+    )
+    slack_username = EncryptedCharField(max_length=50, blank=True, help_text="Your Slack username")
+    github_username = EncryptedCharField(max_length=50, blank=True, help_text="Your GitHub username (without @)")
     referral_code = models.CharField(max_length=20, unique=True, blank=True)
     referred_by = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="referrals")
     referral_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -215,8 +218,8 @@ class Subject(models.Model):
 
 
 class WebRequest(models.Model):
-    ip_address = models.CharField(max_length=100, blank=True, default="")
-    user = models.CharField(max_length=150, blank=True, default="")
+    ip_address = EncryptedCharField(max_length=100, blank=True, default="")
+    user = EncryptedCharField(max_length=150, blank=True, default="")
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
     agent = models.TextField(blank=True, default="")
@@ -851,7 +854,7 @@ class PeerMessage(models.Model):
 
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
-    content = models.TextField()
+    content = EncryptedTextField()
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -1722,7 +1725,7 @@ class Donation(models.Model):
     )
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="donations")
-    email = models.EmailField()
+    email = EncryptedEmailField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     donation_type = models.CharField(max_length=20, choices=DONATION_TYPES)
     status = models.CharField(max_length=20, choices=DONATION_STATUS, default="pending")
@@ -2591,14 +2594,14 @@ class FeatureVote(models.Model):
 
     feature_id = models.CharField(max_length=100)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    ip_address = EncryptedCharField(max_length=100, null=True, blank=True)
     vote = models.CharField(max_length=4, choices=VOTE_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         indexes = [
             models.Index(fields=["feature_id", "user"], name="web_feature_feature_9fbd0b_idx"),
-            models.Index(fields=["feature_id", "ip_address"], name="web_feature_feature_988c48_idx"),
+            # Remove the ip_address index since encrypted fields can't be indexed
         ]
         verbose_name = "Feature Vote"
         verbose_name_plural = "Feature Votes"
@@ -2608,11 +2611,7 @@ class FeatureVote(models.Model):
                 name="unique_user_feature_vote",
                 condition=models.Q(user__isnull=False),
             ),
-            models.UniqueConstraint(
-                fields=["feature_id", "ip_address"],
-                name="unique_ip_feature_vote",
-                condition=models.Q(ip_address__isnull=False),
-            ),
+            # Remove the ip_address constraint since encrypted fields can't be used in constraints
         ]
 
     def clean(self):
