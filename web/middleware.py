@@ -1,6 +1,7 @@
 import logging
 import traceback
 
+import sentry_sdk
 from django.http import Http404
 from django.shortcuts import render
 from django.urls import Resolver404, resolve
@@ -25,6 +26,13 @@ class GlobalExceptionMiddleware:
 
     def process_exception(self, request, exception):
         from django.conf import settings
+
+        # Don't handle 404 errors, let Django's built-in handling work
+        if isinstance(exception, Http404):
+            return None
+
+        # Report to Sentry
+        sentry_sdk.capture_exception(exception)
 
         # Print exception details to console
         print("\n=== Exception Details ===")
@@ -117,6 +125,8 @@ class WebRequestMiddleware:
             logger.debug(f"Caught 404 error: {str(e)}")
             return self.get_response(request)
         except Exception as e:
-            # For any other errors, let Django handle them
+            # Log and report unexpected errors before letting Django handle them
             logger.error(f"Unexpected error in middleware: {str(e)}")
+            # Report to Sentry
+            sentry_sdk.capture_exception(e)
             return self.get_response(request)

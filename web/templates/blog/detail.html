@@ -9,6 +9,25 @@
 {% endblock title %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
+    <nav class="text-gray-600 dark:text-gray-300 text-sm mb-4">
+      <ol class="list-reset flex">
+        <li>
+          <a href="{% url 'blog_list' %}"
+             class="text-orange-500 hover:text-orange-600">Home</a>
+        </li>
+        <li>
+          <span class="mx-2">/</span>
+        </li>
+        <li>
+          <a href="{% url 'blog_list' %}"
+             class="text-orange-500 hover:text-orange-600">Blog</a>
+        </li>
+        <li>
+          <span class="mx-2">/</span>
+        </li>
+        <li class="text-gray-500">{{ post.title }}</li>
+      </ol>
+    </nav>
     <div class="max-w-3xl mx-auto">
       <!-- Blog Post Content -->
       <article class="prose dark:prose-invert lg:prose-lg max-w-none mb-12 prose-headings:font-bold prose-headings:text-gray-900 dark:prose-headings:text-gray-100 prose-h1:text-4xl prose-h2:text-3xl prose-h3:text-2xl prose-p:text-gray-600 dark:prose-p:text-gray-300 prose-p:leading-relaxed prose-p:mb-6 prose-a:text-teal-600 hover:prose-a:text-teal-700 dark:prose-a:text-teal-400 dark:hover:prose-a:text-teal-300 prose-a:no-underline hover:prose-a:underline prose-strong:text-gray-900 dark:prose-strong:text-gray-100 prose-ul:list-none prose-ul:ml-6 prose-li:text-gray-600 dark:prose-li:text-gray-300 prose-blockquote:border-l-4 prose-blockquote:border-teal-500 prose-blockquote:pl-4 prose-blockquote:italic prose-code:text-teal-600 dark:prose-code:text-teal-400 prose-code:bg-gray-100 dark:prose-code:bg-gray-800 prose-code:px-1 prose-code:rounded prose-pre:bg-gray-100 dark:prose-pre:bg-gray-800 prose-pre:p-4 prose-pre:rounded-lg">
