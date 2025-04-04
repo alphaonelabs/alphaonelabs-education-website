@@ -1579,7 +1579,14 @@
   <script>
       document.getElementById('open-share-window').addEventListener('click', function() {
           // Use the discount_url passed from the view
-          var discountUrl = "{{ discount_url }}";
+          var discountUrl = "{{ discount_url|default:'' }}";
+          if (!discountUrl) {
+              console.error("Discount URL is not available");
+              // Fall back to sharing without discount URL
+              var tweetIntentUrl = "https://twitter.com/intent/tweet?text=" + encodeURIComponent("Check out this course: {{ course.title }} {{ request.build_absolute_uri }}");
+              window.open(tweetIntentUrl, 'Share on Twitter', 'width=600,height=400');
+              return;
+          }
           var tweetText = "{{ course.slug }} - Check out this course and claim your discount: ";
           var fullTweet = tweetText + discountUrl;
           var tweetIntentUrl = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(fullTweet);
