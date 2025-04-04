@@ -19,7 +19,6 @@ class CartPageTest(TestCase):
         Verify that the cart page loads successfully and shows a message
         indicating the cart is empty when no items are present.
         """
-        # Replace 'cart_view' with the URL name for your cart page
         url = reverse("cart_view")
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
