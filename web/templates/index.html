@@ -276,70 +276,68 @@
             </div>
           </div>
         </div>
-        <!-- Featured Products (3 across) -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <!-- Featured Products Section -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {% for product in featured_products %}
-            <!-- Product Card -->
-            <div class="rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-              <div class="aspect-square w-full relative overflow-hidden rounded-lg mb-3">
+            <div class="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
+              <!-- Product Image -->
+              <div class="relative aspect-square w-full overflow-hidden">
                 {% if product.image %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
                     <img src="{{ product.image.url }}"
                          alt="{{ product.name }}"
-                         class="w-full h-full object-cover"
-                         height="250"
-                         width="250" />
+                         class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
                   </a>
                 {% else %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
                     <img src="{% static 'images/placeholder.png' %}"
                          alt="{{ product.name }}"
-                         class="w-full h-full object-cover"
-                         height="250"
-                         width="250" />
+                         class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
                   </a>
                 {% endif %}
               </div>
-              <!-- Title and Price -->
-              <div class="mb-3">
-                <h3 class="text-lg font-semibold h-14 flex items-start">
+              <!-- Product Details -->
+              <div class="p-4">
+                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 line-clamp-2">
                   <a href="{% url 'goods_detail' pk=product.id %}"
-                     class="hover:text-orange-500 transition-colors duration-200 line-clamp-2">{{ product.name }}</a>
+                     class="hover:text-orange-500 transition-colors duration-200">{{ product.name }}</a>
                 </h3>
-                <div class="flex items-center justify-between text-sm">
+                <div class="flex items-center justify-between mt-2">
                   {% if product.discount_price %}
-                    <span class="text-red-500 dark:text-red-400 font-bold">${{ product.discount_price }}</span>
-                    <span class="line-through text-gray-500 dark:text-gray-400">${{ product.price }}</span>
+                    <span class="text-red-500 dark:text-red-400 font-bold text-lg">${{ product.discount_price }}</span>
+                    <span class="line-through text-gray-500 dark:text-gray-400 text-sm">${{ product.price }}</span>
                   {% else %}
-                    <span class="text-orange-600 dark:text-orange-500 font-bold">${{ product.price }}</span>
+                    <span class="text-orange-600 dark:text-orange-500 font-bold text-lg">${{ product.price }}</span>
                   {% endif %}
                 </div>
+                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">{{ product.description }}</p>
               </div>
-              <!-- Stock Status -->
-              <div class="mb-3 text-sm text-gray-600 dark:text-gray-300">
-                {% if product.stock > 0 %}
-                  <span class="text-green-500 font-semibold">In Stock</span>
-                {% else %}
-                  <span class="text-red-500 font-semibold">Out of Stock</span>
-                {% endif %}
-              </div>
-              <!-- Add to Cart Button -->
-              <form method="post" action="{% url 'add_goods_to_cart' pk=product.id %}">
-                {% csrf_token %}
-                <button type="submit"
-                        class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-3 py-2 rounded-lg flex items-center justify-center"
-                        {% if product.stock == 0 %}disabled{% endif %}>
-                  <i class="fas fa-cart-plus mr-2"></i>
+              <!-- Stock and Add to Cart -->
+              <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+                <div class="flex items-center justify-between">
                   {% if product.stock > 0 %}
-                    Add to Cart
+                    <span class="text-green-500 font-medium">In Stock</span>
                   {% else %}
-                    Sold Out
+                    <span class="text-red-500 font-medium">Out of Stock</span>
                   {% endif %}
-                </button>
-              </form>
+                  <form method="post" action="{% url 'add_goods_to_cart' pk=product.id %}">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-200"
+                            {% if product.stock == 0 %}disabled{% endif %}>
+                      <i class="fas fa-cart-plus mr-2"></i>
+                      {% if product.stock > 0 %}
+                        Add to Cart
+                      {% else %}
+                        Sold Out
+                      {% endif %}
+                    </button>
+                  </form>
+                </div>
+              </div>
             </div>
           {% empty %}
-            <p>No featured products available.</p>
+            <p class="text-center text-gray-500 dark:text-gray-400">No featured products available.</p>
           {% endfor %}
         </div>
         <!-- Add view more link -->
