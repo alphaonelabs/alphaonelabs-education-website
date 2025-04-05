@@ -7,8 +7,11 @@
   <!-- Modern Hero Section -->
   <div class="relative bg-gradient-to-r from-teal-300 to-teal-500 overflow-hidden">
     <div class="absolute inset-0 opacity-20">
-      <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
-        <path fill="#ffffff" fill-opacity="1" d="M0,32L48,80C96,128,192,224,288,224C384,224,480,128,576,112C672,96,768,160,864,186.7C960,213,1056,203,1152,170.7C1248,139,1344,85,1392,58.7L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+      <svg class="w-full h-full"
+           xmlns="http://www.w3.org/2000/svg"
+           viewBox="0 0 1440 320">
+        <path fill="#ffffff" fill-opacity="1" d="M0,32L48,80C96,128,192,224,288,224C384,224,480,128,576,112C672,96,768,160,864,186.7C960,213,1056,203,1152,170.7C1248,139,1344,85,1392,58.7L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z">
+        </path>
       </svg>
     </div>
     <div class="container mx-auto px-4 py-16 md:py-24 relative z-10">
@@ -18,11 +21,13 @@
           Transforming education through innovative connections between teachers and students.
         </p>
         <div class="flex flex-wrap justify-center gap-4 animate-fade-in animation-delay-400">
-          <a href="{% url 'learn' %}" class="bg-white text-teal-500 hover:bg-teal-50 px-8 py-3 rounded-full shadow-lg flex items-center transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+          <a href="{% url 'learn' %}"
+             class="bg-white text-teal-500 hover:bg-teal-50 px-8 py-3 rounded-full shadow-lg flex items-center transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
             <i class="fas fa-graduation-cap mr-2"></i>
             Start Learning
           </a>
-          <a href="{% url 'teach' %}" class="bg-teal-400 bg-opacity-30 hover:bg-opacity-40 text-white border border-white border-opacity-30 px-8 py-3 rounded-full shadow-lg flex items-center transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+          <a href="{% url 'teach' %}"
+             class="bg-teal-400 bg-opacity-30 hover:bg-opacity-40 text-white border border-white border-opacity-30 px-8 py-3 rounded-full shadow-lg flex items-center transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
             <i class="fas fa-chalkboard-teacher mr-2"></i>
             Become a Teacher
           </a>
@@ -30,7 +35,6 @@
       </div>
     </div>
   </div>
-
   <main class="max-w-[90rem] mx-auto px-4 md:px-6 py-8">
     {% if is_debug %}
       <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-8 rounded-lg shadow-md animate-pulse">
@@ -51,18 +55,16 @@
         </div>
       </div>
     {% endif %}
-
     <!-- Inspirational Quote Section -->
     <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-12 transform transition-all duration-300 hover:shadow-xl border border-gray-100 dark:border-gray-700 hover:border-blue-100 dark:hover:border-blue-900">
       <blockquote class="text-xl md:text-2xl italic text-gray-700 dark:text-gray-300 mb-4">
-            "Somewhere, something incredible is waiting to be known."
+        "Somewhere, something incredible is waiting to be known."
         <span class="block text-right mt-2 text-sm text-gray-600 dark:text-gray-400">- Carl Sagan</span>
-          </blockquote>
+      </blockquote>
       <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
         Alpha One Labs is an innovative platform dedicated to forging meaningful connections between teachers and students. By bridging the gap between knowledge seekers and knowledge givers, we facilitate a dynamic educational experience that empowers everyone involved.
-          </p>
-        </div>
-
+      </p>
+    </div>
     <!-- Main Content Layout -->
     <div class="flex flex-col lg:flex-row space-y-8 lg:space-y-0 lg:space-x-8">
       <!-- Main Content Column -->
@@ -74,45 +76,52 @@
               <i class="fas fa-star text-yellow-500 mr-3"></i>
               Featured Courses
             </h2>
-            <a href="{% url 'course_search' %}" class="group inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition duration-300">
+            <a href="{% url 'course_search' %}"
+               class="group inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition duration-300">
               View All
               <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
             </a>
           </div>
-
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {% for course in featured_courses %}
+            {% for course in featured_courses %}
               <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg border border-gray-100 dark:border-gray-700 transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group">
                 <div class="aspect-video w-full relative overflow-hidden">
-                {% if course.image %}
-                  <a href="{% url 'course_detail' course.slug %}">
-                      <img src="{{ course.image.url }}" alt="{{ course.title }}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
-                  </a>
-                {% else %}
-                  <a href="{% url 'course_detail' course.slug %}">
-                      <img src="{% static 'images/default-course.jpg' %}" alt="{{ course.title }}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
-                  </a>
-                {% endif %}
+                  {% if course.image %}
+                    <a href="{% url 'course_detail' course.slug %}">
+                      <img src="{{ course.image.url }}"
+                           alt="{{ course.title }}"
+                           class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
+                    </a>
+                  {% else %}
+                    <a href="{% url 'course_detail' course.slug %}">
+                      <img src="{% static 'images/default-course.jpg' %}"
+                           alt="{{ course.title }}"
+                           class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
+                    </a>
+                  {% endif %}
                   <div class="absolute top-3 right-3">
                     <span class="px-3 py-1 text-xs font-semibold bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-full shadow-sm">
                       {{ course.subject }}
                     </span>
-              </div>
+                  </div>
                 </div>
-
                 <div class="p-5">
                   <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2 line-clamp-2 h-14">
-                    <a href="{% url 'course_detail' course.slug %}" class="hover:text-blue-600 dark:hover:text-blue-400 transition duration-300">
+                    <a href="{% url 'course_detail' course.slug %}"
+                       class="hover:text-blue-600 dark:hover:text-blue-400 transition duration-300">
                       {{ course.title }}
                     </a>
-                </h3>
-
+                  </h3>
                   <div class="flex items-center justify-between mt-3 mb-4">
                     <div class="flex items-center">
                       {% if course.teacher.profile.avatar %}
-                        <img src="{{ course.teacher.profile.avatar.url }}" alt="{{ course.teacher.username }}" class="h-10 w-10 rounded-full mr-3 border-2 border-white dark:border-gray-700 shadow-sm" />
+                        <img src="{{ course.teacher.profile.avatar.url }}"
+                             alt="{{ course.teacher.username }}"
+                             class="h-10 w-10 rounded-full mr-3 border-2 border-white dark:border-gray-700 shadow-sm" />
                       {% else %}
-                        <img src="{% static 'images/default_teacher.png' %}" alt="{{ course.teacher.username }}" class="h-10 w-10 rounded-full mr-3 border-2 border-white dark:border-gray-700 shadow-sm" />
+                        <img src="{% static 'images/default_teacher.png' %}"
+                             alt="{{ course.teacher.username }}"
+                             class="h-10 w-10 rounded-full mr-3 border-2 border-white dark:border-gray-700 shadow-sm" />
                       {% endif %}
                       <div>
                         <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ course.teacher.username }}</span>
@@ -122,66 +131,64 @@
                       </div>
                     </div>
                     <span class="text-orange-600 dark:text-orange-500 font-bold">
-                    {% if course.price == 0 %}
-                      Free
-                    {% else %}
-                      ${{ course.price }}
-                    {% endif %}
-                  </span>
-                </div>
-
+                      {% if course.price == 0 %}
+                        Free
+                      {% else %}
+                        ${{ course.price }}
+                      {% endif %}
+                    </span>
+                  </div>
                   <div class="grid grid-cols-2 gap-2 mb-4 text-xs">
                     <div class="flex items-center text-gray-600 dark:text-gray-400">
                       <i class="fas fa-eye mr-2 text-blue-500"></i>
-                  <span>{{ course.web_requests.count|default:"0" }} views</span>
-                </div>
+                      <span>{{ course.web_requests.count|default:"0" }} views</span>
+                    </div>
                     <div class="flex items-center text-gray-600 dark:text-gray-400">
                       <i class="fas fa-users mr-2 text-blue-500"></i>
-                  <span>{{ course.enrollments.count }}/{{ course.max_students }}</span>
-                </div>
+                      <span>{{ course.enrollments.count }}/{{ course.max_students }}</span>
+                    </div>
                     <div class="flex items-center text-gray-600 dark:text-gray-400">
                       <i class="fas fa-calendar-alt mr-2 text-blue-500"></i>
-                  <span>{{ course.sessions.count }} sessions</span>
-                </div>
+                      <span>{{ course.sessions.count }} sessions</span>
+                    </div>
                     <div class="flex items-center text-gray-600 dark:text-gray-400">
-                  <i class="fas fa-star text-yellow-400 mr-2"></i>
-                  <span>{{ course.average_rating|default:"N/A" }}</span>
+                      <i class="fas fa-star text-yellow-400 mr-2"></i>
+                      <span>{{ course.average_rating|default:"N/A" }}</span>
+                    </div>
+                  </div>
+                  {% if course.invite_only %}
+                    <div class="text-xs text-indigo-600 dark:text-indigo-400 text-center p-2 border border-indigo-200 dark:border-indigo-800 rounded-lg bg-indigo-50 dark:bg-indigo-900/30">
+                      <i class="fas fa-lock mr-1"></i>
+                      Invite Only
+                    </div>
+                  {% else %}
+                    <form method="post" action="{% url 'add_course_to_cart' course.id %}">
+                      {% csrf_token %}
+                      <button type="submit"
+                              class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-2.5 rounded-lg flex items-center justify-center transition-colors duration-300 shadow-sm hover:shadow">
+                        <i class="fas fa-cart-plus mr-2"></i>
+                        Add to Cart
+                      </button>
+                    </form>
+                  {% endif %}
                 </div>
               </div>
-
-              {% if course.invite_only %}
-                    <div class="text-xs text-indigo-600 dark:text-indigo-400 text-center p-2 border border-indigo-200 dark:border-indigo-800 rounded-lg bg-indigo-50 dark:bg-indigo-900/30">
-                  <i class="fas fa-lock mr-1"></i>
-                  Invite Only
-                </div>
-              {% else %}
-                <form method="post" action="{% url 'add_course_to_cart' course.id %}">
-                  {% csrf_token %}
-                      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-2.5 rounded-lg flex items-center justify-center transition-colors duration-300 shadow-sm hover:shadow">
-                    <i class="fas fa-cart-plus mr-2"></i>
-                    Add to Cart
-                  </button>
-                </form>
-              {% endif %}
-                </div>
-            </div>
-          {% empty %}
+            {% empty %}
               <div class="col-span-3 py-10 text-center">
                 <i class="fas fa-book-open text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
                 <p class="text-gray-500 dark:text-gray-400">No featured courses available at the moment.</p>
               </div>
-          {% endfor %}
-        </div>
+            {% endfor %}
+          </div>
         </section>
         <!-- Interactive Features Row - Quiz & Challenges -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <!-- Quiz Banner -->
+          <!-- Quiz Banner -->
           <div class="bg-gradient-to-r from-teal-300 to-teal-500 rounded-xl overflow-hidden shadow-lg transform hover:-translate-y-1 transition-all duration-300">
             <div class="relative h-full">
               <!-- Decorative circles -->
               <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10"></div>
               <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/10 rounded-full -ml-10 -mb-10"></div>
-
               <div class="p-6 relative z-10">
                 <div class="flex items-center mb-4">
                   <div class="bg-white/20 p-3 rounded-lg mr-4">
@@ -192,99 +199,94 @@
                     <p class="text-teal-100 text-sm">Interactive quizzes for self-assessment</p>
                   </div>
                 </div>
-
                 <p class="text-teal-100 mb-5 text-sm">
                   Challenge yourself with our interactive quizzes. Perfect for testing your understanding and tracking your progress.
                 </p>
-
                 <div class="flex flex-wrap gap-3">
-                  <a href="{% url 'quiz_list' %}" class="bg-white text-teal-500 hover:bg-teal-50 px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition duration-300 inline-flex items-center">
+                  <a href="{% url 'quiz_list' %}"
+                     class="bg-white text-teal-500 hover:bg-teal-50 px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition duration-300 inline-flex items-center">
                     <i class="fas fa-list-ul mr-2"></i> Browse Quizzes
-                </a>
-                {% if user.is_authenticated %}
-                    <a href="{% url 'create_quiz' %}" class="bg-transparent hover:bg-white/20 border border-white px-4 py-2 rounded-lg text-sm font-medium transition duration-300 inline-flex items-center text-white">
-                      <i class="fas fa-plus mr-2"></i> Create Quiz
                   </a>
-                {% endif %}
+                  {% if user.is_authenticated %}
+                    <a href="{% url 'create_quiz' %}"
+                       class="bg-transparent hover:bg-white/20 border border-white px-4 py-2 rounded-lg text-sm font-medium transition duration-300 inline-flex items-center text-white">
+                      <i class="fas fa-plus mr-2"></i> Create Quiz
+                    </a>
+                  {% endif %}
+                </div>
               </div>
-            </div>
-
               <div class="bg-teal-400/30 py-3 px-6">
-            <div class="flex flex-wrap items-center justify-between text-xs text-white">
-              <div class="flex items-center mb-1 md:mb-0">
-                <i class="fas fa-chart-line mr-1"></i>
-                <span>Track progress</span>
-              </div>
-              <div class="flex items-center mb-1 md:mb-0">
-                <i class="fas fa-medal mr-1"></i>
-                <span>Earn badges</span>
-              </div>
-              <div class="flex items-center">
-                <i class="fas fa-share-alt mr-1"></i>
-                <span>Share results</span>
+                <div class="flex flex-wrap items-center justify-between text-xs text-white">
+                  <div class="flex items-center mb-1 md:mb-0">
+                    <i class="fas fa-chart-line mr-1"></i>
+                    <span>Track progress</span>
+                  </div>
+                  <div class="flex items-center mb-1 md:mb-0">
+                    <i class="fas fa-medal mr-1"></i>
+                    <span>Earn badges</span>
+                  </div>
+                  <div class="flex items-center">
+                    <i class="fas fa-share-alt mr-1"></i>
+                    <span>Share results</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-          </div>
-
           <!-- Challenges Banner -->
           <div class="bg-gradient-to-r from-teal-400 to-teal-600 rounded-xl overflow-hidden shadow-lg transform hover:-translate-y-1 transition-all duration-300">
             <div class="relative h-full">
               <!-- Decorative circles -->
               <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10"></div>
               <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/10 rounded-full -ml-10 -mb-10"></div>
-
               <div class="p-6 relative z-10">
                 <div class="flex items-center mb-4">
                   <div class="bg-white/20 p-3 rounded-lg mr-4">
                     <i class="fas fa-trophy text-white text-2xl"></i>
                   </div>
                   <div>
-                <div class="flex items-center mb-1">
-                  <span class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">New Feature</span>
-                </div>
+                    <div class="flex items-center mb-1">
+                      <span class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">New Feature</span>
+                    </div>
                     <h3 class="text-xl font-bold text-white">Peer Challenges</h3>
                     <p class="text-teal-100 text-sm">Compete with friends and classmates</p>
                   </div>
                 </div>
-
                 <p class="text-teal-100 mb-5 text-sm">
                   Create personalized quiz challenges, invite friends, and compete on the leaderboard! Test your knowledge against peers.
                 </p>
-
                 <div class="flex flex-wrap gap-3">
-                  <a href="{% url 'challenge_list' %}" class="bg-white text-teal-500 hover:bg-teal-50 px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition duration-300 inline-flex items-center">
+                  <a href="{% url 'challenge_list' %}"
+                     class="bg-white text-teal-500 hover:bg-teal-50 px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition duration-300 inline-flex items-center">
                     <i class="fas fa-trophy mr-2"></i> View Challenges
                   </a>
                   {% if user.is_authenticated %}
-                    <a href="{% url 'create_challenge' %}" class="bg-transparent hover:bg-white/20 border border-white px-4 py-2 rounded-lg text-sm font-medium transition duration-300 inline-flex items-center text-white">
+                    <a href="{% url 'create_challenge' %}"
+                       class="bg-transparent hover:bg-white/20 border border-white px-4 py-2 rounded-lg text-sm font-medium transition duration-300 inline-flex items-center text-white">
                       <i class="fas fa-plus mr-2"></i> Create Challenge
                     </a>
                   {% endif %}
                 </div>
               </div>
-
               <div class="bg-teal-500/30 py-3 px-6">
-            <div class="flex flex-wrap items-center justify-between text-xs text-white">
-              <div class="flex items-center">
-                <i class="fas fa-users mr-1"></i>
-                <span>Challenge friends</span>
-              </div>
-              <div class="flex items-center">
-                <i class="fas fa-crown mr-1"></i>
-                <span>Compete</span>
-              </div>
-              <div class="flex items-center">
-                <i class="fas fa-chart-bar mr-1"></i>
-                <span>Track results</span>
+                <div class="flex flex-wrap items-center justify-between text-xs text-white">
+                  <div class="flex items-center">
+                    <i class="fas fa-users mr-1"></i>
+                    <span>Challenge friends</span>
+                  </div>
+                  <div class="flex items-center">
+                    <i class="fas fa-crown mr-1"></i>
+                    <span>Compete</span>
+                  </div>
+                  <div class="flex items-center">
+                    <i class="fas fa-chart-bar mr-1"></i>
+                    <span>Track results</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-          </div>
-        </div>
-
         <!-- Featured Products -->
         <section>
           <div class="flex items-center justify-between mb-6">
@@ -292,65 +294,64 @@
               <i class="fas fa-shopping-bag text-orange-500 mr-3"></i>
               Featured Products
             </h2>
-            <a href="{% url 'goods_listing' %}" class="group inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition duration-300">
+            <a href="{% url 'goods_listing' %}"
+               class="group inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition duration-300">
               View All
               <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
             </a>
           </div>
-
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {% for product in featured_products %}
+            {% for product in featured_products %}
               <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg border border-gray-100 dark:border-gray-700 transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group">
                 <div class="aspect-square w-full relative overflow-hidden">
-                {% if product.image %}
-                  <a href="{% url 'goods_detail' pk=product.id %}">
-                      <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
-                  </a>
-                {% else %}
-                  <a href="{% url 'goods_detail' pk=product.id %}">
-                      <img src="{% static 'images/placeholder.png' %}" alt="{{ product.name }}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
-                  </a>
-                {% endif %}
-
+                  {% if product.image %}
+                    <a href="{% url 'goods_detail' pk=product.id %}">
+                      <img src="{{ product.image.url }}"
+                           alt="{{ product.name }}"
+                           class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
+                    </a>
+                  {% else %}
+                    <a href="{% url 'goods_detail' pk=product.id %}">
+                      <img src="{% static 'images/placeholder.png' %}"
+                           alt="{{ product.name }}"
+                           class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
+                    </a>
+                  {% endif %}
                   {% if product.discount_price %}
                     <div class="absolute top-3 left-3">
-                      <span class="px-3 py-1 text-xs font-bold bg-red-500 text-white rounded-full shadow">
-                        SALE
-                      </span>
-              </div>
+                      <span class="px-3 py-1 text-xs font-bold bg-red-500 text-white rounded-full shadow">SALE</span>
+                    </div>
                   {% endif %}
                 </div>
-
                 <div class="p-5">
                   <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2 line-clamp-2 h-14">
-                    <a href="{% url 'goods_detail' pk=product.id %}" class="hover:text-orange-500 dark:hover:text-orange-400 transition duration-300">
+                    <a href="{% url 'goods_detail' pk=product.id %}"
+                       class="hover:text-orange-500 dark:hover:text-orange-400 transition duration-300">
                       {{ product.name }}
                     </a>
-                </h3>
-
+                  </h3>
                   <div class="flex items-center justify-between my-4">
-                  {% if product.discount_price %}
+                    {% if product.discount_price %}
                       <div>
-                    <span class="text-red-500 dark:text-red-400 font-bold text-lg">${{ product.discount_price }}</span>
+                        <span class="text-red-500 dark:text-red-400 font-bold text-lg">${{ product.discount_price }}</span>
                         <span class="line-through text-gray-400 dark:text-gray-500 ml-2">${{ product.price }}</span>
                       </div>
-                  {% else %}
-                    <span class="text-orange-600 dark:text-orange-500 font-bold text-lg">${{ product.price }}</span>
-                  {% endif %}
-
+                    {% else %}
+                      <span class="text-orange-600 dark:text-orange-500 font-bold text-lg">${{ product.price }}</span>
+                    {% endif %}
                     <span class="{% if product.stock > 0 %}text-green-500 dark:text-green-400{% else %}text-red-500 dark:text-red-400{% endif %} text-sm font-semibold">
-                  {% if product.stock > 0 %}
+                      {% if product.stock > 0 %}
                         In Stock
-                  {% else %}
+                      {% else %}
                         Out of Stock
-                  {% endif %}
+                      {% endif %}
                     </span>
                   </div>
-
                   <!-- Add to Cart Button -->
                   <form method="post" action="{% url 'add_goods_to_cart' pk=product.id %}">
                     {% csrf_token %}
-                    <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-3 py-2.5 rounded-lg flex items-center justify-center shadow-sm hover:shadow transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
+                    <button type="submit"
+                            class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-3 py-2.5 rounded-lg flex items-center justify-center shadow-sm hover:shadow transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
                             {% if product.stock == 0 %}disabled{% endif %}>
                       <i class="fas fa-cart-plus mr-2"></i>
                       {% if product.stock > 0 %}
@@ -360,38 +361,40 @@
                       {% endif %}
                     </button>
                   </form>
+                </div>
               </div>
-            </div>
-          {% empty %}
+            {% empty %}
               <div class="col-span-3 py-10 text-center">
                 <i class="fas fa-shopping-basket text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
                 <p class="text-gray-500 dark:text-gray-400">No featured products available at the moment.</p>
               </div>
-          {% endfor %}
-        </div>
+            {% endfor %}
+          </div>
         </section>
         <!-- GSoC Announcement -->
         <section class="bg-gradient-to-r from-teal-300 to-teal-500 rounded-xl p-6 shadow-lg overflow-hidden relative">
           <!-- Decorative elements -->
           <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20"></div>
           <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-20 -mb-20"></div>
-
           <div class="relative flex flex-col md:flex-row items-center justify-between gap-6">
             <div class="md:flex-1">
               <div class="flex items-center space-x-4 mb-4">
                 <div class="hidden sm:block bg-white/20 p-2 rounded-lg">
-                  <img src="{% static 'images/gsoc-logo.png' %}" alt="Google Summer of Code" class="h-16 w-16 object-contain"
+                  <img src="{% static 'images/gsoc-logo.png' %}"
+                       alt="Google Summer of Code"
+                       class="h-16 w-16 object-contain"
                        onerror="this.src='https://summerofcode.withgoogle.com/assets/media/gsoc-2024-badge.svg'" />
-              </div>
-              <div>
+                </div>
+                <div>
                   <h3 class="text-2xl font-bold text-white mb-2">Join us for Google Summer of Code 2025! 🚀</h3>
-                <p class="text-teal-100">
-                  Alpha One Labs has applied to participate in this year's Google Summer of Code. Check out our project ideas and get involved!
-                </p>
+                  <p class="text-teal-100">
+                    Alpha One Labs has applied to participate in this year's Google Summer of Code. Check out our project ideas and get involved!
+                  </p>
+                </div>
               </div>
             </div>
-            </div>
-            <a href="{% url 'gsoc_landing_page' %}" class="md:flex-shrink-0 bg-white hover:bg-teal-50 text-teal-500 font-semibold px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all duration-300 inline-flex items-center group whitespace-nowrap">
+            <a href="{% url 'gsoc_landing_page' %}"
+               class="md:flex-shrink-0 bg-white hover:bg-teal-50 text-teal-500 font-semibold px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all duration-300 inline-flex items-center group whitespace-nowrap">
               <span>Get Started with GSoC</span>
               <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
             </a>
@@ -440,13 +443,13 @@
               </li>
             </ul>
             <div class="mt-6 text-center">
-              <a href="{% url 'learn' %}" class="inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
+              <a href="{% url 'learn' %}"
+                 class="inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
                 Start Learning
                 <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
               </a>
+            </div>
           </div>
-          </div>
-
           <!-- For Teachers -->
           <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
             <h3 class="text-xl font-bold mb-4 flex items-center text-gray-800 dark:text-white">
@@ -488,12 +491,13 @@
               </li>
             </ul>
             <div class="mt-6 text-center">
-              <a href="{% url 'teach' %}" class="inline-flex items-center text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium">
+              <a href="{% url 'teach' %}"
+                 class="inline-flex items-center text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium">
                 Start Teaching
                 <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
               </a>
+            </div>
           </div>
-        </div>
         </div>
         <!-- Team Collaboration Section (for authenticated users) -->
         {% if user.is_authenticated %}
@@ -501,16 +505,15 @@
             <!-- Decorative elements -->
             <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20"></div>
             <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-20 -mb-20"></div>
-
             <div class="p-6 relative">
-            <div class="flex items-center justify-between mb-6">
-              <h2 class="text-2xl font-bold text-white">Team Collaboration</h2>
-                <a href="{% url 'team_goals' %}" class="bg-white hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300 inline-flex items-center group">
-                <span>View All</span>
+              <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-white">Team Collaboration</h2>
+                <a href="{% url 'team_goals' %}"
+                   class="bg-white hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300 inline-flex items-center group">
+                  <span>View All</span>
                   <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
-              </a>
-            </div>
-
+                </a>
+              </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- My Team Goals -->
                 <div class="space-y-4">
@@ -525,6 +528,7 @@
                             <div class="text-sm text-gray-200 flex items-center">
                               <i class="fas fa-calendar-alt mr-2"></i>
                               {% load i18n %}
+
                               <span>{% trans "Due" %}: {{ goal.deadline|date:"M j, Y" }}</span>
                               {% if goal.deadline < now %}
                                 <span class="text-red-300 ml-2 font-medium">({% trans "Overdue" %})</span>
@@ -538,7 +542,8 @@
                               <i class="fas fa-users mr-1"></i>
                               {{ goal.members.count }} members
                             </span>
-                            <a href="{% url 'team_goal_detail' goal.id %}" class="text-white hover:text-blue-200 text-sm inline-flex items-center">
+                            <a href="{% url 'team_goal_detail' goal.id %}"
+                               class="text-white hover:text-blue-200 text-sm inline-flex items-center">
                               View Details
                               <i class="fas fa-chevron-right ml-1 text-xs"></i>
                             </a>
@@ -546,22 +551,23 @@
                         </div>
                       {% endfor %}
                     </div>
-                    <a href="{% url 'create_team_goal' %}" class="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition duration-300 shadow-sm">
-                    <i class="fas fa-plus mr-2"></i>
-                    Create New Team Goal
+                    <a href="{% url 'create_team_goal' %}"
+                       class="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition duration-300 shadow-sm">
+                      <i class="fas fa-plus mr-2"></i>
+                      Create New Team Goal
                     </a>
                   {% else %}
                     <div class="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-center border border-white/10">
                       <i class="fas fa-users-slash text-4xl text-white/40 mb-3"></i>
                       <p class="text-gray-200 mb-4">You haven't created or joined any team goals yet.</p>
-                      <a href="{% url 'create_team_goal' %}" class="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition duration-300 shadow-sm">
+                      <a href="{% url 'create_team_goal' %}"
+                         class="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition duration-300 shadow-sm">
                         <i class="fas fa-plus mr-2"></i>
                         Create Your First Team Goal
-                  </a>
-                </div>
+                      </a>
+                    </div>
                   {% endif %}
                 </div>
-
                 <!-- Team Invitations -->
                 <div class="space-y-4">
                   <h3 class="text-lg font-semibold text-white mb-4">Team Invitations</h3>
@@ -572,15 +578,21 @@
                           <h4 class="font-medium text-white">{{ invite.goal.title }}</h4>
                           <p class="text-sm text-gray-200 mb-3">Invited by {{ invite.sender.username }}</p>
                           <div class="flex items-center space-x-3 mt-3">
-                            <form method="post" action="{% url 'accept_team_invite' invite.id %}" class="inline">
+                            <form method="post"
+                                  action="{% url 'accept_team_invite' invite.id %}"
+                                  class="inline">
                               {% csrf_token %}
-                              <button type="submit" class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition duration-300 shadow-sm">
+                              <button type="submit"
+                                      class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition duration-300 shadow-sm">
                                 Accept
                               </button>
                             </form>
-                            <form method="post" action="{% url 'decline_team_invite' invite.id %}" class="inline">
+                            <form method="post"
+                                  action="{% url 'decline_team_invite' invite.id %}"
+                                  class="inline">
                               {% csrf_token %}
-                              <button type="submit" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition duration-300 shadow-sm">
+                              <button type="submit"
+                                      class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition duration-300 shadow-sm">
                                 Decline
                               </button>
                             </form>
@@ -591,12 +603,12 @@
                   {% else %}
                     <div class="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-center border border-white/10">
                       <i class="fas fa-envelope-open-text text-4xl text-white/40 mb-3"></i>
-                    <p class="text-gray-200">You have no pending team invitations.</p>
+                      <p class="text-gray-200">You have no pending team invitations.</p>
                     </div>
                   {% endif %}
                 </div>
               </div>
-              </div>
+            </div>
           </section>
         {% endif %}
         <!-- Affiliations Section -->
@@ -606,9 +618,18 @@
           </h2>
           <div class="flex flex-wrap items-center justify-center gap-8">
             <!-- OSL Logo -->
-            <a href="https://opensciencelabs.org/" target="_blank" rel="noopener" class="block transform hover:scale-105 transition-transform duration-300">
-              <img src="{% static 'images/logo-osl.svg' %}" alt="Open Source License" class="h-32 w-auto dark:hidden" title="Licensed under Open Source License (OSL)" />
-              <img src="{% static 'images/osl-color-horizontal.png' %}" alt="Open Source License" class="h-16 w-auto hidden dark:block" title="Licensed under Open Source License (OSL)" />
+            <a href="https://opensciencelabs.org/"
+               target="_blank"
+               rel="noopener"
+               class="block transform hover:scale-105 transition-transform duration-300">
+              <img src="{% static 'images/logo-osl.svg' %}"
+                   alt="Open Source License"
+                   class="h-32 w-auto dark:hidden"
+                   title="Licensed under Open Source License (OSL)" />
+              <img src="{% static 'images/osl-color-horizontal.png' %}"
+                   alt="Open Source License"
+                   class="h-16 w-auto hidden dark:block"
+                   title="Licensed under Open Source License (OSL)" />
             </a>
           </div>
           <p class="text-center text-sm text-gray-600 dark:text-gray-400 mt-6">
@@ -627,7 +648,9 @@
               <div class="flex items-center p-2 {% if forloop.counter == 1 %}bg-yellow-50 dark:bg-yellow-900/30{% elif forloop.counter == 2 %}bg-gray-50 dark:bg-gray-700/50{% elif forloop.counter == 3 %}bg-amber-50 dark:bg-amber-900/30{% endif %} rounded-lg">
                 <div class="flex-shrink-0 mr-3 relative">
                   {% if entry.user.profile.avatar %}
-                    <img src="{{ entry.user.profile.avatar.url }}" alt="{{ entry.user.username }}" class="w-10 h-10 rounded-full border-2 {% if forloop.counter == 1 %}border-yellow-400{% elif forloop.counter == 2 %}border-gray-400{% elif forloop.counter == 3 %}border-amber-500{% else %}border-white dark:border-gray-700{% endif %}" />
+                    <img src="{{ entry.user.profile.avatar.url }}"
+                         alt="{{ entry.user.username }}"
+                         class="w-10 h-10 rounded-full border-2 {% if forloop.counter == 1 %}border-yellow-400{% elif forloop.counter == 2 %}border-gray-400{% elif forloop.counter == 3 %}border-amber-500{% else %}border-white dark:border-gray-700{% endif %}" />
                   {% else %}
                     <div class="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-white border-2 {% if forloop.counter == 1 %}border-yellow-400{% elif forloop.counter == 2 %}border-gray-400{% elif forloop.counter == 3 %}border-amber-500{% else %}border-white dark:border-gray-700{% endif %}">
                       {{ entry.user.username|make_list|first|upper }}
@@ -656,20 +679,18 @@
             {% empty %}
               <div class="text-center py-4">
                 <i class="fas fa-trophy text-gray-300 dark:text-gray-600 text-3xl mb-2"></i>
-                <p class="text-sm text-gray-500 dark:text-gray-400">
-                No entries yet. Complete challenges to earn your spot!
-              </p>
+                <p class="text-sm text-gray-500 dark:text-gray-400">No entries yet. Complete challenges to earn your spot!</p>
               </div>
             {% endfor %}
           </div>
           <!-- Leaderboard Navigation Button -->
           <div class="mt-4">
-            <a href="{% url 'leaderboards' %}" class="block text-center bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium px-4 py-2 rounded-lg transition-all duration-300 shadow-sm">
+            <a href="{% url 'leaderboards' %}"
+               class="block text-center bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium px-4 py-2 rounded-lg transition-all duration-300 shadow-sm">
               <i class="fas fa-list-ol mr-2"></i>Full Leaderboard
             </a>
           </div>
         </div>
-
         <!-- Weekly Challenge -->
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
           <h2 class="text-lg font-bold mb-4 flex items-center">
@@ -678,29 +699,30 @@
           </h2>
           {% if current_challenge %}
             <div>
-                <!-- Challenge Title -->
+              <!-- Challenge Title -->
               <h3 class="text-lg font-semibold mb-3 text-gray-800 dark:text-white">{{ current_challenge.0.title }}</h3>
-                <!-- Challenge Description -->
+              <!-- Challenge Description -->
               <p class="text-gray-700 dark:text-gray-300 mb-4 text-sm">{{ current_challenge.0.description }}</p>
-                <!-- Challenge Duration -->
+              <!-- Challenge Duration -->
               <div class="bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-lg mb-4">
                 <p class="text-gray-700 dark:text-gray-300 text-sm flex items-center">
                   <i class="fas fa-calendar-alt mr-2 text-indigo-500 dark:text-indigo-400"></i>
                   <span>{{ current_challenge.0.start_date|date:"M j" }} - {{ current_challenge.0.end_date|date:"M j, Y" }}</span>
                 </p>
               </div>
-                <!-- Submission Button -->
-                {% if user.is_authenticated %}
-                <a href="{% url 'challenge_submit' current_challenge.0.id %}" class="block w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg hover:shadow-md transition-all duration-300 text-center font-medium">
+              <!-- Submission Button -->
+              {% if user.is_authenticated %}
+                <a href="{% url 'challenge_submit' current_challenge.0.id %}"
+                   class="block w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg hover:shadow-md transition-all duration-300 text-center font-medium">
                   <i class="fas fa-trophy mr-2"></i>
                   Complete Challenge
-                  </a>
-                {% else %}
+                </a>
+              {% else %}
                 <p class="text-center text-red-600 dark:text-red-400 text-sm">
                   <i class="fas fa-lock mr-1"></i>
                   Please log in to submit your result
                 </p>
-                {% endif %}
+              {% endif %}
             </div>
           {% else %}
             <div class="text-center py-4">
@@ -709,7 +731,6 @@
             </div>
           {% endif %}
         </div>
-
         <!-- Educational Videos -->
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
           <h2 class="text-lg font-bold mb-4 flex items-center">
@@ -717,77 +738,93 @@
             Educational Videos
           </h2>
           <p class="text-gray-600 dark:text-gray-400 mb-4 text-sm">
-                Discover a wide range of educational videos shared by our community of teachers and learners.
-              </p>
+            Discover a wide range of educational videos shared by our community of teachers and learners.
+          </p>
           <div class="flex gap-4 justify-center">
-                {% if user.is_authenticated %}
-              <a href="{% url 'upload_educational_video' %}" class="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-full flex items-center text-sm transition-colors duration-300 shadow-sm">
-                    <i class="fas fa-upload mr-2"></i> Share
-                  </a>
-                {% endif %}
-            <a href="{% url 'educational_videos_list' %}" class="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-full flex items-center text-sm transition-colors duration-300 shadow-sm">
-                  <i class="fas fa-play-circle mr-2"></i> Browse
-                </a>
-              </div>
-            </div>
-
+            {% if user.is_authenticated %}
+              <a href="{% url 'upload_educational_video' %}"
+                 class="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-full flex items-center text-sm transition-colors duration-300 shadow-sm">
+                <i class="fas fa-upload mr-2"></i> Share
+              </a>
+            {% endif %}
+            <a href="{% url 'educational_videos_list' %}"
+               class="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-full flex items-center text-sm transition-colors duration-300 shadow-sm">
+              <i class="fas fa-play-circle mr-2"></i> Browse
+            </a>
+          </div>
+        </div>
         <!-- Recent Forum & Blog Posts -->
         <div class="grid grid-cols-1 gap-6">
-        <!-- Recent Forum Post -->
+          <!-- Recent Forum Post -->
           <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-md hover:shadow-lg transition-all duration-300">
             <h2 class="text-lg font-bold mb-3 flex items-center">
-            <i class="fa-solid fa-comments text-purple-600 dark:text-purple-400 mr-2"></i>
-            Recent Forum Post
-          </h2>
+              <i class="fa-solid fa-comments text-purple-600 dark:text-purple-400 mr-2"></i>
+              Recent Forum Post
+            </h2>
             <div class="border-l-4 border-purple-200 dark:border-purple-800 pl-3 py-1">
-              <h3 class="font-medium text-gray-900 dark:text-gray-200 mb-1">{{ latest_topic.title|default:"How to get started with advanced mathematics?" }}</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">"{{ latest_topic.content|default:"I'm looking for resources on group theory and number theory. Any recommendations?" }}"</p>
-              <p class="text-xs text-gray-500 dark:text-gray-500">posted by <span class="font-medium">{{ latest_topic.author.username|default:"user123" }}</span></p>
-        </div>
-            <a href="{% if latest_topic %}{% url 'forum_topic' latest_topic.category.slug latest_topic.id %}{% else %}{% url 'forum_categories' %}{% endif %}" class="inline-flex items-center mt-3 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 text-sm font-medium group">
+              <h3 class="font-medium text-gray-900 dark:text-gray-200 mb-1">
+                {{ latest_topic.title|default:"How to get started with advanced mathematics?" }}
+              </h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                "{{ latest_topic.content|default:"I'm looking for resources on group theory and number theory. Any recommendations?" }}"
+              </p>
+              <p class="text-xs text-gray-500 dark:text-gray-500">
+                posted by <span class="font-medium">{{ latest_topic.author.username|default:"user123" }}</span>
+              </p>
+            </div>
+            <a href="{% if latest_topic %}{% url 'forum_topic' latest_topic.category.slug latest_topic.id %}{% else %}{% url 'forum_categories' %}{% endif %}"
+               class="inline-flex items-center mt-3 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 text-sm font-medium group">
               View Discussion
               <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
             </a>
           </div>
-
-        <!-- Recent Blog Post -->
+          <!-- Recent Blog Post -->
           <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-md hover:shadow-lg transition-all duration-300">
             <h2 class="text-lg font-bold mb-3 flex items-center">
               <i class="fa-solid fa-blog text-blue-600 dark:text-blue-400 mr-2"></i>
-            Recent Blog Post
-          </h2>
+              Recent Blog Post
+            </h2>
             <div class="border-l-4 border-blue-200 dark:border-blue-800 pl-3 py-1">
-              <h3 class="font-medium text-gray-900 dark:text-gray-200 mb-1">{{ latest_post.title|default:"The Future of Online Education" }}</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ latest_post.excerpt|default:"Learn how new technologies are shaping the way we teach and learn, including AI-driven insights and personalized curriculum..." }}</p>
-        </div>
-            <a href="{% if latest_post %}{% url 'blog_detail' latest_post.slug %}{% else %}{% url 'blog_list' %}{% endif %}" class="inline-flex items-center mt-3 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium group">
+              <h3 class="font-medium text-gray-900 dark:text-gray-200 mb-1">
+                {{ latest_post.title|default:"The Future of Online Education" }}
+              </h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                {{ latest_post.excerpt|default:"Learn how new technologies are shaping the way we teach and learn, including AI-driven insights and personalized curriculum..." }}
+              </p>
+            </div>
+            <a href="{% if latest_post %}{% url 'blog_detail' latest_post.slug %}{% else %}{% url 'blog_list' %}{% endif %}"
+               class="inline-flex items-center mt-3 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium group">
               Read More
               <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
             </a>
           </div>
-
           <!-- Success Story -->
           <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-md hover:shadow-lg transition-all duration-300">
             <h2 class="text-lg font-bold mb-3 flex items-center">
               <i class="fa-solid fa-star text-yellow-500 dark:text-yellow-400 mr-2"></i>
-            Success Story
-          </h2>
+              Success Story
+            </h2>
             <div class="border-l-4 border-yellow-200 dark:border-yellow-800 pl-3 py-1">
-              <h3 class="font-medium text-gray-900 dark:text-gray-200 mb-1">{{ latest_success_story.title|default:"From Beginner to Expert in 3 Months" }}</h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400">{{ latest_success_story.excerpt|default:"Discover how our platform helped a complete beginner transform into a confident expert through personalized learning paths and dedicated mentorship..." }}</p>
+              <h3 class="font-medium text-gray-900 dark:text-gray-200 mb-1">
+                {{ latest_success_story.title|default:"From Beginner to Expert in 3 Months" }}
+              </h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">
+                {{ latest_success_story.excerpt|default:"Discover how our platform helped a complete beginner transform into a confident expert through personalized learning paths and dedicated mentorship..." }}
+              </p>
             </div>
             <div class="flex justify-between items-center mt-3">
-              <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}" class="inline-flex items-center text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300 text-sm font-medium group">
+              <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}"
+                 class="inline-flex items-center text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300 text-sm font-medium group">
                 Read More
                 <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
               </a>
-              <a href="{% url 'create_success_story' %}" class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-3 py-1 rounded-md inline-flex items-center transition-colors duration-300 shadow-sm">
-              <i class="fas fa-plus mr-1"></i> Share Your Story
-            </a>
+              <a href="{% url 'create_success_story' %}"
+                 class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-3 py-1 rounded-md inline-flex items-center transition-colors duration-300 shadow-sm">
+                <i class="fas fa-plus mr-1"></i> Share Your Story
+              </a>
+            </div>
           </div>
         </div>
-        </div>
-
         <!-- GitHub Contributors Section -->
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-lg">
           <h3 class="text-lg font-bold mb-4 flex items-center">
@@ -835,33 +872,35 @@
             </div>
           </div>
           <div class="text-center">
-            <a href="https://github.com/AlphaOneLabs/education-website/graphs/contributors" target="_blank" class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors duration-300">
+            <a href="https://github.com/AlphaOneLabs/education-website/graphs/contributors"
+               target="_blank"
+               class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors duration-300">
               <i class="fas fa-users mr-2"></i>
               View All Contributors
             </a>
           </div>
         </div>
       </div>
-
       <!-- Sidebar -->
       <div class="lg:w-1/4 space-y-8">
         <!-- What Would You Like To Do? -->
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
           <h2 class="text-xl font-bold mb-6 text-center text-gray-800 dark:text-gray-200">What Would You Like To Do?</h2>
           <div class="space-y-4">
-            <a href="{% url 'teach' %}" class="block w-full bg-gradient-to-r from-teal-300 to-teal-400 hover:from-teal-400 hover:to-teal-500 text-white font-semibold px-6 py-4 rounded-xl transition-all duration-300 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center group">
+            <a href="{% url 'teach' %}"
+               class="block w-full bg-gradient-to-r from-teal-300 to-teal-400 hover:from-teal-400 hover:to-teal-500 text-white font-semibold px-6 py-4 rounded-xl transition-all duration-300 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center group">
               <i class="fa-solid fa-chalkboard-user text-2xl mb-2 group-hover:animate-bounce"></i>
               <span class="text-lg">I Want to Teach</span>
               <div class="text-sm font-normal">Share your knowledge with others</div>
             </a>
-            <a href="{% url 'learn' %}" class="block w-full bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 text-white font-semibold px-6 py-4 rounded-xl transition-all duration-300 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center group">
+            <a href="{% url 'learn' %}"
+               class="block w-full bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 text-white font-semibold px-6 py-4 rounded-xl transition-all duration-300 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center group">
               <i class="fa-solid fa-graduation-cap text-2xl mb-2 group-hover:animate-bounce"></i>
               <span class="text-lg">I Want to Learn</span>
               <div class="text-sm font-normal">Discover new skills and expand your knowledge</div>
             </a>
           </div>
         </div>
-
         {% if user.is_authenticated and teaching_courses %}
           <!-- Courses Teaching Section -->
           <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
@@ -873,7 +912,8 @@
               {% for course in teaching_courses %}
                 <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-300">
                   <div class="flex items-center justify-between mb-1">
-                    <a href="{% url 'course_detail' course.slug %}" class="font-medium text-gray-800 dark:text-gray-200 hover:text-blue-500 dark:hover:text-blue-400 transition">
+                    <a href="{% url 'course_detail' course.slug %}"
+                       class="font-medium text-gray-800 dark:text-gray-200 hover:text-blue-500 dark:hover:text-blue-400 transition">
                       {{ course.title|truncatechars:28 }}
                     </a>
                     <span class="text-xs {% if course.status == 'published' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% elif course.status == 'draft' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %} px-2 py-1 rounded-full">
@@ -889,19 +929,19 @@
                       <i class="fas fa-users text-gray-400 mr-1.5"></i>
                       <span>{{ course.enrolled_students }}/{{ course.max_students }}</span>
                     </div>
-                    </div>
                   </div>
-                {% endfor %}
+                </div>
+              {% endfor %}
               {% if teaching_courses.count > 3 %}
-                <a href="{% url 'teacher_dashboard' %}" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center justify-center mt-2">
+                <a href="{% url 'teacher_dashboard' %}"
+                   class="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center justify-center mt-2">
                   <span>View all courses</span>
                   <i class="fas fa-arrow-right ml-1"></i>
                 </a>
               {% endif %}
-              </div>
             </div>
+          </div>
         {% endif %}
-
         <!-- Progress Trackers Dashboard -->
         {% if user.is_authenticated %}
           <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
@@ -916,95 +956,102 @@
                     <div class="flex justify-between mb-1">
                       <span class="text-gray-700 dark:text-gray-300">{{ tracker.title }}</span>
                       <span class="text-gray-600 dark:text-gray-400">{{ tracker.percentage }}%</span>
-          </div>
+                    </div>
                     <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
                       <div class="h-2.5 rounded-full transition-all duration-1000 ease-out bg-teal-300"
-                           {% if tracker.percentage %}style="width: {{ tracker.percentage }}%"{% else %}style="width: 0%"{% endif %}></div>
+                           {% if tracker.percentage %}style="width: {{ tracker.percentage }}%"{% else %}style="width: 0%"{% endif %}>
+                      </div>
                     </div>
                   </div>
                 {% endfor %}
               </div>
               <div class="mt-4 text-center">
-                <a href="{% url 'tracker_list' %}" class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center">
+                <a href="{% url 'tracker_list' %}"
+                   class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center">
                   <span>View All Trackers</span>
                   <i class="fas fa-arrow-right ml-2 text-xs"></i>
-            </a>
-          </div>
+                </a>
+              </div>
             {% else %}
               <div class="text-center py-4">
                 <p class="text-gray-600 dark:text-gray-400 mb-4">You haven't created any progress trackers yet.</p>
-                <a href="{% url 'create_tracker' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center justify-center shadow-sm transition-colors duration-300">
+                <a href="{% url 'create_tracker' %}"
+                   class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center justify-center shadow-sm transition-colors duration-300">
                   <i class="fas fa-plus mr-2"></i>
                   Create Your First Tracker
                 </a>
-        </div>
+              </div>
             {% endif %}
           </div>
         {% endif %}
       </div>
     </div>
   </main>
-
   <!-- Add CSS for animations -->
   <style>
-    /* Fade in animation */
-    .animate-fade-in {
-      animation: fadeIn 0.8s ease-out forwards;
-      opacity: 0;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
+      /* Fade in animation */
+      .animate-fade-in {
+          animation: fadeIn 0.8s ease-out forwards;
+          opacity: 0;
       }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
 
-    /* Animation delays */
-    .animation-delay-200 {
-      animation-delay: 0.2s;
-    }
+      @keyframes fadeIn {
+          from {
+              opacity: 0;
+              transform: translateY(20px);
+          }
 
-    .animation-delay-400 {
-      animation-delay: 0.4s;
-    }
+          to {
+              opacity: 1;
+              transform: translateY(0);
+          }
+      }
 
-    /* Floating animation for certain elements */
-    .animate-float {
-      animation: float 6s ease-in-out infinite;
-    }
+      /* Animation delays */
+      .animation-delay-200 {
+          animation-delay: 0.2s;
+      }
 
-    @keyframes float {
-      0% {
-        transform: translateY(0px);
+      .animation-delay-400 {
+          animation-delay: 0.4s;
       }
-      50% {
-        transform: translateY(-10px);
-      }
-      100% {
-        transform: translateY(0px);
-      }
-    }
 
-    /* Pulsing animation */
-    .animate-pulse {
-      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
+      /* Floating animation for certain elements */
+      .animate-float {
+          animation: float 6s ease-in-out infinite;
+      }
 
-    @keyframes pulse {
-      0%, 100% {
-        opacity: 1;
+      @keyframes float {
+          0% {
+              transform: translateY(0px);
+          }
+
+          50% {
+              transform: translateY(-10px);
+          }
+
+          100% {
+              transform: translateY(0px);
+          }
       }
-      50% {
-        opacity: 0.8;
+
+      /* Pulsing animation */
+      .animate-pulse {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
       }
-    }
+
+      @keyframes pulse {
+
+          0%,
+          100% {
+              opacity: 1;
+          }
+
+          50% {
+              opacity: 0.8;
+          }
+      }
   </style>
-
   <!-- GitHub contributors script -->
   <script>
       // Top Contributors - For Current Month
@@ -1302,3 +1349,4 @@
       });
   </script>
 {% endblock content %}
+
