@@ -1152,6 +1152,7 @@ class Goods(models.Model):
     storefront = models.ForeignKey(Storefront, on_delete=models.CASCADE, related_name="goods")
     is_available = models.BooleanField(default=True, help_text="Show/hide product from store")
     is_reward = models.BooleanField(default=False, help_text="Can be unlocked as achievement reward")
+    featured = models.BooleanField(default=False, help_text="Mark this product as featured")  # New field
     points_required = models.PositiveIntegerField(
         blank=True, null=True, help_text="Points needed to unlock this reward"
     )
@@ -1694,9 +1695,21 @@ class Meme(models.Model):
     uploader = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, related_name="memes", null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs) -> None:
+        if not self.slug:
+            self.slug = slugify(self.title)
+            # it has to be unique
+            original_slug = self.slug
+            counter = 1
+            while Meme.objects.filter(slug=self.slug).exists():
+                self.slug = f"{original_slug}-{counter}"
+                counter += 1
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ["-created_at"]
