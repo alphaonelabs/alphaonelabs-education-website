@@ -79,7 +79,7 @@
               <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
             </a>
           </div>
-          
+
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {% for course in featured_courses %}
               <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg border border-gray-100 dark:border-gray-700 transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group">
@@ -99,14 +99,14 @@
                     </span>
               </div>
                 </div>
-                
+
                 <div class="p-5">
                   <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2 line-clamp-2 h-14">
                     <a href="{% url 'course_detail' course.slug %}" class="hover:text-blue-600 dark:hover:text-blue-400 transition duration-300">
                       {{ course.title }}
                     </a>
                 </h3>
-                  
+
                   <div class="flex items-center justify-between mt-3 mb-4">
                     <div class="flex items-center">
                       {% if course.teacher.profile.avatar %}
@@ -129,7 +129,7 @@
                     {% endif %}
                   </span>
                 </div>
-                  
+
                   <div class="grid grid-cols-2 gap-2 mb-4 text-xs">
                     <div class="flex items-center text-gray-600 dark:text-gray-400">
                       <i class="fas fa-eye mr-2 text-blue-500"></i>
@@ -148,7 +148,7 @@
                   <span>{{ course.average_rating|default:"N/A" }}</span>
                 </div>
               </div>
-                  
+
               {% if course.invite_only %}
                     <div class="text-xs text-indigo-600 dark:text-indigo-400 text-center p-2 border border-indigo-200 dark:border-indigo-800 rounded-lg bg-indigo-50 dark:bg-indigo-900/30">
                   <i class="fas fa-lock mr-1"></i>
@@ -181,7 +181,7 @@
               <!-- Decorative circles -->
               <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10"></div>
               <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/10 rounded-full -ml-10 -mb-10"></div>
-              
+
               <div class="p-6 relative z-10">
                 <div class="flex items-center mb-4">
                   <div class="bg-white/20 p-3 rounded-lg mr-4">
@@ -192,11 +192,11 @@
                     <p class="text-teal-100 text-sm">Interactive quizzes for self-assessment</p>
                   </div>
                 </div>
-                
+
                 <p class="text-teal-100 mb-5 text-sm">
                   Challenge yourself with our interactive quizzes. Perfect for testing your understanding and tracking your progress.
                 </p>
-                
+
                 <div class="flex flex-wrap gap-3">
                   <a href="{% url 'quiz_list' %}" class="bg-white text-teal-500 hover:bg-teal-50 px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition duration-300 inline-flex items-center">
                     <i class="fas fa-list-ul mr-2"></i> Browse Quizzes
@@ -208,7 +208,7 @@
                 {% endif %}
               </div>
             </div>
-              
+
               <div class="bg-teal-400/30 py-3 px-6">
             <div class="flex flex-wrap items-center justify-between text-xs text-white">
               <div class="flex items-center mb-1 md:mb-0">
@@ -227,14 +227,14 @@
           </div>
         </div>
           </div>
-          
+
           <!-- Challenges Banner -->
           <div class="bg-gradient-to-r from-teal-400 to-teal-600 rounded-xl overflow-hidden shadow-lg transform hover:-translate-y-1 transition-all duration-300">
             <div class="relative h-full">
               <!-- Decorative circles -->
               <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10"></div>
               <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/10 rounded-full -ml-10 -mb-10"></div>
-              
+
               <div class="p-6 relative z-10">
                 <div class="flex items-center mb-4">
                   <div class="bg-white/20 p-3 rounded-lg mr-4">
@@ -248,11 +248,11 @@
                     <p class="text-teal-100 text-sm">Compete with friends and classmates</p>
                   </div>
                 </div>
-                
+
                 <p class="text-teal-100 mb-5 text-sm">
                   Create personalized quiz challenges, invite friends, and compete on the leaderboard! Test your knowledge against peers.
                 </p>
-                
+
                 <div class="flex flex-wrap gap-3">
                   <a href="{% url 'challenge_list' %}" class="bg-white text-teal-500 hover:bg-teal-50 px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition duration-300 inline-flex items-center">
                     <i class="fas fa-trophy mr-2"></i> View Challenges
@@ -264,7 +264,7 @@
                   {% endif %}
                 </div>
               </div>
-              
+
               <div class="bg-teal-500/30 py-3 px-6">
             <div class="flex flex-wrap items-center justify-between text-xs text-white">
               <div class="flex items-center">
@@ -284,7 +284,7 @@
         </div>
           </div>
         </div>
-        
+
         <!-- Featured Products -->
         <section>
           <div class="flex items-center justify-between mb-6">
@@ -297,7 +297,7 @@
               <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
             </a>
           </div>
-          
+
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {% for product in featured_products %}
               <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg border border-gray-100 dark:border-gray-700 transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group">
@@ -311,7 +311,7 @@
                       <img src="{% static 'images/placeholder.png' %}" alt="{{ product.name }}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
                   </a>
                 {% endif %}
-                  
+
                   {% if product.discount_price %}
                     <div class="absolute top-3 left-3">
                       <span class="px-3 py-1 text-xs font-bold bg-red-500 text-white rounded-full shadow">
@@ -320,14 +320,14 @@
               </div>
                   {% endif %}
                 </div>
-                
+
                 <div class="p-5">
                   <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2 line-clamp-2 h-14">
                     <a href="{% url 'goods_detail' pk=product.id %}" class="hover:text-orange-500 dark:hover:text-orange-400 transition duration-300">
                       {{ product.name }}
                     </a>
                 </h3>
-                  
+
                   <div class="flex items-center justify-between my-4">
                   {% if product.discount_price %}
                       <div>
@@ -337,7 +337,7 @@
                   {% else %}
                     <span class="text-orange-600 dark:text-orange-500 font-bold text-lg">${{ product.price }}</span>
                   {% endif %}
-                    
+
                     <span class="{% if product.stock > 0 %}text-green-500 dark:text-green-400{% else %}text-red-500 dark:text-red-400{% endif %} text-sm font-semibold">
                   {% if product.stock > 0 %}
                         In Stock
@@ -346,7 +346,7 @@
                   {% endif %}
                     </span>
                   </div>
-                  
+
                   <!-- Add to Cart Button -->
                   <form method="post" action="{% url 'add_goods_to_cart' pk=product.id %}">
                     {% csrf_token %}
@@ -375,7 +375,7 @@
           <!-- Decorative elements -->
           <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20"></div>
           <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-20 -mb-20"></div>
-          
+
           <div class="relative flex flex-col md:flex-row items-center justify-between gap-6">
             <div class="md:flex-1">
               <div class="flex items-center space-x-4 mb-4">
@@ -446,7 +446,7 @@
               </a>
           </div>
           </div>
-          
+
           <!-- For Teachers -->
           <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
             <h3 class="text-xl font-bold mb-4 flex items-center text-gray-800 dark:text-white">
@@ -501,7 +501,7 @@
             <!-- Decorative elements -->
             <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20"></div>
             <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-20 -mb-20"></div>
-            
+
             <div class="p-6 relative">
             <div class="flex items-center justify-between mb-6">
               <h2 class="text-2xl font-bold text-white">Team Collaboration</h2>
@@ -510,7 +510,7 @@
                   <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
               </a>
             </div>
-              
+
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- My Team Goals -->
                 <div class="space-y-4">
@@ -561,7 +561,7 @@
                 </div>
                   {% endif %}
                 </div>
-                
+
                 <!-- Team Invitations -->
                 <div class="space-y-4">
                   <h3 class="text-lg font-semibold text-white mb-4">Team Invitations</h3>
@@ -669,7 +669,7 @@
             </a>
           </div>
         </div>
-        
+
         <!-- Weekly Challenge -->
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
           <h2 class="text-lg font-bold mb-4 flex items-center">
@@ -709,7 +709,7 @@
             </div>
           {% endif %}
         </div>
-        
+
         <!-- Educational Videos -->
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
           <h2 class="text-lg font-bold mb-4 flex items-center">
@@ -730,7 +730,7 @@
                 </a>
               </div>
             </div>
-        
+
         <!-- Recent Forum & Blog Posts -->
         <div class="grid grid-cols-1 gap-6">
         <!-- Recent Forum Post -->
@@ -749,7 +749,7 @@
               <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
             </a>
           </div>
-          
+
         <!-- Recent Blog Post -->
           <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-md hover:shadow-lg transition-all duration-300">
             <h2 class="text-lg font-bold mb-3 flex items-center">
@@ -765,7 +765,7 @@
               <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
             </a>
           </div>
-          
+
           <!-- Success Story -->
           <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-md hover:shadow-lg transition-all duration-300">
             <h2 class="text-lg font-bold mb-3 flex items-center">
@@ -787,7 +787,7 @@
           </div>
         </div>
         </div>
-        
+
         <!-- GitHub Contributors Section -->
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-lg">
           <h3 class="text-lg font-bold mb-4 flex items-center">
@@ -842,7 +842,7 @@
           </div>
         </div>
       </div>
-      
+
       <!-- Sidebar -->
       <div class="lg:w-1/4 space-y-8">
         <!-- What Would You Like To Do? -->
@@ -861,7 +861,7 @@
             </a>
           </div>
         </div>
-        
+
         {% if user.is_authenticated and teaching_courses %}
           <!-- Courses Teaching Section -->
           <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
@@ -901,7 +901,7 @@
               </div>
             </div>
         {% endif %}
-        
+
         <!-- Progress Trackers Dashboard -->
         {% if user.is_authenticated %}
           <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
@@ -944,7 +944,7 @@
       </div>
     </div>
   </main>
-  
+
   <!-- Add CSS for animations -->
   <style>
     /* Fade in animation */
@@ -952,7 +952,7 @@
       animation: fadeIn 0.8s ease-out forwards;
       opacity: 0;
     }
-    
+
     @keyframes fadeIn {
       from {
         opacity: 0;
@@ -963,21 +963,21 @@
         transform: translateY(0);
       }
     }
-    
+
     /* Animation delays */
     .animation-delay-200 {
       animation-delay: 0.2s;
     }
-    
+
     .animation-delay-400 {
       animation-delay: 0.4s;
     }
-    
+
     /* Floating animation for certain elements */
     .animate-float {
       animation: float 6s ease-in-out infinite;
     }
-    
+
     @keyframes float {
       0% {
         transform: translateY(0px);
@@ -989,12 +989,12 @@
         transform: translateY(0px);
       }
     }
-    
+
     /* Pulsing animation */
     .animate-pulse {
       animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
-    
+
     @keyframes pulse {
       0%, 100% {
         opacity: 1;
@@ -1004,7 +1004,7 @@
       }
     }
   </style>
-  
+
   <!-- GitHub contributors script -->
   <script>
       // Top Contributors - For Current Month
