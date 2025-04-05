@@ -1,0 +1,166 @@
+<!-- Create web/templates/achievements/award_nft_badge.html -->
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div class="p-6">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">🏅 Award NFT Badge</h1>
+        {% if student %}
+          <div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+            <h2 class="font-semibold text-blue-700 dark:text-blue-300">Awarding badge to:</h2>
+            <p class="text-blue-800 dark:text-blue-200 font-medium">{{ student.get_full_name }} ({{ student.email }})</p>
+          </div>
+        {% else %}
+          <div class="mb-6 relative">
+            <label for="student_search"
+                   class="block text-gray-700 dark:text-gray-300 font-medium mb-2">Select Student</label>
+            <input type="text"
+                   id="student_search"
+                   class="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                   placeholder="🔍 Search students by name or email" />
+            <div id="student_list"
+                 class="absolute w-full mt-2 max-h-60 overflow-y-auto bg-white dark:bg-gray-800 rounded-lg shadow-lg hidden transition-all">
+              {% for student in all_students %}
+                <div class="student-item p-3 border-b dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-gray-800 dark:text-gray-200"
+                     data-id="{{ student.id }}"
+                     data-name="{{ student.get_full_name }}">👤 {{ student.get_full_name }}</div>
+              {% empty %}
+                <div class="p-3 text-gray-500 dark:text-gray-400">No students found</div>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+        <form method="post" enctype="multipart/form-data" class="mt-6">
+          {% csrf_token %}
+          {% if not student %}<input type="hidden" name="student_id" id="student_id_input" />{% endif %}
+          <div class="mb-4">
+            <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">🏆 Badge Title</label>
+            <div class="w-full">{{ form.title.as_widget|safe }}</div>
+          </div>
+          <div class="mb-4">
+            <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">📝 Badge Description</label>
+            <div class="w-full">{{ form.description.as_widget|safe }}</div>
+          </div>
+          <div class="mb-4">
+            <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">📜 Achievement Type</label>
+            <div class="w-full">{{ form.achievement_type.as_widget|safe }}</div>
+          </div>
+          <div class="mb-4">
+            <label class="block text-gray-700 dark:text-gray-300 font-medium mb-2">📚 Course (Optional)</label>
+            <div class="w-full">{{ form.course.as_widget|safe }}</div>
+          </div>
+          <div class="mt-6">
+            <button type="submit"
+                    class="px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 focus:ring-2 focus:ring-orange-500 dark:hover:bg-orange-700">
+              🚀 Create NFT Badge
+            </button>
+            <a href="{% url 'teacher_dashboard' %}"
+               class="ml-4 text-gray-600 dark:text-gray-400 hover:underline">Cancel</a>
+          </div>
+        </form>
+        <div class="mt-8 bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+          <h3 class="font-medium text-blue-800 dark:text-blue-200 mb-2">ℹ️ About NFT Badges</h3>
+          <p class="text-blue-700 dark:text-blue-300 text-sm">
+            NFT badges are platform-wide recognitions stored on the blockchain. Students can showcase them in their digital wallets.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+      document.addEventListener("DOMContentLoaded", function() {
+          // Style form elements for dark mode
+          const formInputs = document.querySelectorAll('input[type="text"], input[type="email"], textarea, select');
+          formInputs.forEach(input => {
+              input.classList.add('w-full', 'px-4', 'py-3', 'border', 'rounded-lg', 'focus:ring-2',
+                  'focus:ring-orange-500', 'dark:border-gray-600', 'dark:bg-gray-700', 'dark:text-white');
+
+              // Add specific styles for textareas
+              if (input.tagName.toLowerCase() === 'textarea') {
+                  input.classList.add('resize-y', 'min-h-[100px]');
+              }
+
+              // Add specific styles for select elements
+              if (input.tagName.toLowerCase() === 'select') {
+                  input.classList.add('appearance-none');
+              }
+          });
+
+
+
+          const searchInput = document.getElementById("student_search");
+          const studentList = document.getElementById("student_list");
+          const studentIdInput = document.getElementById("student_id_input");
+
+          if (searchInput) {
+              searchInput.addEventListener("input", function() {
+                  const query = searchInput.value.toLowerCase().trim();
+                  studentList.classList.remove("hidden");
+
+                  document.querySelectorAll(".student-item").forEach(item => {
+                      const name = item.dataset.name.toLowerCase();
+                      item.style.display = name.includes(query) ? "block" : "none";
+                  });
+              });
+
+              document.querySelectorAll(".student-item").forEach(item => {
+                  item.addEventListener("click", function() {
+                      searchInput.value = this.dataset.name;
+                      studentIdInput.value = this.dataset.id;
+                      studentList.classList.add("hidden");
+                  });
+              });
+
+              document.addEventListener("click", function(e) {
+                  if (!studentList.contains(e.target) && e.target !== searchInput) {
+                      studentList.classList.add("hidden");
+                  }
+              });
+          }
+      });
+      document.addEventListener("DOMContentLoaded", function() {
+          const fileInput = document.querySelector('input[type="file"]');
+          const fileName = document.getElementById('file-name');
+          const previewImage = document.createElement("img"); // Create an image element
+          previewImage.classList.add("mt-3", "w-20", "h-20", "rounded-lg", "border");
+
+          // Append the preview image below the file name
+          fileName.parentNode.appendChild(previewImage);
+
+          // Load the image from LocalStorage if available
+          const storedImage = localStorage.getItem("badge_icon");
+          if (storedImage) {
+              previewImage.src = storedImage;
+              fileName.textContent = "Previously selected image";
+          } else {
+              previewImage.style.display = "none"; // Hide if no image
+          }
+
+          if (fileInput) {
+              fileInput.classList.add("hidden");
+
+              fileInput.addEventListener("change", function() {
+                  if (this.files.length > 0) {
+                      const file = this.files[0];
+                      fileName.textContent = file.name;
+
+                      const reader = new FileReader();
+                      reader.onload = function(event) {
+                          const base64String = event.target.result;
+                          localStorage.setItem("badge_icon", base64String); // Store image in LocalStorage
+                          previewImage.src = base64String;
+                          previewImage.style.display = "block"; // Show preview
+                      };
+                      reader.readAsDataURL(file); // Convert to Base64
+                  } else {
+                      fileName.textContent = "No file chosen";
+                      previewImage.style.display = "none";
+                  }
+              });
+          }
+      });
+  </script>
+{% endblock %}

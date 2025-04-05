@@ -1787,3 +1787,19 @@ class StudyGroupForm(forms.ModelForm):
     class Meta:
         model = StudyGroup
         fields = ["name", "description", "course", "max_members", "is_private"]
+
+
+class NFTBadgeForm(forms.ModelForm):
+    class Meta:
+        model = Achievement
+        fields = ["title", "description", "achievement_type", "badge_icon", "course"]
+        widgets = {
+            "course": forms.Select(attrs={"class": "form-select"}),
+        }
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.badge_type = "nft"
+        if commit:
+            instance.save()
+        return instance
