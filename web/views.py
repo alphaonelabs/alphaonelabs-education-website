@@ -243,6 +243,9 @@ def index(request):
     # Get latest success story
     latest_success_story = SuccessStory.objects.filter(status="published").order_by("-published_at").first()
 
+    # Get last two waiting room requests
+    latest_waiting_room_requests = WaitingRoom.objects.filter(status="open").order_by("-created_at")[:2]
+
     # Get top latest 3 leaderboard users
     try:
         top_leaderboard_users, user_rank = get_leaderboard(request.user, period=None, limit=3)
@@ -263,6 +266,7 @@ def index(request):
         "current_challenge": current_challenge,
         "latest_post": latest_post,
         "latest_success_story": latest_success_story,
+        "latest_waiting_room_requests": latest_waiting_room_requests,
         "top_referrers": top_referrers,
         "top_leaderboard_users": top_leaderboard_users,
         "form": form,
