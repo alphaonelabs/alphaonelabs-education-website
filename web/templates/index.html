@@ -1,20 +1,48 @@
 {% extends "base.html" %}
 
 {% load static %}
+{% load i18n %}
 
 {% block content %}
-  <main class="flex-1 w-full max-w-[90rem] mx-auto mt-6 px-4 md:px-6">
+  <!-- Modern Hero Section -->
+  <div class="relative bg-gradient-to-r from-teal-300 to-teal-500 overflow-hidden">
+    <div class="absolute inset-0 opacity-20">
+      <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
+        <path fill="#ffffff" fill-opacity="1" d="M0,32L48,80C96,128,192,224,288,224C384,224,480,128,576,112C672,96,768,160,864,186.7C960,213,1056,203,1152,170.7C1248,139,1344,85,1392,58.7L1440,32L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+      </svg>
+    </div>
+    <div class="container mx-auto px-4 py-16 md:py-24 relative z-10">
+      <div class="max-w-4xl mx-auto text-center">
+        <h1 class="text-4xl md:text-5xl font-bold mb-6 text-white animate-fade-in">Welcome to Alpha One Labs</h1>
+        <p class="text-xl text-teal-100 mb-8 leading-relaxed max-w-3xl mx-auto animate-fade-in animation-delay-200">
+          Transforming education through innovative connections between teachers and students.
+        </p>
+        <div class="flex flex-wrap justify-center gap-4 animate-fade-in animation-delay-400">
+          <a href="{% url 'learn' %}" class="bg-white text-teal-500 hover:bg-teal-50 px-8 py-3 rounded-full shadow-lg flex items-center transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+            <i class="fas fa-graduation-cap mr-2"></i>
+            Start Learning
+          </a>
+          <a href="{% url 'teach' %}" class="bg-teal-400 bg-opacity-30 hover:bg-opacity-40 text-white border border-white border-opacity-30 px-8 py-3 rounded-full shadow-lg flex items-center transform transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
+            <i class="fas fa-chalkboard-teacher mr-2"></i>
+            Become a Teacher
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <main class="max-w-[90rem] mx-auto px-4 md:px-6 py-8">
     {% if is_debug %}
-      <div class="bg-yellow-100 border-l-4 border-yellow-500 p-4 mb-6 rounded">
+      <div class="bg-yellow-50 border-l-4 border-yellow-500 p-4 mb-8 rounded-lg shadow-md animate-pulse">
         <div class="flex items-center">
           <div class="flex-shrink-0">
-            <i class="fas fa-code text-yellow-500"></i>
+            <i class="fas fa-code text-yellow-500 text-xl"></i>
           </div>
           <div class="ml-3">
             <p class="text-sm text-yellow-700">Debug Mode: This banner and buttons are only visible in development.</p>
             <div class="mt-2">
               <a href="{% url 'create_test_data' %}"
-                 class="bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200 inline-flex items-center">
+                 class="bg-teal-400 hover:bg-teal-500 text-white px-4 py-2 rounded-md transition duration-300 inline-flex items-center shadow-sm">
                 <i class="fas fa-database mr-2"></i>
                 Add Test Data
               </a>
@@ -23,58 +51,77 @@
         </div>
       </div>
     {% endif %}
-    <div class="flex flex-col md:flex-row space-y-6 md:space-y-0 md:space-x-6">
-      <div class="md:w-3/4 space-y-7">
-        <div class="space-y-4">
-          <blockquote class="text-xl italic">
+
+    <!-- Inspirational Quote Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-12 transform transition-all duration-300 hover:shadow-xl border border-gray-100 dark:border-gray-700 hover:border-blue-100 dark:hover:border-blue-900">
+      <blockquote class="text-xl md:text-2xl italic text-gray-700 dark:text-gray-300 mb-4">
             "Somewhere, something incredible is waiting to be known."
-            <span class="block text-right">- Carl Sagan</span>
+        <span class="block text-right mt-2 text-sm text-gray-600 dark:text-gray-400">- Carl Sagan</span>
           </blockquote>
-          <p>
-            Alpha One Labs is an innovative platform dedicated to forging
-            meaningful connections between teachers and students. By bridging
-            the gap between knowledge seekers and knowledge givers, we
-            facilitate a dynamic educational experience that empowers everyone
-            involved. Whether you're sharing expertise or searching for
-            guidance, Alpha One Labs helps turn curiosity into collaborative
-            learning—because when passionate minds come together, new
-            understanding is always within reach.
+      <p class="text-gray-700 dark:text-gray-300 leading-relaxed">
+        Alpha One Labs is an innovative platform dedicated to forging meaningful connections between teachers and students. By bridging the gap between knowledge seekers and knowledge givers, we facilitate a dynamic educational experience that empowers everyone involved.
           </p>
         </div>
-        <!-- Featured Courses (3 across) -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-          <!-- Course Card 1 -->
+
+    <!-- Main Content Layout -->
+    <div class="flex flex-col lg:flex-row space-y-8 lg:space-y-0 lg:space-x-8">
+      <!-- Main Content Column -->
+      <div class="lg:w-3/4 space-y-12">
+        <!-- Featured Courses Section -->
+        <section>
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
+              <i class="fas fa-star text-yellow-500 mr-3"></i>
+              Featured Courses
+            </h2>
+            <a href="{% url 'course_search' %}" class="group inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition duration-300">
+              View All
+              <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
+            </a>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {% for course in featured_courses %}
-            <!-- Course Card -->
-            <div class="rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-              <div class="aspect-square w-full relative overflow-hidden rounded-lg mb-3">
+              <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg border border-gray-100 dark:border-gray-700 transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group">
+                <div class="aspect-video w-full relative overflow-hidden">
                 {% if course.image %}
                   <a href="{% url 'course_detail' course.slug %}">
-                    <img src="{{ course.image.url }}"
-                         alt="{{ course.title }}"
-                         class="w-full h-full object-cover"
-                         height="300"
-                         width="300" />
+                      <img src="{{ course.image.url }}" alt="{{ course.title }}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
                   </a>
                 {% else %}
                   <a href="{% url 'course_detail' course.slug %}">
-                    <img src="{% static 'images/default-course.jpg' %}"
-                         alt="{{ course.title }}"
-                         class="w-full h-full object-cover"
-                         height="300"
-                         width="300" />
+                      <img src="{% static 'images/default-course.jpg' %}" alt="{{ course.title }}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
                   </a>
                 {% endif %}
+                  <div class="absolute top-3 right-3">
+                    <span class="px-3 py-1 text-xs font-semibold bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 rounded-full shadow-sm">
+                      {{ course.subject }}
+                    </span>
               </div>
-              <!-- Title and Subject -->
-              <div class="mb-3">
-                <h3 class="text-lg font-semibold h-14 flex items-start">
-                  <a href="{% url 'course_detail' course.slug %}"
-                     class="hover:text-orange-500 transition-colors duration-200 line-clamp-2">{{ course.title }}</a>
+                </div>
+                
+                <div class="p-5">
+                  <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2 line-clamp-2 h-14">
+                    <a href="{% url 'course_detail' course.slug %}" class="hover:text-blue-600 dark:hover:text-blue-400 transition duration-300">
+                      {{ course.title }}
+                    </a>
                 </h3>
-                <div class="flex items-center justify-between text-sm">
-                  <span class="font-medium text-teal-600 dark:text-teal-400">{{ course.subject }}</span>
-                  <span class="text-orange-600 dark:text-orange-500">
+                  
+                  <div class="flex items-center justify-between mt-3 mb-4">
+                    <div class="flex items-center">
+                      {% if course.teacher.profile.avatar %}
+                        <img src="{{ course.teacher.profile.avatar.url }}" alt="{{ course.teacher.username }}" class="h-10 w-10 rounded-full mr-3 border-2 border-white dark:border-gray-700 shadow-sm" />
+                      {% else %}
+                        <img src="{% static 'images/default_teacher.png' %}" alt="{{ course.teacher.username }}" class="h-10 w-10 rounded-full mr-3 border-2 border-white dark:border-gray-700 shadow-sm" />
+                      {% endif %}
+                      <div>
+                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ course.teacher.username }}</span>
+                        {% if course.teacher.profile.expertise %}
+                          <p class="text-xs text-gray-500 dark:text-gray-400">{{ course.teacher.profile.expertise|truncatechars:20 }}</p>
+                        {% endif %}
+                      </div>
+                    </div>
+                    <span class="text-orange-600 dark:text-orange-500 font-bold">
                     {% if course.price == 0 %}
                       Free
                     {% else %}
@@ -82,124 +129,87 @@
                     {% endif %}
                   </span>
                 </div>
-              </div>
-              <!-- Course Stats -->
-              <div class="grid grid-cols-2 gap-2 mb-3 text-sm">
-                <div class="flex items-center text-gray-600 dark:text-gray-300">
-                  <i class="fas fa-eye mr-2"></i>
+                  
+                  <div class="grid grid-cols-2 gap-2 mb-4 text-xs">
+                    <div class="flex items-center text-gray-600 dark:text-gray-400">
+                      <i class="fas fa-eye mr-2 text-blue-500"></i>
                   <span>{{ course.web_requests.count|default:"0" }} views</span>
                 </div>
-                <div class="flex items-center text-gray-600 dark:text-gray-300">
-                  <i class="fas fa-users mr-2"></i>
+                    <div class="flex items-center text-gray-600 dark:text-gray-400">
+                      <i class="fas fa-users mr-2 text-blue-500"></i>
                   <span>{{ course.enrollments.count }}/{{ course.max_students }}</span>
                 </div>
-                <div class="flex items-center text-gray-600 dark:text-gray-300">
-                  <i class="fas fa-calendar-alt mr-2"></i>
+                    <div class="flex items-center text-gray-600 dark:text-gray-400">
+                      <i class="fas fa-calendar-alt mr-2 text-blue-500"></i>
                   <span>{{ course.sessions.count }} sessions</span>
                 </div>
-                <div class="flex items-center text-gray-600 dark:text-gray-300">
+                    <div class="flex items-center text-gray-600 dark:text-gray-400">
                   <i class="fas fa-star text-yellow-400 mr-2"></i>
                   <span>{{ course.average_rating|default:"N/A" }}</span>
                 </div>
               </div>
-              <!-- Session Dates -->
-              <div class="mb-3 text-sm text-gray-600 dark:text-gray-300 min-h-[4rem]">
-                {% with first_session=course.sessions.first last_session=course.sessions.last %}
-                  {% if first_session and last_session %}
-                    <div class="flex items-center mb-1">
-                      <i class="fas fa-calendar-day mr-2"></i>
-                      <span>Starts: {{ first_session.start_time|date:"M j, Y g:i A e" }}</span>
-                    </div>
-                    <div class="flex items-center">
-                      <i class="fas fa-calendar-check mr-2"></i>
-                      <span>Ends: {{ last_session.end_time|date:"M j, Y g:i A e" }}</span>
-                    </div>
-                  {% else %}
-                    <div class="flex items-center mb-1">
-                      <i class="fas fa-calendar-day mr-2"></i>
-                      <span>No sessions scheduled</span>
-                    </div>
-                  {% endif %}
-                {% endwith %}
-              </div>
-              <!-- Teacher Info -->
-              <div class="flex items-center mb-3">
-                {% if course.teacher.profile.avatar %}
-                  <img src="{{ course.teacher.profile.avatar.url }}"
-                       alt="{{ course.teacher.username }}"
-                       class="h-12 w-12 rounded-full mr-3"
-                       width="48"
-                       height="48" />
-                {% else %}
-                  <img src="{% static 'images/default_teacher.png' %}"
-                       alt="{{ course.teacher.username }}"
-                       class="h-12 w-12 rounded-full mr-3"
-                       width="48"
-                       height="48" />
-                {% endif %}
-                <div>
-                  <span class="text-sm font-medium">{{ course.teacher.username }}</span>
-                  {% if course.teacher.profile.expertise %}
-                    <p class="text-xs text-gray-600 dark:text-gray-400">{{ course.teacher.profile.expertise }}</p>
-                  {% endif %}
-                </div>
-              </div>
-              <!-- Action Button -->
+                  
               {% if course.invite_only %}
-                <div class="text-xs text-indigo-600 dark:text-indigo-400 text-center">
+                    <div class="text-xs text-indigo-600 dark:text-indigo-400 text-center p-2 border border-indigo-200 dark:border-indigo-800 rounded-lg bg-indigo-50 dark:bg-indigo-900/30">
                   <i class="fas fa-lock mr-1"></i>
                   Invite Only
                 </div>
               {% else %}
                 <form method="post" action="{% url 'add_course_to_cart' course.id %}">
                   {% csrf_token %}
-                  <button type="submit"
-                          class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-3 py-2 rounded-lg flex items-center justify-center">
+                      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-3 py-2.5 rounded-lg flex items-center justify-center transition-colors duration-300 shadow-sm hover:shadow">
                     <i class="fas fa-cart-plus mr-2"></i>
                     Add to Cart
                   </button>
                 </form>
               {% endif %}
+                </div>
             </div>
           {% empty %}
-            <p>No featured courses available.</p>
+              <div class="col-span-3 py-10 text-center">
+                <i class="fas fa-book-open text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                <p class="text-gray-500 dark:text-gray-400">No featured courses available at the moment.</p>
+              </div>
           {% endfor %}
         </div>
-        <!-- Add view more link -->
-        <div class="text-right mt-4">
-          <a href="{% url 'course_search' %}"
-             class="text-orange-500 hover:text-orange-600 underline transition-colors duration-200">
-            <span>View More Courses</span>
-            <i class="fas fa-arrow-right ml-2"></i>
-          </a>
-        </div>
+        </section>
+        <!-- Interactive Features Row - Quiz & Challenges -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Quiz Banner -->
-        <div class="mt-4 mb-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden shadow-md">
-          <div class="flex flex-col md:flex-row">
-            <div class="p-4 md:p-5 md:w-2/3 text-white">
-              <h2 class="text-sm md:text-base font-semibold mb-1">Test Your Knowledge with Our Quizzes!</h2>
-              <p class="mb-3 text-blue-100 text-xs md:text-sm">
-                Challenge yourself with our interactive quizzes. Perfect for testing your understanding.
-              </p>
-              <div class="flex flex-wrap gap-2">
-                <a href="{% url 'quiz_list' %}"
-                   class="bg-white text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition duration-200 inline-flex items-center">
-                  <i class="fas fa-puzzle-piece mr-1.5"></i> Browse Quizzes
+          <div class="bg-gradient-to-r from-teal-300 to-teal-500 rounded-xl overflow-hidden shadow-lg transform hover:-translate-y-1 transition-all duration-300">
+            <div class="relative h-full">
+              <!-- Decorative circles -->
+              <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+              <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/10 rounded-full -ml-10 -mb-10"></div>
+              
+              <div class="p-6 relative z-10">
+                <div class="flex items-center mb-4">
+                  <div class="bg-white/20 p-3 rounded-lg mr-4">
+                    <i class="fas fa-puzzle-piece text-white text-2xl"></i>
+                  </div>
+                  <div>
+                    <h3 class="text-xl font-bold text-white">Test Your Knowledge</h3>
+                    <p class="text-teal-100 text-sm">Interactive quizzes for self-assessment</p>
+                  </div>
+                </div>
+                
+                <p class="text-teal-100 mb-5 text-sm">
+                  Challenge yourself with our interactive quizzes. Perfect for testing your understanding and tracking your progress.
+                </p>
+                
+                <div class="flex flex-wrap gap-3">
+                  <a href="{% url 'quiz_list' %}" class="bg-white text-teal-500 hover:bg-teal-50 px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition duration-300 inline-flex items-center">
+                    <i class="fas fa-list-ul mr-2"></i> Browse Quizzes
                 </a>
                 {% if user.is_authenticated %}
-                  <a href="{% url 'create_quiz' %}"
-                     class="bg-transparent hover:bg-white/20 border border-white px-3 py-1.5 rounded-md text-xs font-medium transition duration-200 inline-flex items-center">
-                    <i class="fas fa-plus mr-1.5"></i> Create Quiz
+                    <a href="{% url 'create_quiz' %}" class="bg-transparent hover:bg-white/20 border border-white px-4 py-2 rounded-lg text-sm font-medium transition duration-300 inline-flex items-center text-white">
+                      <i class="fas fa-plus mr-2"></i> Create Quiz
                   </a>
                 {% endif %}
               </div>
             </div>
-            <div class="hidden md:block md:w-1/3 relative">
-              <div class="absolute inset-0 bg-contain bg-no-repeat bg-center opacity-80"
-                   style="background-image: url('{% static "images/quiz-illustration.svg" %}')"></div>
-            </div>
-          </div>
-          <div class="bg-blue-700/30 py-1.5 px-4">
+              
+              <div class="bg-teal-400/30 py-3 px-6">
             <div class="flex flex-wrap items-center justify-between text-xs text-white">
               <div class="flex items-center mb-1 md:mb-0">
                 <i class="fas fa-chart-line mr-1"></i>
@@ -216,50 +226,46 @@
             </div>
           </div>
         </div>
-        <!-- Peer Challenges Section -->
-        <div class="mb-6 bg-gradient-to-r from-purple-600 to-pink-500 rounded-lg overflow-hidden shadow-md">
-          <div class="flex flex-col md:flex-row">
-            <div class="p-4 md:w-3/4 text-white relative overflow-hidden">
-              <div class="relative z-10">
+          </div>
+          
+          <!-- Challenges Banner -->
+          <div class="bg-gradient-to-r from-teal-400 to-teal-600 rounded-xl overflow-hidden shadow-lg transform hover:-translate-y-1 transition-all duration-300">
+            <div class="relative h-full">
+              <!-- Decorative circles -->
+              <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10"></div>
+              <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/10 rounded-full -ml-10 -mb-10"></div>
+              
+              <div class="p-6 relative z-10">
+                <div class="flex items-center mb-4">
+                  <div class="bg-white/20 p-3 rounded-lg mr-4">
+                    <i class="fas fa-trophy text-white text-2xl"></i>
+                  </div>
+                  <div>
                 <div class="flex items-center mb-1">
                   <span class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">New Feature</span>
                 </div>
-                <h2 class="text-lg md:text-xl font-bold mb-2">Challenge Your Friends with Peer Quizzes!</h2>
-                <p class="mb-3 text-pink-100 text-sm">
-                  Create personalized quiz challenges, invite friends, and compete on the leaderboard!
+                    <h3 class="text-xl font-bold text-white">Peer Challenges</h3>
+                    <p class="text-teal-100 text-sm">Compete with friends and classmates</p>
+                  </div>
+                </div>
+                
+                <p class="text-teal-100 mb-5 text-sm">
+                  Create personalized quiz challenges, invite friends, and compete on the leaderboard! Test your knowledge against peers.
                 </p>
-                <div class="flex flex-wrap gap-2">
-                  <a href="{% url 'challenge_list' %}"
-                     class="bg-white text-purple-600 hover:bg-purple-50 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition duration-200 inline-flex items-center">
-                    <i class="fas fa-trophy mr-1.5"></i> View Challenges
+                
+                <div class="flex flex-wrap gap-3">
+                  <a href="{% url 'challenge_list' %}" class="bg-white text-teal-500 hover:bg-teal-50 px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition duration-300 inline-flex items-center">
+                    <i class="fas fa-trophy mr-2"></i> View Challenges
                   </a>
                   {% if user.is_authenticated %}
-                    <a href="{% url 'create_challenge' %}"
-                       class="bg-transparent hover:bg-white/20 border border-white px-3 py-1.5 rounded-lg text-sm font-medium transition duration-200 inline-flex items-center">
-                      <i class="fas fa-plus mr-1.5"></i> Create Challenge
+                    <a href="{% url 'create_challenge' %}" class="bg-transparent hover:bg-white/20 border border-white px-4 py-2 rounded-lg text-sm font-medium transition duration-300 inline-flex items-center text-white">
+                      <i class="fas fa-plus mr-2"></i> Create Challenge
                     </a>
                   {% endif %}
                 </div>
               </div>
-            </div>
-            <div class="hidden md:block md:w-1/4 bg-gradient-to-br from-purple-500/30 to-pink-500/30 p-2 relative">
-              <!-- Single Challenge Card visual -->
-              <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                <div class="bg-white/90 dark:bg-gray-800/90 rounded-lg shadow-md p-2 w-36 border-t-4 border-yellow-500">
-                  <div class="flex justify-between items-center mb-1">
-                    <span class="text-xs font-bold text-purple-600 dark:text-purple-400">Math Challenge</span>
-                    <span class="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded-full">1st</span>
-                  </div>
-                  <div class="text-xs text-gray-600 dark:text-gray-300">
-                    <div class="flex items-center">
-                      <i class="fas fa-user-friends mr-1 text-xs"></i> 8 Participants
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="bg-purple-700/30 py-1.5 px-4">
+              
+              <div class="bg-teal-500/30 py-3 px-6">
             <div class="flex flex-wrap items-center justify-between text-xs text-white">
               <div class="flex items-center">
                 <i class="fas fa-users mr-1"></i>
@@ -276,54 +282,75 @@
             </div>
           </div>
         </div>
-        <!-- Featured Products Section -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          </div>
+        </div>
+        
+        <!-- Featured Products -->
+        <section>
+          <div class="flex items-center justify-between mb-6">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white flex items-center">
+              <i class="fas fa-shopping-bag text-orange-500 mr-3"></i>
+              Featured Products
+            </h2>
+            <a href="{% url 'goods_listing' %}" class="group inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition duration-300">
+              View All
+              <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
+            </a>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {% for product in featured_products %}
-            <div class="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
-              <!-- Product Image -->
-              <div class="relative aspect-square w-full overflow-hidden">
+              <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg border border-gray-100 dark:border-gray-700 transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group">
+                <div class="aspect-square w-full relative overflow-hidden">
                 {% if product.image %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
-                    <img src="{{ product.image.url }}"
-                         alt="{{ product.name }}"
-                         class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
+                      <img src="{{ product.image.url }}" alt="{{ product.name }}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
                   </a>
                 {% else %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
-                    <img src="{% static 'images/placeholder.png' %}"
-                         alt="{{ product.name }}"
-                         class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
+                      <img src="{% static 'images/placeholder.png' %}" alt="{{ product.name }}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
                   </a>
                 {% endif %}
-              </div>
-              <!-- Product Details -->
-              <div class="p-4">
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-200 line-clamp-2">
-                  <a href="{% url 'goods_detail' pk=product.id %}"
-                     class="hover:text-orange-500 transition-colors duration-200">{{ product.name }}</a>
-                </h3>
-                <div class="flex items-center justify-between mt-2">
+                  
                   {% if product.discount_price %}
+                    <div class="absolute top-3 left-3">
+                      <span class="px-3 py-1 text-xs font-bold bg-red-500 text-white rounded-full shadow">
+                        SALE
+                      </span>
+              </div>
+                  {% endif %}
+                </div>
+                
+                <div class="p-5">
+                  <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2 line-clamp-2 h-14">
+                    <a href="{% url 'goods_detail' pk=product.id %}" class="hover:text-orange-500 dark:hover:text-orange-400 transition duration-300">
+                      {{ product.name }}
+                    </a>
+                </h3>
+                  
+                  <div class="flex items-center justify-between my-4">
+                  {% if product.discount_price %}
+                      <div>
                     <span class="text-red-500 dark:text-red-400 font-bold text-lg">${{ product.discount_price }}</span>
-                    <span class="line-through text-gray-500 dark:text-gray-400 text-sm">${{ product.price }}</span>
+                        <span class="line-through text-gray-400 dark:text-gray-500 ml-2">${{ product.price }}</span>
+                      </div>
                   {% else %}
                     <span class="text-orange-600 dark:text-orange-500 font-bold text-lg">${{ product.price }}</span>
                   {% endif %}
-                </div>
-                <p class="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">{{ product.description }}</p>
-              </div>
-              <!-- Stock and Add to Cart -->
-              <div class="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-                <div class="flex items-center justify-between">
+                    
+                    <span class="{% if product.stock > 0 %}text-green-500 dark:text-green-400{% else %}text-red-500 dark:text-red-400{% endif %} text-sm font-semibold">
                   {% if product.stock > 0 %}
-                    <span class="text-green-500 font-medium">In Stock</span>
+                        In Stock
                   {% else %}
-                    <span class="text-red-500 font-medium">Out of Stock</span>
+                        Out of Stock
                   {% endif %}
+                    </span>
+                  </div>
+                  
+                  <!-- Add to Cart Button -->
                   <form method="post" action="{% url 'add_goods_to_cart' pk=product.id %}">
                     {% csrf_token %}
-                    <button type="submit"
-                            class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-lg transition-colors duration-200"
+                    <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-3 py-2.5 rounded-lg flex items-center justify-center shadow-sm hover:shadow transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed"
                             {% if product.stock == 0 %}disabled{% endif %}>
                       <i class="fas fa-cart-plus mr-2"></i>
                       {% if product.stock > 0 %}
@@ -333,188 +360,227 @@
                       {% endif %}
                     </button>
                   </form>
-                </div>
               </div>
             </div>
           {% empty %}
-            <p class="text-center text-gray-500 dark:text-gray-400">No featured products available.</p>
+              <div class="col-span-3 py-10 text-center">
+                <i class="fas fa-shopping-basket text-4xl text-gray-300 dark:text-gray-600 mb-4"></i>
+                <p class="text-gray-500 dark:text-gray-400">No featured products available at the moment.</p>
+              </div>
           {% endfor %}
         </div>
-        <!-- Add view more link -->
-        <div class="text-right mt-4">
-          <a href="{% url 'goods_listing' %}"
-             class="text-orange-500 hover:text-orange-600 underline transition-colors duration-200">
-            <span>View More Products</span>
-            <i class="fas fa-arrow-right ml-2"></i>
-          </a>
-        </div>
+        </section>
         <!-- GSoC Announcement -->
-        <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white shadow-lg my-8">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-              <div class="hidden sm:block">
-                <img src="{% static 'images/gsoc-logo.png' %}"
-                     alt="Google Summer of Code"
-                     class="h-16 w-16 object-contain"
-                     onerror="this.src='https://summerofcode.withgoogle.com/assets/media/gsoc-2024-badge.svg'"
-                     height="64"
-                     width="64" />
+        <section class="bg-gradient-to-r from-teal-300 to-teal-500 rounded-xl p-6 shadow-lg overflow-hidden relative">
+          <!-- Decorative elements -->
+          <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20"></div>
+          <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-20 -mb-20"></div>
+          
+          <div class="relative flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="md:flex-1">
+              <div class="flex items-center space-x-4 mb-4">
+                <div class="hidden sm:block bg-white/20 p-2 rounded-lg">
+                  <img src="{% static 'images/gsoc-logo.png' %}" alt="Google Summer of Code" class="h-16 w-16 object-contain"
+                       onerror="this.src='https://summerofcode.withgoogle.com/assets/media/gsoc-2024-badge.svg'" />
               </div>
               <div>
-                <h3 class="text-xl font-bold mb-2">Join us for Google Summer of Code 2025! 🚀</h3>
-                <p class="text-blue-100">
+                  <h3 class="text-2xl font-bold text-white mb-2">Join us for Google Summer of Code 2025! 🚀</h3>
+                <p class="text-teal-100">
                   Alpha One Labs has applied to participate in this year's Google Summer of Code. Check out our project ideas and get involved!
                 </p>
               </div>
             </div>
-            <a href="{% url 'gsoc_landing_page' %}"
-               class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
+            </div>
+            <a href="{% url 'gsoc_landing_page' %}" class="md:flex-shrink-0 bg-white hover:bg-teal-50 text-teal-500 font-semibold px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all duration-300 inline-flex items-center group whitespace-nowrap">
               <span>Get Started with GSoC</span>
-              <i class="fas fa-arrow-right ml-2"></i>
+              <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
             </a>
           </div>
-        </div>
-        <!-- Two cards next to each other: For Learners & For Teachers -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        </section>
+        <!-- For Learners & Teachers Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <!-- For Learners -->
-          <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-            <h3 class="text-lg font-semibold mb-2 flex items-center">
-              <i class="fa-solid fa-user-graduate text-teal-600 dark:text-teal-400 mr-2"></i>
+          <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <h3 class="text-xl font-bold mb-4 flex items-center text-gray-800 dark:text-white">
+              <div class="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-full mr-4">
+                <i class="fa-solid fa-user-graduate text-blue-600 dark:text-blue-400"></i>
+              </div>
               For Learners
             </h3>
-            <ul class="list-disc list-inside space-y-2 text-sm text-gray-800 dark:text-gray-200">
-              <li>
-                <i class="fa-solid fa-robot text-gray-600 dark:text-gray-300 mr-2"></i>
-                Advanced search with AI-powered recommendations
+            <ul class="space-y-3 text-gray-700 dark:text-gray-300">
+              <li class="flex items-start">
+                <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full mr-3 mt-0.5">
+                  <i class="fa-solid fa-robot text-blue-600 dark:text-blue-400 text-sm"></i>
+                </div>
+                <span>Advanced search with AI-powered recommendations</span>
               </li>
-              <li>
-                <i class="fa-solid fa-calendar-check text-gray-600 dark:text-gray-300 mr-2"></i>
-                Flexible scheduling with calendar integration
+              <li class="flex items-start">
+                <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full mr-3 mt-0.5">
+                  <i class="fa-solid fa-calendar-check text-blue-600 dark:text-blue-400 text-sm"></i>
+                </div>
+                <span>Flexible scheduling with calendar integration</span>
               </li>
-              <li>
-                <i class="fa-solid fa-trophy text-gray-600 dark:text-gray-300 mr-2"></i>
-                Track your progress and earn achievements
+              <li class="flex items-start">
+                <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full mr-3 mt-0.5">
+                  <i class="fa-solid fa-trophy text-blue-600 dark:text-blue-400 text-sm"></i>
+                </div>
+                <span>Track your progress and earn achievements</span>
               </li>
-              <li>
-                <i class="fa-solid fa-users text-gray-600 dark:text-gray-300 mr-2"></i>
-                Join study groups and connect with peers
+              <li class="flex items-start">
+                <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full mr-3 mt-0.5">
+                  <i class="fa-solid fa-users text-blue-600 dark:text-blue-400 text-sm"></i>
+                </div>
+                <span>Join study groups and connect with peers</span>
               </li>
-              <li>
-                <i class="fa-solid fa-chalkboard-teacher text-gray-600 dark:text-gray-300 mr-2"></i>
-                Access both virtual and in-person classes
+              <li class="flex items-start">
+                <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full mr-3 mt-0.5">
+                  <i class="fa-solid fa-chalkboard-teacher text-blue-600 dark:text-blue-400 text-sm"></i>
+                </div>
+                <span>Access both virtual and in-person classes</span>
               </li>
             </ul>
+            <div class="mt-6 text-center">
+              <a href="{% url 'learn' %}" class="inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
+                Start Learning
+                <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
+              </a>
           </div>
+          </div>
+          
           <!-- For Teachers -->
-          <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-            <h3 class="text-lg font-semibold mb-2 flex items-center">
-              <i class="fa-solid fa-chalkboard-user text-teal-600 dark:text-teal-400 mr-2"></i>
+          <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
+            <h3 class="text-xl font-bold mb-4 flex items-center text-gray-800 dark:text-white">
+              <div class="bg-orange-100 dark:bg-orange-900/50 p-3 rounded-full mr-4">
+                <i class="fa-solid fa-chalkboard-user text-orange-600 dark:text-orange-400"></i>
+              </div>
               For Teachers
             </h3>
-            <ul class="list-disc list-inside space-y-2 text-sm text-gray-800 dark:text-gray-200">
-              <li>
-                <i class="fa-solid fa-clipboard-list text-gray-600 dark:text-gray-300 mr-2"></i>
-                Comprehensive course management tools
+            <ul class="space-y-3 text-gray-700 dark:text-gray-300">
+              <li class="flex items-start">
+                <div class="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full mr-3 mt-0.5">
+                  <i class="fa-solid fa-clipboard-list text-orange-600 dark:text-orange-400 text-sm"></i>
+                </div>
+                <span>Comprehensive course management tools</span>
               </li>
-              <li>
-                <i class="fa-solid fa-chart-line text-gray-600 dark:text-gray-300 mr-2"></i>
-                Analytics and student progress tracking
+              <li class="flex items-start">
+                <div class="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full mr-3 mt-0.5">
+                  <i class="fa-solid fa-chart-line text-orange-600 dark:text-orange-400 text-sm"></i>
+                </div>
+                <span>Analytics and student progress tracking</span>
               </li>
-              <li>
-                <i class="fa-solid fa-credit-card text-gray-600 dark:text-gray-300 mr-2"></i>
-                Secure payment processing and earnings management
+              <li class="flex items-start">
+                <div class="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full mr-3 mt-0.5">
+                  <i class="fa-solid fa-credit-card text-orange-600 dark:text-orange-400 text-sm"></i>
+                </div>
+                <span>Secure payment processing and earnings management</span>
               </li>
-              <li>
-                <i class="fa-solid fa-bullhorn text-gray-600 dark:text-gray-300 mr-2"></i>
-                Marketing tools to promote your courses
+              <li class="flex items-start">
+                <div class="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full mr-3 mt-0.5">
+                  <i class="fa-solid fa-bullhorn text-orange-600 dark:text-orange-400 text-sm"></i>
+                </div>
+                <span>Marketing tools to promote your courses</span>
               </li>
-              <li>
-                <i class="fa-solid fa-comments text-gray-600 dark:text-gray-300 mr-2"></i>
-                Direct communication with students
+              <li class="flex items-start">
+                <div class="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full mr-3 mt-0.5">
+                  <i class="fa-solid fa-comments text-orange-600 dark:text-orange-400 text-sm"></i>
+                </div>
+                <span>Direct communication with students</span>
               </li>
             </ul>
+            <div class="mt-6 text-center">
+              <a href="{% url 'teach' %}" class="inline-flex items-center text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium">
+                Start Teaching
+                <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
+              </a>
           </div>
         </div>
+        </div>
+        <!-- Team Collaboration Section (for authenticated users) -->
         {% if user.is_authenticated %}
-          <!-- Team Collaboration Section -->
-          <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg p-6 mt-8">
+          <section class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg overflow-hidden relative">
+            <!-- Decorative elements -->
+            <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20"></div>
+            <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-20 -mb-20"></div>
+            
+            <div class="p-6 relative">
             <div class="flex items-center justify-between mb-6">
               <h2 class="text-2xl font-bold text-white">Team Collaboration</h2>
-              <a href="{% url 'team_goals' %}"
-                 class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
+                <a href="{% url 'team_goals' %}" class="bg-white hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300 inline-flex items-center group">
                 <span>View All</span>
-                <i class="fas fa-arrow-right ml-2"></i>
+                  <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
               </a>
             </div>
-            {% if user.is_authenticated %}
+              
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <!-- My Team Goals -->
                 <div class="space-y-4">
-                  <h3 class="text-lg font-semibold text-white">My Team Goals</h3>
+                  <h3 class="text-lg font-semibold text-white mb-4">My Team Goals</h3>
                   {% if user_team_goals %}
-                    <div class="space-y-3">
+                    <div class="space-y-4">
                       {% for goal in user_team_goals|slice:":3" %}
-                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition duration-200">
-                          <h4 class="font-medium text-white">{{ goal.title }}</h4>
-                          <p class="text-sm text-gray-200 mt-1">{{ goal.description|truncatechars:100 }}</p>
+                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition duration-300 border border-white/10">
+                          <h4 class="font-medium text-white mb-1">{{ goal.title }}</h4>
+                          <p class="text-sm text-gray-200 mb-3">{{ goal.description|truncatechars:100 }}</p>
                           {% if goal.deadline %}
-                            <div class="text-sm text-gray-200 mt-2">
-                              <i class="fas fa-calendar-alt mr-1"></i>
+                            <div class="text-sm text-gray-200 flex items-center">
+                              <i class="fas fa-calendar-alt mr-2"></i>
                               {% load i18n %}
-
                               <span>{% trans "Due" %}: {{ goal.deadline|date:"M j, Y" }}</span>
                               {% if goal.deadline < now %}
-                                <span class="text-red-300 ml-1">({% trans "Overdue" %})</span>
+                                <span class="text-red-300 ml-2 font-medium">({% trans "Overdue" %})</span>
                               {% else %}
-                                <span class="text-gray-300 ml-1">({{ goal.deadline|timeuntil }} {% trans "left" %})</span>
+                                <span class="text-gray-300 ml-2">({{ goal.deadline|timeuntil }} {% trans "left" %})</span>
                               {% endif %}
                             </div>
                           {% endif %}
                           <div class="flex items-center justify-between mt-3">
-                            <span class="text-sm text-gray-200">
+                            <span class="text-sm text-gray-200 flex items-center">
                               <i class="fas fa-users mr-1"></i>
                               {{ goal.members.count }} members
                             </span>
-                            <a href="{% url 'team_goal_detail' goal.id %}"
-                               class="text-white hover:text-gray-200 text-sm">View Details</a>
+                            <a href="{% url 'team_goal_detail' goal.id %}" class="text-white hover:text-blue-200 text-sm inline-flex items-center">
+                              View Details
+                              <i class="fas fa-chevron-right ml-1 text-xs"></i>
+                            </a>
                           </div>
                         </div>
                       {% endfor %}
                     </div>
-                  {% else %}
-                    <p class="text-gray-200">You haven't created or joined any team goals yet.</p>
-                  {% endif %}
-                  <a href="{% url 'create_team_goal' %}"
-                     class="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-gray-100 rounded-lg transition duration-200">
+                    <a href="{% url 'create_team_goal' %}" class="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition duration-300 shadow-sm">
                     <i class="fas fa-plus mr-2"></i>
                     Create New Team Goal
+                    </a>
+                  {% else %}
+                    <div class="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-center border border-white/10">
+                      <i class="fas fa-users-slash text-4xl text-white/40 mb-3"></i>
+                      <p class="text-gray-200 mb-4">You haven't created or joined any team goals yet.</p>
+                      <a href="{% url 'create_team_goal' %}" class="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition duration-300 shadow-sm">
+                        <i class="fas fa-plus mr-2"></i>
+                        Create Your First Team Goal
                   </a>
                 </div>
+                  {% endif %}
+                </div>
+                
                 <!-- Team Invitations -->
                 <div class="space-y-4">
-                  <h3 class="text-lg font-semibold text-white">Team Invitations</h3>
+                  <h3 class="text-lg font-semibold text-white mb-4">Team Invitations</h3>
                   {% if team_invites %}
                     <div class="space-y-3">
                       {% for invite in team_invites|slice:":3" %}
-                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition duration-200">
+                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition duration-300 border border-white/10">
                           <h4 class="font-medium text-white">{{ invite.goal.title }}</h4>
-                          <p class="text-sm text-gray-200 mt-1">Invited by {{ invite.sender.username }}</p>
-                          <div class="flex items-center space-x-2 mt-3">
-                            <form method="post"
-                                  action="{% url 'accept_team_invite' invite.id %}"
-                                  class="inline">
+                          <p class="text-sm text-gray-200 mb-3">Invited by {{ invite.sender.username }}</p>
+                          <div class="flex items-center space-x-3 mt-3">
+                            <form method="post" action="{% url 'accept_team_invite' invite.id %}" class="inline">
                               {% csrf_token %}
-                              <button type="submit"
-                                      class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition duration-200">
+                              <button type="submit" class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition duration-300 shadow-sm">
                                 Accept
                               </button>
                             </form>
-                            <form method="post"
-                                  action="{% url 'decline_team_invite' invite.id %}"
-                                  class="inline">
+                            <form method="post" action="{% url 'decline_team_invite' invite.id %}" class="inline">
                               {% csrf_token %}
-                              <button type="submit"
-                                      class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition duration-200">
+                              <button type="submit" class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition duration-300 shadow-sm">
                                 Decline
                               </button>
                             </form>
@@ -523,186 +589,59 @@
                       {% endfor %}
                     </div>
                   {% else %}
+                    <div class="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-center border border-white/10">
+                      <i class="fas fa-envelope-open-text text-4xl text-white/40 mb-3"></i>
                     <p class="text-gray-200">You have no pending team invitations.</p>
+                    </div>
                   {% endif %}
                 </div>
               </div>
-            {% else %}
-              <div class="text-center py-8">
-                <p class="text-gray-200 mb-4">Sign in to create or join team goals and collaborate with others!</p>
-                <a href="{% url 'login' %}"
-                   class="inline-flex items-center px-6 py-3 bg-white text-blue-600 hover:bg-gray-100 rounded-lg transition duration-200">
-                  <i class="fas fa-sign-in-alt mr-2"></i>
-                  Sign In to Get Started
-                </a>
               </div>
-            {% endif %}
-          </div>
+          </section>
         {% endif %}
         <!-- Affiliations Section -->
-        <div class="border border-gradient-to-r from-purple-500 to-pink-400 p-1 rounded-md shadow-md mb-4 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800 mb-6">
-          <h2 class="text-xl font-semibold flex items-center mb-4">
-            <i class="fas fa-handshake text-teal-600 dark:text-teal-400 mr-2"></i> Our Affiliations
+        <section class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-md">
+          <h2 class="text-xl font-bold mb-6 text-gray-800 dark:text-white flex items-center">
+            <i class="fas fa-handshake text-blue-600 dark:text-blue-400 mr-2"></i> Our Affiliations
           </h2>
-          <div class="flex flex-wrap items-center justify-center gap-6">
+          <div class="flex flex-wrap items-center justify-center gap-8">
             <!-- OSL Logo -->
-            <a href="https://opensciencelabs.org/"
-               target="_blank"
-               rel="noopener"
-               class="block">
-              <img src="{% static 'images/logo-osl.svg' %}"
-                   alt="Open Source License"
-                   class="h-32 w-auto dark:hidden"
-                   title="Licensed under Open Source License (OSL)"
-                   height="128"
-                   width="auto" />
-              <img src="{% static 'images/osl-color-horizontal.png' %}"
-                   alt="Open Source License"
-                   class="h-16 w-auto hidden dark:block"
-                   title="Licensed under Open Source License (OSL)"
-                   height="128"
-                   width="auto" />
+            <a href="https://opensciencelabs.org/" target="_blank" rel="noopener" class="block transform hover:scale-105 transition-transform duration-300">
+              <img src="{% static 'images/logo-osl.svg' %}" alt="Open Source License" class="h-32 w-auto dark:hidden" title="Licensed under Open Source License (OSL)" />
+              <img src="{% static 'images/osl-color-horizontal.png' %}" alt="Open Source License" class="h-16 w-auto hidden dark:block" title="Licensed under Open Source License (OSL)" />
             </a>
-            <!-- Space for additional affiliation logos -->
           </div>
-          <p class="text-center text-sm text-gray-600 dark:text-gray-400 mt-4">
+          <p class="text-center text-sm text-gray-600 dark:text-gray-400 mt-6">
             Alpha One Labs is proudly affiliated with open source initiatives that advance education technology.
           </p>
-        </div>
-      </div>
-      <div class="md:w-1/4 space-y-8">
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 shadow-lg">
-          <h2 class="text-xl font-semibold mb-6 text-center text-gray-800 dark:text-gray-200">What Would You Like To Do?</h2>
-          <div class="space-y-4">
-            <a href="{% url 'teach' %}"
-               class="block w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-4 rounded-xl transition duration-200 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center">
-              <i class="fa-solid fa-chalkboard-user text-2xl mb-2"></i>
-              <span class="text-lg">I Want to Teach</span>
-              <div class="text-sm font-normal">Share your knowledge with others</div>
-            </a>
-            <a href="{% url 'learn' %}"
-               class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-4 rounded-xl transition duration-200 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center">
-              <i class="fa-solid fa-graduation-cap mr-3 text-2xl mb-2"></i>
-              <span class="text-lg">I Want to Learn</span>
-              <div class="text-sm font-normal">Discover new skills and expand your knowledge</div>
-            </a>
-          </div>
-        </div>
-        {% if user.is_authenticated and teaching_courses %}
-          <!-- Courses Teaching Section -->
-          <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 bg-white dark:bg-gray-800 shadow-lg">
-            <h2 class="text-lg font-semibold mb-4 flex items-center">
-              <i class="fa-solid fa-chalkboard-teacher text-teal-300 dark:text-teal-300 mr-2"></i>
-              My Teaching Courses
-            </h2>
-            <div class="space-y-3">
-              {% for course in teaching_courses %}
-                <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200">
-                  <div class="flex items-center justify-between mb-1">
-                    <a href="{% url 'course_detail' course.slug %}"
-                       class="font-medium text-gray-800 dark:text-gray-200 hover:text-teal-300 dark:hover:text-teal-300 transition">
-                      {{ course.title|truncatechars:28 }}
-                    </a>
-                    <span class="text-xs {% if course.status == 'published' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% elif course.status == 'draft' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %} px-2 py-1 rounded-full">
-                      {{ course.get_status_display }}
-                    </span>
-                  </div>
-                  <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-300">
-                    <div class="flex items-center">
-                      <i class="fas fa-eye text-gray-400 mr-1.5"></i>
-                      <span>{{ course.view_count|default:"0" }} views</span>
-                    </div>
-                    <div class="flex items-center">
-                      <i class="fas fa-users text-gray-400 mr-1.5"></i>
-                      <span>{{ course.enrolled_students }}/{{ course.max_students }} enrolled</span>
-                    </div>
-                  </div>
-                </div>
-              {% endfor %}
-              {% if teaching_courses.count > 3 %}
-                <a href="{% url 'teacher_dashboard' %}"
-                   class="text-teal-300 hover:text-teal-400 dark:text-teal-300 dark:hover:text-teal-400 text-sm flex items-center justify-center mt-2">
-                  <span>View all courses</span>
-                  <i class="fas fa-arrow-right ml-1"></i>
-                </a>
-              {% endif %}
-            </div>
-          </div>
-        {% endif %}
-        <!-- Progress Trackers Dashboard -->
-        {% if user.is_authenticated %}
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
-            <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-4 flex items-center">
-              <i class="fa-solid fa-chart-line text-blue-600 dark:text-blue-400 mr-2"></i>
-              Progress Trackers
-            </h2>
-            {% if user.progress_trackers.exists %}
-              <div class="space-y-4">
-                {% for tracker in user.progress_trackers.all|slice:":3" %}
-                  <div>
-                    <div class="flex justify-between mb-1">
-                      <span class="text-gray-700 dark:text-gray-300">{{ tracker.title }}</span>
-                      <span class="text-gray-600 dark:text-gray-400">{{ tracker.percentage }}%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3">
-                      <div class="bg-{{ tracker.color }} h-3 rounded-full"
-                           {% verbatim %}
-                           style="width: {% endverbatim %}{{ tracker.percentage }}{% verbatim %}%"
-                           {% endverbatim %}></div>
-                    </div>
-                  </div>
-                {% endfor %}
-              </div>
-              <div class="mt-4 text-center">
-                <a href="{% url 'tracker_list' %}"
-                   class="text-blue-600 hover:text-blue-800 dark:text-blue-400 inline-flex items-center">
-                  <span>View All Trackers</span>
-                  <i class="fas fa-arrow-right ml-2 text-xs"></i>
-                </a>
-              </div>
-            {% else %}
-              <p class="text-gray-600 dark:text-gray-400 mb-4">You haven't created any progress trackers yet.</p>
-              <div class="text-center">
-                <a href="{% url 'create_tracker' %}"
-                   class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center justify-center">
-                  <i class="fas fa-plus mr-2"></i>
-                  Create Your First Tracker
-                </a>
-              </div>
-            {% endif %}
-          </div>
-        {% endif %}
+        </section>
         <!-- Leaderboard -->
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h2 class="text-lg font-semibold mb-4 flex items-center">
-            <i class="fa-solid fa-trophy text-yellow-600 dark:text-yellow-400 mr-2"></i>
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
+          <h2 class="text-lg font-bold mb-4 flex items-center">
+            <i class="fa-solid fa-trophy text-yellow-500 dark:text-yellow-400 mr-2"></i>
             Leaderboard Champions
           </h2>
+          <p class="text-gray-600 dark:text-gray-400 mb-6 text-sm">Global leaderboard</p>
           <div class="space-y-3">
-            <p class="text-gray-600 dark:text-gray-400 mb-6">Global leaderboard</p>
             {% for entry in top_leaderboard_users %}
               <div class="flex items-center p-2 {% if forloop.counter == 1 %}bg-yellow-50 dark:bg-yellow-900/30{% elif forloop.counter == 2 %}bg-gray-50 dark:bg-gray-700/50{% elif forloop.counter == 3 %}bg-amber-50 dark:bg-amber-900/30{% endif %} rounded-lg">
                 <div class="flex-shrink-0 mr-3 relative">
                   {% if entry.user.profile.avatar %}
-                    <img src="{{ entry.user.profile.avatar.url }}"
-                         alt="{{ entry.user.username }}"
-                         class="w-10 h-10 rounded-full"
-                         width="40"
-                         height="40" />
+                    <img src="{{ entry.user.profile.avatar.url }}" alt="{{ entry.user.username }}" class="w-10 h-10 rounded-full border-2 {% if forloop.counter == 1 %}border-yellow-400{% elif forloop.counter == 2 %}border-gray-400{% elif forloop.counter == 3 %}border-amber-500{% else %}border-white dark:border-gray-700{% endif %}" />
                   {% else %}
-                    <div class="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-white">
+                    <div class="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-600 flex items-center justify-center text-white border-2 {% if forloop.counter == 1 %}border-yellow-400{% elif forloop.counter == 2 %}border-gray-400{% elif forloop.counter == 3 %}border-amber-500{% else %}border-white dark:border-gray-700{% endif %}">
                       {{ entry.user.username|make_list|first|upper }}
                     </div>
                   {% endif %}
-                  <div class="absolute -top-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-white {% if forloop.counter == 1 %}bg-yellow-500{% elif forloop.counter == 2 %}bg-gray-500{% elif forloop.counter == 3 %}bg-amber-600{% endif %}">
+                  <div class="absolute -top-1 -left-1 w-5 h-5 rounded-full flex items-center justify-center text-white shadow-md {% if forloop.counter == 1 %}bg-yellow-500{% elif forloop.counter == 2 %}bg-gray-500{% elif forloop.counter == 3 %}bg-amber-600{% else %}bg-blue-500{% endif %}">
                     {{ forloop.counter }}
                   </div>
                 </div>
                 <div class="flex-1 min-w-0">
                   {% if entry.user.id == user.id %}
-                    <p class="text-sm font-medium truncate">
+                    <p class="text-sm font-medium truncate flex items-center">
                       You
-                      <span class="bg-blue-200 px-3 py-1 rounded-full text-sm">Excellent Work</span>
+                      <span class="bg-blue-100 dark:bg-blue-900/50 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full text-xs ml-2">You</span>
                     </p>
                   {% else %}
                     <p class="text-sm font-medium truncate">{{ entry.user.username }}</p>
@@ -715,123 +654,143 @@
                 </div>
               </div>
             {% empty %}
-              <p class="text-sm text-gray-500 dark:text-gray-400 text-center py-2">
+              <div class="text-center py-4">
+                <i class="fas fa-trophy text-gray-300 dark:text-gray-600 text-3xl mb-2"></i>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
                 No entries yet. Complete challenges to earn your spot!
               </p>
+              </div>
             {% endfor %}
           </div>
-          <!-- Leaderboard Navigation Buttons -->
-          <div class="mt-4 space-y-2">
-            <a href="{% url 'leaderboards' %}"
-               class="block text-center bg-orange-500 hover:bg-orange-600 text-white font-medium px-4 py-2 rounded-lg transition-colors">
+          <!-- Leaderboard Navigation Button -->
+          <div class="mt-4">
+            <a href="{% url 'leaderboards' %}" class="block text-center bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium px-4 py-2 rounded-lg transition-all duration-300 shadow-sm">
               <i class="fas fa-list-ol mr-2"></i>Full Leaderboard
             </a>
           </div>
         </div>
+        
         <!-- Weekly Challenge -->
-        <div class="container mx-auto px-4 py-8">
-          <h1 class="text-3xl font-bold mb-6 text-center">🏆 Weekly Challenges</h1>
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
+          <h2 class="text-lg font-bold mb-4 flex items-center">
+            <i class="fa-solid fa-calendar-star text-indigo-600 dark:text-indigo-400 mr-2 fas fa-calendar-week"></i>
+            Weekly Challenge
+          </h2>
           {% if current_challenge %}
-            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800">
-              <!-- Only display the first challenge (current week) -->
-              <div class="challenge-item">
+            <div>
                 <!-- Challenge Title -->
-                <h2 class="text-xl font-semibold mb-4">{{ current_challenge.0.title }}</h2>
+              <h3 class="text-lg font-semibold mb-3 text-gray-800 dark:text-white">{{ current_challenge.0.title }}</h3>
                 <!-- Challenge Description -->
-                <p class="text-gray-700 dark:text-gray-300 mb-4">{{ current_challenge.0.description }}</p>
+              <p class="text-gray-700 dark:text-gray-300 mb-4 text-sm">{{ current_challenge.0.description }}</p>
                 <!-- Challenge Duration -->
-                <p class="text-gray-600 dark:text-gray-400 mb-4">
-                  <strong>Duration:</strong> {{ current_challenge.0.start_date }} to {{ current_challenge.0.end_date }}
+              <div class="bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-lg mb-4">
+                <p class="text-gray-700 dark:text-gray-300 text-sm flex items-center">
+                  <i class="fas fa-calendar-alt mr-2 text-indigo-500 dark:text-indigo-400"></i>
+                  <span>{{ current_challenge.0.start_date|date:"M j" }} - {{ current_challenge.0.end_date|date:"M j, Y" }}</span>
                 </p>
+              </div>
                 <!-- Submission Button -->
                 {% if user.is_authenticated %}
-                  <a href="{% url 'challenge_submit' current_challenge.0.id %}"
-                     class="inline-block bg-teal-600 text-white px-5 py-2.5 rounded-lg hover:bg-teal-700 transition-shadow shadow-md">
-                    Complete My Challenge
+                <a href="{% url 'challenge_submit' current_challenge.0.id %}" class="block w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2.5 rounded-lg hover:shadow-md transition-all duration-300 text-center font-medium">
+                  <i class="fas fa-trophy mr-2"></i>
+                  Complete Challenge
                   </a>
                 {% else %}
-                  <p class="text-red-600 dark:text-red-400 mt-4">Please log in to submit your result.</p>
+                <p class="text-center text-red-600 dark:text-red-400 text-sm">
+                  <i class="fas fa-lock mr-1"></i>
+                  Please log in to submit your result
+                </p>
                 {% endif %}
-              </div>
             </div>
           {% else %}
-            <p class="text-center text-gray-500 dark:text-gray-400">No challenges available at this time.</p>
+            <div class="text-center py-4">
+              <i class="fas fa-calendar-times text-gray-300 dark:text-gray-600 text-3xl mb-2"></i>
+              <p class="text-gray-500 dark:text-gray-400">No challenges available at this time.</p>
+            </div>
           {% endif %}
         </div>
+        
         <!-- Educational Videos -->
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800 mb-6">
-          <h2 class="text-xl font-semibold flex items-center">
-            <span class="mr-2">🎬</span> Educational Videos
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
+          <h2 class="text-lg font-bold mb-4 flex items-center">
+            <i class="fas fa-film text-red-500 dark:text-red-400 mr-2"></i>
+            Educational Videos
           </h2>
-          <div class="col-span-full text-center">
-            <div class="pt-6 text-center">
-              <p class="text-gray-600 dark:text-gray-300 mb-4 max-w-lg mx-auto">
+          <p class="text-gray-600 dark:text-gray-400 mb-4 text-sm">
                 Discover a wide range of educational videos shared by our community of teachers and learners.
-                From science and technology to arts and languages, find videos that help you learn new skills and concepts.
               </p>
-              <div class="mt-4 flex gap-4">
+          <div class="flex gap-4 justify-center">
                 {% if user.is_authenticated %}
-                  <a href="{% url 'upload_educational_video' %}"
-                     class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full flex items-center">
+              <a href="{% url 'upload_educational_video' %}" class="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-full flex items-center text-sm transition-colors duration-300 shadow-sm">
                     <i class="fas fa-upload mr-2"></i> Share
                   </a>
                 {% endif %}
-                <a href="{% url 'educational_videos_list' %}"
-                   class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full flex items-center">
+            <a href="{% url 'educational_videos_list' %}" class="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-full flex items-center text-sm transition-colors duration-300 shadow-sm">
                   <i class="fas fa-play-circle mr-2"></i> Browse
                 </a>
               </div>
             </div>
-          </div>
-        </div>
+        
+        <!-- Recent Forum & Blog Posts -->
+        <div class="grid grid-cols-1 gap-6">
         <!-- Recent Forum Post -->
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h2 class="text-lg font-semibold mb-2 flex items-center">
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-md hover:shadow-lg transition-all duration-300">
+            <h2 class="text-lg font-bold mb-3 flex items-center">
             <i class="fa-solid fa-comments text-purple-600 dark:text-purple-400 mr-2"></i>
             Recent Forum Post
           </h2>
-          <p class="text-sm">
-            <strong class="block text-gray-900 dark:text-gray-200 mb-1">{{ latest_topic.title|default:"How to get started with advanced mathematics?" }}</strong>
-            "{{ latest_topic.content|default:"I'm looking for resources on group theory and number theory. Any recommendations?" }}" — <em>posted by {{ latest_topic.author.username|default:"user123" }}</em>
-          </p>
-          <a href="{% if latest_topic %}{% url 'forum_topic' latest_topic.category.slug latest_topic.id %}{% else %}{% url 'forum_categories' %}{% endif %}"
-             class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block mt-2">View Discussion →</a>
+            <div class="border-l-4 border-purple-200 dark:border-purple-800 pl-3 py-1">
+              <h3 class="font-medium text-gray-900 dark:text-gray-200 mb-1">{{ latest_topic.title|default:"How to get started with advanced mathematics?" }}</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">"{{ latest_topic.content|default:"I'm looking for resources on group theory and number theory. Any recommendations?" }}"</p>
+              <p class="text-xs text-gray-500 dark:text-gray-500">posted by <span class="font-medium">{{ latest_topic.author.username|default:"user123" }}</span></p>
         </div>
+            <a href="{% if latest_topic %}{% url 'forum_topic' latest_topic.category.slug latest_topic.id %}{% else %}{% url 'forum_categories' %}{% endif %}" class="inline-flex items-center mt-3 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 text-sm font-medium group">
+              View Discussion
+              <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
+            </a>
+          </div>
+          
         <!-- Recent Blog Post -->
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h2 class="text-lg font-semibold mb-2 flex items-center">
-            <i class="fa-solid fa-blog text-red-600 dark:text-red-400 mr-2"></i>
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-md hover:shadow-lg transition-all duration-300">
+            <h2 class="text-lg font-bold mb-3 flex items-center">
+              <i class="fa-solid fa-blog text-blue-600 dark:text-blue-400 mr-2"></i>
             Recent Blog Post
           </h2>
-          <p class="text-sm">
-            <strong class="block text-gray-900 dark:text-gray-200 mb-1">{{ latest_post.title|default:"The Future of Online Education" }}</strong>
-            {{ latest_post.excerpt|default:"Learn how new technologies are shaping the way we teach and learn, including AI-driven insights and personalized curriculum..." }}
-          </p>
-          <a href="{% if latest_post %}{% url 'blog_detail' latest_post.slug %}{% else %}{% url 'blog_list' %}{% endif %}"
-             class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block mt-2">Read More →</a>
+            <div class="border-l-4 border-blue-200 dark:border-blue-800 pl-3 py-1">
+              <h3 class="font-medium text-gray-900 dark:text-gray-200 mb-1">{{ latest_post.title|default:"The Future of Online Education" }}</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ latest_post.excerpt|default:"Learn how new technologies are shaping the way we teach and learn, including AI-driven insights and personalized curriculum..." }}</p>
         </div>
-        <!-- Success Stories -->
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h2 class="text-lg font-semibold mb-2 flex items-center">
-            <i class="fa-solid fa-trophy text-yellow-600 dark:text-yellow-400 mr-2"></i>
+            <a href="{% if latest_post %}{% url 'blog_detail' latest_post.slug %}{% else %}{% url 'blog_list' %}{% endif %}" class="inline-flex items-center mt-3 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium group">
+              Read More
+              <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
+            </a>
+          </div>
+          
+          <!-- Success Story -->
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-md hover:shadow-lg transition-all duration-300">
+            <h2 class="text-lg font-bold mb-3 flex items-center">
+              <i class="fa-solid fa-star text-yellow-500 dark:text-yellow-400 mr-2"></i>
             Success Story
           </h2>
-          <p class="text-sm">
-            <strong class="block text-gray-900 dark:text-gray-200 mb-1">{{ latest_success_story.title|default:"From Beginner to Expert in 3 Months" }}</strong>
-            {{ latest_success_story.excerpt|default:"Discover how our platform helped a complete beginner transform into a confident expert through personalized learning paths and dedicated mentorship..." }}
-          </p>
-          <div class="flex justify-between items-center mt-2">
-            <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}"
-               class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block">Read More →</a>
-            <a href="{% url 'create_success_story' %}"
-               class="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded-md inline-flex items-center">
+            <div class="border-l-4 border-yellow-200 dark:border-yellow-800 pl-3 py-1">
+              <h3 class="font-medium text-gray-900 dark:text-gray-200 mb-1">{{ latest_success_story.title|default:"From Beginner to Expert in 3 Months" }}</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-400">{{ latest_success_story.excerpt|default:"Discover how our platform helped a complete beginner transform into a confident expert through personalized learning paths and dedicated mentorship..." }}</p>
+            </div>
+            <div class="flex justify-between items-center mt-3">
+              <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}" class="inline-flex items-center text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300 text-sm font-medium group">
+                Read More
+                <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
+              </a>
+              <a href="{% url 'create_success_story' %}" class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-3 py-1 rounded-md inline-flex items-center transition-colors duration-300 shadow-sm">
               <i class="fas fa-plus mr-1"></i> Share Your Story
             </a>
           </div>
         </div>
-        <!-- GitHub Contributors Section (Now in sidebar) -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-          <h3 class="text-lg font-semibold mb-4 flex items-center">
+        </div>
+        
+        <!-- GitHub Contributors Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-lg">
+          <h3 class="text-lg font-bold mb-4 flex items-center">
             <i class="fa-brands fa-github text-gray-800 dark:text-gray-200 mr-2"></i>
             Thank you to our Contributors!
           </h3>
@@ -875,38 +834,178 @@
               </div>
             </div>
           </div>
-          <!-- Recent Contributions -->
-          <div class="mb-4">
-            <h4 class="text-sm font-medium mb-3 flex items-center">
-              <i class="fa-solid fa-code-pull-request text-purple-600 dark:text-purple-400 mr-1"></i>
-              Recently Merged PRs
-            </h4>
-            <div class="space-y-2" id="recent-contributors-section">
-              <div class="animate-pulse space-y-2">
-                {% for i in "12345"|make_list %}
-                  <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                    <div class="flex-1">
-                      <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                      <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-1"></div>
-                    </div>
-                  </div>
-                {% endfor %}
-              </div>
-            </div>
-          </div>
           <div class="text-center">
-            <a href="https://github.com/AlphaOneLabs/education-website/graphs/contributors"
-               target="_blank"
-               class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
-              <i class="fas fa-users mr-1"></i>
+            <a href="https://github.com/AlphaOneLabs/education-website/graphs/contributors" target="_blank" class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors duration-300">
+              <i class="fas fa-users mr-2"></i>
               View All Contributors
             </a>
           </div>
         </div>
       </div>
+      
+      <!-- Sidebar -->
+      <div class="lg:w-1/4 space-y-8">
+        <!-- What Would You Like To Do? -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
+          <h2 class="text-xl font-bold mb-6 text-center text-gray-800 dark:text-gray-200">What Would You Like To Do?</h2>
+          <div class="space-y-4">
+            <a href="{% url 'teach' %}" class="block w-full bg-gradient-to-r from-teal-300 to-teal-400 hover:from-teal-400 hover:to-teal-500 text-white font-semibold px-6 py-4 rounded-xl transition-all duration-300 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center group">
+              <i class="fa-solid fa-chalkboard-user text-2xl mb-2 group-hover:animate-bounce"></i>
+              <span class="text-lg">I Want to Teach</span>
+              <div class="text-sm font-normal">Share your knowledge with others</div>
+            </a>
+            <a href="{% url 'learn' %}" class="block w-full bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 text-white font-semibold px-6 py-4 rounded-xl transition-all duration-300 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center group">
+              <i class="fa-solid fa-graduation-cap text-2xl mb-2 group-hover:animate-bounce"></i>
+              <span class="text-lg">I Want to Learn</span>
+              <div class="text-sm font-normal">Discover new skills and expand your knowledge</div>
+            </a>
+          </div>
+        </div>
+        
+        {% if user.is_authenticated and teaching_courses %}
+          <!-- Courses Teaching Section -->
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
+            <h2 class="text-lg font-bold mb-4 flex items-center">
+              <i class="fa-solid fa-chalkboard-teacher text-blue-500 dark:text-blue-400 mr-2"></i>
+              My Teaching Courses
+            </h2>
+            <div class="space-y-3">
+              {% for course in teaching_courses %}
+                <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-300">
+                  <div class="flex items-center justify-between mb-1">
+                    <a href="{% url 'course_detail' course.slug %}" class="font-medium text-gray-800 dark:text-gray-200 hover:text-blue-500 dark:hover:text-blue-400 transition">
+                      {{ course.title|truncatechars:28 }}
+                    </a>
+                    <span class="text-xs {% if course.status == 'published' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% elif course.status == 'draft' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %} px-2 py-1 rounded-full">
+                      {{ course.get_status_display }}
+                    </span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-300">
+                    <div class="flex items-center">
+                      <i class="fas fa-eye text-gray-400 mr-1.5"></i>
+                      <span>{{ course.view_count|default:"0" }} views</span>
+                    </div>
+                    <div class="flex items-center">
+                      <i class="fas fa-users text-gray-400 mr-1.5"></i>
+                      <span>{{ course.enrolled_students }}/{{ course.max_students }}</span>
+                    </div>
+                    </div>
+                  </div>
+                {% endfor %}
+              {% if teaching_courses.count > 3 %}
+                <a href="{% url 'teacher_dashboard' %}" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center justify-center mt-2">
+                  <span>View all courses</span>
+                  <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+              {% endif %}
+              </div>
+            </div>
+        {% endif %}
+        
+        <!-- Progress Trackers Dashboard -->
+        {% if user.is_authenticated %}
+          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
+            <h2 class="text-lg font-bold mb-4 flex items-center">
+              <i class="fa-solid fa-chart-line text-blue-600 dark:text-blue-400 mr-2"></i>
+              Progress Trackers
+            </h2>
+            {% if user.progress_trackers.exists %}
+              <div class="space-y-4">
+                {% for tracker in user.progress_trackers.all|slice:":3" %}
+                  <div>
+                    <div class="flex justify-between mb-1">
+                      <span class="text-gray-700 dark:text-gray-300">{{ tracker.title }}</span>
+                      <span class="text-gray-600 dark:text-gray-400">{{ tracker.percentage }}%</span>
+          </div>
+                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                      <div class="h-2.5 rounded-full transition-all duration-1000 ease-out bg-teal-300"
+                           {% if tracker.percentage %}style="width: {{ tracker.percentage }}%"{% else %}style="width: 0%"{% endif %}></div>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+              <div class="mt-4 text-center">
+                <a href="{% url 'tracker_list' %}" class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center">
+                  <span>View All Trackers</span>
+                  <i class="fas fa-arrow-right ml-2 text-xs"></i>
+            </a>
+          </div>
+            {% else %}
+              <div class="text-center py-4">
+                <p class="text-gray-600 dark:text-gray-400 mb-4">You haven't created any progress trackers yet.</p>
+                <a href="{% url 'create_tracker' %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center justify-center shadow-sm transition-colors duration-300">
+                  <i class="fas fa-plus mr-2"></i>
+                  Create Your First Tracker
+                </a>
+        </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
     </div>
   </main>
+  
+  <!-- Add CSS for animations -->
+  <style>
+    /* Fade in animation */
+    .animate-fade-in {
+      animation: fadeIn 0.8s ease-out forwards;
+      opacity: 0;
+    }
+    
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    /* Animation delays */
+    .animation-delay-200 {
+      animation-delay: 0.2s;
+    }
+    
+    .animation-delay-400 {
+      animation-delay: 0.4s;
+    }
+    
+    /* Floating animation for certain elements */
+    .animate-float {
+      animation: float 6s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+      0% {
+        transform: translateY(0px);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+      100% {
+        transform: translateY(0px);
+      }
+    }
+    
+    /* Pulsing animation */
+    .animate-pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.8;
+      }
+    }
+  </style>
+  
+  <!-- GitHub contributors script -->
   <script>
       // Top Contributors - For Current Month
       function fetchTopContributors() {
@@ -1038,7 +1137,7 @@
                           </div>
                           <div class="flex-1 min-w-0">
                               <div class="flex items-center justify-between">
-                                  <a href="/contributors/${contributor.username}/" target="_blank" class="text-xs font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 truncate">
+                                  <a href="/contributors/${contributor.username}/" target="_blank" class="text-xs font-medium text-gray-900 dark:text-gray-100 hover:text-blue-500 dark:hover:text-blue-400 truncate">
                                      ${contributor.username || 'Unknown Contributor'}
                                   </a>
                                   <span class="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 text-xs px-1 py-0.5 rounded-full text-[10px]">
@@ -1169,7 +1268,7 @@
                           <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-8 h-8 rounded-full" loading="lazy" width="32" height="32" />
                           <div class="flex-1 min-w-0">
                               <div class="flex items-center justify-between">
-                                  <a href="${contributor.prs_url}" target="_blank" class="text-xs font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 truncate">
+                                  <a href="${contributor.prs_url}" target="_blank" class="text-xs font-medium text-gray-900 dark:text-gray-100 hover:text-blue-500 dark:hover:text-blue-400 truncate">
                                       ${contributor.username}
                                   </a>
                                   <span class="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 text-xs px-1 py-0.5 rounded-full text-[10px]">
@@ -1196,101 +1295,10 @@
               });
       }
 
-      // Recent Contributors
-      function fetchRecentContributions() {
-          // Create a helper function to fetch paginated data
-          async function fetchPage(page) {
-              const response = await fetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=${page}`);
-              return response.json();
-          }
-
-          // Fetch 2 pages of data
-          Promise.all([fetchPage(1), fetchPage(2)])
-              .then(results => {
-                  // Combine the results from both pages
-                  const pulls = [...results[0], ...results[1]];
-                  const filteredPulls = pulls.filter(pull => {
-                          const username = pull.user.login;
-                          return !username.includes('[bot]') &&
-                              !username.includes('dependabot') &&
-                              username !== 'A1L13N' &&
-                              pull.merged_at !== null;
-                      })
-                      .sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at))
-                      .slice(0, 5); //taking top 5
-
-                  const container = document.getElementById('recent-contributors-section');
-                  container.innerHTML = '';
-
-                  if (filteredPulls.length === 0) {
-                      container.innerHTML = `
-                          <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
-                              No merged pull requests found.
-                          </div>
-                      `;
-                      return;
-                  }
-
-                  filteredPulls.forEach(pull => {
-                      const div = document.createElement('div');
-                      div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
-
-                      // Create the GSoC-style PRs URL for this user
-                      const prs_url = `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${pull.user.login}+is:merged`;
-
-                      // Calculate how long ago the PR was merged
-                      const mergedDate = new Date(pull.merged_at);
-                      const now = new Date();
-                      const diffTime = Math.abs(now - mergedDate);
-                      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                      const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-
-                      let timeAgo;
-                      if (diffDays > 0) {
-                          timeAgo = diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
-                      } else if (diffHours > 0) {
-                          timeAgo = diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
-                      } else {
-                          const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
-                          timeAgo = diffMinutes === 0 ? 'just now' :
-                              diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`;
-                      }
-
-                      div.innerHTML = `
-                          <img src="${pull.user.avatar_url}" alt="${pull.user.login}" class="w-8 h-8 rounded-full" loading="lazy" width="32" height="32" />
-                          <div class="flex-1 min-w-0">
-                              <div class="flex items-center justify-between">
-                                  <a href="${pull.user.html_url}" target="_blank" class="text-xs font-medium text-gray-900 dark:text-gray-100 hover:text-orange-500 dark:hover:text-orange-400 truncate">
-                                      ${pull.user.login}
-                                  </a>
-                                  <span class="text-[8px] text-gray-500 dark:text-gray-400">
-                                      <i class="fas fa-history mr-0.5"></i>${timeAgo}
-                                  </span>
-                              </div>
-                              <p class="text-[9px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
-                                  PR <a href="${pull.html_url}" class="hover:underline">#${pull.number}</a>: ${pull.title.length > 25 ? pull.title.substring(0, 25) + '...' : pull.title}
-                              </p>
-                          </div>
-                      `;
-                      container.appendChild(div);
-                  });
-              })
-              .catch(error => {
-                  const container = document.getElementById('recent-contributors-section');
-                  container.innerHTML = `
-                      <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
-                          <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
-                          Failed to load contributions.
-                      </div>
-                  `;
-                  console.error('Error fetching recent contributions:', error);
-              });
-      }
-
+      // Call the contributor functions when the DOM is loaded
       document.addEventListener('DOMContentLoaded', function() {
           fetchTopContributors();
           fetchNewContributors();
-          fetchRecentContributions();
       });
   </script>
 {% endblock content %}
