@@ -1,0 +1,407 @@
+<!-- web/templates/analytics/educator_dashboard/student_performance.html -->
+{% extends "base.html" %}
+
+{% block title %}
+  Student Performance Analysis
+{% endblock title %}
+{% block extra_head %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+  <style>
+      .performance-card {
+          border-radius: 12px;
+          box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .performance-card:hover {
+          transform: translateY(-5px);
+          box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .chart-container {
+          height: 300px;
+          position: relative;
+          margin-bottom: 1.5rem;
+      }
+
+      .progress-ring {
+          position: relative;
+          width: 120px;
+          height: 120px;
+      }
+
+      .progress-ring__circle {
+          transform: rotate(-90deg);
+          transform-origin: 50% 50%;
+          stroke-linecap: round;
+      }
+
+      .progress-ring__text {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          font-size: 1.5rem;
+          font-weight: bold;
+      }
+
+      .timeline {
+          position: relative;
+          max-width: 1200px;
+          margin: 0 auto;
+      }
+
+      .timeline::after {
+          content: '';
+          position: absolute;
+          width: 3px;
+          background-color: #4f46e5;
+          top: 0;
+          bottom: 0;
+          left: 50%;
+          margin-left: -1.5px;
+      }
+
+      .timeline-item {
+          padding: 10px 40px;
+          position: relative;
+          width: 50%;
+      }
+
+      .timeline-item::after {
+          content: '';
+          position: absolute;
+          width: 20px;
+          height: 20px;
+          right: -10px;
+          background-color: #fff;
+          border: 3px solid #4f46e5;
+          top: 15px;
+          border-radius: 50%;
+          z-index: 1;
+      }
+
+      .timeline-item.left {
+          left: 0;
+      }
+
+      .timeline-item.right {
+          left: 50%;
+      }
+
+      .timeline-item.right::after {
+          left: -10px;
+      }
+
+      .timeline-item-content {
+          padding: 15px;
+          background-color: white;
+          border-radius: 8px;
+          box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      @media screen and (max-width: 768px) {
+          .timeline::after {
+              left: 31px;
+          }
+
+          .timeline-item {
+              width: 100%;
+              padding-left: 70px;
+              padding-right: 25px;
+          }
+
+          .timeline-item.right {
+              left: 0;
+          }
+
+          .timeline-item.left::after,
+          .timeline-item.right::after {
+              left: 21px;
+          }
+      }
+  </style>
+{% endblock extra_head %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <!-- Header with navigation and student info -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+      <div class="flex items-center mb-4 md:mb-0">
+        <a href="{% url 'educator_analytics_dashboard' %}"
+           class="text-indigo-600 hover:text-indigo-800 mr-4">
+          <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+        <h1 class="text-3xl font-bold">Student Performance Analysis</h1>
+      </div>
+      <div class="flex items-center">
+        <div class="mr-4">
+          <img src="https://ui-avatars.com/api/?name={{ student.get_full_name|default:student.username }}&background=random"
+               alt="{{ student.get_full_name|default:student.username }}"
+               class="w-12 h-12 rounded-full border-2 border-indigo-500" />
+        </div>
+        <div>
+          <h2 class="text-xl font-semibold">{{ student.get_full_name|default:student.username }}</h2>
+          <p class="text-gray-500">{{ profile.student_id|default:"ID not available" }}</p>
+        </div>
+        <div class="ml-6">
+          <button id="contactStudent"
+                  class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
+            <i class="fas fa-envelope mr-2"></i> Contact
+          </button>
+        </div>
+      </div>
+    </div>
+    <!-- Overview Metrics -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Courses Enrolled -->
+      <div class="performance-card bg-gradient-to-r from-indigo-500 to-indigo-600 text-white p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-indigo-100 mb-1">Courses Enrolled</p>
+            <p class="text-3xl font-bold">{{ enrollments.count }}</p>
+          </div>
+          <div class="bg-white bg-opacity-20 rounded-full p-3">
+            <i class="fas fa-book text-2xl"></i>
+          </div>
+        </div>
+      </div>
+      <!-- Average Progress -->
+      <div class="performance-card bg-gradient-to-r from-green-500 to-green-600 text-white p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-green-100 mb-1">Average Progress</p>
+            <p class="text-3xl font-bold">
+              {% with avg_progress=courses_data|dictsortreversed:"progress"|map:"progress"|average %}
+                {{ avg_progress|floatformat }}%
+              {% endwith %}
+            </p>
+          </div>
+          <div class="bg-white bg-opacity-20 rounded-full p-3">
+            <i class="fas fa-tasks text-2xl"></i>
+          </div>
+        </div>
+      </div>
+      <!-- Attendance Rate -->
+      <div class="performance-card bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-blue-100 mb-1">Attendance Rate</p>
+            <p class="text-3xl font-bold">{{ attendance_rate|floatformat }}%</p>
+          </div>
+          <div class="bg-white bg-opacity-20 rounded-full p-3">
+            <i class="fas fa-calendar-check text-2xl"></i>
+          </div>
+        </div>
+      </div>
+      <!-- Achievements -->
+      <div class="performance-card bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-sm text-purple-100 mb-1">Achievements</p>
+            <p class="text-3xl font-bold">{{ achievements.count }}</p>
+          </div>
+          <div class="bg-white bg-opacity-20 rounded-full p-3">
+            <i class="fas fa-trophy text-2xl"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Main Content -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+      <!-- Course Progress -->
+      <div class="performance-card bg-white dark:bg-gray-800 col-span-2 p-6">
+        <h2 class="text-xl font-semibold mb-4">Course Progress</h2>
+        <div class="chart-container">
+          <canvas id="courseProgressChart"></canvas>
+        </div>
+        <h3 class="text-lg font-medium mt-8 mb-4">Enrolled Courses</h3>
+        <div class="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+          {% for enrollment in enrollments %}
+            <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border-l-4 {% if enrollment.progress.completion_percentage > 75 %}border-green-500 {% elif enrollment.progress.completion_percentage > 50 %}border-blue-500 {% elif enrollment.progress.completion_percentage > 25 %}border-yellow-500 {% else %}border-red-500{% endif %}">
+              <div>
+                <h4 class="font-medium">{{ enrollment.course.title }}</h4>
+                <p class="text-sm text-gray-500 dark:text-gray-400">Enrolled: {{ enrollment.enrollment_date|date:"M d, Y" }}</p>
+              </div>
+              <div class="text-right">
+                <div class="font-bold {% if enrollment.progress.completion_percentage > 75 %}text-green-600 dark:text-green-400 {% elif enrollment.progress.completion_percentage > 50 %}text-blue-600 dark:text-blue-400 {% elif enrollment.progress.completion_percentage > 25 %}text-yellow-600 dark:text-yellow-400 {% else %}text-red-600 dark:text-red-400{% endif %}">
+                  {{ enrollment.progress.completion_percentage|floatformat }}%
+                </div>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                  Last active: {{ enrollment.progress.last_accessed|date:"M d, Y" }}
+                </p>
+              </div>
+            </div>
+          {% empty %}
+            <p class="text-gray-500 dark:text-gray-400">No courses enrolled.</p>
+          {% endfor %}
+        </div>
+      </div>
+      <!-- Attendance & Engagement -->
+      <div class="performance-card bg-white dark:bg-gray-800 p-6">
+        <h2 class="text-xl font-semibold mb-4">Attendance & Engagement</h2>
+        <!-- Attendance Donut Chart -->
+        <div class="mb-6">
+          <h3 class="text-lg font-medium mb-3">Attendance Overview</h3>
+          <div class="flex justify-center">
+            <canvas id="attendanceChart" width="200" height="200"></canvas>
+          </div>
+        </div>
+        <!-- Attendance Stats -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-center">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Present</div>
+            <div class="text-xl font-bold">{{ attendance_stats.present }}</div>
+          </div>
+          <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-center">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Late</div>
+            <div class="text-xl font-bold">{{ attendance_stats.late }}</div>
+          </div>
+          <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-center">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Excused</div>
+            <div class="text-xl font-bold">{{ attendance_stats.excused }}</div>
+          </div>
+          <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-center">
+            <div class="text-sm text-gray-500 dark:text-gray-400">Absent</div>
+            <div class="text-xl font-bold">{{ attendance_stats.absent }}</div>
+          </div>
+        </div>
+        <!-- Engagement Score -->
+        <h3 class="text-lg font-medium mb-3">Engagement Score</h3>
+        <div class="flex justify-center items-center">
+          <div class="progress-ring">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <circle class="progress-ring__circle progress-ring__circle--bg" stroke="#f3f4f6" stroke-width="8" fill="transparent" r="50" cx="60" cy="60" />
+              <circle id="engagementCircle" class="progress-ring__circle" stroke="#4f46e5" stroke-width="8" fill="transparent" r="50" cx="60" cy="60" stroke-dasharray="314" stroke-dashoffset="50" />
+            </svg>
+            <div class="progress-ring__text" id="engagementText">85%</div>
+          </div>
+        </div>
+        <div class="mt-6">
+          <h3 class="text-lg font-medium mb-3">Recent Activity</h3>
+          <div class="space-y-2">
+            <div class="text-sm bg-indigo-50 dark:bg-indigo-900 p-2 rounded">
+              <span class="font-medium">May 2, 2025</span> - Completed Module 3 in Web Development
+            </div>
+            <div class="text-sm bg-indigo-50 dark:bg-indigo-900 p-2 rounded">
+              <span class="font-medium">Apr 29, 2025</span> - Attended Data Science lecture
+            </div>
+            <div class="text-sm bg-indigo-50 dark:bg-indigo-900 p-2 rounded">
+              <span class="font-medium">Apr 27, 2025</span> - Submitted project for Machine Learning
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Learning Journey & AI Insights -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Learning Journey Timeline -->
+      <div class="performance-card bg-white dark:bg-gray-800 p-6">
+        <h2 class="text-xl font-semibold mb-6">Learning Journey</h2>
+        <div class="timeline">
+          <div class="timeline-item left">
+            <div class="timeline-item-content">
+              <span class="text-indigo-600 font-medium">March 15, 2025</span>
+              <h3 class="font-medium mt-1">Enrolled in Web Development Course</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Started journey into web technologies</p>
+            </div>
+          </div>
+          <div class="timeline-item right">
+            <div class="timeline-item-content">
+              <span class="text-indigo-600 font-medium">March 22, 2025</span>
+              <h3 class="font-medium mt-1">Completed HTML & CSS Module</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Scored 92% on the assessment</p>
+            </div>
+          </div>
+          <div class="timeline-item left">
+            <div class="timeline-item-content">
+              <span class="text-indigo-600 font-medium">April 5, 2025</span>
+              <h3 class="font-medium mt-1">First JavaScript Project</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Created interactive form validation</p>
+            </div>
+          </div>
+          <div class="timeline-item right">
+            <div class="timeline-item-content">
+              <span class="text-indigo-600 font-medium">April 20, 2025</span>
+              <h3 class="font-medium mt-1">Started React Framework</h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Beginning advanced frontend development</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- AI Insights -->
+      <div class="performance-card bg-white dark:bg-gray-800 p-6">
+        <h2 class="text-xl font-semibold mb-4">AI-Powered Insights</h2>
+        <div class="mb-6">
+          <h3 class="text-lg font-medium mb-3">Predicted Completion Date</h3>
+          <div class="flex items-center bg-indigo-50 dark:bg-indigo-900 p-4 rounded-lg">
+            <div class="bg-indigo-100 dark:bg-indigo-800 rounded-full p-3 mr-4">
+              <i class="fas fa-calendar-alt text-indigo-600 dark:text-indigo-400 text-xl"></i>
+            </div>
+            <div>
+              <p class="text-xl font-bold">July 15, 2025</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">Based on current progress rate</p>
+            </div>
+            <div class="ml-auto">
+              <div class="text-sm px-3 py-1 rounded-full bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100">
+                On Track
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="mb-6">
+          <h3 class="text-lg font-medium mb-3">Learning Style</h3>
+          <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+            <div class="flex justify-between mb-4">
+              <span class="text-sm">Visual</span>
+              <span class="text-sm font-medium">75%</span>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+              <div class="bg-blue-600 h-2.5 rounded-full" style="width: 75%"></div>
+            </div>
+            <div class="flex justify-between mt-4 mb-2">
+              <span class="text-sm">Auditory</span>
+              <span class="text-sm font-medium">45%</span>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+              <div class="bg-green-600 h-2.5 rounded-full" style="width: 45%"></div>
+            </div>
+            <div class="flex justify-between mt-4 mb-2">
+              <span class="text-sm">Kinesthetic</span>
+              <span class="text-sm font-medium">60%</span>
+            </div>
+            <div class="w-full bg-gray-200 dark:bg-gray-600 rounded-full h-2.5">
+              <div class="bg-purple-600 h-2.5 rounded-full" style="width: 60%"></div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <h3 class="text-lg font-medium mb-3">Personalized Recommendations</h3>
+          <div class="space-y-3">
+            <div class="p-3 bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-500 rounded">
+              <h4 class="font-medium">Increase Participation</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Student engagement in group discussions is below average. Encourage more active participation.
+              </p>
+            </div>
+            <div class="p-3 bg-blue-50 dark:bg-blue-900 border-l-4 border-blue-500 rounded">
+              <h4 class="font-medium">Provide Additional Resources</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                Based on assessment results, consider providing supplementary materials on JavaScript promises and async functions.
+              </p>
+            </div>
+            <div class="p-3 bg-green-50 dark:bg-green-900 border-l-4 border-green-500 rounded">
+              <h4 class="font-medium">Project-Based Learning</h4>
+              <p class="text-sm text-gray-700 dark:text-gray-300">
+                This student excels with hands-on projects. Assign more project-based assessments to increase engagement.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
+{% block extra_js %}
+  <script src="{% static 'js/analytics_dashboard/student_performance.js' %}"></script>
+{% endblock extra_js %}
