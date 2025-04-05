@@ -687,7 +687,7 @@
                 <div class="flex-1">
                   <div class="flex items-center justify-between">
                     <div>
-                      <a href="{% url 'user_profile' username=entry.user.username %}" 
+                      <a href="{% url 'user_profile' username=entry.user.username %}"
                          class="font-medium text-gray-800 dark:text-white hover:text-teal-500 dark:hover:text-teal-400 transition-colors duration-200">
                         {{ entry.user.username }}
                       </a>
@@ -710,10 +710,10 @@
                 <p class="text-gray-500 dark:text-gray-400">No leaderboard data available yet.</p>
               </div>
             {% endfor %}
-            
+
             {% if top_leaderboard_users %}
               <div class="text-center mt-4">
-                <a href="{% url 'leaderboard' %}" 
+                <a href="{% url 'leaderboard' %}"
                    class="text-teal-500 hover:text-teal-600 dark:text-teal-400 dark:hover:text-teal-300 inline-flex items-center text-sm font-medium"
                    aria-label="View full leaderboard">
                   <span>View Full Leaderboard</span>
@@ -775,13 +775,13 @@
             </p>
           <div class="flex gap-4 justify-center">
               {% if user.is_authenticated %}
-            <a href="{% url 'upload_educational_video' %}" 
+            <a href="{% url 'upload_educational_video' %}"
                class="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-full flex items-center text-sm transition-colors duration-300 shadow-sm"
                aria-label="Share an educational video">
                   <i class="fas fa-upload mr-2" aria-hidden="true"></i> Share
                 </a>
               {% endif %}
-            <a href="{% url 'educational_videos_list' %}" 
+            <a href="{% url 'educational_videos_list' %}"
                class="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-full flex items-center text-sm transition-colors duration-300 shadow-sm"
                aria-label="Browse educational videos">
                 <i class="fas fa-play-circle mr-2" aria-hidden="true"></i> Browse
@@ -952,7 +952,7 @@
               {% for course in teaching_courses %}
                 <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-300">
                   <div class="flex items-center justify-between mb-1">
-                    <a href="{% url 'course_detail' course.slug %}" 
+                    <a href="{% url 'course_detail' course.slug %}"
                        class="font-medium text-gray-800 dark:text-gray-200 hover:text-blue-500 dark:hover:text-blue-400 transition"
                        aria-label="View details of course: {{ course.title }}">
                       {{ course.title|truncatechars:28 }}
@@ -975,7 +975,7 @@
                 </div>
               {% endfor %}
               {% if teaching_courses.count > 3 %}
-                <a href="{% url 'teacher_dashboard' %}" 
+                <a href="{% url 'teacher_dashboard' %}"
                    class="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center justify-center mt-2"
                    aria-label="View all teaching courses">
                   <span>View all courses</span>
@@ -1003,9 +1003,9 @@
                     <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
                       <div class="h-2.5 rounded-full transition-all duration-1000 ease-out bg-teal-300"
                            {% if tracker.percentage %}style="width: {{ tracker.percentage }}%"{% else %}style="width: 0%"{% endif %}
-                           role="progressbar" 
-                           aria-valuenow="{{ tracker.percentage|default:0 }}" 
-                           aria-valuemin="0" 
+                           role="progressbar"
+                           aria-valuenow="{{ tracker.percentage|default:0 }}"
+                           aria-valuemin="0"
                            aria-valuemax="100"
                            aria-label="{{ tracker.title }} completion: {{ tracker.percentage|default:0 }}%"></div>
                     </div>
@@ -1013,7 +1013,7 @@
                 {% endfor %}
               </div>
               <div class="mt-4 text-center">
-                <a href="{% url 'tracker_list' %}" 
+                <a href="{% url 'tracker_list' %}"
                    class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center"
                    aria-label="View all progress trackers">
                   <span>View All Trackers</span>
@@ -1023,7 +1023,7 @@
             {% else %}
               <div class="text-center py-4">
                 <p class="text-gray-600 dark:text-gray-400 mb-4">You haven't created any progress trackers yet.</p>
-                <a href="{% url 'create_tracker' %}" 
+                <a href="{% url 'create_tracker' %}"
                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center justify-center shadow-sm transition-colors duration-300"
                    aria-label="Create your first progress tracker">
                   <i class="fas fa-plus mr-2" aria-hidden="true"></i>
@@ -1038,11 +1038,11 @@
   </main>
   <!-- Add CSS for animations -->
   <style>
-    /* 
-    NOTE: For better maintainability, these animations should be moved 
+    /*
+    NOTE: For better maintainability, these animations should be moved
     to an external stylesheet if they are used on multiple pages.
     */
-    
+
     /* Fade in animation */
     .animate-fade-in {
       animation: fadeIn 0.8s ease-out forwards;
@@ -1125,7 +1125,7 @@
                           throw new Error(`HTTP error: ${response.status}`);
                       }
                       const data = await response.json();
-                      
+
                       // Cache the result
                       cache[url] = {
                           data: data,
@@ -1170,7 +1170,7 @@
               // Combine the results from both pages
               const pulls = [...page1, ...page2];
               const contributors = {};
-              
+
               pulls.forEach(pull => {
                   const username = pull.user.login;
                   const mergedAt = new Date(pull.merged_at);
