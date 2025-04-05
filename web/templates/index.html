@@ -1,6 +1,8 @@
 {% extends "base.html" %}
+
 {% load static %}
 {% load i18n %}
+
 {% block content %}
   <!-- Modern Hero Section -->
   <div class="relative bg-gradient-to-r from-teal-300 to-teal-500 overflow-hidden">
@@ -185,8 +187,12 @@
           <div class="bg-gradient-to-r from-teal-300 to-teal-500 rounded-xl overflow-hidden shadow-lg transform hover:-translate-y-1 transition-all duration-300">
             <div class="relative h-full">
               <!-- Decorative circles -->
-              <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10" aria-hidden="true" role="presentation"></div>
-              <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/10 rounded-full -ml-10 -mb-10" aria-hidden="true" role="presentation"></div>
+              <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10"
+                   aria-hidden="true"
+                   role="presentation"></div>
+              <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/10 rounded-full -ml-10 -mb-10"
+                   aria-hidden="true"
+                   role="presentation"></div>
               <div class="p-6 relative z-10">
                 <div class="flex items-center mb-4">
                   <div class="bg-white/20 p-3 rounded-lg mr-4" aria-hidden="true">
@@ -237,8 +243,12 @@
           <div class="bg-gradient-to-r from-teal-400 to-teal-600 rounded-xl overflow-hidden shadow-lg transform hover:-translate-y-1 transition-all duration-300">
             <div class="relative h-full">
               <!-- Decorative circles -->
-              <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10" aria-hidden="true" role="presentation"></div>
-              <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/10 rounded-full -ml-10 -mb-10" aria-hidden="true" role="presentation"></div>
+              <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-10 -mt-10"
+                   aria-hidden="true"
+                   role="presentation"></div>
+              <div class="absolute bottom-0 left-0 w-20 h-20 bg-white/10 rounded-full -ml-10 -mb-10"
+                   aria-hidden="true"
+                   role="presentation"></div>
               <div class="p-6 relative z-10">
                 <div class="flex items-center mb-4">
                   <div class="bg-white/20 p-3 rounded-lg mr-4" aria-hidden="true">
@@ -300,7 +310,8 @@
                class="group inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition duration-300"
                aria-label="View all products">
               View All
-              <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300" aria-hidden="true"></i>
+              <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"
+                 aria-hidden="true"></i>
             </a>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -308,13 +319,15 @@
               <div class="bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg border border-gray-100 dark:border-gray-700 transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group">
                 <div class="aspect-square w-full relative overflow-hidden">
                   {% if product.image %}
-                    <a href="{% url 'goods_detail' pk=product.id %}" aria-label="View {{ product.name }} details">
+                    <a href="{% url 'goods_detail' pk=product.id %}"
+                       aria-label="View {{ product.name }} details">
                       <img src="{{ product.image.url }}"
                            alt="{{ product.name }}"
                            class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
                     </a>
                   {% else %}
-                    <a href="{% url 'goods_detail' pk=product.id %}" aria-label="View {{ product.name }} details">
+                    <a href="{% url 'goods_detail' pk=product.id %}"
+                       aria-label="View {{ product.name }} details">
                       <img src="{% static 'images/placeholder.png' %}"
                            alt="Product placeholder for {{ product.name }}"
                            class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500" />
@@ -322,7 +335,8 @@
                   {% endif %}
                   {% if product.discount_price %}
                     <div class="absolute top-3 left-3">
-                      <span class="px-3 py-1 text-xs font-bold bg-red-500 text-white rounded-full shadow" aria-label="Sale item">SALE</span>
+                      <span class="px-3 py-1 text-xs font-bold bg-red-500 text-white rounded-full shadow"
+                            aria-label="Sale item">SALE</span>
                     </div>
                   {% endif %}
                 </div>
@@ -337,13 +351,14 @@
                     {% if product.discount_price %}
                       <div>
                         <span class="text-red-500 dark:text-red-400 font-bold text-lg">${{ product.discount_price }}</span>
-                        <span class="line-through text-gray-400 dark:text-gray-500 ml-2" aria-label="Original price: ${{ product.price }}">${{ product.price }}</span>
+                        <span class="line-through text-gray-400 dark:text-gray-500 ml-2"
+                              aria-label="Original price: ${{ product.price }}">${{ product.price }}</span>
                       </div>
                     {% else %}
                       <span class="text-orange-600 dark:text-orange-500 font-bold text-lg">${{ product.price }}</span>
                     {% endif %}
                     <span class="{% if product.stock > 0 %}text-green-500 dark:text-green-400{% else %}text-red-500 dark:text-red-400{% endif %} text-sm font-semibold"
-                         aria-live="polite">
+                          aria-live="polite">
                       {% if product.stock > 0 %}
                         In Stock
                       {% else %}
@@ -370,7 +385,8 @@
               </div>
             {% empty %}
               <div class="col-span-3 py-10 text-center">
-                <i class="fas fa-shopping-basket text-4xl text-gray-300 dark:text-gray-600 mb-4" aria-hidden="true"></i>
+                <i class="fas fa-shopping-basket text-4xl text-gray-300 dark:text-gray-600 mb-4"
+                   aria-hidden="true"></i>
                 <p class="text-gray-500 dark:text-gray-400">No featured products available at the moment.</p>
               </div>
             {% endfor %}
@@ -379,8 +395,12 @@
         <!-- GSoC Announcement -->
         <section class="bg-gradient-to-r from-teal-300 to-teal-500 rounded-xl p-6 shadow-lg overflow-hidden relative">
           <!-- Decorative elements -->
-          <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20" aria-hidden="true" role="presentation"></div>
-          <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-20 -mb-20" aria-hidden="true" role="presentation"></div>
+          <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20"
+               aria-hidden="true"
+               role="presentation"></div>
+          <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-20 -mb-20"
+               aria-hidden="true"
+               role="presentation"></div>
           <div class="relative flex flex-col md:flex-row items-center justify-between gap-6">
             <div class="md:flex-1">
               <div class="flex items-center space-x-4 mb-4">
@@ -402,7 +422,8 @@
                class="md:flex-shrink-0 bg-white hover:bg-teal-50 text-teal-500 font-semibold px-6 py-3 rounded-full shadow-md hover:shadow-lg transition-all duration-300 inline-flex items-center group whitespace-nowrap"
                aria-label="Get started with Google Summer of Code 2025">
               <span>Get Started with GSoC</span>
-              <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300" aria-hidden="true"></i>
+              <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"
+                 aria-hidden="true"></i>
             </a>
           </div>
         </section>
@@ -412,38 +433,44 @@
           <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
             <h3 class="text-xl font-bold mb-4 flex items-center text-gray-800 dark:text-white">
               <div class="bg-blue-100 dark:bg-blue-900/50 p-3 rounded-full mr-4">
-                <i class="fa-solid fa-user-graduate text-blue-600 dark:text-blue-400" aria-hidden="true"></i>
+                <i class="fa-solid fa-user-graduate text-blue-600 dark:text-blue-400"
+                   aria-hidden="true"></i>
               </div>
               For Learners
             </h3>
             <ul class="space-y-3 text-gray-700 dark:text-gray-300">
               <li class="flex items-start">
                 <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full mr-3 mt-0.5">
-                  <i class="fa-solid fa-robot text-blue-600 dark:text-blue-400 text-sm" aria-hidden="true"></i>
+                  <i class="fa-solid fa-robot text-blue-600 dark:text-blue-400 text-sm"
+                     aria-hidden="true"></i>
                 </div>
                 <span>Advanced search with AI-powered recommendations</span>
               </li>
               <li class="flex items-start">
                 <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full mr-3 mt-0.5">
-                  <i class="fa-solid fa-calendar-check text-blue-600 dark:text-blue-400 text-sm" aria-hidden="true"></i>
+                  <i class="fa-solid fa-calendar-check text-blue-600 dark:text-blue-400 text-sm"
+                     aria-hidden="true"></i>
                 </div>
                 <span>Flexible scheduling with calendar integration</span>
               </li>
               <li class="flex items-start">
                 <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full mr-3 mt-0.5">
-                  <i class="fa-solid fa-trophy text-blue-600 dark:text-blue-400 text-sm" aria-hidden="true"></i>
+                  <i class="fa-solid fa-trophy text-blue-600 dark:text-blue-400 text-sm"
+                     aria-hidden="true"></i>
                 </div>
                 <span>Track your progress and earn achievements</span>
               </li>
               <li class="flex items-start">
                 <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full mr-3 mt-0.5">
-                  <i class="fa-solid fa-users text-blue-600 dark:text-blue-400 text-sm" aria-hidden="true"></i>
+                  <i class="fa-solid fa-users text-blue-600 dark:text-blue-400 text-sm"
+                     aria-hidden="true"></i>
                 </div>
                 <span>Join study groups and connect with peers</span>
               </li>
               <li class="flex items-start">
                 <div class="bg-blue-100 dark:bg-blue-900/30 p-2 rounded-full mr-3 mt-0.5">
-                  <i class="fa-solid fa-chalkboard-teacher text-blue-600 dark:text-blue-400 text-sm" aria-hidden="true"></i>
+                  <i class="fa-solid fa-chalkboard-teacher text-blue-600 dark:text-blue-400 text-sm"
+                     aria-hidden="true"></i>
                 </div>
                 <span>Access both virtual and in-person classes</span>
               </li>
@@ -453,7 +480,8 @@
                  class="inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
                  aria-label="Start learning with our platform">
                 Start Learning
-                <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300" aria-hidden="true"></i>
+                <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"
+                   aria-hidden="true"></i>
               </a>
             </div>
           </div>
@@ -461,38 +489,44 @@
           <div class="bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-xl p-6 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
             <h3 class="text-xl font-bold mb-4 flex items-center text-gray-800 dark:text-white">
               <div class="bg-orange-100 dark:bg-orange-900/50 p-3 rounded-full mr-4">
-                <i class="fa-solid fa-chalkboard-user text-orange-600 dark:text-orange-400" aria-hidden="true"></i>
+                <i class="fa-solid fa-chalkboard-user text-orange-600 dark:text-orange-400"
+                   aria-hidden="true"></i>
               </div>
               For Teachers
             </h3>
             <ul class="space-y-3 text-gray-700 dark:text-gray-300">
               <li class="flex items-start">
                 <div class="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full mr-3 mt-0.5">
-                  <i class="fa-solid fa-clipboard-list text-orange-600 dark:text-orange-400 text-sm" aria-hidden="true"></i>
+                  <i class="fa-solid fa-clipboard-list text-orange-600 dark:text-orange-400 text-sm"
+                     aria-hidden="true"></i>
                 </div>
                 <span>Comprehensive course management tools</span>
               </li>
               <li class="flex items-start">
                 <div class="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full mr-3 mt-0.5">
-                  <i class="fa-solid fa-chart-line text-orange-600 dark:text-orange-400 text-sm" aria-hidden="true"></i>
+                  <i class="fa-solid fa-chart-line text-orange-600 dark:text-orange-400 text-sm"
+                     aria-hidden="true"></i>
                 </div>
                 <span>Analytics and student progress tracking</span>
               </li>
               <li class="flex items-start">
                 <div class="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full mr-3 mt-0.5">
-                  <i class="fa-solid fa-credit-card text-orange-600 dark:text-orange-400 text-sm" aria-hidden="true"></i>
+                  <i class="fa-solid fa-credit-card text-orange-600 dark:text-orange-400 text-sm"
+                     aria-hidden="true"></i>
                 </div>
                 <span>Secure payment processing and earnings management</span>
               </li>
               <li class="flex items-start">
                 <div class="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full mr-3 mt-0.5">
-                  <i class="fa-solid fa-bullhorn text-orange-600 dark:text-orange-400 text-sm" aria-hidden="true"></i>
+                  <i class="fa-solid fa-bullhorn text-orange-600 dark:text-orange-400 text-sm"
+                     aria-hidden="true"></i>
                 </div>
                 <span>Marketing tools to promote your courses</span>
               </li>
               <li class="flex items-start">
                 <div class="bg-orange-100 dark:bg-orange-900/30 p-2 rounded-full mr-3 mt-0.5">
-                  <i class="fa-solid fa-comments text-orange-600 dark:text-orange-400 text-sm" aria-hidden="true"></i>
+                  <i class="fa-solid fa-comments text-orange-600 dark:text-orange-400 text-sm"
+                     aria-hidden="true"></i>
                 </div>
                 <span>Direct communication with students</span>
               </li>
@@ -502,7 +536,8 @@
                  class="inline-flex items-center text-orange-600 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 font-medium"
                  aria-label="Start teaching on our platform">
                 Start Teaching
-                <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300" aria-hidden="true"></i>
+                <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"
+                   aria-hidden="true"></i>
               </a>
             </div>
           </div>
@@ -511,8 +546,10 @@
         {% if user.is_authenticated %}
           <section class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl shadow-lg overflow-hidden relative">
             <!-- Decorative elements -->
-            <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20" aria-hidden="true"></div>
-            <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-20 -mb-20" aria-hidden="true"></div>
+            <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-20 -mt-20"
+                 aria-hidden="true"></div>
+            <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/10 rounded-full -ml-20 -mb-20"
+                 aria-hidden="true"></div>
             <div class="p-6 relative">
               <div class="flex items-center justify-between mb-6">
                 <h2 class="text-2xl font-bold text-white">Team Collaboration</h2>
@@ -520,7 +557,8 @@
                    class="bg-white hover:bg-blue-50 text-blue-600 font-semibold px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300 inline-flex items-center group"
                    aria-label="View all team goals">
                   <span>View All</span>
-                  <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300" aria-hidden="true"></i>
+                  <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"
+                     aria-hidden="true"></i>
                 </a>
               </div>
               <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -567,7 +605,8 @@
                     </a>
                   {% else %}
                     <div class="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-center border border-white/10">
-                      <i class="fas fa-users-slash text-4xl text-white/40 mb-3" aria-hidden="true"></i>
+                      <i class="fas fa-users-slash text-4xl text-white/40 mb-3"
+                         aria-hidden="true"></i>
                       <p class="text-gray-200 mb-4">You haven't created or joined any team goals yet.</p>
                       <a href="{% url 'create_team_goal' %}"
                          class="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-blue-50 rounded-lg transition duration-300 shadow-sm"
@@ -594,9 +633,7 @@
                               {% csrf_token %}
                               <button type="submit"
                                       class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition duration-300 shadow-sm"
-                                      aria-label="Accept invitation to {{ invite.goal.title }}">
-                                Accept
-                              </button>
+                                      aria-label="Accept invitation to {{ invite.goal.title }}">Accept</button>
                             </form>
                             <form method="post"
                                   action="{% url 'decline_team_invite' invite.id %}"
@@ -604,9 +641,7 @@
                               {% csrf_token %}
                               <button type="submit"
                                       class="px-3 py-1 bg-transparent hover:bg-white/10 border border-white text-white text-sm rounded-lg transition duration-300"
-                                      aria-label="Decline invitation to {{ invite.goal.title }}">
-                                Decline
-                              </button>
+                                      aria-label="Decline invitation to {{ invite.goal.title }}">Decline</button>
                             </form>
                           </div>
                         </div>
@@ -620,7 +655,8 @@
                     </a>
                   {% else %}
                     <div class="bg-white/10 backdrop-blur-sm rounded-lg p-6 text-center border border-white/10">
-                      <i class="fas fa-envelope-open text-4xl text-white/40 mb-3" aria-hidden="true"></i>
+                      <i class="fas fa-envelope-open text-4xl text-white/40 mb-3"
+                         aria-hidden="true"></i>
                       <p class="text-gray-200">You have no pending team invitations.</p>
                     </div>
                   {% endif %}
@@ -657,7 +693,8 @@
         <!-- Leaderboard -->
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
           <h2 class="text-lg font-bold mb-4 flex items-center">
-            <i class="fa-solid fa-trophy text-yellow-500 dark:text-yellow-400 mr-2" aria-hidden="true"></i>
+            <i class="fa-solid fa-trophy text-yellow-500 dark:text-yellow-400 mr-2"
+               aria-hidden="true"></i>
             Leaderboard Champions
           </h2>
           <p class="text-gray-600 dark:text-gray-400 mb-6 text-sm">Global leaderboard</p>
@@ -677,9 +714,7 @@
                   {% endif %}
                   {% if forloop.counter < 4 %}
                     <div class="absolute -top-1 -right-1 {% if forloop.counter == 1 %}bg-yellow-400{% elif forloop.counter == 2 %}bg-gray-400{% elif forloop.counter == 3 %}bg-amber-500{% endif %} text-white w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
-                         aria-label="Rank {{ forloop.counter }}">
-                      {{ forloop.counter }}
-                    </div>
+                         aria-label="Rank {{ forloop.counter }}">{{ forloop.counter }}</div>
                   {% endif %}
                 </div>
                 <div class="flex-1">
@@ -695,16 +730,15 @@
                     </div>
                     <div class="text-right">
                       <span class="text-sm font-semibold {% if forloop.counter == 1 %}text-yellow-500 dark:text-yellow-400{% elif forloop.counter == 2 %}text-gray-500 dark:text-gray-300{% elif forloop.counter == 3 %}text-amber-500 dark:text-amber-400{% else %}text-teal-500 dark:text-teal-400{% endif %}"
-                            aria-label="Score: {{ entry.points }}">
-                        {{ entry.points }} pts
-                      </span>
+                            aria-label="Score: {{ entry.points }}">{{ entry.points }} pts</span>
                     </div>
                   </div>
                 </div>
               </div>
             {% empty %}
               <div class="text-center py-4">
-                <i class="fas fa-chart-bar text-gray-300 dark:text-gray-600 text-4xl mb-2" aria-hidden="true"></i>
+                <i class="fas fa-chart-bar text-gray-300 dark:text-gray-600 text-4xl mb-2"
+                   aria-hidden="true"></i>
                 <p class="text-gray-500 dark:text-gray-400">No leaderboard data available yet.</p>
               </div>
             {% endfor %}
@@ -723,7 +757,8 @@
         <!-- Weekly Challenge -->
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
           <h2 class="text-lg font-bold mb-4 flex items-center">
-            <i class="fa-solid fa-calendar-star text-indigo-600 dark:text-indigo-400 mr-2 fas fa-calendar-week" aria-hidden="true"></i>
+            <i class="fa-solid fa-calendar-star text-indigo-600 dark:text-indigo-400 mr-2 fas fa-calendar-week"
+               aria-hidden="true"></i>
             Weekly Challenge
           </h2>
           {% if current_challenge %}
@@ -734,8 +769,10 @@
               <p class="text-gray-700 dark:text-gray-300 mb-4 text-sm">{{ current_challenge.0.description }}</p>
               <!-- Challenge Duration -->
               <div class="bg-indigo-50 dark:bg-indigo-900/30 p-3 rounded-lg mb-4">
-                <p class="text-gray-700 dark:text-gray-300 text-sm flex items-center" aria-label="Challenge duration from {{ current_challenge.0.start_date|date:'M j' }} to {{ current_challenge.0.end_date|date:'M j, Y' }}">
-                  <i class="fas fa-calendar-alt mr-2 text-indigo-500 dark:text-indigo-400" aria-hidden="true"></i>
+                <p class="text-gray-700 dark:text-gray-300 text-sm flex items-center"
+                   aria-label="Challenge duration from {{ current_challenge.0.start_date|date:'M j' }} to {{ current_challenge.0.end_date|date:'M j, Y' }}">
+                  <i class="fas fa-calendar-alt mr-2 text-indigo-500 dark:text-indigo-400"
+                     aria-hidden="true"></i>
                   <span>{{ current_challenge.0.start_date|date:"M j" }} - {{ current_challenge.0.end_date|date:"M j, Y" }}</span>
                 </p>
               </div>
@@ -748,7 +785,8 @@
                   Complete Challenge
                 </a>
               {% else %}
-                <p class="text-center text-red-600 dark:text-red-400 text-sm" aria-live="polite">
+                <p class="text-center text-red-600 dark:text-red-400 text-sm"
+                   aria-live="polite">
                   <i class="fas fa-lock mr-1" aria-hidden="true"></i>
                   Please log in to submit your result
                 </p>
@@ -764,473 +802,490 @@
         <!-- Educational Videos -->
         <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
           <h2 class="text-lg font-bold mb-4 flex items-center">
-            <i class="fas fa-film text-red-500 dark:text-red-400 mr-2" aria-hidden="true"></i>
+            <i class="fas fa-film text-red-500 dark:text-red-400 mr-2"
+               aria-hidden="true"></i>
             Educational Videos
           </h2>
           <p class="text-gray-600 dark:text-gray-400 mb-4 text-sm">
-              Discover a wide range of educational videos shared by our community of teachers and learners.
-            </p>
+            Discover a wide range of educational videos shared by our community of teachers and learners.
+          </p>
           <div class="flex gap-4 justify-center">
-              {% if user.is_authenticated %}
-            <a href="{% url 'upload_educational_video' %}"
-               class="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-full flex items-center text-sm transition-colors duration-300 shadow-sm"
-               aria-label="Share an educational video">
-                  <i class="fas fa-upload mr-2" aria-hidden="true"></i> Share
-                </a>
-              {% endif %}
+            {% if user.is_authenticated %}
+              <a href="{% url 'upload_educational_video' %}"
+                 class="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-full flex items-center text-sm transition-colors duration-300 shadow-sm"
+                 aria-label="Share an educational video">
+                <i class="fas fa-upload mr-2" aria-hidden="true"></i> Share
+              </a>
+            {% endif %}
             <a href="{% url 'educational_videos_list' %}"
                class="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-full flex items-center text-sm transition-colors duration-300 shadow-sm"
                aria-label="Browse educational videos">
-                <i class="fas fa-play-circle mr-2" aria-hidden="true"></i> Browse
-              </a>
-            </div>
-          </div>
-        </div>
-        <!-- Recent Forum & Blog Posts -->
-        <div class="grid grid-cols-1 gap-6">
-          <!-- Recent Forum Post -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-md hover:shadow-lg transition-all duration-300">
-            <h2 class="text-lg font-bold mb-3 flex items-center">
-              <i class="fa-solid fa-comments text-purple-600 dark:text-purple-400 mr-2"></i>
-              Recent Forum Post
-            </h2>
-            <div class="border-l-4 border-purple-200 dark:border-purple-800 pl-3 py-1">
-              <h3 class="font-medium text-gray-900 dark:text-gray-200 mb-1">
-                {{ latest_topic.title|default:"How to get started with advanced mathematics?" }}
-              </h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                "{{ latest_topic.content|default:"I'm looking for resources on group theory and number theory. Any recommendations?" }}"
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-500">
-                posted by <span class="font-medium">{{ latest_topic.author.username|default:"user123" }}</span>
-              </p>
-            </div>
-            <a href="{% if latest_topic %}{% url 'forum_topic' latest_topic.category.slug latest_topic.id %}{% else %}{% url 'forum_categories' %}{% endif %}"
-               class="inline-flex items-center mt-3 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 text-sm font-medium group">
-              View Discussion
-              <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
+              <i class="fas fa-play-circle mr-2" aria-hidden="true"></i> Browse
             </a>
           </div>
-          <!-- Recent Blog Post -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-md hover:shadow-lg transition-all duration-300">
-            <h2 class="text-lg font-bold mb-3 flex items-center">
-              <i class="fa-solid fa-blog text-blue-600 dark:text-blue-400 mr-2"></i>
-              Recent Blog Post
-            </h2>
-            <div class="border-l-4 border-blue-200 dark:border-blue-800 pl-3 py-1">
-              <h3 class="font-medium text-gray-900 dark:text-gray-200 mb-1">
-                {{ latest_post.title|default:"The Future of Online Education" }}
-              </h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400">
-                {{ latest_post.excerpt|default:"Learn how new technologies are shaping the way we teach and learn, including AI-driven insights and personalized curriculum..." }}
-              </p>
-            </div>
-            <a href="{% if latest_post %}{% url 'blog_detail' latest_post.slug %}{% else %}{% url 'blog_list' %}{% endif %}"
-               class="inline-flex items-center mt-3 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium group">
+        </div>
+      </div>
+      <!-- Recent Forum & Blog Posts -->
+      <div class="grid grid-cols-1 gap-6">
+        <!-- Recent Forum Post -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-md hover:shadow-lg transition-all duration-300">
+          <h2 class="text-lg font-bold mb-3 flex items-center">
+            <i class="fa-solid fa-comments text-purple-600 dark:text-purple-400 mr-2"></i>
+            Recent Forum Post
+          </h2>
+          <div class="border-l-4 border-purple-200 dark:border-purple-800 pl-3 py-1">
+            <h3 class="font-medium text-gray-900 dark:text-gray-200 mb-1">
+              {{ latest_topic.title|default:"How to get started with advanced mathematics?" }}
+            </h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">
+              "{{ latest_topic.content|default:"I'm looking for resources on group theory and number theory. Any recommendations?" }}"
+            </p>
+            <p class="text-xs text-gray-500 dark:text-gray-500">
+              posted by <span class="font-medium">{{ latest_topic.author.username|default:"user123" }}</span>
+            </p>
+          </div>
+          <a href="{% if latest_topic %}{% url 'forum_topic' latest_topic.category.slug latest_topic.id %}{% else %}{% url 'forum_categories' %}{% endif %}"
+             class="inline-flex items-center mt-3 text-purple-600 hover:text-purple-700 dark:text-purple-400 dark:hover:text-purple-300 text-sm font-medium group">
+            View Discussion
+            <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
+          </a>
+        </div>
+        <!-- Recent Blog Post -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-md hover:shadow-lg transition-all duration-300">
+          <h2 class="text-lg font-bold mb-3 flex items-center">
+            <i class="fa-solid fa-blog text-blue-600 dark:text-blue-400 mr-2"></i>
+            Recent Blog Post
+          </h2>
+          <div class="border-l-4 border-blue-200 dark:border-blue-800 pl-3 py-1">
+            <h3 class="font-medium text-gray-900 dark:text-gray-200 mb-1">
+              {{ latest_post.title|default:"The Future of Online Education" }}
+            </h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              {{ latest_post.excerpt|default:"Learn how new technologies are shaping the way we teach and learn, including AI-driven insights and personalized curriculum..." }}
+            </p>
+          </div>
+          <a href="{% if latest_post %}{% url 'blog_detail' latest_post.slug %}{% else %}{% url 'blog_list' %}{% endif %}"
+             class="inline-flex items-center mt-3 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium group">
+            Read More
+            <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
+          </a>
+        </div>
+        <!-- Success Story -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-md hover:shadow-lg transition-all duration-300">
+          <h2 class="text-lg font-bold mb-3 flex items-center">
+            <i class="fa-solid fa-star text-yellow-500 dark:text-yellow-400 mr-2"></i>
+            Success Story
+          </h2>
+          <div class="border-l-4 border-yellow-200 dark:border-yellow-800 pl-3 py-1">
+            <h3 class="font-medium text-gray-900 dark:text-gray-200 mb-1">
+              {{ latest_success_story.title|default:"From Beginner to Expert in 3 Months" }}
+            </h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+              {{ latest_success_story.excerpt|default:"Discover how our platform helped a complete beginner transform into a confident expert through personalized learning paths and dedicated mentorship..." }}
+            </p>
+          </div>
+          <div class="flex justify-between items-center mt-3">
+            <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}"
+               class="inline-flex items-center text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300 text-sm font-medium group">
               Read More
               <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
             </a>
-          </div>
-          <!-- Success Story -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-md hover:shadow-lg transition-all duration-300">
-            <h2 class="text-lg font-bold mb-3 flex items-center">
-              <i class="fa-solid fa-star text-yellow-500 dark:text-yellow-400 mr-2"></i>
-              Success Story
-            </h2>
-            <div class="border-l-4 border-yellow-200 dark:border-yellow-800 pl-3 py-1">
-              <h3 class="font-medium text-gray-900 dark:text-gray-200 mb-1">
-                {{ latest_success_story.title|default:"From Beginner to Expert in 3 Months" }}
-              </h3>
-              <p class="text-sm text-gray-600 dark:text-gray-400">
-                {{ latest_success_story.excerpt|default:"Discover how our platform helped a complete beginner transform into a confident expert through personalized learning paths and dedicated mentorship..." }}
-              </p>
-            </div>
-            <div class="flex justify-between items-center mt-3">
-              <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}"
-                 class="inline-flex items-center text-yellow-600 hover:text-yellow-700 dark:text-yellow-400 dark:hover:text-yellow-300 text-sm font-medium group">
-                Read More
-                <i class="fas fa-arrow-right ml-2 transform group-hover:translate-x-1 transition-transform duration-300"></i>
-              </a>
-              <a href="{% url 'create_success_story' %}"
-                 class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-3 py-1 rounded-md inline-flex items-center transition-colors duration-300 shadow-sm">
-                <i class="fas fa-plus mr-1"></i> Share Your Story
-              </a>
-            </div>
-          </div>
-        </div>
-        <!-- GitHub Contributors Section -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-lg">
-          <h3 class="text-lg font-bold mb-4 flex items-center">
-            <i class="fa-brands fa-github text-gray-800 dark:text-gray-200 mr-2" aria-hidden="true"></i>
-            Thank you to our Contributors!
-          </h3>
-          <!-- Top Contributors -->
-          <div class="mb-4">
-            <h4 class="text-sm font-medium mb-3 flex items-center">
-              <i class="fa-solid fa-trophy text-amber-600 dark:text-amber-400 mr-1" aria-hidden="true"></i>
-              Top Contributors (<span id="current-month-display" aria-live="polite"></span>)
-            </h4>
-            <div class="space-y-2" id="top-contributors-section" aria-live="polite">
-              <div class="animate-pulse space-y-2">
-                {% for i in "12345"|make_list %}
-                  <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                    <div class="flex-1">
-                      <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                      <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-1"></div>
-                    </div>
-                  </div>
-                {% endfor %}
-              </div>
-            </div>
-          </div>
-          <!-- New Contributors -->
-          <div class="mb-4">
-            <h4 class="text-sm font-medium mb-3 flex items-center">
-              <i class="fa-solid fa-user-plus text-green-600 dark:text-green-400 mr-1" aria-hidden="true"></i>
-              New Contributors
-            </h4>
-            <div class="space-y-2" id="new-contributors-section" aria-live="polite">
-              <div class="animate-pulse space-y-2">
-                {% for i in "12345"|make_list %}
-                  <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                    <div class="flex-1">
-                      <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                      <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-1"></div>
-                    </div>
-                  </div>
-                {% endfor %}
-              </div>
-            </div>
-          </div>
-          <div class="text-center">
-            <a href="https://github.com/AlphaOneLabs/education-website/graphs/contributors"
-               target="_blank"
-               rel="noopener"
-               class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors duration-300"
-               aria-label="View all contributors on GitHub">
-              <i class="fas fa-users mr-2" aria-hidden="true"></i>
-              View All Contributors
+            <a href="{% url 'create_success_story' %}"
+               class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-3 py-1 rounded-md inline-flex items-center transition-colors duration-300 shadow-sm">
+              <i class="fas fa-plus mr-1"></i> Share Your Story
             </a>
           </div>
         </div>
       </div>
-      <!-- Sidebar -->
-      <div class="lg:w-1/4 space-y-8">
-        <!-- What Would You Like To Do? -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
-          <h2 class="text-xl font-bold mb-6 text-center text-gray-800 dark:text-gray-200">What Would You Like To Do?</h2>
-          <div class="space-y-4">
-            <a href="{% url 'teach' %}"
-               class="block w-full bg-gradient-to-r from-teal-300 to-teal-400 hover:from-teal-400 hover:to-teal-500 text-white font-semibold px-6 py-4 rounded-xl transition-all duration-300 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center group"
-               aria-label="Start teaching: Share your knowledge with others">
-              <i class="fa-solid fa-chalkboard-user text-2xl mb-2 group-hover:animate-bounce" aria-hidden="true"></i>
-              <span class="text-lg">I Want to Teach</span>
-              <div class="text-sm font-normal">Share your knowledge with others</div>
-            </a>
-            <a href="{% url 'learn' %}"
-               class="block w-full bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 text-white font-semibold px-6 py-4 rounded-xl transition-all duration-300 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center group"
-               aria-label="Start learning: Discover new skills and expand your knowledge">
-              <i class="fa-solid fa-graduation-cap text-2xl mb-2 group-hover:animate-bounce" aria-hidden="true"></i>
-              <span class="text-lg">I Want to Learn</span>
-              <div class="text-sm font-normal">Discover new skills and expand your knowledge</div>
-            </a>
-          </div>
-        </div>
-        {% if user.is_authenticated and teaching_courses %}
-          <!-- Courses Teaching Section -->
-          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
-            <h2 class="text-lg font-bold mb-4 flex items-center">
-              <i class="fa-solid fa-chalkboard-teacher text-blue-500 dark:text-blue-400 mr-2" aria-hidden="true"></i>
-              My Teaching Courses
-            </h2>
-            <div class="space-y-3">
-              {% for course in teaching_courses %}
-                <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-300">
-                  <div class="flex items-center justify-between mb-1">
-                    <a href="{% url 'course_detail' course.slug %}"
-                       class="font-medium text-gray-800 dark:text-gray-200 hover:text-blue-500 dark:hover:text-blue-400 transition"
-                       aria-label="View details of course: {{ course.title }}">
-                      {{ course.title|truncatechars:28 }}
-                    </a>
-                    <span class="text-xs {% if course.status == 'published' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% elif course.status == 'draft' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %} px-2 py-1 rounded-full"
-                          aria-label="Status: {{ course.get_status_display }}">
-                      {{ course.get_status_display }}
-                    </span>
-                  </div>
-                  <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-300">
-                    <div class="flex items-center">
-                      <i class="fas fa-eye text-gray-400 mr-1.5" aria-hidden="true"></i>
-                      <span aria-label="Course has {{ course.view_count|default:'0' }} views">{{ course.view_count|default:"0" }} views</span>
-                    </div>
-                    <div class="flex items-center">
-                      <i class="fas fa-users text-gray-400 mr-1.5" aria-hidden="true"></i>
-                      <span aria-label="Course enrollment: {{ course.enrolled_students }} out of {{ course.max_students }} maximum students">{{ course.enrolled_students }}/{{ course.max_students }}</span>
-                    </div>
+      <!-- GitHub Contributors Section -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-5 shadow-lg">
+        <h3 class="text-lg font-bold mb-4 flex items-center">
+          <i class="fa-brands fa-github text-gray-800 dark:text-gray-200 mr-2"
+             aria-hidden="true"></i>
+          Thank you to our Contributors!
+        </h3>
+        <!-- Top Contributors -->
+        <div class="mb-4">
+          <h4 class="text-sm font-medium mb-3 flex items-center">
+            <i class="fa-solid fa-trophy text-amber-600 dark:text-amber-400 mr-1"
+               aria-hidden="true"></i>
+            Top Contributors (<span id="current-month-display" aria-live="polite"></span>)
+          </h4>
+          <div class="space-y-2" id="top-contributors-section" aria-live="polite">
+            <div class="animate-pulse space-y-2">
+              {% for i in "12345"|make_list %}
+                <div class="flex items-center space-x-2">
+                  <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                  <div class="flex-1">
+                    <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                    <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-1"></div>
                   </div>
                 </div>
               {% endfor %}
-              {% if teaching_courses.count > 3 %}
-                <a href="{% url 'teacher_dashboard' %}"
-                   class="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center justify-center mt-2"
-                   aria-label="View all teaching courses">
-                  <span>View all courses</span>
-                  <i class="fas fa-arrow-right ml-1" aria-hidden="true"></i>
-                </a>
-              {% endif %}
             </div>
           </div>
-        {% endif %}
-        <!-- Progress Trackers Dashboard -->
-        {% if user.is_authenticated %}
-          <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
-            <h2 class="text-lg font-bold mb-4 flex items-center">
-              <i class="fa-solid fa-chart-line text-blue-600 dark:text-blue-400 mr-2" aria-hidden="true"></i>
-              Progress Trackers
-            </h2>
-            {% if user.progress_trackers.exists %}
-              <div class="space-y-4">
-                {% for tracker in user.progress_trackers.all|slice:":3" %}
-                  <div>
-                    <div class="flex justify-between mb-1">
-                      <span class="text-gray-700 dark:text-gray-300">{{ tracker.title }}</span>
-                      <span class="text-gray-600 dark:text-gray-400">{{ tracker.percentage }}%</span>
-                    </div>
-                    <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
-                      <div class="h-2.5 rounded-full transition-all duration-1000 ease-out bg-teal-300"
-                           {% if tracker.percentage %}style="width: {{ tracker.percentage }}%"{% else %}style="width: 0%"{% endif %}
-                           role="progressbar"
-                           aria-valuenow="{{ tracker.percentage|default:0 }}"
-                           aria-valuemin="0"
-                           aria-valuemax="100"
-                           aria-label="{{ tracker.title }} completion: {{ tracker.percentage|default:0 }}%"></div>
-                    </div>
+        </div>
+        <!-- New Contributors -->
+        <div class="mb-4">
+          <h4 class="text-sm font-medium mb-3 flex items-center">
+            <i class="fa-solid fa-user-plus text-green-600 dark:text-green-400 mr-1"
+               aria-hidden="true"></i>
+            New Contributors
+          </h4>
+          <div class="space-y-2" id="new-contributors-section" aria-live="polite">
+            <div class="animate-pulse space-y-2">
+              {% for i in "12345"|make_list %}
+                <div class="flex items-center space-x-2">
+                  <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                  <div class="flex-1">
+                    <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                    <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-1"></div>
                   </div>
-                {% endfor %}
-              </div>
-              <div class="mt-4 text-center">
-                <a href="{% url 'tracker_list' %}"
-                   class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center"
-                   aria-label="View all progress trackers">
-                  <span>View All Trackers</span>
-                  <i class="fas fa-arrow-right ml-2 text-xs" aria-hidden="true"></i>
-                </a>
-              </div>
-            {% else %}
-              <div class="text-center py-4">
-                <p class="text-gray-600 dark:text-gray-400 mb-4">You haven't created any progress trackers yet.</p>
-                <a href="{% url 'create_tracker' %}"
-                   class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center justify-center shadow-sm transition-colors duration-300"
-                   aria-label="Create your first progress tracker">
-                  <i class="fas fa-plus mr-2" aria-hidden="true"></i>
-                  Create Your First Tracker
-                </a>
-              </div>
-            {% endif %}
+                </div>
+              {% endfor %}
+            </div>
           </div>
-        {% endif %}
+        </div>
+        <div class="text-center">
+          <a href="https://github.com/AlphaOneLabs/education-website/graphs/contributors"
+             target="_blank"
+             rel="noopener"
+             class="inline-flex items-center px-4 py-2 bg-gray-800 hover:bg-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 text-white text-sm font-medium rounded-lg transition-colors duration-300"
+             aria-label="View all contributors on GitHub">
+            <i class="fas fa-users mr-2" aria-hidden="true"></i>
+            View All Contributors
+          </a>
+        </div>
       </div>
     </div>
-  </main>
-  <!-- Add CSS for animations -->
-  <style>
+    <!-- Sidebar -->
+    <div class="lg:w-1/4 space-y-8">
+      <!-- What Would You Like To Do? -->
+      <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
+        <h2 class="text-xl font-bold mb-6 text-center text-gray-800 dark:text-gray-200">What Would You Like To Do?</h2>
+        <div class="space-y-4">
+          <a href="{% url 'teach' %}"
+             class="block w-full bg-gradient-to-r from-teal-300 to-teal-400 hover:from-teal-400 hover:to-teal-500 text-white font-semibold px-6 py-4 rounded-xl transition-all duration-300 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center group"
+             aria-label="Start teaching: Share your knowledge with others">
+            <i class="fa-solid fa-chalkboard-user text-2xl mb-2 group-hover:animate-bounce"
+               aria-hidden="true"></i>
+            <span class="text-lg">I Want to Teach</span>
+            <div class="text-sm font-normal">Share your knowledge with others</div>
+          </a>
+          <a href="{% url 'learn' %}"
+             class="block w-full bg-gradient-to-r from-teal-400 to-teal-500 hover:from-teal-500 hover:to-teal-600 text-white font-semibold px-6 py-4 rounded-xl transition-all duration-300 text-center shadow-lg hover:shadow-xl flex flex-col items-center justify-center group"
+             aria-label="Start learning: Discover new skills and expand your knowledge">
+            <i class="fa-solid fa-graduation-cap text-2xl mb-2 group-hover:animate-bounce"
+               aria-hidden="true"></i>
+            <span class="text-lg">I Want to Learn</span>
+            <div class="text-sm font-normal">Discover new skills and expand your knowledge</div>
+          </a>
+        </div>
+      </div>
+      {% if user.is_authenticated and teaching_courses %}
+        <!-- Courses Teaching Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
+          <h2 class="text-lg font-bold mb-4 flex items-center">
+            <i class="fa-solid fa-chalkboard-teacher text-blue-500 dark:text-blue-400 mr-2"
+               aria-hidden="true"></i>
+            My Teaching Courses
+          </h2>
+          <div class="space-y-3">
+            {% for course in teaching_courses %}
+              <div class="border border-gray-200 dark:border-gray-600 rounded-lg p-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-300">
+                <div class="flex items-center justify-between mb-1">
+                  <a href="{% url 'course_detail' course.slug %}"
+                     class="font-medium text-gray-800 dark:text-gray-200 hover:text-blue-500 dark:hover:text-blue-400 transition"
+                     aria-label="View details of course: {{ course.title }}">{{ course.title|truncatechars:28 }}</a>
+                  <span class="text-xs {% if course.status == 'published' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200{% elif course.status == 'draft' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200{% else %}bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300{% endif %} px-2 py-1 rounded-full"
+                        aria-label="Status: {{ course.get_status_display }}">{{ course.get_status_display }}</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-300">
+                  <div class="flex items-center">
+                    <i class="fas fa-eye text-gray-400 mr-1.5" aria-hidden="true"></i>
+                    <span aria-label="Course has {{ course.view_count|default:'0' }} views">{{ course.view_count|default:"0" }} views</span>
+                  </div>
+                  <div class="flex items-center">
+                    <i class="fas fa-users text-gray-400 mr-1.5" aria-hidden="true"></i>
+                    <span aria-label="Course enrollment: {{ course.enrolled_students }} out of {{ course.max_students }} maximum students">{{ course.enrolled_students }}/{{ course.max_students }}</span>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+            {% if teaching_courses.count > 3 %}
+              <a href="{% url 'teacher_dashboard' %}"
+                 class="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 text-sm flex items-center justify-center mt-2"
+                 aria-label="View all teaching courses">
+                <span>View all courses</span>
+                <i class="fas fa-arrow-right ml-1" aria-hidden="true"></i>
+              </a>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+      <!-- Progress Trackers Dashboard -->
+      {% if user.is_authenticated %}
+        <div class="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 p-6 shadow-lg">
+          <h2 class="text-lg font-bold mb-4 flex items-center">
+            <i class="fa-solid fa-chart-line text-blue-600 dark:text-blue-400 mr-2"
+               aria-hidden="true"></i>
+            Progress Trackers
+          </h2>
+          {% if user.progress_trackers.exists %}
+            <div class="space-y-4">
+              {% for tracker in user.progress_trackers.all|slice:":3" %}
+                <div>
+                  <div class="flex justify-between mb-1">
+                    <span class="text-gray-700 dark:text-gray-300">{{ tracker.title }}</span>
+                    <span class="text-gray-600 dark:text-gray-400">{{ tracker.percentage }}%</span>
+                  </div>
+                  <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 overflow-hidden">
+                    <div class="h-2.5 rounded-full transition-all duration-1000 ease-out bg-teal-300"
+                         {% if tracker.percentage %}style="width: {{ tracker.percentage }}%"{% else %}style="width: 0%"{% endif %}
+                         role="progressbar"
+                         aria-valuenow="{{ tracker.percentage|default:0 }}"
+                         aria-valuemin="0"
+                         aria-valuemax="100"
+                         aria-label="{{ tracker.title }} completion: {{ tracker.percentage|default:0 }}%"></div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+            <div class="mt-4 text-center">
+              <a href="{% url 'tracker_list' %}"
+                 class="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 inline-flex items-center"
+                 aria-label="View all progress trackers">
+                <span>View All Trackers</span>
+                <i class="fas fa-arrow-right ml-2 text-xs" aria-hidden="true"></i>
+              </a>
+            </div>
+          {% else %}
+            <div class="text-center py-4">
+              <p class="text-gray-600 dark:text-gray-400 mb-4">You haven't created any progress trackers yet.</p>
+              <a href="{% url 'create_tracker' %}"
+                 class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg inline-flex items-center justify-center shadow-sm transition-colors duration-300"
+                 aria-label="Create your first progress tracker">
+                <i class="fas fa-plus mr-2" aria-hidden="true"></i>
+                Create Your First Tracker
+              </a>
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</main>
+<!-- Add CSS for animations -->
+<style>
     /*
     NOTE: For better maintainability, these animations should be moved
     to an external stylesheet if they are used on multiple pages.
     */
     /* Fade in animation */
     .animate-fade-in {
-      animation: fadeIn 0.8s ease-out forwards;
-      opacity: 0;
-    }
-    @keyframes fadeIn {
-      from {
+        animation: fadeIn 0.8s ease-out forwards;
         opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
     }
+
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     /* Animation delays */
     .animation-delay-200 {
-      animation-delay: 0.2s;
+        animation-delay: 0.2s;
     }
+
     .animation-delay-400 {
-      animation-delay: 0.4s;
+        animation-delay: 0.4s;
     }
+
     /* Floating animation for certain elements */
     .animate-float {
-      animation: float 6s ease-in-out infinite;
+        animation: float 6s ease-in-out infinite;
     }
+
     @keyframes float {
-      0% {
-        transform: translateY(0px);
-      }
-      50% {
-        transform: translateY(-10px);
-      }
-      100% {
-        transform: translateY(0px);
-      }
+        0% {
+            transform: translateY(0px);
+        }
+
+        50% {
+            transform: translateY(-10px);
+        }
+
+        100% {
+            transform: translateY(0px);
+        }
     }
+
     /* Pulsing animation */
     .animate-pulse {
-      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
+
     @keyframes pulse {
-      0%, 100% {
-        opacity: 1;
-      }
-      50% {
-        opacity: 0.8;
-      }
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.8;
+        }
     }
-  </style>
-  <!-- GitHub contributors script -->
-  <script>
-      // Helper function to add caching for API requests
-      const cachedFetch = (async () => {
-          const cache = {};
-          const cacheTimeMinutes = 15; // Cache for 15 minutes
-          return async (url) => {
-              // Check if we have a cached response that's still valid
-              const now = new Date().getTime();
-              if (cache[url] && cache[url].timestamp > now - (cacheTimeMinutes * 60 * 1000)) {
-                  return cache[url].data;
-              }
-              // If no cache or cache is expired, fetch from API with retry logic
-              let retries = 3;
-              let lastError;
-              while (retries > 0) {
-                  try {
-                      const response = await fetch(url);
-                      if (!response.ok) {
-                          throw new Error(`HTTP error: ${response.status}`);
-                      }
-                      const data = await response.json();
-                      // Cache the result
-                      cache[url] = {
-                          data: data,
-                          timestamp: now
-                      };
-                      return data;
-                  } catch (error) {
-                      lastError = error;
-                      retries--;
-                      // Wait between retries
-                      await new Promise(resolve => setTimeout(resolve, 1000));
-                  }
-              }
-              throw lastError;
-          };
-      })();
-      // Top Contributors - For Current Month
-      async function fetchTopContributors() {
-          try {
-              // Get the first day of the current month
-              const now = new Date();
-              const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-              // Get month name for display
-              const monthNames = ["January", "February", "March", "April", "May", "June",
-                  "July", "August", "September", "October", "November", "December"
-              ];
-              const currentMonth = monthNames[now.getMonth()];
-              // Display current month in the heading
-              document.getElementById('current-month-display').textContent = currentMonth;
-              // Fetch 2 pages of data
-              const [page1, page2] = await Promise.all([
-                  cachedFetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=closed&per_page=100&page=1`),
-                  cachedFetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=closed&per_page=100&page=2`)
-              ]);
-              // Combine the results from both pages
-              const pulls = [...page1, ...page2];
-              const contributors = {};
-              pulls.forEach(pull => {
-                  const username = pull.user.login;
-                  const mergedAt = new Date(pull.merged_at);
-                  //skipping bots and specific users
-                  if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
-                      return;
-                  }
-                  //only count merged PRs from the current month
-                  if (!pull.merged_at || mergedAt < firstDay) {
-                      return;
-                  }
-                  if (!contributors[username]) {
-                      contributors[username] = {
-                          username: username,
-                          avatar_url: pull.user.avatar_url,
-                          profile_url: pull.user.html_url,
-                          merged_count: 0,
-                          prs: [],
-                          latest_merged_at: null
-                      };
-                  }
-                  contributors[username].merged_count++;
-                  contributors[username].prs.push({
-                      number: pull.number,
-                      title: pull.title,
-                      url: pull.html_url,
-                      merged_at: pull.merged_at,
-                      created_at: pull.created_at
-                  });
-                  if (!contributors[username].latest_merged_at ||
-                      new Date(pull.merged_at) > new Date(contributors[username].latest_merged_at)) {
-                      contributors[username].latest_merged_at = pull.merged_at;
-                  }
-              });
-              //sort by number of PRs, then by most recent PR
-              const topContributors = Object.values(contributors)
-                  .sort((a, b) => {
-                      const countDiff = b.merged_count - a.merged_count;
-                      if (countDiff !== 0) return countDiff;
-                      return new Date(b.latest_merged_at) - new Date(a.latest_merged_at);
-                  })
-                  .slice(0, 5); // taking top 5
-              // Sort PRs for each contributor by merged_at date (newest first)
-              topContributors.forEach(contributor => {
-                  contributor.prs.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
-              });
-              const container = document.getElementById('top-contributors-section');
-              container.innerHTML = '';
-              if (topContributors.length === 0) {
-                  container.innerHTML = `
+</style>
+<!-- GitHub contributors script -->
+<script>
+    // Helper function to add caching for API requests
+    const cachedFetch = (async () => {
+        const cache = {};
+        const cacheTimeMinutes = 15; // Cache for 15 minutes
+        return async (url) => {
+            // Check if we have a cached response that's still valid
+            const now = new Date().getTime();
+            if (cache[url] && cache[url].timestamp > now - (cacheTimeMinutes * 60 * 1000)) {
+                return cache[url].data;
+            }
+            // If no cache or cache is expired, fetch from API with retry logic
+            let retries = 3;
+            let lastError;
+            while (retries > 0) {
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) {
+                        throw new Error(`HTTP error: ${response.status}`);
+                    }
+                    const data = await response.json();
+                    // Cache the result
+                    cache[url] = {
+                        data: data,
+                        timestamp: now
+                    };
+                    return data;
+                } catch (error) {
+                    lastError = error;
+                    retries--;
+                    // Wait between retries
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+            throw lastError;
+        };
+    })();
+    // Top Contributors - For Current Month
+    async function fetchTopContributors() {
+        try {
+            // Get the first day of the current month
+            const now = new Date();
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            // Get month name for display
+            const monthNames = ["January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"
+            ];
+            const currentMonth = monthNames[now.getMonth()];
+            // Display current month in the heading
+            document.getElementById('current-month-display').textContent = currentMonth;
+            // Fetch 2 pages of data
+            const [page1, page2] = await Promise.all([
+                cachedFetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=closed&per_page=100&page=1`),
+                cachedFetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=closed&per_page=100&page=2`)
+            ]);
+            // Combine the results from both pages
+            const pulls = [...page1, ...page2];
+            const contributors = {};
+            pulls.forEach(pull => {
+                const username = pull.user.login;
+                const mergedAt = new Date(pull.merged_at);
+                //skipping bots and specific users
+                if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
+                    return;
+                }
+                //only count merged PRs from the current month
+                if (!pull.merged_at || mergedAt < firstDay) {
+                    return;
+                }
+                if (!contributors[username]) {
+                    contributors[username] = {
+                        username: username,
+                        avatar_url: pull.user.avatar_url,
+                        profile_url: pull.user.html_url,
+                        merged_count: 0,
+                        prs: [],
+                        latest_merged_at: null
+                    };
+                }
+                contributors[username].merged_count++;
+                contributors[username].prs.push({
+                    number: pull.number,
+                    title: pull.title,
+                    url: pull.html_url,
+                    merged_at: pull.merged_at,
+                    created_at: pull.created_at
+                });
+                if (!contributors[username].latest_merged_at ||
+                    new Date(pull.merged_at) > new Date(contributors[username].latest_merged_at)) {
+                    contributors[username].latest_merged_at = pull.merged_at;
+                }
+            });
+            //sort by number of PRs, then by most recent PR
+            const topContributors = Object.values(contributors)
+                .sort((a, b) => {
+                    const countDiff = b.merged_count - a.merged_count;
+                    if (countDiff !== 0) return countDiff;
+                    return new Date(b.latest_merged_at) - new Date(a.latest_merged_at);
+                })
+                .slice(0, 5); // taking top 5
+            // Sort PRs for each contributor by merged_at date (newest first)
+            topContributors.forEach(contributor => {
+                contributor.prs.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
+            });
+            const container = document.getElementById('top-contributors-section');
+            container.innerHTML = '';
+            if (topContributors.length === 0) {
+                container.innerHTML = `
                       <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2" role="status">
                           No contributions found this month.
                       </div>
                   `;
-                  return;
-              }
-              // Top Contributors - Simplified for sidebar
-              topContributors.forEach((contributor, index) => {
-                  const div = document.createElement('div');
-                  div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
-                  let rankBadgeInner = '';
-                  if (index === 0) {
-                      rankBadgeInner = '🥇';
-                  } else if (index === 1) {
-                      rankBadgeInner = '🥈';
-                  } else if (index === 2) {
-                      rankBadgeInner = '🥉';
-                  } else {
-                      rankBadgeInner = `${index + 1}`;
-                  }
-                  let rankBadgeClass = '';
-                  if (index === 0) {
-                      rankBadgeClass = 'bg-yellow-500 border-yellow-600';
-                  } else if (index === 1) {
-                      rankBadgeClass = 'bg-gray-300 border-gray-400';
-                  } else if (index === 2) {
-                      rankBadgeClass = 'bg-amber-600 border-amber-700';
-                  } else {
-                      rankBadgeClass = 'bg-blue-500 border-blue-600';
-                  }
-                  div.innerHTML = `
+                return;
+            }
+            // Top Contributors - Simplified for sidebar
+            topContributors.forEach((contributor, index) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
+                let rankBadgeInner = '';
+                if (index === 0) {
+                    rankBadgeInner = '🥇';
+                } else if (index === 1) {
+                    rankBadgeInner = '🥈';
+                } else if (index === 2) {
+                    rankBadgeInner = '🥉';
+                } else {
+                    rankBadgeInner = `${index + 1}`;
+                }
+                let rankBadgeClass = '';
+                if (index === 0) {
+                    rankBadgeClass = 'bg-yellow-500 border-yellow-600';
+                } else if (index === 1) {
+                    rankBadgeClass = 'bg-gray-300 border-gray-400';
+                } else if (index === 2) {
+                    rankBadgeClass = 'bg-amber-600 border-amber-700';
+                } else {
+                    rankBadgeClass = 'bg-blue-500 border-blue-600';
+                }
+                div.innerHTML = `
                       <div class="relative">
-                          <img src="${contributor.avatar_url}" alt="${contributor.username}'s avatar" class="w-8 h-8 rounded-full border-2 border-gray-200 dark:border-gray-700">
+                          <img src="${contributor.avatar_url}" alt="${contributor.username}'s avatar" class="w-8 h-8 rounded-full border-2 border-gray-200 dark:border-gray-700" />
                           <div class="absolute -top-1 -right-1 w-4 h-4 ${rankBadgeClass} rounded-full flex items-center justify-center text-white text-xs" aria-label="Rank ${index + 1}">
                               ${rankBadgeInner}
                           </div>
@@ -1244,105 +1299,108 @@
                           </div>
                       </div>
                   `;
-                  container.appendChild(div);
-              });
-          } catch (error) {
-              const container = document.getElementById('top-contributors-section');
-              container.innerHTML = `
+                container.appendChild(div);
+            });
+        } catch (error) {
+            const container = document.getElementById('top-contributors-section');
+            container.innerHTML = `
                   <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2" role="status">
                       <i class="fas fa-exclamation-circle text-red-500 mr-1" aria-hidden="true"></i>
                       Failed to load contributors. Will retry automatically.
                   </div>
               `;
-              console.error('Error fetching top contributors:', error);
-              // Retry after a delay
-              setTimeout(fetchTopContributors, 30000);
-          }
-      }
-      // New Contributors
-      async function fetchNewContributors() {
-          try {
-              // Calculate date 30 days ago for "new" threshold
-              const thirtyDaysAgo = new Date();
-              thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-              // Fetch 2 pages of data
-              const [page1, page2] = await Promise.all([
-                  cachedFetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=1`),
-                  cachedFetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=2`)
-              ]);
-              // Combine the results from both pages
-              const pulls = [...page1, ...page2];
-              const userPrs = {};
-              const firstMergedPrDetails = {};
-              pulls.forEach(pull => {
-                  const username = pull.user.login;
-                  //bots and specific users ignored
-                  if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
-                      return;
-                  }
-                  if (!pull.merged_at) {
-                      return;
-                  }
-                  if (!userPrs[username]) {
-                      userPrs[username] = [];
-                  }
-                  userPrs[username].push({
-                      number: pull.number,
-                      title: pull.title,
-                      url: pull.html_url,
-                      merged_at: pull.merged_at,
-                      created_at: pull.created_at,
-                      avatar_url: pull.user.avatar_url,
-                      profile_url: pull.user.html_url,
-                      state: pull.state
-                  });
-              });
-              // Find the first merged PR for each user
-              for (const [username, prs] of Object.entries(userPrs)) {
-                  if (prs.length > 0) {
-                      // Sort PRs by merged_at date (oldest first)
-                      prs.sort((a, b) => new Date(a.merged_at) - new Date(b.merged_at));
-                      const firstPr = prs[0];
-                      const firstPrDate = new Date(firstPr.merged_at);
-                      // Only include if their first PR was within the last 30 days
-                      if (firstPrDate >= thirtyDaysAgo) {
-                          firstMergedPrDetails[username] = {
-                              username: username,
-                              avatar_url: firstPr.avatar_url,
-                              pr_url: firstPr.url,
-                              pr_title: firstPr.title,
-                              pr_number: firstPr.number,
-                              created_at: firstPr.created_at,
-                              profile_url: firstPr.profile_url,
-                              merged_at: firstPr.merged_at,
-                              state: firstPr.state,
-                              // Add the GSoC-style PRs URL
-                              prs_url: `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${username}+is:merged`
-                          };
-                      }
-                  }
-              }
-              //converting to array and sorting by most recently merged first PR
-              const newContributors = Object.values(firstMergedPrDetails)
-                  .sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at))
-                  .slice(0, 5); // taking top 5
-              const container = document.getElementById('new-contributors-section');
-              container.innerHTML = '';
-              if (newContributors.length === 0) {
-                  container.innerHTML = `
+            console.error('Error fetching top contributors:', error);
+            // Retry after a delay
+            setTimeout(fetchTopContributors, 30000);
+        }
+    }
+    // New Contributors
+    async function fetchNewContributors() {
+        try {
+            // Calculate date 30 days ago for "new" threshold
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            // Fetch 2 pages of data
+            const [page1, page2] = await Promise.all([
+                cachedFetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=1`),
+                cachedFetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=2`)
+            ]);
+            // Combine the results from both pages
+            const pulls = [...page1, ...page2];
+            const userPrs = {};
+            const firstMergedPrDetails = {};
+            pulls.forEach(pull => {
+                const username = pull.user.login;
+                //bots and specific users ignored
+                if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
+                    return;
+                }
+                if (!pull.merged_at) {
+                    return;
+                }
+                if (!userPrs[username]) {
+                    userPrs[username] = [];
+                }
+                userPrs[username].push({
+                    number: pull.number,
+                    title: pull.title,
+                    url: pull.html_url,
+                    merged_at: pull.merged_at,
+                    created_at: pull.created_at,
+                    avatar_url: pull.user.avatar_url,
+                    profile_url: pull.user.html_url,
+                    state: pull.state
+                });
+            });
+            // Find the first merged PR for each user
+            for (const [username, prs] of Object.entries(userPrs)) {
+                if (prs.length > 0) {
+                    // Sort PRs by merged_at date (oldest first)
+                    prs.sort((a, b) => new Date(a.merged_at) - new Date(b.merged_at));
+                    const firstPr = prs[0];
+                    const firstPrDate = new Date(firstPr.merged_at);
+                    // Only include if their first PR was within the last 30 days
+                    if (firstPrDate >= thirtyDaysAgo) {
+                        firstMergedPrDetails[username] = {
+                            username: username,
+                            avatar_url: firstPr.avatar_url,
+                            pr_url: firstPr.url,
+                            pr_title: firstPr.title,
+                            pr_number: firstPr.number,
+                            created_at: firstPr.created_at,
+                            profile_url: firstPr.profile_url,
+                            merged_at: firstPr.merged_at,
+                            state: firstPr.state,
+                            // Add the GSoC-style PRs URL
+                            prs_url: `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${username}+is:merged`
+                        };
+                    }
+                }
+            }
+            //converting to array and sorting by most recently merged first PR
+            const newContributors = Object.values(firstMergedPrDetails)
+                .sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at))
+                .slice(0, 5); // taking top 5
+            const container = document.getElementById('new-contributors-section');
+            container.innerHTML = '';
+            if (newContributors.length === 0) {
+                container.innerHTML = `
                       <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2" role="status">
                           No new contributors in the last 30 days.
                       </div>
                   `;
-                  return;
-              }
-              newContributors.forEach((contributor) => {
-                  const div = document.createElement('div');
-                  div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
-                  const mergedDate = new Date(contributor.merged_at);
-                  const displayDate = mergedDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                  div.innerHTML = `
-                      <img src="${contributor.avatar_url}" alt="${contributor.username}'s avatar" class="w-8 h-8 rounded-full border-2 border-green-300 dark:border-green-700">
+                return;
+            }
+            newContributors.forEach((contributor) => {
+                const div = document.createElement('div');
+                div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
+                const mergedDate = new Date(contributor.merged_at);
+                const displayDate = mergedDate.toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric'
+                });
+                div.innerHTML = `
+                      <img src="${contributor.avatar_url}" alt="${contributor.username}'s avatar" class="w-8 h-8 rounded-full border-2 border-green-300 dark:border-green-700" />
                       <div class="flex-1">
                           <a href="${contributor.profile_url}" target="_blank" rel="noopener" class="text-sm font-medium text-gray-800 dark:text-gray-200 hover:text-green-600 dark:hover:text-green-400">
                               ${contributor.username}
@@ -1352,25 +1410,25 @@
                           </div>
                       </div>
                   `;
-                  container.appendChild(div);
-              });
-          } catch (error) {
-              const container = document.getElementById('new-contributors-section');
-              container.innerHTML = `
+                container.appendChild(div);
+            });
+        } catch (error) {
+            const container = document.getElementById('new-contributors-section');
+            container.innerHTML = `
                   <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2" role="status">
                       <i class="fas fa-exclamation-circle text-red-500 mr-1" aria-hidden="true"></i>
                       Failed to load new contributors. Will retry automatically.
                   </div>
               `;
-              console.error('Error fetching new contributors:', error);
-              // Retry after a delay
-              setTimeout(fetchNewContributors, 30000);
-          }
-      }
-      // Initialize both contributor sections with a slight delay between them to avoid API rate limits
-      document.addEventListener('DOMContentLoaded', () => {
-          setTimeout(fetchTopContributors, 500);
-          setTimeout(fetchNewContributors, 2500);
-      });
-  </script>
+            console.error('Error fetching new contributors:', error);
+            // Retry after a delay
+            setTimeout(fetchNewContributors, 30000);
+        }
+    }
+    // Initialize both contributor sections with a slight delay between them to avoid API rate limits
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(fetchTopContributors, 500);
+        setTimeout(fetchNewContributors, 2500);
+    });
+</script>
 {% endblock content %}
