@@ -44,8 +44,11 @@ from .models import (
     QuizQuestion,
     Review,
     SearchLog,
+    SelfCheckin,
     Session,
     SessionAttendance,
+    SessionFeedback,
+    SessionSurvey,
     Storefront,
     Subject,
     SuccessStory,
@@ -811,3 +814,27 @@ class PointsAdmin(admin.ModelAdmin):
         ("Related Data", {"fields": ("challenge", "current_streak")}),
         ("Timestamps", {"fields": ("awarded_at", "updated_at"), "classes": ("collapse",)}),
     )
+
+
+@admin.register(SessionFeedback)
+class SessionFeedbackAdmin(admin.ModelAdmin):
+    list_display = ("student", "session", "created_at")
+    list_filter = ("created_at", "session__course")
+    search_fields = ("student__username", "session__title", "rose", "bud", "thorn")
+    raw_id_fields = ("student", "session")
+
+
+@admin.register(SessionSurvey)
+class SessionSurveyAdmin(admin.ModelAdmin):
+    list_display = ("student", "session", "content_rating", "teaching_rating", "created_at")
+    list_filter = ("created_at", "session__course", "content_rating", "teaching_rating")
+    search_fields = ("student__username", "session__title", "comments")
+    raw_id_fields = ("student", "session")
+
+
+@admin.register(SelfCheckin)
+class SelfCheckinAdmin(admin.ModelAdmin):
+    list_display = ("student", "session", "pre_rating", "post_rating", "created_at")
+    list_filter = ("created_at", "session__course", "pre_rating", "post_rating")
+    search_fields = ("student__username", "session__title", "notes")
+    raw_id_fields = ("student", "session")
