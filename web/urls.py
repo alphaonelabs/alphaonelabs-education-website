@@ -95,6 +95,14 @@ urlpatterns += i18n_patterns(
     ),
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
     path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session"),
+    # Learning Map URLs with slugs
+    path("learning-maps/", views.learning_map_list, name="learning_map_list"),
+    path("learning-maps/ <slug:slug>/", views.learning_map_detail, name="learning_map_detail"),
+    path("learning-maps/<slug:slug>/add-node/", views.add_map_node, name="add_map_node"),
+    path("learning-maps/<slug:slug>/share/", views.share_learning_map, name="share_learning_map"),
+    path("learning-maps/<slug:slug>/data/", views.get_learning_map_data, name="learning_map_data"),
+    path("learning-maps/nodes/<int:node_id>/update/", views.update_map_node, name="update_map_node"),
+    path("learning-maps/public/<str:share_token>/", views.public_learning_map, name="public_learning_map"),
     # Social media sharing URLs
     path("social-media/", views.social_media_dashboard, name="social_media_dashboard"),
     path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),

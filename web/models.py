@@ -1,5 +1,6 @@
 import os
 import random
+import secrets
 import string
 import time
 import uuid
@@ -2805,3 +2806,104 @@ class ScheduledPost(models.Model):
 
     def __str__(self):
         return self.content
+
+
+class LearningMap(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="learning_maps")
+    title = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    slug = models.SlugField(max_length=150, unique=True, blank=True)
+    public = models.BooleanField(default=False, help_text="If enabled, this map can be viewed by anyone with the link")
+    share_token = models.CharField(max_length=32, unique=True, blank=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        # Generate share token if not exists
+        if not self.share_token:
+            self.share_token = secrets.token_urlsafe(24)
+        # Generate slug if not exists
+        if not self.slug:
+            base_slug = slugify(self.title)
+            slug = base_slug
+            counter = 1
+            # Ensure slug is unique
+            while LearningMap.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            self.slug = slug
+
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"{self.user.username}'s {self.title}"
+
+
+class LearningMapNode(models.Model):
+    NODE_TYPES = [
+        ("tracker", "Progress Tracker"),
+        ("course", "Course"),
+        ("milestone", "Custom Milestone"),
+    ]
+
+    learning_map = models.ForeignKey(LearningMap, on_delete=models.CASCADE, related_name="nodes")
+    title = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    node_type = models.CharField(max_length=20, choices=NODE_TYPES)
+
+    # References to existing models
+    tracker = models.ForeignKey("ProgressTracker", on_delete=models.SET_NULL, null=True, blank=True)
+    enrollment = models.ForeignKey("Enrollment", on_delete=models.SET_NULL, null=True, blank=True)
+
+    # For custom milestones
+    current_value = models.IntegerField(default=0, null=True, blank=True)
+    target_value = models.IntegerField(null=True, blank=True)
+    color = models.CharField(
+        max_length=20,
+        default="blue-600",
+        choices=[
+            ("blue-600", "Primary"),
+            ("green-600", "Success"),
+            ("yellow-600", "Warning"),
+            ("red-600", "Danger"),
+            ("gray-600", "Secondary"),
+        ],
+    )
+
+    # Position for the visual map
+    x_position = models.IntegerField(default=0)
+    y_position = models.IntegerField(default=0)
+
+    # Order for sequential display
+    order = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["order"]
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def progress_percentage(self):
+        """Calculate progress percentage based on node type"""
+        if self.node_type == "tracker" and self.tracker:
+            return (
+                min(100, int((self.tracker.current_value / self.tracker.target_value) * 100))
+                if self.tracker.target_value
+                else 0
+            )
+
+        elif self.node_type == "course" and self.enrollment:
+            if hasattr(self.enrollment, "progress"):
+                return self.enrollment.progress.completion_percentage
+            return 0
+
+        elif self.node_type == "milestone" and self.target_value:
+            return min(100, int((self.current_value / self.target_value) * 100)) if self.target_value else 0
+
+        return 0
+
+    @property
+    def is_completed(self):
+        """Return whether this node is completed (100% progress)"""
+        return self.progress_percentage >= 100

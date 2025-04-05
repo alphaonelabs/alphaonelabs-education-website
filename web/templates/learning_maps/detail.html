@@ -1,0 +1,222 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}{{ learning_map.title }} - Learning Map{% endblock %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+      <div class="flex items-center">
+        <a href="{% url 'learning_map_list' %}"
+           class="text-blue-600 hover:underline flex items-center mr-4">
+          <svg class="w-4 h-4 mr-1"
+               fill="none"
+               stroke="currentColor"
+               viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+          Back to Maps
+        </a>
+        <h1 class="text-2xl font-bold">{{ learning_map.title }}</h1>
+      </div>
+      {% if is_owner %}
+        <div class="flex space-x-2">
+          <a href="{% url 'add_map_node' learning_map.slug %}"
+             class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center">
+            <svg class="w-4 h-4 mr-1"
+                 fill="none"
+                 stroke="currentColor"
+                 viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Add Node
+          </a>
+          <a href="{% url 'share_learning_map' learning_map.slug %}"
+             class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 flex items-center">
+            <svg class="w-4 h-4 mr-1"
+                 fill="none"
+                 stroke="currentColor"
+                 viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z">
+              </path>
+            </svg>
+            Share
+          </a>
+        </div>
+      {% endif %}
+    </div>
+    {% if learning_map.description %}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+        <p class="text-gray-700 dark:text-gray-300">{{ learning_map.description }}</p>
+      </div>
+    {% endif %}
+    <!-- Learning Map Visualization -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+      <h2 class="text-xl font-semibold mb-4">Your Learning Journey</h2>
+      <div id="learning-map-container"
+           data-map-slug="{{ learning_map.slug }}"
+           class="min-h-[300px] relative">
+        <div class="absolute inset-0 flex items-center justify-center">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600"></div>
+          <span class="ml-2">Loading your learning map...</span>
+        </div>
+        <div id="learning-map-error"
+             class="absolute inset-0 flex items-center justify-center hidden">
+          <svg class="w-8 h-8 text-red-500 mr-2"
+               fill="none"
+               stroke="currentColor"
+               viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+            </path>
+          </svg>
+          <span>Failed to load the learning map.
+            <button class="text-blue-500 underline" onclick="location.reload()">Retry</button>
+          </span>
+        </div>
+      </div>
+      {% if is_owner %}
+        <!-- Hidden input to indicate owner status for JS -->
+        <div id="is-owner-indicator" class="hidden"></div>
+      {% endif %}
+    </div>
+    <!-- Map Nodes -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+        <h2 class="text-xl font-semibold">Nodes</h2>
+        {% if is_owner %}
+          <a href="{% url 'add_map_node' learning_map.slug %}"
+             class="text-blue-600 hover:underline flex items-center">
+            <svg class="w-4 h-4 mr-1"
+                 fill="none"
+                 stroke="currentColor"
+                 viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            Add Node
+          </a>
+        {% endif %}
+      </div>
+      <div class="divide-y divide-gray-200 dark:divide-gray-700">
+        {% for node in nodes %}
+          <div class="px-6 py-4 flex items-start">
+            <div class="flex-shrink-0 mr-4">
+              {% if node.is_completed %}
+                <div class="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                  <svg class="w-6 h-6 text-green-600 dark:text-green-300"
+                       fill="none"
+                       stroke="currentColor"
+                       viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                </div>
+              {% else %}
+                {% if node.node_type == 'tracker' %}
+                  <div class="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-purple-600 dark:text-purple-300"
+                         fill="none"
+                         stroke="currentColor"
+                         viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                      </path>
+                    </svg>
+                  </div>
+                {% elif node.node_type == 'course' %}
+                  <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-blue-600 dark:text-blue-300"
+                         fill="none"
+                         stroke="currentColor"
+                         viewBox="0 0 24 24">
+                      <path d="M12 14l9-5-9-5-9 5 9 5z"></path>
+                      <path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998a12.078 12.078 0 01.665-6.479L12 14z">
+                      </path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998a12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222">
+                      </path>
+                    </svg>
+                  </div>
+                {% else %}
+                  <div class="w-10 h-10 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center">
+                    <svg class="w-6 h-6 text-yellow-600 dark:text-yellow-300"
+                         fill="none"
+                         stroke="currentColor"
+                         viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                  </div>
+                {% endif %}
+              {% endif %}
+            </div>
+            <div class="flex-grow">
+              <div class="flex justify-between">
+                <h3 class="font-semibold text-lg">{{ node.title }}</h3>
+                <span class="px-2 py-1 text-xs font-semibold rounded-full {% if node.is_completed %} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 {% else %} {% if node.node_type == 'tracker' %} bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200 {% elif node.node_type == 'course' %} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200 {% else %} bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 {% endif %} {% endif %} ">
+                  {% if node.is_completed %}
+                    Completed
+                  {% else %}
+                    {{ node.progress_percentage }}% Complete
+                  {% endif %}
+                </span>
+              </div>
+              {% if node.description %}<p class="text-gray-600 dark:text-gray-400 mt-1">{{ node.description }}</p>{% endif %}
+              <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mt-3">
+                <div class=" {% if node.is_completed %} bg-green-600 {% else %} {% if node.node_type == 'tracker' %} bg-purple-600 {% elif node.node_type == 'course' %} bg-blue-600 {% else %} bg-yellow-600 {% endif %} {% endif %} h-2.5 rounded-full"
+                     role="progressbar"
+                     aria-valuenow="{{ node.progress_percentage }}"
+                     aria-valuemin="0"
+                     aria-valuemax="100"
+                     style="width: {{ node.progress_percentage }}%"></div>
+              </div>
+            </div>
+            <!-- Node-specific details -->
+            <div class="mt-2 text-sm">
+              {% if node.node_type == 'tracker' and node.tracker %}
+                <div class="text-gray-600 dark:text-gray-400">
+                  Progress: {{ node.tracker.current_value }}/{{ node.tracker.target_value }}
+                </div>
+              {% elif node.node_type == 'course' and node.enrollment %}
+                <div class="text-gray-600 dark:text-gray-400">
+                  <a href="{% url 'course_detail' node.enrollment.course.slug %}"
+                     class="text-blue-600 hover:underline">View Course</a>
+                </div>
+              {% elif node.node_type == 'milestone' %}
+                <div class="text-gray-600 dark:text-gray-400">
+                  Progress: {{ node.current_value }}/{{ node.target_value }}
+                  {% if is_owner %}
+                    <!-- Progress update form for milestones -->
+                    <form method="post"
+                          action="{% url 'update_map_node' node.id %}"
+                          class="mt-2 flex items-center">
+                      {% csrf_token %}
+                      <input type="number"
+                             name="current_value"
+                             value="{{ node.current_value }}"
+                             min="0"
+                             max="{{ node.target_value }}"
+                             required
+                             step="1"
+                             class="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md dark:bg-gray-700" />
+                      <button type="submit"
+                              class="ml-2 px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700">
+                        Update
+                      </button>
+                    </form>
+                  {% endif %}
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      {% empty %}
+        <div class="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+          <p class="mb-2">You haven't added any nodes to this learning map yet.</p>
+          {% if is_owner %}
+            <a href="{% url 'add_map_node' learning_map.slug %}"
+               class="text-blue-600 hover:underline">Add your first node</a> to start tracking your learning journey.
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+<!-- Include the learning map visualization script -->
+<script src="{% static 'js/learning-maps/detail.js' %}"></script>
+{% endblock %}

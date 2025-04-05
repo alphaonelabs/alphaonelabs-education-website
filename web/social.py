@@ -2,6 +2,7 @@ import logging
 import random
 import re
 from datetime import datetime
+from urllib.parse import quote
 
 import requests
 from django.conf import settings
@@ -334,3 +335,29 @@ def get_social_stats():
     # Add other social media platforms here as needed
 
     return stats
+
+
+def get_social_share_links(url: str, title: str, summary: str = None, image_url: str = None) -> dict:
+    """
+    Generate social media sharing links for a given URL, title, and optional summary or image.
+
+    Args:
+        url (str): The URL to share.
+        title (str): The title of the content being shared.
+        summary (str, optional): A short summary of the content.
+        image_url (str, optional): A URL to an image to include in the share (if supported).
+
+    Returns:
+        dict: A dictionary containing sharing links for various platforms.
+    """
+    encoded_url = quote(url)
+    encoded_title = quote(title)
+
+    # TODO: Utilize the image_url parameter in sharing links if needed in future updates.
+    return {
+        "twitter": f"https://twitter.com/intent/tweet?url={encoded_url}&text={encoded_title}",
+        "facebook": f"https://www.facebook.com/sharer/sharer.php?u={encoded_url}",
+        "linkedin": f"https://www.linkedin.com/shareArticle?mini=true&url={encoded_url}"
+        "&title={encoded_title}&summary={encoded_summary}",
+        "email": f"mailto:?subject={encoded_title}&body=Check out this content: {url}",
+    }
