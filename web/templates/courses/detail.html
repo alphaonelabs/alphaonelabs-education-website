@@ -6,8 +6,26 @@
 {% load session_filters %}
 
 {% block title %}
-  {{ course.title }} - Course Details
+  {{ course.title }} | Alpha One Labs
 {% endblock title %}
+{% block meta_description %}
+  {{ course.short_description|default:"Explore this course on Alpha One Labs." }} Taught by {{ course.teacher.username }} with {{ course.enrollments.count }} students enrolled.
+{% endblock %}
+{% block meta_keywords %}
+  {{ course.title }}, {{ course.subject }}, online course, Alpha One Labs, education, learning
+{% endblock %}
+{% block og_title %}{{ course.title }} | Alpha One Labs{% endblock %}
+{% block og_description %}
+  {{ course.short_description|default:"Explore this course on Alpha One Labs." }} Taught by {{ course.teacher.username }}.
+{% endblock %}
+{% block og_type %}product{% endblock %}
+{% block og_image %}
+  {% if course.image %}
+    {{ request.scheme }}://{{ request.get_host }}{{ course.image.url }}
+  {% else %}
+    {{ request.scheme }}://{{ request.get_host }}{% static 'images/default-course.jpg' %}
+  {% endif %}
+{% endblock %}
 {% block extra_head %}
   <!-- Share dropdown -->
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>

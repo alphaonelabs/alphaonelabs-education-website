@@ -2,7 +2,22 @@
 
 {% load static %}
 {% load account %}
+{% load i18n %}
+{% load allauth %}
 
+{% block title %}
+  Log In | Alpha One Labs Account
+{% endblock title %}
+{% block meta_description %}
+  Sign in to your Alpha One Labs account to access courses, track your progress, and engage with our learning community.
+{% endblock %}
+{% block meta_keywords %}
+  login, sign in, account access, user account, Alpha One Labs, education platform login
+{% endblock %}
+{% block og_title %}Log In | Alpha One Labs Account{% endblock %}
+{% block og_description %}
+  Sign in to your Alpha One Labs account to access courses, track your progress, and engage with our learning community.
+{% endblock %}
 {% block extra_head %}
   {{ block.super }}
   <script src="{% static 'js/password-toggle.js' %}"></script>
