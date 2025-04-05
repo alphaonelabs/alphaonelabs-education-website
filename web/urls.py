@@ -12,6 +12,7 @@ from .views import (
     GradeableLinkDetailView,
     GradeableLinkListView,
     add_goods_to_cart,
+    apply_discount_via_referrer,
     feature_vote,
     feature_vote_count,
     features_page,
@@ -107,6 +108,8 @@ urlpatterns += i18n_patterns(
         name="create_payment_intent",
     ),
     path("stripe-webhook/", views.stripe_webhook, name="stripe_webhook"),
+    # discount
+    path("discounts/apply/", apply_discount_via_referrer, name="apply_discount_via_referrer"),
     # Avatar customization
     path("avatar/customize/", views_avatar.customize_avatar, name="customize_avatar"),
     path("avatar/set-as-profile/", views_avatar.set_avatar_as_profile_pic, name="set_avatar_as_profile_pic"),
