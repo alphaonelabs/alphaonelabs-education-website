@@ -146,6 +146,216 @@
         *::after {
             box-sizing: inherit;
         }
+
+    
+  /* Base navigation container styling */
+  .nav-container {
+    /* Desktop styles - horizontal layout */
+    @media (min-width: 768px) {
+      display: flex;
+      align-items: center;
+      space-x: 3;
+    }
+    
+    /* Mobile styles - off-canvas menu */
+    @media (max-width: 767px) {
+      position: fixed;
+      top: 0;
+      right: -300px; /* Start off-screen */
+      width: 280px;
+      height: 100vh;
+      background-color: white;
+      z-index: 50;
+      overflow-y: auto;
+      transition: right 0.3s ease;
+      box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+      display: flex;
+      flex-direction: column;
+      padding: 1rem;
+      padding-top: 4rem;
+    }
+    
+    /* Dark mode support */
+    .dark & {
+      @media (max-width: 767px) {
+        background-color: #1f2937; /* dark:bg-gray-800 */
+      }
+    }
+  }
+  
+  /* Show mobile menu when active */
+  .nav-container.active {
+    @media (max-width: 767px) {
+      right: 0;
+    }
+  }
+  
+  /* Main navigation links container */
+  .main-nav-links {
+    @media (max-width: 767px) {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 1rem;
+    }
+    
+    .dark & {
+      @media (max-width: 767px) {
+        border-color: #374151; /* dark:border-gray-700 */
+      }
+    }
+  }
+  
+  /* Dropdown container */
+  .nav-dropdown {
+    position: relative;
+    
+    @media (max-width: 767px) {
+      width: 100%;
+      margin-bottom: 0.5rem;
+    }
+  }
+  
+  /* Dropdown toggle button */
+  .dropdown-toggle {
+    @media (max-width: 767px) {
+      width: 100%;
+      justify-content: space-between;
+      padding: 0.75rem 0;
+      color: #1f2937;
+    }
+    
+    .dark & {
+      @media (max-width: 767px) {
+        color: #f3f4f6; /* dark:text-gray-100 */
+      }
+    }
+  }
+  
+  /* Dropdown content - desktop: shown on hover, mobile: shown on click */
+  .dropdown-content {
+    /* Desktop styles */
+    @media (min-width: 768px) {
+      position: absolute;
+      left: 0;
+      top: 100%;
+      width: 14rem;
+      background-color: white;
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(-10px);
+      transition: opacity 0.2s, visibility 0.2s, transform 0.2s;
+      z-index: 20;
+    }
+    
+    /* Mobile styles */
+    @media (max-width: 767px) {
+      display: none;
+      width: 100%;
+      padding-left: 1rem;
+    }
+    
+    .dark & {
+      @media (min-width: 768px) {
+        background-color: #1f2937; /* dark:bg-gray-800 */
+      }
+    }
+  }
+  
+  /* Show dropdown on hover for desktop */
+  @media (min-width: 768px) {
+    .nav-dropdown:hover .dropdown-content {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    
+    .nav-dropdown:hover .dropdown-icon {
+      transform: rotate(180deg);
+    }
+  }
+  
+  /* Show dropdown when active class is applied (for mobile) */
+  .nav-dropdown.active .dropdown-content {
+    @media (max-width: 767px) {
+      display: block;
+    }
+  }
+  
+  .nav-dropdown.active .dropdown-icon {
+    @media (max-width: 767px) {
+      transform: rotate(180deg);
+    }
+  }
+  
+  /* Search bar styling */
+  .search-bar {
+    @media (max-width: 991px) {
+      display: none;
+    }
+    
+    @media (max-width: 767px) {
+      display: block;
+      margin: 1rem 0;
+      width: 100%;
+    }
+    
+    input {
+      @media (max-width: 767px) {
+        width: 100% !important;
+      }
+    }
+  }
+  
+  /* Utility buttons container */
+  .utility-buttons {
+    @media (max-width: 767px) {
+      margin-top: auto;
+      padding-top: 1rem;
+      border-top: 1px solid #e5e7eb;
+      width: 100%;
+      justify-content: space-around;
+    }
+    
+    .dark & {
+      @media (max-width: 767px) {
+        border-color: #374151; /* dark:border-gray-700 */
+      }
+    }
+  }
+  
+  /* Mobile menu close button */
+  #mobile-menu-close {
+    display: none;
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    font-size: 1.25rem;
+    color: #6b7280; /* text-gray-500 */
+    background: none;
+    border: none;
+    cursor: pointer;
+    
+    @media (max-width: 767px) {
+      display: block;
+    }
+    
+    .dark & {
+      color: #9ca3af; /* dark:text-gray-400 */
+    }
+    
+    &:hover {
+      color: #111827; /* text-gray-900 */
+      
+      .dark & {
+        color: #f3f4f6; /* dark:text-gray-100 */
+      }
+    }
+  }
     </style>
     {% block extra_head %}
     {% endblock extra_head %}
@@ -157,29 +367,30 @@
       <div class="max-w-[90rem] mx-auto px-4 md:px-6 flex items-center justify-between h-[70px] relative gap-2">
         <!-- Logo and Title -->
         <a href="{% url 'index' %}"
-           class="flex flex-1 min-w-[150px] max-w-[50%] items-center space-x-2">
-          <img src="{% static 'images/logo.png' %}"
-               alt="Alpha One Labs Logo"
-               height="40"
-               width="40"
-               class="h-10 w-10" />
-          <span class="text-xl font-bold text-white ">Alpha One Labs</span>
+       class="flex flex-1 min-w-[150px] max-w-[50%] items-center space-x-2">
+      <img src="{% static 'images/logo.png' %}"
+           alt="Alpha One Labs Logo"
+           height="40"
+           width="40"
+           class="h-10 w-10" />
+      <span class="text-xl font-bold text-white ">Alpha One Labs</span>
         </a>
         <!-- Mobile Menu Button -->
-        <button class="md:hidden p-2 hover:bg-teal-700 rounded-lg"
-                onclick="toggleMobileMenu()">
-          <i class="fas fa-bars text-xl"></i>
+        <button id="mobile-menu-button" class="md:hidden p-2 hover:bg-teal-700 rounded-lg">
+      <i class="fas fa-bars text-xl"></i>
         </button>
         <!-- Nav and additional actions -->
-        <nav class="hidden md:flex items-center space-x-3">
+        <nav id="unified-nav" class="nav-container">
           <!-- Main navigation links with dropdowns -->
-          <div class="flex space-x-2 items-center">
+          <div class="main-nav-links md:flex md:space-x-2 md:items-center">
             <!-- LEARN Dropdown -->
-            <div class="relative group">
-              <button class="flex items-center space-x-1 text-white hover:text-teal-100 focus:outline-none py-2">
-                <span class="font-medium">LEARN</span>
-                <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-hover:rotate-180"></i>
-              </button>
+            <div class="nav-dropdown">
+          <button class="dropdown-toggle flex items-center space-x-1 text-white hover:text-teal-100 focus:outline-none py-2">
+            <span class="font-medium">LEARN</span>
+              <i class="dropdown-icon fas fa-chevron-down text-xs transition-transform duration-200"></i>
+            </button>
+          <div class="dropdown-content">
+            <div class="dropdown-inner py-2 px-1">
               <div class="absolute left-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 transform origin-top-left">
                 <div class="py-2 px-1">
                   <a href="{% url 'classes_map' %}"
@@ -222,13 +433,13 @@
               </div>
             </div>
             <!-- COMMUNITY Dropdown -->
-            <div class="relative group">
-              <button class="flex items-center space-x-1 text-white hover:text-teal-100 focus:outline-none py-2">
+            <div class="nav-dropdown">
+              <button class="dropdown-toggle flex items-center space-x-1 text-white hover:text-teal-100 focus:outline-none py-2">
                 <span class="font-medium">COMMUNITY</span>
-                <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-hover:rotate-180"></i>
+                  <i class="dropdown-icon fas fa-chevron-down text-xs transition-transform duration-200"></i>
               </button>
-              <div class="absolute left-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 transform origin-top-left">
-                <div class="py-2 px-1">
+            <div class="dropdown-content">
+              <div class="dropdown-inner py-2 px-1">
                   <a href="{% url 'waiting_rooms' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-chalkboard-teacher mr-2 text-teal-500"></i>Learning Requests
@@ -271,13 +482,13 @@
               </div>
             </div>
             <!-- RESOURCES Dropdown -->
-            <div class="relative group">
-              <button class="flex items-center space-x-1 text-white hover:text-teal-100 focus:outline-none py-2">
+            <div class="nav-dropdown">
+              <button class="dropdown-toggle flex items-center space-x-1 text-white hover:text-teal-100 focus:outline-none py-2">
                 <span class="font-medium">RESOURCES</span>
-                <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-hover:rotate-180"></i>
+                <i class="dropdown-icon fas fa-chevron-down text-xs transition-transform duration-200"></i>
               </button>
-              <div class="absolute left-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 transform origin-top-left">
-                <div class="py-2 px-1">
+            <div class="dropdown-content">
+              <div class="dropdown-inner py-2 px-1">
                   <a href="{% url 'progress_visualization' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-chart-line mr-2 text-teal-500"></i>Progress Trackers
@@ -304,13 +515,13 @@
               </div>
             </div>
             <!-- ABOUT Dropdown -->
-            <div class="relative group">
-              <button class="flex items-center space-x-1 text-white hover:text-teal-100 focus:outline-none py-2">
+            <div class="nav-dropdown">
+              <button class="dropdown-toggle flex items-center space-x-1 text-white hover:text-teal-100 focus:outline-none py-2">
                 <span class="font-medium">ABOUT</span>
-                <i class="fas fa-chevron-down text-xs transition-transform duration-200 group-hover:rotate-180"></i>
+                <i class="dropdown-icon fas fa-chevron-down text-xs transition-transform duration-200"></i>
               </button>
-              <div class="absolute left-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 transform origin-top-left">
-                <div class="py-2 px-1">
+            <div class="dropdown-content">
+              <div class="dropdown-inner py-2 px-1">
                   <a href="{% url 'about' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-circle-info mr-2 text-teal-500"></i>Our Mission
@@ -336,48 +547,47 @@
             </div>
           </div>
           <!-- Search bar (persistent element) -->
-          <div class="relative hidden lg:inline-block w-[250px]">
+          <div class="search-bar relative w-full lg:w-[250px] md:ml-3">
             <form action="{% url 'course_search' %}" method="get" class="m-0">
               <input type="text"
-                     name="q"
-                     placeholder="What do you want to learn?"
-                     class="rounded-full w-[250px] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-700" />
+                 name="q"
+                 placeholder="What do you want to learn?"
+                 class="rounded-full w-[250px] bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-700" />
               <button type="submit"
-                      class="absolute right-3 top-2 text-gray-500 dark:text-gray-300">
-                <i class="fas fa-search"></i>
+                  class="absolute right-3 top-2 text-gray-500 dark:text-gray-300">
+            <i class="fas fa-search"></i>
               </button>
-            </form>
-          </div>
+          </form>
+        </div>
           <!-- Language and Dark Mode -->
-          <div class="flex items-center space-x-2">
-            <!-- Cart Icon -->
+          <div class="utility-buttons flex items-center space-x-2">
+        <!-- Cart Icon -->
             <a href="{% url 'cart_view' %}"
                class="relative hover:underline flex items-center p-2 hover:bg-teal-700 rounded-lg">
-              <i class="fa-solid fa-shopping-cart"></i>
-              {% if request.user.cart.item_count > 0 or request.session.session_key and request.session.session_key|get_cart_item_count > 0 %}
-                <span class="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
-                  {% if request.user.is_authenticated %}
-                    {{ request.user.cart.item_count }}
-                  {% else %}
-                    {{ request.session.session_key|get_cart_item_count }}
-                  {% endif %}
-                </span>
+            <i class="fa-solid fa-shopping-cart"></i>
+            {% if request.user.cart.item_count > 0 or request.session.session_key and request.session.session_key|get_cart_item_count > 0 %}
+            <span class="absolute -top-1 -right-1 bg-orange-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center">
+              {% if request.user.is_authenticated %}
+                {{ request.user.cart.item_count }}
+              {% else %}
+                {{ request.session.session_key|get_cart_item_count }}
               {% endif %}
+            </span>
+            {% endif %}
             </a>
             <!-- New Notification Button for Invitations -->
             <a href="{% url 'user_invitations' %}"
-               class="relative hover:underline flex items-center p-2 hover:bg-teal-700 rounded-lg">
+             class="relative hover:underline flex items-center p-2 hover:bg-teal-700 rounded-lg">
               <i class="fas fa-bell"></i>
               {% if pending_invites_count %}
                 <span class="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-600 flex items-center justify-center text-white text-xs">
-                  {{ pending_invites_count }}
+                {{ pending_invites_count }}
                 </span>
               {% endif %}
             </a>
-            <div class="relative">
-              <button class="focus:outline-none hover:underline flex items-center p-2 hover:bg-teal-700 rounded-lg"
-                      onclick="toggleLanguageDropdown()">
-                <i class="fa-solid fa-globe"></i>
+          <div class="relative">
+            <button id="language-button" class="focus:outline-none hover:underline flex items-center p-2 hover:bg-teal-700 rounded-lg">
+            <i class="fa-solid fa-globe"></i>
               </button>
               <!-- Language dropdown content -->
               <div id="language-dropdown"
@@ -395,21 +605,20 @@
               </div>
             </div>
             <button class="focus:outline-none flex items-center hover:underline p-2 rounded-lg hover:bg-teal-700 transition-colors"
-                    title="Switch to Dark Mode"
-                    onclick="toggleDarkMode()">
+                title="Switch to Dark Mode"
+                onclick="toggleDarkMode()">
               <i id="darkModeIcon" class="fas fa-moon"></i>
-            </button>
-            <a href="{% url 'social_media_dashboard' %}"
+           </button>
+          <a href="{% url 'social_media_dashboard' %}"
                class="p-2 rounded-full inline-flex items-center ml-2">
               <i class="fab fa-twitter text-xl"></i>
-            </a>
+          </a>
           </div>
           <!-- Auth Buttons -->
           {% if user.is_authenticated %}
-            <!-- User Avatar and Dropdown -->
-            <div class="relative">
-              <button onclick="toggleUserDropdown()"
-                      class="flex items-center space-x-2 focus:outline-none">
+        <!-- User Avatar and Dropdown -->
+          <div class="relative">
+            <button id="user-button" class="flex items-center space-x-2 focus:outline-none">
                 {% if user.profile.custom_avatar %}
                   <div class="w-12 h-12 p-1.5 transform hover:scale-105 transition-transform duration-200">
                     <div class="w-full h-full overflow-hidden rounded-full flex items-center justify-center">
@@ -431,7 +640,7 @@
                 <i class="fas fa-chevron-down text-white text-xs"></i>
               </button>
               <!-- User Dropdown Menu -->
-              <div id="user-dropdown"
+                <div id="user-dropdown"
                    class="hidden absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-50">
                 <div class="px-4 py-2 text-sm text-gray-700 dark:text-gray-200 border-b border-gray-200 dark:border-gray-700">
                   <div class="font-semibold truncate" title="{{ user.username }}">{{ user.username }}</div>
@@ -479,19 +688,19 @@
               </div>
             </div>
           {% else %}
-            <div class="flex items-center space-x-2">
-              <a href="{% url 'account_login' %}"
-                 class="hover:underline flex items-center p-2 hover:bg-teal-700 rounded-lg">
-                <i class="fa-solid fa-right-to-bracket mr-1"></i>
-                <span class="hidden sm:inline">Login</span>
-              </a>
-              <a href="{% url 'account_signup' %}"
-                 class="px-3 py-1 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-semibold flex items-center">
-                <i class="fa-solid fa-user-plus mr-2"></i>
-                <span class="hidden sm:inline">Signup</span>
-              </a>
-            </div>
-          {% endif %}
+          <div class="flex items-center space-x-2">
+            <a href="{% url 'account_login' %}"
+               class="hover:underline flex items-center p-2 hover:bg-teal-700 rounded-lg">
+              <i class="fa-solid fa-right-to-bracket mr-1"></i>
+              <span class="hidden sm:inline">Login</span>
+            </a>
+          <a href="{% url 'account_signup' %}"
+             class="px-3 py-1 rounded-full bg-orange-500 hover:bg-orange-600 text-white font-semibold flex items-center">
+            <i class="fa-solid fa-user-plus mr-2"></i>
+            <span class="hidden sm:inline">Signup</span>
+          </a>
+        </div>
+        {% endif %}
         </nav>
         <!-- Mobile Menu (hidden by default) -->
         <div id="mobile-menu"
@@ -1013,6 +1222,138 @@
       </div>
     </footer>
     <script>
+
+  // Navigation system for both mobile and desktop
+  document.addEventListener('DOMContentLoaded', function() {
+    // Elements
+    const mobileMenuButton = document.getElementById('mobile-menu-button');
+    const mobileMenuOverlay = document.getElementById('mobile-menu-overlay');
+    const navContainer = document.getElementById('unified-nav');
+    const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
+    const languageButton = document.getElementById('language-button');
+    const languageDropdown = document.getElementById('language-dropdown');
+    const userButton = document.getElementById('user-button');
+    const userDropdown = document.getElementById('user-dropdown');
+    
+    // Add close button to mobile menu
+    const closeButton = document.createElement('button');
+    closeButton.id = 'mobile-menu-close';
+    closeButton.innerHTML = '<i class="fas fa-times"></i>';
+    navContainer.appendChild(closeButton);
+    
+    // Toggle mobile menu
+    function toggleMobileMenu() {
+      navContainer.classList.toggle('active');
+      mobileMenuOverlay.classList.toggle('hidden');
+      document.body.classList.toggle('overflow-hidden');
+    }
+    
+    // Toggle dropdown on mobile
+    function toggleDropdown(dropdown) {
+      // Close other dropdowns first
+      dropdownToggles.forEach(toggle => {
+        const parent = toggle.closest('.nav-dropdown');
+        if (parent !== dropdown && parent.classList.contains('active')) {
+          parent.classList.remove('active');
+        }
+      });
+      
+      // Toggle the clicked dropdown
+      dropdown.classList.toggle('active');
+    }
+    
+    // Toggle utility dropdowns (language, user)
+    function toggleUtilityDropdown(dropdown) {
+      dropdown.classList.toggle('hidden');
+    }
+    
+    // Close all dropdowns
+    function closeAllDropdowns() {
+      dropdownToggles.forEach(toggle => {
+        const parent = toggle.closest('.nav-dropdown');
+        if (parent.classList.contains('active')) {
+          parent.classList.remove('active');
+        }
+      });
+      
+      // Also close utility dropdowns
+      languageDropdown.classList.add('hidden');
+      if (userDropdown) userDropdown.classList.add('hidden');
+    }
+    
+    // Event Listeners
+    
+    // Mobile menu toggle
+    mobileMenuButton.addEventListener('click', toggleMobileMenu);
+    closeButton.addEventListener('click', toggleMobileMenu);
+    mobileMenuOverlay.addEventListener('click', toggleMobileMenu);
+    
+    // Dropdown toggles
+    dropdownToggles.forEach(toggle => {
+      toggle.addEventListener('click', function(e) {
+        // Only handle click for mobile view
+        if (window.innerWidth < 768) {
+          e.preventDefault();
+          const dropdown = this.closest('.nav-dropdown');
+          toggleDropdown(dropdown);
+        }
+      });
+    });
+    
+    // Language dropdown
+    languageButton.addEventListener('click', function() {
+      toggleUtilityDropdown(languageDropdown);
+    });
+    
+    // User dropdown
+    if (userButton) {
+      userButton.addEventListener('click', function() {
+        toggleUtilityDropdown(userDropdown);
+      });
+    }
+    
+    // Close dropdowns when clicking outside
+    document.addEventListener('click', function(event) {
+      // For language dropdown
+      if (!languageButton.contains(event.target) && 
+          !languageDropdown.contains(event.target)) {
+        languageDropdown.classList.add('hidden');
+      }
+      
+      // For user dropdown
+      if (userButton && userDropdown && 
+          !userButton.contains(event.target) && 
+          !userDropdown.contains(event.target)) {
+        userDropdown.classList.add('hidden');
+      }
+      
+      // For mobile nav dropdowns - only on mobile
+      if (window.innerWidth < 768) {
+        const clickedToggle = event.target.closest('.dropdown-toggle');
+        const clickedDropdown = event.target.closest('.dropdown-content');
+        
+        if (!clickedToggle && !clickedDropdown) {
+          closeAllDropdowns();
+        }
+      }
+    });
+    
+    // Resize handler - restore desktop state when resizing
+    window.addEventListener('resize', function() {
+      if (window.innerWidth >= 768) {
+        // If resized to desktop, reset mobile menu state
+        navContainer.classList.remove('active');
+        mobileMenuOverlay.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+        
+        // Reset all mobile accordion states
+        dropdownToggles.forEach(toggle => {
+          const parent = toggle.closest('.nav-dropdown');
+          parent.classList.remove('active');
+        });
+      }
+    });
+  });
         function toggleMobileMenu() {
             const menu = document.getElementById('mobile-menu');
             menu.classList.toggle('hidden');
