@@ -8,23 +8,17 @@
       .auth-container {
           max-width: 800px;
           margin: 1.5rem auto;
-          padding: 1.5rem;
+          padding: 2rem;
           background: white;
           border-radius: 0.5rem;
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-
-      @media (prefers-color-scheme: dark) {
-          .auth-container {
-              background-color: #1f2937;
-          }
       }
   </style>
   <!-- Add password toggle script -->
   <script src="{% static 'js/password-toggle.js' %}"></script>
 {% endblock extra_head %}
 {% block content %}
-  <div class="grid md:grid-cols-5 gap-4 items-center">
+  <div class="grid bg-white dark:bg-[#1f2937] md:grid-cols-5 gap-10 items-center">
     <!-- Left side illustration -->
     <div class="md:col-span-2 text-center hidden md:block">
       <div class="flex flex-col items-center space-y-3">
