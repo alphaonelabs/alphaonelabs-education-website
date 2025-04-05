@@ -154,7 +154,7 @@
     @media (min-width: 768px) {
       display: flex;
       align-items: center;
-      space-x: 3;
+      gap: 0.75rem;;
     }
     
     /* Mobile styles - off-canvas menu */
@@ -703,9 +703,8 @@
         {% endif %}
         </nav>
         <!-- Mobile Menu (hidden by default) -->
-        <div id="mobile-menu"
-             class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 hidden">
-          <div class="absolute right-0 top-0 h-full w-72 bg-white dark:bg-gray-800 shadow-lg overflow-y-auto mobile-menu-content">
+       <div id="mobile-menu-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
+        </div><div class="absolute right-0 top-0 h-full w-72 bg-white dark:bg-gray-800 shadow-lg overflow-y-auto mobile-menu-content">
             <!-- Close button -->
             <button class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
                     onclick="toggleMobileMenu()">
