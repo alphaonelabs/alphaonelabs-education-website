@@ -38,6 +38,9 @@ urlpatterns += i18n_patterns(
     path("", views.index, name="index"),
     path("create-test-data/", views.run_create_test_data, name="create_test_data"),
     path("learn/", views.learn, name="learn"),
+    path("crowdfunding/", views.crowdfunding_list, name="crowdfunding_list"),
+    path("crowdfunding/create/", views.crowdfunding_create, name="crowdfunding_create"),
+    path("crowdfunding/<int:campaign_id>/", views.crowdfunding_detail, name="crowdfunding_detail"),
     path("waiting-rooms/", views.waiting_rooms, name="waiting_rooms"),
     path("teach/", views.teach, name="teach"),
     path("about/", views.about, name="about"),
@@ -55,6 +58,7 @@ urlpatterns += i18n_patterns(
     path("blog/create/", views.create_blog_post, name="create_blog_post"),
     path("blog/tag/<str:tag>/", views.blog_tag, name="blog_tag"),
     path("blog/<slug:slug>/", views.blog_detail, name="blog_detail"),
+    path("crowdfunding/<int:campaign_id>/donate/", views.create_donation_intent, name="create_donation_intent"),
     # Leaderboard URLs
     path("leaderboards/", views.all_leaderboards, name="leaderboards"),
     # Success Stories URLs

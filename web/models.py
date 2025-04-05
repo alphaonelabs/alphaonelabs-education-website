@@ -13,7 +13,7 @@ from django.core.files.base import ContentFile
 from django.core.mail import send_mail
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models.signals import post_save
+from django.db.models.signals import post_delete, post_save
 from django.dispatch import receiver
 from django.urls import reverse
 from django.utils import timezone
@@ -23,6 +23,67 @@ from markdownx.models import MarkdownxField
 from PIL import Image
 
 from web.utils import calculate_and_update_user_streak
+
+
+class Campaign(models.Model):
+    """
+    Model representing a crowdfunding campaign created by a teacher.
+    """
+
+    teacher = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="campaigns", help_text="Teacher who created the campaign."
+    )
+    title = models.CharField(max_length=255, help_text="Campaign title")
+    description = models.TextField(help_text="Detailed campaign description")
+    funding_goal = models.DecimalField(max_digits=10, decimal_places=2, help_text="Target funding amount in dollars")
+    amount_raised = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0, help_text="Total funds raised so far"
+    )
+    itemized_budget = models.JSONField(blank=True, help_text="Optional JSON field for itemized budget breakdown")
+    video_url = models.URLField(blank=True, help_text="Optional video pitch URL for the campaign")
+    image = models.ImageField(upload_to="campaign_images/", blank=True, help_text="Optional campaign image")
+    approved = models.BooleanField(default=True, help_text="Indicates whether the campaign is approved by moderators")
+    live = models.BooleanField(default=True, help_text="Indicates whether the campaign is live and accepting donations")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Crowdfunding Campaign"
+        verbose_name_plural = "Crowdfunding Campaigns"
+
+    def __str__(self):
+        return self.title
+
+    def get_absolute_url(self):
+        """
+        Returns the URL to access a particular campaign's detail view.
+        """
+        return reverse("crowdfunding_detail", kwargs={"campaign_id": self.id})
+
+    def update_amount_raised(self):
+        """
+        Recalculate and update the total amount raised from related donations.
+        """
+        total = self.donations.aggregate(total=models.Sum("amount"))["total"] or 0
+        self.amount_raised = total
+        self.save()
+
+
+class CampaignDonation(models.Model):
+    """
+    Model to record individual donations to a campaign.
+    """
+
+    campaign = models.ForeignKey(
+        Campaign, on_delete=models.CASCADE, related_name="donations", help_text="Campaign receiving the donation"
+    )
+    donor_name = models.CharField(max_length=255, help_text="Name of the donor")
+    donor_email = models.EmailField(help_text="Email address of the donor")
+    amount = models.DecimalField(max_digits=10, decimal_places=2, help_text="Donation amount in dollars")
+    donated_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.donor_name} donated ${self.amount} to {self.campaign.title}"
 
 
 class Notification(models.Model):
@@ -2805,3 +2866,15 @@ class ScheduledPost(models.Model):
 
     def __str__(self):
         return self.content
+
+
+@receiver(post_save, sender=CampaignDonation)
+def update_campaign_amount_on_donation(sender, instance, created, **kwargs):
+    """Update campaign amount_raised when a donation is saved."""
+    instance.campaign.update_amount_raised()
+
+
+@receiver(post_delete, sender=CampaignDonation)
+def update_campaign_amount_on_donation_delete(sender, instance, **kwargs):
+    """Update campaign amount_raised when a donation is deleted."""
+    instance.campaign.update_amount_raised()
