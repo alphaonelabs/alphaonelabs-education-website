@@ -1,8 +1,6 @@
 {% extends "base.html" %}
-
 {% load static %}
 {% load i18n %}
-
 {% block content %}
   <!-- Modern Hero Section -->
   <div class="relative bg-gradient-to-r from-teal-300 to-teal-500 overflow-hidden">
@@ -710,7 +708,6 @@
                 <p class="text-gray-500 dark:text-gray-400">No leaderboard data available yet.</p>
               </div>
             {% endfor %}
-
             {% if top_leaderboard_users %}
               <div class="text-center mt-4">
                 <a href="{% url 'leaderboard' %}"
@@ -1042,13 +1039,11 @@
     NOTE: For better maintainability, these animations should be moved
     to an external stylesheet if they are used on multiple pages.
     */
-
     /* Fade in animation */
     .animate-fade-in {
       animation: fadeIn 0.8s ease-out forwards;
       opacity: 0;
     }
-
     @keyframes fadeIn {
       from {
         opacity: 0;
@@ -1059,21 +1054,17 @@
         transform: translateY(0);
       }
     }
-
     /* Animation delays */
     .animation-delay-200 {
       animation-delay: 0.2s;
     }
-
     .animation-delay-400 {
       animation-delay: 0.4s;
     }
-
     /* Floating animation for certain elements */
     .animate-float {
       animation: float 6s ease-in-out infinite;
     }
-
     @keyframes float {
       0% {
         transform: translateY(0px);
@@ -1085,12 +1076,10 @@
         transform: translateY(0px);
       }
     }
-
     /* Pulsing animation */
     .animate-pulse {
       animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
-
     @keyframes pulse {
       0%, 100% {
         opacity: 1;
@@ -1106,18 +1095,15 @@
       const cachedFetch = (async () => {
           const cache = {};
           const cacheTimeMinutes = 15; // Cache for 15 minutes
-
           return async (url) => {
               // Check if we have a cached response that's still valid
               const now = new Date().getTime();
               if (cache[url] && cache[url].timestamp > now - (cacheTimeMinutes * 60 * 1000)) {
                   return cache[url].data;
               }
-
               // If no cache or cache is expired, fetch from API with retry logic
               let retries = 3;
               let lastError;
-
               while (retries > 0) {
                   try {
                       const response = await fetch(url);
@@ -1125,13 +1111,11 @@
                           throw new Error(`HTTP error: ${response.status}`);
                       }
                       const data = await response.json();
-
                       // Cache the result
                       cache[url] = {
                           data: data,
                           timestamp: now
                       };
-
                       return data;
                   } catch (error) {
                       lastError = error;
@@ -1140,51 +1124,41 @@
                       await new Promise(resolve => setTimeout(resolve, 1000));
                   }
               }
-
               throw lastError;
           };
       })();
-
       // Top Contributors - For Current Month
       async function fetchTopContributors() {
           try {
               // Get the first day of the current month
               const now = new Date();
               const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-
               // Get month name for display
               const monthNames = ["January", "February", "March", "April", "May", "June",
                   "July", "August", "September", "October", "November", "December"
               ];
               const currentMonth = monthNames[now.getMonth()];
-
               // Display current month in the heading
               document.getElementById('current-month-display').textContent = currentMonth;
-
               // Fetch 2 pages of data
               const [page1, page2] = await Promise.all([
                   cachedFetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=closed&per_page=100&page=1`),
                   cachedFetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=closed&per_page=100&page=2`)
               ]);
-
               // Combine the results from both pages
               const pulls = [...page1, ...page2];
               const contributors = {};
-
               pulls.forEach(pull => {
                   const username = pull.user.login;
                   const mergedAt = new Date(pull.merged_at);
-
                   //skipping bots and specific users
                   if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
                       return;
                   }
-
                   //only count merged PRs from the current month
                   if (!pull.merged_at || mergedAt < firstDay) {
                       return;
                   }
-
                   if (!contributors[username]) {
                       contributors[username] = {
                           username: username,
@@ -1195,9 +1169,7 @@
                           latest_merged_at: null
                       };
                   }
-
                   contributors[username].merged_count++;
-
                   contributors[username].prs.push({
                       number: pull.number,
                       title: pull.title,
@@ -1205,13 +1177,11 @@
                       merged_at: pull.merged_at,
                       created_at: pull.created_at
                   });
-
                   if (!contributors[username].latest_merged_at ||
                       new Date(pull.merged_at) > new Date(contributors[username].latest_merged_at)) {
                       contributors[username].latest_merged_at = pull.merged_at;
                   }
               });
-
               //sort by number of PRs, then by most recent PR
               const topContributors = Object.values(contributors)
                   .sort((a, b) => {
@@ -1220,15 +1190,12 @@
                       return new Date(b.latest_merged_at) - new Date(a.latest_merged_at);
                   })
                   .slice(0, 5); // taking top 5
-
               // Sort PRs for each contributor by merged_at date (newest first)
               topContributors.forEach(contributor => {
                   contributor.prs.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
               });
-
               const container = document.getElementById('top-contributors-section');
               container.innerHTML = '';
-
               if (topContributors.length === 0) {
                   container.innerHTML = `
                       <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2" role="status">
@@ -1237,12 +1204,10 @@
                   `;
                   return;
               }
-
               // Top Contributors - Simplified for sidebar
               topContributors.forEach((contributor, index) => {
                   const div = document.createElement('div');
                   div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
-
                   let rankBadgeInner = '';
                   if (index === 0) {
                       rankBadgeInner = '🥇';
@@ -1253,7 +1218,6 @@
                   } else {
                       rankBadgeInner = `${index + 1}`;
                   }
-
                   let rankBadgeClass = '';
                   if (index === 0) {
                       rankBadgeClass = 'bg-yellow-500 border-yellow-600';
@@ -1264,7 +1228,6 @@
                   } else {
                       rankBadgeClass = 'bg-blue-500 border-blue-600';
                   }
-
                   div.innerHTML = `
                       <div class="relative">
                           <img src="${contributor.avatar_url}" alt="${contributor.username}'s avatar" class="w-8 h-8 rounded-full border-2 border-gray-200 dark:border-gray-700">
@@ -1296,41 +1259,33 @@
               setTimeout(fetchTopContributors, 30000);
           }
       }
-
       // New Contributors
       async function fetchNewContributors() {
           try {
               // Calculate date 30 days ago for "new" threshold
               const thirtyDaysAgo = new Date();
               thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
               // Fetch 2 pages of data
               const [page1, page2] = await Promise.all([
                   cachedFetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=1`),
                   cachedFetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=2`)
               ]);
-
               // Combine the results from both pages
               const pulls = [...page1, ...page2];
               const userPrs = {};
               const firstMergedPrDetails = {};
-
               pulls.forEach(pull => {
                   const username = pull.user.login;
-
                   //bots and specific users ignored
                   if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
                       return;
                   }
-
                   if (!pull.merged_at) {
                       return;
                   }
-
                   if (!userPrs[username]) {
                       userPrs[username] = [];
                   }
-
                   userPrs[username].push({
                       number: pull.number,
                       title: pull.title,
@@ -1342,7 +1297,6 @@
                       state: pull.state
                   });
               });
-
               // Find the first merged PR for each user
               for (const [username, prs] of Object.entries(userPrs)) {
                   if (prs.length > 0) {
@@ -1350,7 +1304,6 @@
                       prs.sort((a, b) => new Date(a.merged_at) - new Date(b.merged_at));
                       const firstPr = prs[0];
                       const firstPrDate = new Date(firstPr.merged_at);
-
                       // Only include if their first PR was within the last 30 days
                       if (firstPrDate >= thirtyDaysAgo) {
                           firstMergedPrDetails[username] = {
@@ -1369,15 +1322,12 @@
                       }
                   }
               }
-
               //converting to array and sorting by most recently merged first PR
               const newContributors = Object.values(firstMergedPrDetails)
                   .sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at))
                   .slice(0, 5); // taking top 5
-
               const container = document.getElementById('new-contributors-section');
               container.innerHTML = '';
-
               if (newContributors.length === 0) {
                   container.innerHTML = `
                       <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2" role="status">
@@ -1386,13 +1336,11 @@
                   `;
                   return;
               }
-
               newContributors.forEach((contributor) => {
                   const div = document.createElement('div');
                   div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
                   const mergedDate = new Date(contributor.merged_at);
                   const displayDate = mergedDate.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-
                   div.innerHTML = `
                       <img src="${contributor.avatar_url}" alt="${contributor.username}'s avatar" class="w-8 h-8 rounded-full border-2 border-green-300 dark:border-green-700">
                       <div class="flex-1">
@@ -1419,7 +1367,6 @@
               setTimeout(fetchNewContributors, 30000);
           }
       }
-
       // Initialize both contributor sections with a slight delay between them to avoid API rate limits
       document.addEventListener('DOMContentLoaded', () => {
           setTimeout(fetchTopContributors, 500);
