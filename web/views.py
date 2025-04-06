@@ -233,6 +233,9 @@ def index(request):
     # Get featured courses
     featured_courses = Course.objects.filter(status="published", is_featured=True).order_by("-created_at")[:3]
 
+    # Get featured goods
+    featured_goods = Goods.objects.filter(featured=True, is_available=True).order_by("-created_at")[:3]
+
     # Get current challenge
     current_challenge_obj = Challenge.objects.filter(
         start_date__lte=timezone.now(), end_date__gte=timezone.now()
@@ -261,6 +264,7 @@ def index(request):
     context = {
         "profile": profile,
         "featured_courses": featured_courses,
+        "featured_products": featured_goods,
         "current_challenge": current_challenge,
         "latest_post": latest_post,
         "latest_success_story": latest_success_story,
