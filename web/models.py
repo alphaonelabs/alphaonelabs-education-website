@@ -224,6 +224,7 @@ class WebRequest(models.Model):
     path = models.CharField(max_length=255, blank=True, default="")
     referer = models.CharField(max_length=255, blank=True, default="")
     course = models.ForeignKey("Course", on_delete=models.CASCADE, related_name="web_requests", null=True, blank=True)
+    goods = models.ForeignKey("Goods", on_delete=models.SET_NULL, related_name="web_requests", null=True, blank=True)
 
     def __str__(self):
         return f"{self.path} - {self.count} views"

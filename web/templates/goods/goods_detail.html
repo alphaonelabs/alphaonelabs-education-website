@@ -134,6 +134,10 @@
             <p class="text-2xl font-bold text-gray-900 dark:text-white">${{ product.price }}</p>
           {% endif %}
         </div>
+        <div class="flex items-center text-gray-600 dark:text-gray-300">
+          <i class="fas fa-eye mr-2"></i>
+          <span>{{ product.web_requests.count|default:"0" }} views</span>
+        </div>
         <!-- Stock Status -->
         <p class="text-gray-600 dark:text-gray-400 mb-4">
           Stock:
@@ -175,7 +179,7 @@
                    class="w-full h-56 object-cover rounded-md transition-transform duration-300 hover:scale-105" />
             </a>
             <h3 class="mt-3 text-lg font-semibold text-gray-900 dark:text-white">{{ other_product.name }}</h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400">{{ other_product.description|truncatewords:10 }}</p>
+            <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">{{ other_product.description|truncatewords:10 }}</p>
             <div class="mt-2">
               {% if other_product.discount_price %}
                 <p class="text-sm text-gray-500 line-through">${{ other_product.price }}</p>
