@@ -30,6 +30,7 @@ cryptography = "^44.0.2"
 tweepy = "^4.15.0"
 pillow = "^11.1.0"
 uvicorn = "^0.34.0"
+sentry-sdk = "^2.25.1"
 
 [tool.poetry.group.dev.dependencies]
 djlint = "^1.34.1"
