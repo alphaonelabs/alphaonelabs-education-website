@@ -106,6 +106,7 @@ INSTALLED_APPS = [
     "captcha",
     "markdownx",
     "web",
+    "channels",
 ]
 
 if DEBUG and not TESTING:
@@ -162,7 +163,18 @@ WSGI_APPLICATION = "web.wsgi.application"
 
 # Add ASGI application configuration
 ASGI_APPLICATION = "web.asgi.application"
+ASGI_APPLICATION = "web.asgi.application"
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
 
+# YouTube streaming settings
+YOUTUBE_STREAM_KEY = os.environ.get("YOUTUBE_STREAM_KEY")
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
