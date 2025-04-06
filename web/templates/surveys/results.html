@@ -189,26 +189,83 @@
 
         // Initialize donut charts
         document.addEventListener('DOMContentLoaded', function() {
-          {% for result in results %}
-          // Data for chart {{ result.question.id }}
-          const data{{ result.question.id }} = {
-              labels: [{% for choice in result.choices %}'{{ choice.text }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
-              datasets: [{
-                  data: [{% for choice in result.choices %}{{ choice.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
-                  backgroundColor: generateColorPalette({{ result.choices|length }}),
-                  borderWidth: 0,
-                  hoverOffset: 4
-              }]
-          };
+            {
+                %
+                for result in results %
+            }
+            // Data for chart {{ result.question.id }}
+            const data {
+                {
+                    result.question.id
+                }
+            } = {
+                labels: [{
+                        %
+                        for choice in result.choices %
+                    }
+                    '{{ choice.text }}' {
+                        %
+                        if not forloop.last %
+                    }, {
+                        %
+                        endif %
+                    } {
+                        %
+                        endfor %
+                    }
+                ],
+                datasets: [{
+                    data: [{
+                        %
+                        for choice in result.choices %
+                    } {
+                        {
+                            choice.count
+                        }
+                    } {
+                        %
+                        if not forloop.last %
+                    }, {
+                        %
+                        endif %
+                    } {
+                        %
+                        endfor %
+                    }],
+                    backgroundColor: generateColorPalette({
+                        {
+                            result.choices | length
+                        }
+                    }),
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            };
 
 
             // Create chart {{ result.question.id }}
-            const ctx{{ result.question.id }} = document.createElement('canvas');
-            document.querySelector('#chart-{{ result.question.id }} .chart-donut').appendChild(ctx{{ result.question.id }});
+            const ctx {
+                {
+                    result.question.id
+                }
+            } = document.createElement('canvas');
+            document.querySelector('#chart-{{ result.question.id }} .chart-donut').appendChild(ctx {
+                {
+                    result.question.id
+                }
+            });
 
-            charts['chart-{{ result.question.id }}'] = new Chart(ctx{{ result.question.id }}, {
+            charts['chart-{{ result.question.id }}'] = new Chart(ctx {
+                {
+                    result.question.id
+                }
+            }, {
                 type: 'doughnut',
-                data: data{{ result.question.id }},
+                data: data {
+                    {
+                        result.question.id
+                    }
+                },
                 options: {
                     cutout: '70%',
                     responsive: true,
@@ -220,7 +277,10 @@
                     }
                 }
             });
-            {% endfor %}
+            {
+                %
+                endfor %
+            }
 
             // Add event listeners to toggle buttons
             const toggleButtons = document.querySelectorAll('.toggle-chart-view');

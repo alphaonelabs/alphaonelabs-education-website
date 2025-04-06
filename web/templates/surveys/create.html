@@ -120,15 +120,16 @@
               newQuestion.querySelector('.question-type-selector').addEventListener('change', handleTypeChange);
               document.getElementById('questions').appendChild(newQuestion);
           });
+
           function validateScaleValues(input) {
-            const parent = input.closest('.scale-fields');
-            const min = parseInt(parent.querySelector('input[name="scale_min[]"]').value);
-            const max = parseInt(parent.querySelector('input[name="scale_max[]"]').value);
-            
-            if (min && max && min >= max) {
-              alert('Maximum value must be greater than minimum value');
-              input.value = '';
-            }
+              const parent = input.closest('.scale-fields');
+              const min = parseInt(parent.querySelector('input[name="scale_min[]"]').value);
+              const max = parseInt(parent.querySelector('input[name="scale_max[]"]').value);
+
+              if (min && max && min >= max) {
+                  alert('Maximum value must be greater than minimum value');
+                  input.value = '';
+              }
           }
           // Handle type changes
           function handleTypeChange(event) {
