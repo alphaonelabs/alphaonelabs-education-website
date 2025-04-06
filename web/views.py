@@ -7033,7 +7033,7 @@ def apply_discount_via_referrer(request) -> HttpResponse:
     else:
         return HttpResponseBadRequest("Invalid request method.")
 
- 
+
 def users_list(request: HttpRequest) -> HttpResponse:
     """
     Display a list of users who have their profile set to public,
