@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  {{ object.title }} Results
+{% endblock title %}
+
+{% block content %}
+  <main class="flex-1 w-full max-w-[90rem] mx-auto mt-6 px-4 md:px-6">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold flex items-center">
+        <i class="fa-solid fa-chart-pie text-teal-600 dark:text-teal-400 mr-2"></i>
+        {{ object.title }} Results
+      </h1>
+      <a href="{% url 'survey-list' %}" class="text-teal-600 dark:text-teal-400 hover:underline flex items-center">
+        <i class="fa-solid fa-arrow-left mr-2"></i>
+        Back to surveys
+      </a>
+    </div>
+    
+    {% if results %}
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-8">
+        <div class="border-b border-gray-200 dark:border-gray-700 p-4">
+          <h2 class="text-lg font-semibold flex items-center">
+            <i class="fa-solid fa-chart-line text-teal-600 dark:text-teal-400 mr-2"></i>
+            Survey Overview
+          </h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400">
+            Total questions: {{ results|length }} • Total participants: {{ total_participants }}
+          </p>
+        </div>
+        
+        <div class="p-6">
+          <div class="flex flex-wrap -mx-2">
+            <div class="w-full md:w-1/2 p-2">
+              <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <div class="text-center">
+                  <div class="inline-flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 dark:bg-blue-900/30 mb-3">
+                    <i class="fa-solid fa-users text-blue-600 dark:text-blue-400 text-xl"></i>
+                  </div>
+                  <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Response Rate</h3>
+                  <div class="relative pt-1 px-8 mt-4">
+                    <div class="flex items-center justify-between mb-2">
+                      <div class="text-xs font-semibold inline-block text-blue-600">
+                        {{ response_rate|floatformat:0 }}% Complete
+                      </div>
+                    </div>
+                    <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200 dark:bg-gray-600">
+                      <div style="width:{{ response_rate }}%" class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="w-full md:w-1/2 p-2">
+              <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <div class="text-center">
+                  <div class="inline-flex items-center justify-center h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 mb-3">
+                    <i class="fa-solid fa-clock text-green-600 dark:text-green-400 text-xl"></i>
+                  </div>
+                  <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Average Completion Time</h3>
+                  <p class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
+                    {{ avg_completion_time|default:"2.5" }} min
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+            
+      <h2 class="text-xl font-semibold mb-4 flex items-center">
+        <i class="fa-solid fa-list-ol text-teal-600 dark:text-teal-400 mr-2"></i>
+        Question Results
+      </h2>
+            
+      <div class="grid grid-cols-1 gap-6">
+        {% for result in results %}
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <div class="border-b border-gray-200 dark:border-gray-700 p-4">
+              <div class="flex items-start justify-between">
+                <div>
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ result.question.text }}</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Total responses: {{ result.total }}</p>
+                </div>
+                <div class="flex items-center">
+                  <button class="toggle-chart-view text-gray-500 hover:text-teal-600 dark:text-gray-400 dark:hover:text-teal-400 p-1" data-question-id="{{ result.question.id }}">
+                    <i class="fa-solid fa-chart-bar text-xl"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            <div class="p-4">
+              <!-- Bar Chart View -->
+              <div id="bars-{{ result.question.id }}" class="chart-container">
+                <div class="space-y-4">
+                  {% for choice in result.choices %}
+                    <div class="relative">
+                      <div class="flex items-center justify-between mb-1">
+                        <div class="text-gray-700 dark:text-gray-300 font-medium">{{ choice.text }}</div>
+                        <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                          {{ choice.count }} ({{ choice.percentage|floatformat:0 }}%)
+                        </div>
+                      </div>
+                      <div class="flex h-6 overflow-hidden text-xs bg-gray-200 dark:bg-gray-700 rounded-full">
+                        <div style="width: {{ choice.count }}%" 
+                             class="flex flex-col justify-center text-center text-white bg-gradient-to-r from-teal-500 to-blue-500 dark:from-teal-600 dark:to-blue-600 shadow-none whitespace-nowrap rounded-full transition-all duration-500">
+                          {% if choice.percentage > 15 %}
+                            <span class="px-2">{{ choice.percentage|floatformat:0 }}%</span>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+              
+              <!-- Donut Chart View (Hidden by Default) -->
+              <div id="chart-{{ result.question.id }}" class="chart-container donut-chart hidden">
+                <div class="flex justify-center py-4">
+                  <div class="chart-donut relative" style="width: 200px; height: 200px;">
+                    <!-- This will be filled by JS -->
+                    <div class="absolute inset-0 flex items-center justify-center">
+                      <div class="text-center">
+                        <div class="text-xl font-bold text-gray-800 dark:text-gray-200">{{ result.total }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">responses</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="chart-legend grid grid-cols-2 gap-2 mt-4">
+                  {% for choice in result.choices %}
+                    <div class="flex items-center p-2 rounded-md bg-gray-50 dark:bg-gray-700/50">
+                      <div class="w-3 h-3 rounded-full choice-color-{{ forloop.counter }}" style="background-color: {{ choice.color }};"></div>
+                      <span class="ml-2 text-sm text-gray-700 dark:text-gray-300 truncate">{{ choice.text }}</span>
+                      <span class="ml-auto text-xs font-medium text-gray-500 dark:text-gray-400">{{ choice.count }}</span>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      
+      <div class="mt-8">
+        <h2 class="text-xl font-semibold mb-4 flex items-center">
+          <i class="fa-solid fa-comments text-teal-600 dark:text-teal-400 mr-2"></i>
+          Response Summary
+        </h2>
+        
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+          <div class="prose dark:prose-invert max-w-none">
+            <p>Based on the survey results, {{ top_choice.text }} was the most popular choice with {{ top_choice.percentage|floatformat:0 }}% of responses.</p>
+            <p>The least chosen option was {{ bottom_choice.text }} with only {{ bottom_choice.percentage|floatformat:0 }}% of total responses.</p>
+            
+            <h3>Key Takeaways</h3>
+            <ul>
+              <li>{{ total_participants }} people participated in this survey</li>
+              <li>{{ results|length }} questions were answered</li>
+              <li>The highest engagement was on question "{{ most_answered_question.text }}"</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center">
+        <i class="fa-solid fa-chart-bar text-4xl text-gray-400 dark:text-gray-500 mb-4"></i>
+        <p class="text-gray-700 dark:text-gray-300">No responses have been submitted yet.</p>
+      </div>
+    {% endif %}
+  </main>
+
+  {% block extra_js %}
+  <!-- Include Chart.js from CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js" integrity="sha512-ElRFoEQdI5Ht6kZvyzXhYG9NqjtkmlkfYk0wr6wHxU9JEHakS7UJZNeml5ALk+8IKlU6jDgMabC3vkumRokgJA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  
+  <script>
+    // Variables to store our charts
+    const charts = {};
+    
+    // Helper function to generate a color palette
+    function generateColorPalette(numColors) {
+      const palette = [];
+      for (let i = 0; i < numColors; i++) {
+        palette.push(`hsl(${i * 360 / numColors}, 70%, 60%)`);
+      }
+      return palette;
+    }
+    
+    // Initialize donut charts
+    document.addEventListener('DOMContentLoaded', function() {
+      {% for result in results %}
+      // Data for chart {{ result.question.id }}
+      const data{{ result.question.id }} = {
+        labels: [{% for choice in result.choices %}'{{ choice.text }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+        datasets: [{
+          data: [{% for choice in result.choices %}{{ choice.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+          backgroundColor: generateColorPalette({{ result.choices|length }}),
+          borderWidth: 0,
+          hoverOffset: 4
+        }]
+      };
+      
+      // Create chart {{ result.question.id }}
+      const ctx{{ result.question.id }} = document.createElement('canvas');
+      document.querySelector('#chart-{{ result.question.id }} .chart-donut').appendChild(ctx{{ result.question.id }});
+      
+      charts['chart-{{ result.question.id }}'] = new Chart(ctx{{ result.question.id }}, {
+        type: 'doughnut',
+        data: data{{ result.question.id }},
+        options: {
+          cutout: '70%',
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            }
+          }
+        }
+      });
+      {% endfor %}
+      
+      // Add event listeners to toggle buttons
+      const toggleButtons = document.querySelectorAll('.toggle-chart-view');
+      toggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+          const questionId = this.getAttribute('data-question-id');
+          const barsContainer = document.getElementById(`bars-${questionId}`);
+          const chartContainer = document.getElementById(`chart-${questionId}`);
+          
+          if (barsContainer.classList.contains('hidden')) {
+            // Switch to bars view
+            chartContainer.classList.add('hidden');
+            barsContainer.classList.remove('hidden');
+            this.innerHTML = '<i class="fa-solid fa-chart-pie text-xl"></i>';
+          } else {
+            // Switch to donut view
+            barsContainer.classList.add('hidden');
+            chartContainer.classList.remove('hidden');
+            this.innerHTML = '<i class="fa-solid fa-bars text-xl"></i>';
+            
+            // Resize chart to ensure proper rendering
+            charts[`chart-${questionId}`].resize();
+          }
+        });
+      });
+    });
+  </script>
+  {% endblock extra_js %}
+{% endblock content %}

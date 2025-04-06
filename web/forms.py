@@ -41,6 +41,7 @@ from .models import (
     StudyGroup,
     Subject,
     SuccessStory,
+    Survey,
     TeamGoal,
     TeamGoalMember,
     TeamInvite,
@@ -98,6 +99,12 @@ __all__ = [
     "LinkGradeForm",
     "AwardAchievementForm",
 ]
+
+
+class SurveyForm(forms.ModelForm):
+    class Meta:
+        model = Survey
+        fields = ["title"]
 
 
 class AccountDeleteForm(forms.Form):
