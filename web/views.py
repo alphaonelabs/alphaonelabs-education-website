@@ -7032,3 +7032,58 @@ def apply_discount_via_referrer(request) -> HttpResponse:
         return redirect("profile")
     else:
         return HttpResponseBadRequest("Invalid request method.")
+
+ 
+def users_list(request: HttpRequest) -> HttpResponse:
+    """
+    Display a list of users who have their profile set to public,
+    ordered by most recent updates.
+    """
+    profiles = Profile.objects.filter(is_profile_public=True).select_related("user").order_by("-updated_at")
+
+    # Add statistics for each user to create fun scorecards
+    for profile in profiles:
+        if profile.user.is_teacher:
+            # Teacher stats
+            courses = Course.objects.filter(teacher=profile.user).prefetch_related("enrollments", "reviews")
+            profile.total_courses = courses.count()
+            profile.total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
+            # Get average rating across all courses
+            course_ratings = [course.average_rating for course in courses if course.average_rating > 0]
+            profile.avg_rating = round(sum(course_ratings) / len(course_ratings), 1) if course_ratings else 0
+        else:
+            # Student stats
+            enrollments = Enrollment.objects.filter(student=profile.user).select_related("course")
+            profile.total_courses = enrollments.count()
+            completed_enrollments = enrollments.filter(status="completed")
+            profile.total_completed = completed_enrollments.count()
+
+            # Calculate average progress across all courses
+            total_progress = 0
+            progress_count = 0
+            enrollment_ids = [e.id for e in enrollments]
+            existing_progresses = {
+                p.enrollment_id: p for p in CourseProgress.objects.filter(enrollment_id__in=enrollment_ids)
+            }
+
+            for enrollment in enrollments:
+                progress = existing_progresses.get(enrollment.id)
+                if not progress:
+                    progress = CourseProgress.objects.create(enrollment=enrollment)
+                total_progress += progress.completion_percentage
+                progress_count += 1
+            profile.avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+
+            # Add achievements count
+            profile.achievements_count = Achievement.objects.filter(student=profile.user).count()
+
+    # Pagination: 12 profiles per page
+    paginator = Paginator(profiles, 12)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "page_obj": page_obj,
+    }
+
+    return render(request, "users_list.html", context)

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}
+  User List
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">User List</h1>
+    </div>
+    {% if page_obj %}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for user in page_obj %}
+          <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-300"
+               role="article"
+               aria-labelledby="user-{{ user.id }}">
+            <div class="p-6">
+              <div class="flex justify-between items-start">
+                <h3 id="user-{{ user.id }}"
+                    class="text-xl font-semibold text-gray-800 mb-2">{{ user.username }}</h3>
+                <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">{{ user.role }}</span>
+              </div>
+              <p class="text-gray-600 mb-4">Joined: {{ user.date_joined|date:"F d, Y" }}</p>
+              {% if user.user.is_teacher %}
+                <div class="mt-2 space-y-1">
+                  <p class="text-sm text-gray-600">Courses: {{ user.total_courses }}</p>
+                  <p class="text-sm text-gray-600">Students: {{ user.total_students }}</p>
+                  {% if user.avg_rating > 0 %}<p class="text-sm text-gray-600">Rating: {{ user.avg_rating }}/5</p>{% endif %}
+                </div>
+              {% else %}
+                <div class="mt-2 space-y-1">
+                  <p class="text-sm text-gray-600">Enrolled: {{ user.total_courses }}</p>
+                  <p class="text-sm text-gray-600">Completed: {{ user.total_completed }}</p>
+                  <p class="text-sm text-gray-600">Avg. Progress: {{ user.avg_progress }}%</p>
+                  <p class="text-sm text-gray-600">Achievements: {{ user.achievements_count }}</p>
+                </div>
+              {% endif %}
+              <div class="flex justify-between items-center">
+                {% if user.groups.exists %}
+                  <span class="text-sm text-gray-500">{{ user.groups.count }} group{{ user.groups.count|pluralize }}</span>
+                {% else %}
+                  <span class="text-sm text-gray-500">0 groups</span>
+                {% endif %}
+                <a href="{% url 'public_profile' user.username %}"
+                   class="text-blue-600 hover:text-blue-800 font-medium">View Profile</a>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      <!-- Pagination controls -->
+      <div class="flex justify-center mt-8">
+        <nav class="inline-flex">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}"
+               class="bg-white border border-gray-300 text-gray-500 hover:bg-gray-100 px-4 py-2 text-sm font-medium rounded-l-md">Previous</a>
+          {% endif %}
+          <span class="bg-blue-50 border border-gray-300 text-blue-600 px-4 py-2 text-sm font-medium">
+            {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+          </span>
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}"
+               class="bg-white border border-gray-300 text-gray-500 hover:bg-gray-100 px-4 py-2 text-sm font-medium rounded-r-md">Next</a>
+          {% endif %}
+        </nav>
+      </div>
+    {% else %}
+      <div class="text-center py-8">
+        <p class="text-gray-600 mb-2">No public profiles found</p>
+        <p class="text-sm text-gray-500">Users need to set their profiles to public to appear in this list.</p>
+      </div>
+    {% endif %}
+  </div>
+{% endblock content %}
