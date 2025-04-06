@@ -598,7 +598,7 @@
                 {% endif %}
               </div>
               <!-- Tab Content -->
-              <div class="p-6">
+              <div class="p-4 sm:p-6">
                 <!-- Students Tab -->
                 {% if is_teacher or is_enrolled %}
                   <div id="content-students"
@@ -658,755 +658,756 @@
                       </div>
                     </div>
                     <!-- Students Table -->
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-                      <div class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
-                        <h3 class="font-semibold text-lg text-gray-800 dark:text-gray-200">
-                          <i class="fas fa-users text-teal-500 dark:text-teal-400 mr-2"></i>
-                          Student Details
-                        </h3>
+                    <div class="flex flex-col sm:flex-row justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+                      <h3 class="flex items-center font-semibold text-lg text-gray-800 dark:text-gray-200">
+                        <i class="fas fa-users text-teal-500 dark:text-teal-400 mr-2"></i>
+                        Student Details
+                      </h3>
+                      {% if user == course.teacher %}
+                        <a href="{% url 'add_student_to_course' course.slug %}"
+                           class="mt-2 sm:mt-0 inline-flex items-center px-4 py-2 text-sm bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition duration-200">
+                          <i class="fas fa-user-plus mr-2"></i>
+                          Add Students
+                        </a>
+                      {% endif %}
+                    </div>
+                    {% if course.enrollments.exists %}
+                      <div class="relative overflow-hidden">
+                        <div class="overflow-x-auto scrollbar-hide">
+                          <table class="w-full table-auto divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                              <tr>
+                                <th scope="col"
+                                    class="px-3 py-2 text-left text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                  Student
+                                </th>
+                                <th scope="col"
+                                    class="px-3 py-2 text-left text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                  Enrollment Date
+                                </th>
+                                <th scope="col"
+                                    class="px-3 py-2 text-left text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                  Progress
+                                </th>
+                                <th scope="col"
+                                    class="px-3 py-2 text-left text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                  Attendance
+                                </th>
+                                <th scope="col"
+                                    class="px-3 py-2 text-left text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                  Status
+                                </th>
+                                <th scope="col"
+                                    class="px-3 py-2 text-left text-xs sm:text-sm font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                  Actions
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                              {% for enrollment in course.enrollments.all %}
+                                <tr class="{% cycle 'bg-white' 'bg-gray-50' %} dark:{% cycle 'bg-gray-800' 'bg-gray-750' %}">
+                                  <td class="px-3 py-2 whitespace-nowrap">
+                                    <div class="flex items-center space-x-2">
+                                      <div class="flex-shrink-0 h-10 w-10">
+                                        {% if enrollment.student.profile.avatar %}
+                                          <img src="{{ enrollment.student.profile.avatar.url }}"
+                                               alt="{{ enrollment.student.username }}"
+                                               class="h-10 w-10 rounded-full object-cover"
+                                               width="40"
+                                               height="40" />
+                                        {% else %}
+                                          <div class="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                                            <i class="fas fa-user text-gray-400 dark:text-gray-400"></i>
+                                          </div>
+                                        {% endif %}
+                                      </div>
+                                      <div class="overflow-hidden">
+                                        <div class="text-xs sm:text-sm font-medium text-gray-900 dark:text-white truncate">
+                                          {{ enrollment.student.get_full_name|default:enrollment.student.username }}
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 truncate">{{ enrollment.student.username }}</div>
+                                        {% if enrollment.student.profile.expertise %}
+                                          <div class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-500 italic truncate">
+                                            {{ enrollment.student.profile.expertise|truncatechars:30 }}
+                                          </div>
+                                        {% endif %}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td class="px-3 py-2 whitespace-nowrap">
+                                    <div class="text-xs sm:text-sm text-gray-900 dark:text-white">{{ enrollment.enrollment_date|date:"M d, Y" }}</div>
+                                    <div class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">
+                                      {{ enrollment.enrollment_date|timesince }} ago
+                                    </div>
+                                  </td>
+                                  <td class="px-3 py-2 whitespace-nowrap">
+                                    {% if enrollment.progress %}
+                                      <div class="flex items-center">
+                                        <div class="min-w-[4rem] w-[4rem] h-2 bg-gray-200 dark:bg-gray-700 rounded-full mr-2 overflow-hidden">
+                                          <div class="h-full bg-teal-500 dark:bg-teal-400 progress-bar"
+                                               style="width: {{ enrollment.progress.completion_percentage }}%"
+                                               data-progress="{{ enrollment.progress.completion_percentage }}"></div>
+                                        </div>
+                                        <span class="text-[10px] sm:text-xs text-gray-600 dark:text-gray-400">{{ enrollment.progress.completion_percentage }}%</span>
+                                      </div>
+                                    {% else %}
+                                      <span class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">No progress data</span>
+                                    {% endif %}
+                                  </td>
+                                  <td class="px-3 py-2 whitespace-nowrap">
+                                    {% if student_attendance and student_attendance|get_item:enrollment.student.id %}
+                                      <div class="text-xs sm:text-sm">
+                                        <span class="px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 font-medium">
+                                          <i class="fas fa-calendar-check text-blue-600 dark:text-blue-400 mr-1"></i>
+                                          {{ student_attendance|get_item:enrollment.student.id|get_item:'attended' }}/{{ student_attendance|get_item:enrollment.student.id|get_item:'total' }}
+                                        </span>
+                                      </div>
+                                      <div class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                        {% with attendance_rate=student_attendance|get_item:enrollment.student.id|get_item:'attended'|floatformat:0 %}
+                                          {{ attendance_rate }}% attendance rate
+                                        {% endwith %}
+                                      </div>
+                                    {% else %}
+                                      <span class="text-[10px] sm:text-xs text-gray-500 dark:text-gray-400">No data</span>
+                                    {% endif %}
+                                  </td>
+                                  <td class="px-3 py-2 whitespace-nowrap">
+                                    {% if enrollment.status == 'completed' %}
+                                      <span class="px-2 py-1 text-[10px] sm:text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                        <i class="fas fa-check-circle mr-1"></i>Completed
+                                      </span>
+                                    {% elif enrollment.status == 'in_progress' %}
+                                      <span class="px-2 py-1 text-[10px] sm:text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                        <i class="fas fa-spinner mr-1"></i>In Progress
+                                      </span>
+                                    {% else %}
+                                      <span class="px-2 py-1 text-[10px] sm:text-xs rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                                        {{ enrollment.status|title|default:"Unknown" }}
+                                      </span>
+                                    {% endif %}
+                                  </td>
+                                  <td class="px-3 py-2 whitespace-nowrap text-[10px] sm:text-sm font-medium">
+                                    <div class="flex space-x-2">
+                                      <a href="{% url 'public_profile' enrollment.student.username %}"
+                                         class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                                         title="View profile">
+                                        <i class="fas fa-user-circle"></i>
+                                      </a>
+                                      {% if user == course.teacher %}
+                                        <a href="{% url 'student_management' course.slug enrollment.student.id %}"
+                                           class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                                           title="Manage student">
+                                          <i class="fas fa-cog"></i>
+                                        </a>
+                                        <a href="{% url 'message_students' course.slug %}?student={{ enrollment.student.id }}"
+                                           class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                                           title="Message student">
+                                          <i class="fas fa-envelope"></i>
+                                        </a>
+                                      {% endif %}
+                                    </div>
+                                  </td>
+                                </tr>
+                              {% endfor %}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    {% else %}
+                      <div class="p-8 text-center">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
+                          <i class="fas fa-users text-gray-400 dark:text-gray-500 text-2xl"></i>
+                        </div>
+                        <p class="text-gray-500 dark:text-gray-400">No students have enrolled in this course yet.</p>
                         {% if user == course.teacher %}
                           <a href="{% url 'add_student_to_course' course.slug %}"
-                             class="inline-flex items-center px-3 py-1.5 text-sm bg-teal-300 hover:bg-teal-400 text-white rounded-lg transition duration-200">
+                             class="inline-flex items-center px-4 py-2 mt-4 bg-teal-300 hover:bg-teal-400 text-white rounded-lg transition duration-200">
                             <i class="fas fa-user-plus mr-2"></i>
                             Add Students
                           </a>
                         {% endif %}
                       </div>
-                      {% if course.enrollments.exists %}
-                        <div class="relative overflow-hidden">
-                          <div class="overflow-x-auto scrollbar-hide">
-                            <table class="w-full divide-y divide-gray-200 dark:divide-gray-700 table-fixed">
-                              <thead class="bg-gray-50 dark:bg-gray-700">
-                                <tr>
-                                  <th scope="col"
-                                      class="w-1/4 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Student
-                                  </th>
-                                  <th scope="col"
-                                      class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Enrollment Date
-                                  </th>
-                                  <th scope="col"
-                                      class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Progress
-                                  </th>
-                                  <th scope="col"
-                                      class="w-1/6 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Attendance
-                                  </th>
-                                  <th scope="col"
-                                      class="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Status
-                                  </th>
-                                  <th scope="col"
-                                      class="w-1/12 px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                                    Actions
-                                  </th>
-                                </tr>
-                              </thead>
-                              <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                                {% for enrollment in course.enrollments.all %}
-                                  <tr class="{% cycle 'bg-white' 'bg-gray-50' %} dark:{% cycle 'bg-gray-800' 'bg-gray-750' %}">
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                      <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                          {% if enrollment.student.profile.avatar %}
-                                            <img src="{{ enrollment.student.profile.avatar.url }}"
-                                                 alt="{{ enrollment.student.username }}"
-                                                 class="h-10 w-10 rounded-full object-cover"
-                                                 width="40"
-                                                 height="40" />
-                                          {% else %}
-                                            <div class="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                                              <i class="fas fa-user text-gray-400 dark:text-gray-400"></i>
-                                            </div>
-                                          {% endif %}
-                                        </div>
-                                        <div class="ml-4 overflow-hidden">
-                                          <div class="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                            {{ enrollment.student.get_full_name|default:enrollment.student.username }}
-                                          </div>
-                                          <div class="text-sm text-gray-500 dark:text-gray-400 truncate">{{ enrollment.student.username }}</div>
-                                          {% if enrollment.student.profile.expertise %}
-                                            <div class="text-xs text-gray-500 dark:text-gray-500 italic truncate">
-                                              {{ enrollment.student.profile.expertise|truncatechars:30 }}
-                                            </div>
-                                          {% endif %}
-                                        </div>
-                                      </div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                      <div class="text-sm text-gray-900 dark:text-white">{{ enrollment.enrollment_date|date:"M d, Y" }}</div>
-                                      <div class="text-xs text-gray-500 dark:text-gray-400">{{ enrollment.enrollment_date|timesince }} ago</div>
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                      {% if enrollment.progress %}
-                                        <div class="flex items-center">
-                                          <div class="min-w-[4.5rem] w-[4.5rem] h-2 bg-gray-200 dark:bg-gray-700 rounded-full mr-2 overflow-hidden">
-                                            <div class="h-full bg-teal-500 dark:bg-teal-400 progress-bar"
-                                                 style="width: {{ enrollment.progress.completion_percentage }}%"
-                                                 data-progress="{{ enrollment.progress.completion_percentage }}"></div>
-                                          </div>
-                                          <span class="text-sm text-gray-600 dark:text-gray-400">{{ enrollment.progress.completion_percentage }}%</span>
-                                        </div>
-                                      {% else %}
-                                        <span class="text-sm text-gray-500 dark:text-gray-400">No progress data</span>
-                                      {% endif %}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                      {% if student_attendance and student_attendance|get_item:enrollment.student.id %}
-                                        <div class="text-sm">
-                                          <span class="px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium">
-                                            <i class="fas fa-calendar-check text-blue-600 dark:text-blue-400 mr-1"></i>
-                                            {{ student_attendance|get_item:enrollment.student.id|get_item:'attended' }}/{{ student_attendance|get_item:enrollment.student.id|get_item:'total' }}
-                                          </span>
-                                        </div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                                          {% with attendance_rate=student_attendance|get_item:enrollment.student.id|get_item:'attended'|floatformat:0 %}
-                                            {{ attendance_rate }}% attendance rate
-                                          {% endwith %}
-                                        </div>
-                                      {% else %}
-                                        <span class="text-sm text-gray-500 dark:text-gray-400">No data</span>
-                                      {% endif %}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                      {% if enrollment.status == 'completed' %}
-                                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                          <i class="fas fa-check-circle mr-1"></i>Completed
-                                        </span>
-                                      {% elif enrollment.status == 'in_progress' %}
-                                        <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                          <i class="fas fa-spinner mr-1"></i>In Progress
-                                        </span>
-                                      {% else %}
-                                        <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                                          {{ enrollment.status|title|default:"Unknown" }}
-                                        </span>
-                                      {% endif %}
-                                    </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                      <div class="flex space-x-2">
-                                        <a href="{% url 'public_profile' enrollment.student.username %}"
-                                           class="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                                           title="View profile">
-                                          <i class="fas fa-user-circle"></i>
-                                        </a>
-                                        {% if user == course.teacher %}
-                                          <a href="{% url 'student_management' course.slug enrollment.student.id %}"
-                                             class="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
-                                             title="Manage student">
-                                            <i class="fas fa-cog"></i>
-                                          </a>
-                                          <a href="{% url 'message_students' course.slug %}?student={{ enrollment.student.id }}"
-                                             class="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
-                                             title="Message student">
-                                            <i class="fas fa-envelope"></i>
-                                          </a>
-                                        {% endif %}
-                                      </div>
-                                    </td>
-                                  </tr>
-                                {% endfor %}
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-                      {% else %}
-                        <div class="p-8 text-center">
-                          <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-700 mb-4">
-                            <i class="fas fa-users text-gray-400 dark:text-gray-500 text-2xl"></i>
-                          </div>
-                          <p class="text-gray-500 dark:text-gray-400">No students have enrolled in this course yet.</p>
-                          {% if user == course.teacher %}
-                            <a href="{% url 'add_student_to_course' course.slug %}"
-                               class="inline-flex items-center px-4 py-2 mt-4 bg-teal-300 hover:bg-teal-400 text-white rounded-lg transition duration-200">
-                              <i class="fas fa-user-plus mr-2"></i>
-                              Add Students
-                            </a>
-                          {% endif %}
-                        </div>
-                      {% endif %}
-                    </div>
-                    <!-- Additional Stats -->
-                    {% if user == course.teacher and course.enrollments.exists %}
-                      <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <!-- Completion Statistics -->
-                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                          <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-4">
-                            <i class="fas fa-chart-pie text-teal-500 dark:text-teal-400 mr-2"></i>
-                            Completion Statistics
-                          </h4>
-                          <div class="flex items-center justify-center">
-                            <div class="w-32 h-32 rounded-full flex items-center justify-center border-8 border-teal-100 dark:border-teal-900 relative">
-                              <div class="text-center">
-                                <span class="block text-2xl font-bold text-teal-600 dark:text-teal-400">
-                                  {{ completed_enrollment_count|floatformat:0 }}%
-                                </span>
-                                <span class="text-xs text-gray-500 dark:text-gray-400">Completion</span>
-                              </div>
-                              <!-- CSS-based progress circle would go here -->
+                    {% endif %}
+                  </div>
+                  <!-- Additional Stats -->
+                  {% if user == course.teacher and course.enrollments.exists %}
+                    <div class="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      <!-- Completion Statistics -->
+                      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                        <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-4">
+                          <i class="fas fa-chart-pie text-teal-500 dark:text-teal-400 mr-2"></i>
+                          Completion Statistics
+                        </h4>
+                        <div class="flex items-center justify-center">
+                          <div class="w-32 h-32 rounded-full flex items-center justify-center border-8 border-teal-100 dark:border-teal-900 relative">
+                            <div class="text-center">
+                              <span class="block text-2xl font-bold text-teal-600 dark:text-teal-400">
+                                {{ completed_enrollment_count|floatformat:0 }}%
+                              </span>
+                              <span class="text-xs text-gray-500 dark:text-gray-400">Completion</span>
                             </div>
-                            <div class="ml-6 space-y-2">
-                              <div>
-                                <div class="flex items-center">
-                                  <div class="w-3 h-3 bg-teal-500 rounded-full mr-2"></div>
-                                  <span class="text-sm text-gray-600 dark:text-gray-300">Completed</span>
-                                </div>
-                                <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ completed_enrollment_count }}</div>
+                            <!-- CSS-based progress circle would go here -->
+                          </div>
+                          <div class="ml-6 space-y-2">
+                            <div>
+                              <div class="flex items-center">
+                                <div class="w-3 h-3 bg-teal-500 rounded-full mr-2"></div>
+                                <span class="text-sm text-gray-600 dark:text-gray-300">Completed</span>
                               </div>
-                              <div>
-                                <div class="flex items-center">
-                                  <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                                  <span class="text-sm text-gray-600 dark:text-gray-300">In Progress</span>
-                                </div>
-                                <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ in_progress_enrollment_count }}</div>
+                              <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ completed_enrollment_count }}</div>
+                            </div>
+                            <div>
+                              <div class="flex items-center">
+                                <div class="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
+                                <span class="text-sm text-gray-600 dark:text-gray-300">In Progress</span>
                               </div>
-                              <div>
-                                <div class="flex items-center">
-                                  <div class="w-3 h-3 bg-gray-300 dark:bg-gray-600 rounded-full mr-2"></div>
-                                  <span class="text-sm text-gray-600 dark:text-gray-300">Total</span>
-                                </div>
-                                <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ course.enrollments.count }}</div>
+                              <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ in_progress_enrollment_count }}</div>
+                            </div>
+                            <div>
+                              <div class="flex items-center">
+                                <div class="w-3 h-3 bg-gray-300 dark:bg-gray-600 rounded-full mr-2"></div>
+                                <span class="text-sm text-gray-600 dark:text-gray-300">Total</span>
                               </div>
+                              <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ course.enrollments.count }}</div>
                             </div>
                           </div>
                         </div>
-                        <!-- Attendance Overview -->
-                        <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                          <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-4">
-                            <i class="fas fa-calendar-check text-teal-500 dark:text-teal-400 mr-2"></i>
-                            Attendance Overview
-                          </h4>
-                          <div class="space-y-3">
-                            {% if student_attendance %}
-                              {% for student_id, data in student_attendance.items %}
-                                {% with student=data.student attended=data.attended|default:0 total=data.total|default:0 %}
-                                  <div class="flex items-center">
-                                    <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex-shrink-0 mr-2 overflow-hidden">
-                                      {% if student.profile.avatar %}
-                                        <img src="{{ student.profile.avatar.url }}"
-                                             alt="{{ student.username }}"
-                                             class="w-full h-full object-cover"
-                                             width="32"
-                                             height="32" />
-                                      {% else %}
-                                        <div class="w-full h-full flex items-center justify-center">
-                                          <i class="fas fa-user text-gray-400 dark:text-gray-500"></i>
-                                        </div>
-                                      {% endif %}
+                      </div>
+                      <!-- Attendance Overview -->
+                      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                        <h4 class="font-medium text-gray-800 dark:text-gray-200 mb-4">
+                          <i class="fas fa-calendar-check text-teal-500 dark:text-teal-400 mr-2"></i>
+                          Attendance Overview
+                        </h4>
+                        <div class="space-y-3">
+                          {% if student_attendance %}
+                            {% for student_id, data in student_attendance.items %}
+                              {% with student=data.student attended=data.attended|default:0 total=data.total|default:0 %}
+                                <div class="flex items-center">
+                                  <div class="w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-600 flex-shrink-0 mr-2 overflow-hidden">
+                                    {% if student.profile.avatar %}
+                                      <img src="{{ student.profile.avatar.url }}"
+                                           alt="{{ student.username }}"
+                                           class="w-full h-full object-cover"
+                                           width="32"
+                                           height="32" />
+                                    {% else %}
+                                      <div class="w-full h-full flex items-center justify-center">
+                                        <i class="fas fa-user text-gray-400 dark:text-gray-500"></i>
+                                      </div>
+                                    {% endif %}
+                                  </div>
+                                  <div class="flex-grow">
+                                    <div class="flex justify-between items-center mb-1">
+                                      <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ student.username }}</span>
+                                      <span class="text-xs text-gray-500 dark:text-gray-400">{{ attended }}/{{ total }}</span>
                                     </div>
-                                    <div class="flex-grow">
-                                      <div class="flex justify-between items-center mb-1">
-                                        <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ student.username }}</span>
-                                        <span class="text-xs text-gray-500 dark:text-gray-400">{{ attended }}/{{ total }}</span>
-                                      </div>
-                                      <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                                        <div class="h-full bg-teal-500 dark:bg-teal-400"
-                                             style="width: {% if total > 0 %}{{ attended|floatformat:0 }}%{% else %}0%{% endif %}">
-                                        </div>
+                                    <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                      <div class="h-full bg-teal-500 dark:bg-teal-400"
+                                           style="width: {% if total > 0 %}{{ attended|floatformat:0 }}%{% else %}0%{% endif %}">
                                       </div>
                                     </div>
                                   </div>
-                                {% endwith %}
-                              {% endfor %}
-                            {% else %}
-                              <div class="text-center py-4">
-                                <p class="text-gray-500 dark:text-gray-400">No attendance data available</p>
-                              </div>
-                            {% endif %}
-                          </div>
-                        </div>
-                      </div>
-                    {% endif %}
-                  </div>
-                {% endif %}
-                <!-- Course Description Tab -->
-                <div id="content-description"
-                     class="tab-content {% if not is_teacher and not is_enrolled %}active{% else %}hidden{% endif %}"
-                     role="tabpanel"
-                     aria-labelledby="tab-description">
-                  <div class="markdown-content space-y-6 text-gray-800 dark:text-gray-200">
-                    <div class="space-y-2">
-                      <!-- Schedule -->
-                      <div>
-                        <h2 class="text-xl font-bold mb-2">Schedule</h2>
-                        {{ course.description|markdown }}
-                      </div>
-                      <!-- Learning Objectives -->
-                      <div class="mt-8">
-                        <h2 class="text-xl font-bold mb-2">Learning Objectives</h2>
-                        {{ course.learning_objectives|markdown }}
-                      </div>
-                      <!-- Prerequisites -->
-                      {% if course.prerequisites %}
-                        <div class="mt-8">
-                          <h2 class="text-xl font-bold mb-2">Prerequisites</h2>
-                          {{ course.prerequisites|markdown }}
-                        </div>
-                      {% endif %}
-                    </div>
-                  </div>
-                </div>
-                <!-- Materials Tab -->
-                <div id="content-materials"
-                     class="tab-content hidden"
-                     role="tabpanel"
-                     aria-labelledby="tab-materials">
-                  <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
-                    <div class="flex justify-between items-center mb-4">
-                      <h2 class="text-xl font-bold">Course Materials</h2>
-                      {% if user == course.teacher %}
-                        <a href="{% url 'upload_material' course.slug %}"
-                           class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg transition duration-200 text-sm">
-                          <i class="fas fa-plus mr-1"></i>Add Material
-                        </a>
-                      {% endif %}
-                    </div>
-                    {% if course.materials.exists %}
-                      <div class="max-h-96 overflow-y-auto pr-2">
-                        <div class="space-y-3">
-                          {% for material in course.materials.all %}
-                            <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 shadow-sm">
-                              <div class="flex justify-between items-start">
-                                <div>
-                                  <h3 class="font-semibold text-sm">
-                                    {% if is_enrolled or not material.requires_enrollment or is_teacher %}
-                                      {% if material.external_url %}
-                                        <a href="{{ material.external_url }}"
-                                           target="_blank"
-                                           class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                          {{ material.title }}
-                                          <i class="fas fa-external-link-alt ml-1 text-xs"></i>
-                                        </a>
-                                      {% else %}
-                                        <a href="{% url 'download_material' course.slug material.id %}"
-                                           class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                          {{ material.title }}
-                                          <i class="fas fa-download ml-1 text-xs"></i>
-                                        </a>
-                                      {% endif %}
-                                    {% else %}
-                                      {{ material.preview_content }}
-                                      <span class="ml-2 text-xs text-gray-500">(Enroll to access)</span>
-                                    {% endif %}
-                                  </h3>
-                                  {% if material.description %}
-                                    <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">{{ material.description|truncatechars:50 }}</p>
-                                  {% endif %}
                                 </div>
-                                {% if user == course.teacher %}
-                                  <a href="{% url 'delete_material' course.slug material.id %}"
-                                     class="text-red-600 hover:text-red-800 dark:text-red-400 text-sm">
-                                    <i class="fas fa-trash"></i>
-                                  </a>
-                                {% endif %}
-                              </div>
-                            </div>
-                          {% endfor %}
-                        </div>
-                      </div>
-                    {% else %}
-                      <p class="text-gray-500 dark:text-gray-400 text-sm italic">No materials available for this course yet.</p>
-                    {% endif %}
-                  </div>
-                </div>
-                <!-- Progress Tab -->
-                {% if is_enrolled and enrollment %}
-                  <div id="content-progress"
-                       class="tab-content hidden"
-                       role="tabpanel"
-                       aria-labelledby="tab-progress">
-                    <div class="space-y-6">
-                      <!-- Progress Tracker -->
-                      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                        <!-- Progress Header -->
-                        <div class="relative mb-4">
-                          <div class="flex justify-between items-center mb-2">
-                            <h3 class="font-semibold text-lg">Your Progress</h3>
-                            <div class="text-2xl font-bold text-green-600 dark:text-green-400"
-                                 style="width: 50%">{{ enrollment.progress.completion_percentage }}</div>
-                          </div>
-                          <!-- Green Gradient Progress Bar -->
-                          <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-                            <div data-progress="{{ enrollment.progress.completion_percentage }}"
-                                 class="h-full bg-teal-500 dark:bg-teal-400"
-                                 style="width: {{ enrollment.progress.completion_percentage }}%"></div>
-                          </div>
-                        </div>
-                        <!-- Stats -->
-                        <div class="grid grid-cols-2 gap-4 text-center">
-                          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                            <div class="text-sm text-gray-500 dark:text-gray-400">Completed Sessions</div>
-                            <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                              {{ enrollment.progress.completed_sessions.count }}
-                            </div>
-                          </div>
-                          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
-                            <div class="text-sm text-gray-500 dark:text-gray-400">Remaining Sessions</div>
-                            <div class="text-2xl font-bold text-orange-600 dark:text-orange-400"
-                                 id="remaining-count-tab"
-                                 data-total-sessions="{{ course.sessions.count|default:0 }}"
-                                 data-completed-sessions="{{ enrollment.progress.completed_sessions.count|default:0 }}">
-                              <!-- Will be filled by JavaScript -->
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      <!-- Session Completion List -->
-                      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-                        <h4 class="font-medium mb-4">Session Completion</h4>
-                        <div class="max-h-96 overflow-y-auto pr-2 space-y-2">
-                          {% for session in course.sessions.all %}
-                            <div class="flex items-center justify-between p-3 {% if session in enrollment.progress.completed_sessions.all %}bg-green-50 dark:bg-green-900/20{% else %}bg-gray-50 dark:bg-gray-700/50{% endif %} rounded-lg border border-gray-100 dark:border-gray-700">
-                              <div class="flex items-center space-x-3">
-                                {% if session in enrollment.progress.completed_sessions.all %}
-                                  <i class="fas fa-check-circle text-green-500 dark:text-green-400 text-lg"></i>
-                                {% elif session.end_time < now %}
-                                  <i class="fas fa-circle text-red-500 dark:text-red-400 text-lg"></i>
-                                {% else %}
-                                  <i class="far fa-circle text-gray-400 dark:text-gray-500 text-lg"></i>
-                                {% endif %}
-                                <div>
-                                  <div class="font-medium">{{ session.title }}</div>
-                                  <div class="text-sm text-gray-600 dark:text-gray-400">{{ session.start_time|date:"M d, Y g:i A e" }}</div>
-                                </div>
-                              </div>
-                              <div>
-                                {% if session in enrollment.progress.completed_sessions.all %}
-                                  <span class="px-3 py-1 text-sm rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                                    Completed
-                                  </span>
-                                {% elif session.end_time < now %}
-                                  <form method="post"
-                                        action="{% url 'mark_session_completed' session.id %}"
-                                        class="inline">
-                                    {% csrf_token %}
-                                    <button type="submit"
-                                            class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-full">
-                                      Complete
-                                    </button>
-                                  </form>
-                                {% else %}
-                                  <span class="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                    Upcoming
-                                  </span>
-                                {% endif %}
-                              </div>
-                            </div>
-                          {% endfor %}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                {% endif %}
-              </div>
-            </div>
-            <section id="course_reviews"
-                     class="bg-gradient-to-r from-teal-50 to-blue-50 dark:from-gray-750 dark:to-gray-800 rounded-xl shadow-md p-6 border border-gray-100 dark:border-gray-700 mb-6">
-              <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-bold text-gray-800 dark:text-white">Course Reviews</h2>
-                {% if is_enrolled and not user_review %}
-                  <a href="{% url 'add_review' course.slug %}"
-                     class="bg-teal-500 hover:bg-teal-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center">
-                    <i class="fas fa-star mr-2"></i>Write a Review
-                  </a>
-                {% endif %}
-              </div>
-              <!-- Course Average Rating -->
-              <div class="mb-8 bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm">
-                <div class="flex flex-col md:flex-row items-center gap-6">
-                  <div class="text-center">
-                    <div class="text-4xl font-bold text-teal-600 dark:text-teal-400">
-                      {{ course.average_rating|default:"0"|floatformat:1 }}
-                    </div>
-                    <div class="flex mt-1">
-                      {% for i in "12345" %}
-                        {% if forloop.counter <= course.average_rating|default:0|floatformat:"0" %}
-                          <i class="fas fa-star text-yellow-400"></i>
-                        {% elif forloop.counter <= course.average_rating|default:0|add:"0.5"|floatformat:"0" %}
-                          <i class="fas fa-star-half-alt text-yellow-400"></i>
-                        {% else %}
-                          <i class="far fa-star text-yellow-400"></i>
-                        {% endif %}
-                      {% endfor %}
-                    </div>
-                    <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ reviews_num }} review{{ reviews.count|pluralize }}</div>
-                  </div>
-                  <div class="flex-grow">
-                    <div class="space-y-2">
-                      {% for i in "54321" %}
-                        <div class="flex items-center space-x-2">
-                          <div class="w-12 text-sm text-right">{{ i }} star{{ i|pluralize }}</div>
-                          <div class="flex-grow h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
-                            {% if rating_distribution|get_item:i > 0 %}
-                              <div class="h-full bg-yellow-400 rating-distribution-bar"
-                                   data-rating="{{ rating_distribution|get_item:i }}"></div>
-                            {% else %}
-                              <div class="h-full bg-yellow-400" style="width: 0%"></div>
-                            {% endif %}
-                          </div>
-                          <div class="w-12 text-sm">{{ rating_distribution|get_item:i }}</div>
-                        </div>
-                      {% endfor %}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              {% if reviews or featured_review %}
-                <!-- featured reviews List -->
-                <div class="space-y-4">
-                  {% for review in featured_review %}
-                    <div class="relative bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm">
-                      <span class="absolute top-0 left-0 p-1.5 px-2.5 rounded-lg inline-block mb-4 bg-yellow-400">Featured</span>
-                      <div class="flex justify-between mt-9 items-start">
-                        <div class="flex items-start space-x-3">
-                          {% if review.student.profile.avatar %}
-                            <img src="{{ review.student.profile.avatar.url }}"
-                                 alt="{{ review.student.username }}"
-                                 class="w-10 h-10 rounded-full object-cover"
-                                 width="40"
-                                 height="40" />
+                              {% endwith %}
+                            {% endfor %}
                           {% else %}
-                            <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center ring-2 ring-yellow-400 ring-opacity-50">
-                              <i class="fas fa-user text-gray-400"></i>
+                            <div class="text-center py-4">
+                              <p class="text-gray-500 dark:text-gray-400">No attendance data available</p>
                             </div>
                           {% endif %}
-                          <div>
-                            {% if request.user.id == review.student.id %}
-                              <div class="font-medium text-gray-800 dark:text-white">You</div>
-                            {% else %}
-                              <div class="font-medium text-gray-800 dark:text-white">{{ review.student.username }}</div>
-                            {% endif %}
-                            <div class="flex items-center mt-1">
-                              {% for i in "12345" %}
-                                {% if forloop.counter <= review.rating %}
-                                  <i class="fas fa-star text-yellow-400 text-sm"></i>
-                                {% else %}
-                                  <i class="far fa-star text-yellow-400 text-sm"></i>
-                                {% endif %}
-                              {% endfor %}
-                            </div>
-                          </div>
-                        </div>
-                        <div class="flex items-center">
-                          <div class="text-xs text-gray-500 dark:text-gray-400 mr-3">{{ review.created_at|date:"M d, Y" }}</div>
                         </div>
                       </div>
-                      <div class="mt-3 text-gray-700 dark:text-gray-300">{{ review.comment }}</div>
-                      <!-- Edit/Delete buttons for user's own reviews -->
-                      {% if request.user.is_authenticated and request.user.id == review.student.id %}
-                        <div class="flex mt-1 clearfix justify-end">
-                          <div class="flex space-x-2 float-right">
-                            <a href="{% url 'edit_review' course.slug review.id %}"
-                               class="inline-flex items-center px-3 py-1.5 text-sm bg-teal-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
-                              <i class="fas fa-edit mr-2"></i>
-                              Edit
-                            </a>
-                            <button onclick="confirmDelete('{% url 'delete_review' course.slug review.id %}')"
-                                    class="inline-flex items-center px-3 py-1.5 text-sm bg-red-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
-                              <i class="fas fa-trash-alt mr-2"></i>
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      {% endif %}
-                      <!-- Feature reviews Edit/Delete buttons for teachers -->
-                      {% if is_teacher %}
-                        <div class="flex mt-1 clearfix justify-end">
-                          <div class="flex space-x-2 float-right">
-                            <button onclick="confirmAddOrDeleteFeatureReviews('{% url 'remove_featured_review' course.slug review.id %}', 'Remove')"
-                                    data-content="Remove from features"
-                                    class="inline-flex items-center px-3 py-1.5 text-sm bg-red-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
-                              <i class="fas fa-trash-alt mr-2"></i>
-                              Remove from features
-                            </button>
-                          </div>
-                        </div>
-                      {% endif %}
                     </div>
-                  {% endfor %}
-                  <!-- Normal reviews List -->
-                  {% for review in reviews %}
-                    <div class="bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm">
-                      <div class="flex justify-between items-start">
-                        <div class="flex items-start space-x-3">
-                          {% if review.student.profile.avatar %}
-                            <img src="{{ review.student.profile.avatar.url }}"
-                                 alt="{{ review.student.username }}"
-                                 class="w-10 h-10 rounded-full object-cover"
-                                 width="40"
-                                 height="40" />
-                          {% else %}
-                            <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
-                              <i class="fas fa-user text-gray-400"></i>
-                            </div>
-                          {% endif %}
-                          <div>
-                            {% if request.user.id == review.student.id %}
-                              <div class="font-medium text-gray-800 dark:text-white">You</div>
-                            {% else %}
-                              <div class="font-medium text-gray-800 dark:text-white">{{ review.student.username }}</div>
-                            {% endif %}
-                            <div class="flex items-center mt-1">
-                              {% for i in "12345" %}
-                                {% if forloop.counter <= review.rating %}
-                                  <i class="fas fa-star text-yellow-400 text-sm"></i>
-                                {% else %}
-                                  <i class="far fa-star text-yellow-400 text-sm"></i>
-                                {% endif %}
-                              {% endfor %}
-                            </div>
-                          </div>
-                        </div>
-                        <div class="flex items-center">
-                          <div class="text-xs text-gray-500 dark:text-gray-400 mr-3">{{ review.created_at|date:"M d, Y" }}</div>
-                        </div>
-                      </div>
-                      <div class="mt-3 text-gray-700 dark:text-gray-300">{{ review.comment }}</div>
-                      <!-- Edit/Delete buttons for student's own reviews -->
-                      {% if request.user.is_authenticated and request.user.id == review.student.id %}
-                        <div class="flex mt-1 clearfix justify-end">
-                          <div class="flex space-x-2 float-right">
-                            <a href="{% url 'edit_review' course.slug review.id %}"
-                               class="inline-flex items-center px-3 py-1.5 text-sm bg-teal-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
-                              <i class="fas fa-edit mr-2"></i>
-                              Edit
-                            </a>
-                            <button onclick="confirmDelete('{% url 'delete_review' course.slug review.id %}')"
-                                    class="inline-flex items-center px-3 py-1.5 text-sm bg-red-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
-                              <i class="fas fa-trash-alt mr-2"></i>
-                              Delete
-                            </button>
-                          </div>
-                        </div>
-                      {% endif %}
-                      <!-- Add/Delete reviews to Feature for teachers -->
-                      {% if is_teacher %}
-                        <div class="flex mt-1 clearfix justify-end">
-                          <div class="flex space-x-2 float-right">
-                            <button onclick="confirmAddOrDeleteFeatureReviews('{% url 'add_featured_review' course.slug review.id %}', 'add')"
-                                    data-content="Add to features"
-                                    class="inline-flex items-center px-3 py-1.5 text-sm bg-teal-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
-                              <i class="fas fa-plus mr-2"></i>
-                              Add to features
-                            </button>
-                          </div>
-                        </div>
-                      {% endif %}
-                    </div>
-                  {% endfor %}
-                </div>
-                <!-- Delete Confirmation Modal -->
-                <div id="deleteModal"
-                     class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
-                  <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
-                    <h3 id="modal-title"
-                        class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Confirm Deletion</h3>
-                    <p id="modal-message" class="text-gray-700 dark:text-gray-300 mb-6">
-                      Are you sure you want to delete this review? This action cannot be undone.
-                    </p>
-                    <div class="flex justify-end space-x-3">
-                      <button onclick="closeDeleteModal()"
-                              class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
-                        Cancel
-                      </button>
-                      <a id="deleteLink"
-                         href="#"
-                         class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Delete</a>
-                    </div>
-                  </div>
-                </div>
-              {% else %}
-                <div class="text-center py-8 bg-white dark:bg-gray-700 rounded-lg">
-                  <div class="text-gray-500 dark:text-gray-400">No reviews yet</div>
-                  <div class="text-sm text-gray-400 dark:text-gray-500 mt-1">Be the first to review this course!</div>
+                  {% endif %}
                 </div>
               {% endif %}
-            </section>
+              <!-- Course Description Tab -->
+              <div id="content-description"
+                   class="tab-content {% if not is_teacher and not is_enrolled %}active{% else %}hidden{% endif %}"
+                   role="tabpanel"
+                   aria-labelledby="tab-description">
+                <div class="markdown-content space-y-6 text-gray-800 dark:text-gray-200">
+                  <div class="space-y-2">
+                    <!-- Schedule -->
+                    <div>
+                      <h2 class="text-xl font-bold mb-2">Schedule</h2>
+                      {{ course.description|markdown }}
+                    </div>
+                    <!-- Learning Objectives -->
+                    <div class="mt-8">
+                      <h2 class="text-xl font-bold mb-2">Learning Objectives</h2>
+                      {{ course.learning_objectives|markdown }}
+                    </div>
+                    <!-- Prerequisites -->
+                    {% if course.prerequisites %}
+                      <div class="mt-8">
+                        <h2 class="text-xl font-bold mb-2">Prerequisites</h2>
+                        {{ course.prerequisites|markdown }}
+                      </div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+              <!-- Materials Tab -->
+              <div id="content-materials"
+                   class="tab-content hidden"
+                   role="tabpanel"
+                   aria-labelledby="tab-materials">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
+                  <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold">Course Materials</h2>
+                    {% if user == course.teacher %}
+                      <a href="{% url 'upload_material' course.slug %}"
+                         class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg transition duration-200 text-sm">
+                        <i class="fas fa-plus mr-1"></i>Add Material
+                      </a>
+                    {% endif %}
+                  </div>
+                  {% if course.materials.exists %}
+                    <div class="max-h-96 overflow-y-auto pr-2">
+                      <div class="space-y-3">
+                        {% for material in course.materials.all %}
+                          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 shadow-sm">
+                            <div class="flex justify-between items-start">
+                              <div>
+                                <h3 class="font-semibold text-sm">
+                                  {% if is_enrolled or not material.requires_enrollment or is_teacher %}
+                                    {% if material.external_url %}
+                                      <a href="{{ material.external_url }}"
+                                         target="_blank"
+                                         class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                        {{ material.title }}
+                                        <i class="fas fa-external-link-alt ml-1 text-xs"></i>
+                                      </a>
+                                    {% else %}
+                                      <a href="{% url 'download_material' course.slug material.id %}"
+                                         class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                        {{ material.title }}
+                                        <i class="fas fa-download ml-1 text-xs"></i>
+                                      </a>
+                                    {% endif %}
+                                  {% else %}
+                                    {{ material.preview_content }}
+                                    <span class="ml-2 text-xs text-gray-500">(Enroll to access)</span>
+                                  {% endif %}
+                                </h3>
+                                {% if material.description %}
+                                  <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">{{ material.description|truncatechars:50 }}</p>
+                                {% endif %}
+                              </div>
+                              {% if user == course.teacher %}
+                                <a href="{% url 'delete_material' course.slug material.id %}"
+                                   class="text-red-600 hover:text-red-800 dark:text-red-400 text-sm">
+                                  <i class="fas fa-trash"></i>
+                                </a>
+                              {% endif %}
+                            </div>
+                          </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  {% else %}
+                    <p class="text-gray-500 dark:text-gray-400 text-sm italic">No materials available for this course yet.</p>
+                  {% endif %}
+                </div>
+              </div>
+              <!-- Progress Tab -->
+              {% if is_enrolled and enrollment %}
+                <div id="content-progress"
+                     class="tab-content hidden"
+                     role="tabpanel"
+                     aria-labelledby="tab-progress">
+                  <div class="space-y-6">
+                    <!-- Progress Tracker -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                      <!-- Progress Header -->
+                      <div class="relative mb-4">
+                        <div class="flex justify-between items-center mb-2">
+                          <h3 class="font-semibold text-lg">Your Progress</h3>
+                          <div class="text-2xl font-bold text-green-600 dark:text-green-400"
+                               style="width: 50%">{{ enrollment.progress.completion_percentage }}</div>
+                        </div>
+                        <!-- Green Gradient Progress Bar -->
+                        <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                          <div data-progress="{{ enrollment.progress.completion_percentage }}"
+                               class="h-full bg-teal-500 dark:bg-teal-400"
+                               style="width: {{ enrollment.progress.completion_percentage }}%"></div>
+                        </div>
+                      </div>
+                      <!-- Stats -->
+                      <div class="grid grid-cols-2 gap-4 text-center">
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                          <div class="text-sm text-gray-500 dark:text-gray-400">Completed Sessions</div>
+                          <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+                            {{ enrollment.progress.completed_sessions.count }}
+                          </div>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                          <div class="text-sm text-gray-500 dark:text-gray-400">Remaining Sessions</div>
+                          <div class="text-2xl font-bold text-orange-600 dark:text-orange-400"
+                               id="remaining-count-tab"
+                               data-total-sessions="{{ course.sessions.count|default:0 }}"
+                               data-completed-sessions="{{ enrollment.progress.completed_sessions.count|default:0 }}">
+                            <!-- Will be filled by JavaScript -->
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- Session Completion List -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                      <h4 class="font-medium mb-4">Session Completion</h4>
+                      <div class="max-h-96 overflow-y-auto pr-2 space-y-2">
+                        {% for session in course.sessions.all %}
+                          <div class="flex items-center justify-between p-3 {% if session in enrollment.progress.completed_sessions.all %}bg-green-50 dark:bg-green-900/20{% else %}bg-gray-50 dark:bg-gray-700/50{% endif %} rounded-lg border border-gray-100 dark:border-gray-700">
+                            <div class="flex items-center space-x-3">
+                              {% if session in enrollment.progress.completed_sessions.all %}
+                                <i class="fas fa-check-circle text-green-500 dark:text-green-400 text-lg"></i>
+                              {% elif session.end_time < now %}
+                                <i class="fas fa-circle text-red-500 dark:text-red-400 text-lg"></i>
+                              {% else %}
+                                <i class="far fa-circle text-gray-400 dark:text-gray-500 text-lg"></i>
+                              {% endif %}
+                              <div>
+                                <div class="font-medium">{{ session.title }}</div>
+                                <div class="text-sm text-gray-600 dark:text-gray-400">{{ session.start_time|date:"M d, Y g:i A e" }}</div>
+                              </div>
+                            </div>
+                            <div>
+                              {% if session in enrollment.progress.completed_sessions.all %}
+                                <span class="px-3 py-1 text-sm rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                  Completed
+                                </span>
+                              {% elif session.end_time < now %}
+                                <form method="post"
+                                      action="{% url 'mark_session_completed' session.id %}"
+                                      class="inline">
+                                  {% csrf_token %}
+                                  <button type="submit"
+                                          class="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-full">
+                                    Complete
+                                  </button>
+                                </form>
+                              {% else %}
+                                <span class="px-3 py-1 text-sm rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                                  Upcoming
+                                </span>
+                              {% endif %}
+                            </div>
+                          </div>
+                        {% endfor %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
           </div>
+          <section id="course_reviews"
+                   class="bg-gradient-to-r from-teal-50 to-blue-50 dark:from-gray-750 dark:to-gray-800 rounded-xl shadow-md p-2 sm:p-4 md:p-6 border border-gray-100 dark:border-gray-700 mb-6">
+            <div class="flex items-center justify-between mb-6">
+              <h2 class="text-xl font-bold text-gray-800 dark:text-white">Course Reviews</h2>
+              {% if is_enrolled and not user_review %}
+                <a href="{% url 'add_review' course.slug %}"
+                   class="bg-teal-500 hover:bg-teal-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center">
+                  <i class="fas fa-star mr-2"></i>Write a Review
+                </a>
+              {% endif %}
+            </div>
+            <!-- Course Average Rating -->
+            <div class="mb-8 bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm">
+              <div class="flex flex-col md:flex-row items-center gap-6">
+                <div class="text-center">
+                  <div class="text-4xl font-bold text-teal-600 dark:text-teal-400">
+                    {{ course.average_rating|default:"0"|floatformat:1 }}
+                  </div>
+                  <div class="flex mt-1">
+                    {% for i in "12345" %}
+                      {% if forloop.counter <= course.average_rating|default:0|floatformat:"0" %}
+                        <i class="fas fa-star text-yellow-400"></i>
+                      {% elif forloop.counter <= course.average_rating|default:0|add:"0.5"|floatformat:"0" %}
+                        <i class="fas fa-star-half-alt text-yellow-400"></i>
+                      {% else %}
+                        <i class="far fa-star text-yellow-400"></i>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400 mt-1">{{ reviews_num }} review{{ reviews.count|pluralize }}</div>
+                </div>
+                <div class="flex-grow">
+                  <div class="space-y-2">
+                    {% for i in "54321" %}
+                      <div class="flex items-center space-x-2">
+                        <div class="w-12 text-sm text-right">{{ i }} star{{ i|pluralize }}</div>
+                        <div class="flex-grow h-2 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
+                          {% if rating_distribution|get_item:i > 0 %}
+                            <div class="h-full bg-yellow-400 rating-distribution-bar"
+                                 data-rating="{{ rating_distribution|get_item:i }}"></div>
+                          {% else %}
+                            <div class="h-full bg-yellow-400" style="width: 0%"></div>
+                          {% endif %}
+                        </div>
+                        <div class="w-12 text-sm">{{ rating_distribution|get_item:i }}</div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% if reviews or featured_review %}
+              <!-- featured reviews List -->
+              <div class="space-y-4">
+                {% for review in featured_review %}
+                  <div class="relative bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm">
+                    <span class="absolute top-0 left-0 p-1.5 px-2.5 rounded-lg inline-block mb-4 bg-yellow-400">Featured</span>
+                    <div class="flex justify-between mt-9 items-start">
+                      <div class="flex items-start space-x-3">
+                        {% if review.student.profile.avatar %}
+                          <img src="{{ review.student.profile.avatar.url }}"
+                               alt="{{ review.student.username }}"
+                               class="w-10 h-10 rounded-full object-cover"
+                               width="40"
+                               height="40" />
+                        {% else %}
+                          <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center ring-2 ring-yellow-400 ring-opacity-50">
+                            <i class="fas fa-user text-gray-400"></i>
+                          </div>
+                        {% endif %}
+                        <div>
+                          {% if request.user.id == review.student.id %}
+                            <div class="font-medium text-gray-800 dark:text-white">You</div>
+                          {% else %}
+                            <div class="font-medium text-gray-800 dark:text-white">{{ review.student.username }}</div>
+                          {% endif %}
+                          <div class="flex items-center mt-1">
+                            {% for i in "12345" %}
+                              {% if forloop.counter <= review.rating %}
+                                <i class="fas fa-star text-yellow-400 text-sm"></i>
+                              {% else %}
+                                <i class="far fa-star text-yellow-400 text-sm"></i>
+                              {% endif %}
+                            {% endfor %}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="flex items-center">
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mr-3">{{ review.created_at|date:"M d, Y" }}</div>
+                      </div>
+                    </div>
+                    <div class="mt-3 text-gray-700 dark:text-gray-300">{{ review.comment }}</div>
+                    <!-- Edit/Delete buttons for user's own reviews -->
+                    {% if request.user.is_authenticated and request.user.id == review.student.id %}
+                      <div class="flex mt-1 clearfix justify-end">
+                        <div class="flex space-x-2 float-right">
+                          <a href="{% url 'edit_review' course.slug review.id %}"
+                             class="inline-flex items-center px-3 py-1.5 text-sm bg-teal-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
+                            <i class="fas fa-edit mr-2"></i>
+                            Edit
+                          </a>
+                          <button onclick="confirmDelete('{% url 'delete_review' course.slug review.id %}')"
+                                  class="inline-flex items-center px-3 py-1.5 text-sm bg-red-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
+                            <i class="fas fa-trash-alt mr-2"></i>
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    {% endif %}
+                    <!-- Feature reviews Edit/Delete buttons for teachers -->
+                    {% if is_teacher %}
+                      <div class="flex mt-1 clearfix justify-end">
+                        <div class="flex space-x-2 float-right">
+                          <button onclick="confirmAddOrDeleteFeatureReviews('{% url 'remove_featured_review' course.slug review.id %}', 'Remove')"
+                                  data-content="Remove from features"
+                                  class="inline-flex items-center px-3 py-1.5 text-sm bg-red-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
+                            <i class="fas fa-trash-alt mr-2"></i>
+                            Remove from features
+                          </button>
+                        </div>
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+                <!-- Normal reviews List -->
+                {% for review in reviews %}
+                  <div class="bg-white dark:bg-gray-700 rounded-lg p-4 shadow-sm">
+                    <div class="flex justify-between items-start">
+                      <div class="flex items-start space-x-3">
+                        {% if review.student.profile.avatar %}
+                          <img src="{{ review.student.profile.avatar.url }}"
+                               alt="{{ review.student.username }}"
+                               class="w-10 h-10 rounded-full object-cover"
+                               width="40"
+                               height="40" />
+                        {% else %}
+                          <div class="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-600 flex items-center justify-center">
+                            <i class="fas fa-user text-gray-400"></i>
+                          </div>
+                        {% endif %}
+                        <div>
+                          {% if request.user.id == review.student.id %}
+                            <div class="font-medium text-gray-800 dark:text-white">You</div>
+                          {% else %}
+                            <div class="font-medium text-gray-800 dark:text-white">{{ review.student.username }}</div>
+                          {% endif %}
+                          <div class="flex items-center mt-1">
+                            {% for i in "12345" %}
+                              {% if forloop.counter <= review.rating %}
+                                <i class="fas fa-star text-yellow-400 text-sm"></i>
+                              {% else %}
+                                <i class="far fa-star text-yellow-400 text-sm"></i>
+                              {% endif %}
+                            {% endfor %}
+                          </div>
+                        </div>
+                      </div>
+                      <div class="flex items-center">
+                        <div class="text-xs text-gray-500 dark:text-gray-400 mr-3">{{ review.created_at|date:"M d, Y" }}</div>
+                      </div>
+                    </div>
+                    <div class="mt-3 text-gray-700 dark:text-gray-300">{{ review.comment }}</div>
+                    <!-- Edit/Delete buttons for student's own reviews -->
+                    {% if request.user.is_authenticated and request.user.id == review.student.id %}
+                      <div class="flex mt-1 clearfix justify-end">
+                        <div class="flex space-x-2 float-right">
+                          <a href="{% url 'edit_review' course.slug review.id %}"
+                             class="inline-flex items-center px-3 py-1.5 text-sm bg-teal-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
+                            <i class="fas fa-edit mr-2"></i>
+                            Edit
+                          </a>
+                          <button onclick="confirmDelete('{% url 'delete_review' course.slug review.id %}')"
+                                  class="inline-flex items-center px-3 py-1.5 text-sm bg-red-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
+                            <i class="fas fa-trash-alt mr-2"></i>
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    {% endif %}
+                    <!-- Add/Delete reviews to Feature for teachers -->
+                    {% if is_teacher %}
+                      <div class="flex mt-1 clearfix justify-end">
+                        <div class="flex space-x-2 float-right">
+                          <button onclick="confirmAddOrDeleteFeatureReviews('{% url 'add_featured_review' course.slug review.id %}', 'add')"
+                                  data-content="Add to features"
+                                  class="inline-flex items-center px-3 py-1.5 text-sm bg-teal-500 hover:bg-teal-600 text-white rounded-md transition duration-200">
+                            <i class="fas fa-plus mr-2"></i>
+                            Add to features
+                          </button>
+                        </div>
+                      </div>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+              <!-- Delete Confirmation Modal -->
+              <div id="deleteModal"
+                   class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+                <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+                  <h3 id="modal-title"
+                      class="text-lg font-bold mb-4 text-gray-900 dark:text-white">Confirm Deletion</h3>
+                  <p id="modal-message" class="text-gray-700 dark:text-gray-300 mb-6">
+                    Are you sure you want to delete this review? This action cannot be undone.
+                  </p>
+                  <div class="flex justify-end space-x-3">
+                    <button onclick="closeDeleteModal()"
+                            class="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-white rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
+                      Cancel
+                    </button>
+                    <a id="deleteLink"
+                       href="#"
+                       class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700">Delete</a>
+                  </div>
+                </div>
+              </div>
+            {% else %}
+              <div class="text-center py-8 bg-white dark:bg-gray-700 rounded-lg">
+                <div class="text-gray-500 dark:text-gray-400">No reviews yet</div>
+                <div class="text-sm text-gray-400 dark:text-gray-500 mt-1">Be the first to review this course!</div>
+              </div>
+            {% endif %}
+          </section>
         </div>
       </div>
     </div>
   </div>
-  <!-- Notification -->
-  <div id="notification"
-       class="notification bg-blue-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center">
-    <i class="fas fa-info-circle notification-icon mr-2"></i>
-    <span class="notification-message">This is a notification</span>
-  </div>
-  <script>
-      document.addEventListener('keydown', function(event) {
-          if (event.key === 'Escape') {
-              closeDeleteModal();
-          }
-      });
+</div>
+<!-- Notification -->
+<div id="notification"
+     class="notification bg-blue-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center">
+  <i class="fas fa-info-circle notification-icon mr-2"></i>
+  <span class="notification-message">This is a notification</span>
+</div>
+<script>
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            closeDeleteModal();
+        }
+    });
 
-      function setRatingDistributionWidths() {
-          // Parse the widths data from the template
-          const reviewsNum = JSON.parse('{{ reviews_num|escapejs }}');
+    function setRatingDistributionWidths() {
+        // Parse the widths data from the template
+        const reviewsNum = JSON.parse('{{ reviews_num|escapejs }}');
 
-          // Function to set width based on rating
-          function setWidth(element, StartNum) {
-              const width = reviewsNum == 0 ? 0 : 100 * (StartNum / reviewsNum);
-              element.style.width = `${width}%`;
-          }
+        // Function to set width based on rating
+        function setWidth(element, StartNum) {
+            const width = reviewsNum == 0 ? 0 : 100 * (StartNum / reviewsNum);
+            element.style.width = `${width}%`;
+        }
 
-          // Apply widths to all elements
-          document.querySelectorAll('.rating-distribution-bar').forEach(element => {
-              const StartNum = element.getAttribute('data-rating');
-              setWidth(element, StartNum);
-          });
-      }
-      setRatingDistributionWidths()
+        // Apply widths to all elements
+        document.querySelectorAll('.rating-distribution-bar').forEach(element => {
+            const StartNum = element.getAttribute('data-rating');
+            setWidth(element, StartNum);
+        });
+    }
+    setRatingDistributionWidths()
 
-      document.getElementById("average_stars").innerText = JSON.parse('{{ course.average_rating|escapejs }}').toFixed(1);
+    document.getElementById("average_stars").innerText = JSON.parse('{{ course.average_rating|escapejs }}').toFixed(1);
 
-      function confirmDelete(deleteUrl) {
-          console.log("deleteUrl", deleteUrl)
-          document.getElementById('deleteLink').href = deleteUrl;
-          document.getElementById('deleteModal').classList.remove('hidden');
-      }
+    function confirmDelete(deleteUrl) {
+        console.log("deleteUrl", deleteUrl)
+        document.getElementById('deleteLink').href = deleteUrl;
+        document.getElementById('deleteModal').classList.remove('hidden');
+    }
 
-      function closeDeleteModal() {
-          document.getElementById('deleteModal').classList.add('hidden');
-      }
+    function closeDeleteModal() {
+        document.getElementById('deleteModal').classList.add('hidden');
+    }
 
-      function confirmAddOrDeleteFeatureReviews(deleteUrl, action) {
-          let deleteLink = document.getElementById('deleteLink')
-          if (action == "add") {
-              document.getElementById('modal-title').innerHTML = "Confirm Add";
-              document.getElementById('modal-message').innerHTML = "Are you sure you want to add this review to featured?";
-              deleteLink.classList.remove("bg-red-500", "hover:bg-red-700")
-              deleteLink.classList.add("bg-teal-500", "hover:bg-teal-700")
-              deleteLink.innerHTML = "Add to features"
-          } else {
-              document.getElementById('modal-title').innerHTML = "Confirm Deletion";
-              document.getElementById('modal-message').innerHTML = "Are you sure you want to remove this review from featured?";
-              deleteLink.classList.remove("bg-teal-500", "hover:bg-teal-700")
-              deleteLink.classList.add("bg-red-500", "hover:bg-red-700")
-              deleteLink.innerHTML = "Remove from features"
-          }
+    function confirmAddOrDeleteFeatureReviews(deleteUrl, action) {
+        let deleteLink = document.getElementById('deleteLink')
+        if (action == "add") {
+            document.getElementById('modal-title').innerHTML = "Confirm Add";
+            document.getElementById('modal-message').innerHTML = "Are you sure you want to add this review to featured?";
+            deleteLink.classList.remove("bg-red-500", "hover:bg-red-700")
+            deleteLink.classList.add("bg-teal-500", "hover:bg-teal-700")
+            deleteLink.innerHTML = "Add to features"
+        } else {
+            document.getElementById('modal-title').innerHTML = "Confirm Deletion";
+            document.getElementById('modal-message').innerHTML = "Are you sure you want to remove this review from featured?";
+            deleteLink.classList.remove("bg-teal-500", "hover:bg-teal-700")
+            deleteLink.classList.add("bg-red-500", "hover:bg-red-700")
+            deleteLink.innerHTML = "Remove from features"
+        }
 
-          deleteLink.href = deleteUrl;
-          document.getElementById('deleteModal').classList.remove('hidden');
-      }
+        deleteLink.href = deleteUrl;
+        document.getElementById('deleteModal').classList.remove('hidden');
+    }
 
-      function loadCalendar(year, month) {
-          fetch(`/courses/{{ course.slug }}/calendar/?year=${year}&month=${month}`)
-              .then(response => response.json())
-              .then(data => {
-                  // Update month display
-                  document.getElementById('current-month').textContent = data.current_month;
+    function loadCalendar(year, month) {
+        fetch(`/courses/{{ course.slug }}/calendar/?year=${year}&month=${month}`)
+            .then(response => response.json())
+            .then(data => {
+                // Update month display
+                document.getElementById('current-month').textContent = data.current_month;
 
-                  // Update calendar grid
-                  const grid = document.getElementById('calendar-grid');
-                  let html = '';
+                // Update calendar grid
+                const grid = document.getElementById('calendar-grid');
+                let html = '';
 
-                  data.calendar_weeks.forEach(week => {
-                      week.forEach(day => {
-                          const today = day.is_today ? 'bg-gray-100 dark:bg-gray-700' : '';
-                          html += `
+                data.calendar_weeks.forEach(week => {
+                    week.forEach(day => {
+                        const today = day.is_today ? 'bg-gray-100 dark:bg-gray-700' : '';
+                        html += `
             <div class="p-2 border-b border-r dark:border-gray-700 ${today}">
               ${day.date ? `
                 <div class="relative">
@@ -1420,147 +1421,147 @@
               ` : ''}
             </div>
           `;
-                      });
-                  });
+                    });
+                });
 
-                  grid.innerHTML = html;
+                grid.innerHTML = html;
 
-                  // Update navigation buttons
-                  document.getElementById('prev-month-btn').setAttribute('onclick', `loadCalendar(${data.prev_month.year}, ${data.prev_month.month})`);
-                  document.getElementById('next-month-btn').setAttribute('onclick', `loadCalendar(${data.next_month.year}, ${data.next_month.month})`);
-              })
-              .catch(error => {
-                  console.error('Error loading calendar:', error);
-              });
-      }
+                // Update navigation buttons
+                document.getElementById('prev-month-btn').setAttribute('onclick', `loadCalendar(${data.prev_month.year}, ${data.prev_month.month})`);
+                document.getElementById('next-month-btn').setAttribute('onclick', `loadCalendar(${data.next_month.year}, ${data.next_month.month})`);
+            })
+            .catch(error => {
+                console.error('Error loading calendar:', error);
+            });
+    }
 
-      function showNotification(message, type = 'info') {
-          const notification = document.getElementById('notification');
-          const iconEl = notification.querySelector('.notification-icon');
-          const messageEl = notification.querySelector('.notification-message');
+    function showNotification(message, type = 'info') {
+        const notification = document.getElementById('notification');
+        const iconEl = notification.querySelector('.notification-icon');
+        const messageEl = notification.querySelector('.notification-message');
 
-          // Set icon based on notification type
-          let icon = 'fa-info-circle';
-          let bgColor = 'bg-blue-500';
+        // Set icon based on notification type
+        let icon = 'fa-info-circle';
+        let bgColor = 'bg-blue-500';
 
-          if (type === 'success') {
-              icon = 'fa-check-circle';
-              bgColor = 'bg-green-500';
-          } else if (type === 'error') {
-              icon = 'fa-exclamation-circle';
-              bgColor = 'bg-red-500';
-          } else if (type === 'warning') {
-              icon = 'fa-exclamation-triangle';
-              bgColor = 'bg-yellow-500';
-          }
+        if (type === 'success') {
+            icon = 'fa-check-circle';
+            bgColor = 'bg-green-500';
+        } else if (type === 'error') {
+            icon = 'fa-exclamation-circle';
+            bgColor = 'bg-red-500';
+        } else if (type === 'warning') {
+            icon = 'fa-exclamation-triangle';
+            bgColor = 'bg-yellow-500';
+        }
 
-          // Update notification content
-          iconEl.className = `fas ${icon} notification-icon mr-2`;
-          notification.className = `notification ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center`;
-          messageEl.textContent = message;
+        // Update notification content
+        iconEl.className = `fas ${icon} notification-icon mr-2`;
+        notification.className = `notification ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center`;
+        messageEl.textContent = message;
 
-          // Show notification
-          notification.classList.add('show');
+        // Show notification
+        notification.classList.add('show');
 
-          // Hide after 3 seconds
-          setTimeout(() => {
-              notification.classList.remove('show');
-          }, 3000);
-      }
+        // Hide after 3 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+        }, 3000);
+    }
 
-      // Calculate remaining sessions when the page loads
-      document.addEventListener('DOMContentLoaded', function() {
-          const remainingElement = document.getElementById('remaining-count');
-          if (remainingElement) {
-              const totalSessions = parseInt(remainingElement.dataset.totalSessions, 10) || 0;
-              const completedSessions = parseInt(remainingElement.dataset.completedSessions, 10) || 0;
-              const remainingSessions = totalSessions - completedSessions;
-              remainingElement.textContent = remainingSessions;
-          }
+    // Calculate remaining sessions when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        const remainingElement = document.getElementById('remaining-count');
+        if (remainingElement) {
+            const totalSessions = parseInt(remainingElement.dataset.totalSessions, 10) || 0;
+            const completedSessions = parseInt(remainingElement.dataset.completedSessions, 10) || 0;
+            const remainingSessions = totalSessions - completedSessions;
+            remainingElement.textContent = remainingSessions;
+        }
 
-          // Tab functionality
-          const tabButtons = document.querySelectorAll('[data-tab]');
-          const tabContents = document.querySelectorAll('.tab-content');
+        // Tab functionality
+        const tabButtons = document.querySelectorAll('[data-tab]');
+        const tabContents = document.querySelectorAll('.tab-content');
 
-          function setActiveTab(tabId) {
-              // Hide all tab contents
-              tabContents.forEach(content => {
-                  content.classList.add('hidden');
-                  content.classList.remove('active');
-              });
+        function setActiveTab(tabId) {
+            // Hide all tab contents
+            tabContents.forEach(content => {
+                content.classList.add('hidden');
+                content.classList.remove('active');
+            });
 
-              // Remove active state from all tab buttons
-              tabButtons.forEach(button => {
-                  button.classList.remove('active-tab');
-                  button.classList.remove('border-teal-300', 'dark:border-teal-500', 'text-gray-800', 'dark:text-white');
-                  button.classList.add('border-transparent', 'text-gray-600', 'dark:text-gray-400');
-                  button.setAttribute('aria-selected', 'false');
-              });
+            // Remove active state from all tab buttons
+            tabButtons.forEach(button => {
+                button.classList.remove('active-tab');
+                button.classList.remove('border-teal-300', 'dark:border-teal-500', 'text-gray-800', 'dark:text-white');
+                button.classList.add('border-transparent', 'text-gray-600', 'dark:text-gray-400');
+                button.setAttribute('aria-selected', 'false');
+            });
 
-              // Show the selected tab content
-              const selectedContent = document.getElementById(`content-${tabId}`);
-              if (selectedContent) {
-                  selectedContent.classList.remove('hidden');
-                  selectedContent.classList.add('active');
-              }
+            // Show the selected tab content
+            const selectedContent = document.getElementById(`content-${tabId}`);
+            if (selectedContent) {
+                selectedContent.classList.remove('hidden');
+                selectedContent.classList.add('active');
+            }
 
-              // Set active state for selected tab button
-              const selectedButton = document.getElementById(`tab-${tabId}`);
-              if (selectedButton) {
-                  selectedButton.classList.add('active-tab');
-                  selectedButton.classList.remove('border-transparent', 'text-gray-600', 'dark:text-gray-400');
-                  selectedButton.classList.add('border-teal-300', 'dark:border-teal-500', 'text-gray-800', 'dark:text-white');
-                  selectedButton.setAttribute('aria-selected', 'true');
-              }
-          }
+            // Set active state for selected tab button
+            const selectedButton = document.getElementById(`tab-${tabId}`);
+            if (selectedButton) {
+                selectedButton.classList.add('active-tab');
+                selectedButton.classList.remove('border-transparent', 'text-gray-600', 'dark:text-gray-400');
+                selectedButton.classList.add('border-teal-300', 'dark:border-teal-500', 'text-gray-800', 'dark:text-white');
+                selectedButton.setAttribute('aria-selected', 'true');
+            }
+        }
 
-          // Add click event listeners to tab buttons
-          tabButtons.forEach(button => {
-              button.addEventListener('click', function() {
-                  const tabId = this.getAttribute('data-tab');
-                  setActiveTab(tabId);
-              });
-          });
+        // Add click event listeners to tab buttons
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                setActiveTab(tabId);
+            });
+        });
 
-          // Calculate remaining sessions when the page loads
-          const tabRemainingElement = document.getElementById('remaining-count-tab');
-          if (tabRemainingElement) {
-              const totalSessions = parseInt(tabRemainingElement.dataset.totalSessions, 10) || 0;
-              const completedSessions = parseInt(tabRemainingElement.dataset.completedSessions, 10) || 0;
-              const remainingSessions = totalSessions - completedSessions;
-              tabRemainingElement.textContent = remainingSessions;
-          }
+        // Calculate remaining sessions when the page loads
+        const tabRemainingElement = document.getElementById('remaining-count-tab');
+        if (tabRemainingElement) {
+            const totalSessions = parseInt(tabRemainingElement.dataset.totalSessions, 10) || 0;
+            const completedSessions = parseInt(tabRemainingElement.dataset.completedSessions, 10) || 0;
+            const remainingSessions = totalSessions - completedSessions;
+            tabRemainingElement.textContent = remainingSessions;
+        }
 
-          // Initialize progress bars
-          document.addEventListener('DOMContentLoaded', function() {
-              // Calculate remaining sessions
-              const mainRemainingElement = document.getElementById('remaining-count-main');
-              const tabRemainingElement = document.getElementById('remaining-count-tab');
+        // Initialize progress bars
+        document.addEventListener('DOMContentLoaded', function() {
+            // Calculate remaining sessions
+            const mainRemainingElement = document.getElementById('remaining-count-main');
+            const tabRemainingElement = document.getElementById('remaining-count-tab');
 
-              // Main page remaining count
-              if (mainRemainingElement) {
-                  const totalSessions = parseInt(mainRemainingElement.getAttribute('data-total-sessions') || '0');
-                  const completedSessions = parseInt(mainRemainingElement.getAttribute('data-completed-sessions') || '0');
-                  const remainingSessions = Math.max(0, totalSessions - completedSessions);
-                  mainRemainingElement.textContent = remainingSessions;
-              }
+            // Main page remaining count
+            if (mainRemainingElement) {
+                const totalSessions = parseInt(mainRemainingElement.getAttribute('data-total-sessions') || '0');
+                const completedSessions = parseInt(mainRemainingElement.getAttribute('data-completed-sessions') || '0');
+                const remainingSessions = Math.max(0, totalSessions - completedSessions);
+                mainRemainingElement.textContent = remainingSessions;
+            }
 
-              // Tab remaining count
-              if (tabRemainingElement) {
-                  const totalSessions = parseInt(tabRemainingElement.getAttribute('data-total-sessions') || '0');
-                  const completedSessions = parseInt(tabRemainingElement.getAttribute('data-completed-sessions') || '0');
-                  const remainingSessions = Math.max(0, totalSessions - completedSessions);
-                  tabRemainingElement.textContent = remainingSessions;
-              }
+            // Tab remaining count
+            if (tabRemainingElement) {
+                const totalSessions = parseInt(tabRemainingElement.getAttribute('data-total-sessions') || '0');
+                const completedSessions = parseInt(tabRemainingElement.getAttribute('data-completed-sessions') || '0');
+                const remainingSessions = Math.max(0, totalSessions - completedSessions);
+                tabRemainingElement.textContent = remainingSessions;
+            }
 
-              // Set width for progress bars based on data-progress attribute
-              document.querySelectorAll('.progress-bar').forEach(function(bar) {
-                  const progress = bar.getAttribute('data-progress');
-                  if (progress) {
-                      bar.style.width = progress + '%';
-                  }
-              });
-          });
-      });
-  </script>
+            // Set width for progress bars based on data-progress attribute
+            document.querySelectorAll('.progress-bar').forEach(function(bar) {
+                const progress = bar.getAttribute('data-progress');
+                if (progress) {
+                    bar.style.width = progress + '%';
+                }
+            });
+        });
+    });
+</script>
 {% endblock content %}
