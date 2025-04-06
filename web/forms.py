@@ -41,6 +41,7 @@ from .models import (
     StudyGroup,
     Subject,
     SuccessStory,
+    Survey,
     TeamGoal,
     TeamGoalMember,
     TeamInvite,
@@ -97,7 +98,26 @@ __all__ = [
     "GradeableLinkForm",
     "LinkGradeForm",
     "AwardAchievementForm",
+    "SurveyForm",
 ]
+
+
+class SurveyForm(forms.ModelForm):
+    title = forms.CharField(
+        max_length=200,
+        widget=TailwindInput(attrs={"placeholder": "Enter survey title"}),
+        help_text="Give your survey a clear and descriptive title",
+    )
+
+    class Meta:
+        model = Survey
+        fields = ["title"]
+
+    def clean_title(self):
+        title = self.cleaned_data.get("title")
+        if len(title) < 5:
+            raise forms.ValidationError("Survey title must be at least 5 characters long")
+        return title
 
 
 class AccountDeleteForm(forms.Form):

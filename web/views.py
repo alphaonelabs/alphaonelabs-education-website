@@ -91,6 +91,7 @@ from .forms import (
     StudentEnrollmentForm,
     StudyGroupForm,
     SuccessStoryForm,
+    SurveyForm,
     TeacherSignupForm,
     TeachForm,
     TeamGoalCompletionForm,
@@ -113,6 +114,7 @@ from .models import (
     Certificate,
     Challenge,
     ChallengeSubmission,
+    Choice,
     Course,
     CourseMaterial,
     CourseProgress,
@@ -141,6 +143,8 @@ from .models import (
     ProductImage,
     Profile,
     ProgressTracker,
+    Question,
+    Response,
     Review,
     ScheduledPost,
     SearchLog,
@@ -152,6 +156,7 @@ from .models import (
     StudyGroupInvite,
     Subject,
     SuccessStory,
+    Survey,
     TeamGoal,
     TeamGoalMember,
     TeamInvite,
@@ -303,6 +308,160 @@ def index(request):
                 }
             )
     return render(request, "index.html", context)
+
+
+class SurveyListView(LoginRequiredMixin, ListView):
+    model = Survey
+    template_name = "surveys/list.html"
+    login_url = "/accounts/login/"
+
+
+class SurveyCreateView(LoginRequiredMixin, CreateView):
+    model = Survey
+    form_class = SurveyForm
+    template_name = "surveys/create.html"
+    login_url = "/accounts/login/"
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        survey = form.save()
+
+        # Process questions
+        question_texts = self.request.POST.getlist("question_text[]")
+        question_types = self.request.POST.getlist("question_type[]")
+        question_choices = self.request.POST.getlist("question_choices[]")
+        scale_mins = self.request.POST.getlist("scale_min[]")
+        scale_maxs = self.request.POST.getlist("scale_max[]")
+
+        for i, (q_text, q_type) in enumerate(zip(question_texts, question_types)):
+            if q_text.strip():
+                # Convert scale values to integers with proper error handling
+                scale_min = 1
+                scale_max = 5
+
+                try:
+                    if q_type == "scale" and i < len(scale_mins) and scale_mins[i]:
+                        scale_min = int(scale_mins[i])
+                    if q_type == "scale" and i < len(scale_maxs) and scale_maxs[i]:
+                        scale_max = int(scale_maxs[i])
+                except (ValueError, IndexError):
+                    # Use defaults if there's an error
+                    scale_min = 1
+                    scale_max = 5
+
+                question = Question.objects.create(
+                    survey=survey,
+                    text=q_text.strip(),
+                    type=q_type,  # This should match your model field name
+                    scale_min=scale_min,
+                    scale_max=scale_max,
+                )
+
+                # Handle choices based on question type
+                if q_type == "true_false":
+                    Choice.objects.create(question=question, text="True")
+                    Choice.objects.create(question=question, text="False")
+                elif q_type == "scale":
+                    for num in range(question.scale_min, question.scale_max + 1):
+                        Choice.objects.create(question=question, text=str(num))
+                elif q_type in ["mcq", "checkbox"]:
+                    # Make sure we have choices for this question
+                    if i < len(question_choices):
+                        for choice_text in question_choices[i].split("\n"):
+                            if choice_text.strip():
+                                Choice.objects.create(question=question, text=choice_text.strip())
+
+        return redirect("surveys")
+
+
+class SurveyDetailView(LoginRequiredMixin, DetailView):
+    model = Survey
+    template_name = "surveys/detail.html"
+    login_url = "/accounts/login/"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Check if user has already submitted this survey
+        context["already_submitted"] = Response.objects.filter(
+            user=self.request.user, question__survey=self.object
+        ).exists()
+        # Check if user is the creator of this survey
+        context["is_creator"] = self.object.author == self.request.user
+        return context
+
+
+@login_required
+def submit_survey(request, survey_id):
+    survey = get_object_or_404(Survey, pk=survey_id)
+
+    # Check if user already submitted
+    if Response.objects.filter(user=request.user, question__survey=survey).exists():
+        messages.error(request, "You've already submitted this survey!")
+        return redirect("survey-detail", pk=survey.id)
+
+    if request.method == "POST":
+        for question in survey.question_set.all():
+            if question.required and not request.POST.get(f"question_{question.id}"):
+                messages.error(request, f"Please answer required question: {question.text}")
+                return redirect("survey-detail", pk=survey.id)
+
+            if question.type == "checkbox":
+                choices = request.POST.getlist(f"question_{question.id}")
+                for choice_id in choices:
+                    choice = Choice.objects.get(id=choice_id)
+                    Response.objects.create(user=request.user, question=question, choice=choice)
+            elif question.type == "text":
+                Response.objects.create(
+                    user=request.user, question=question, text_answer=request.POST.get(f"question_{question.id}")
+                )
+            else:
+                choice_id = request.POST.get(f"question_{question.id}")
+                if choice_id:
+                    choice = Choice.objects.get(id=choice_id)
+                    Response.objects.create(user=request.user, question=question, choice=choice)
+
+        messages.success(request, "Survey submitted successfully!")
+        return redirect("survey-results", pk=survey.id)
+
+    return redirect("survey-detail", pk=survey.id)
+
+
+class SurveyResultsView(LoginRequiredMixin, DetailView):
+    model = Survey
+    template_name = "surveys/results.html"
+    login_url = "/accounts/login/"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        results = []
+        for question in self.object.question_set.all():
+            choices_data = []
+            total = 0
+            for choice in question.choice_set.all():
+                count = choice.response_set.count()
+                choices_data.append({"text": choice.text, "count": count})
+                total += count
+            results.append({"question": question, "choices": choices_data, "total": total})
+        context["results"] = results
+        # Check if user is the creator of this survey
+        context["is_creator"] = self.object.author == self.request.user
+        return context
+
+
+class SurveyDeleteView(LoginRequiredMixin, DeleteView):
+    model = Survey
+    success_url = reverse_lazy("surveys")  # Use reverse_lazy
+    template_name = "surveys/delete.html"
+    login_url = "/accounts/login/"
+
+    def get_queryset(self):
+        # Override queryset to only allow creator to access the survey for deletion
+        base_qs = super().get_queryset()
+        return base_qs.filter(author=self.request.user)
+
+    def handle_no_permission(self):
+        messages.error(self.request, "You can only delete surveys that you created.")
+        return redirect("surveys")
 
 
 def signup_view(request):
