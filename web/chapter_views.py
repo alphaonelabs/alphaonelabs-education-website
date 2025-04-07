@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db import models
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
@@ -15,7 +16,7 @@ from web.models import (
 )
 
 
-def chapters_list(request):
+def chapters_list(request: HttpRequest) -> HttpResponse:
     """List all active chapters."""
     chapters = Chapter.objects.filter(is_active=True).order_by("-is_featured", "name")
 
@@ -38,7 +39,7 @@ def chapters_list(request):
     )
 
 
-def chapter_detail(request, slug):
+def chapter_detail(request: HttpRequest, slug: str) -> HttpResponse:
     """Show details of a specific chapter."""
     chapter = get_object_or_404(Chapter, slug=slug, is_active=True)
 
@@ -82,7 +83,7 @@ def chapter_detail(request, slug):
 
 
 @login_required
-def join_chapter(request, slug):
+def join_chapter(request: HttpRequest, slug: str) -> HttpResponse:
     """Handle joining a chapter."""
     chapter = get_object_or_404(Chapter, slug=slug, is_active=True)
 
@@ -125,7 +126,7 @@ def join_chapter(request, slug):
 
 
 @login_required
-def leave_chapter(request, slug):
+def leave_chapter(request: HttpRequest, slug: str) -> HttpResponse:
     """Handle leaving a chapter."""
     chapter = get_object_or_404(Chapter, slug=slug)
     membership = get_object_or_404(ChapterMembership, chapter=chapter, user=request.user)
@@ -150,7 +151,7 @@ def leave_chapter(request, slug):
 
 
 @login_required
-def edit_membership(request, slug):
+def edit_membership(request: HttpRequest, slug: str) -> HttpResponse:
     """Edit user's membership details."""
     chapter = get_object_or_404(Chapter, slug=slug)
     membership = get_object_or_404(ChapterMembership, chapter=chapter, user=request.user)
@@ -172,7 +173,7 @@ def edit_membership(request, slug):
 
 
 @login_required
-def apply_for_chapter(request):
+def apply_for_chapter(request: HttpRequest) -> HttpResponse:
     """Handle applications to create a new chapter."""
     if request.method == "POST":
         chapter_name = request.POST.get("chapter_name")
@@ -197,7 +198,7 @@ def apply_for_chapter(request):
 
 
 @login_required
-def chapter_event_detail(request, slug, event_id):
+def chapter_event_detail(request: HttpRequest, slug: str, event_id: int) -> HttpResponse:
     """View details of a chapter event."""
     chapter = get_object_or_404(Chapter, slug=slug, is_active=True)
     event = get_object_or_404(ChapterEvent, id=event_id, chapter=chapter)
@@ -223,7 +224,7 @@ def chapter_event_detail(request, slug, event_id):
 
 
 @login_required
-def rsvp_event(request, slug, event_id):
+def rsvp_event(request: HttpRequest, slug: str, event_id: int) -> HttpResponse:
     """RSVP to a chapter event."""
     chapter = get_object_or_404(Chapter, slug=slug, is_active=True)
     event = get_object_or_404(ChapterEvent, id=event_id, chapter=chapter)
@@ -243,40 +244,42 @@ def rsvp_event(request, slug, event_id):
 
 
 @login_required
-def cancel_rsvp(request, slug, event_id):
+def cancel_rsvp(request: HttpRequest, slug: str, event_id: int) -> HttpResponse:
     """Cancel RSVP to a chapter event."""
     chapter = get_object_or_404(Chapter, slug=slug, is_active=True)
     event = get_object_or_404(ChapterEvent, id=event_id, chapter=chapter)
 
-    attendance = event.attendees.filter(user=request.user).first()
-    if attendance:
-        attendance.delete()
-        messages.success(request, "Your registration has been canceled.")
-    else:
-        messages.info(request, "You were not registered for this event.")
+    # Delete the attendee record if it exists
+    event.attendees.filter(user=request.user).delete()
+    messages.success(request, "Your event registration has been canceled.")
 
     return redirect("chapter_event_detail", slug=slug, event_id=event_id)
 
 
 @login_required
-def manage_chapter(request, slug):
-    """Management dashboard for chapter leaders."""
+def manage_chapter(request: HttpRequest, slug: str) -> HttpResponse:
+    """Chapter management interface for authorized users."""
     chapter = get_object_or_404(Chapter, slug=slug)
-    membership = get_object_or_404(ChapterMembership, chapter=chapter, user=request.user)
 
-    # Only allow leaders and co-organizers to access
-    if membership.role not in ["lead", "co_organizer"]:
-        messages.error(request, "You don't have permission to manage this chapter.")
+    # Check if user has permission to manage the chapter
+    user_membership = chapter.members.filter(user=request.user).first()
+    if not user_membership or user_membership.role not in ["lead", "co_organizer"]:
+        messages.error(request, "You do not have permission to manage this chapter.")
         return redirect("chapter_detail", slug=slug)
 
-    # Get pending membership requests
-    pending_memberships = chapter.members.filter(is_approved=False)
+    # Get pending memberships
+    pending_memberships = chapter.members.filter(is_approved=False).order_by("joined_at")
 
-    # Get all events
-    events = chapter.events.all().order_by("-start_time")
-
-    # Get all resources
-    resources = chapter.resources.all().order_by("-created_at")
+    # Get approved members
+    approved_members = chapter.members.filter(is_approved=True).order_by(
+        models.Case(
+            models.When(role="lead", then=0),
+            models.When(role="co_organizer", then=1),
+            models.When(role="volunteer", then=2),
+            default=3,
+        ),
+        "joined_at",
+    )
 
     return render(
         request,
@@ -284,39 +287,36 @@ def manage_chapter(request, slug):
         {
             "chapter": chapter,
             "pending_memberships": pending_memberships,
-            "events": events,
-            "resources": resources,
+            "approved_members": approved_members,
+            "user_role": user_membership.role,
         },
     )
 
 
 @login_required
-def edit_chapter(request, slug):
+def edit_chapter(request: HttpRequest, slug: str) -> HttpResponse:
     """Edit chapter details."""
     chapter = get_object_or_404(Chapter, slug=slug)
-    membership = get_object_or_404(ChapterMembership, chapter=chapter, user=request.user)
 
-    # Only allow leaders to edit
-    if membership.role != "lead":
-        messages.error(request, "Only the Chapter Lead can edit chapter details.")
+    # Check if user has permission to edit the chapter
+    user_membership = chapter.members.filter(user=request.user).first()
+    if not user_membership or user_membership.role != "lead":
+        messages.error(request, "Only Chapter Leads can edit chapter details.")
         return redirect("chapter_detail", slug=slug)
 
     if request.method == "POST":
-        chapter.name = request.POST.get("name")
-        chapter.region = request.POST.get("region")
-        chapter.description = request.POST.get("description")
-        chapter.website = request.POST.get("website", "")
-        chapter.discord_link = request.POST.get("discord_link", "")
-        chapter.facebook_link = request.POST.get("facebook_link", "")
-        chapter.twitter_link = request.POST.get("twitter_link", "")
-
-        # Handle logo upload
-        if "logo" in request.FILES:
-            chapter.logo = request.FILES["logo"]
-
+        chapter.name = request.POST.get("name", chapter.name)
+        chapter.description = request.POST.get("description", chapter.description)
+        chapter.region = request.POST.get("region", chapter.region)
+        chapter.website = request.POST.get("website", chapter.website)
+        chapter.github = request.POST.get("github", chapter.github)
+        chapter.twitter = request.POST.get("twitter", chapter.twitter)
+        chapter.discord = request.POST.get("discord", chapter.discord)
+        chapter.meetup = request.POST.get("meetup", chapter.meetup)
         chapter.save()
+
         messages.success(request, "Chapter details have been updated.")
-        return redirect("chapter_detail", slug=slug)
+        return redirect("manage_chapter", slug=chapter.slug)
 
     return render(
         request,
@@ -328,71 +328,69 @@ def edit_chapter(request, slug):
 
 
 @login_required
-def approve_membership(request, slug, user_id):
+def approve_membership(request: HttpRequest, slug: str, user_id: int) -> HttpResponse:
     """Approve a pending membership request."""
     chapter = get_object_or_404(Chapter, slug=slug)
-    leader_membership = get_object_or_404(ChapterMembership, chapter=chapter, user=request.user)
-    member_to_approve = get_object_or_404(User, id=user_id)
-    membership = get_object_or_404(ChapterMembership, chapter=chapter, user=member_to_approve, is_approved=False)
+    membership = get_object_or_404(ChapterMembership, chapter=chapter, user_id=user_id, is_approved=False)
 
-    # Only allow leaders and co-organizers to approve
-    if leader_membership.role not in ["lead", "co_organizer"]:
-        messages.error(request, "You don't have permission to approve memberships.")
+    # Check if user has permission to approve memberships
+    user_membership = chapter.members.filter(user=request.user).first()
+    if not user_membership or user_membership.role not in ["lead", "co_organizer"]:
+        messages.error(request, "You do not have permission to approve memberships.")
         return redirect("chapter_detail", slug=slug)
 
-    if request.method == "POST":
-        membership.is_approved = True
-        membership.save()
-        messages.success(request, f"{member_to_approve.username}'s membership has been approved.")
+    membership.is_approved = True
+    membership.save()
 
+    messages.success(request, f"{membership.user.username} has been approved as a chapter member.")
     return redirect("manage_chapter", slug=slug)
 
 
 @login_required
-def reject_membership(request, slug, user_id):
+def reject_membership(request: HttpRequest, slug: str, user_id: int) -> HttpResponse:
     """Reject a pending membership request."""
     chapter = get_object_or_404(Chapter, slug=slug)
-    leader_membership = get_object_or_404(ChapterMembership, chapter=chapter, user=request.user)
-    member_to_reject = get_object_or_404(User, id=user_id)
-    membership = get_object_or_404(ChapterMembership, chapter=chapter, user=member_to_reject, is_approved=False)
+    membership = get_object_or_404(ChapterMembership, chapter=chapter, user_id=user_id, is_approved=False)
 
-    # Only allow leaders and co-organizers to reject
-    if leader_membership.role not in ["lead", "co_organizer"]:
-        messages.error(request, "You don't have permission to reject memberships.")
+    # Check if user has permission to reject memberships
+    user_membership = chapter.members.filter(user=request.user).first()
+    if not user_membership or user_membership.role not in ["lead", "co_organizer"]:
+        messages.error(request, "You do not have permission to reject memberships.")
         return redirect("chapter_detail", slug=slug)
 
-    if request.method == "POST":
-        membership.delete()
-        messages.success(request, f"{member_to_reject.username}'s membership request has been rejected.")
+    # Delete the membership
+    membership.delete()
 
+    messages.success(request, f"The membership request from {membership.user.username} has been rejected.")
     return redirect("manage_chapter", slug=slug)
 
 
 @login_required
-def manage_member_role(request, slug, user_id):
-    """Change a member's role in the chapter."""
+def manage_member_role(request: HttpRequest, slug: str, user_id: int) -> HttpResponse:
+    """Change a member's role within the chapter."""
     chapter = get_object_or_404(Chapter, slug=slug)
-    leader_membership = get_object_or_404(ChapterMembership, chapter=chapter, user=request.user)
-    target_user = get_object_or_404(User, id=user_id)
-    target_membership = get_object_or_404(ChapterMembership, chapter=chapter, user=target_user, is_approved=True)
+    target_membership = get_object_or_404(ChapterMembership, chapter=chapter, user_id=user_id, is_approved=True)
 
-    # Only the lead can change roles
-    if leader_membership.role != "lead":
-        messages.error(request, "Only the Chapter Lead can change member roles.")
-        return redirect("chapter_detail", slug=slug)
-
-    # Cannot change your own role
-    if target_user == request.user:
-        messages.error(request, "You cannot change your own role.")
+    # Check if user has permission to manage roles
+    user_membership = chapter.members.filter(user=request.user).first()
+    if not user_membership or user_membership.role != "lead":
+        messages.error(request, "Only Chapter Leads can change member roles.")
         return redirect("manage_chapter", slug=slug)
 
     if request.method == "POST":
         new_role = request.POST.get("role")
-        if new_role in [r[0] for r in ChapterMembership.ROLE_CHOICES]:
+        if new_role in ["lead", "co_organizer", "volunteer", "member"]:
+            # If changing lead, current lead must be downgraded
+            if new_role == "lead":
+                current_lead = chapter.members.filter(role="lead").first()
+                if current_lead and current_lead.user_id != user_id:
+                    current_lead.role = "co_organizer"
+                    current_lead.save()
+
             target_membership.role = new_role
             target_membership.save()
             messages.success(
-                request, f"{target_user.username}'s role has been updated to {target_membership.get_role_display()}."
+                request, f"{target_membership.user.username}'s role has been updated to {new_role.replace('_', ' ').title()}."
             )
         else:
             messages.error(request, "Invalid role selected.")
@@ -401,14 +399,14 @@ def manage_member_role(request, slug, user_id):
 
 
 @login_required
-def create_chapter_event(request, slug):
-    """Create a new event for the chapter."""
+def create_chapter_event(request: HttpRequest, slug: str) -> HttpResponse:
+    """Create a new event for a chapter."""
     chapter = get_object_or_404(Chapter, slug=slug)
-    membership = get_object_or_404(ChapterMembership, chapter=chapter, user=request.user)
 
-    # Only allow leaders and co-organizers to create events
-    if membership.role not in ["lead", "co_organizer"]:
-        messages.error(request, "You don't have permission to create events.")
+    # Check if user has permission to create events
+    user_membership = chapter.members.filter(user=request.user).first()
+    if not user_membership or user_membership.role not in ["lead", "co_organizer"]:
+        messages.error(request, "You do not have permission to create events.")
         return redirect("chapter_detail", slug=slug)
 
     if request.method == "POST":
@@ -417,12 +415,15 @@ def create_chapter_event(request, slug):
         event_type = request.POST.get("event_type")
         start_time = request.POST.get("start_time")
         end_time = request.POST.get("end_time")
-        location = request.POST.get("location", "")
-        meeting_link = request.POST.get("meeting_link", "")
-        max_participants = request.POST.get("max_participants", 50)
-        is_public = request.POST.get("is_public") == "on"
+        location = request.POST.get("location")
+        is_online = "is_online" in request.POST
+        is_public = "is_public" in request.POST
+        max_attendees = request.POST.get("max_attendees", 0)
+        if max_attendees == "":
+            max_attendees = 0
 
-        event = ChapterEvent.objects.create(
+        # Create the event
+        ChapterEvent.objects.create(
             chapter=chapter,
             title=title,
             description=description,
@@ -430,60 +431,55 @@ def create_chapter_event(request, slug):
             start_time=start_time,
             end_time=end_time,
             location=location,
-            meeting_link=meeting_link,
-            max_participants=max_participants,
+            is_online=is_online,
             is_public=is_public,
+            max_attendees=max_attendees,
             organizer=request.user,
         )
 
-        # Handle image upload
-        if "image" in request.FILES:
-            event.image = request.FILES["image"]
-            event.save()
-
-        messages.success(request, "Event has been created successfully.")
-        return redirect("chapter_event_detail", slug=slug, event_id=event.id)
+        messages.success(request, "The event has been created.")
+        return redirect("chapter_detail", slug=slug)
 
     return render(
         request,
         "web/chapters/create_event.html",
         {
             "chapter": chapter,
-            "event_types": ChapterEvent.EVENT_TYPES,
         },
     )
 
 
 @login_required
-def edit_chapter_event(request, slug, event_id):
-    """Edit a chapter event."""
+def edit_chapter_event(request: HttpRequest, slug: str, event_id: int) -> HttpResponse:
+    """Edit an existing chapter event."""
     chapter = get_object_or_404(Chapter, slug=slug)
     event = get_object_or_404(ChapterEvent, id=event_id, chapter=chapter)
-    membership = get_object_or_404(ChapterMembership, chapter=chapter, user=request.user)
 
-    # Only allow organizer, leaders and co-organizers to edit
-    if membership.role not in ["lead", "co_organizer"] and event.organizer != request.user:
-        messages.error(request, "You don't have permission to edit this event.")
+    # Check if user has permission to edit events
+    user_membership = chapter.members.filter(user=request.user).first()
+    if not user_membership or user_membership.role not in ["lead", "co_organizer"]:
+        messages.error(request, "You do not have permission to edit events.")
         return redirect("chapter_event_detail", slug=slug, event_id=event_id)
 
     if request.method == "POST":
-        event.title = request.POST.get("title")
-        event.description = request.POST.get("description")
-        event.event_type = request.POST.get("event_type")
-        event.start_time = request.POST.get("start_time")
-        event.end_time = request.POST.get("end_time")
-        event.location = request.POST.get("location", "")
-        event.meeting_link = request.POST.get("meeting_link", "")
-        event.max_participants = request.POST.get("max_participants", 50)
-        event.is_public = request.POST.get("is_public") == "on"
+        event.title = request.POST.get("title", event.title)
+        event.description = request.POST.get("description", event.description)
+        event.event_type = request.POST.get("event_type", event.event_type)
+        event.start_time = request.POST.get("start_time", event.start_time)
+        event.end_time = request.POST.get("end_time", event.end_time)
+        event.location = request.POST.get("location", event.location)
+        event.is_online = "is_online" in request.POST
+        event.is_public = "is_public" in request.POST
 
-        # Handle image upload
-        if "image" in request.FILES:
-            event.image = request.FILES["image"]
+        max_attendees = request.POST.get("max_attendees", "0")
+        if max_attendees == "":
+            max_attendees = "0"
+        event.max_attendees = int(max_attendees)
 
         event.save()
-        messages.success(request, "Event has been updated successfully.")
-        return redirect("chapter_event_detail", slug=slug, event_id=event.id)
+
+        messages.success(request, "The event has been updated.")
+        return redirect("chapter_event_detail", slug=slug, event_id=event_id)
 
     return render(
         request,
@@ -491,26 +487,25 @@ def edit_chapter_event(request, slug, event_id):
         {
             "chapter": chapter,
             "event": event,
-            "event_types": ChapterEvent.EVENT_TYPES,
         },
     )
 
 
 @login_required
-def delete_chapter_event(request, slug, event_id):
+def delete_chapter_event(request: HttpRequest, slug: str, event_id: int) -> HttpResponse:
     """Delete a chapter event."""
     chapter = get_object_or_404(Chapter, slug=slug)
     event = get_object_or_404(ChapterEvent, id=event_id, chapter=chapter)
-    membership = get_object_or_404(ChapterMembership, chapter=chapter, user=request.user)
 
-    # Only allow organizer, leaders and co-organizers to delete
-    if membership.role not in ["lead", "co_organizer"] and event.organizer != request.user:
-        messages.error(request, "You don't have permission to delete this event.")
+    # Check if user has permission to delete events
+    user_membership = chapter.members.filter(user=request.user).first()
+    if not user_membership or user_membership.role not in ["lead", "co_organizer"]:
+        messages.error(request, "You do not have permission to delete events.")
         return redirect("chapter_event_detail", slug=slug, event_id=event_id)
 
     if request.method == "POST":
         event.delete()
-        messages.success(request, "Event has been deleted.")
+        messages.success(request, "The event has been deleted.")
         return redirect("chapter_detail", slug=slug)
 
     return render(
@@ -524,56 +519,60 @@ def delete_chapter_event(request, slug, event_id):
 
 
 @login_required
-def mark_attendance(request, slug, event_id):
-    """Mark attendance for an event."""
+def mark_attendance(request: HttpRequest, slug: str, event_id: int) -> HttpResponse:
+    """Mark attendance for event attendees."""
     chapter = get_object_or_404(Chapter, slug=slug)
     event = get_object_or_404(ChapterEvent, id=event_id, chapter=chapter)
-    membership = get_object_or_404(ChapterMembership, chapter=chapter, user=request.user)
 
-    # Only allow event organizer, leaders and co-organizers to mark attendance
-    if membership.role not in ["lead", "co_organizer"] and event.organizer != request.user:
-        messages.error(request, "You don't have permission to mark attendance.")
+    # Check if user has permission to mark attendance
+    user_membership = chapter.members.filter(user=request.user).first()
+    if not user_membership or user_membership.role not in ["lead", "co_organizer", "volunteer"]:
+        messages.error(request, "You do not have permission to mark attendance.")
         return redirect("chapter_event_detail", slug=slug, event_id=event_id)
 
     if request.method == "POST":
-        attendee_ids = request.POST.getlist("attendees")
+        # Get the list of attendees who showed up
+        attendee_ids = request.POST.getlist("attendee")
 
-        # Mark all selected users as attended
-        ChapterEventAttendee.objects.filter(event=event).update(attended=False)
-        ChapterEventAttendee.objects.filter(event=event, user_id__in=attendee_ids).update(attended=True)
+        # Update attendance records
+        for attendee in event.attendees.all():
+            attendee.attended = str(attendee.user.id) in attendee_ids
+            attendee.save()
 
-        messages.success(request, "Attendance has been updated.")
+        messages.success(request, "Attendance has been recorded.")
         return redirect("chapter_event_detail", slug=slug, event_id=event_id)
 
+    attendees = event.attendees.all().select_related("user")
     return render(
         request,
         "web/chapters/mark_attendance.html",
         {
             "chapter": chapter,
             "event": event,
-            "attendees": event.attendees.all().select_related("user"),
+            "attendees": attendees,
         },
     )
 
 
 @login_required
-def add_chapter_resource(request, slug):
+def add_chapter_resource(request: HttpRequest, slug: str) -> HttpResponse:
     """Add a resource to a chapter."""
     chapter = get_object_or_404(Chapter, slug=slug)
-    membership = get_object_or_404(ChapterMembership, chapter=chapter, user=request.user)
 
-    # Only approved members can add resources
-    if not membership.is_approved:
-        messages.error(request, "Your membership needs to be approved before you can add resources.")
+    # Check if user has permission to add resources
+    user_membership = chapter.members.filter(user=request.user).first()
+    if not user_membership or user_membership.role not in ["lead", "co_organizer"]:
+        messages.error(request, "You do not have permission to add resources.")
         return redirect("chapter_detail", slug=slug)
 
     if request.method == "POST":
         title = request.POST.get("title")
         description = request.POST.get("description")
         resource_type = request.POST.get("resource_type")
-        external_url = request.POST.get("external_url", "")
+        external_url = request.POST.get("external_url")
 
-        resource = ChapterResource.objects.create(
+        # Create the resource
+        ChapterResource.objects.create(
             chapter=chapter,
             title=title,
             description=description,
@@ -582,12 +581,7 @@ def add_chapter_resource(request, slug):
             created_by=request.user,
         )
 
-        # Handle file upload
-        if "file" in request.FILES:
-            resource.file = request.FILES["file"]
-            resource.save()
-
-        messages.success(request, "Resource has been added successfully.")
+        messages.success(request, "The resource has been added.")
         return redirect("chapter_detail", slug=slug)
 
     return render(
@@ -595,35 +589,30 @@ def add_chapter_resource(request, slug):
         "web/chapters/add_resource.html",
         {
             "chapter": chapter,
-            "resource_types": ChapterResource.RESOURCE_TYPES,
         },
     )
 
 
 @login_required
-def edit_chapter_resource(request, slug, resource_id):
+def edit_chapter_resource(request: HttpRequest, slug: str, resource_id: int) -> HttpResponse:
     """Edit a chapter resource."""
     chapter = get_object_or_404(Chapter, slug=slug)
     resource = get_object_or_404(ChapterResource, id=resource_id, chapter=chapter)
-    membership = get_object_or_404(ChapterMembership, chapter=chapter, user=request.user)
 
-    # Only creator or leaders can edit resources
-    if resource.created_by != request.user and membership.role not in ["lead", "co_organizer"]:
-        messages.error(request, "You don't have permission to edit this resource.")
+    # Check if user has permission to edit resources
+    user_membership = chapter.members.filter(user=request.user).first()
+    if not user_membership or user_membership.role not in ["lead", "co_organizer"]:
+        messages.error(request, "You do not have permission to edit resources.")
         return redirect("chapter_detail", slug=slug)
 
     if request.method == "POST":
-        resource.title = request.POST.get("title")
-        resource.description = request.POST.get("description")
-        resource.resource_type = request.POST.get("resource_type")
-        resource.external_url = request.POST.get("external_url", "")
-
-        # Handle file upload
-        if "file" in request.FILES:
-            resource.file = request.FILES["file"]
-
+        resource.title = request.POST.get("title", resource.title)
+        resource.description = request.POST.get("description", resource.description)
+        resource.resource_type = request.POST.get("resource_type", resource.resource_type)
+        resource.external_url = request.POST.get("external_url", resource.external_url)
         resource.save()
-        messages.success(request, "Resource has been updated successfully.")
+
+        messages.success(request, "The resource has been updated.")
         return redirect("chapter_detail", slug=slug)
 
     return render(
@@ -632,26 +621,25 @@ def edit_chapter_resource(request, slug, resource_id):
         {
             "chapter": chapter,
             "resource": resource,
-            "resource_types": ChapterResource.RESOURCE_TYPES,
         },
     )
 
 
 @login_required
-def delete_chapter_resource(request, slug, resource_id):
+def delete_chapter_resource(request: HttpRequest, slug: str, resource_id: int) -> HttpResponse:
     """Delete a chapter resource."""
     chapter = get_object_or_404(Chapter, slug=slug)
     resource = get_object_or_404(ChapterResource, id=resource_id, chapter=chapter)
-    membership = get_object_or_404(ChapterMembership, chapter=chapter, user=request.user)
 
-    # Only creator or leaders can delete resources
-    if resource.created_by != request.user and membership.role not in ["lead", "co_organizer"]:
-        messages.error(request, "You don't have permission to delete this resource.")
+    # Check if user has permission to delete resources
+    user_membership = chapter.members.filter(user=request.user).first()
+    if not user_membership or user_membership.role not in ["lead", "co_organizer"]:
+        messages.error(request, "You do not have permission to delete resources.")
         return redirect("chapter_detail", slug=slug)
 
     if request.method == "POST":
         resource.delete()
-        messages.success(request, "Resource has been deleted.")
+        messages.success(request, "The resource has been deleted.")
         return redirect("chapter_detail", slug=slug)
 
     return render(
