@@ -19,7 +19,7 @@
                         <p class="text-gray-600 dark:text-gray-400">{{ chapter.region }}</p>
                     </div>
                 </div>
-                
+
                 <div class="flex flex-wrap gap-2">
                     {% if not user.is_authenticated %}
                         <a href="{% url 'account_login' %}?next={{ request.path }}" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md text-sm transition">
@@ -47,43 +47,43 @@
                     {% endif %}
                 </div>
             </div>
-            
+
             <div class="prose prose-lg dark:prose-invert max-w-none mb-4">
                 <p>{{ chapter.description }}</p>
             </div>
-            
+
             <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600 dark:text-gray-400">
                 <div class="flex items-center">
                     <i class="fas fa-users mr-1"></i>
                     <span>{{ chapter.member_count }} members</span>
                 </div>
-                
+
                 <div class="flex items-center">
                     <i class="fas fa-calendar-alt mr-1"></i>
                     <span>Founded {{ chapter.founding_date|date:"F Y" }}</span>
                 </div>
-                
+
                 {% if chapter.website %}
                     <a href="{{ chapter.website }}" target="_blank" class="flex items-center hover:text-teal-600 dark:hover:text-teal-400">
                         <i class="fas fa-globe mr-1"></i>
                         <span>Website</span>
                     </a>
                 {% endif %}
-                
+
                 {% if chapter.discord_link %}
                     <a href="{{ chapter.discord_link }}" target="_blank" class="flex items-center hover:text-teal-600 dark:hover:text-teal-400">
                         <i class="fab fa-discord mr-1"></i>
                         <span>Discord</span>
                     </a>
                 {% endif %}
-                
+
                 {% if chapter.facebook_link %}
                     <a href="{{ chapter.facebook_link }}" target="_blank" class="flex items-center hover:text-teal-600 dark:hover:text-teal-400">
                         <i class="fab fa-facebook mr-1"></i>
                         <span>Facebook</span>
                     </a>
                 {% endif %}
-                
+
                 {% if chapter.twitter_link %}
                     <a href="{{ chapter.twitter_link }}" target="_blank" class="flex items-center hover:text-teal-600 dark:hover:text-teal-400">
                         <i class="fab fa-twitter mr-1"></i>
@@ -92,7 +92,7 @@
                 {% endif %}
             </div>
         </div>
-        
+
         <!-- Upcoming Events Section -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
             <div class="flex justify-between items-center mb-6">
@@ -103,7 +103,7 @@
                     </a>
                 {% endif %}
             </div>
-            
+
             {% if upcoming_events %}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {% for event in upcoming_events %}
@@ -145,11 +145,11 @@
                 </div>
             {% endif %}
         </div>
-        
+
         <!-- Members Section -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
             <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Chapter Members</h2>
-            
+
             {% if members %}
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {% for member in members %}
@@ -178,7 +178,7 @@
                 <p class="text-center text-gray-600 dark:text-gray-400 py-4">No members yet.</p>
             {% endif %}
         </div>
-        
+
         <!-- Resources Section -->
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
             <div class="flex justify-between items-center mb-6">
@@ -189,7 +189,7 @@
                     </a>
                 {% endif %}
             </div>
-            
+
             {% if resources %}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {% for resource in resources %}
@@ -212,7 +212,7 @@
                                         <i class="fas fa-external-link-alt mr-1"></i> Visit Link
                                     </a>
                                 {% endif %}
-                                
+
                                 {% if user_membership and user_membership.is_approved and resource.created_by == user or user_membership.role in 'lead,co_organizer' %}
                                     <div class="ml-auto">
                                         <a href="{% url 'edit_chapter_resource' slug=chapter.slug resource_id=resource.id %}" class="text-yellow-600 dark:text-yellow-400 text-sm font-medium hover:underline">
@@ -238,12 +238,12 @@
                 </div>
             {% endif %}
         </div>
-        
+
         <!-- Past Events Section -->
         {% if past_events %}
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                 <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Past Events</h2>
-                
+
                 <div class="divide-y divide-gray-200 dark:divide-gray-700">
                     {% for event in past_events %}
                         <div class="py-4 first:pt-0 last:pb-0">
@@ -273,4 +273,4 @@
         {% endif %}
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

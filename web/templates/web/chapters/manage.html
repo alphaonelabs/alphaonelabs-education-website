@@ -10,7 +10,7 @@
                 </a>
                 <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Manage {{ chapter.name }}</h1>
             </div>
-            
+
             <!-- Tabs -->
             <div class="border-b border-gray-200 dark:border-gray-700 mb-6">
                 <nav class="flex -mb-px space-x-8" aria-label="Tabs">
@@ -33,7 +33,7 @@
                     </button>
                 </nav>
             </div>
-            
+
             <!-- Pending Member Requests Tab -->
             <div class="tab-content" id="pending-requests">
                 {% if pending_memberships %}
@@ -104,7 +104,7 @@
                     </div>
                 {% endif %}
             </div>
-            
+
             <!-- Events Tab -->
             <div class="tab-content hidden" id="events">
                 <div class="flex justify-end mb-4">
@@ -112,7 +112,7 @@
                         <i class="fas fa-plus mr-1"></i> Create Event
                     </a>
                 </div>
-                
+
                 {% if events %}
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -180,7 +180,7 @@
                     </div>
                 {% endif %}
             </div>
-            
+
             <!-- Resources Tab -->
             <div class="tab-content hidden" id="resources">
                 <div class="flex justify-end mb-4">
@@ -188,7 +188,7 @@
                         <i class="fas fa-plus mr-1"></i> Add Resource
                     </a>
                 </div>
-                
+
                 {% if resources %}
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
@@ -242,7 +242,7 @@
                     </div>
                 {% endif %}
             </div>
-            
+
             <!-- Chapter Settings Tab -->
             <div class="tab-content hidden" id="settings">
                 <div class="flex justify-end mb-4">
@@ -250,10 +250,10 @@
                         <i class="fas fa-edit mr-1"></i> Edit Chapter
                     </a>
                 </div>
-                
+
                 <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
                     <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Chapter Information</h3>
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                         <div>
                             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Name</p>
@@ -283,7 +283,7 @@
                                         Inactive
                                     </span>
                                 {% endif %}
-                                
+
                                 {% if chapter.is_featured %}
                                     <span class="ml-2 px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
                                         Featured
@@ -292,9 +292,9 @@
                             </p>
                         </div>
                     </div>
-                    
+
                     <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Online Presence</h3>
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Website</p>
@@ -355,29 +355,29 @@
     document.addEventListener('DOMContentLoaded', function() {
         const tabButtons = document.querySelectorAll('.tab-button');
         const tabContents = document.querySelectorAll('.tab-content');
-        
+
         tabButtons.forEach(button => {
             button.addEventListener('click', () => {
                 const tabId = button.getAttribute('data-tab');
-                
+
                 // Hide all tab contents
                 tabContents.forEach(content => {
                     content.classList.add('hidden');
                 });
-                
+
                 // Show selected tab content
                 document.getElementById(tabId).classList.remove('hidden');
-                
+
                 // Update active tab
                 tabButtons.forEach(btn => {
                     btn.classList.remove('active', 'border-teal-500', 'text-teal-600', 'dark:text-teal-400');
                     btn.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'dark:text-gray-400', 'dark:hover:text-gray-300');
                 });
-                
+
                 button.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'dark:text-gray-400', 'dark:hover:text-gray-300');
                 button.classList.add('active', 'border-teal-500', 'text-teal-600', 'dark:text-teal-400');
             });
         });
     });
 </script>
-{% endblock %} 
+{% endblock %}

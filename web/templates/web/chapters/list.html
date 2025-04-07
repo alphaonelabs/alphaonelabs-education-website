@@ -58,11 +58,11 @@
                                 {{ chapter.member_count }} members
                             </span>
                         </div>
-                        
+
                         <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">{{ chapter.name }}</h2>
                         <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">{{ chapter.region }}</p>
                         <p class="text-gray-700 dark:text-gray-300 mb-4 line-clamp-3">{{ chapter.description }}</p>
-                        
+
                         {% if chapter.upcoming_events %}
                             <div class="mb-4">
                                 <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Next event:</p>
@@ -97,4 +97,4 @@
         </div>
     {% endif %}
 </div>
-{% endblock %} 
+{% endblock %}

@@ -10,7 +10,7 @@
                 </a>
                 <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Delete Resource</h1>
             </div>
-            
+
             <div class="mb-6 p-4 bg-red-50 dark:bg-red-900 rounded-lg">
                 <div class="flex items-center mb-4">
                     <i class="fas fa-exclamation-triangle text-red-600 dark:text-red-400 text-lg mr-2"></i>
@@ -20,7 +20,7 @@
                     Are you sure you want to delete the following resource? This action cannot be undone.
                 </p>
             </div>
-            
+
             <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mb-6">
                 <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">{{ resource.title }}</h3>
                 <p class="text-gray-600 dark:text-gray-400 text-sm mb-2">
@@ -29,23 +29,23 @@
                 {% if resource.description %}
                     <p class="text-gray-700 dark:text-gray-300 mb-3">{{ resource.description }}</p>
                 {% endif %}
-                
+
                 <div class="flex flex-wrap gap-2 mt-2">
                     {% if resource.file %}
                         <div class="text-sm text-gray-600 dark:text-gray-400">
-                            <span class="font-medium">File:</span> 
+                            <span class="font-medium">File:</span>
                             <a href="{{ resource.file.url }}" class="text-blue-600 dark:text-blue-400 hover:underline" download>{{ resource.file.name|split:'/'}}</a>
                         </div>
                     {% endif %}
                     {% if resource.external_url %}
                         <div class="text-sm text-gray-600 dark:text-gray-400">
-                            <span class="font-medium">URL:</span> 
+                            <span class="font-medium">URL:</span>
                             <a href="{{ resource.external_url }}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">{{ resource.external_url }}</a>
                         </div>
                     {% endif %}
                 </div>
             </div>
-            
+
             <form method="post">
                 {% csrf_token %}
                 <div class="flex justify-end">
@@ -60,4 +60,4 @@
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}

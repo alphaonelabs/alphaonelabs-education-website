@@ -2835,7 +2835,7 @@ class Chapter(models.Model):
     @property
     def member_count(self):
         return self.members.filter(is_approved=True).count()
-    
+
     @property
     def upcoming_events(self):
         return self.events.filter(start_time__gte=timezone.now()).order_by('start_time')
@@ -2944,7 +2944,7 @@ class ChapterResource(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.chapter.name}"
-        
+
     def clean(self):
         if not self.file and not self.external_url:
             raise ValidationError("Either a file or external URL must be provided")

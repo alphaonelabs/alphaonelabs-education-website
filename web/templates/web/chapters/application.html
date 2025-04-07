@@ -10,14 +10,14 @@
                 </a>
                 <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Start a New Chapter</h1>
             </div>
-            
+
             <div class="mb-8">
                 <div class="bg-blue-50 dark:bg-blue-900 p-4 rounded-lg text-blue-800 dark:text-blue-200 mb-6">
                     <h2 class="text-lg font-semibold mb-2 flex items-center">
                         <i class="fas fa-info-circle mr-2"></i> About Alpha One Chapters
                     </h2>
                     <p class="mb-3">
-                        Chapters are community-led groups that bring together people interested in AI education, 
+                        Chapters are community-led groups that bring together people interested in AI education,
                         research, and ethical development. As a chapter leader, you'll have the opportunity to:
                     </p>
                     <ul class="list-disc pl-6 space-y-1">
@@ -28,7 +28,7 @@
                         <li>Make a meaningful impact in AI education</li>
                     </ul>
                 </div>
-                
+
                 <div class="bg-yellow-50 dark:bg-yellow-900 p-4 rounded-lg text-yellow-800 dark:text-yellow-200">
                     <h3 class="text-lg font-semibold mb-2 flex items-center">
                         <i class="fas fa-lightbulb mr-2"></i> Chapter Leader Responsibilities
@@ -43,10 +43,10 @@
                     </ul>
                 </div>
             </div>
-            
+
             <form method="post" enctype="multipart/form-data" class="space-y-6">
                 {% csrf_token %}
-                
+
                 {% if form.non_field_errors %}
                     <div class="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 p-3 rounded-lg mb-4">
                         {% for error in form.non_field_errors %}
@@ -54,9 +54,9 @@
                         {% endfor %}
                     </div>
                 {% endif %}
-                
+
                 <h3 class="text-xl font-bold text-gray-800 dark:text-white">Chapter Information</h3>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="{{ form.name.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -74,7 +74,7 @@
                             <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.name.errors.0 }}</p>
                         {% endif %}
                     </div>
-                    
+
                     <div>
                         <label for="{{ form.region.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Region/Location*
@@ -92,7 +92,7 @@
                         {% endif %}
                     </div>
                 </div>
-                
+
                 <div>
                     <label for="{{ form.description.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Chapter Description*
@@ -108,7 +108,7 @@
                         <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.description.errors.0 }}</p>
                     {% endif %}
                 </div>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="{{ form.focus_areas.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -125,7 +125,7 @@
                             <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.focus_areas.errors.0 }}</p>
                         {% endif %}
                     </div>
-                    
+
                     <div>
                         <label for="{{ form.target_audience.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Target Audience*
@@ -142,7 +142,7 @@
                         {% endif %}
                     </div>
                 </div>
-                
+
                 <div>
                     <label for="{{ form.logo.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Chapter Logo (optional)
@@ -163,9 +163,9 @@
                         <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.logo.errors.0 }}</p>
                     {% endif %}
                 </div>
-                
+
                 <h3 class="text-xl font-bold text-gray-800 dark:text-white pt-4">Leadership & Planning</h3>
-                
+
                 <div>
                     <label for="{{ form.leadership_team.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Leadership Team*
@@ -181,7 +181,7 @@
                         <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.leadership_team.errors.0 }}</p>
                     {% endif %}
                 </div>
-                
+
                 <div>
                     <label for="{{ form.planned_activities.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Planned Activities*
@@ -197,7 +197,7 @@
                         <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.planned_activities.errors.0 }}</p>
                     {% endif %}
                 </div>
-                
+
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="{{ form.meeting_frequency.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -215,7 +215,7 @@
                             <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.meeting_frequency.errors.0 }}</p>
                         {% endif %}
                     </div>
-                    
+
                     <div>
                         <label for="{{ form.venue_type.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                             Venue Type*
@@ -237,9 +237,9 @@
                         {% endif %}
                     </div>
                 </div>
-                
+
                 <h3 class="text-xl font-bold text-gray-800 dark:text-white pt-4">Additional Information</h3>
-                
+
                 <div>
                     <label for="{{ form.motivation.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Your Motivation*
@@ -255,7 +255,7 @@
                         <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.motivation.errors.0 }}</p>
                     {% endif %}
                 </div>
-                
+
                 <div>
                     <label for="{{ form.experience.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Relevant Experience*
@@ -271,7 +271,7 @@
                         <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.experience.errors.0 }}</p>
                     {% endif %}
                 </div>
-                
+
                 <div>
                     <label for="{{ form.comments.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Additional Comments (optional)
@@ -287,12 +287,12 @@
                         <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.comments.errors.0 }}</p>
                     {% endif %}
                 </div>
-                
+
                 <div class="flex items-start gap-2 pt-4">
-                    <input 
-                        type="checkbox" 
-                        name="{{ form.agree_to_terms.name }}" 
-                        id="{{ form.agree_to_terms.id_for_label }}" 
+                    <input
+                        type="checkbox"
+                        name="{{ form.agree_to_terms.name }}"
+                        id="{{ form.agree_to_terms.id_for_label }}"
                         class="mt-1 h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
                         {% if form.agree_to_terms.value %}checked{% endif %}
                     >
@@ -304,14 +304,14 @@
                 {% if form.agree_to_terms.errors %}
                     <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.agree_to_terms.errors.0 }}</p>
                 {% endif %}
-                
+
                 <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mt-8">
                     <p class="text-sm text-gray-700 dark:text-gray-300 mb-4">
                         <i class="fas fa-info-circle mr-1 text-blue-500"></i>
                         Your application will be reviewed by our team. We may reach out for additional information
                         or to schedule a brief interview. You'll receive a notification once your application is processed.
                     </p>
-                    
+
                     <div class="flex justify-end">
                         <a href="{% url 'chapters_list' %}" class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md text-sm transition mr-3">
                             Cancel
@@ -325,4 +325,4 @@
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}
