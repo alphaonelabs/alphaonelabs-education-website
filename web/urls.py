@@ -49,6 +49,7 @@ urlpatterns += i18n_patterns(
     path("waiting-rooms/", views.waiting_rooms, name="waiting_rooms"),
     path("teach/", views.teach, name="teach"),
     path("about/", views.about, name="about"),
+    path("users/", views.users_list, name="users_list"),
     path("profile/<str:username>/", views.public_profile, name="public_profile"),
     path("graphing_calculator/", views.graphing_calculator, name="graphing_calculator"),
     path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
