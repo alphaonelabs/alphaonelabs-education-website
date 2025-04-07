@@ -1,146 +1,142 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
+  <div class="container mx-auto px-4 py-8">
     <div class="max-w-2xl mx-auto">
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-            <div class="flex items-center mb-6">
-                <a href="{% url 'chapter_detail' slug=chapter.slug %}" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mr-3">
-                    <i class="fas fa-arrow-left"></i>
-                </a>
-                <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Join {{ chapter.name }}</h1>
-            </div>
-
-            <div class="mb-6">
-                <div class="flex items-center gap-4 mb-4">
-                    {% if chapter.logo %}
-                        <img src="{{ chapter.logo.url }}" alt="{{ chapter.name }} logo" class="w-16 h-16 object-contain rounded-full">
-                    {% else %}
-                        <div class="w-16 h-16 bg-teal-100 dark:bg-teal-900 rounded-full flex items-center justify-center text-teal-600 dark:text-teal-300 text-2xl font-bold">
-                            {{ chapter.name|slice:":1" }}
-                        </div>
-                    {% endif %}
-                    <div>
-                        <h2 class="text-xl font-bold text-gray-800 dark:text-white">{{ chapter.name }}</h2>
-                        <p class="text-gray-600 dark:text-gray-400">
-                            <i class="fas fa-map-marker-alt mr-1"></i> {{ chapter.region }}
-                        </p>
-                    </div>
-                </div>
-
-                <p class="text-gray-700 dark:text-gray-300 mb-4">{{ chapter.description }}</p>
-
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
-                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Chapter Details</h3>
-                    <ul class="space-y-2 text-gray-700 dark:text-gray-300">
-                        <li><i class="fas fa-users mr-2 text-gray-500 dark:text-gray-400"></i> {{ chapter.member_count }} members</li>
-                        <li><i class="fas fa-calendar mr-2 text-gray-500 dark:text-gray-400"></i> Founded {{ chapter.founding_date|date:"F Y" }}</li>
-                        {% if chapter.meeting_frequency %}
-                            <li><i class="fas fa-clock mr-2 text-gray-500 dark:text-gray-400"></i> Meets {{ chapter.meeting_frequency }}</li>
-                        {% endif %}
-                    </ul>
-                </div>
-            </div>
-
-            <form method="post" class="space-y-6">
-                {% csrf_token %}
-
-                {% if form.non_field_errors %}
-                    <div class="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 p-3 rounded-lg mb-4">
-                        {% for error in form.non_field_errors %}
-                            <p>{{ error }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-
-                <div>
-                    <label for="{{ form.motivation.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Why do you want to join this chapter?
-                    </label>
-                    <textarea
-                        name="{{ form.motivation.name }}"
-                        id="{{ form.motivation.id_for_label }}"
-                        rows="4"
-                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white"
-                        placeholder="Share your motivation for joining this chapter..."
-                    >{{ form.motivation.value|default:'' }}</textarea>
-                    {% if form.motivation.errors %}
-                        <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.motivation.errors.0 }}</p>
-                    {% endif %}
-                </div>
-
-                <div>
-                    <label for="{{ form.interests.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        What specific topics or activities are you interested in?
-                    </label>
-                    <textarea
-                        name="{{ form.interests.name }}"
-                        id="{{ form.interests.id_for_label }}"
-                        rows="4"
-                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white"
-                        placeholder="Share your relevant interests and what you hope to learn or contribute..."
-                    >{{ form.interests.value|default:'' }}</textarea>
-                    {% if form.interests.errors %}
-                        <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.interests.errors.0 }}</p>
-                    {% endif %}
-                </div>
-
-                <div>
-                    <label for="{{ form.experience.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Relevant experience or skills (optional)
-                    </label>
-                    <textarea
-                        name="{{ form.experience.name }}"
-                        id="{{ form.experience.id_for_label }}"
-                        rows="4"
-                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white"
-                        placeholder="Share any relevant experience, skills, or background you have..."
-                    >{{ form.experience.value|default:'' }}</textarea>
-                    {% if form.experience.errors %}
-                        <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.experience.errors.0 }}</p>
-                    {% endif %}
-                </div>
-
-                {% if form.agree_to_code_of_conduct %}
-                    <div class="flex items-start gap-2">
-                        <input
-                            type="checkbox"
-                            name="{{ form.agree_to_code_of_conduct.name }}"
-                            id="{{ form.agree_to_code_of_conduct.id_for_label }}"
-                            class="mt-1 h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
-                            {% if form.agree_to_code_of_conduct.value %}checked{% endif %}
-                        >
-                        <label for="{{ form.agree_to_code_of_conduct.id_for_label }}" class="text-sm text-gray-700 dark:text-gray-300">
-                            I agree to follow the <a href="{% url 'code_of_conduct' %}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">Code of Conduct</a> and community guidelines
-                        </label>
-                    </div>
-                    {% if form.agree_to_code_of_conduct.errors %}
-                        <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.agree_to_code_of_conduct.errors.0 }}</p>
-                    {% endif %}
-                {% endif %}
-
-                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                    <p class="text-sm text-gray-700 dark:text-gray-300 mb-4">
-                        <i class="fas fa-info-circle mr-1 text-blue-500"></i>
-                        {% if chapter.requires_approval %}
-                            Your request to join will be reviewed by the chapter leadership team.
-                            You'll receive a notification once your membership is approved.
-                        {% else %}
-                            You'll be automatically added to this chapter once you submit this form.
-                        {% endif %}
-                    </p>
-
-                    <div class="flex justify-end">
-                        <a href="{% url 'chapter_detail' slug=chapter.slug %}" class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md text-sm transition mr-3">
-                            Cancel
-                        </a>
-                        <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md text-sm transition">
-                            Submit Request
-                        </button>
-                    </div>
-                </div>
-            </form>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+        <div class="flex items-center mb-6">
+          <a href="{% url 'chapter_detail' slug=chapter.slug %}"
+             class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mr-3">
+            <i class="fas fa-arrow-left"></i>
+          </a>
+          <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Join {{ chapter.name }}</h1>
         </div>
+        <div class="mb-6">
+          <div class="flex items-center gap-4 mb-4">
+            {% if chapter.logo %}
+              <img src="{{ chapter.logo.url }}"
+                   alt="{{ chapter.name }} logo"
+                   class="w-16 h-16 object-contain rounded-full" />
+            {% else %}
+              <div class="w-16 h-16 bg-teal-100 dark:bg-teal-900 rounded-full flex items-center justify-center text-teal-600 dark:text-teal-300 text-2xl font-bold">
+                {{ chapter.name|slice:":1" }}
+              </div>
+            {% endif %}
+            <div>
+              <h2 class="text-xl font-bold text-gray-800 dark:text-white">{{ chapter.name }}</h2>
+              <p class="text-gray-600 dark:text-gray-400">
+                <i class="fas fa-map-marker-alt mr-1"></i> {{ chapter.region }}
+              </p>
+            </div>
+          </div>
+          <p class="text-gray-700 dark:text-gray-300 mb-4">{{ chapter.description }}</p>
+          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Chapter Details</h3>
+            <ul class="space-y-2 text-gray-700 dark:text-gray-300">
+              <li>
+                <i class="fas fa-users mr-2 text-gray-500 dark:text-gray-400"></i> {{ chapter.member_count }} members
+              </li>
+              <li>
+                <i class="fas fa-calendar mr-2 text-gray-500 dark:text-gray-400"></i> Founded {{ chapter.founding_date|date:"F Y" }}
+              </li>
+              {% if chapter.meeting_frequency %}
+                <li>
+                  <i class="fas fa-clock mr-2 text-gray-500 dark:text-gray-400"></i> Meets {{ chapter.meeting_frequency }}
+                </li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
+        <form method="post" class="space-y-6">
+          {% csrf_token %}
+          {% if form.non_field_errors %}
+            <div class="bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 p-3 rounded-lg mb-4">
+              {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+          {% endif %}
+          <div>
+            <label for="{{ form.motivation.id_for_label }}"
+                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Why do you want to join this chapter?
+            </label>
+            <textarea name="{{ form.motivation.name }}"
+                      id="{{ form.motivation.id_for_label }}"
+                      rows="4"
+                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Share your motivation for joining this chapter...">{{ form.motivation.value|default:'' }}</textarea>
+            {% if form.motivation.errors %}
+              <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.motivation.errors.0 }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label for="{{ form.interests.id_for_label }}"
+                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              What specific topics or activities are you interested in?
+            </label>
+            <textarea name="{{ form.interests.name }}"
+                      id="{{ form.interests.id_for_label }}"
+                      rows="4"
+                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Share your relevant interests and what you hope to learn or contribute...">{{ form.interests.value|default:'' }}</textarea>
+            {% if form.interests.errors %}
+              <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.interests.errors.0 }}</p>
+            {% endif %}
+          </div>
+          <div>
+            <label for="{{ form.experience.id_for_label }}"
+                   class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Relevant experience or skills (optional)
+            </label>
+            <textarea name="{{ form.experience.name }}"
+                      id="{{ form.experience.id_for_label }}"
+                      rows="4"
+                      class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white"
+                      placeholder="Share any relevant experience, skills, or background you have...">{{ form.experience.value|default:'' }}</textarea>
+            {% if form.experience.errors %}
+              <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.experience.errors.0 }}</p>
+            {% endif %}
+          </div>
+          {% if form.agree_to_code_of_conduct %}
+            <div class="flex items-start gap-2">
+              <input type="checkbox"
+                     name="{{ form.agree_to_code_of_conduct.name }}"
+                     id="{{ form.agree_to_code_of_conduct.id_for_label }}"
+                     class="mt-1 h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded"
+                     {% if form.agree_to_code_of_conduct.value %}checked{% endif %} />
+              <label for="{{ form.agree_to_code_of_conduct.id_for_label }}"
+                     class="text-sm text-gray-700 dark:text-gray-300">
+                I agree to follow the <a href="{% url 'code_of_conduct' %}"
+    target="_blank"
+    class="text-blue-600 dark:text-blue-400 hover:underline">Code of Conduct</a> and community guidelines
+              </label>
+            </div>
+            {% if form.agree_to_code_of_conduct.errors %}
+              <p class="text-red-600 dark:text-red-400 text-sm mt-1">{{ form.agree_to_code_of_conduct.errors.0 }}</p>
+            {% endif %}
+          {% endif %}
+          <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+            <p class="text-sm text-gray-700 dark:text-gray-300 mb-4">
+              <i class="fas fa-info-circle mr-1 text-blue-500"></i>
+              {% if chapter.requires_approval %}
+                Your request to join will be reviewed by the chapter leadership team.
+                You'll receive a notification once your membership is approved.
+              {% else %}
+                You'll be automatically added to this chapter once you submit this form.
+              {% endif %}
+            </p>
+            <div class="flex justify-end">
+              <a href="{% url 'chapter_detail' slug=chapter.slug %}"
+                 class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md text-sm transition mr-3">
+                Cancel
+              </a>
+              <button type="submit"
+                      class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md text-sm transition">
+                Submit Request
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
     </div>
-</div>
+  </div>
 {% endblock %}
