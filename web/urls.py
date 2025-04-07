@@ -454,8 +454,16 @@ urlpatterns += i18n_patterns(
     path("chapters/<slug:slug>/events/<int:event_id>/attendance/", views.mark_attendance, name="mark_attendance"),
     # Chapter Resources URLs
     path("chapters/<slug:slug>/resources/add/", views.add_chapter_resource, name="add_chapter_resource"),
-    path("chapters/<slug:slug>/resources/<int:resource_id>/edit/", views.edit_chapter_resource, name="edit_chapter_resource"),
-    path("chapters/<slug:slug>/resources/<int:resource_id>/delete/", views.delete_chapter_resource, name="delete_chapter_resource"),
+    path(
+        "chapters/<slug:slug>/resources/<int:resource_id>/edit/",
+        views.edit_chapter_resource,
+        name="edit_chapter_resource",
+    ),
+    path(
+        "chapters/<slug:slug>/resources/<int:resource_id>/delete/",
+        views.delete_chapter_resource,
+        name="delete_chapter_resource",
+    ),
     prefix_default_language=True,
 )
 

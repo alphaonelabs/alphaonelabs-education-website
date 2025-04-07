@@ -6,27 +6,15 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
 
-from web.models import (
-    Chapter,
-    ChapterMembership,
-    ChapterEvent,
-    ChapterResource,
-    ChapterApplication
-)
+from web.models import Chapter, ChapterMembership, ChapterEvent, ChapterResource, ChapterApplication
 
 
 class ChapterModelTests(TestCase):
     def setUp(self):
-        self.user = User.objects.create_user(
-            username="testuser",
-            email="test@example.com",
-            password="testpassword123"
-        )
+        self.user = User.objects.create_user(username="testuser", email="test@example.com", password="testpassword123")
 
         self.chapter = Chapter.objects.create(
-            name="Test Chapter",
-            description="A test chapter for unit testing",
-            region="Test Region"
+            name="Test Chapter", description="A test chapter for unit testing", region="Test Region"
         )
 
     def test_chapter_creation(self):
@@ -38,16 +26,12 @@ class ChapterModelTests(TestCase):
 
     def test_membership_creation(self):
         membership = ChapterMembership.objects.create(
-            chapter=self.chapter,
-            user=self.user,
-            role='lead',
-            bio="Test bio",
-            is_approved=True
+            chapter=self.chapter, user=self.user, role="lead", bio="Test bio", is_approved=True
         )
 
         self.assertEqual(membership.user, self.user)
         self.assertEqual(membership.chapter, self.chapter)
-        self.assertEqual(membership.role, 'lead')
+        self.assertEqual(membership.role, "lead")
         self.assertEqual(membership.bio, "Test bio")
         self.assertTrue(membership.is_approved)
 
@@ -60,7 +44,7 @@ class ChapterModelTests(TestCase):
             start_time=timezone.now() + datetime.timedelta(days=1),
             end_time=timezone.now() + datetime.timedelta(days=1, hours=2),
             location="Test Location",
-            organizer=self.user
+            organizer=self.user,
         )
 
         self.assertEqual(event.chapter, self.chapter)
@@ -77,7 +61,7 @@ class ChapterModelTests(TestCase):
             description="A test resource",
             resource_type="document",
             external_url="https://example.com/resource",
-            created_by=self.user
+            created_by=self.user,
         )
 
         self.assertEqual(resource.chapter, self.chapter)
@@ -94,7 +78,7 @@ class ChapterModelTests(TestCase):
             region="New Region",
             description="A new chapter application",
             proposed_activities="Proposed activities",
-            experience="Leadership experience"
+            experience="Leadership experience",
         )
 
         self.assertEqual(application.applicant, self.user)
@@ -108,32 +92,20 @@ class ChapterViewTests(TestCase):
         self.client = Client()
 
         # Create test users
-        self.user = User.objects.create_user(
-            username="testuser",
-            email="test@example.com",
-            password="testpassword123"
-        )
+        self.user = User.objects.create_user(username="testuser", email="test@example.com", password="testpassword123")
 
         self.admin_user = User.objects.create_user(
-            username="adminuser",
-            email="admin@example.com",
-            password="adminpassword123",
-            is_staff=True
+            username="adminuser", email="admin@example.com", password="adminpassword123", is_staff=True
         )
 
         # Create test chapter
         self.chapter = Chapter.objects.create(
-            name="Test Chapter",
-            description="A test chapter for integration testing",
-            region="Test Region"
+            name="Test Chapter", description="A test chapter for integration testing", region="Test Region"
         )
 
         # Create lead membership
         self.lead_membership = ChapterMembership.objects.create(
-            chapter=self.chapter,
-            user=self.admin_user,
-            role='lead',
-            is_approved=True
+            chapter=self.chapter, user=self.admin_user, role="lead", is_approved=True
         )
 
         # Create an event
@@ -144,7 +116,7 @@ class ChapterViewTests(TestCase):
             event_type="meetup",
             start_time=timezone.now() + datetime.timedelta(days=1),
             end_time=timezone.now() + datetime.timedelta(days=1, hours=2),
-            organizer=self.admin_user
+            organizer=self.admin_user,
         )
 
         # Create a resource
@@ -154,16 +126,16 @@ class ChapterViewTests(TestCase):
             description="A test resource",
             resource_type="document",
             external_url="https://example.com/resource",
-            created_by=self.admin_user
+            created_by=self.admin_user,
         )
 
     def test_chapters_list_view(self):
-        response = self.client.get(reverse('chapters_list'))
+        response = self.client.get(reverse("chapters_list"))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Test Chapter")
 
     def test_chapter_detail_view(self):
-        response = self.client.get(reverse('chapter_detail', args=[self.chapter.slug]))
+        response = self.client.get(reverse("chapter_detail", args=[self.chapter.slug]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Test Chapter")
         self.assertContains(response, "Test Event")
@@ -174,26 +146,23 @@ class ChapterViewTests(TestCase):
         self.client.login(username="testuser", password="testpassword123")
 
         # Get the join page
-        response = self.client.get(reverse('join_chapter', args=[self.chapter.slug]))
+        response = self.client.get(reverse("join_chapter", args=[self.chapter.slug]))
         self.assertEqual(response.status_code, 200)
 
         # Submit the join form
-        response = self.client.post(
-            reverse('join_chapter', args=[self.chapter.slug]),
-            {'bio': 'Test member bio'}
-        )
-        self.assertRedirects(response, reverse('chapter_detail', args=[self.chapter.slug]))
+        response = self.client.post(reverse("join_chapter", args=[self.chapter.slug]), {"bio": "Test member bio"})
+        self.assertRedirects(response, reverse("chapter_detail", args=[self.chapter.slug]))
 
         # Verify membership was created but not approved
         membership = ChapterMembership.objects.get(user=self.user, chapter=self.chapter)
-        self.assertEqual(membership.role, 'member')
+        self.assertEqual(membership.role, "member")
         self.assertFalse(membership.is_approved)
 
     def test_chapter_management_view(self):
         # Login as chapter lead
         self.client.login(username="adminuser", password="adminpassword123")
 
-        response = self.client.get(reverse('manage_chapter', args=[self.chapter.slug]))
+        response = self.client.get(reverse("manage_chapter", args=[self.chapter.slug]))
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, "Test Chapter")
 
@@ -201,14 +170,9 @@ class ChapterViewTests(TestCase):
         self.client.login(username="testuser", password="testpassword123")
 
         # First create a membership for the test user
-        ChapterMembership.objects.create(
-            chapter=self.chapter,
-            user=self.user,
-            role='member',
-            is_approved=True
-        )
+        ChapterMembership.objects.create(chapter=self.chapter, user=self.user, role="member", is_approved=True)
 
-        response = self.client.get(reverse('manage_chapter', args=[self.chapter.slug]))
+        response = self.client.get(reverse("manage_chapter", args=[self.chapter.slug]))
         self.assertEqual(response.status_code, 302)  # Should redirect
 
     def test_creating_chapter_event(self):
@@ -216,7 +180,7 @@ class ChapterViewTests(TestCase):
         self.client.login(username="adminuser", password="adminpassword123")
 
         # Get the create event page
-        response = self.client.get(reverse('create_chapter_event', args=[self.chapter.slug]))
+        response = self.client.get(reverse("create_chapter_event", args=[self.chapter.slug]))
         self.assertEqual(response.status_code, 200)
 
         # Create an event
@@ -224,69 +188,60 @@ class ChapterViewTests(TestCase):
         tomorrow_plus_2 = timezone.now() + datetime.timedelta(days=1, hours=2)
 
         event_data = {
-            'title': 'New Test Event',
-            'description': 'A new test event description',
-            'event_type': 'workshop',
-            'start_time': tomorrow.strftime('%Y-%m-%d %H:%M:%S'),
-            'end_time': tomorrow_plus_2.strftime('%Y-%m-%d %H:%M:%S'),
-            'location': 'New Location',
-            'is_public': 'on'
+            "title": "New Test Event",
+            "description": "A new test event description",
+            "event_type": "workshop",
+            "start_time": tomorrow.strftime("%Y-%m-%d %H:%M:%S"),
+            "end_time": tomorrow_plus_2.strftime("%Y-%m-%d %H:%M:%S"),
+            "location": "New Location",
+            "is_public": "on",
         }
 
-        response = self.client.post(
-            reverse('create_chapter_event', args=[self.chapter.slug]),
-            event_data
-        )
+        response = self.client.post(reverse("create_chapter_event", args=[self.chapter.slug]), event_data)
 
         # Check that the event was created
-        self.assertTrue(ChapterEvent.objects.filter(title='New Test Event').exists())
+        self.assertTrue(ChapterEvent.objects.filter(title="New Test Event").exists())
 
     def test_adding_chapter_resource(self):
         # Login as chapter lead
         self.client.login(username="adminuser", password="adminpassword123")
 
         # Get the add resource page
-        response = self.client.get(reverse('add_chapter_resource', args=[self.chapter.slug]))
+        response = self.client.get(reverse("add_chapter_resource", args=[self.chapter.slug]))
         self.assertEqual(response.status_code, 200)
 
         # Add a resource
         resource_data = {
-            'title': 'New Test Resource',
-            'description': 'A new test resource description',
-            'resource_type': 'template',
-            'external_url': 'https://example.com/new-resource'
+            "title": "New Test Resource",
+            "description": "A new test resource description",
+            "resource_type": "template",
+            "external_url": "https://example.com/new-resource",
         }
 
-        response = self.client.post(
-            reverse('add_chapter_resource', args=[self.chapter.slug]),
-            resource_data
-        )
+        response = self.client.post(reverse("add_chapter_resource", args=[self.chapter.slug]), resource_data)
 
         # Check that the resource was created
-        self.assertTrue(ChapterResource.objects.filter(title='New Test Resource').exists())
+        self.assertTrue(ChapterResource.objects.filter(title="New Test Resource").exists())
 
     def test_chapter_application(self):
         # Login as normal user
         self.client.login(username="testuser", password="testpassword123")
 
         # Get the application page
-        response = self.client.get(reverse('apply_for_chapter'))
+        response = self.client.get(reverse("apply_for_chapter"))
         self.assertEqual(response.status_code, 200)
 
         # Submit an application
         application_data = {
-            'chapter_name': 'New Test Chapter',
-            'region': 'New Test Region',
-            'description': 'A new test chapter description',
-            'proposed_activities': 'Proposed activities for new chapter',
-            'experience': 'Leadership experience'
+            "chapter_name": "New Test Chapter",
+            "region": "New Test Region",
+            "description": "A new test chapter description",
+            "proposed_activities": "Proposed activities for new chapter",
+            "experience": "Leadership experience",
         }
 
-        response = self.client.post(
-            reverse('apply_for_chapter'),
-            application_data
-        )
+        response = self.client.post(reverse("apply_for_chapter"), application_data)
 
         # Check that the application was created
-        self.assertTrue(ChapterApplication.objects.filter(chapter_name='New Test Chapter').exists())
-        self.assertRedirects(response, reverse('chapters_list'))
+        self.assertTrue(ChapterApplication.objects.filter(chapter_name="New Test Chapter").exists())
+        self.assertRedirects(response, reverse("chapters_list"))

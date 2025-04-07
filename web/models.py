@@ -2809,6 +2809,7 @@ class ScheduledPost(models.Model):
 
 class Chapter(models.Model):
     """Model for educational chapters (local communities)."""
+
     name = models.CharField(max_length=200)
     slug = models.SlugField(unique=True, max_length=200)
     description = models.TextField()
@@ -2838,28 +2839,29 @@ class Chapter(models.Model):
 
     @property
     def upcoming_events(self):
-        return self.events.filter(start_time__gte=timezone.now()).order_by('start_time')
+        return self.events.filter(start_time__gte=timezone.now()).order_by("start_time")
 
 
 class ChapterMembership(models.Model):
     """Model for chapter members."""
+
     ROLE_CHOICES = [
-        ('lead', 'Chapter Lead'),
-        ('co_organizer', 'Co-Organizer'),
-        ('volunteer', 'Volunteer'),
-        ('member', 'Member'),
+        ("lead", "Chapter Lead"),
+        ("co_organizer", "Co-Organizer"),
+        ("volunteer", "Volunteer"),
+        ("member", "Member"),
     ]
 
-    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name='members')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chapter_memberships')
-    role = models.CharField(max_length=15, choices=ROLE_CHOICES, default='member')
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name="members")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="chapter_memberships")
+    role = models.CharField(max_length=15, choices=ROLE_CHOICES, default="member")
     bio = models.TextField(blank=True, help_text="Information about your role in this chapter")
     is_approved = models.BooleanField(default=False)
     joined_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ['chapter', 'user']
+        unique_together = ["chapter", "user"]
 
     def __str__(self):
         return f"{self.user.username} - {self.chapter.name} ({self.get_role_display()})"
@@ -2867,33 +2869,34 @@ class ChapterMembership(models.Model):
 
 class ChapterEvent(models.Model):
     """Model for events organized by chapters."""
+
     EVENT_TYPES = [
-        ('workshop', 'Workshop'),
-        ('meetup', 'Meetup'),
-        ('training', 'Teacher Training'),
-        ('showcase', 'Student Showcase'),
-        ('hackathon', 'Educational Hackathon'),
-        ('talk', 'Guest Speaker Talk'),
-        ('other', 'Other'),
+        ("workshop", "Workshop"),
+        ("meetup", "Meetup"),
+        ("training", "Teacher Training"),
+        ("showcase", "Student Showcase"),
+        ("hackathon", "Educational Hackathon"),
+        ("talk", "Guest Speaker Talk"),
+        ("other", "Other"),
     ]
 
-    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name='events')
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name="events")
     title = models.CharField(max_length=200)
     description = models.TextField()
-    event_type = models.CharField(max_length=20, choices=EVENT_TYPES, default='meetup')
+    event_type = models.CharField(max_length=20, choices=EVENT_TYPES, default="meetup")
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     location = models.CharField(max_length=200, blank=True, help_text="Physical location of the event")
     meeting_link = models.URLField(blank=True, help_text="Virtual meeting link")
-    image = models.ImageField(upload_to='chapter_events', blank=True)
+    image = models.ImageField(upload_to="chapter_events", blank=True)
     max_participants = models.PositiveIntegerField(default=50)
     is_public = models.BooleanField(default=True, help_text="If false, only chapter members can view")
-    organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='organized_chapter_events')
+    organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="organized_chapter_events")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-start_time']
+        ordering = ["-start_time"]
 
     def __str__(self):
         return f"{self.title} - {self.chapter.name}"
@@ -2909,13 +2912,14 @@ class ChapterEvent(models.Model):
 
 class ChapterEventAttendee(models.Model):
     """Model for tracking event attendance."""
-    event = models.ForeignKey(ChapterEvent, on_delete=models.CASCADE, related_name='attendees')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chapter_event_attendances')
+
+    event = models.ForeignKey(ChapterEvent, on_delete=models.CASCADE, related_name="attendees")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="chapter_event_attendances")
     registered_at = models.DateTimeField(auto_now_add=True)
     attended = models.BooleanField(default=False)
 
     class Meta:
-        unique_together = ['event', 'user']
+        unique_together = ["event", "user"]
 
     def __str__(self):
         return f"{self.user.username} - {self.event.title}"
@@ -2923,22 +2927,23 @@ class ChapterEventAttendee(models.Model):
 
 class ChapterResource(models.Model):
     """Model for resources shared by chapter members."""
+
     RESOURCE_TYPES = [
-        ('document', 'Document'),
-        ('presentation', 'Presentation'),
-        ('template', 'Template'),
-        ('guide', 'How-to Guide'),
-        ('link', 'External Link'),
-        ('other', 'Other'),
+        ("document", "Document"),
+        ("presentation", "Presentation"),
+        ("template", "Template"),
+        ("guide", "How-to Guide"),
+        ("link", "External Link"),
+        ("other", "Other"),
     ]
 
-    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name='resources')
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, related_name="resources")
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     resource_type = models.CharField(max_length=20, choices=RESOURCE_TYPES)
-    file = models.FileField(upload_to='chapter_resources', blank=True)
+    file = models.FileField(upload_to="chapter_resources", blank=True)
     external_url = models.URLField(blank=True)
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chapter_resources')
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="chapter_resources")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -2952,19 +2957,22 @@ class ChapterResource(models.Model):
 
 class ChapterApplication(models.Model):
     """Model for chapter applications."""
+
     STATUS_CHOICES = [
-        ('pending', 'Pending Review'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
+        ("pending", "Pending Review"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
     ]
 
-    applicant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='chapter_applications')
+    applicant = models.ForeignKey(User, on_delete=models.CASCADE, related_name="chapter_applications")
     chapter_name = models.CharField(max_length=200)
     region = models.CharField(max_length=200)
     description = models.TextField()
     proposed_activities = models.TextField()
-    experience = models.TextField(help_text="Applicant's experience with community organizing, education, or leadership")
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    experience = models.TextField(
+        help_text="Applicant's experience with community organizing, education, or leadership"
+    )
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
     admin_notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
