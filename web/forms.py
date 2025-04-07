@@ -1801,6 +1801,7 @@ class MembershipPlanForm(forms.ModelForm):
     FREE_PLAN_CONFIRMATION_ERROR = (
         "Please confirm that you intend to create a free plan by checking the confirmation box below."
     )
+    YEARLY_DISCOUNT_ERROR = "Yearly price should offer a discount compared to paying monthly for 12 months."
     confirm_free_plan = forms.BooleanField(
         required=False,
         widget=TailwindCheckboxInput(),
@@ -1853,7 +1854,7 @@ class MembershipPlanForm(forms.ModelForm):
             if price_yearly >= yearly_equivalent:
                 self.add_error(
                     "price_yearly",
-                    "Yearly price should offer a discount compared to paying monthly for 12 months.",
+                    self.YEARLY_DISCOUNT_ERROR,
                 )
 
         return cleaned_data
@@ -1890,7 +1891,7 @@ class MembershipPlanForm(forms.ModelForm):
             "order": TailwindNumberInput(attrs={"min": "0"}),
         }
         help_texts: ClassVar[dict[str, str]] = {
-            "features": "Enter the features for this membership plan, one per line.",
+            "features": "Enter the features as a JSON list. Example: ['Feature 1', 'Feature 2']",
             "is_popular": "Mark this plan as popular to highlight it on the pricing page.",
             "stripe_monthly_price_id": "Stripe Price ID for monthly billing",
             "stripe_yearly_price_id": "Stripe Price ID for yearly billing",
