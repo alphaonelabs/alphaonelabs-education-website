@@ -21,7 +21,7 @@ class ChapterModelTests(TestCase):
         self.user = User.objects.create_user(username="testuser", email="test@example.com", password="password123")
 
         self.chapter = Chapter.objects.create(
-            name="Test Chapter", description="A test chapter for unit testing", region="Test Region",
+            name="Test Chapter", description="A test chapter for unit testing", region="Test Region"
         )
 
     def test_chapter_creation(self) -> None:
@@ -33,7 +33,7 @@ class ChapterModelTests(TestCase):
 
     def test_membership_creation(self) -> None:
         membership = ChapterMembership.objects.create(
-            chapter=self.chapter, user=self.user, role="lead", bio="Test bio", is_approved=True,
+            chapter=self.chapter, user=self.user, role="lead", bio="Test bio", is_approved=True
         )
 
         assert membership.user == self.user
@@ -51,7 +51,7 @@ class ChapterModelTests(TestCase):
             start_time=timezone.now() + datetime.timedelta(days=1),
             end_time=timezone.now() + datetime.timedelta(days=1, hours=2),
             location="Test Location",
-            organizer=self.user,
+            organizer=self.user
         )
 
         assert event.chapter == self.chapter
@@ -68,7 +68,7 @@ class ChapterModelTests(TestCase):
             description="A test resource",
             resource_type="document",
             external_url="https://example.com/resource",
-            created_by=self.user,
+            created_by=self.user
         )
 
         assert resource.chapter == self.chapter
@@ -85,7 +85,7 @@ class ChapterModelTests(TestCase):
             region="New Region",
             description="A new chapter application",
             proposed_activities="Proposed activities",
-            experience="Leadership experience",
+            experience="Leadership experience"
         )
 
         assert application.applicant == self.user
@@ -102,17 +102,17 @@ class ChapterViewTests(TestCase):
         self.user = User.objects.create_user(username="testuser", email="test@example.com", password="password123")
 
         self.admin_user = User.objects.create_user(
-            username="adminuser", email="admin@example.com", password="password123", is_staff=True,
+            username="adminuser", email="admin@example.com", password="password123", is_staff=True
         )
 
         # Create test chapter
         self.chapter = Chapter.objects.create(
-            name="Test Chapter", description="A test chapter for integration testing", region="Test Region",
+            name="Test Chapter", description="A test chapter for integration testing", region="Test Region"
         )
 
         # Create lead membership
         self.lead_membership = ChapterMembership.objects.create(
-            chapter=self.chapter, user=self.admin_user, role="lead", is_approved=True,
+            chapter=self.chapter, user=self.admin_user, role="lead", is_approved=True
         )
 
         # Create an event
@@ -123,7 +123,7 @@ class ChapterViewTests(TestCase):
             event_type="meetup",
             start_time=timezone.now() + datetime.timedelta(days=1),
             end_time=timezone.now() + datetime.timedelta(days=1, hours=2),
-            organizer=self.admin_user,
+            organizer=self.admin_user
         )
 
         # Create a resource
@@ -133,7 +133,7 @@ class ChapterViewTests(TestCase):
             description="A test resource",
             resource_type="document",
             external_url="https://example.com/resource",
-            created_by=self.admin_user,
+            created_by=self.admin_user
         )
 
     def test_chapters_list_view(self) -> None:
