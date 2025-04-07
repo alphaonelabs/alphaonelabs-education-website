@@ -255,8 +255,13 @@
                     {% for session in sessions %}
                       <div class="relative border dark:border-gray-700 rounded-lg p-3 transition bg-white dark:bg-gray-800 {% if session.end_time < now %}opacity-70 grayscale{% endif %}">
                         {% if session.end_time < now %}
-                          <div class="absolute top-2 right-2 bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-full font-medium"
-                               aria-label="Past">Past</div>
+                          <div class="absolute top-2 right-2 group">
+                            <div class="bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-full font-medium"
+                                 aria-label="Past">Past</div>
+                            <span class="absolute -top-8 right-0 w-max bg-black text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity z-20 whitespace-nowrap">
+                              Session expired
+                            </span>
+                          </div>
                         {% endif %}
                         <div class="space-y-1">
                           <h3 class="text-sm font-semibold truncate">{{ session.title }}</h3>
