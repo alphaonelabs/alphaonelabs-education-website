@@ -124,6 +124,7 @@ from .models import (
     ForumCategory,
     ForumReply,
     ForumTopic,
+    ForumVote,
     Goods,
     GradeableLink,
     LearningStreak,
@@ -1814,39 +1815,39 @@ def forum_category(request, slug):
 
 
 def forum_topic(request, category_slug, topic_id):
-    """Display a forum topic and its replies."""
-    topic = get_object_or_404(ForumTopic, id=topic_id, category__slug=category_slug)
-    categories = ForumCategory.objects.all()
+    """View for displaying a forum topic and its replies."""
+    category = get_object_or_404(ForumCategory, slug=category_slug)
+    topic = get_object_or_404(ForumTopic, id=topic_id, category=category)
 
-    # Get view count from WebRequest model
-    view_count = (
-        WebRequest.objects.filter(path=request.path).aggregate(total_views=models.Sum("count"))["total_views"] or 0
-    )
-    topic.views = view_count
+    # Increment view count
+    topic.views += 1
     topic.save()
 
-    # Handle POST requests for replies, etc.
-    if request.method == "POST":
-        action = request.POST.get("action")
-        if action == "add_reply" and request.user.is_authenticated:
-            content = request.POST.get("content")
-            if content:
-                ForumReply.objects.create(topic=topic, author=request.user, content=content)
-                messages.success(request, "Reply added successfully.")
-                return redirect("forum_topic", category_slug=category_slug, topic_id=topic_id)
-        elif action == "delete_reply" and request.user.is_authenticated:
-            reply_id = request.POST.get("reply_id")
-            reply = get_object_or_404(ForumReply, id=reply_id, author=request.user)
-            reply.delete()
-            messages.success(request, "Reply deleted successfully.")
-            return redirect("forum_topic", category_slug=category_slug, topic_id=topic_id)
-        elif action == "delete_topic" and request.user == topic.author:
-            topic.delete()
-            messages.success(request, "Topic deleted successfully.")
-            return redirect("forum_category", slug=category_slug)
+    # Get replies
+    replies = topic.replies.all().order_by("created_at")
 
-    replies = topic.replies.select_related("author").order_by("created_at")
-    return render(request, "web/forum/topic.html", {"topic": topic, "replies": replies, "categories": categories})
+    # Pass category list for sidebar
+    categories = ForumCategory.objects.all().order_by("order", "name")
+
+    # Pass user's votes to template
+    user_topic_vote = topic.user_vote(request.user) if request.user.is_authenticated else None
+    user_reply_votes = {}
+
+    if request.user.is_authenticated:
+        for reply in replies:
+            user_reply_votes[reply.id] = reply.user_vote(request.user)
+            print("topic is : ", topic)
+
+    context = {
+        "category": category,
+        "topic": topic,
+        "replies": replies,
+        "categories": categories,
+        "user_topic_vote": user_topic_vote,
+        "user_reply_votes": user_reply_votes,
+    }
+
+    return render(request, "web/forum/topic.html", context)
 
 
 @login_required
@@ -2843,16 +2844,18 @@ def create_forum_category(request):
     """Create a new forum category."""
     if request.method == "POST":
         form = ForumCategoryForm(request.POST)
+        print("are we heer")
         if form.is_valid():
             category = form.save()
+            print("are we here")
             if not category.slug:
                 category.slug = slugify(category.name)
             category.save()
             messages.success(request, f"Forum category '{category.name}' created successfully!")
             return redirect("forum_category", slug=category.slug)
-    else:
-        form = ForumCategoryForm()
-        print(form.errors)
+        else:
+            form = ForumCategoryForm()
+            print(form.errors)
 
     return render(request, "web/forum/create_category.html", {"form": form})
 
@@ -7018,3 +7021,97 @@ def users_list(request: HttpRequest) -> HttpResponse:
     }
 
     return render(request, "users_list.html", context)
+
+
+@login_required
+def topic_vote(request, pk):
+    """Handle voting on a topic."""
+    print("method is: ", request.method)
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST method allowed"}, status=405)
+
+    try:
+        topic = ForumTopic.objects.get(pk=pk)
+        vote_type = request.POST.get("vote_type")
+
+        if vote_type not in ["up", "down"]:
+            return JsonResponse({"error": "Invalid vote type"}, status=400)
+
+        # Check if user already voted on this topic
+        vote, created = ForumVote.objects.get_or_create(
+            user=request.user, topic=topic, defaults={"vote_type": vote_type}
+        )
+
+        if not created:
+            # User already voted, check if they're changing their vote
+            if vote.vote_type == vote_type:
+                # Same vote type, so remove the vote
+                vote.delete()
+                action = "removed"
+            else:
+                # Different vote type, so update the vote
+                vote.vote_type = vote_type
+                vote.save()
+                action = "changed"
+        else:
+            action = "added"
+
+        return JsonResponse(
+            {
+                "success": True,
+                "action": action,
+                "upvotes": topic.upvote_count(),
+                "downvotes": topic.downvote_count(),
+                "score": topic.vote_score(),
+            }
+        )
+
+    except ForumTopic.DoesNotExist:
+        return JsonResponse({"error": "Topic not found"}, status=404)
+
+
+@login_required
+def reply_vote(request, pk):
+    """Handle voting on a reply."""
+    print("method is: ", request.method)
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST method allowed"}, status=405)
+
+    try:
+        reply = ForumReply.objects.get(pk=pk)
+        vote_type = request.POST.get("vote_type")
+
+        if vote_type not in ["up", "down"]:
+            return JsonResponse({"error": "Invalid vote type"}, status=400)
+
+        # Check if user already voted on this reply
+        vote, created = ForumVote.objects.get_or_create(
+            user=request.user, reply=reply, defaults={"vote_type": vote_type}
+        )
+
+        if not created:
+            # User already voted, check if they're changing their vote
+            if vote.vote_type == vote_type:
+                # Same vote type, so remove the vote
+                vote.delete()
+                action = "removed"
+            else:
+                # Different vote type, so update the vote
+                vote.vote_type = vote_type
+                vote.save()
+                action = "changed"
+        else:
+            action = "added"
+
+        return JsonResponse(
+            {
+                "success": True,
+                "action": action,
+                "upvotes": reply.upvote_count(),
+                "downvotes": reply.downvote_count(),
+                "score": reply.vote_score(),
+            }
+        )
+
+    except ForumReply.DoesNotExist:
+        return JsonResponse({"error": "Reply not found"}, status=404)

@@ -198,6 +198,8 @@ urlpatterns += i18n_patterns(
     path("forum/my-topics/", views.my_forum_topics, name="my_forum_topics"),
     path("forum/my-replies/", views.my_forum_replies, name="my_forum_replies"),
     path("forum/sync-milestones/", views.sync_github_milestones, name="sync_github_milestones"),
+    path("forum/topic/<int:pk>/vote/", views.topic_vote, name="topic_vote"),
+    path("forum/reply/<int:pk>/vote/", views.reply_vote, name="reply_vote"),
     # Peer Networking URLs
     path("peers/", views.peer_connections, name="peer_connections"),
     path(
