@@ -255,7 +255,8 @@
                     {% for session in sessions %}
                       <div class="relative border dark:border-gray-700 rounded-lg p-3 transition bg-white dark:bg-gray-800 {% if session.end_time < now %}opacity-70 grayscale{% endif %}">
                         {% if session.end_time < now %}
-                          <div class="absolute top-2 right-2 bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-full font-medium">Past</div>
+                          <div class="absolute top-2 right-2 bg-red-100 text-red-600 text-xs px-2 py-0.5 rounded-full font-medium"
+                               aria-label="Past">Past</div>
                         {% endif %}
                         <div class="space-y-1">
                           <h3 class="text-sm font-semibold truncate">{{ session.title }}</h3>
