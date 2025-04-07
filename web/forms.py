@@ -1796,6 +1796,12 @@ class StudyGroupForm(forms.ModelForm):
 
 class MembershipPlanForm(forms.ModelForm):
     STRIPE_PRICE_ID_ERROR = "Invalid format: Stripe price IDs must start with 'price_'"
+    confirm_free_plan = forms.BooleanField(
+        required=False,
+        widget=TailwindCheckboxInput(),
+        label="I confirm this is intentionally a free plan",
+        help_text="Check this box to confirm you're creating a plan with $0 pricing",
+    )
 
     def clean_stripe_monthly_price_id(self) -> str:
         price_id = self.cleaned_data.get("stripe_monthly_price_id")
@@ -1821,19 +1827,15 @@ class MembershipPlanForm(forms.ModelForm):
                 if not isinstance(features, list):
                     raise forms.ValidationError("Features must be a list of items")
             except json.JSONDecodeError:
-                raise forms.ValidationError("Features must be in valid JSON format")
+                raise forms.ValidationError("Features must be in valid JSON format") from None
         return features
 
     def clean_price_monthly(self) -> float:
         price = self.cleaned_data.get("price_monthly")
-        if price == 0 and not hasattr(self, "_confirmed_free_plan"):
-            self._confirmed_free_plan = True
-            # This is a warning - in a real implementation, you might want to add
-            # a confirmation checkbox or display a warning message to the user
-            from django.contrib import messages
-
-            if hasattr(self, "request"):
-                messages.warning(self.request, "You're creating a free plan. Is this intentional?")
+        if price == 0 and not self.cleaned_data.get("confirm_free_plan"):
+            raise forms.ValidationError(
+                "Please confirm that you intend to create a free plan by checking the confirmation box below."
+            )
         return price
 
     def clean(self) -> dict:
@@ -1845,7 +1847,8 @@ class MembershipPlanForm(forms.ModelForm):
             yearly_equivalent = price_monthly * 12
             if price_yearly >= yearly_equivalent:
                 self.add_error(
-                    "price_yearly", "Yearly price should offer a discount compared to paying monthly for 12 months."
+                    "price_yearly",
+                    "Yearly price should offer a discount compared to paying monthly for 12 months.",
                 )
 
         return cleaned_data
@@ -1865,6 +1868,7 @@ class MembershipPlanForm(forms.ModelForm):
             "is_active",
             "is_popular",
             "order",
+            "confirm_free_plan",
         ]
         widgets: ClassVar[dict[str, Any]] = {
             "name": TailwindInput(),
