@@ -7026,16 +7026,15 @@ def users_list(request: HttpRequest) -> HttpResponse:
 @login_required
 def topic_vote(request, pk):
     """Handle voting on a topic."""
-    print("method is: ", request.method)
-    if request.method != "POST":
-        return JsonResponse({"error": "Only POST method allowed"}, status=405)
 
     try:
         topic = ForumTopic.objects.get(pk=pk)
         vote_type = request.POST.get("vote_type")
 
         if vote_type not in ["up", "down"]:
-            return JsonResponse({"error": "Invalid vote type"}, status=400)
+            # For form submissions, redirect back with an error message if needed
+            messages.error(request, "Invalid vote type")
+            return redirect("view_topic", pk=topic.id)
 
         # Check if user already voted on this topic
         vote, created = ForumVote.objects.get_or_create(
@@ -7047,27 +7046,18 @@ def topic_vote(request, pk):
             if vote.vote_type == vote_type:
                 # Same vote type, so remove the vote
                 vote.delete()
-                action = "removed"
             else:
                 # Different vote type, so update the vote
                 vote.vote_type = vote_type
                 vote.save()
-                action = "changed"
-        else:
-            action = "added"
 
-        return JsonResponse(
-            {
-                "success": True,
-                "action": action,
-                "upvotes": topic.upvote_count(),
-                "downvotes": topic.downvote_count(),
-                "score": topic.vote_score(),
-            }
-        )
+        # After processing the vote, redirect back to the topic page
+        return redirect("forum_topic", category_slug=topic.category.slug, topic_id=topic.id)
 
     except ForumTopic.DoesNotExist:
-        return JsonResponse({"error": "Topic not found"}, status=404)
+        # Handle case when topic doesn't exist
+        messages.error(request, "Topic not found")
+        return redirect("forum_categories")
 
 
 @login_required

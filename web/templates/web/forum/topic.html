@@ -9,35 +9,101 @@
 {% block content %}
   <main class="flex-1 w-full max-w-[90rem] mx-auto px-0 md:px-0 h-full">
     <div class="flex flex-col lg:flex-row h-full min-h-[calc(100vh-4rem)]">
-      <!-- Left Sidebar -->
+      <!-- Left Sidebar - Categories Navigation -->
       <div class="w-full lg:w-64 xl:w-72 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-4 lg:p-6">
-        <!-- Sidebar content (populate with your category list if needed) -->
-        {% for cat in categories %}
-          <a href="{% url 'forum_category' cat.slug %}"
-             class="block mb-2 text-gray-700 dark:text-gray-300 hover:text-teal-400">{{ cat.name }}</a>
-        {% endfor %}
+        <div class="mb-6">
+          <h2 class="text-xl font-bold flex items-center text-gray-800 dark:text-gray-100">
+            <i class="fa-solid fa-comments text-teal-300 mr-2"></i>
+            Forum
+          </h2>
+          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">Join discussions, ask questions, and share knowledge</p>
+        </div>
+        <nav>
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide">Categories</h3>
+              {% if user.is_authenticated %}
+                <a href="{% url 'create_forum_category' %}"
+                   class="text-xs text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 flex items-center">
+                  <i class="fa-solid fa-plus mr-1 text-xs"></i>
+                  New
+                </a>
+              {% endif %}
+            </div>
+            <ul class="space-y-2">
+              <li>
+                <a href="{% url 'forum_categories' %}"
+                   class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                  <i class="fa-solid fa-layer-group text-teal-300 mr-2"></i>
+                  All Categories
+                </a>
+              </li>
+              {% for cat in categories|default:'' %}
+                <li>
+                  <a href="{% url 'forum_category' slug=cat.slug %}"
+                     class="flex items-center py-2 px-3 {% if cat.slug == topic.category.slug %}text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 font-medium{% else %}text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700{% endif %} rounded-lg">
+                    <i class="fa-solid {{ cat.icon|default:'fa-folder' }} text-teal-300 mr-2"></i>
+                    {{ cat.name }}
+                    <span class="ml-auto text-xs text-gray-500 dark:text-gray-400">{{ cat.topics.count }}</span>
+                  </a>
+                </li>
+              {% empty %}
+                <li>
+                  <a href="{% url 'forum_category' slug=topic.category.slug %}"
+                     class="flex items-center py-2 px-3 text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-lg font-medium">
+                    <i class="fa-solid {{ topic.category.icon|default:'fa-folder' }} text-teal-300 mr-2"></i>
+                    {{ topic.category.name }}
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% if user.is_authenticated %}
+            <div class="mb-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+              <h3 class="text-sm font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">My Activity</h3>
+              <ul class="space-y-2">
+                <li>
+                  <a href="{% url 'my_forum_topics' %}"
+                     class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <i class="fa-solid fa-pen-to-square text-teal-300 mr-2"></i>
+                    My Topics
+                  </a>
+                </li>
+                <li>
+                  <a href="{% url 'my_forum_replies' %}"
+                     class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+                    <i class="fa-solid fa-reply text-teal-300 mr-2"></i>
+                    My Replies
+                  </a>
+                </li>
+              </ul>
+            </div>
+          {% endif %}
+        </nav>
       </div>
-      <!-- Main Content -->
+      <!-- Main Content Area -->
       <div class="flex-1 bg-gray-50 dark:bg-gray-900 overflow-y-auto">
         <div class="p-4 lg:p-6">
           <!-- Breadcrumbs -->
           <nav class="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
             <a href="{% url 'forum_categories' %}" class="hover:text-teal-300">Forum</a>
-            <span>/</span>
+            <span class="text-gray-400 dark:text-gray-600">/</span>
             <a href="{% url 'forum_category' topic.category.slug %}"
                class="hover:text-teal-300">{{ topic.category.name }}</a>
-            <span>/</span>
+            <span class="text-gray-400 dark:text-gray-600">/</span>
             <span class="text-gray-800 dark:text-gray-200 truncate max-w-xs">{{ topic.title }}</span>
           </nav>
-          <!-- Topic -->
+          <!-- Topic Area -->
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow mb-6">
             <div class="p-6 border-b border-gray-200 dark:border-gray-700">
+              <!-- Topic Header -->
               <div class="flex justify-between items-start">
                 <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ topic.title }}</h1>
                 {% if user == topic.author %}
                   <a href="{% url 'edit_topic' topic.id %}"
-                     class="text-sm text-gray-600 hover:text-teal-300 dark:text-gray-400 dark:hover:text-teal-300">
-                    <i class="fas fa-edit mr-1"></i>Edit
+                     class="text-gray-600 hover:text-teal-300 dark:text-gray-400 dark:hover:text-teal-300 flex items-center">
+                    <i class="fas fa-edit mr-1"></i>
+                    Edit
                   </a>
                 {% endif %}
               </div>
@@ -46,7 +112,9 @@
                 {% if topic.author.profile.avatar %}
                   <img src="{{ topic.author.profile.avatar.url }}"
                        alt="{{ topic.author.username }}"
-                       class="w-8 h-8 rounded-full object-cover mr-3" />
+                       class="w-8 h-8 rounded-full object-cover mr-3"
+                       width="32"
+                       height="32" />
                 {% else %}
                   <div class="w-8 h-8 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center text-teal-600 dark:text-teal-300 font-bold text-sm mr-3">
                     {{ topic.author.username|slice:":1"|upper }}
@@ -55,13 +123,15 @@
                 <div>
                   <div class="font-medium text-gray-800 dark:text-gray-200">{{ topic.author.username }}</div>
                   <div class="text-xs text-gray-500 dark:text-gray-400">
-                    <time datetime="{{ topic.created_at|date:'Y-m-d H:i' }}">{{ topic.created_at|timesince }} ago</time>
+                    <time datetime="{{ topic.created_at|date:'Y-m-d H:i' }}">
+                      {{ topic.created_at|timesince }} ago
+                    </time>
                     <span class="mx-1">•</span>
                     <span>{{ topic.views }} views</span>
                   </div>
                 </div>
               </div>
-              <!-- Vote + Content -->
+              <!-- Topic Content with Voting -->
               <div class="flex items-start">
                 <div class="flex flex-col items-center mr-4 text-gray-500 dark:text-gray-400">
                   <button type="button"
@@ -98,56 +168,221 @@
                     {% csrf_token %}
                     <input type="hidden" name="action" value="delete_topic" />
                     <button type="submit"
-                            class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300">
-                      Delete Topic
+                            class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm">
+                      <i class="fas fa-trash-alt mr-1"></i> Delete
                     </button>
                   </form>
                 </div>
               {% endif %}
             </div>
           </div>
-          <!-- Replies -->
-          {% for reply in replies %}
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 mb-4">
-              <div class="flex items-start">
-                <div class="flex flex-col items-center mr-3 text-gray-500 dark:text-gray-400">
-                  <button class="vote-btn p-1 hover:text-teal-500 transition-colors duration-200 focus:outline-none"
-                          data-reply="{{ reply.id }}"
-                          data-vote-type="up">
-                    <svg xmlns="http://www.w3.org/2000/svg"
-                         class="w-5 h-5 {% if user_reply_votes|get_item:reply.id == 'up' %}text-teal-500{% endif %}"
-                         fill="none"
-                         viewBox="0 0 24 24"
-                         stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                    </svg>
-                  </button>
-                  <span class="vote-score text-xs font-medium my-1">{{ reply.vote_score }}</span>
-                  <button class="vote-btn p-1 hover:text-red-500 transition-colors duration-200 focus:outline-none"
-                          data-reply="{{ reply.id }}"
-                          data-vote-type="down">
-                    <svg xmlns="http://www.w3.org/2000/svg"
-                         class="w-5 h-5 {% if user_reply_votes|get_item:reply.id == 'down' %}text-red-500{% endif %}"
-                         fill="none"
-                         viewBox="0 0 24 24"
-                         stroke="currentColor">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                </div>
-                <div class="flex-1">
-                  <div class="flex items-center mb-2">
-                    <div class="font-medium text-gray-800 dark:text-gray-100">{{ reply.author.username }}</div>
-                    <div class="text-xs text-gray-500 dark:text-gray-400 ml-2">{{ reply.created_at|timesince }} ago</div>
-                  </div>
-                  <div class="text-gray-700 dark:text-gray-300">{{ reply.content|linebreaks }}</div>
-                </div>
-              </div>
+          <!-- Replies Section -->
+          <div class="mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Replies ({{ replies.count }})</h2>
             </div>
-          {% endfor %}
+            <!-- Replies List -->
+            <div class="space-y-4">
+              {% for reply in replies %}
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 lg:p-5">
+                  <div class="flex">
+                    <div class="flex flex-col items-center mr-3 text-gray-500 dark:text-gray-400">
+                      <button class="vote-btn p-1 hover:text-teal-500 transition-colors duration-200 focus:outline-none"
+                              data-reply="{{ reply.id }}"
+                              data-vote-type="up">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             class="w-5 h-5 {% if user_reply_votes|get_item:reply.id == 'up' %}text-teal-500{% endif %}"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                        </svg>
+                      </button>
+                      <span class="vote-score text-xs font-medium my-1">{{ reply.vote_score }}</span>
+                      <button class="vote-btn p-1 hover:text-red-500 transition-colors duration-200 focus:outline-none"
+                              data-reply="{{ reply.id }}"
+                              data-vote-type="down">
+                        <svg xmlns="http://www.w3.org/2000/svg"
+                             class="w-5 h-5 {% if user_reply_votes|get_item:reply.id == 'down' %}text-red-500{% endif %}"
+                             fill="none"
+                             viewBox="0 0 24 24"
+                             stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div class="mr-3 hidden sm:block">
+                      {% if reply.author.profile.avatar %}
+                        <img src="{{ reply.author.profile.avatar.url }}"
+                             alt="{{ reply.author.username }}"
+                             class="w-8 h-8 rounded-full object-cover"
+                             width="32"
+                             height="32" />
+                      {% else %}
+                        <div class="w-8 h-8 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center text-teal-600 dark:text-teal-300 font-bold text-sm">
+                          {{ reply.author.username|slice:":1"|upper }}
+                        </div>
+                      {% endif %}
+                    </div>
+                    <div class="flex-1">
+                      <div class="flex items-start justify-between mb-2">
+                        <div>
+                          <span class="font-medium text-gray-700 dark:text-gray-300">{{ reply.author.username }}</span>
+                          <time datetime="{{ reply.created_at|date:'Y-m-d H:i' }}"
+                                class="text-xs text-gray-500 dark:text-gray-400 ml-2">
+                            {{ reply.created_at|timesince }} ago
+                          </time>
+                        </div>
+                        {% if user == reply.author %}
+                          <div class="flex space-x-4 text-sm">
+                            <a href="{% url 'edit_reply' reply.id %}"
+                               class="text-teal-300 hover:text-teal-400 dark:text-teal-300 dark:hover:text-teal-400">
+                              <i class="fas fa-edit mr-1"></i>Edit
+                            </a>
+                            <form method="post" class="inline">
+                              {% csrf_token %}
+                              <input type="hidden" name="action" value="delete_reply" />
+                              <input type="hidden" name="reply_id" value="{{ reply.id }}" />
+                              <button type="submit"
+                                      class="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300">
+                                <i class="fas fa-trash-alt mr-1"></i>Delete
+                              </button>
+                            </form>
+                          </div>
+                        {% endif %}
+                      </div>
+                      <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 text-sm">
+                        {{ reply.content|linebreaks }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              {% empty %}
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm text-center">
+                  <p class="text-gray-500 dark:text-gray-400">No replies yet. Be the first to reply!</p>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+          <!-- Reply Form -->
+          {% if user.is_authenticated %}
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Post a Reply</h3>
+              <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="add_reply" />
+                <div>
+                  <label for="content"
+                         class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Your Reply</label>
+                  <textarea name="content"
+                            id="content"
+                            rows="4"
+                            class="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 dark:focus:ring-offset-gray-800 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
+                            required></textarea>
+                </div>
+                <div class="flex justify-end">
+                  <button type="submit"
+                          class="bg-teal-300 hover:bg-teal-400 text-white font-medium py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
+                    <i class="fas fa-paper-plane mr-2"></i>
+                    Post Reply
+                  </button>
+                </div>
+              </form>
+            </div>
+          {% else %}
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 text-center">
+              <p class="text-gray-600 dark:text-gray-400 mb-4">Please log in to join the discussion.</p>
+              <a href="{% url 'account_login' %}?next={{ request.path }}"
+                 class="inline-flex items-center bg-teal-300 hover:bg-teal-400 text-white font-medium py-2 px-4 rounded-lg">
+                <i class="fa-solid fa-sign-in-alt mr-2"></i>
+                Log In to Reply
+              </a>
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>
   </main>
-  <script src="{% static 'js/forum.js' %}"></script>
+  <script>
+      document.addEventListener("DOMContentLoaded", function() {
+          // Get CSRF token
+          function getCsrfToken() {
+              return document.querySelector("[name=csrfmiddlewaretoken]").value;
+          }
+
+          // Handle vote buttons for topics
+          document.querySelectorAll(".vote-btn[data-topic]").forEach((button) => {
+              button.addEventListener("click", function(e) {
+                  e.preventDefault();
+
+                  if (!document.body.classList.contains("user-authenticated")) {
+                      window.location.href = '/en/account/login';
+                      return;
+                  }
+
+                  const topicId = this.dataset.topic;
+                  const voteType = this.dataset.voteType;
+                  const csrftoken = getCsrfToken();
+
+                  // Using form submission instead of fetch
+                  const form = document.createElement('form');
+                  form.method = 'POST';
+                  form.action = "{% url 'topic_vote' topic.id %}";
+                  form.style.display = 'none';
+
+                  const csrfInput = document.createElement('input');
+                  csrfInput.type = 'hidden';
+                  csrfInput.name = 'csrfmiddlewaretoken';
+                  csrfInput.value = csrftoken;
+                  form.appendChild(csrfInput);
+
+                  const voteTypeInput = document.createElement('input');
+                  voteTypeInput.type = 'hidden';
+                  voteTypeInput.name = 'vote_type';
+                  voteTypeInput.value = voteType;
+                  form.appendChild(voteTypeInput);
+
+                  document.body.appendChild(form);
+                  form.submit();
+              });
+          });
+
+          // Handle vote buttons for replies
+          document.querySelectorAll(".vote-btn[data-reply]").forEach((button) => {
+              button.addEventListener("click", function(e) {
+                  e.preventDefault();
+
+                  if (!document.body.classList.contains("user-authenticated")) {
+                      window.location.href = '/account/login';
+                      return;
+                  }
+
+                  const replyId = this.dataset.reply;
+                  const voteType = this.dataset.voteType;
+                  const csrftoken = getCsrfToken();
+
+                  // Using form submission instead of fetch
+                  const form = document.createElement('form');
+                  form.method = 'POST';
+                  form.action = "{% url 'reply_vote' 0 %}".replace('0', replyId);
+                  form.style.display = 'none';
+
+                  const csrfInput = document.createElement('input');
+                  csrfInput.type = 'hidden';
+                  csrfInput.name = 'csrfmiddlewaretoken';
+                  csrfInput.value = csrftoken;
+                  form.appendChild(csrfInput);
+
+                  const voteTypeInput = document.createElement('input');
+                  voteTypeInput.type = 'hidden';
+                  voteTypeInput.name = 'vote_type';
+                  voteTypeInput.value = voteType;
+                  form.appendChild(voteTypeInput);
+
+                  document.body.appendChild(form);
+                  form.submit();
+              });
+          });
+      });
+  </script>
 {% endblock content %}
