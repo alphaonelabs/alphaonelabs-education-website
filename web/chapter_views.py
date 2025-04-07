@@ -17,7 +17,9 @@ from web.models import (
 
 def chapters_list(request):
     """List all active chapters."""
-    chapters = Chapter.objects.filter(is_active=True).order_by('-is_featured', 'name')
+    chapters = Chapter.objects.filter(is_active=True).order_by('-is
+
+    # Filter by
 
     # Filter by region if provided
     region = request.GET.get('region')
@@ -606,4 +608,5 @@ def delete_chapter_resource(request, slug, resource_id):
     return render(request, 'web/chapters/delete_resource.html', {
         'chapter': chapter,
         'resource': resource,
-    })
+    })e': resource,
+    }) 
