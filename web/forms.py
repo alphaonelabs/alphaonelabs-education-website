@@ -1798,6 +1798,9 @@ class MembershipPlanForm(forms.ModelForm):
     STRIPE_PRICE_ID_ERROR = "Invalid format: Stripe price IDs must start with 'price_'"
     FEATURES_FORMAT_ERROR = "Features must be in valid JSON format"
     FEATURES_TYPE_ERROR = "Features must be a list of items"
+    FREE_PLAN_CONFIRMATION_ERROR = (
+        "Please confirm that you intend to create a free plan by checking the confirmation box below."
+    )
     confirm_free_plan = forms.BooleanField(
         required=False,
         widget=TailwindCheckboxInput(),
@@ -1836,7 +1839,7 @@ class MembershipPlanForm(forms.ModelForm):
         price = self.cleaned_data.get("price_monthly")
         if price == 0 and not self.cleaned_data.get("confirm_free_plan"):
             raise forms.ValidationError(
-                "Please confirm that you intend to create a free plan by checking the confirmation box below.",
+                self.FREE_PLAN_CONFIRMATION_ERROR,
             )
         return price
 
