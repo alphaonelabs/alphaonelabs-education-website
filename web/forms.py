@@ -1809,6 +1809,33 @@ class MembershipPlanForm(forms.ModelForm):
             raise forms.ValidationError(self.STRIPE_PRICE_ID_ERROR)
         return price_id
 
+    def clean_features(self) -> list:
+        features = self.cleaned_data.get("features")
+        if features:
+            try:
+                if isinstance(features, str):
+                    import json
+
+                    features = json.loads(features)
+
+                if not isinstance(features, list):
+                    raise forms.ValidationError("Features must be a list of items")
+            except json.JSONDecodeError:
+                raise forms.ValidationError("Features must be in valid JSON format")
+        return features
+
+    def clean_price_monthly(self) -> float:
+        price = self.cleaned_data.get("price_monthly")
+        if price == 0 and not hasattr(self, "_confirmed_free_plan"):
+            self._confirmed_free_plan = True
+            # This is a warning - in a real implementation, you might want to add
+            # a confirmation checkbox or display a warning message to the user
+            from django.contrib import messages
+
+            if hasattr(self, "request"):
+                messages.warning(self.request, "You're creating a free plan. Is this intentional?")
+        return price
+
     def clean(self) -> dict:
         cleaned_data = super().clean()
         price_monthly = cleaned_data.get("price_monthly")
