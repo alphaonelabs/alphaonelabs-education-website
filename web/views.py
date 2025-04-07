@@ -7272,7 +7272,7 @@ def checkout_membership(request: HttpRequest, plan_slug: str, billing_period: st
     return render(request, "membership/checkout.html", context)
 
 
-def change_membership_plan(request: HttpRequest) -> HttpResponse:
+def change_membership_plan(_request: HttpRequest) -> HttpResponse:
     """Redirect to membership plans page for changing plans."""
     return redirect("membership_plans")
 

@@ -1809,7 +1809,7 @@ class MembershipPlanForm(forms.ModelForm):
             raise forms.ValidationError(self.STRIPE_PRICE_ID_ERROR)
         return price_id
 
-    def clean(self):
+    def clean(self) -> dict:
         cleaned_data = super().clean()
         price_monthly = cleaned_data.get("price_monthly")
         price_yearly = cleaned_data.get("price_yearly")
@@ -1844,8 +1844,8 @@ class MembershipPlanForm(forms.ModelForm):
             "slug": TailwindInput(),
             "description": TailwindTextarea(attrs={"rows": 3}),
             "features": TailwindJSONWidget(),
-            "price_monthly": TailwindNumberInput(attrs={"step": "0.01", "min": "0"}),
-            "price_yearly": TailwindNumberInput(attrs={"step": "0.01", "min": "0"}),
+            "price_monthly": TailwindNumberInput(attrs={"step": "0.01", "min": "0", "max": "9999.99"}),
+            "price_yearly": TailwindNumberInput(attrs={"step": "0.01", "min": "0", "max": "99999.99"}),
             "billing_period": TailwindSelect(),
             "stripe_monthly_price_id": TailwindInput(),
             "stripe_yearly_price_id": TailwindInput(),
