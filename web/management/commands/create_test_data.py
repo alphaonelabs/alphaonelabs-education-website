@@ -2,6 +2,7 @@ import random
 from datetime import timedelta
 from decimal import Decimal
 
+from allauth.account.models import EmailAddress
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -96,6 +97,7 @@ class Command(BaseCommand):
                 last_login=timezone.now(),
             )
             Profile.objects.filter(user=user).update(is_teacher=True)
+            EmailAddress.objects.create(user=user, email=user.email, primary=True, verified=True)
             teachers.append(user)
             self.stdout.write(f"Created teacher: {user.username}")
 
@@ -109,6 +111,7 @@ class Command(BaseCommand):
                 last_name="Doe",
                 last_login=timezone.now(),
             )
+            EmailAddress.objects.create(user=user, email=user.email, primary=True, verified=True)
             students.append(user)
             self.stdout.write(f"Created student: {user.username}")
 
