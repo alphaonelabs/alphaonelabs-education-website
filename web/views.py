@@ -34,14 +34,7 @@ from django.core.paginator import Paginator
 from django.db import IntegrityError, models, router, transaction
 from django.db.models import Avg, Count, Q, Sum
 from django.db.models.functions import Coalesce
-from django.http import (
-    FileResponse,
-    Http404,
-    HttpRequest,
-    HttpResponse,
-    HttpResponseForbidden,
-    JsonResponse,
-)
+from django.http import FileResponse, Http404, HttpRequest, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import NoReverseMatch, reverse, reverse_lazy
@@ -54,13 +47,7 @@ from django.views import generic
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_GET, require_POST
-from django.views.generic import (
-    CreateView,
-    DeleteView,
-    DetailView,
-    ListView,
-    UpdateView,
-)
+from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from .calendar_sync import generate_google_calendar_link, generate_ical_feed, generate_outlook_calendar_link
 from .decorators import teacher_required
@@ -113,6 +100,12 @@ from .models import (
     Certificate,
     Challenge,
     ChallengeSubmission,
+    Chapter,
+    ChapterApplication,
+    ChapterEvent,
+    ChapterEventAttendee,
+    ChapterMembership,
+    ChapterResource,
     Course,
     CourseMaterial,
     CourseProgress,
@@ -159,12 +152,6 @@ from .models import (
     UserBadge,
     WaitingRoom,
     WebRequest,
-    Chapter,
-    ChapterMembership,
-    ChapterApplication,
-    ChapterEvent,
-    ChapterEventAttendee,
-    ChapterResource,
 )
 from .notifications import (
     notify_session_reminder,
