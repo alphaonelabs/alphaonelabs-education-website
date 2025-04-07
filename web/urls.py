@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
-from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
+from . import admin_views, chapter_views, peer_challenge_views, quiz_views, views, views_avatar
 from .views import (
     GoodsListingView,
     GradeableLinkCreateView,
@@ -433,35 +433,69 @@ urlpatterns += i18n_patterns(
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
     path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
     # Chapter URLs
-    path("chapters/", views.chapters_list, name="chapters_list"),
-    path("chapters/apply/", views.apply_for_chapter, name="apply_for_chapter"),
-    path("chapters/<slug:slug>/", views.chapter_detail, name="chapter_detail"),
-    path("chapters/<slug:slug>/join/", views.join_chapter, name="join_chapter"),
-    path("chapters/<slug:slug>/leave/", views.leave_chapter, name="leave_chapter"),
-    path("chapters/<slug:slug>/edit-membership/", views.edit_membership, name="edit_membership"),
-    path("chapters/<slug:slug>/manage/", views.manage_chapter, name="manage_chapter"),
-    path("chapters/<slug:slug>/edit/", views.edit_chapter, name="edit_chapter"),
-    path("chapters/<slug:slug>/approve-member/<int:user_id>/", views.approve_membership, name="approve_membership"),
-    path("chapters/<slug:slug>/reject-member/<int:user_id>/", views.reject_membership, name="reject_membership"),
-    path("chapters/<slug:slug>/manage-role/<int:user_id>/", views.manage_member_role, name="manage_member_role"),
-    # Chapter Events URLs
-    path("chapters/<slug:slug>/events/create/", views.create_chapter_event, name="create_chapter_event"),
-    path("chapters/<slug:slug>/events/<int:event_id>/", views.chapter_event_detail, name="chapter_event_detail"),
-    path("chapters/<slug:slug>/events/<int:event_id>/edit/", views.edit_chapter_event, name="edit_chapter_event"),
-    path("chapters/<slug:slug>/events/<int:event_id>/delete/", views.delete_chapter_event, name="delete_chapter_event"),
-    path("chapters/<slug:slug>/events/<int:event_id>/rsvp/", views.rsvp_event, name="rsvp_event"),
-    path("chapters/<slug:slug>/events/<int:event_id>/cancel-rsvp/", views.cancel_rsvp, name="cancel_rsvp"),
-    path("chapters/<slug:slug>/events/<int:event_id>/attendance/", views.mark_attendance, name="mark_attendance"),
-    # Chapter Resources URLs
-    path("chapters/<slug:slug>/resources/add/", views.add_chapter_resource, name="add_chapter_resource"),
+    path("chapters/", chapter_views.chapters_list, name="chapters_list"),
+    path("chapters/apply/", chapter_views.apply_for_chapter, name="apply_for_chapter"),
+    path("chapters/<slug:slug>/", chapter_views.chapter_detail, name="chapter_detail"),
+    path("chapters/<slug:slug>/join/", chapter_views.join_chapter, name="join_chapter"),
+    path("chapters/<slug:slug>/leave/", chapter_views.leave_chapter, name="leave_chapter"),
+    path("chapters/<slug:slug>/edit-membership/", chapter_views.edit_membership, name="edit_membership"),
+    path("chapters/<slug:slug>/manage/", chapter_views.manage_chapter, name="manage_chapter"),
+    path("chapters/<slug:slug>/edit/", chapter_views.edit_chapter, name="edit_chapter"),
     path(
-        "chapters/<slug:slug>/resources/<int:resource_id>/edit/",
-        views.edit_chapter_resource,
+        "chapters/<slug:slug>/approve-member/<int:user_id>/",
+        chapter_views.approve_membership,
+        name="approve_membership",
+    ),
+    path(
+        "chapters/<slug:slug>/reject-member/<int:user_id>/",
+        chapter_views.reject_membership,
+        name="reject_membership",
+    ),
+    path(
+        "chapters/<slug:slug>/manage-role/<int:user_id>/",
+        chapter_views.manage_member_role,
+        name="manage_member_role",
+    ),
+    path("chapters/<slug:slug>/create-event/", chapter_views.create_chapter_event, name="create_chapter_event"),
+    path(
+        "chapters/<slug:slug>/event/<int:event_id>/",
+        chapter_views.chapter_event_detail,
+        name="chapter_event_detail",
+    ),
+    path(
+        "chapters/<slug:slug>/event/<int:event_id>/edit/",
+        chapter_views.edit_chapter_event,
+        name="edit_chapter_event",
+    ),
+    path(
+        "chapters/<slug:slug>/event/<int:event_id>/delete/",
+        chapter_views.delete_chapter_event,
+        name="delete_chapter_event",
+    ),
+    path(
+        "chapters/<slug:slug>/event/<int:event_id>/rsvp/",
+        chapter_views.rsvp_event,
+        name="rsvp_event",
+    ),
+    path(
+        "chapters/<slug:slug>/event/<int:event_id>/cancel-rsvp/",
+        chapter_views.cancel_rsvp,
+        name="cancel_rsvp",
+    ),
+    path(
+        "chapters/<slug:slug>/event/<int:event_id>/attendance/",
+        chapter_views.mark_attendance,
+        name="mark_chapter_attendance",
+    ),
+    path("chapters/<slug:slug>/add-resource/", chapter_views.add_chapter_resource, name="add_chapter_resource"),
+    path(
+        "chapters/<slug:slug>/resource/<int:resource_id>/edit/",
+        chapter_views.edit_chapter_resource,
         name="edit_chapter_resource",
     ),
     path(
-        "chapters/<slug:slug>/resources/<int:resource_id>/delete/",
-        views.delete_chapter_resource,
+        "chapters/<slug:slug>/resource/<int:resource_id>/delete/",
+        chapter_views.delete_chapter_resource,
         name="delete_chapter_resource",
     ),
     prefix_default_language=True,
