@@ -17,6 +17,12 @@ from .models import (
     CartItem,
     Challenge,
     ChallengeSubmission,
+    Chapter,
+    ChapterApplication,
+    ChapterEvent,
+    ChapterEventAttendee,
+    ChapterMembership,
+    ChapterResource,
     Course,
     CourseMaterial,
     CourseProgress,
@@ -53,12 +59,6 @@ from .models import (
     UserMembership,
     WaitingRoom,
     WebRequest,
-    Chapter,
-    ChapterMembership,
-    ChapterEvent,
-    ChapterEventAttendee,
-    ChapterResource,
-    ChapterApplication,
 )
 
 admin.site.unregister(EmailAddress)

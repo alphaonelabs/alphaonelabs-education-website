@@ -1,12 +1,12 @@
 import datetime
 
-from django.test import TestCase, Client
-from django.urls import reverse
-from django.utils import timezone
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import Client, TestCase
+from django.urls import reverse
+from django.utils import timezone
 
-from web.models import Chapter, ChapterMembership, ChapterEvent, ChapterResource, ChapterApplication
+from web.models import Chapter, ChapterApplication, ChapterEvent, ChapterMembership, ChapterResource
 
 
 class ChapterModelTests(TestCase):
