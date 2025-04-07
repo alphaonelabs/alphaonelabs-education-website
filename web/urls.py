@@ -41,6 +41,7 @@ urlpatterns += i18n_patterns(
     path("waiting-rooms/", views.waiting_rooms, name="waiting_rooms"),
     path("teach/", views.teach, name="teach"),
     path("about/", views.about, name="about"),
+    path("users/", views.users_list, name="users_list"),
     path("profile/<str:username>/", views.public_profile, name="public_profile"),
     path("graphing_calculator/", views.graphing_calculator, name="graphing_calculator"),
     path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
@@ -442,6 +443,7 @@ urlpatterns += i18n_patterns(
     path("membership/webhook/", views.membership_webhook, name="membership_webhook"),
     path("membership/cancel-subscription/", views.cancel_subscription_view, name="cancel_subscription"),
     path("membership/reactivate-subscription/", views.reactivate_subscription_view, name="reactivate_subscription"),
+    path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
     prefix_default_language=True,
 )
 

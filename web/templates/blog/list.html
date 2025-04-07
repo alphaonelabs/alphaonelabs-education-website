@@ -2,6 +2,24 @@
 
 {% block content %}
   <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <nav class="text-gray-600 dark:text-gray-300 text-sm mb-4">
+      <ol class="list-reset flex">
+        <li>
+          <a href="{% url 'blog_list' %}"
+             class="text-orange-500 hover:text-orange-600">Home</a>
+        </li>
+        <li>
+          <span class="mx-2">/</span>
+        </li>
+        <li class="text-gray-500">
+          {% if current_tag %}
+            Posts tagged with "{{ current_tag }}"
+          {% else %}
+            Blog
+          {% endif %}
+        </li>
+      </ol>
+    </nav>
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <!-- Main Content -->
       <div class="lg:col-span-2">
