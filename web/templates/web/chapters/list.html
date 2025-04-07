@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Educational Chapters</h1>
+        {% if user.is_authenticated %}
+            <a href="{% url 'apply_for_chapter' %}" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg transition duration-200">
+                Start a Chapter
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- Region Filter -->
+    <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <form method="get" class="flex flex-wrap gap-4 items-end">
+            <div class="flex-1 min-w-[250px]">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Filter by Region</label>
+                <select name="region" class="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+                    <option value="">All Regions</option>
+                    {% for region in regions %}
+                        <option value="{{ region }}" {% if selected_region == region %}selected{% endif %}>{{ region }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition duration-200">
+                    Filter
+                </button>
+                {% if selected_region %}
+                    <a href="{% url 'chapters_list' %}" class="ml-2 text-sm text-blue-600 dark:text-blue-400 hover:underline">
+                        Clear Filter
+                    </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    {% if chapters %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for chapter in chapters %}
+                <div class="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-md hover:shadow-lg transition-shadow">
+                    {% if chapter.is_featured %}
+                        <div class="bg-yellow-100 dark:bg-yellow-900 px-3 py-1 text-yellow-800 dark:text-yellow-200 text-sm font-medium text-center">
+                            Featured Chapter
+                        </div>
+                    {% endif %}
+                    <div class="p-5">
+                        <div class="flex items-center justify-between mb-4">
+                            {% if chapter.logo %}
+                                <img src="{{ chapter.logo.url }}" alt="{{ chapter.name }} logo" class="w-16 h-16 object-contain rounded-full">
+                            {% else %}
+                                <div class="w-16 h-16 bg-teal-100 dark:bg-teal-900 rounded-full flex items-center justify-center text-teal-600 dark:text-teal-300 text-xl font-bold">
+                                    {{ chapter.name|slice:":1" }}
+                                </div>
+                            {% endif %}
+                            <span class="text-sm bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-3 py-1 rounded-full">
+                                {{ chapter.member_count }} members
+                            </span>
+                        </div>
+                        
+                        <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-2">{{ chapter.name }}</h2>
+                        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">{{ chapter.region }}</p>
+                        <p class="text-gray-700 dark:text-gray-300 mb-4 line-clamp-3">{{ chapter.description }}</p>
+                        
+                        {% if chapter.upcoming_events %}
+                            <div class="mb-4">
+                                <p class="text-sm font-medium text-gray-700 dark:text-gray-300">Next event:</p>
+                                <p class="text-sm text-blue-600 dark:text-blue-400">
+                                    {{ chapter.upcoming_events.0.title }} - {{ chapter.upcoming_events.0.start_time|date:"M d, Y" }}
+                                </p>
+                            </div>
+                        {% endif %}
+
+                        <div class="mt-4">
+                            <a href="{% url 'chapter_detail' slug=chapter.slug %}" class="inline-block bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md text-sm transition duration-200">
+                                View Chapter
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-6 text-center">
+            <h3 class="text-xl font-medium text-gray-700 dark:text-gray-300 mb-2">No chapters found</h3>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">Be the first to start a chapter in your region!</p>
+            {% if user.is_authenticated %}
+                <a href="{% url 'apply_for_chapter' %}" class="inline-block bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md transition duration-200">
+                    Start a Chapter
+                </a>
+            {% else %}
+                <a href="{% url 'login' %}?next={% url 'apply_for_chapter' %}" class="inline-block bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md transition duration-200">
+                    Log in to Start a Chapter
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %} 

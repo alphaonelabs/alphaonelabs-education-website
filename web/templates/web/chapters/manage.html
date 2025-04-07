@@ -1,0 +1,383 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+            <div class="flex items-center mb-6">
+                <a href="{% url 'chapter_detail' slug=chapter.slug %}" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 mr-3">
+                    <i class="fas fa-arrow-left"></i>
+                </a>
+                <h1 class="text-2xl font-bold text-gray-800 dark:text-white">Manage {{ chapter.name }}</h1>
+            </div>
+            
+            <!-- Tabs -->
+            <div class="border-b border-gray-200 dark:border-gray-700 mb-6">
+                <nav class="flex -mb-px space-x-8" aria-label="Tabs">
+                    <button class="tab-button active border-teal-500 text-teal-600 dark:text-teal-400 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm" data-tab="pending-requests">
+                        Pending Requests
+                        {% if pending_memberships %}
+                            <span class="ml-2 px-2 py-0.5 bg-teal-100 dark:bg-teal-900 text-teal-600 dark:text-teal-400 rounded-full text-xs">
+                                {{ pending_memberships.count }}
+                            </span>
+                        {% endif %}
+                    </button>
+                    <button class="tab-button border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm" data-tab="events">
+                        Events
+                    </button>
+                    <button class="tab-button border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm" data-tab="resources">
+                        Resources
+                    </button>
+                    <button class="tab-button border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm" data-tab="settings">
+                        Chapter Settings
+                    </button>
+                </nav>
+            </div>
+            
+            <!-- Pending Member Requests Tab -->
+            <div class="tab-content" id="pending-requests">
+                {% if pending_memberships %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-800">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Member</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Bio</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Requested</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                {% for membership in pending_memberships %}
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-10 w-10">
+                                                    {% if membership.user.profile.avatar %}
+                                                        <img class="h-10 w-10 rounded-full" src="{{ membership.user.profile.avatar.url }}" alt="">
+                                                    {% else %}
+                                                        <div class="h-10 w-10 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-medium">
+                                                            {{ membership.user.username|slice:":1" }}
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="ml-4">
+                                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                                        {{ membership.user.username }}
+                                                    </div>
+                                                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                                                        {{ membership.user.email }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4">
+                                            <div class="text-sm text-gray-900 dark:text-white max-w-xs truncate">
+                                                {{ membership.bio|default:"No bio provided" }}
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {{ membership.joined_at|date:"M d, Y" }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <form method="post" action="{% url 'approve_membership' slug=chapter.slug user_id=membership.user.id %}" class="inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-200 mr-3">
+                                                    Approve
+                                                </button>
+                                            </form>
+                                            <form method="post" action="{% url 'reject_membership' slug=chapter.slug user_id=membership.user.id %}" class="inline">
+                                                {% csrf_token %}
+                                                <button type="submit" class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200">
+                                                    Reject
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 text-center">
+                        <p class="text-gray-600 dark:text-gray-400">No pending membership requests</p>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Events Tab -->
+            <div class="tab-content hidden" id="events">
+                <div class="flex justify-end mb-4">
+                    <a href="{% url 'create_chapter_event' slug=chapter.slug %}" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md text-sm transition">
+                        <i class="fas fa-plus mr-1"></i> Create Event
+                    </a>
+                </div>
+                
+                {% if events %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-800">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Event</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</th>
+                                    <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Attendees</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                {% for event in events %}
+                                    <tr>
+                                        <td class="px-6 py-4">
+                                            <div class="flex items-center">
+                                                <div class="flex-shrink-0 h-10 w-10">
+                                                    {% if event.image %}
+                                                        <img class="h-10 w-10 rounded object-cover" src="{{ event.image.url }}" alt="">
+                                                    {% else %}
+                                                        <div class="h-10 w-10 rounded bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300">
+                                                            <i class="fas fa-calendar-alt"></i>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                                <div class="ml-4">
+                                                    <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                                        {{ event.title }}
+                                                    </div>
+                                                    <div class="text-xs text-gray-500 dark:text-gray-400">
+                                                        {{ event.get_event_type_display }}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            <div>{{ event.start_time|date:"M d, Y" }}</div>
+                                            <div>{{ event.start_time|date:"g:i A" }} - {{ event.end_time|date:"g:i A" }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500 dark:text-gray-400">
+                                            {{ event.attendees.count }} / {{ event.max_participants }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <a href="{% url 'chapter_event_detail' slug=chapter.slug event_id=event.id %}" class="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-200 mr-3">
+                                                View
+                                            </a>
+                                            <a href="{% url 'edit_chapter_event' slug=chapter.slug event_id=event.id %}" class="text-yellow-600 dark:text-yellow-400 hover:text-yellow-900 dark:hover:text-yellow-200 mr-3">
+                                                Edit
+                                            </a>
+                                            <a href="{% url 'delete_chapter_event' slug=chapter.slug event_id=event.id %}" class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200">
+                                                Delete
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 text-center">
+                        <p class="text-gray-600 dark:text-gray-400">No events have been created yet</p>
+                        <a href="{% url 'create_chapter_event' slug=chapter.slug %}" class="mt-4 inline-block bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md text-sm transition">
+                            Schedule an Event
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Resources Tab -->
+            <div class="tab-content hidden" id="resources">
+                <div class="flex justify-end mb-4">
+                    <a href="{% url 'add_chapter_resource' slug=chapter.slug %}" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md text-sm transition">
+                        <i class="fas fa-plus mr-1"></i> Add Resource
+                    </a>
+                </div>
+                
+                {% if resources %}
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                            <thead class="bg-gray-50 dark:bg-gray-800">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Resource</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Added By</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                {% for resource in resources %}
+                                    <tr>
+                                        <td class="px-6 py-4">
+                                            <div class="text-sm font-medium text-gray-900 dark:text-white">
+                                                {{ resource.title }}
+                                            </div>
+                                            <div class="text-sm text-gray-500 dark:text-gray-400 max-w-xs truncate">
+                                                {{ resource.description }}
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {{ resource.get_resource_type_display }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                            {{ resource.created_by.username }}
+                                            <div class="text-xs">
+                                                {{ resource.created_at|date:"M d, Y" }}
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                            <a href="{% url 'edit_chapter_resource' slug=chapter.slug resource_id=resource.id %}" class="text-yellow-600 dark:text-yellow-400 hover:text-yellow-900 dark:hover:text-yellow-200 mr-3">
+                                                Edit
+                                            </a>
+                                            <a href="{% url 'delete_chapter_resource' slug=chapter.slug resource_id=resource.id %}" class="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-200">
+                                                Delete
+                                            </a>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-8 text-center">
+                        <p class="text-gray-600 dark:text-gray-400">No resources have been added yet</p>
+                        <a href="{% url 'add_chapter_resource' slug=chapter.slug %}" class="mt-4 inline-block bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md text-sm transition">
+                            Add a Resource
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Chapter Settings Tab -->
+            <div class="tab-content hidden" id="settings">
+                <div class="flex justify-end mb-4">
+                    <a href="{% url 'edit_chapter' slug=chapter.slug %}" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md text-sm transition">
+                        <i class="fas fa-edit mr-1"></i> Edit Chapter
+                    </a>
+                </div>
+                
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-6">
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Chapter Information</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Name</p>
+                            <p class="mt-1 text-gray-900 dark:text-white">{{ chapter.name }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Region</p>
+                            <p class="mt-1 text-gray-900 dark:text-white">{{ chapter.region }}</p>
+                        </div>
+                        <div class="md:col-span-2">
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Description</p>
+                            <p class="mt-1 text-gray-900 dark:text-white">{{ chapter.description }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Founded</p>
+                            <p class="mt-1 text-gray-900 dark:text-white">{{ chapter.founding_date|date:"F j, Y" }}</p>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Status</p>
+                            <p class="mt-1">
+                                {% if chapter.is_active %}
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                        Active
+                                    </span>
+                                {% else %}
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                        Inactive
+                                    </span>
+                                {% endif %}
+                                
+                                {% if chapter.is_featured %}
+                                    <span class="ml-2 px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                        Featured
+                                    </span>
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">Online Presence</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Website</p>
+                            <p class="mt-1 text-gray-900 dark:text-white">
+                                {% if chapter.website %}
+                                    <a href="{{ chapter.website }}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">
+                                        {{ chapter.website }}
+                                    </a>
+                                {% else %}
+                                    Not set
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Discord</p>
+                            <p class="mt-1 text-gray-900 dark:text-white">
+                                {% if chapter.discord_link %}
+                                    <a href="{{ chapter.discord_link }}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">
+                                        Discord Server
+                                    </a>
+                                {% else %}
+                                    Not set
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Facebook</p>
+                            <p class="mt-1 text-gray-900 dark:text-white">
+                                {% if chapter.facebook_link %}
+                                    <a href="{{ chapter.facebook_link }}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">
+                                        Facebook Page
+                                    </a>
+                                {% else %}
+                                    Not set
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Twitter</p>
+                            <p class="mt-1 text-gray-900 dark:text-white">
+                                {% if chapter.twitter_link %}
+                                    <a href="{{ chapter.twitter_link }}" target="_blank" class="text-blue-600 dark:text-blue-400 hover:underline">
+                                        Twitter Profile
+                                    </a>
+                                {% else %}
+                                    Not set
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const tabId = button.getAttribute('data-tab');
+                
+                // Hide all tab contents
+                tabContents.forEach(content => {
+                    content.classList.add('hidden');
+                });
+                
+                // Show selected tab content
+                document.getElementById(tabId).classList.remove('hidden');
+                
+                // Update active tab
+                tabButtons.forEach(btn => {
+                    btn.classList.remove('active', 'border-teal-500', 'text-teal-600', 'dark:text-teal-400');
+                    btn.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'dark:text-gray-400', 'dark:hover:text-gray-300');
+                });
+                
+                button.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'dark:text-gray-400', 'dark:hover:text-gray-300');
+                button.classList.add('active', 'border-teal-500', 'text-teal-600', 'dark:text-teal-400');
+            });
+        });
+    });
+</script>
+{% endblock %} 

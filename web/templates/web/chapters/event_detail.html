@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Event Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+        <div class="flex flex-col md:flex-row gap-6">
+            <div class="md:w-1/3">
+                {% if event.image %}
+                    <img src="{{ event.image.url }}" alt="{{ event.title }}" class="w-full h-60 object-cover rounded-lg">
+                {% else %}
+                    <div class="w-full h-60 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-calendar-alt text-6xl text-gray-400 dark:text-gray-500"></i>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="md:w-2/3">
+                <div class="flex flex-wrap justify-between items-start mb-4">
+                    <h1 class="text-3xl font-bold text-gray-800 dark:text-white">{{ event.title }}</h1>
+                    <span class="bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-200 px-3 py-1 rounded-full text-sm font-medium">
+                        {{ event.get_event_type_display }}
+                    </span>
+                </div>
+                
+                <div class="flex flex-wrap gap-6 text-gray-600 dark:text-gray-400 mb-4">
+                    <p class="flex items-center">
+                        <i class="fas fa-calendar-day mr-2 text-teal-500 dark:text-teal-400"></i>
+                        {{ event.start_time|date:"F d, Y" }}
+                    </p>
+                    <p class="flex items-center">
+                        <i class="fas fa-clock mr-2 text-teal-500 dark:text-teal-400"></i>
+                        {{ event.start_time|date:"g:i A" }} - {{ event.end_time|date:"g:i A" }}
+                    </p>
+                    <p class="flex items-center">
+                        <i class="fas fa-map-marker-alt mr-2 text-teal-500 dark:text-teal-400"></i>
+                        {% if event.location %}{{ event.location }}{% else %}Online{% endif %}
+                    </p>
+                </div>
+                
+                {% if event.meeting_link %}
+                    <div class="mb-4 p-3 bg-blue-50 dark:bg-blue-900 rounded-lg text-blue-700 dark:text-blue-200">
+                        <p class="font-medium">Meeting Link:</p>
+                        <a href="{{ event.meeting_link }}" target="_blank" class="text-blue-600 dark:text-blue-300 hover:underline">
+                            {{ event.meeting_link }}
+                        </a>
+                    </div>
+                {% endif %}
+                
+                <!-- RSVP Action -->
+                <div class="mt-4">
+                    {% if user.is_authenticated %}
+                        {% if user_rsvp %}
+                            <div class="flex gap-4 items-center">
+                                <span class="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 rounded-full text-sm">
+                                    <i class="fas fa-check-circle mr-1"></i> RSVP'd
+                                </span>
+                                <a href="{% url 'cancel_rsvp' slug=chapter.slug event_id=event.id %}" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm transition">
+                                    <i class="fas fa-times-circle mr-1"></i> Cancel RSVP
+                                </a>
+                            </div>
+                        {% else %}
+                            {% if event.start_time > current_time %}
+                                <a href="{% url 'rsvp_event' slug=chapter.slug event_id=event.id %}" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md text-sm transition">
+                                    <i class="fas fa-check-circle mr-1"></i> RSVP for this event
+                                </a>
+                            {% else %}
+                                <span class="text-gray-600 dark:text-gray-400">
+                                    <i class="fas fa-clock mr-1"></i> Event has already started or ended
+                                </span>
+                            {% endif %}
+                        {% endif %}
+                    {% else %}
+                        <a href="{% url 'login' %}?next={% url 'chapter_event_detail' slug=chapter.slug event_id=event.id %}" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md text-sm transition">
+                            <i class="fas fa-sign-in-alt mr-1"></i> Log in to RSVP
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Event Info -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2">
+            <!-- Event Description -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">About This Event</h2>
+                <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+                    {{ event.description|linebreaks }}
+                </div>
+                
+                {% if event.agenda %}
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mt-6 mb-3">Agenda</h3>
+                    <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">
+                        {{ event.agenda|linebreaks }}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <!-- Event Resources -->
+            {% if event_resources %}
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">Event Resources</h2>
+                    <div class="space-y-4">
+                        {% for resource in event_resources %}
+                            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">{{ resource.title }}</h3>
+                                    <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs rounded-full">
+                                        {{ resource.get_resource_type_display }}
+                                    </span>
+                                </div>
+                                <p class="text-gray-700 dark:text-gray-300 text-sm mb-3">{{ resource.description }}</p>
+                                <div class="flex flex-wrap gap-2">
+                                    {% if resource.file %}
+                                        <a href="{{ resource.file.url }}" class="text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline" download>
+                                            <i class="fas fa-download mr-1"></i> Download File
+                                        </a>
+                                    {% endif %}
+                                    {% if resource.external_url %}
+                                        <a href="{{ resource.external_url }}" target="_blank" class="text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline">
+                                            <i class="fas fa-external-link-alt mr-1"></i> Visit Link
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div>
+            <!-- Event Details Sidebar -->
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+                <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Event Details</h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Chapter</p>
+                        <a href="{% url 'chapter_detail' slug=chapter.slug %}" class="text-blue-600 dark:text-blue-400 hover:underline">
+                            {{ chapter.name }}
+                        </a>
+                    </div>
+                    
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Organized by</p>
+                        <p class="text-gray-800 dark:text-gray-200">{{ event.organizer.get_full_name|default:event.organizer.username }}</p>
+                    </div>
+                    
+                    <div>
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">RSVP Count</p>
+                        <p class="text-gray-800 dark:text-gray-200">{{ event.rsvp_count }} attending</p>
+                    </div>
+                    
+                    {% if event.max_attendees %}
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Capacity</p>
+                            <p class="text-gray-800 dark:text-gray-200">{{ event.rsvp_count }} / {{ event.max_attendees }} spots filled</p>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mt-2">
+                                <div class="bg-teal-600 h-2.5 rounded-full" style="width: {{ event.capacity_percentage }}%"></div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% if event.requirements %}
+                        <div>
+                            <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Requirements</p>
+                            <p class="text-gray-800 dark:text-gray-200">{{ event.requirements }}</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Event Management -->
+            {% if user.is_authenticated and user_membership and user_membership.is_approved and user_membership.role in 'lead,co_organizer' %}
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+                    <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Event Management</h3>
+                    <div class="space-y-3">
+                        <a href="{% url 'edit_chapter_event' slug=chapter.slug event_id=event.id %}" class="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center px-4 py-2 rounded-md text-sm transition">
+                            <i class="fas fa-edit mr-1"></i> Edit Event
+                        </a>
+                        
+                        {% if event.start_time < current_time and event.end_time > current_time or event.end_time < current_time %}
+                            <a href="{% url 'mark_attendance' slug=chapter.slug event_id=event.id %}" class="block w-full bg-green-600 hover:bg-green-700 text-white text-center px-4 py-2 rounded-md text-sm transition">
+                                <i class="fas fa-user-check mr-1"></i> Mark Attendance
+                            </a>
+                        {% endif %}
+                        
+                        <button type="button" onclick="confirmDelete()" class="block w-full bg-red-600 hover:bg-red-700 text-white text-center px-4 py-2 rounded-md text-sm transition">
+                            <i class="fas fa-trash mr-1"></i> Delete Event
+                        </button>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Attendees List -->
+    {% if rsvp_list %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Attendees ({{ rsvp_list|length }})</h2>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {% for rsvp in rsvp_list %}
+                    <div class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                        <div class="flex-shrink-0 mr-3">
+                            {% if rsvp.user.profile.avatar %}
+                                <img src="{{ rsvp.user.profile.avatar.url }}" alt="{{ rsvp.user.username }}" class="w-12 h-12 rounded-full">
+                            {% else %}
+                                <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold">
+                                    {{ rsvp.user.username|slice:":1" }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-800 dark:text-white">
+                                {{ rsvp.user.username }}
+                            </p>
+                            {% if rsvp.attended %}
+                                <span class="inline-block px-2 py-0.5 text-xs rounded bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
+                                    <i class="fas fa-check-circle mr-1"></i> Attended
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+function confirmDelete() {
+    if (confirm("Are you sure you want to delete this event? This action cannot be undone.")) {
+        window.location.href = "{% url 'delete_chapter_event' slug=chapter.slug event_id=event.id %}";
+    }
+}
+</script>
+{% endblock %} 

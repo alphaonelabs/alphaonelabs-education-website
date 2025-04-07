@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-4xl mx-auto">
+        <!-- Chapter Header -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                <div class="flex items-center mb-4 md:mb-0">
+                    {% if chapter.logo %}
+                        <img src="{{ chapter.logo.url }}" alt="{{ chapter.name }}" class="w-16 h-16 rounded-lg mr-4">
+                    {% else %}
+                        <div class="w-16 h-16 bg-teal-100 dark:bg-teal-900 rounded-lg flex items-center justify-center text-teal-600 dark:text-teal-300 font-bold text-2xl mr-4">
+                            {{ chapter.name|slice:":1" }}
+                        </div>
+                    {% endif %}
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-800 dark:text-white">{{ chapter.name }}</h1>
+                        <p class="text-gray-600 dark:text-gray-400">{{ chapter.region }}</p>
+                    </div>
+                </div>
+                
+                <div class="flex flex-wrap gap-2">
+                    {% if not user.is_authenticated %}
+                        <a href="{% url 'account_login' %}?next={{ request.path }}" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md text-sm transition">
+                            <i class="fas fa-sign-in-alt mr-1"></i> Login to Join
+                        </a>
+                    {% elif user_membership %}
+                        {% if user_membership.is_approved %}
+                            <a href="{% url 'edit_membership' slug=chapter.slug %}" class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-md text-sm transition">
+                                <i class="fas fa-user-edit mr-1"></i> Edit Membership
+                            </a>
+                            {% if user_membership.role in 'lead,co_organizer' %}
+                                <a href="{% url 'manage_chapter' slug=chapter.slug %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm transition">
+                                    <i class="fas fa-cog mr-1"></i> Manage Chapter
+                                </a>
+                            {% endif %}
+                        {% else %}
+                            <div class="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300 px-4 py-2 rounded-md text-sm">
+                                <i class="fas fa-clock mr-1"></i> Membership Pending
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <a href="{% url 'join_chapter' slug=chapter.slug %}" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md text-sm transition">
+                            <i class="fas fa-user-plus mr-1"></i> Join Chapter
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="prose prose-lg dark:prose-invert max-w-none mb-4">
+                <p>{{ chapter.description }}</p>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600 dark:text-gray-400">
+                <div class="flex items-center">
+                    <i class="fas fa-users mr-1"></i>
+                    <span>{{ chapter.member_count }} members</span>
+                </div>
+                
+                <div class="flex items-center">
+                    <i class="fas fa-calendar-alt mr-1"></i>
+                    <span>Founded {{ chapter.founding_date|date:"F Y" }}</span>
+                </div>
+                
+                {% if chapter.website %}
+                    <a href="{{ chapter.website }}" target="_blank" class="flex items-center hover:text-teal-600 dark:hover:text-teal-400">
+                        <i class="fas fa-globe mr-1"></i>
+                        <span>Website</span>
+                    </a>
+                {% endif %}
+                
+                {% if chapter.discord_link %}
+                    <a href="{{ chapter.discord_link }}" target="_blank" class="flex items-center hover:text-teal-600 dark:hover:text-teal-400">
+                        <i class="fab fa-discord mr-1"></i>
+                        <span>Discord</span>
+                    </a>
+                {% endif %}
+                
+                {% if chapter.facebook_link %}
+                    <a href="{{ chapter.facebook_link }}" target="_blank" class="flex items-center hover:text-teal-600 dark:hover:text-teal-400">
+                        <i class="fab fa-facebook mr-1"></i>
+                        <span>Facebook</span>
+                    </a>
+                {% endif %}
+                
+                {% if chapter.twitter_link %}
+                    <a href="{{ chapter.twitter_link }}" target="_blank" class="flex items-center hover:text-teal-600 dark:hover:text-teal-400">
+                        <i class="fab fa-twitter mr-1"></i>
+                        <span>Twitter</span>
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Upcoming Events Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Upcoming Events</h2>
+                {% if user_membership and user_membership.is_approved and user_membership.role in 'lead,co_organizer' %}
+                    <a href="{% url 'create_chapter_event' slug=chapter.slug %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm transition">
+                        <i class="fas fa-plus mr-1"></i> Create Event
+                    </a>
+                {% endif %}
+            </div>
+            
+            {% if upcoming_events %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% for event in upcoming_events %}
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">
+                                <a href="{% url 'chapter_event_detail' slug=chapter.slug event_id=event.id %}" class="hover:text-teal-600 dark:hover:text-teal-400">
+                                    {{ event.title }}
+                                </a>
+                            </h3>
+                            <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-2">
+                                <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs rounded-full mr-2">
+                                    {{ event.get_event_type_display }}
+                                </span>
+                                <i class="far fa-calendar mr-1"></i>
+                                <span>{{ event.start_time|date:"M d, Y" }}</span>
+                                <i class="far fa-clock mx-1"></i>
+                                <span>{{ event.start_time|date:"g:i A" }} - {{ event.end_time|date:"g:i A" }}</span>
+                            </div>
+                            <p class="text-gray-700 dark:text-gray-300 text-sm mb-3 line-clamp-2">{{ event.description }}</p>
+                            <div class="flex justify-between items-center">
+                                <div class="text-sm text-gray-600 dark:text-gray-400">
+                                    <i class="fas fa-users mr-1"></i> {{ event.attendees.count }} / {{ event.max_participants }}
+                                </div>
+                                <a href="{% url 'chapter_event_detail' slug=chapter.slug event_id=event.id %}" class="text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline">
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-8">
+                    <p class="text-gray-600 dark:text-gray-400">No upcoming events scheduled.</p>
+                    {% if user_membership and user_membership.is_approved and user_membership.role in 'lead,co_organizer' %}
+                        <a href="{% url 'create_chapter_event' slug=chapter.slug %}" class="mt-4 inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm transition">
+                            Schedule an Event
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Members Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Chapter Members</h2>
+            
+            {% if members %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {% for member in members %}
+                        <div class="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                            <div class="flex-shrink-0 mr-3">
+                                {% if member.user.profile.avatar %}
+                                    <img src="{{ member.user.profile.avatar.url }}" alt="{{ member.user.username }}" class="w-12 h-12 rounded-full">
+                                {% else %}
+                                    <div class="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold">
+                                        {{ member.user.username|slice:":1" }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <a href="#" class="font-medium text-blue-600 dark:text-blue-400 hover:underline">
+                                    {{ member.user.username }}
+                                </a>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">
+                                    {{ member.get_role_display }}
+                                </p>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-center text-gray-600 dark:text-gray-400 py-4">No members yet.</p>
+            {% endif %}
+        </div>
+        
+        <!-- Resources Section -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white">Shared Resources</h2>
+                {% if user_membership and user_membership.is_approved %}
+                    <a href="{% url 'add_chapter_resource' slug=chapter.slug %}" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm transition">
+                        <i class="fas fa-plus mr-1"></i> Add Resource
+                    </a>
+                {% endif %}
+            </div>
+            
+            {% if resources %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {% for resource in resources %}
+                        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="text-lg font-semibold text-gray-800 dark:text-white">{{ resource.title }}</h3>
+                                <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs rounded-full">
+                                    {{ resource.get_resource_type_display }}
+                                </span>
+                            </div>
+                            <p class="text-gray-700 dark:text-gray-300 text-sm mb-3">{{ resource.description }}</p>
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                {% if resource.file %}
+                                    <a href="{{ resource.file.url }}" class="text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline" download>
+                                        <i class="fas fa-download mr-1"></i> Download File
+                                    </a>
+                                {% endif %}
+                                {% if resource.external_url %}
+                                    <a href="{{ resource.external_url }}" target="_blank" class="text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline">
+                                        <i class="fas fa-external-link-alt mr-1"></i> Visit Link
+                                    </a>
+                                {% endif %}
+                                
+                                {% if user_membership and user_membership.is_approved and resource.created_by == user or user_membership.role in 'lead,co_organizer' %}
+                                    <div class="ml-auto">
+                                        <a href="{% url 'edit_chapter_resource' slug=chapter.slug resource_id=resource.id %}" class="text-yellow-600 dark:text-yellow-400 text-sm font-medium hover:underline">
+                                            <i class="fas fa-edit mr-1"></i> Edit
+                                        </a>
+                                        <a href="{% url 'delete_chapter_resource' slug=chapter.slug resource_id=resource.id %}" class="ml-2 text-red-600 dark:text-red-400 text-sm font-medium hover:underline">
+                                            <i class="fas fa-trash mr-1"></i> Delete
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-8">
+                    <p class="text-gray-600 dark:text-gray-400">No resources have been shared yet.</p>
+                    {% if user_membership and user_membership.is_approved %}
+                        <a href="{% url 'add_chapter_resource' slug=chapter.slug %}" class="mt-4 inline-block bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm transition">
+                            Share a Resource
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Past Events Section -->
+        {% if past_events %}
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">Past Events</h2>
+                
+                <div class="divide-y divide-gray-200 dark:divide-gray-700">
+                    {% for event in past_events %}
+                        <div class="py-4 first:pt-0 last:pb-0">
+                            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                                <div>
+                                    <h3 class="text-lg font-semibold text-gray-800 dark:text-white">
+                                        <a href="{% url 'chapter_event_detail' slug=chapter.slug event_id=event.id %}" class="hover:text-teal-600 dark:hover:text-teal-400">
+                                            {{ event.title }}
+                                        </a>
+                                    </h3>
+                                    <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                        <span class="px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs rounded-full mr-2">
+                                            {{ event.get_event_type_display }}
+                                        </span>
+                                        <i class="far fa-calendar mr-1"></i>
+                                        <span>{{ event.start_time|date:"M d, Y" }}</span>
+                                    </div>
+                                </div>
+                                <a href="{% url 'chapter_event_detail' slug=chapter.slug event_id=event.id %}" class="text-blue-600 dark:text-blue-400 text-sm font-medium hover:underline mt-2 md:mt-0">
+                                    View Details
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %} 

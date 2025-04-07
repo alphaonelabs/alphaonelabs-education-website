@@ -432,6 +432,30 @@ urlpatterns += i18n_patterns(
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
     path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
+    # Chapter URLs
+    path("chapters/", views.chapters_list, name="chapters_list"),
+    path("chapters/apply/", views.apply_for_chapter, name="apply_for_chapter"),
+    path("chapters/<slug:slug>/", views.chapter_detail, name="chapter_detail"),
+    path("chapters/<slug:slug>/join/", views.join_chapter, name="join_chapter"),
+    path("chapters/<slug:slug>/leave/", views.leave_chapter, name="leave_chapter"),
+    path("chapters/<slug:slug>/edit-membership/", views.edit_membership, name="edit_membership"),
+    path("chapters/<slug:slug>/manage/", views.manage_chapter, name="manage_chapter"),
+    path("chapters/<slug:slug>/edit/", views.edit_chapter, name="edit_chapter"),
+    path("chapters/<slug:slug>/approve-member/<int:user_id>/", views.approve_membership, name="approve_membership"),
+    path("chapters/<slug:slug>/reject-member/<int:user_id>/", views.reject_membership, name="reject_membership"),
+    path("chapters/<slug:slug>/manage-role/<int:user_id>/", views.manage_member_role, name="manage_member_role"),
+    # Chapter Events URLs
+    path("chapters/<slug:slug>/events/create/", views.create_chapter_event, name="create_chapter_event"),
+    path("chapters/<slug:slug>/events/<int:event_id>/", views.chapter_event_detail, name="chapter_event_detail"),
+    path("chapters/<slug:slug>/events/<int:event_id>/edit/", views.edit_chapter_event, name="edit_chapter_event"),
+    path("chapters/<slug:slug>/events/<int:event_id>/delete/", views.delete_chapter_event, name="delete_chapter_event"),
+    path("chapters/<slug:slug>/events/<int:event_id>/rsvp/", views.rsvp_event, name="rsvp_event"),
+    path("chapters/<slug:slug>/events/<int:event_id>/cancel-rsvp/", views.cancel_rsvp, name="cancel_rsvp"),
+    path("chapters/<slug:slug>/events/<int:event_id>/attendance/", views.mark_attendance, name="mark_attendance"),
+    # Chapter Resources URLs
+    path("chapters/<slug:slug>/resources/add/", views.add_chapter_resource, name="add_chapter_resource"),
+    path("chapters/<slug:slug>/resources/<int:resource_id>/edit/", views.edit_chapter_resource, name="edit_chapter_resource"),
+    path("chapters/<slug:slug>/resources/<int:resource_id>/delete/", views.delete_chapter_resource, name="delete_chapter_resource"),
     prefix_default_language=True,
 )
 

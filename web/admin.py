@@ -53,6 +53,12 @@ from .models import (
     UserMembership,
     WaitingRoom,
     WebRequest,
+    Chapter,
+    ChapterMembership,
+    ChapterEvent,
+    ChapterEventAttendee,
+    ChapterResource,
+    ChapterApplication,
 )
 
 admin.site.unregister(EmailAddress)
@@ -810,4 +816,95 @@ class PointsAdmin(admin.ModelAdmin):
         (None, {"fields": ("user", "amount", "reason", "point_type")}),
         ("Related Data", {"fields": ("challenge", "current_streak")}),
         ("Timestamps", {"fields": ("awarded_at", "updated_at"), "classes": ("collapse",)}),
+    )
+
+
+@admin.register(Chapter)
+class ChapterAdmin(admin.ModelAdmin):
+    list_display = ('name', 'region', 'is_active', 'is_featured', 'member_count', 'founding_date', 'created_at')
+    list_filter = ('is_active', 'is_featured', 'founding_date', 'created_at')
+    search_fields = ('name', 'description', 'region')
+    prepopulated_fields = {'slug': ('name',)}
+    date_hierarchy = 'created_at'
+    readonly_fields = ('founding_date', 'created_at', 'updated_at')
+    fieldsets = (
+        (None, {'fields': ('name', 'slug', 'description', 'region', 'logo')}),
+        ('Status', {'fields': ('is_active', 'is_featured')}),
+        ('Links', {'fields': ('website', 'discord_link', 'facebook_link', 'twitter_link')}),
+        ('Dates', {'fields': ('founding_date', 'created_at', 'updated_at')}),
+    )
+
+    def member_count(self, obj):
+        return obj.members.filter(is_approved=True).count()
+    member_count.short_description = 'Members'
+
+
+@admin.register(ChapterMembership)
+class ChapterMembershipAdmin(admin.ModelAdmin):
+    list_display = ('user', 'chapter', 'role', 'is_approved', 'joined_at')
+    list_filter = ('role', 'is_approved', 'joined_at')
+    search_fields = ('user__username', 'user__email', 'chapter__name', 'bio')
+    raw_id_fields = ('user', 'chapter')
+    readonly_fields = ('joined_at', 'updated_at')
+    date_hierarchy = 'joined_at'
+    fieldsets = (
+        (None, {'fields': ('user', 'chapter', 'role', 'is_approved')}),
+        ('Details', {'fields': ('bio', 'joined_at', 'updated_at')}),
+    )
+
+
+@admin.register(ChapterEvent)
+class ChapterEventAdmin(admin.ModelAdmin):
+    list_display = ('title', 'chapter', 'event_type', 'start_time', 'end_time', 'is_public', 'organizer')
+    list_filter = ('event_type', 'is_public', 'start_time', 'created_at')
+    search_fields = ('title', 'description', 'chapter__name', 'location')
+    raw_id_fields = ('chapter', 'organizer')
+    readonly_fields = ('created_at', 'updated_at')
+    date_hierarchy = 'start_time'
+    fieldsets = (
+        (None, {'fields': ('chapter', 'title', 'description', 'event_type', 'organizer')}),
+        ('Timing', {'fields': ('start_time', 'end_time')}),
+        ('Location', {'fields': ('location', 'meeting_link')}),
+        ('Settings', {'fields': ('image', 'max_participants', 'is_public')}),
+        ('Metadata', {'fields': ('created_at', 'updated_at')}),
+    )
+
+
+@admin.register(ChapterEventAttendee)
+class ChapterEventAttendeeAdmin(admin.ModelAdmin):
+    list_display = ('user', 'event', 'registered_at', 'attended')
+    list_filter = ('attended', 'registered_at')
+    search_fields = ('user__username', 'user__email', 'event__title')
+    raw_id_fields = ('user', 'event')
+    readonly_fields = ('registered_at',)
+    date_hierarchy = 'registered_at'
+
+
+@admin.register(ChapterResource)
+class ChapterResourceAdmin(admin.ModelAdmin):
+    list_display = ('title', 'chapter', 'resource_type', 'created_by', 'created_at')
+    list_filter = ('resource_type', 'created_at')
+    search_fields = ('title', 'description', 'chapter__name', 'created_by__username')
+    raw_id_fields = ('chapter', 'created_by')
+    readonly_fields = ('created_at', 'updated_at')
+    date_hierarchy = 'created_at'
+    fieldsets = (
+        (None, {'fields': ('chapter', 'title', 'description', 'resource_type', 'created_by')}),
+        ('Content', {'fields': ('file', 'external_url')}),
+        ('Metadata', {'fields': ('created_at', 'updated_at')}),
+    )
+
+
+@admin.register(ChapterApplication)
+class ChapterApplicationAdmin(admin.ModelAdmin):
+    list_display = ('chapter_name', 'region', 'applicant', 'status', 'created_at')
+    list_filter = ('status', 'created_at')
+    search_fields = ('chapter_name', 'region', 'applicant__username', 'applicant__email', 'description')
+    raw_id_fields = ('applicant',)
+    readonly_fields = ('created_at', 'updated_at')
+    date_hierarchy = 'created_at'
+    fieldsets = (
+        (None, {'fields': ('applicant', 'chapter_name', 'region', 'status')}),
+        ('Application Details', {'fields': ('description', 'proposed_activities', 'experience')}),
+        ('Admin', {'fields': ('admin_notes', 'created_at', 'updated_at')}),
     )
