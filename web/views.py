@@ -7,86 +7,60 @@ import os
 import re
 import shutil
 import socket
-import subprocess
-import time
-from collections import Counter, defaultdict
-from datetime import timedelta
-from decimal import Decimal
-from urllib.parse import urlparse
+users_with_stats = []
+for profile in profiles:
+    user = profile.user
+    user.is_teacher = profile.is_teacher
+    user.role = "Teacher" if profile.is_teacher else "Student"
+    try:
+        if user.is_teacher:
+            courses = Course.objects.filter(teacher=user).prefetch_related("enrollments", "reviews")
+            user.total_courses = courses.count()
+            user.total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
+            course_ratings = [course.average_rating for course in courses if course.average_rating > 0]
+            user.avg_rating = round(sum(course_ratings) / len(course_ratings), 1) if course_ratings else 0
+        else:
+            enrollments = Enrollment.objects.filter(student=user).select_related("course")
+            user.total_courses = enrollments.count()
+            completed_enrollments = enrollments.filter(status="completed")
+            user.total_completed = completed_enrollments.count()
+            
+            total_progress = 0
+            progress_count = 0
+            enrollment_ids = [e.id for e in enrollments]
+            existing_progresses = {
+                p.enrollment_id: p for p in CourseProgress.objects.filter(enrollment_id__in=enrollment_ids)
+            }
+            
+            for enrollment in enrollments:
+                progress = existing_progresses.get(enrollment.id)
+                if not progress:
+                    # Use get_or_create to avoid duplicate entries and race conditions
+                    progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+                total_progress += progress.completion_percentage
+                progress_count += 1
+            user.avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+            
+            user.achievements_count = Achievement.objects.filter(student=user).count()
+    except Exception as e:
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error calculating user stats for {user.username}: {e}")
+        if user.is_teacher:
+            user.total_courses = 0
+            user.total_students = 0
+            user.avg_rating = 0
+        else:
+            user.total_courses = 0
+            user.total_completed = 0
+            user.avg_progress = 0
+            user.achievements_count = 0
+    users_with_stats.append(user)
 
-import requests
-import stripe
-import tweepy
-from allauth.account.models import EmailAddress
-from allauth.account.utils import send_email_confirmation
-from django.conf import settings
-from django.contrib import messages
-from django.contrib.admin.utils import NestedObjects
-from django.contrib.auth import get_user_model, login, logout
-from django.contrib.auth.decorators import login_required, user_passes_test
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.contrib.auth.models import User
-from django.core.cache import cache
-from django.core.exceptions import ObjectDoesNotExist
-from django.core.mail import send_mail
-from django.core.management import call_command
-from django.core.paginator import Paginator
-from django.db import IntegrityError, models, router, transaction
-from django.db.models import Avg, Count, Q, Sum
-from django.db.models.functions import Coalesce
-from django.http import (
-    FileResponse,
-    Http404,
-    HttpRequest,
-    HttpResponse,
-    HttpResponseForbidden,
-    JsonResponse,
-)
-from django.shortcuts import get_object_or_404, redirect, render
-from django.template.loader import render_to_string
-from django.urls import NoReverseMatch, reverse, reverse_lazy
-from django.utils import timezone
-from django.utils.crypto import get_random_string
-from django.utils.html import strip_tags
-from django.utils.text import slugify
-from django.utils.translation import gettext as _
-from django.views import generic
-from django.views.decorators.clickjacking import xframe_options_exempt
-from django.views.decorators.csrf import csrf_exempt, csrf_protect
-from django.views.decorators.http import require_GET, require_POST
-from django.views.generic import (
-    CreateView,
-    DeleteView,
-    DetailView,
-    ListView,
-    UpdateView,
-)
-
-from .calendar_sync import generate_google_calendar_link, generate_ical_feed, generate_outlook_calendar_link
-from .decorators import teacher_required
-from .forms import (
-    AccountDeleteForm,
-    AwardAchievementForm,
-    BlogPostForm,
-    ChallengeSubmissionForm,
-    CourseForm,
-    CourseMaterialForm,
-    EducationalVideoForm,
-    FeedbackForm,
-    ForumCategoryForm,
-    ForumTopicForm,
-    GoodsForm,
-    GradeableLinkForm,
-    InviteStudentForm,
-    LearnForm,
-    LinkGradeForm,
-    MemeForm,
-    MessageTeacherForm,
-    NotificationPreferencesForm,
-    ProfileUpdateForm,
-    ProgressTrackerForm,
-    ReviewForm,
-    SessionForm,
+paginator = Paginator(users_with_stats, 12)
+page_number = request.GET.get("page")
+page_obj = paginator.get_page(page_number)
+context = {"page_obj": page_obj}
+return render(request, "users_list.html", context)
     StorefrontForm,
     StudentEnrollmentForm,
     StudyGroupForm,
@@ -5295,65 +5269,69 @@ def toggle_course_status(request, slug):
     return redirect("course_detail", slug=slug)
 
 
-def public_profile(request, username):
-    user = get_object_or_404(User, username=username)
-
+context = {"profile": profile}
     try:
-        profile = user.profile
-    except Profile.DoesNotExist:
-        # Instead of raising Http404, we call custom_404.
-        return custom_404(request, "Profile not found.")
-
-    if not profile.is_profile_public:
-        return custom_404(request, "Profile not found.")
-
-    context = {"profile": profile}
-
-    if profile.is_teacher:
-        courses = Course.objects.filter(teacher=user)
-        total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
-        context.update(
-            {
+        if profile.is_teacher:
+            courses = Course.objects.filter(teacher=profile.user)
+            total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
+            avg_rating = 0
+            total_ratings = 0
+            for course in courses:
+                course_ratings = course.reviews.all()
+                if course_ratings:
+                    avg_rating += sum(review.rating for review in course_ratings)
+                    total_ratings += len(course_ratings)
+            avg_rating = round(avg_rating / total_ratings, 1) if total_ratings > 0 else 0
+            context.update({
                 "teacher_stats": {
                     "courses": courses,
                     "total_courses": courses.count(),
                     "total_students": total_students,
+                    "avg_rating": avg_rating,
                 }
-            }
-        )
-    else:
-        enrollments = Enrollment.objects.filter(student=user)
-        completed_enrollments = enrollments.filter(status="completed")
-        total_courses = enrollments.count()
-        total_completed = completed_enrollments.count()
-        total_progress = 0
-        progress_count = 0
-        for enrollment in enrollments:
-            progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
-            total_progress += progress.completion_percentage
-            progress_count += 1
-        avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
-        context.update(
-            {
+            })
+        else:
+            enrollments = Enrollment.objects.filter(student=profile.user)
+            completed_enrollments = enrollments.filter(status="completed")
+            total_courses = enrollments.count()
+            total_completed = completed_enrollments.count()
+            total_progress = 0
+            progress_count = 0
+            enrollment_ids = [e.id for e in enrollments]
+            existing_progresses = {p.enrollment_id: p for p in CourseProgress.objects.filter(enrollment_id__in=enrollment_ids)}
+            for enrollment in enrollments:
+                progress = existing_progresses.get(enrollment.id)
+                if not progress:
+                    progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+                total_progress += progress.completion_percentage
+                progress_count += 1
+            avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+            context.update({
                 "total_courses": total_courses,
                 "total_completed": total_completed,
                 "avg_progress": avg_progress,
                 "completed_courses": completed_enrollments,
-            }
-        )
-
-    return render(request, "public_profile_detail.html", context)
-
-
-class GradeableLinkListView(ListView):
-    """View to display all submitted links that can be graded."""
-
-    model = GradeableLink
-    template_name = "grade_links/link_list.html"
-    context_object_name = "links"
-    paginate_by = 10
-
-
+                "achievements_count": Achievement.objects.filter(student=profile.user).count(),
+            })
+    except Exception as e:
+        logger.error("Error computing profile statistics: %s", e, exc_info=True)
+        if profile.is_teacher:
+            context.update({
+                "teacher_stats": {
+                    "courses": Course.objects.none(),
+                    "total_courses": 0,
+                    "total_students": 0,
+                    "avg_rating": 0,
+                }
+            })
+        else:
+            context.update({
+                "total_courses": 0,
+                "total_completed": 0,
+                "avg_progress": 0,
+                "completed_courses": Enrollment.objects.none(),
+                "achievements_count": 0,
+            })
 class GradeableLinkDetailView(DetailView):
     """View to display details about a specific link and its grades."""
 
@@ -6966,38 +6944,50 @@ def users_list(request: HttpRequest) -> HttpResponse:
     Display a list of users who have their profile set to public,
     ordered by most recent updates.
     """
-    profiles = Profile.objects.filter(is_profile_public=True).select_related("user").order_by("-updated_at")
-
     # Add statistics for each user to create fun scorecards
     for profile in profiles:
-        if profile.user.is_teacher:
-            # Teacher stats
-            courses = Course.objects.filter(teacher=profile.user).prefetch_related("enrollments", "reviews")
-            profile.total_courses = courses.count()
-            profile.total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
-            # Get average rating across all courses
-            course_ratings = [course.average_rating for course in courses if course.average_rating > 0]
-            profile.avg_rating = round(sum(course_ratings) / len(course_ratings), 1) if course_ratings else 0
-        else:
-            # Student stats
-            enrollments = Enrollment.objects.filter(student=profile.user).select_related("course")
-            profile.total_courses = enrollments.count()
-            completed_enrollments = enrollments.filter(status="completed")
-            profile.total_completed = completed_enrollments.count()
-
-            # Calculate average progress across all courses
-            total_progress = 0
-            progress_count = 0
-            enrollment_ids = [e.id for e in enrollments]
-            existing_progresses = {
-                p.enrollment_id: p for p in CourseProgress.objects.filter(enrollment_id__in=enrollment_ids)
-            }
-
-            for enrollment in enrollments:
-                progress = existing_progresses.get(enrollment.id)
-                if not progress:
-                    progress = CourseProgress.objects.create(enrollment=enrollment)
-                total_progress += progress.completion_percentage
+        try:
+            if profile.user.is_teacher:
+                # Teacher stats
+                courses = Course.objects.filter(teacher=profile.user).prefetch_related("enrollments", "reviews")
+                profile.total_courses = courses.count()
+                profile.total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
+                # Get average rating across all courses
+                course_ratings = [course.average_rating for course in courses if course.average_rating > 0]
+                profile.avg_rating = round(sum(course_ratings) / len(course_ratings), 1) if course_ratings else 0
+            else:
+                # Student stats
+                enrollments = Enrollment.objects.filter(student=profile.user).select_related("course")
+                profile.total_courses = enrollments.count()
+                completed_enrollments = enrollments.filter(status="completed")
+                profile.total_completed = completed_enrollments.count()
+                # Calculate average progress across all courses
+                total_progress = 0
+                progress_count = 0
+                enrollment_ids = [e.id for e in enrollments]
+                existing_progresses = {
+                    p.enrollment_id: p for p in CourseProgress.objects.filter(enrollment_id__in=enrollment_ids)
+                }
+                for enrollment in enrollments:
+                    progress = existing_progresses.get(enrollment.id)
+                    if not progress:
+                        progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+                    total_progress += progress.completion_percentage
+                    progress_count += 1
+                profile.avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+                # Add achievements count
+                profile.achievements_count = Achievement.objects.filter(student=profile.user).count()
+        except Exception as e:
+            logger.error(f"Error computing stats for user {profile.user.username}: {e}")
+            if profile.user.is_teacher:
+                profile.total_courses = 0
+                profile.total_students = 0
+                profile.avg_rating = 0
+            else:
+                profile.total_courses = 0
+                profile.total_completed = 0
+                profile.avg_progress = 0
+                profile.achievements_count = 0
                 progress_count += 1
             profile.avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
 

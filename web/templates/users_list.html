@@ -21,7 +21,7 @@
                 <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">{{ user.role }}</span>
               </div>
               <p class="text-gray-600 mb-4">Joined: {{ user.date_joined|date:"F d, Y" }}</p>
-              {% if user.user.is_teacher %}
+              {% if user.is_teacher %}
                 <div class="mt-2 space-y-1">
                   <p class="text-sm text-gray-600">Courses: {{ user.total_courses }}</p>
                   <p class="text-sm text-gray-600">Students: {{ user.total_students }}</p>
