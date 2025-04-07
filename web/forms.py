@@ -1825,7 +1825,7 @@ class MembershipPlanForm(forms.ModelForm):
 
     class Meta:
         model = MembershipPlan
-        fields = [
+        fields: ClassVar[list[str]] = [
             "name",
             "slug",
             "description",

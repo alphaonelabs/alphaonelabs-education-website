@@ -7136,14 +7136,14 @@ def cancel_user_subscription(user: "User") -> dict:
 
         # Update local membership data
         update_membership_from_subscription(user, subscription)
-
-        return {"success": True}
     except stripe.error.StripeError:
         logger.exception("Stripe error cancelling subscription")
         return {"success": False, "error": "Error processing subscription cancellation"}
     except Exception:
         logger.exception("Unexpected error cancelling subscription")
         return {"success": False, "error": "An unexpected error occurred"}
+    else:
+        return {"success": True}
 
 
 def reactivate_user_subscription(user):
@@ -7294,11 +7294,11 @@ def membership_webhook(request) -> HttpResponse:
     try:
         setup_stripe()
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-    except ValueError as e:
-        logger.exception("Invalid webhook payload: %s", e)
+    except ValueError:
+        logger.exception("Invalid webhook payload")
         return HttpResponse(status=400)
-    except stripe.error.SignatureVerificationError as e:
-        logger.exception("Invalid webhook signature: %s", e)
+    except stripe.error.SignatureVerificationError:
+        logger.exception("Invalid webhook signature")
         return HttpResponse(status=400)
 
     # Log the event
