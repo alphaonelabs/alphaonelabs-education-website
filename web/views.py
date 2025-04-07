@@ -6913,7 +6913,7 @@ def get_twitter_client():
     return tweepy.API(auth)
 
 
-@user_passes_test(social_media_manager_required, login_url='/accounts/login/')
+@user_passes_test(social_media_manager_required, login_url="/accounts/login/")
 def social_media_dashboard(request):
     # Fetch all posts that haven't been posted yet
     posts = ScheduledPost.objects.filter(posted=False).order_by("-id")
