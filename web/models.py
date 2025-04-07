@@ -865,6 +865,13 @@ class PeerMessage(models.Model):
     def __str__(self):
         return f"Message from {self.sender.username} to {self.receiver.username}"
 
+    def save(self, *args, **kwargs):
+        if self.read_at and not self.is_read:
+            self.is_read = True
+        elif self.is_read and not self.read_at:
+            self.read_at = timezone.now()
+        super().save(*args, **kwargs)
+
 
 class StudyGroup(models.Model):
     """Study groups for collaborative learning."""
