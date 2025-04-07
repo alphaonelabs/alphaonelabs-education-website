@@ -456,6 +456,7 @@ urlpatterns += i18n_patterns(
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
     path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
     path("add-custom-badge/", views.add_custom_badge, name="add_custom_badge"),
+    path("fetch_awarded_badges/", views.fetch_awarded_badges, name="fetch_awarded_badges"),
     prefix_default_language=True,
 )
 

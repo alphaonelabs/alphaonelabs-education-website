@@ -744,6 +744,10 @@ def course_detail(request, slug):
     sessions = course.sessions.all().order_by("start_time")
     now = timezone.now()
     is_teacher = request.user == course.teacher
+    awarded_badges = []
+    if is_teacher:
+        awarded_badges = Badge.objects.filter(created_by=request.user, course=course)
+
     completed_sessions = []
     # Check if user is the teacher of this course
 
@@ -868,6 +872,7 @@ def course_detail(request, slug):
         "rating_distribution": rating_distribution,
         "reviews_num": reviews_num,
         "discount_url": discount_url,
+        "awarded_badges": awarded_badges,
     }
 
     return render(request, "courses/detail.html", context)
@@ -7608,47 +7613,80 @@ def add_custom_badge(request):
         student = User.objects.get(id=student_id)
     except User.DoesNotExist:
         return JsonResponse({"success": False, "message": "Student not found"}, status=404)
-    if request.user != course.teacher:
-        return JsonResponse(
-            {"success": False, "message": "Unauthorized: Only the course teacher can award badges"}, status=403
-        )
     enrollment = Enrollment.objects.filter(student=student, course=course, status="approved").first()
     if not enrollment:
         return JsonResponse({"success": False, "message": "Student is not enrolled in the course"}, status=400)
     image = request.FILES.get("image")
-    badge = Badge.objects.create(
-        name=custom_type,
-        badge_type="achievement",
-        custom_type=custom_type,
-        description=description,
-        course=course,
-        created_by=request.user,
-    )
+    # Validate image if provided
     if image:
-        badge.image = image
-        badge.save()
-    user_badge, created = UserBadge.objects.get_or_create(
-        user=student,
-        badge=badge,
-        course_enrollment=enrollment,
-        defaults={
-            "award_method": "teacher_awarded",
-            "awarded_by": request.user,
-            "award_message": f"Custom badge awarded: {custom_type}",
-        },
-    )
-    if not created:
-        user_badge.award_message = f"Custom badge awarded: {custom_type}"
-        user_badge.save()
-    Notification.objects.create(
-        user=student,
-        title=f"New Custom Badge: {badge.name}",
-        message=(
-            f"You have been awarded the custom badge '{badge.name}' by "
-            f"{request.user.get_full_name() or request.user.username}."
-        ),
-        notification_type="badge_awarded",
-    )
-    return JsonResponse(
-        {"success": True, "message": f"Custom badge '{badge.name}' awarded successfully", "badge_id": badge.id}
-    )
+        # Check file size (e.g., max 5MB)
+        if image.size > 5 * 1024 * 1024:
+            return JsonResponse({"success": False, "message": "Image file too large (max 5MB)"}, status=400)
+        # Check file type
+        valid_image_types = ["image/jpeg", "image/png", "image/gif"]
+        if image.content_type not in valid_image_types:
+            return JsonResponse({"success": False, "message": "Invalid image format"}, status=400)
+    try:
+        badge = Badge.objects.create(
+            name=custom_type,
+            badge_type="achievement",
+            custom_type=custom_type,
+            description=description,
+            course=course,
+            created_by=request.user,
+        )
+        if image:
+            badge.image = image
+            badge.save()
+        user_badge, created = UserBadge.objects.get_or_create(
+            user=student,
+            badge=badge,
+            course_enrollment=enrollment,
+            defaults={
+                "award_method": "teacher_awarded",
+                "awarded_by": request.user,
+                "award_message": f"Custom badge awarded: {custom_type}",
+            },
+        )
+        if not created:
+            user_badge.award_message = f"Custom badge awarded: {custom_type}"
+            user_badge.save()
+        Notification.objects.create(
+            user=student,
+            title=f"New Custom Badge: {badge.name}",
+            message=(
+                f"You have been awarded the custom badge '{badge.name}' by "
+                f"{request.user.get_full_name() or request.user.username}."
+            ),
+            notification_type="badge_awarded",
+        )
+        return JsonResponse(
+            {"success": True, "message": f"Custom badge '{badge.name}' awarded successfully", "badge_id": badge.id}
+        )
+    except (User.DoesNotExist, Course.DoesNotExist) as e:
+        return JsonResponse({"success": False, "message": str(e)}, status=404)
+    except Exception as e:
+        logger.exception(f"Error awarding custom badge: {e!s}")
+        return JsonResponse({"success": False, "message": "An unexpected error occurred"}, status=500)
+
+
+@login_required
+@require_GET
+def fetch_awarded_badges(request):
+    """
+    View to return all badges as JSON.
+    """
+    badges = Badge.objects.all()
+    data = []
+    for badge in badges:
+        data.append(
+            {
+                "id": badge.id,
+                "name": badge.name,
+                "badge_type": badge.badge_type,
+                "description": badge.description,
+                "course": badge.course.title if badge.course else None,
+                "created_by": badge.created_by.username if hasattr(badge, "created_by") and badge.created_by else None,
+            }
+        )
+    return JsonResponse({"badges": data})

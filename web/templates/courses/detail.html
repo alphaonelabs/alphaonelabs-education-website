@@ -1122,6 +1122,60 @@
                   </div>
                 {% endif %}
               </div>
+              <!-- Awarded Badges Section in Teacher's Profile -->
+              <div class="p-6">
+                <h2 class="text-xl font-semibold mb-6">Awarded Badges</h2>
+                <div id="awardedBadgesContainer">
+                  {% if awarded_badges %}
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {% for badge in awarded_badges %}
+                        <div class="flex flex-col items-center bg-gray-50 dark:bg-gray-700 rounded-lg p-3 shadow-sm">
+                          <div class="mb-2">
+                            {% if badge.image %}
+                              <img src="{{ badge.image.url }}"
+                                   alt="{{ badge.name }}"
+                                   class="w-16 h-16 object-contain" />
+                            {% else %}
+                              {% if badge.badge_type == "perfect_attendance" %}
+                                <i class="fas fa-calendar-check text-yellow-600 dark:text-yellow-400 text-2xl"></i>
+                              {% elif badge.badge_type == "participation" %}
+                                <i class="fas fa-hand-paper text-blue-600 dark:text-blue-400 text-2xl"></i>
+                              {% elif badge.badge_type == "completion" %}
+                                <i class="fas fa-graduation-cap text-green-600 dark:text-green-400 text-2xl"></i>
+                              {% elif badge.badge_type == "challenge" %}
+                                <i class="fas fa-medal text-orange-600 dark:text-orange-400 text-xl"></i>
+                              {% elif badge.badge_type == "achievement" %}
+                                <i class="fas fa-trophy text-purple-600 dark:text-purple-400 text-2xl"></i>
+                              {% else %}
+                                <i class="fas fa-star text-gray-500 dark:text-gray-400 text-2xl"></i>
+                              {% endif %}
+                            {% endif %}
+                          </div>
+                          <p class="text-sm font-medium text-center text-gray-600 dark:text-gray-300">
+                            {% if badge.custom_type %}
+                              {{ badge.custom_type }}
+                            {% else %}
+                              {{ badge.get_badge_type_display }}
+                            {% endif %}
+                          </p>
+                          {% if badge.course %}
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                              <span class="font-semibold">Course:</span> {{ badge.course.title }}
+                            </p>
+                          {% endif %}
+                        </div>
+                      {% endfor %}
+                    </div>
+                  {% else %}
+                    <div class="text-center py-8">
+                      <div class="text-gray-400 dark:text-gray-500 mb-4">
+                        <i class="fas fa-award text-4xl"></i>
+                      </div>
+                      <p class="text-gray-600 dark:text-gray-300">You haven't awarded any badges so far.</p>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
             </div>
             <section id="course_reviews"
                      class="bg-gradient-to-r from-teal-50 to-blue-50 dark:from-gray-750 dark:to-gray-800 rounded-xl shadow-md p-6 border border-gray-100 dark:border-gray-700 mb-6">
@@ -1372,9 +1426,12 @@
           </button>
         </div>
       </div>
-      <form id="awardBadgeForm" class="p-6 space-y-4">
+      <form id="awardBadgeForm"
+            class="p-6 space-y-4"
+            enctype="multipart/form-data">
         {% csrf_token %}
-        <input type="hidden" name="student_id" id="studentId" />
+        <!-- Hidden student_id is set dynamically via JavaScript -->
+        <input type="hidden" name="student_id" id="customBadgeStudentId" value="" />
         <input type="hidden" name="course_slug" value="{{ course.slug }}" />
         <div>
           <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Select Badge</label>
@@ -1448,10 +1505,10 @@
           </button>
         </div>
       </form>
-      <div>
+      <div class="flex items-center justify-left px-3">
         <button type="button"
                 onclick="openCustomBadgeModal()"
-                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700  mb-3">
           <i class="fas fa-plus mr-2"></i> Add Custom Badge
         </button>
       </div>
@@ -1855,10 +1912,10 @@
                   .then(data => {
                       if (data.success) {
                           showNotification('Badge awarded successfully!', 'success');
+                          refreshAwardedBadgesSection();
                           closeAwardBadgeModal();
                           form.reset();
                           form.querySelector('textarea[name="description"]').value = '';
-                          setTimeout(() => window.location.reload(), 1500);
                       } else {
                           showNotification(data.message || 'Failed to award badge', 'error');
                       }
@@ -1883,25 +1940,36 @@
           document.getElementById('selectStudentModal').classList.add('hidden');
       }
 
-      function selectStudent(studentId, studentName) {
-          closeSelectStudentModal();
-          openAwardBadgeModal(studentId, studentName);
+
+      function refreshAwardedBadgesSection() {
+          fetch('{% url "fetch_awarded_badges" %}')
+              .then(response => response.text())
+              .then(html => {
+                  document.getElementById('awardedBadgesContainer').innerHTML = html;
+              })
+              .catch(error => console.error('Failed to refresh badges:', error));
       }
 
+      const searchInput = document.getElementById('studentSearch');
+      let debounceTimeout;
 
-      document.getElementById('studentSearch')?.addEventListener('input', function(e) {
-          const searchTerm = e.target.value.toLowerCase();
-          document.querySelectorAll('.student-option').forEach(option => {
-              const studentName = option.querySelector('.font-medium').textContent.toLowerCase();
-              const studentEmail = option.querySelector('.text-gray-500').textContent.toLowerCase();
-
-              if (studentName.includes(searchTerm) || studentEmail.includes(searchTerm)) {
-                  option.classList.remove('hidden');
-              } else {
-                  option.classList.add('hidden');
-              }
+      if (searchInput) {
+          searchInput.addEventListener('input', function(e) {
+              clearTimeout(debounceTimeout);
+              debounceTimeout = setTimeout(() => {
+                  const searchTerm = e.target.value.toLowerCase();
+                  document.querySelectorAll('.student-option').forEach(option => {
+                      const studentName = option.querySelector('.font-medium').textContent.toLowerCase();
+                      const studentEmail = option.querySelector('.text-gray-500').textContent.toLowerCase();
+                      if (studentName.includes(searchTerm) || studentEmail.includes(searchTerm)) {
+                          option.classList.remove('hidden');
+                      } else {
+                          option.classList.add('hidden');
+                      }
+                  });
+              }, 300);
           });
-      });
+      }
 
 
       window.addEventListener('click', function(e) {
@@ -1914,17 +1982,6 @@
               closeAwardBadgeModal();
           }
       });
-
-      function openCustomBadgeModal() {
-          const modal = document.getElementById('customBadgeModal');
-          const studentIdInput = document.querySelector('#customBadgeForm input[name="student_id"]');
-          studentIdInput.value = studentId;
-          modal.classList.remove('hidden');
-      }
-
-      function closeCustomBadgeModal() {
-          document.getElementById('customBadgeModal').classList.add('hidden');
-      }
 
       document.getElementById('customBadgeForm').addEventListener('submit', function(e) {
           e.preventDefault();
