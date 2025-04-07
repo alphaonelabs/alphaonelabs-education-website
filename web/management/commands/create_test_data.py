@@ -35,6 +35,7 @@ from web.models import (
     Storefront,
     StudyGroup,
     Subject,
+    WaitingRoom,
 )
 
 
@@ -134,6 +135,26 @@ class Command(BaseCommand):
 
         if not challenges:
             self.stdout.write(self.style.WARNING("No new challenges created, all week numbers already exist."))
+
+        waiting_rooms = []
+        for i in range(5):
+            room = WaitingRoom.objects.create(
+                title=f"Waiting Room {i + 1}",
+                description=f"Description for waiting room {i + 1}",
+                subject=f"Subject {i + 1}",
+                topics=f"Topic1 Topic2 Topic{i + 1}",
+                creator=random.choice(teachers),  # Assign a random teacher as the creator
+                status="open",
+            )
+            waiting_rooms.append(room)
+            self.stdout.write(f"Created waiting room: {room.title}")
+
+        # Add participants to waiting rooms
+        for room in waiting_rooms:
+            participants = random.sample(students, k=random.randint(1, len(students)))
+            room.participants.set(participants)
+            room.save()
+            self.stdout.write(f"Added participants to waiting room: {room.title}")
 
         # Date range for random dates (from 2 weeks ago to now)
         now = timezone.now()
