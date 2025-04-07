@@ -7422,8 +7422,8 @@ def handle_invoice_payment_failed(invoice):
             logger.exception("No user found for customer %s", invoice["customer"])
         except Exception:
             logger.error("Error handling invoice.payment_failed")
-            
-            
+
+
 def users_list(request: HttpRequest) -> HttpResponse:
     """
     Display a list of users who have their profile set to public,
