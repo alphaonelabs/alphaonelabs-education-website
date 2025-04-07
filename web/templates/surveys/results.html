@@ -7,19 +7,20 @@
 {% endblock title %}
 {% block content %}
   <main class="flex-1 w-full max-w-[90rem] mx-auto mt-6 px-4 md:px-6">
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
       <h1 class="text-2xl font-bold flex items-center">
         <i class="fa-solid fa-chart-pie text-teal-600 dark:text-teal-400 mr-2"></i>
         {{ object.title }} Results
       </h1>
-      <a href="{% url 'survey-list' %}"
+      <a href="{% url 'surveys' %}"
          class="text-teal-600 dark:text-teal-400 hover:underline flex items-center">
         <i class="fa-solid fa-arrow-left mr-2"></i>
         Back to surveys
       </a>
     </div>
     {% if results %}
-      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-8">
+      <!-- Survey Overview Section -->
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-8 shadow-sm">
         <div class="border-b border-gray-200 dark:border-gray-700 p-4">
           <h2 class="text-lg font-semibold flex items-center">
             <i class="fa-solid fa-chart-line text-teal-600 dark:text-teal-400 mr-2"></i>
@@ -55,114 +56,83 @@
               <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
                 <div class="text-center">
                   <div class="inline-flex items-center justify-center h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 mb-3">
-                    <i class="fa-solid fa-clock text-green-600 dark:text-green-400 text-xl"></i>
+                    <i class="fa-solid fa-gauge-high text-green-600 dark:text-green-400 text-xl"></i>
                   </div>
-                  <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Average Completion Time</h3>
-                  <p class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">{{ avg_completion_time|default:"2.5" }} min</p>
+                  <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Engagement Score</h3>
+                  <p class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
+                    {% if engagement_score %}
+                      {{ engagement_score }}%
+                    {% else %}
+                      N/A
+                    {% endif %}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Based on question completion rate</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
+      <!-- Question Results Section -->
       <h2 class="text-xl font-semibold mb-4 flex items-center">
         <i class="fa-solid fa-list-ol text-teal-600 dark:text-teal-400 mr-2"></i>
         Question Results
       </h2>
-      <div class="grid grid-cols-1 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {% for result in results %}
-          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm">
             <div class="border-b border-gray-200 dark:border-gray-700 p-4">
               <div class="flex items-start justify-between">
-                <div>
+                <div class="pr-4">
                   <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ result.question.text }}</h3>
                   <p class="text-sm text-gray-500 dark:text-gray-400">Total responses: {{ result.total }}</p>
-                </div>
-                <div class="flex items-center">
-                  <button class="toggle-chart-view text-gray-500 hover:text-teal-600 dark:text-gray-400 dark:hover:text-teal-400 p-1"
-                          data-question-id="{{ result.question.id }}">
-                    <i class="fa-solid fa-chart-bar text-xl"></i>
-                  </button>
                 </div>
               </div>
             </div>
             <div class="p-4">
-              <!-- Bar Chart View -->
-              <div id="bars-{{ result.question.id }}" class="chart-container">
-                <div class="space-y-4">
-                  {% for choice in result.choices %}
-                    <div class="relative">
-                      <div class="flex items-center justify-between mb-1">
-                        <div class="text-gray-700 dark:text-gray-300 font-medium">{{ choice.text }}</div>
-                        <div class="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                          {{ choice.count }} ({{ choice.percentage|floatformat:0 }}%)
-                        </div>
-                      </div>
-                      <div class="flex h-6 overflow-hidden text-xs bg-gray-200 dark:bg-gray-700 rounded-full">
-                        <div style="width: {{ choice.count }}%"
-                             class="flex flex-col justify-center text-center text-white bg-gradient-to-r from-teal-500 to-blue-500 dark:from-teal-600 dark:to-blue-600 shadow-none whitespace-nowrap rounded-full transition-all duration-500">
-                          {% if choice.percentage > 15 %}
-                            <span class="px-2">{{ choice.percentage|floatformat:0 }}%</span>
-                          {% endif %}
-                        </div>
-                      </div>
-                    </div>
-                  {% endfor %}
+              {% if result.total > 0 %}
+                <div id="bars-{{ result.question.id }}" class="chart-container"></div>
+              {% else %}
+                <div class="p-6 text-center text-gray-500">
+                  <i class="fa-solid fa-chart-simple text-2xl mb-2"></i>
+                  <p>No responses for this question yet</p>
                 </div>
-              </div>
-              <!-- Donut Chart View (Hidden by Default) -->
-              <div id="chart-{{ result.question.id }}"
-                   class="chart-container donut-chart hidden">
-                <div class="flex justify-center py-4">
-                  <div class="chart-donut relative" style="width: 200px; height: 200px;">
-                    <!-- This will be filled by JS -->
-                    <div class="absolute inset-0 flex items-center justify-center">
-                      <div class="text-center">
-                        <div class="text-xl font-bold text-gray-800 dark:text-gray-200">{{ result.total }}</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">responses</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div class="chart-legend grid grid-cols-2 gap-2 mt-4">
-                  {% for choice in result.choices %}
-                    <div class="flex items-center p-2 rounded-md bg-gray-50 dark:bg-gray-700/50">
-                      <div class="w-3 h-3 rounded-full choice-color-{{ forloop.counter }}"
-                           style="background-color: {{ choice.color }}"></div>
-                      <span class="ml-2 text-sm text-gray-700 dark:text-gray-300 truncate">{{ choice.text }}</span>
-                      <span class="ml-auto text-xs font-medium text-gray-500 dark:text-gray-400">{{ choice.count }}</span>
-                    </div>
-                  {% endfor %}
-                </div>
-              </div>
+              {% endif %}
             </div>
           </div>
         {% endfor %}
       </div>
+      <!-- Response Summary Section -->
       <div class="mt-8">
         <h2 class="text-xl font-semibold mb-4 flex items-center">
           <i class="fa-solid fa-comments text-teal-600 dark:text-teal-400 mr-2"></i>
           Response Summary
         </h2>
-        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
           <div class="prose dark:prose-invert max-w-none">
-            <p>
-              Based on the survey results, {{ top_choice.text }} was the most popular choice with {{ top_choice.percentage|floatformat:0 }}% of responses.
-            </p>
-            <p>
-              The least chosen option was {{ bottom_choice.text }} with only {{ bottom_choice.percentage|floatformat:0 }}% of total responses.
-            </p>
+            {% if top_choice %}
+              <p>
+                Based on the survey results, {{ top_choice.text }} was the most popular choice with {{ top_choice.percentage|floatformat:0 }}% of responses.
+              </p>
+            {% endif %}
+            {% if bottom_choice %}
+              <p>
+                The least chosen option was {{ bottom_choice.text }} with only {{ bottom_choice.percentage|floatformat:0 }}% of total responses.
+              </p>
+            {% endif %}
             <h3>Key Takeaways</h3>
             <ul>
               <li>{{ total_participants }} people participated in this survey</li>
               <li>{{ results|length }} questions were answered</li>
-              <li>The highest engagement was on question "{{ most_answered_question.text }}"</li>
+              {% if most_answered_question %}
+                <li>The highest engagement was on question "{{ most_answered_question.text }}"</li>
+              {% endif %}
             </ul>
           </div>
         </div>
       </div>
     {% else %}
-      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center">
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center shadow-sm">
         <i class="fa-solid fa-chart-bar text-4xl text-gray-400 dark:text-gray-500 mb-4"></i>
         <p class="text-gray-700 dark:text-gray-300">No responses have been submitted yet.</p>
       </div>
@@ -174,139 +144,227 @@
             integrity="sha512-ElRFoEQdI5Ht6kZvyzXhYG9NqjtkmlkfYk0wr6wHxU9JEHakS7UJZNeml5ALk+8IKlU6jDgMabC3vkumRokgJA=="
             crossorigin="anonymous"
             referrerpolicy="no-referrer"></script>
+    <!-- Fallback if CDN fails -->
     <script>
-        // Variables to store our charts
+        if (typeof Chart === 'undefined') {
+            document.write('<script src="{% static "js/chart.min.js" %}"><\/script>');
+        }
+    </script>
+<!-- Make chart_data_json available to JavaScript -->
+<script>
+    const chartDataJson = {
+        {
+            chart_data_json | safe
+        }
+    };
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Ensure chartDataJson is properly parsed
+        const chartData = typeof chartDataJson === 'string' ? JSON.parse(chartDataJson) : chartDataJson;
         const charts = {};
+        const chartColors = [
+            '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+            '#EC4899', '#06B6D4', '#14B8A6', '#F97316', '#6366F1'
+        ];
 
-        // Helper function to generate a color palette
-        function generateColorPalette(numColors) {
-            const palette = [];
-            for (let i = 0; i < numColors; i++) {
-                palette.push(`hsl(${i * 360 / numColors}, 70%, 60%)`);
+        // Initialize chart for a question
+        function createChart(questionId, type = 'doughnut') {
+            const questionData = chartData.find(item => item.question_id == questionId);
+            if (!questionData) return null;
+
+            const chartContainer = document.getElementById(`chart-container-${questionId}`);
+            if (!chartContainer) return null;
+
+            // Clear previous canvas if exists
+            chartContainer.innerHTML = '';
+
+            // Create new canvas
+            const canvas = document.createElement('canvas');
+            chartContainer.appendChild(canvas);
+
+            // Determine chart configuration based on type
+            let chartConfig;
+
+            if (type === 'doughnut') {
+                chartConfig = {
+                    type: 'doughnut',
+                    data: {
+                        labels: questionData.labels,
+                        datasets: [{
+                            data: questionData.data,
+                            backgroundColor: chartColors.slice(0, questionData.labels.length),
+                            borderWidth: 2,
+                            borderColor: '#ffffff',
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '65%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle'
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = Math.round((value / total) * 100);
+                                        return `${label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+            } else if (type === 'bar') {
+                chartConfig = {
+                    type: 'bar',
+                    data: {
+                        labels: questionData.labels,
+                        datasets: [{
+                            data: questionData.data,
+                            backgroundColor: chartColors.slice(0, questionData.labels.length),
+                            borderWidth: 0,
+                            borderRadius: 4,
+                            maxBarThickness: 50
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = Math.round((value / total) * 100);
+                                        return `${value} responses (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                grid: {
+                                    display: false
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                };
             }
-            return palette;
+
+            if (!chartConfig) return null;
+
+            try {
+                const chart = new Chart(canvas, chartConfig);
+                charts[`chart-${questionId}`] = chart;
+                return chart;
+            } catch (error) {
+                console.error(`Failed to create chart for question ${questionId}:`, error);
+                chartContainer.innerHTML = '<div class="p-4 text-center text-red-500">Failed to load chart</div>';
+                return null;
+            }
         }
 
-        // Initialize donut charts
-        document.addEventListener('DOMContentLoaded', function() {
-            {
-                %
-                for result in results %
+        // Add combined chart container to each question card
+        document.querySelectorAll('.chart-container').forEach(container => {
+            const questionId = container.id.split('-')[1];
+            const questionCard = container.closest('.bg-white');
+
+            if (questionCard) {
+                // Create a container for the chart
+                const chartContainer = document.createElement('div');
+                chartContainer.id = `chart-container-${questionId}`;
+                chartContainer.className = 'w-full h-60 my-4';
+
+                // Insert the chart container after the chart-container div
+                const chartBody = questionCard.querySelector('.p-4');
+                if (chartBody) {
+                    // Move the existing chart controls
+                    const controlPanel = document.createElement('div');
+                    controlPanel.className = 'flex justify-center space-x-2 mb-4';
+
+                    // Create chart type toggle buttons
+                    const barButton = document.createElement('button');
+                    barButton.className = 'px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-md active-chart-btn';
+                    barButton.innerHTML = '<i class="fa-solid fa-bars mr-1"></i> Bar';
+                    barButton.onclick = () => switchChartType(questionId, 'bar', barButton, donutButton);
+
+                    const donutButton = document.createElement('button');
+                    donutButton.className = 'px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-md';
+                    donutButton.innerHTML = '<i class="fa-solid fa-chart-pie mr-1"></i> Donut';
+                    donutButton.onclick = () => switchChartType(questionId, 'doughnut', barButton, donutButton);
+
+                    controlPanel.appendChild(barButton);
+                    controlPanel.appendChild(donutButton);
+
+                    // Add control panel and chart container
+                    chartBody.innerHTML = '';
+                    chartBody.appendChild(controlPanel);
+                    chartBody.appendChild(chartContainer);
+
+                    // Initialize with bar chart
+                    createChart(questionId, 'bar');
+                }
             }
-            // Data for chart {{ result.question.id }}
-            const data {
-                {
-                    result.question.id
-                }
-            } = {
-                labels: [{
-                        %
-                        for choice in result.choices %
-                    }
-                    '{{ choice.text }}' {
-                        %
-                        if not forloop.last %
-                    }, {
-                        %
-                        endif %
-                    } {
-                        %
-                        endfor %
-                    }
-                ],
-                datasets: [{
-                    data: [{
-                        %
-                        for choice in result.choices %
-                    } {
-                        {
-                            choice.count
-                        }
-                    } {
-                        %
-                        if not forloop.last %
-                    }, {
-                        %
-                        endif %
-                    } {
-                        %
-                        endfor %
-                    }],
-                    backgroundColor: generateColorPalette({
-                        {
-                            result.choices | length
-                        }
-                    }),
-                    borderWidth: 0,
-                    hoverOffset: 4
-                }]
-            };
-
-
-            // Create chart {{ result.question.id }}
-            const ctx {
-                {
-                    result.question.id
-                }
-            } = document.createElement('canvas');
-            document.querySelector('#chart-{{ result.question.id }} .chart-donut').appendChild(ctx {
-                {
-                    result.question.id
-                }
-            });
-
-            charts['chart-{{ result.question.id }}'] = new Chart(ctx {
-                {
-                    result.question.id
-                }
-            }, {
-                type: 'doughnut',
-                data: data {
-                    {
-                        result.question.id
-                    }
-                },
-                options: {
-                    cutout: '70%',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    }
-                }
-            });
-            {
-                %
-                endfor %
-            }
-
-            // Add event listeners to toggle buttons
-            const toggleButtons = document.querySelectorAll('.toggle-chart-view');
-            toggleButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const questionId = this.getAttribute('data-question-id');
-                    const barsContainer = document.getElementById(`bars-${questionId}`);
-                    const chartContainer = document.getElementById(`chart-${questionId}`);
-
-                    if (barsContainer.classList.contains('hidden')) {
-                        // Switch to bars view
-                        chartContainer.classList.add('hidden');
-                        barsContainer.classList.remove('hidden');
-                        this.innerHTML = '<i class="fa-solid fa-chart-pie text-xl"></i>';
-                    } else {
-                        // Switch to donut view
-                        barsContainer.classList.add('hidden');
-                        chartContainer.classList.remove('hidden');
-                        this.innerHTML = '<i class="fa-solid fa-bars text-xl"></i>';
-
-                        // Resize chart to ensure proper rendering
-                        charts[`chart-${questionId}`].resize();
-                    }
-                });
-            });
         });
-    </script>
-  {% endblock extra_js %}
+
+        // Function to switch chart type
+        function switchChartType(questionId, type, barBtn, donutBtn) {
+            // Update active button
+            if (type === 'bar') {
+                barBtn.classList.add('active-chart-btn');
+                donutBtn.classList.remove('active-chart-btn');
+            } else {
+                donutBtn.classList.add('active-chart-btn');
+                barBtn.classList.remove('active-chart-btn');
+            }
+
+            // Destroy existing chart
+            if (charts[`chart-${questionId}`]) {
+                charts[`chart-${questionId}`].destroy();
+            }
+
+            // Create new chart
+            createChart(questionId, type);
+        }
+
+        // Add a style for active button
+        const style = document.createElement('style');
+        style.textContent = `
+    .active-chart-btn {
+      background-color: #0ea5e9;
+      color: white;
+    }
+    .dark .active-chart-btn {
+      background-color: #0284c7;
+      color: white;
+    }
+  `;
+        document.head.appendChild(style);
+    });
+</script>
+{% endblock extra_js %}
 {% endblock content %}

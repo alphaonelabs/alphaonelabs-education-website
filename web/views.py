@@ -437,18 +437,87 @@ class SurveyResultsView(LoginRequiredMixin, DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        # Process survey results
         results = []
+        total_participants = 0
+        most_answered_question = None
+        max_responses = 0
+        top_choice = None
+        bottom_choice = None
+        overall_top_choice_count = 0
+        overall_bottom_choice_count = float("inf")
+        total_possible_responses = 0
+        total_actual_responses = 0
+        avg_completion_time = None
+        context["avg_completion_time"] = avg_completion_time
+
         for question in self.object.question_set.all():
             choices_data = []
-            total = 0
+            question_total = 0
+
+            # Process each choice for this question
             for choice in question.choice_set.all():
-                count = choice.response_set.count()
+                count = choice.response_set.count() if hasattr(choice, "response_set") else 0
+
+                question_total += count
                 choices_data.append({"text": choice.text, "count": count})
-                total += count
-            results.append({"question": question, "choices": choices_data, "total": total})
-        context["results"] = results
-        # Check if user is the creator of this survey
-        context["is_creator"] = self.object.author == self.request.user
+
+            if question_total == 0:
+                continue
+            if question_total > 0:
+                total_possible_responses += total_participants * 1  # Each participant could answer this question
+                total_actual_responses += question_total
+
+            if question_total > max_responses:
+                max_responses = question_total
+                most_answered_question = question
+
+            for choice in choices_data:
+                choice["percentage"] = (choice["count"] / question_total * 100) if question_total > 0 else 0
+
+                if choice["count"] > overall_top_choice_count:
+                    overall_top_choice_count = choice["count"]
+                    top_choice = choice
+
+                if choice["count"] < overall_bottom_choice_count and choice["count"] > 0:
+                    overall_bottom_choice_count = choice["count"]
+                    bottom_choice = choice
+
+            results.append({"question": question, "choices": choices_data, "total": question_total})
+
+            total_participants = max(total_participants, question_total)
+        engagement_score = 0
+        if total_possible_responses > 0:
+            engagement_score = (total_actual_responses / total_possible_responses) * 100
+
+        context["engagement_score"] = round(engagement_score, 1)
+        target_participants = getattr(self.object, "target_participants", 100)  # default to 100 if not set
+        response_rate = (total_participants / target_participants * 100) if target_participants > 0 else 0
+
+        context.update(
+            {
+                "results": results,
+                "total_participants": total_participants,
+                "response_rate": min(response_rate, 100),  # Cap at 100%
+                "most_answered_question": most_answered_question,
+                "top_choice": top_choice,
+                "bottom_choice": bottom_choice,
+                "is_creator": self.object.author == self.request.user if hasattr(self.object, "author") else False,
+            }
+        )
+
+        chart_data = []
+        for result in results:
+            chart_data.append(
+                {
+                    "question_id": result["question"].id,
+                    "labels": [choice["text"] for choice in result["choices"]],
+                    "data": [choice["count"] for choice in result["choices"]],
+                }
+            )
+        context["chart_data_json"] = json.dumps(chart_data)
+
         return context
 
 
