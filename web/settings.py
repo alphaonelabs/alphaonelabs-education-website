@@ -18,7 +18,6 @@ env = environ.Env()
 env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
 
 if os.path.exists(env_file):
-    print(f"Using env file: {env_file}")
     environ.Env.read_env(env_file)
 else:
     print("No .env file found.")
@@ -31,8 +30,8 @@ ENVIRONMENT = env.str("ENVIRONMENT", default="development")
 DEBUG = False
 
 # Only enable DEBUG in local environment and only if DJANGO_DEBUG is True
-if ENVIRONMENT == "local":
-    DEBUG = env.bool("DJANGO_DEBUG", default=False)
+if ENVIRONMENT == "development":
+    DEBUG = True
 
 # Detect test environment and set DEBUG=True to use local media path
 if "test" in sys.argv:
@@ -71,6 +70,7 @@ if not DEBUG:
 
 ALLOWED_HOSTS = [
     "alphaonelabs99282llkb.pythonanywhere.com",
+    "0.0.0.0",
     "127.0.0.1",
     "localhost",
     "alphaonelabs.com",
