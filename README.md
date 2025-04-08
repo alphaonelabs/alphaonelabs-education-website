@@ -83,7 +83,7 @@ Alpha One Labs is an education platform designed to facilitate both learning and
    cd alphaonelabs-education-website
    ```
 
-2. Set up a virtual environment:
+2. Set up virtual environment:
 
    ```bash
    python -m venv venv

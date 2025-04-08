@@ -3,6 +3,7 @@ import random
 import string
 import time
 import uuid
+from datetime import datetime, timedelta
 from io import BytesIO
 
 from allauth.account.signals import user_signed_up
@@ -852,7 +853,10 @@ class PeerMessage(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
     content = models.TextField()
+    encrypted_key = models.TextField(blank=True, default="")  # Using default empty string instead of null
     is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    starred = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -860,6 +864,13 @@ class PeerMessage(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender.username} to {self.receiver.username}"
+
+    def save(self, *args, **kwargs):
+        if self.read_at and not self.is_read:
+            self.is_read = True
+        elif self.is_read and not self.read_at:
+            self.read_at = timezone.now()
+        super().save(*args, **kwargs)
 
 
 class StudyGroup(models.Model):
@@ -2805,3 +2816,20 @@ class ScheduledPost(models.Model):
 
     def __str__(self):
         return self.content
+
+
+def default_valid_until() -> datetime:
+    return timezone.now() + timedelta(days=30)
+
+
+class Discount(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    code = models.CharField(max_length=20, unique=True)
+    discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=5.00)
+    valid_from = models.DateTimeField(default=timezone.now)
+    valid_until = models.DateTimeField(default=default_valid_until)
+    used = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.code} for {self.user.username} on {self.course.title}"
