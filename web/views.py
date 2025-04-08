@@ -1829,39 +1829,61 @@ def forum_category(request, slug):
 
 
 def forum_topic(request, category_slug, topic_id):
-    """View for displaying a forum topic and its replies."""
-    category = get_object_or_404(ForumCategory, slug=category_slug)
-    topic = get_object_or_404(ForumTopic, id=topic_id, category=category)
+    """Display a forum topic and its replies."""
+    topic = get_object_or_404(ForumTopic, id=topic_id, category__slug=category_slug)
+    categories = ForumCategory.objects.all()
 
-    # Increment view count
-    topic.views += 1
-    topic.save()
+    # Get view count from WebRequest model
+    view_count = (
+        WebRequest.objects.filter(path=request.path).aggregate(total_views=models.Sum("count"))["total_views"] or 0
+    )
+    topic.views = view_count
 
-    # Get replies
-    replies = topic.replies.all().order_by("created_at")
+    # Handle POST requests for replies, voting, and deletion
+    if request.method == "POST":
+        action = request.POST.get("action")
 
-    # Pass category list for sidebar
-    categories = ForumCategory.objects.all().order_by("order", "name")
+        if action == "add_reply" and request.user.is_authenticated:
+            content = request.POST.get("content")
+            if content:
+                ForumReply.objects.create(topic=topic, author=request.user, content=content)
+                messages.success(request, "Reply added successfully.")
+                return redirect("forum_topic", category_slug=category_slug, topic_id=topic_id)
 
-    # Pass user's votes to template
-    user_topic_vote = topic.user_vote(request.user) if request.user.is_authenticated else None
-    user_reply_votes = {}
+        elif action == "delete_reply" and request.user.is_authenticated:
+            reply_id = request.POST.get("reply_id")
+            reply = get_object_or_404(ForumReply, id=reply_id, author=request.user)
+            reply.delete()
+            messages.success(request, "Reply deleted successfully.")
+            return redirect("forum_topic", category_slug=category_slug, topic_id=topic_id)
 
+        elif action == "delete_topic" and request.user == topic.author:
+            topic.delete()
+            messages.success(request, "Topic deleted successfully.")
+            return redirect("forum_category", slug=category_slug)
+
+    # Fetch replies after POST handling
+    replies = topic.replies.select_related("author").order_by("created_at")
+
+    # Votes handling
     if request.user.is_authenticated:
-        for reply in replies:
-            user_reply_votes[reply.id] = reply.user_vote(request.user)
-            print("topic is : ", topic)
+        user_topic_vote = topic.user_vote(request.user)
+        user_reply_votes = {reply.id: reply.user_vote(request.user) for reply in replies}
+    else:
+        user_topic_vote = None
+        user_reply_votes = {}
 
-    context = {
-        "category": category,
-        "topic": topic,
-        "replies": replies,
-        "categories": categories,
-        "user_topic_vote": user_topic_vote,
-        "user_reply_votes": user_reply_votes,
-    }
-
-    return render(request, "web/forum/topic.html", context)
+    return render(
+        request,
+        "web/forum/topic.html",
+        {
+            "topic": topic,
+            "replies": replies,
+            "categories": categories,
+            "user_topic_vote": user_topic_vote,
+            "user_reply_votes": user_reply_votes,
+        },
+    )
 
 
 @login_required
@@ -2866,18 +2888,17 @@ def create_forum_category(request):
     """Create a new forum category."""
     if request.method == "POST":
         form = ForumCategoryForm(request.POST)
-        print("are we heer")
         if form.is_valid():
-            category = form.save()
-            print("are we here")
+            category = form.save(commit=False)
             if not category.slug:
                 category.slug = slugify(category.name)
             category.save()
             messages.success(request, f"Forum category '{category.name}' created successfully!")
             return redirect("forum_category", slug=category.slug)
         else:
-            form = ForumCategoryForm()
             print(form.errors)
+    else:
+        form = ForumCategoryForm()
 
     return render(request, "web/forum/create_category.html", {"form": form})
 
@@ -7111,6 +7132,8 @@ def users_list(request: HttpRequest) -> HttpResponse:
 @login_required
 def topic_vote(request, pk):
     """Handle voting on a topic."""
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST method allowed"}, status=405)
 
     try:
         topic = ForumTopic.objects.get(pk=pk)
@@ -7148,7 +7171,6 @@ def topic_vote(request, pk):
 @login_required
 def reply_vote(request, pk):
     """Handle voting on a reply."""
-    print("method is: ", request.method)
     if request.method != "POST":
         return JsonResponse({"error": "Only POST method allowed"}, status=405)
 
@@ -7157,7 +7179,8 @@ def reply_vote(request, pk):
         vote_type = request.POST.get("vote_type")
 
         if vote_type not in ["up", "down"]:
-            return JsonResponse({"error": "Invalid vote type"}, status=400)
+            messages.error(request, "Invalid vote type")
+            return redirect("forum_topic", category_slug=reply.topic.category.slug, topic_id=reply.topic.id)
 
         # Check if user already voted on this reply
         vote, created = ForumVote.objects.get_or_create(
@@ -7169,24 +7192,47 @@ def reply_vote(request, pk):
             if vote.vote_type == vote_type:
                 # Same vote type, so remove the vote
                 vote.delete()
-                action = "removed"
             else:
                 # Different vote type, so update the vote
                 vote.vote_type = vote_type
                 vote.save()
-                action = "changed"
-        else:
-            action = "added"
 
-        return JsonResponse(
-            {
-                "success": True,
-                "action": action,
-                "upvotes": reply.upvote_count(),
-                "downvotes": reply.downvote_count(),
-                "score": reply.vote_score(),
-            }
-        )
+        # After processing the vote, redirect back to the topic page
+        return redirect("forum_topic", category_slug=reply.topic.category.slug, topic_id=reply.topic.id)
+
+    except ForumReply.DoesNotExist:
+        messages.error(request, "Reply not found")
+        return redirect("forum_categories")
 
     except ForumReply.DoesNotExist:
         return JsonResponse({"error": "Reply not found"}, status=404)
+
+
+def topic_detail(request, pk):
+    topic = get_object_or_404(ForumTopic, pk=pk)
+
+    # Get the user's vote on this topic if any
+    user_topic_vote = None
+    if request.user.is_authenticated:
+        try:
+            vote = ForumVote.objects.get(topic=topic, user=request.user)
+            user_topic_vote = vote.vote_type
+        except ForumVote.DoesNotExist:
+            pass
+
+    # Get user votes on replies
+    user_reply_votes = {}
+    if request.user.is_authenticated:
+        reply_votes = ForumVote.objects.filter(reply__topic=topic, user=request.user).values_list(
+            "reply_id", "vote_type"
+        )
+        user_reply_votes = dict(reply_votes)
+
+    context = {
+        "topic": topic,
+        "user_topic_vote": user_topic_vote,
+        "user_reply_votes": user_reply_votes,
+        # other context variables
+    }
+
+    return render(request, "web/forum/topic.html", context)

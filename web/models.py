@@ -2863,6 +2863,7 @@ class ScheduledPost(models.Model):
     def __str__(self):
         return self.content
 
+
 class ForumVote(models.Model):
     """Model for storing votes on forum topics and replies."""
 
@@ -2896,7 +2897,8 @@ class ForumVote(models.Model):
         elif self.reply:
             return f"{self.user.username} {self.vote_type}voted reply #{self.reply.id}"
         return f"{self.user.username} cast a vote"
-      
+
+
 def default_valid_until() -> datetime:
     return timezone.now() + timedelta(days=30)
 
