@@ -127,14 +127,14 @@
                 <div class="mt-4 flex items-center space-x-4">
                   {% if topic.github_issue_url %}
                     <a href="{{ topic.github_issue_url }}"
-                       target="_blank"
+                       target="_blank" rel="noopener noreferrer"
                        class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800">
                       <i class="fa-brands fa-github mr-1"></i> GitHub Issue
                     </a>
                   {% endif %}
                   {% if topic.github_milestone_url %}
                     <a href="{{ topic.github_milestone_url }}"
-                       target="_blank"
+                       target="_blank" rel="noopener noreferrer"
                        class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800">
                       <i class="fa-brands fa-github mr-1"></i> GitHub Milestone
                     </a>
