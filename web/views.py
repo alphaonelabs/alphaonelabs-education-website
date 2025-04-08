@@ -450,25 +450,32 @@ def all_leaderboards(request):
         return render(request, "leaderboards/leaderboards.html", context)
 
 
-@login_required
-def profile(request):
-    if request.method == "POST":
-        form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
-        if form.is_valid():
-            form.save()  # Save the form data
-            request.user.profile.refresh_from_db()  # Refresh to load updated profile
-            messages.success(request, "Profile updated successfully!")
-            return redirect("profile")
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f"Error in {field}: {error}")
-    else:
-        form = ProfileUpdateForm(instance=request.user)
+else:
+        try:
+            enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
+            completed_courses = enrollments.filter(status="completed").count()
+            total_progress = 0
+            progress_count = 0
+            for enrollment in enrollments:
+                progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+                if progress.completion_percentage is not None:
+                    total_progress += progress.completion_percentage
+                    progress_count += 1
+            avg_progress = round(total_progress / progress_count) if progress_count
 
-    badges = UserBadge.objects.filter(user=request.user).select_related("badge")
-
-    context = {
+> 0 else 0
+        except Exception as e:
+            logger.error(f"Error processing student statistics: {e}")
+            enrollments = []
+            completed_courses = 0
+            avg_progress = 0
+        context.update(
+            {
+                "enrollments": enrollments,
+                "completed_courses": completed_courses,
+                "avg_progress": avg_progress,
+            }
+        )
         "form": form,
         "badges": badges,
     }
@@ -7057,41 +7064,60 @@ def users_list(request: HttpRequest) -> HttpResponse:
 
     # Add statistics for each user to create fun scorecards
     for profile in profiles:
-        if profile.user.is_teacher:
-            # Teacher stats
-            courses = Course.objects.filter(teacher=profile.user).prefetch_related("enrollments", "reviews")
-            profile.total_courses = courses.count()
-            profile.total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
-            # Get average rating across all courses
-            course_ratings = [course.average_rating for course in courses if course.average_rating > 0]
-            profile.avg_rating = round(sum(course_ratings) / len(course_ratings), 1) if course_ratings else 0
-        else:
-            # Student stats
-            enrollments = Enrollment.objects.filter(student=profile.user).select_related("course")
-            profile.total_courses = enrollments.count()
-            completed_enrollments = enrollments.filter(status="completed")
-            profile.total_completed = completed_enrollments.count()
+        try:
+            if profile.user.is_teacher:
+                # Teacher stats
+                courses = Course.objects.filter(teacher=profile.user).prefetch_related("enrollments", "reviews")
+                profile.total_courses = courses.count()
+                profile.total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
+                # Get average rating across all courses
+                course_ratings = [course.average_rating for course in courses if course.average_rating
 
-            # Calculate average progress across all courses
-            total_progress = 0
-            progress_count = 0
-            enrollment_ids = [e.id for e in enrollments]
-            existing_progresses = {
-                p.enrollment_id: p for p in CourseProgress.objects.filter(enrollment_id__in=enrollment_ids)
-            }
+    > 0]
+                profile.avg_rating = round(sum(course_ratings) / len(course_ratings), 1) if course_ratings else 0
+            else:
+                # Student stats
+                enrollments = Enrollment.objects.filter(student=profile.user).select_related("course")
+                profile.total_courses = enrollments.count()
+                completed_enrollments = enrollments.filter(status="completed")
+                profile.total_completed = completed_enrollments.count()
 
-            for enrollment in enrollments:
-                progress = existing_progresses.get(enrollment.id)
-                if not progress:
-                    progress = CourseProgress.objects.create(enrollment=enrollment)
-                total_progress += progress.completion_percentage
-                progress_count += 1
-            profile.avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+                # Calculate average progress across all courses using get_or_create
+                total_progress = 0
+                progress_count = 0
+                for enrollment in enrollments:
+                    progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+                    total_progress += progress.completion_percentage
+                    progress_count += 1
+                profile.avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
 
-            # Add achievements count
-            profile.achievements_count = Achievement.objects.filter(student=profile.user).count()
+                # Set achievements count
+                profile.achievements_count = Achievement.objects.filter(student=profile.user).count()
+        except Exception as e:
+            logger.error(f"Error calculating statistics for user {profile.user.username}: {e}")
+            if profile.user.is_teacher:
+                profile.total_courses = 0
+                profile.total_students = 0
+                profile.avg_rating = 0
+            else:
+                profile.total_courses = 0
+                profile.total_completed = 0
+                profile.avg_progress = 0
+                profile.achievements_count = 0
 
-    # Pagination: 12 profiles per page
+                # Add achievements count
+                profile.achievements_count = Achievement.objects.filter(student=profile.user).count()
+        except Exception as e:
+            logger.error(f"Error processing statistics for user {profile.user.username}: {e}")
+            if profile.user.is_teacher:
+                profile.total_courses = 0
+                profile.total_students = 0
+                profile.avg_rating = 0
+            else:
+                profile.total_courses = 0
+                profile.total_completed = 0
+                profile.avg_progress = 0
+                profile.achievements_count = 0
     paginator = Paginator(profiles, 12)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
