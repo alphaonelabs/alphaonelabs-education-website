@@ -408,9 +408,12 @@
                     onclick="toggleDarkMode()">
               <i id="darkModeIcon" class="fas fa-moon"></i>
             </button>
-            <a href="{% url 'social_media_dashboard' %}"
-               class="p-2 rounded-full inline-flex items-center ml-2">
-              <i class="fab fa-twitter text-xl"></i>
+            <a href="{% url 'social_media_dashboard' %}">
+              <img src="{% static 'images/x-logo.svg' %}"
+                   alt="X (Twitter) Logo"
+                   class="w-4 h-4 filter invert"
+                   width="20"
+                   height="20" />
             </a>
           </div>
           <!-- Auth Buttons -->
@@ -624,9 +627,7 @@
                       <i class="fas fa-lightbulb mr-2 text-teal-500"></i>
                       <span>Features</span>
                     </a>
-                    <a href="#"
-                       a
-                       href="{% url 'success_story_list' %}"
+                    <a href="{% url 'success_story_list' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-star mr-2 text-teal-500"></i>
                       <span>Success Stories</span>
@@ -958,7 +959,7 @@
                  class="flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
                 <img src="{% static 'images/x-logo.svg' %}"
                      alt="X (Twitter) Logo"
-                     class="w-5 h-5"
+                     class="w-5 h-5 dark:invert"
                      width="20"
                      height="20" />
               </a>
