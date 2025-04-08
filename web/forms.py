@@ -1127,7 +1127,7 @@ class PeerChallengeInvitationForm(forms.ModelForm):
         return cleaned_data
 
 
-class ForumTopicForm(forms.ModelForm):
+class ForumTopicForm(forms.Form):
     title = forms.CharField(
         max_length=200,
         required=True,
