@@ -45,7 +45,7 @@ jobs:
         run: |
           mysql -h127.0.0.1 -P3306 -uroot -prootpassword -e "SET GLOBAL sql_mode='NO_ENGINE_SUBSTITUTION';"
 
-      # Create a temporary Dockerfile that doesn't set up the database during build
+      # Create a temporary Dockerfile that doesn't run migrations during build
       - name: Create test Dockerfile
         run: |
           cat > Dockerfile.test << EOF
@@ -83,7 +83,7 @@ jobs:
           # Expose port
           EXPOSE 8000
 
-          # Don't run migrations or create data during build
+          # Don't run migrations during build
           CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
           EOF
 
@@ -103,6 +103,9 @@ jobs:
 
       - name: Start Docker container and setup database
         run: |
+          # Remove any existing container to start fresh
+          docker rm -f education-app || true
+
           # Create .env file with MySQL configuration
           cp .env.sample .env.mysql
           sed -i 's|DATABASE_URL=.*|DATABASE_URL=mysql://root:rootpassword@127.0.0.1:3306/test_db|g' .env.mysql
@@ -120,20 +123,22 @@ jobs:
             -e DJANGO_SETTINGS_MODULE=web.settings \
             education-website:test
 
-          # Wait for container to start
+          # Wait for container to start up
           sleep 10
 
-          # Now run migrations and setup database inside the container
-          docker exec education-app python manage.py migrate
+          # Run migrations to update the database schema
+          docker exec education-app python manage.py migrate --noinput
+
+          # Create any test data needed
           docker exec education-app python manage.py create_test_data
 
-          # Create superuser if needed
+          # Create superuser if needed (ignore failure if exists)
           docker exec -e DJANGO_SUPERUSER_USERNAME=admin -e DJANGO_SUPERUSER_EMAIL=admin@example.com -e DJANGO_SUPERUSER_PASSWORD=adminpassword education-app python manage.py createsuperuser --noinput || true
 
           # Verify database connection
           docker exec education-app python -c "from django.db import connection; print('Database backend:', connection.vendor)"
 
-          # Wait for app to be fully up
+          # Wait a few seconds for the app to fully start
           sleep 5
           docker ps
 
