@@ -18,20 +18,38 @@
       <!-- Main Content -->
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
         <!-- Donation Form -->
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8">
-          <div class="mb-6">
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8 h-fit">
+          <div class="flex flex-col">
             <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-6">{% trans "Make a Donation" %}</h2>
             <!-- Donation Form -->
-            <form id="donation-form" class="space-y-6 sm:space-y-8">
+            <form id="donation-form" class="space-y-4 sm:space-y-6">
+              <!-- Donation Type Toggle -->
+              <div class="flex flex-col space-y-4">
+                <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Donation Type</h2>
+                <div class="flex rounded-lg bg-gray-100 dark:bg-gray-700 p-1">
+                  <button type="button"
+                          id="one-time-btn"
+                          class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                          data-type="one_time">{% trans "One-time" %}</button>
+                  <button type="button"
+                          id="monthly-btn"
+                          class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                          data-type="subscription">{% trans "Monthly" %}</button>
+                </div>
+                <p id="donation-type-description"
+                   class="text-sm text-gray-600 dark:text-gray-400">
+                  {% trans "Support our mission with a one-time donation" %}
+                </p>
+              </div>
               <!-- Amount Selection -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">{% trans "Select Amount" %}</label>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-4">
+              <div class="space-y-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans "Select Amount" %}</label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {% for amount in donation_amounts %}
                     <button type="button"
-                            class="amount-btn w-full bg-gray-50 hover:bg-teal-50 dark:bg-gray-700 dark:hover:bg-teal-900 text-gray-700 dark:text-gray-300 py-3 px-4 rounded-lg transition duration-200 shadow-sm border border-gray-200 dark:border-gray-600 hover:border-teal-300 dark:hover:border-teal-600"
+                            class="amount-btn w-full flex items-center justify-center bg-gray-50 hover:bg-teal-50 dark:bg-gray-700 dark:hover:bg-teal-900 text-gray-700 dark:text-gray-300 py-3 px-4 rounded-lg transition-all duration-200 shadow-sm border border-gray-200 dark:border-gray-600 hover:border-teal-300 dark:hover:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400"
                             data-amount="{{ amount }}">
-                      <span class="text-lg font-semibold">${{ amount }}</span>
+                      <span class="text-lg font-semibold">{{ DEFAULT_CURRENCY_SYMBOL|default:"$" }}{{ amount }}</span>
                     </button>
                   {% endfor %}
                 </div>
@@ -40,11 +58,11 @@
                   <input type="number"
                          id="custom-amount"
                          class="w-full pl-8 pr-4 py-3 text-lg border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                         placeholder="{% trans 'Or enter custom amount' %}" />
+                         placeholder="{{ _("Or enter custom amount") }}" />
                 </div>
               </div>
               <!-- Personal Information -->
-              <div class="space-y-6">
+              <div class="space-y-4">
                 <div>
                   <label for="donation-email"
                          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -85,20 +103,24 @@
                 </p>
               </div>
               <!-- Payment Information -->
-              <div id="payment-element" class="mb-4 min-h-[100px] relative">
+              <div id="payment-element" class="relative">
                 <!-- Loading State -->
                 <div id="payment-loading"
-                     class="absolute inset-0 flex items-center justify-center bg-white dark:bg-gray-800">
-                  <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-500"></div>
+                     class="hidden absolute inset-0 flex flex-col items-center justify-center bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm z-10 rounded-lg">
+                  <div class="animate-spin rounded-full h-12 w-12 border-4 border-teal-500 border-t-transparent mb-4"></div>
+                  <p id="payment-loading-text"
+                     class="text-teal-600 dark:text-teal-400 font-medium text-center">
+                    {% trans "Initializing payment system..." %}
+                  </p>
                 </div>
                 <!-- Stripe Elements will be inserted here -->
               </div>
               <!-- Error Messages -->
-              <div id="payment-message" class="mt-4 text-sm text-center"></div>
+              <div id="payment-message" class="text-sm text-center"></div>
               <!-- Submit Button -->
               <button type="submit"
                       id="submit-button"
-                      class="w-full bg-teal-500 hover:bg-teal-600 dark:bg-teal-600 dark:hover:bg-teal-700 text-white text-lg font-semibold px-6 py-4 rounded-lg transition duration-200 flex items-center justify-center relative">
+                      class="w-full bg-teal-500 hover:bg-teal-600 dark:bg-teal-600 dark:hover:bg-teal-700 text-white text-lg font-semibold px-6 py-4 rounded-lg transition duration-200 flex items-center justify-center relative mb-2">
                 <span id="button-text" class="transition-opacity duration-200">{% trans "Donate Now" %}</span>
                 <div id="spinner"
                      class="absolute inset-0 flex items-center justify-center hidden">
@@ -112,11 +134,16 @@
                   </svg>
                 </div>
               </button>
+              <!-- Subscription Notice -->
+              <div id="subscription-notice"
+                   class="hidden text-sm text-gray-600 dark:text-gray-400 text-center px-2 pb-2">
+                {% trans "You will be charged this amount monthly. You can cancel anytime." %}
+              </div>
             </form>
           </div>
         </div>
         <!-- Information and Recent Donations -->
-        <div class="space-y-6 sm:space-y-8">
+        <div class="space-y-6 sm:space-y-8 self-start">
           <!-- Why Donate Section -->
           <div class="bg-teal-50 dark:bg-teal-900/20 rounded-xl shadow-lg p-6 sm:p-8 border border-teal-200 dark:border-teal-800">
             <h2 class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">{% trans "Why Donate?" %}</h2>
@@ -166,6 +193,61 @@
               </ul>
               <p class="mt-6 text-base sm:text-lg font-medium text-gray-700 dark:text-gray-300">
                 {% trans "We're committed to making quality education accessible to everyone, regardless of their financial situation." %}
+              </p>
+            </div>
+          </div>
+          <!-- Monthly Donation Benefits Section -->
+          <div id="monthly-benefits-card"
+               class="bg-teal-50 dark:bg-teal-900/20 rounded-xl shadow-lg p-6 sm:p-8 border border-teal-200 dark:border-teal-800">
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">{% trans "Why Donate Monthly?" %}</h2>
+            <div class="space-y-4">
+              <p class="text-base sm:text-lg text-gray-700 dark:text-gray-300">
+                {% trans "Monthly donations provide sustainable support that helps us:" %}
+              </p>
+              <ul class="list-none space-y-3">
+                <li class="flex items-start">
+                  <svg class="h-6 w-6 text-teal-600 mr-2 mt-0.5"
+                       fill="none"
+                       stroke="currentColor"
+                       viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z">
+                    </path>
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">{% trans "Plan long-term educational programs" %}</span>
+                </li>
+                <li class="flex items-start">
+                  <svg class="h-6 w-6 text-teal-600 mr-2 mt-0.5"
+                       fill="none"
+                       stroke="currentColor"
+                       viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z">
+                    </path>
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">{% trans "Maintain consistent support for students" %}</span>
+                </li>
+                <li class="flex items-start">
+                  <svg class="h-6 w-6 text-teal-600 mr-2 mt-0.5"
+                       fill="none"
+                       stroke="currentColor"
+                       viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z">
+                    </path>
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">{% trans "Develop new educational resources continuously" %}</span>
+                </li>
+                <li class="flex items-start">
+                  <svg class="h-6 w-6 text-teal-600 mr-2 mt-0.5"
+                       fill="none"
+                       stroke="currentColor"
+                       viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z">
+                    </path>
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">{% trans "Make long-term commitments to communities" %}</span>
+                </li>
+              </ul>
+              <p class="mt-4 text-base text-gray-700 dark:text-gray-300 italic">
+                {% trans "Your monthly support creates a foundation for sustainable education." %}
               </p>
             </div>
           </div>
@@ -225,18 +307,89 @@
           const form = document.getElementById('donation-form');
           const emailInput = document.getElementById('donation-email');
 
-          // Function to update the final donation amount
+          // Currency formatting configuration
+          const currencyFormatter = new Intl.NumberFormat('{{ LANGUAGE_CODE|default:"en-US" }}', {
+              style: 'currency',
+              currency: '{{ DEFAULT_CURRENCY|default:"USD" }}',
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+          });
+
           function updateFinalAmount(amount) {
               if (!isNaN(amount) && amount > 0) {
-                  finalAmountDisplay.textContent = `$${parseFloat(amount).toFixed(2)}`;
-                  return true;
+                  try {
+                      const numericAmount = parseFloat(amount);
+                      if (numericAmount > 999999.99) {
+                          showMessage("{% trans 'Please enter an amount less than 1,000,000' %}", "error");
+                          finalAmountDisplay.textContent = currencyFormatter.format(0);
+                          return false;
+                      }
+                      finalAmountDisplay.textContent = currencyFormatter.format(numericAmount);
+                      return true;
+                  } catch (error) {
+                      console.error('Error formatting amount:', error);
+                      finalAmountDisplay.textContent = currencyFormatter.format(0);
+                      return false;
+                  }
               } else {
-                  finalAmountDisplay.textContent = '$0.00';
+                  finalAmountDisplay.textContent = currencyFormatter.format(0);
                   return false;
               }
           }
 
-          // Event listener for predefined amount buttons
+          // Debounce function to prevent rapid re-initialization
+          function debounce(func, wait) {
+              let timeout;
+              return function executedFunction(...args) {
+                  const later = () => {
+                      clearTimeout(timeout);
+                      func(...args);
+                  };
+                  clearTimeout(timeout);
+                  timeout = setTimeout(later, wait);
+              };
+          }
+
+          // Function to check if we can initialize payment
+          function canInitializePayment() {
+              const amount = getSelectedAmount();
+              const email = emailInput.value.trim();
+
+              // Clear any existing error messages if email is valid
+              if (email) {
+                  showMessage("", "info"); // Clear the message
+              }
+
+              return amount && parseFloat(amount) > 0 && email;
+          }
+
+          // Update initialize references to use debounced version
+          customAmountInput.addEventListener('input', function() {
+              const customAmount = this.value;
+              amountButtons.forEach(btn => {
+                  btn.classList.remove('bg-teal-50', 'dark:bg-teal-900/20', 'border-teal-300', 'dark:border-teal-600');
+                  btn.classList.add('bg-gray-50', 'dark:bg-gray-700', 'border-gray-200', 'dark:border-gray-600');
+              });
+
+              if (updateFinalAmount(customAmount)) {
+                  if (canInitializePayment()) {
+                      debouncedInitialize();
+                  }
+              }
+          });
+
+          // Email input handler
+          emailInput.addEventListener('input', function() {
+              const email = this.value.trim();
+              if (email) {
+                  showMessage("", "info"); // Clear any email-related error message
+              }
+              if (canInitializePayment()) {
+                  debouncedInitialize();
+              }
+          });
+
+          // Update amount button click handlers
           amountButtons.forEach(button => {
               button.addEventListener('click', function() {
                   amountButtons.forEach(btn => {
@@ -250,22 +403,234 @@
                   customAmountInput.value = '';
                   const selectedAmount = this.getAttribute('data-amount');
                   if (updateFinalAmount(selectedAmount)) {
-                      initialize();
+                      if (canInitializePayment()) {
+                          debouncedInitialize();
+                      }
                   }
+              });
+          });
+
+          let donationType = 'one_time';
+          const oneTimeBtn = document.getElementById('one-time-btn');
+          const monthlyBtn = document.getElementById('monthly-btn');
+          const typeDescription = document.getElementById('donation-type-description');
+
+          function updateDonationTypeUI(type) {
+              donationType = type;
+
+              // Reset both buttons
+              [oneTimeBtn, monthlyBtn].forEach(btn => {
+                  btn.classList.remove("bg-teal-500", "text-white", "hover:bg-teal-600");
+                  btn.classList.add("hover:bg-gray-200", "dark:hover:bg-gray-600", "text-gray-700", "dark:text-gray-300");
+              });
+
+              // Style active button
+              const activeBtn = type === "one_time" ? oneTimeBtn : monthlyBtn;
+              activeBtn.classList.remove("hover:bg-gray-200", "dark:hover:bg-gray-600", "text-gray-700", "dark:text-gray-300");
+              activeBtn.classList.add("bg-teal-500", "text-white", "hover:bg-teal-600");
+
+              // Update description and button text
+              typeDescription.textContent = type === "one_time" ?
+                  "{% trans 'Support our mission with a one-time donation' %}" :
+                  "{% trans 'Provide sustainable support with automatic monthly donations' %}";
+
+              document.getElementById('button-text').textContent = type === "one_time" ?
+                  "{% trans 'Donate Now' %}" :
+                  "{% trans 'Start Monthly Donation' %}";
+
+              // Toggle subscription notice
+              const subscriptionNotice = document.getElementById('subscription-notice');
+              subscriptionNotice.classList.toggle('hidden', type === "one_time");
+
+              // Reset payment form
+              resetPaymentForm();
+          }
+
+          // Update the debouncedInitialize function
+          const debouncedInitialize = debounce(async function() {
+              try {
+                  const amount = getSelectedAmount();
+                  const email = emailInput.value.trim();
+                  const isSubscription = donationType === "subscription";
+
+                  if (!amount || parseFloat(amount) <= 0) {
+                      showMessage("{% trans 'Please select or enter a valid donation amount' %}", "error");
+                      return;
+                  }
+
+                  if (!email) {
+                      showMessage("{% trans 'Please enter your email address' %}", "error");
+                      return;
+                  }
+
+                  // Show loading state
+                  const loadingElement = document.getElementById('payment-loading');
+                  const loadingText = document.getElementById('payment-loading-text');
+                  const paymentElement = document.getElementById('payment-element');
+
+                  loadingElement.classList.remove('hidden');
+                  loadingElement.style.display = 'flex';
+                  loadingElement.style.opacity = '1';
+                  paymentElement.style.minHeight = '150px';
+
+                  loadingText.textContent = "{% trans 'Initializing payment system...' %}";
+                  showMessage("", "info");
+
+                  // Create payment intent or subscription
+                  const response = await fetch(isSubscription ? "{% url 'create_donation_subscription' %}" : "{% url 'create_donation_payment_intent' %}", {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json',
+                          'X-CSRFToken': getCookie('csrftoken')
+                      },
+                      body: JSON.stringify({
+                          amount: amount,
+                          email: email,
+                          message: document.getElementById('donation-message').value,
+                          anonymous: document.getElementById('anonymous-donation').checked,
+                          donation_type: donationType
+                      })
+                  });
+
+                  if (!response.ok) {
+                      throw new Error(await response.text());
+                  }
+
+                  const data = await response.json();
+                  if (data.error) {
+                      throw new Error(data.error);
+                  }
+
+                  // Initialize Stripe if needed
+                  if (!stripe) {
+                      if (!('{{ stripe_public_key }}')) {
+                          throw new Error('Stripe public key is missing');
+                      }
+                      stripe = Stripe('{{ stripe_public_key }}');
+                  }
+
+                  // Initialize Elements
+                  if (elements) {
+                      elements.unmount();
+                  }
+
+                  elements = stripe.elements({
+                      clientSecret: data.clientSecret,
+                      appearance: {
+                          theme: 'stripe',
+                          variables: {
+                              colorPrimary: '#0d9488',
+                              colorBackground: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+                              colorText: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937',
+                          }
+                      }
+                  });
+
+                  // Create and mount payment element with proper subscription handling
+                  const payment = elements.create('payment', {
+                      layout: "tabs",
+                      defaultValues: {
+                          billingDetails: {
+                              email: email,
+                          }
+                      },
+                      terms: isSubscription ? {
+                          card: 'always',
+                          auBecsDebit: 'always',
+                          sepaDebit: 'always',
+                          bancontact: 'always',
+                          ideal: 'always',
+                          sofort: 'always'
+                      } : undefined,
+                      wallets: {
+                          applePay: 'auto',
+                          googlePay: 'auto'
+                      }
+                  });
+
+                  try {
+                      await payment.mount('#payment-element');
+                      hideLoadingState();
+                      showMessage("", "info");
+                  } catch (mountError) {
+                      console.error('Payment Element Mount Error:', mountError);
+                      throw new Error('Failed to initialize payment form');
+                  }
+
+              } catch (error) {
+                  console.error('Payment Initialization Error:', error);
+                  hideLoadingState();
+                  showMessage(error.message || "{% trans 'Failed to initialize payment. Please try again.' %}", "error");
+              }
+          }, 500);
+
+          // Update event listeners for donation type buttons
+          oneTimeBtn.addEventListener('click', () => {
+              if (donationType !== "one_time") {
+                  updateDonationTypeUI("one_time");
+              }
+          });
+
+          monthlyBtn.addEventListener('click', () => {
+              if (donationType !== "subscription") {
+                  updateDonationTypeUI("subscription");
+              }
+          });
+
+          // Style configurations for amount buttons
+          const buttonStyles = {
+              inactive: {
+                  remove: [
+                      'bg-blue-100', 'dark:bg-blue-900', 'text-blue-700', 'dark:text-blue-300',
+                      'bg-teal-50', 'dark:bg-teal-900/20', 'border-teal-300', 'dark:border-teal-600'
+                  ],
+                  add: [
+                      'bg-gray-50', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300',
+                      'border-gray-200', 'dark:border-gray-600'
+                  ]
+              },
+              active: {
+                  remove: [
+                      'bg-gray-50', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300',
+                      'border-gray-200', 'dark:border-gray-600'
+                  ],
+                  add: [
+                      'bg-teal-50', 'dark:bg-teal-900/20', 'text-teal-700', 'dark:text-teal-300',
+                      'border-teal-300', 'dark:border-teal-600'
+                  ]
+              }
+          };
+
+          // Function to update button styles
+          function updateButtonStyles(buttons, activeButton = null) {
+              buttons.forEach(button => {
+                  const styles = button === activeButton ? buttonStyles.active : buttonStyles.inactive;
+                  button.classList.remove(...styles.remove);
+                  button.classList.add(...styles.add);
+              });
+          }
+
+          // Debounced amount selection handler
+          const handleAmountSelection = debounce((amount) => {
+              if (updateFinalAmount(amount)) {
+                  debouncedInitialize();
+              }
+          }, 300);
+
+          // Event listeners for amount buttons
+          amountButtons.forEach(button => {
+              button.addEventListener('click', function() {
+                  updateButtonStyles(amountButtons, this);
+                  customAmountInput.value = '';
+                  const selectedAmount = this.getAttribute('data-amount');
+                  handleAmountSelection(selectedAmount);
               });
           });
 
           // Event listener for custom amount input
           customAmountInput.addEventListener('input', function() {
-              const customAmount = this.value;
-              amountButtons.forEach(btn => {
-                  btn.classList.remove('bg-teal-50', 'dark:bg-teal-900/20', 'border-teal-300', 'dark:border-teal-600');
-                  btn.classList.add('bg-gray-50', 'dark:bg-gray-700', 'border-gray-200', 'dark:border-gray-600');
-              });
-
-              if (updateFinalAmount(customAmount)) {
-                  initialize();
-              }
+              updateButtonStyles(amountButtons); // Reset all buttons
+              handleAmountSelection(this.value);
           });
 
           try {
@@ -280,24 +645,29 @@
               showMessage("Payment system initialization failed. Please try again later.");
           }
 
-          async function initialize() {
+          async function handleSubmit(e) {
+              e.preventDefault();
+              setLoading(true);
+
               try {
+                  if (!elements) {
+                      throw new Error("{% trans 'Payment system not initialized. Please try again.' %}");
+                  }
+
                   const amount = getSelectedAmount();
-                  if (!amount || parseFloat(amount) <= 0) {
-                      showMessage("Please select or enter a valid donation amount.");
-                      return;
+                  const email = emailInput.value.trim();
+                  const isSubscription = donationType === "subscription";
+
+                  // Submit the payment element first
+                  const {
+                      error: submitError
+                  } = await elements.submit();
+                  if (submitError) {
+                      throw submitError;
                   }
 
-                  const email = emailInput.value;
-                  if (!email) {
-                      showMessage("Please enter your email address.");
-                      return;
-                  }
-
-                  // Show loading state
-                  document.getElementById('payment-loading').style.display = 'flex';
-
-                  const response = await fetch("{% url 'create_donation_payment_intent' %}", {
+                  // Create payment intent or subscription
+                  const response = await fetch(isSubscription ? "{% url 'create_donation_subscription' %}" : "{% url 'create_donation_payment_intent' %}", {
                       method: 'POST',
                       headers: {
                           'Content-Type': 'application/json',
@@ -307,141 +677,57 @@
                           amount: amount,
                           email: email,
                           message: document.getElementById('donation-message').value,
-                          anonymous: document.getElementById('anonymous-donation').checked
+                          anonymous: document.getElementById('anonymous-donation').checked,
+                          donation_type: donationType
                       })
                   });
 
+                  if (!response.ok) {
+                      const errorText = await response.text();
+                      throw new Error(errorText);
+                  }
+
                   const data = await response.json();
                   if (data.error) {
-                      showMessage(data.error);
-                      document.getElementById('payment-loading').style.display = 'none';
-                      return;
+                      throw new Error(data.error);
                   }
 
-                  const {
-                      clientSecret,
-                      donation_id: newDonationId
-                  } = data;
-                  if (!clientSecret) {
-                      showMessage("Failed to initialize payment. Please try again.");
-                      document.getElementById('payment-loading').style.display = 'none';
-                      return;
-                  }
-
-                  // Store the donation ID for later use
-                  donation_id = newDonationId;
-
-                  const appearance = {
-                      theme: 'stripe',
-                      variables: {
-                          colorPrimary: '#14b8a6',
-                          colorBackground: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
-                          colorText: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937',
-                          colorDanger: '#dc2626',
-                          fontFamily: 'Inter var, system-ui, sans-serif',
-                          spacingUnit: '4px',
-                          borderRadius: '8px',
-                      },
-                      rules: {
-                          '.Tab, .Input': {
-                              border: '1px solid #e5e7eb',
-                              boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-                              backgroundColor: document.documentElement.classList.contains('dark') ? '#374151' : '#ffffff',
-                          },
-                          '.Tab:hover': {
-                              color: '#14b8a6',
-                              borderColor: '#14b8a6',
-                          },
-                          '.Tab--selected': {
-                              borderColor: '#14b8a6',
-                              color: '#14b8a6',
-                          },
-                          '.Input:focus': {
-                              borderColor: '#14b8a6',
-                              boxShadow: '0 0 0 1px #14b8a6',
-                          },
-                      }
-                  };
-
-                  if (elements) {
-                      elements.unmount();
-                  }
-
-                  elements = stripe.elements({
-                      appearance,
-                      clientSecret,
-                      loader: 'auto',
-                  });
-
-                  const paymentElement = elements.create("payment", {
-                      layout: "tabs",
-                      defaultValues: {
-                          billingDetails: {
-                              email: email,
-                          }
-                      },
-                      paymentMethodOrder: ['card', 'apple_pay', 'google_pay', 'amazon_pay', 'cashapp', 'link'],
-                      business: {
-                          name: "Education Website"
-                      }
-                  });
-
-                  await paymentElement.mount("#payment-element");
-                  // Hide loading state after mounting
-                  document.getElementById('payment-loading').style.display = 'none';
-                  showMessage("", "info");
-              } catch (error) {
-                  console.error('[Initialize] Error:', error);
-                  document.getElementById('payment-loading').style.display = 'none';
-                  showMessage(error.message || "Failed to initialize payment system. Please try again.");
-              }
-          }
-
-          async function handleSubmit(e) {
-              e.preventDefault();
-
-              try {
-                  setLoading(true);
-
-                  const amount = getSelectedAmount();
-                  if (!amount || parseFloat(amount) <= 0) {
-                      showMessage("Please select or enter a valid donation amount.");
-                      return;
-                  }
-
-                  if (!emailInput.value) {
-                      showMessage("Please enter your email address.");
-                      return;
-                  }
-
-                  if (!elements) {
-                      showMessage("Payment system is not initialized. Please select an amount first.");
-                      return;
-                  }
-
+                  // Use confirmPayment for both one-time and subscription
                   const {
                       error
                   } = await stripe.confirmPayment({
                       elements,
                       confirmParams: {
-                          return_url: window.location.origin + "{% url 'donation_success' %}?donation_id=" + donation_id,
-                          receipt_email: emailInput.value,
+                          return_url: window.location.origin + "{% url 'donation_success' %}?donation_id=" + data.donation_id,
+                          payment_method_data: {
+                              billing_details: {
+                                  email: email
+                              }
+                          }
                       }
                   });
 
                   if (error) {
-                      console.error('[Payment Error]', error);
-                      if (error.type === 'card_error' || error.type === 'validation_error') {
-                          showMessage(error.message);
-                      } else {
-                          showMessage("An unexpected error occurred. Please try again.");
-                      }
-                  } else {
-                      showMessage("Thank you for your donation! Processing payment...", "success");
+                      throw error;
                   }
-              } catch (e) {
-                  console.error('[Submit Error]', e);
-                  showMessage("An unexpected error occurred. Please try again.");
+
+                  showMessage(isSubscription ?
+                      "{% trans 'Setting up your monthly donation...' %}" :
+                      "{% trans 'Processing your donation...' %}", "success");
+
+              } catch (error) {
+                  console.error('Payment Error:', error);
+                  let errorMessage;
+
+                  if (error.type === "card_error" || error.type === "validation_error") {
+                      errorMessage = error.message;
+                  } else if (error.type === "invalid_request_error") {
+                      errorMessage = "{% trans 'Invalid payment request. Please check your details and try again.' %}";
+                  } else {
+                      errorMessage = error.message || "{% trans 'An unexpected error occurred. Please try again.' %}";
+                  }
+
+                  showMessage(errorMessage, "error");
               } finally {
                   setLoading(false);
               }
@@ -452,15 +738,35 @@
               if (!messageDiv) return;
 
               messageDiv.textContent = messageText;
-              messageDiv.classList.remove("text-red-500", "text-green-500", "text-blue-500");
+              messageDiv.classList.remove(
+                  "text-red-500", "text-green-500", "text-blue-500",
+                  "bg-red-50", "bg-green-50", "bg-blue-50",
+                  "border", "border-red-200", "border-green-200", "border-blue-200",
+                  "dark:bg-red-900/20", "dark:bg-green-900/20", "dark:bg-blue-900/20",
+                  "dark:border-red-800", "dark:border-green-800", "dark:border-blue-800",
+                  "dark:text-red-400", "dark:text-green-400", "dark:text-blue-400"
+              );
 
               if (messageText) {
+                  messageDiv.classList.add(
+                      "p-4", "rounded-lg", "border", "text-sm", "font-medium"
+                  );
+
                   if (type === "success") {
-                      messageDiv.classList.add("text-green-500");
+                      messageDiv.classList.add(
+                          "bg-green-50", "border-green-200", "text-green-500",
+                          "dark:bg-green-900/20", "dark:border-green-800", "dark:text-green-400"
+                      );
                   } else if (type === "info") {
-                      messageDiv.classList.add("text-blue-500");
+                      messageDiv.classList.add(
+                          "bg-blue-50", "border-blue-200", "text-blue-500",
+                          "dark:bg-blue-900/20", "dark:border-blue-800", "dark:text-blue-400"
+                      );
                   } else {
-                      messageDiv.classList.add("text-red-500");
+                      messageDiv.classList.add(
+                          "bg-red-50", "border-red-200", "text-red-500",
+                          "dark:bg-red-900/20", "dark:border-red-800", "dark:text-red-400"
+                      );
                   }
               }
           }
@@ -516,6 +822,58 @@
           if (defaultAmount) {
               updateFinalAmount(defaultAmount);
           }
+
+          // Initialize UI with one-time donation as default
+          updateDonationTypeUI("one_time");
+
+          // Initialize payment if we have the required fields
+          if (canInitializePayment()) {
+              debouncedInitialize();
+          }
       });
+
+      // Add helper function to hide loading state
+      function hideLoadingState() {
+          const loadingElement = document.getElementById('payment-loading');
+          const paymentElement = document.getElementById('payment-element');
+
+          loadingElement.style.opacity = '0';
+          setTimeout(() => {
+              loadingElement.style.display = 'none';
+              loadingElement.classList.add('hidden');
+
+              // Adjust payment element height after loading
+              if (elements) {
+                  paymentElement.style.minHeight = 'auto';
+              } else {
+                  paymentElement.style.minHeight = '0';
+              }
+          }, 300);
+      }
+
+      // Update resetPaymentForm function
+      function resetPaymentForm() {
+          // Clear any existing payment elements
+          if (elements) {
+              elements.unmount();
+              elements = null;
+          }
+
+          // Reset payment element container
+          const paymentElement = document.getElementById('payment-element');
+          paymentElement.innerHTML = '';
+          paymentElement.style.minHeight = '0';
+
+          // Hide loading indicator
+          hideLoadingState();
+
+          // Clear any error messages
+          showMessage("", "info");
+
+          // If we have an amount and email, initialize new payment
+          if (canInitializePayment()) {
+              debouncedInitialize();
+          }
+      }
   </script>
 {% endblock extra_js %}
