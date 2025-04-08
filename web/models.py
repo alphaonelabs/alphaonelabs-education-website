@@ -5,6 +5,7 @@ import time
 import uuid
 from datetime import datetime, timedelta
 from io import BytesIO
+from typing import ClassVar
 
 from allauth.account.signals import user_signed_up
 from django.conf import settings
@@ -1782,17 +1783,72 @@ class Donation(models.Model):
 
 
 class Badge(models.Model):
-    BADGE_TYPES = [
-        ("challenge", "Challenge Completion"),
-        ("course", "Course Completion"),
+    """
+    Model representing badges awarded for various achievements.
+
+    Attributes:
+        name (str): The name of the badge.
+        badge_type (str): The predefined type of the badge, chosen from BADGE_TYPE_CHOICES.
+        custom_type (str): An optional custom type for the badge, which overrides the predefined badge_type if provided.
+        description (str): A brief description of the badge.
+        image (ImageField): An optional image representing the badge, recommended size is 200x200 pixels.
+        course (ForeignKey): The course associated with this badge, if applicable.
+        challenge (ForeignKey): The challenge associated with this badge, if applicable.
+        created_by (ForeignKey): The user who created the badge.
+        is_active (bool): Indicates whether the badge is active.
+        criteria (JSONField): A JSON field to store criteria for earning the badge.
+        created_at (DateTimeField): The timestamp when the badge was created.
+        updated_at (DateTimeField): The timestamp when the badge was last updated.
+
+    Notes:
+        - If `custom_type` is provided, it takes precedence over `badge_type` when determining the badge's type.
+        - The `image` field automatically processes uploaded images to ensure they are in RGB format
+            and resized to 200x200 pixels.
+
+    Meta:
+        ordering: Badges are ordered by `badge_type` and then by `name`.
+
+    Example:
+        To create a badge with a custom type:
+            Badge.objects.create(
+                name="Top Performer",
+                custom_type="Employee of the Month",
+                description="Awarded for outstanding performance in March.",
+                created_by=user_instance,
+    """
+
+    BADGE_TYPE_CHOICES: ClassVar[list[tuple[str, str]]] = [
+        ("perfect_attendance", "Perfect Attendance"),
+        ("participation", "Outstanding Participation"),
+        ("completion", "Course Completion"),
         ("achievement", "Special Achievement"),
-        ("teacher_awarded", "Teacher Awarded"),
+        ("challenge", "Challenge Completion"),
     ]
     name = models.CharField(max_length=100)
-    description = models.TextField()
-    image = models.ImageField(upload_to="badges/")
-    badge_type = models.CharField(max_length=20, choices=BADGE_TYPES)
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True, related_name="badges")
+    badge_type = models.CharField(
+        max_length=50,
+        choices=BADGE_TYPE_CHOICES,
+        default="perfect_attendance",
+    )
+    custom_type = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Custom badge type (optional, overrides predefined types)",
+    )
+    description = models.TextField(blank=True)
+    image = models.ImageField(
+        upload_to="badge_images/",
+        blank=True,
+        help_text="Upload an image for the badge (200x200 recommended)",
+    )
+    course = models.ForeignKey(
+        Course,
+        on_delete=models.CASCADE,
+        related_name="badges",
+        null=True,
+        blank=True,
+        help_text="The course associated with this badge, if any",
+    )
     challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, null=True, blank=True, related_name="badges")
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_badges")
     is_active = models.BooleanField(default=True)
@@ -1870,7 +1926,7 @@ def award_challenge_badge(sender, instance, created, **kwargs):
 @receiver(post_save, sender=Enrollment)
 def award_course_completion_badge(sender, instance, **kwargs):
     if instance.status == "completed":
-        course_badges = Badge.objects.filter(course=instance.course, badge_type="course", is_active=True)
+        course_badges = Badge.objects.filter(course=instance.course, badge_type="completion", is_active=True)
         for badge in course_badges:
             if not UserBadge.objects.filter(user=instance.student, badge=badge).exists():
                 UserBadge.objects.create(
