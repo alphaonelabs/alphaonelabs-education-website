@@ -5,6 +5,20 @@
 {% endblock title %}
 {% block content %}
   <div class="container mx-auto px-2 py-8">
+    <!-- Breadcrumbs -->
+    <nav class="text-sm text-gray-500 dark:text-gray-300 mb-4"
+         aria-label="Breadcrumb">
+      <ol class="list-reset flex">
+        <li>
+          <a href="{% url 'index' %}"
+             class="hover:text-gray-700 dark:hover:text-white">Home</a>
+        </li>
+        <li>
+          <span class="mx-2">/</span>
+        </li>
+        <li class="text-gray-700 dark:text-white font-semibold">Storefronts</li>
+      </ol>
+    </nav>
     <h1 class="text-4xl font-extrabold text-gray-900 dark:text-white mb-6 text-center">Explore Our Products</h1>
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
       <!-- Filter Sidebar -->
