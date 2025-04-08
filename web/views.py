@@ -1891,11 +1891,19 @@ def create_topic(request, category_slug):
 
 
 @login_required
-def topic_detail(request, topic_id):
+def topic_detail(request: HttpRequest, topic_id: int) -> HttpResponse:
     topic = get_object_or_404(ForumTopic, id=topic_id)
     categories = ForumCategory.objects.all()
+    
+    # Increment view count
+    view_count = (
+        WebRequest.objects.filter(path=request.path)
+        .aggregate(total_views=models.Sum("count"))["total_views"] or 0
+    )
+    topic.views = view_count
+    topic.save()
+    
     return render(request, "web/forum/topic.html", {"topic": topic, "categories": categories})
-
 
 @login_required
 def peer_connections(request):
