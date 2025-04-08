@@ -3480,7 +3480,11 @@ def current_weekly_challenge(request):
 def challenge_detail(request, challenge_id):
     try:
         challenge = get_object_or_404(Challenge, id=challenge_id)
-        submissions = ChallengeSubmission.objects.filter(challenge=challenge)
+
+        submissions = (
+            ChallengeSubmission.objects.filter(challenge=challenge).filter(Q(is_public=True) | Q(user=request.user)),
+        )
+
         # Check if the current user has submitted this challenge
         user_submission = None
         if request.user.is_authenticated:
