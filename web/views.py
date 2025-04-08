@@ -7143,7 +7143,7 @@ def topic_vote(request, pk):
         if vote_type not in ["up", "down"]:
             # For form submissions, redirect back with an error message if needed
             messages.error(request, "Invalid vote type")
-            return redirect("view_topic", pk=topic.id)
+            return redirect("topic_vote", pk=topic.id)
 
         # Check if user already voted on this topic
         vote, created = ForumVote.objects.get_or_create(
@@ -7204,9 +7204,6 @@ def reply_vote(request, pk):
     except ForumReply.DoesNotExist:
         messages.error(request, "Reply not found")
         return redirect("forum_categories")
-
-    except ForumReply.DoesNotExist:
-        return JsonResponse({"error": "Reply not found"}, status=404)
 
 
 def topic_detail(request, pk):

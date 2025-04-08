@@ -225,7 +225,9 @@
                       <!-- Upvote button -->
                       <button class="vote-btn p-1 hover:text-teal-500 transition-colors duration-200 focus:outline-none"
                               data-reply="{{ reply.id }}"
-                              data-vote-type="up">
+                              data-vote-type="up"
+                              aria-label="Upvote this reply"
+                              aria-pressed="{% if user_reply_votes|get_item:reply.id == 'up' %}true{% else %}false{% endif %}">
                         <svg xmlns="http://www.w3.org/2000/svg"
                              class="w-5 h-5 {% if user_reply_votes|get_item:reply.id == 'up' %}text-teal-500{% endif %}"
                              fill="none"
@@ -241,7 +243,9 @@
                       <!-- Downvote button -->
                       <button class="vote-btn p-1 hover:text-red-500 transition-colors duration-200 focus:outline-none"
                               data-reply="{{ reply.id }}"
-                              data-vote-type="down">
+                              data-vote-type="down"
+                              aria-label="Downvote this reply"
+                              aria-pressed="{% if user_reply_votes|get_item:reply.id == 'down' %}true{% else %}false{% endif %}">
                         <svg xmlns="http://www.w3.org/2000/svg"
                              class="w-5 h-5 {% if user_reply_votes|get_item:reply.id == 'down' %}text-red-500{% endif %}"
                              fill="none"
@@ -370,83 +374,92 @@
   </main>
   <script>
       document.addEventListener("DOMContentLoaded", function() {
-          // Get CSRF token
+          // CSRF token extractor
           function getCsrfToken() {
-              return document.querySelector("[name=csrfmiddlewaretoken]").value;
+              const csrfInput = document.querySelector("[name=csrfmiddlewaretoken]");
+              return csrfInput ? csrfInput.value : '';
           }
+
           const loginUrl = "{% url 'account_signup' %}";
-          // Handle vote buttons for topics
-          document.querySelectorAll(".vote-btn[data-topic]").forEach((button) => {
-              button.addEventListener("click", function(e) {
-                  e.preventDefault();
 
-                  if (!document.body.classList.contains("user-authenticated")) {
-                      window.location.href = loginUrl;
-                      return;
-                  }
+          // Event handler for vote buttons
+          function handleVote(e) {
+              e.preventDefault();
 
-                  const topicId = this.dataset.topic;
-                  const voteType = this.dataset.voteType;
-                  const csrftoken = getCsrfToken();
+              // Redirect to login if user is not authenticated
+              if (!document.body.classList.contains("user-authenticated")) {
+                  window.location.href = loginUrl;
+                  return;
+              }
 
-                  // Using form submission instead of fetch
-                  const form = document.createElement('form');
-                  form.method = 'POST';
-                  form.action = "{% url 'topic_vote' topic.id %}";
-                  form.style.display = 'none';
+              const button = e.currentTarget;
+              const voteType = button.dataset.voteType;
+              const csrftoken = getCsrfToken();
+              const isTopicVote = button.hasAttribute('data-topic');
 
-                  const csrfInput = document.createElement('input');
-                  csrfInput.type = 'hidden';
-                  csrfInput.name = 'csrfmiddlewaretoken';
-                  csrfInput.value = csrftoken;
-                  form.appendChild(csrfInput);
+              let url;
+              if (isTopicVote) {
+                  const topicId = button.dataset.topic;
+                  url = "{% url 'topic_vote' topic.id %}";
+              } else {
+                  const replyId = button.dataset.reply;
+                  url = "{% url 'reply_vote' 0 %}".replace('0', replyId);
+              }
 
-                  const voteTypeInput = document.createElement('input');
-                  voteTypeInput.type = 'hidden';
-                  voteTypeInput.name = 'vote_type';
-                  voteTypeInput.value = voteType;
-                  form.appendChild(voteTypeInput);
+              fetch(url, {
+                      method: "POST",
+                      headers: {
+                          "X-CSRFToken": csrftoken,
+                          "Content-Type": "application/x-www-form-urlencoded"
+                      },
+                      body: `vote_type=${voteType}`
+                  })
+                  .then(response => {
+                      if (response.ok) return response.json();
+                      throw new Error("Vote failed");
+                  })
+                  .then(data => {
+                      updateVoteUI(button, data);
+                  })
+                  .catch(error => {
+                      console.error(error);
+                      location.reload(); // Fallback
+                  });
+          }
 
-                  document.body.appendChild(form);
-                  form.submit();
-              });
-          });
+          // Update the UI after voting
+          function updateVoteUI(button, data) {
+              const container = button.closest('.flex-col'); // Find vote container
+              const scoreEl = container.querySelector('.vote-score');
+              const upBtn = container.querySelector('button[data-vote-type="up"]');
+              const downBtn = container.querySelector('button[data-vote-type="down"]');
 
-          // Handle vote buttons for replies
-          document.querySelectorAll(".vote-btn[data-reply]").forEach((button) => {
-              button.addEventListener("click", function(e) {
-                  e.preventDefault();
+              // Update score and color
+              scoreEl.textContent = data.vote_score;
+              scoreEl.className = "vote-score text-sm font-bold my-1";
+              if (data.vote_score > 0) {
+                  scoreEl.classList.add("text-teal-500");
+              } else if (data.vote_score < 0) {
+                  scoreEl.classList.add("text-red-500");
+              } else {
+                  scoreEl.classList.add("text-gray-500", "dark:text-gray-400");
+              }
 
-                  if (!document.body.classList.contains("user-authenticated")) {
-                      window.location.href = loginUrl;
-                      return;
-                  }
+              // Reset icon colors
+              upBtn.querySelector("svg").classList.remove("text-teal-500");
+              downBtn.querySelector("svg").classList.remove("text-red-500");
 
-                  const replyId = this.dataset.reply;
-                  const voteType = this.dataset.voteType;
-                  const csrftoken = getCsrfToken();
+              // Toggle button highlight
+              if (data.user_vote === "up") {
+                  upBtn.querySelector("svg").classList.add("text-teal-500");
+              } else if (data.user_vote === "down") {
+                  downBtn.querySelector("svg").classList.add("text-red-500");
+              }
+          }
 
-                  // Using form submission instead of fetch
-                  const form = document.createElement('form');
-                  form.method = 'POST';
-                  form.action = "{% url 'reply_vote' 0 %}".replace('0', replyId);
-                  form.style.display = 'none';
-
-                  const csrfInput = document.createElement('input');
-                  csrfInput.type = 'hidden';
-                  csrfInput.name = 'csrfmiddlewaretoken';
-                  csrfInput.value = csrftoken;
-                  form.appendChild(csrfInput);
-
-                  const voteTypeInput = document.createElement('input');
-                  voteTypeInput.type = 'hidden';
-                  voteTypeInput.name = 'vote_type';
-                  voteTypeInput.value = voteType;
-                  form.appendChild(voteTypeInput);
-
-                  document.body.appendChild(form);
-                  form.submit();
-              });
+          // Attach to all vote buttons
+          document.querySelectorAll(".vote-btn").forEach(btn => {
+              btn.addEventListener("click", handleVote);
           });
       });
   </script>
