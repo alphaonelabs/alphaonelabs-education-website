@@ -3141,7 +3141,7 @@ def system_status(request):
 @login_required
 @teacher_required
 def message_enrolled_students(request, slug):
-    """Send an email to all enrolled students in a course."""
+    """Send an email to all enrolled students in a course with encrypted content."""
     course = get_object_or_404(Course, slug=slug, teacher=request.user)
 
     if request.method == "POST":
@@ -3149,16 +3149,22 @@ def message_enrolled_students(request, slug):
         message = request.POST.get("message")
 
         if title and message:
+            # Import the encryption function from our secure messaging module
+            from web.secure_messaging import encrypt_message
+
+            # Encrypt the message using Fernet and decode to string for email content
+            encrypted_message = encrypt_message(message).decode("utf-8")
+
             # Get all enrolled students
             enrolled_students = User.objects.filter(
                 enrollments__course=course, enrollments__status="approved"
             ).distinct()
 
-            # Send email to each student
+            # Send email to each student with the encrypted message
             for student in enrolled_students:
                 send_mail(
                     subject=f"[{course.title}] {title}",
-                    message=message,
+                    message=encrypted_message,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[student.email],
                     fail_silently=True,
@@ -3173,7 +3179,7 @@ def message_enrolled_students(request, slug):
 
 
 def message_teacher(request, teacher_id):
-    """Send a message to a teacher."""
+    """Send a message to a teacher with secure encryption."""
     teacher = get_object_or_404(get_user_model(), id=teacher_id)
     if not teacher.profile.is_teacher:
         messages.error(request, "This user is not a teacher.")
@@ -3182,6 +3188,10 @@ def message_teacher(request, teacher_id):
     if request.method == "POST":
         form = MessageTeacherForm(request.POST, user=request.user)
         if form.is_valid():
+            # The MessageTeacherForm's clean_message method encrypts the message,
+            # so form.cleaned_data["message"] already contains the encrypted text.
+            encrypted_message = form.cleaned_data["message"]
+
             # Prepare email content
             if request.user.is_authenticated:
                 sender_name = request.user.get_full_name() or request.user.username
@@ -3190,25 +3200,25 @@ def message_teacher(request, teacher_id):
                 sender_name = form.cleaned_data["name"]
                 sender_email = form.cleaned_data["email"]
 
-            # Send email to teacher
+            # Send email to teacher using the encrypted message
             context = {
                 "sender_name": sender_name,
                 "sender_email": sender_email,
-                "message": form.cleaned_data["message"],
+                "message": encrypted_message,
             }
             html_message = render_to_string("web/emails/teacher_message.html", context)
 
             try:
                 send_mail(
                     subject=f"New message from {sender_name}",
-                    message=form.cleaned_data["message"],
+                    message=encrypted_message,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[teacher.email],
                     html_message=html_message,
                 )
                 messages.success(request, "Your message has been sent successfully!")
 
-                # Get the next URL from query params, default to course search if not provided
+                # Optionally redirect based on next URL parameter
                 next_url = request.GET.get("next")
                 if next_url:
                     try:

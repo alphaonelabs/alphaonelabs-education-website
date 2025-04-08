@@ -853,7 +853,10 @@ class PeerMessage(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
     content = models.TextField()
+    encrypted_key = models.TextField(blank=True, default="")  # Using default empty string instead of null
     is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    starred = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -861,6 +864,13 @@ class PeerMessage(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender.username} to {self.receiver.username}"
+
+    def save(self, *args, **kwargs):
+        if self.read_at and not self.is_read:
+            self.is_read = True
+        elif self.is_read and not self.read_at:
+            self.read_at = timezone.now()
+        super().save(*args, **kwargs)
 
 
 class StudyGroup(models.Model):

@@ -4,6 +4,7 @@ from pathlib import Path
 
 import environ
 import sentry_sdk
+from cryptography.fernet import Fernet
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -16,6 +17,11 @@ sentry_sdk.init(
 env = environ.Env()
 
 env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+
+
+# Set encryption key for secure messaging; in production, this must come from the environment
+MESSAGE_ENCRYPTION_KEY = env.str("MESSAGE_ENCRYPTION_KEY", default=Fernet.generate_key()).strip()
+SECURE_MESSAGE_KEY = MESSAGE_ENCRYPTION_KEY
 
 if os.path.exists(env_file):
     environ.Env.read_env(env_file)

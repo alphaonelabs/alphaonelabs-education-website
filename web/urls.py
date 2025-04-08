@@ -6,6 +6,14 @@ from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
 from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
+from .secure_messaging import (
+    compose_message,
+    download_message,
+    inbox,
+    messaging_dashboard,
+    send_encrypted_message,
+    toggle_star_message,
+)
 from .views import (
     GoodsListingView,
     GradeableLinkCreateView,
@@ -97,6 +105,12 @@ urlpatterns += i18n_patterns(
     ),
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
     path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session"),
+    path("messaging/dashboard/", messaging_dashboard, name="messaging_dashboard"),
+    path("messaging/compose/", compose_message, name="compose_message"),
+    path("secure/send/", send_encrypted_message, name="send_encrypted_message"),
+    path("secure/inbox/", inbox, name="inbox"),
+    path("secure/download/<int:message_id>/", download_message, name="download_message"),
+    path("secure/toggle_star/<int:message_id>/", toggle_star_message, name="toggle_star_message"),
     # Social media sharing URLs
     path("social-media/", views.social_media_dashboard, name="social_media_dashboard"),
     path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
