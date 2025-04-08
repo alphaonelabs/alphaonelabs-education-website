@@ -352,7 +352,12 @@
               </button>
             </form>
           </div>
-          <!-- Language and Dark Mode -->
+          <!-- Messaging Button -->
+          <a href="{% url 'inbox' %}"
+             title="Messages"
+             class="flex items-center p-2 hover:bg-teal-700 rounded-lg">
+            <i class="fas fa-comments text-xl"></i>
+          </a> <!-- Language and Dark Mode -->
           <div class="flex items-center space-x-2">
             <!-- Cart Icon -->
             <a href="{% url 'cart_view' %}"
@@ -452,9 +457,10 @@
                     <i class="fas fa-cog mr-2"></i> Admin Panel
                   </a>
                 {% endif %}
-                <a href="{% url 'profile' %}"
+                <a href="{% url 'messaging_dashboard' %}"
+                   title="Messages"
                    class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                  <i class="fas fa-user-circle mr-2"></i> Profile
+                  <i class="fas fa-comments mr-2 text-xl"></i>Messages
                 </a>
                 <!-- Add the Notification Preferences link here -->
                 <a href="{% url 'notification_preferences' %}"
