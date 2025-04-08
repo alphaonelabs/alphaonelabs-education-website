@@ -352,7 +352,12 @@
               </button>
             </form>
           </div>
-          <!-- Language and Dark Mode -->
+          <!-- Messaging Button -->
+          <a href="{% url 'inbox' %}"
+             title="Messages"
+             class="flex items-center p-2 hover:bg-teal-700 rounded-lg">
+            <i class="fas fa-comments text-xl"></i>
+          </a> <!-- Language and Dark Mode -->
           <div class="flex items-center space-x-2">
             <!-- Cart Icon -->
             <a href="{% url 'cart_view' %}"
@@ -403,9 +408,12 @@
                     onclick="toggleDarkMode()">
               <i id="darkModeIcon" class="fas fa-moon"></i>
             </button>
-            <a href="{% url 'social_media_dashboard' %}"
-               class="p-2 rounded-full inline-flex items-center ml-2">
-              <i class="fab fa-twitter text-xl"></i>
+            <a href="{% url 'social_media_dashboard' %}">
+              <img src="{% static 'images/x-logo.svg' %}"
+                   alt="X (Twitter) Logo"
+                   class="w-4 h-4 filter invert"
+                   width="20"
+                   height="20" />
             </a>
           </div>
           <!-- Auth Buttons -->
@@ -452,9 +460,10 @@
                     <i class="fas fa-cog mr-2"></i> Admin Panel
                   </a>
                 {% endif %}
-                <a href="{% url 'profile' %}"
+                <a href="{% url 'messaging_dashboard' %}"
+                   title="Messages"
                    class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                  <i class="fas fa-user-circle mr-2"></i> Profile
+                  <i class="fas fa-comments mr-2 text-xl"></i>Messages
                 </a>
                 <!-- Add the Notification Preferences link here -->
                 <a href="{% url 'notification_preferences' %}"
@@ -618,9 +627,7 @@
                       <i class="fas fa-lightbulb mr-2 text-teal-500"></i>
                       <span>Features</span>
                     </a>
-                    <a href="#"
-                       a
-                       href="{% url 'success_story_list' %}"
+                    <a href="{% url 'success_story_list' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-star mr-2 text-teal-500"></i>
                       <span>Success Stories</span>

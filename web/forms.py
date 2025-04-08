@@ -2,9 +2,12 @@ import re
 
 from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
+from cryptography.fernet import Fernet
 from django import forms
+from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.db import IntegrityError
 from django.utils import timezone
@@ -98,6 +101,8 @@ __all__ = [
     "LinkGradeForm",
     "AwardAchievementForm",
 ]
+
+fernet = Fernet(settings.SECURE_MESSAGE_KEY)
 
 
 class AccountDeleteForm(forms.Form):
@@ -1218,8 +1223,6 @@ class BlogPostForm(forms.ModelForm):
 
 class MessageTeacherForm(forms.Form):
     name = forms.CharField(
-        max_length=100,
-        required=True,
         widget=TailwindInput(
             attrs={
                 "class": (
@@ -1230,7 +1233,6 @@ class MessageTeacherForm(forms.Form):
         ),
     )
     email = forms.EmailField(
-        required=True,
         widget=TailwindEmailInput(
             attrs={
                 "class": (
@@ -1267,12 +1269,25 @@ class MessageTeacherForm(forms.Form):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
-
-        # If user is authenticated, remove name, email and captcha fields
+        # If the user is authenticated, remove name, email, and captcha fields.
         if user and user.is_authenticated:
             del self.fields["name"]
             del self.fields["email"]
             del self.fields["captcha"]
+
+    def clean_message(self):
+        """
+        Encrypts the message field using Fernet before processing.
+        Returns the encrypted message as a decoded string.
+        """
+        message = self.cleaned_data.get("message")
+        if not message:
+            raise ValidationError("Message cannot be empty.")
+        try:
+            encrypted_message = fernet.encrypt(message.encode("utf-8"))
+            return encrypted_message.decode("utf-8")
+        except Exception as e:
+            raise ValidationError("Encryption failed: " + str(e))
 
 
 class FeedbackForm(forms.Form):
