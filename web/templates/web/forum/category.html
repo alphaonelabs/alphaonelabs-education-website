@@ -136,10 +136,16 @@
                         <span class="mx-2">•</span>
                         <span class="whitespace-nowrap">{{ topic.created_at|timesince }} ago</span>
                         <span class="mx-2">•</span>
-                        <span class="flex items-center">
-                          <i class="fa-solid fa-arrow-up text-teal-300 mr-1"></i>
-                          {{ topic.upvote_count }} upvotes
-                        </span>
+                        <div class="flex space-x-3">
+                          <span class="flex items-center">
+                            <i class="fa-solid fa-arrow-up text-teal-300 mr-1"></i>
+                            {{ topic.upvote_count }} upvotes
+                          </span>
+                          <span class="flex items-center">
+                            <i class="fa-solid fa-arrow-down text-red-300 mr-1"></i>
+                            {{ topic.downvote_count }} downvotes
+                          </span>
+                        </div>
                       </div>
                       {% if topic.replies.exists %}
                         <div class="text-right text-xs text-gray-500 dark:text-gray-400 hidden md:block">

@@ -1838,6 +1838,7 @@ def forum_topic(request, category_slug, topic_id):
         WebRequest.objects.filter(path=request.path).aggregate(total_views=models.Sum("count"))["total_views"] or 0
     )
     topic.views = view_count
+    topic.save()
 
     # Handle POST requests for replies, voting, and deletion
     if request.method == "POST":
