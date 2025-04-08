@@ -82,6 +82,8 @@ jobs:
 
           mysql -h127.0.0.1 -P3306 -uroot -prootpassword -e "SET GLOBAL sql_mode='NO_ENGINE_SUBSTITUTION';"
 
+          python manage.py migrate
+
           python manage.py test
 
   security:
