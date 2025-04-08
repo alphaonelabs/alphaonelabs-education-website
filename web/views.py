@@ -3651,6 +3651,8 @@ class GoodsDetailView(generic.DetailView):
         context = super().get_context_data(**kwargs)
         context["product_images"] = self.object.goods_images.all()  # Get all images related to the product
         context["other_products"] = Goods.objects.exclude(pk=self.object.pk)[:12]  # Fetch other products
+        view_data = WebRequest.objects.filter(path=self.request.path).aggregate(total_views=Coalesce(Sum("count"), 0))
+        context["view_count"] = view_data["total_views"]
         return context
 
 
