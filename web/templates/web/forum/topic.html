@@ -66,13 +66,6 @@
                     My Topics
                   </a>
                 </li>
-                <li>
-                  <a href="{% url 'my_forum_replies' %}"
-                     class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
-                    <i class="fa-solid fa-reply text-teal-300 mr-2"></i>
-                    My Replies
-                  </a>
-                </li>
               </ul>
             </div>
           {% endif %}
@@ -99,8 +92,7 @@
                 {% if user == topic.author %}
                   <a href="{% url 'edit_topic' topic.id %}"
                      class="text-gray-600 hover:text-teal-300 dark:text-gray-400 dark:hover:text-teal-300 flex items-center">
-                    <i class="fas fa-edit mr-1"></i>
-                    Edit
+                    <i class="fas fa-edit mr-1"></i> Edit
                   </a>
                 {% endif %}
               </div>
@@ -130,6 +122,25 @@
               </div>
               <!-- Topic Content -->
               <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">{{ topic.content|linebreaks }}</div>
+              <!-- GitHub Links -->
+              {% if topic.github_issue_url or topic.github_milestone_url %}
+                <div class="mt-4 flex items-center space-x-4">
+                  {% if topic.github_issue_url %}
+                    <a href="{{ topic.github_issue_url }}"
+                       target="_blank"
+                       class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800">
+                      <i class="fa-brands fa-github mr-1"></i> GitHub Issue
+                    </a>
+                  {% endif %}
+                  {% if topic.github_milestone_url %}
+                    <a href="{{ topic.github_milestone_url }}"
+                       target="_blank"
+                       class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800">
+                      <i class="fa-brands fa-github mr-1"></i> GitHub Milestone
+                    </a>
+                  {% endif %}
+                </div>
+              {% endif %}
               {% if user == topic.author %}
                 <div class="mt-6 flex justify-end">
                   <form method="post" class="inline">
@@ -144,104 +155,6 @@
               {% endif %}
             </div>
           </div>
-          <!-- Replies Section -->
-          <div class="mb-6">
-            <div class="flex items-center justify-between mb-4">
-              <h2 class="text-xl font-bold text-gray-800 dark:text-gray-100">Replies ({{ replies.count }})</h2>
-            </div>
-            <!-- Replies List -->
-            <div class="space-y-4">
-              {% for reply in replies %}
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 lg:p-5">
-                  <div class="flex">
-                    <div class="mr-3 hidden sm:block">
-                      {% if reply.author.profile.avatar %}
-                        <img src="{{ reply.author.profile.avatar.url }}"
-                             alt="{{ reply.author.username }}"
-                             class="w-8 h-8 rounded-full object-cover"
-                             width="32"
-                             height="32" />
-                      {% else %}
-                        <div class="w-8 h-8 rounded-full bg-teal-100 dark:bg-teal-900 flex items-center justify-center text-teal-600 dark:text-teal-300 font-bold text-sm">
-                          {{ reply.author.username|slice:":1"|upper }}
-                        </div>
-                      {% endif %}
-                    </div>
-                    <div class="flex-1">
-                      <div class="flex items-start justify-between mb-2">
-                        <div>
-                          <span class="font-medium text-gray-700 dark:text-gray-300">{{ reply.author.username }}</span>
-                          <time datetime="{{ reply.created_at|date:'Y-m-d H:i' }}"
-                                class="text-xs text-gray-500 dark:text-gray-400 ml-2">
-                            {{ reply.created_at|timesince }} ago
-                          </time>
-                        </div>
-                        {% if user == reply.author %}
-                          <div class="flex space-x-4 text-sm">
-                            <a href="{% url 'edit_reply' reply.id %}"
-                               class="text-teal-300 hover:text-teal-400 dark:text-teal-300 dark:hover:text-teal-400">
-                              <i class="fas fa-edit mr-1"></i>Edit
-                            </a>
-                            <form method="post" class="inline">
-                              {% csrf_token %}
-                              <input type="hidden" name="action" value="delete_reply" />
-                              <input type="hidden" name="reply_id" value="{{ reply.id }}" />
-                              <button type="submit"
-                                      class="text-red-500 hover:text-red-600 dark:text-red-400 dark:hover:text-red-300">
-                                <i class="fas fa-trash-alt mr-1"></i>Delete
-                              </button>
-                            </form>
-                          </div>
-                        {% endif %}
-                      </div>
-                      <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300 text-sm">
-                        {{ reply.content|linebreaks }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              {% empty %}
-                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm text-center">
-                  <p class="text-gray-500 dark:text-gray-400">No replies yet. Be the first to reply!</p>
-                </div>
-              {% endfor %}
-            </div>
-          </div>
-          <!-- Reply Form -->
-          {% if user.is_authenticated %}
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-              <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Post a Reply</h3>
-              <form method="post" class="space-y-4">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="add_reply" />
-                <div>
-                  <label for="content"
-                         class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Your Reply</label>
-                  <textarea name="content"
-                            id="content"
-                            rows="4"
-                            class="w-full border border-gray-300 dark:border-gray-600 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 dark:focus:ring-offset-gray-800 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200"
-                            required></textarea>
-                </div>
-                <div class="flex justify-end">
-                  <button type="submit"
-                          class="bg-teal-300 hover:bg-teal-400 text-white font-medium py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-300 focus:ring-offset-2 dark:focus:ring-offset-gray-800">
-                    <i class="fas fa-paper-plane mr-2"></i>
-                    Post Reply
-                  </button>
-                </div>
-              </form>
-            </div>
-          {% else %}
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 text-center">
-              <p class="text-gray-600 dark:text-gray-400 mb-4">Please log in to join the discussion.</p>
-              <a href="{% url 'account_login' %}?next={{ request.path }}"
-                 class="inline-flex items-center bg-teal-300 hover:bg-teal-400 text-white font-medium py-2 px-4 rounded-lg">
-                <i class="fa-solid fa-sign-in-alt mr-2"></i>
-                Log In to Reply
-              </a>
-            </div>
-          {% endif %}
         </div>
       </div>
     </div>

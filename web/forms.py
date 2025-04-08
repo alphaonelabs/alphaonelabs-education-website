@@ -25,6 +25,7 @@ from .models import (
     CourseMaterial,
     EducationalVideo,
     ForumCategory,
+    ForumTopic,
     Goods,
     GradeableLink,
     LinkGrade,
@@ -1126,7 +1127,7 @@ class PeerChallengeInvitationForm(forms.ModelForm):
         return cleaned_data
 
 
-class ForumTopicForm(forms.Form):
+class ForumTopicForm(forms.ModelForm):
     title = forms.CharField(
         max_length=200,
         required=True,
@@ -1155,6 +1156,36 @@ class ForumTopicForm(forms.Form):
             }
         ),
     )
+    github_issue_url = forms.URLField(
+        required=False,
+        help_text="Link to a related GitHub issue (optional)",
+        widget=forms.URLInput(
+            attrs={"placeholder": "https://github.com/alphaonelabs/alphaonelabs-education-website/issues/123"}
+        ),
+    )
+    github_milestone_url = forms.URLField(
+        required=False,
+        help_text="Link to a related GitHub milestone (optional)",
+        widget=forms.URLInput(
+            attrs={"placeholder": "https://github.com/alphaonelabs/alphaonelabs-education-website/milestone/1"}
+        ),
+    )
+
+    class Meta:
+        model = ForumTopic
+        fields = ["title", "content", "github_issue_url", "github_milestone_url"]
+
+    def clean_github_issue_url(self):
+        url = self.cleaned_data.get("github_issue_url")
+        if url and (not url.startswith("https://github.com/") or "/issues/" not in url):
+            raise forms.ValidationError("Please enter a valid GitHub issue URL")
+        return url
+
+    def clean_github_milestone_url(self):
+        url = self.cleaned_data.get("github_milestone_url")
+        if url and (not url.startswith("https://github.com/") or "milestone" not in url):
+            raise forms.ValidationError("Please enter a valid GitHub milestone URL")
+        return url
 
 
 class AvatarForm(forms.ModelForm):

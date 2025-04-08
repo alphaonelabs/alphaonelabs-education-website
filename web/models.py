@@ -798,6 +798,8 @@ class ForumTopic(models.Model):
     views = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    github_issue_url = models.URLField(blank=True, help_text="Link to related GitHub issue")
+    github_milestone_url = models.URLField(blank=True, help_text="Link to related GitHub milestone")
 
     class Meta:
         ordering = ["-is_pinned", "-created_at"]
