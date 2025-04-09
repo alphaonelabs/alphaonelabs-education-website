@@ -9,12 +9,16 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
+
 RUN python -m pip install --upgrade pip && \
     python -m pip install wheel --no-cache-dir && \
     python -m pip install -r requirements.txt
 
+# Copy requirements and install Python dependencies
+COPY requirements.txt .
+RUN python -m pip install --no-cache-dir --upgrade pip wheel mysqlclient && \
+    python -m pip install --no-cache-dir -r requirements.txt
+    
 # Copy project files
 COPY . .
 
