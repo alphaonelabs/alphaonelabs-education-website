@@ -3651,6 +3651,8 @@ class GoodsDetailView(generic.DetailView):
         context = super().get_context_data(**kwargs)
         context["product_images"] = self.object.goods_images.all()  # Get all images related to the product
         context["other_products"] = Goods.objects.exclude(pk=self.object.pk)[:12]  # Fetch other products
+        view_data = WebRequest.objects.filter(path=self.request.path).aggregate(total_views=Coalesce(Sum("count"), 0))
+        context["view_count"] = view_data["total_views"]
         return context
 
 
@@ -7073,7 +7075,7 @@ def get_twitter_client():
     return tweepy.API(auth)
 
 
-@user_passes_test(social_media_manager_required)
+@user_passes_test(social_media_manager_required, login_url="/accounts/login/")
 def social_media_dashboard(request):
     # Fetch all posts that haven't been posted yet
     posts = ScheduledPost.objects.filter(posted=False).order_by("-id")
@@ -7185,7 +7187,7 @@ def users_list(request: HttpRequest) -> HttpResponse:
 
     # Add statistics for each user to create fun scorecards
     for profile in profiles:
-        if profile.user.is_teacher:
+        if profile.is_teacher:
             # Teacher stats
             courses = Course.objects.filter(teacher=profile.user).prefetch_related("enrollments", "reviews")
             profile.total_courses = courses.count()

@@ -10,38 +10,44 @@
     </div>
     {% if page_obj %}
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {% for user in page_obj %}
+        {% for profile in page_obj %}
           <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-300"
                role="article"
-               aria-labelledby="user-{{ user.id }}">
+               aria-labelledby="user-{{ profile.user.id }}">
             <div class="p-6">
               <div class="flex justify-between items-start">
-                <h3 id="user-{{ user.id }}"
-                    class="text-xl font-semibold text-gray-800 mb-2">{{ user.username }}</h3>
-                <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">{{ user.role }}</span>
+                <h3 id="user-{{ profile.user.id }}"
+                    class="text-xl font-semibold text-gray-800 mb-2">{{ profile.user.username }}</h3>
+                <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+                  {% if profile.is_teacher %}
+                    Teacher
+                  {% else %}
+                    Student
+                  {% endif %}
+                </span>
               </div>
-              <p class="text-gray-600 mb-4">Joined: {{ user.date_joined|date:"F d, Y" }}</p>
-              {% if user.is_teacher %}
+              <p class="text-gray-600 mb-4">Joined: {{ profile.user.date_joined|date:"F d, Y" }}</p>
+              {% if profile.is_teacher %}
                 <div class="mt-2 space-y-1">
-                  <p class="text-sm text-gray-600">Courses: {{ user.total_courses }}</p>
-                  <p class="text-sm text-gray-600">Students: {{ user.total_students }}</p>
-                  {% if user.avg_rating > 0 %}<p class="text-sm text-gray-600">Rating: {{ user.avg_rating }}/5</p>{% endif %}
+                  <p class="text-sm text-gray-600">Courses: {{ profile.total_courses }}</p>
+                  <p class="text-sm text-gray-600">Students: {{ profile.total_students }}</p>
+                  {% if profile.avg_rating > 0 %}<p class="text-sm text-gray-600">Rating: {{ profile.avg_rating }}/5</p>{% endif %}
                 </div>
               {% else %}
                 <div class="mt-2 space-y-1">
-                  <p class="text-sm text-gray-600">Enrolled: {{ user.total_courses }}</p>
-                  <p class="text-sm text-gray-600">Completed: {{ user.total_completed }}</p>
-                  <p class="text-sm text-gray-600">Avg. Progress: {{ user.avg_progress }}%</p>
-                  <p class="text-sm text-gray-600">Achievements: {{ user.achievements_count }}</p>
+                  <p class="text-sm text-gray-600">Enrolled: {{ profile.total_courses }}</p>
+                  <p class="text-sm text-gray-600">Completed: {{ profile.total_completed }}</p>
+                  <p class="text-sm text-gray-600">Avg. Progress: {{ profile.avg_progress }}%</p>
+                  <p class="text-sm text-gray-600">Achievements: {{ profile.achievements_count }}</p>
                 </div>
               {% endif %}
               <div class="flex justify-between items-center">
-                {% if user.groups.exists %}
-                  <span class="text-sm text-gray-500">{{ user.groups.count }} group{{ user.groups.count|pluralize }}</span>
+                {% if profile.user.groups.exists %}
+                  <span class="text-sm text-gray-500">{{ profile.user.groups.count }} group{{ profile.user.groups.count|pluralize }}</span>
                 {% else %}
                   <span class="text-sm text-gray-500">0 groups</span>
                 {% endif %}
-                <a href="{% url 'public_profile' user.username %}"
+                <a href="{% url 'public_profile' profile.user.username %}"
                    class="text-blue-600 hover:text-blue-800 font-medium">View Profile</a>
               </div>
             </div>
