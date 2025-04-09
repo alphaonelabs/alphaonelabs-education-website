@@ -6,12 +6,21 @@ from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
 from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
+from .secure_messaging import (
+    compose_message,
+    download_message,
+    inbox,
+    messaging_dashboard,
+    send_encrypted_message,
+    toggle_star_message,
+)
 from .views import (
     GoodsListingView,
     GradeableLinkCreateView,
     GradeableLinkDetailView,
     GradeableLinkListView,
     add_goods_to_cart,
+    apply_discount_via_referrer,
     feature_vote,
     feature_vote_count,
     features_page,
@@ -41,6 +50,7 @@ urlpatterns += i18n_patterns(
     path("waiting-rooms/", views.waiting_rooms, name="waiting_rooms"),
     path("teach/", views.teach, name="teach"),
     path("about/", views.about, name="about"),
+    path("users/", views.users_list, name="users_list"),
     path("profile/<str:username>/", views.public_profile, name="public_profile"),
     path("graphing_calculator/", views.graphing_calculator, name="graphing_calculator"),
     path("certificate/<uuid:certificate_id>/", views.certificate_detail, name="certificate_detail"),
@@ -95,6 +105,12 @@ urlpatterns += i18n_patterns(
     ),
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
     path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session"),
+    path("messaging/dashboard/", messaging_dashboard, name="messaging_dashboard"),
+    path("messaging/compose/", compose_message, name="compose_message"),
+    path("secure/send/", send_encrypted_message, name="send_encrypted_message"),
+    path("secure/inbox/", inbox, name="inbox"),
+    path("secure/download/<int:message_id>/", download_message, name="download_message"),
+    path("secure/toggle_star/<int:message_id>/", toggle_star_message, name="toggle_star_message"),
     # Social media sharing URLs
     path("social-media/", views.social_media_dashboard, name="social_media_dashboard"),
     path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
@@ -107,6 +123,8 @@ urlpatterns += i18n_patterns(
         name="create_payment_intent",
     ),
     path("stripe-webhook/", views.stripe_webhook, name="stripe_webhook"),
+    # discount
+    path("discounts/apply/", apply_discount_via_referrer, name="apply_discount_via_referrer"),
     # Avatar customization
     path("avatar/customize/", views_avatar.customize_avatar, name="customize_avatar"),
     path("avatar/set-as-profile/", views_avatar.set_avatar_as_profile_pic, name="set_avatar_as_profile_pic"),
@@ -197,6 +215,8 @@ urlpatterns += i18n_patterns(
     path("forum/my-topics/", views.my_forum_topics, name="my_forum_topics"),
     path("forum/my-replies/", views.my_forum_replies, name="my_forum_replies"),
     path("forum/sync-milestones/", views.sync_github_milestones, name="sync_github_milestones"),
+    path("forum/topic/<int:pk>/vote/", views.topic_vote, name="topic_vote"),
+    path("forum/reply/<int:pk>/vote/", views.reply_vote, name="reply_vote"),
     # Peer Networking URLs
     path("peers/", views.peer_connections, name="peer_connections"),
     path(
@@ -449,5 +469,4 @@ urlpatterns += i18n_patterns(
 )
 
 handler404 = "web.views.custom_404"
-handler500 = "web.views.custom_500"
 handler429 = "web.views.custom_429"

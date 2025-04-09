@@ -553,4 +553,20 @@
       </div>
     </div>
   </div>
+  {% if discount_codes %}
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
+      <h2 class="text-xl font-bold mb-4">Your Discount Codes</h2>
+      <ul class="space-y-2">
+        {% for discount in discount_codes %}
+          <li class="flex items-center justify-between">
+            <div>
+              <span class="font-semibold text-teal-600">{{ discount.code }}</span>
+              <span class="text-gray-600">– {{ discount.discount_percentage }}% off</span>
+            </div>
+            <div class="text-sm text-gray-500">(valid until {{ discount.valid_until|date:"M j, Y" }})</div>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
 {% endblock content %}

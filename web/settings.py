@@ -3,22 +3,26 @@ import sys
 from pathlib import Path
 
 import environ
-import sentry_sdk
+from cryptography.fernet import Fernet
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Initialize Sentry SDK for error reporting
-sentry_sdk.init(
-    dsn=os.environ.get("SENTRY_DSN", ""),
-    send_default_pii=True,
-)
+# # Initialize Sentry SDK for error reporting
+# sentry_sdk.init(
+#     dsn=os.environ.get("SENTRY_DSN", ""),
+#     send_default_pii=True,
+# )
 
 env = environ.Env()
 
 env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
 
+
+# Set encryption key for secure messaging; in production, this must come from the environment
+MESSAGE_ENCRYPTION_KEY = env.str("MESSAGE_ENCRYPTION_KEY", default=Fernet.generate_key()).strip()
+SECURE_MESSAGE_KEY = MESSAGE_ENCRYPTION_KEY
+
 if os.path.exists(env_file):
-    print(f"Using env file: {env_file}")
     environ.Env.read_env(env_file)
 else:
     print("No .env file found.")
@@ -31,8 +35,8 @@ ENVIRONMENT = env.str("ENVIRONMENT", default="development")
 DEBUG = False
 
 # Only enable DEBUG in local environment and only if DJANGO_DEBUG is True
-if ENVIRONMENT == "local":
-    DEBUG = env.bool("DJANGO_DEBUG", default=False)
+if ENVIRONMENT == "development":
+    DEBUG = True
 
 # Detect test environment and set DEBUG=True to use local media path
 if "test" in sys.argv:
@@ -71,6 +75,7 @@ if not DEBUG:
 
 ALLOWED_HOSTS = [
     "alphaonelabs99282llkb.pythonanywhere.com",
+    "0.0.0.0",
     "127.0.0.1",
     "localhost",
     "alphaonelabs.com",
@@ -90,7 +95,12 @@ CSRF_TRUSTED_ORIGINS = [
 
 # Error handling
 handler404 = "web.views.custom_404"
-handler500 = "web.views.custom_500"
+# Custom handler for 429 (too many requests)
+handler429 = "web.views.custom_429"
+
+# Admin notification settings
+ADMINS = [("Admin", os.getenv("EMAIL_FROM"))]
+SERVER_EMAIL = os.getenv("EMAIL_FROM")  # Email address error messages come from
 
 INSTALLED_APPS = [
     "django.contrib.admin",

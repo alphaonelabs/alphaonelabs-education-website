@@ -151,8 +151,7 @@
     {% endblock extra_head %}
     <link rel="stylesheet" href="{% static 'css/markdown.css' %}" />
   </head>
-  <body class="min-h-screen flex flex-col bg-white text-gray-900 dark:bg-black dark:text-gray-100 transition-colors duration-300 overflow-x-hidden">
-    <!-- HEADER -->
+  <body class="min-h-screen flex flex-col bg-white text-gray-900 dark:bg-black dark:text-gray-100 transition-colors duration-300 overflow-x-hidden {% if user.is_authenticated %}user-authenticated{% endif %}">
     <header class="w-full bg-teal-600 dark:bg-teal-800 text-white shadow-md">
       <div class="max-w-[90rem] mx-auto px-4 md:px-6 flex items-center justify-between h-[70px] relative gap-2">
         <!-- Logo and Title -->
@@ -174,13 +173,6 @@
         <nav class="hidden md:flex items-center space-x-3">
           <!-- Main navigation links with dropdowns -->
           <div class="flex space-x-2 items-center">
-            <div class="relative group ">
-              <a class="nav-link flex flex-1 min-w-[150px] max-w-[50%] items-center space-x-2"
-                 href="{% url 'classes_map' %}">
-                <i class="fas fa-map-marker-alt"></i>
-                <span>Classes Near Me</span>
-              </a>
-            </div>
             <!-- LEARN Dropdown -->
             <div class="relative group">
               <button class="flex items-center space-x-1 text-white hover:text-teal-100 focus:outline-none py-2">
@@ -189,6 +181,10 @@
               </button>
               <div class="absolute left-0 mt-1 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 transform origin-top-left">
                 <div class="py-2 px-1">
+                  <a href="{% url 'classes_map' %}"
+                     class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
+                    <i class="fas fa-map-marker-alt mr-2 text-teal-500"></i>Classes Near Me
+                  </a>
                   <a href="{% url 'course_search' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-book-open mr-2 text-teal-500"></i>Courses
@@ -255,6 +251,10 @@
                   <a href="{% url 'features' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-lightbulb mr-2 text-teal-500"></i>Features
+                  </a>
+                  <a href="{% url 'users_list' %}"
+                     class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
+                    <i class="fas fa-clipboard-list mr-2 text-teal-500"></i>Fun Scorecards
                   </a>
                   <a href="#"
                      a
@@ -351,7 +351,12 @@
               </button>
             </form>
           </div>
-          <!-- Language and Dark Mode -->
+          <!-- Messaging Button -->
+          <a href="{% url 'inbox' %}"
+             title="Messages"
+             class="flex items-center p-2 hover:bg-teal-700 rounded-lg">
+            <i class="fas fa-comments text-xl"></i>
+          </a> <!-- Language and Dark Mode -->
           <div class="flex items-center space-x-2">
             <!-- Cart Icon -->
             <a href="{% url 'cart_view' %}"
@@ -402,9 +407,12 @@
                     onclick="toggleDarkMode()">
               <i id="darkModeIcon" class="fas fa-moon"></i>
             </button>
-            <a href="{% url 'social_media_dashboard' %}"
-               class="p-2 rounded-full inline-flex items-center ml-2">
-              <i class="fab fa-twitter text-xl"></i>
+            <a href="{% url 'social_media_dashboard' %}">
+              <img src="{% static 'images/x-logo.svg' %}"
+                   alt="X (Twitter) Logo"
+                   class="w-4 h-4 filter invert"
+                   width="20"
+                   height="20" />
             </a>
           </div>
           <!-- Auth Buttons -->
@@ -451,9 +459,10 @@
                     <i class="fas fa-cog mr-2"></i> Admin Panel
                   </a>
                 {% endif %}
-                <a href="{% url 'profile' %}"
+                <a href="{% url 'messaging_dashboard' %}"
+                   title="Messages"
                    class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                  <i class="fas fa-user-circle mr-2"></i> Profile
+                  <i class="fas fa-comments mr-2 text-xl"></i>Messages
                 </a>
                 <!-- Add the Notification Preferences link here -->
                 <a href="{% url 'notification_preferences' %}"
@@ -531,6 +540,11 @@
                        class="fas fa-chevron-down text-gray-500 dark:text-gray-400 transition-transform duration-200"></i>
                   </div>
                   <div id="learn-accordion" class="hidden mt-2 ml-2 space-y-2">
+                    <a href="{% url 'classes_map' %}"
+                       class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                      <i class="fas fa-map-marker-alt mr-2 text-teal-500"></i>
+                      <span>Classes Near Me</span>
+                    </a>
                     <a href="{% url 'course_search' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-book-open mr-2 text-teal-500"></i>
@@ -612,9 +626,7 @@
                       <i class="fas fa-lightbulb mr-2 text-teal-500"></i>
                       <span>Features</span>
                     </a>
-                    <a href="#"
-                       a
-                       href="{% url 'success_story_list' %}"
+                    <a href="{% url 'success_story_list' %}"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-star mr-2 text-teal-500"></i>
                       <span>Success Stories</span>
@@ -946,7 +958,7 @@
                  class="flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
                 <img src="{% static 'images/x-logo.svg' %}"
                      alt="X (Twitter) Logo"
-                     class="w-5 h-5"
+                     class="w-5 h-5 dark:invert"
                      width="20"
                      height="20" />
               </a>

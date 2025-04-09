@@ -565,6 +565,19 @@
                 </div>
               {% endif %}
             </div>
+            <!-- Dedicated Share & Save Section -->
+            <section id="discount-share"
+                     class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 mt-8">
+              <h3 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">Share & Save</h3>
+              <p class="text-gray-600 dark:text-gray-400 mb-4">
+                Share this course on Twitter and receive an exclusive discount coupon!
+              </p>
+              <!-- Button to open Twitter share dialog -->
+              <button id="open-share-window"
+                      class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded">
+                Share on Twitter
+              </button>
+            </section>
             <!-- Tabbed Interface for Course Information -->
             <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
               <!-- Tab Buttons -->
@@ -1575,6 +1588,23 @@
                   }
               });
           });
+      });
+  </script>
+  <script>
+      document.getElementById('open-share-window').addEventListener('click', function() {
+          // Use the discount_url passed from the view
+          var discountUrl = "{{ discount_url|default:'' }}";
+          if (!discountUrl) {
+              console.error("Discount URL is not available");
+              // Fall back to sharing without discount URL
+              var tweetIntentUrl = "https://twitter.com/intent/tweet?text=" + encodeURIComponent("Check out this course: {{ course.title }} {{ request.build_absolute_uri }}");
+              window.open(tweetIntentUrl, 'Share on Twitter', 'width=600,height=400');
+              return;
+          }
+          var tweetText = "{{ course.slug }} - Check out this course and claim your discount: ";
+          var fullTweet = tweetText + discountUrl;
+          var tweetIntentUrl = "https://twitter.com/intent/tweet?text=" + encodeURIComponent(fullTweet);
+          window.open(tweetIntentUrl, 'Share on Twitter', 'width=600,height=400');
       });
   </script>
 {% endblock content %}
