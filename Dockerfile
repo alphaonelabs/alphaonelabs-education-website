@@ -22,7 +22,7 @@ RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel
 COPY requirements.txt .
 
 # Install Python dependencies
-RUN python -m pip install --no-cache-dir --no-use-pep517 -r requirements.txt
+RUN python -m pip install --no-cache-dir --no-binary :all: --no-use-pep517 -r requirements.txt
 
 # Install mysqlclient
 RUN python -m pip install --no-cache-dir mysqlclient
