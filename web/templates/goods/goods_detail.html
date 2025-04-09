@@ -32,6 +32,25 @@
       }
   </style>
   <div class="container mx-auto px-4 py-8">
+    <nav class="text-gray-600 text-sm mb-4 px-4">
+      <ol class="list-reset flex">
+        <li>
+          <a href="{% url 'index' %}"
+             class="hover:text-gray-700 dark:hover:text-white">Home</a>
+        </li>
+        <li>
+          <span class="mx-2">/</span>
+        </li>
+        <li>
+          <a href="{% url 'goods_listing' %}"
+             class="hover:text-gray-700 dark:hover:text-white">Storefront</a>
+        </li>
+        <li>
+          <span class="mx-2">/</span>
+        </li>
+        <li class="text-gray-800 font-semibold">{{ product.name }}</li>
+      </ol>
+    </nav>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
       <!-- Product Image Gallery -->
       <div class="flex flex-col items-center">
