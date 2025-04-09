@@ -130,6 +130,25 @@
               </div>
               <!-- Topic Content -->
               <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">{{ topic.content|linebreaks }}</div>
+              <!-- GitHub Links -->
+              {% if topic.github_issue_url or topic.github_milestone_url %}
+                <div class="mt-4 flex items-center space-x-4">
+                  {% if topic.github_issue_url %}
+                    <a href="{{ topic.github_issue_url }}"
+                       target="_blank"
+                       class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800">
+                      <i class="fa-brands fa-github mr-1"></i> GitHub Issue
+                    </a>
+                  {% endif %}
+                  {% if topic.github_milestone_url %}
+                    <a href="{{ topic.github_milestone_url }}"
+                       target="_blank"
+                       class="inline-flex items-center text-sm text-blue-600 hover:text-blue-800">
+                      <i class="fa-brands fa-github mr-1"></i> GitHub Milestone
+                    </a>
+                  {% endif %}
+                </div>
+              {% endif %}
               {% if user == topic.author %}
                 <div class="mt-6 flex justify-end">
                   <form method="post" class="inline">
