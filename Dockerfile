@@ -10,14 +10,18 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     libssl-dev \
     libffi-dev \
-    curl \
     gcc \
+    curl \
     && rm -rf /var/lib/apt/lists/*
-    
+
+# Upgrade pip, setuptools, and wheel BEFORE installing anything else
+RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel
+
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
-RUN python -m pip install --no-cache-dir --upgrade pip wheel mysqlclient && \
-    python -m pip install --no-cache-dir -r requirements.txt
+RUN python -m pip install --no-cache-dir -r requirements.txt
+# Install mysqlclient separately if needed
+RUN python -m pip install --no-cache-dir mysqlclient
 
 # Copy project files
 COPY . .
