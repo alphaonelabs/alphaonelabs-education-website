@@ -12,14 +12,19 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     gcc \
     curl \
+    python3-wheel \
     && rm -rf /var/lib/apt/lists/*
 
-# Upgrade pip, setuptools, and wheel FIRST
+# Install Python build tools
 RUN python -m pip install --no-cache-dir --upgrade pip setuptools wheel
 
-# Install Python dependencies with PEP 517 disabled (for old setup.py packages)
+# Copy requirements
 COPY requirements.txt .
+
+# Install Python dependencies
 RUN python -m pip install --no-cache-dir --no-use-pep517 -r requirements.txt
+
+# Install mysqlclient
 RUN python -m pip install --no-cache-dir mysqlclient
 
 # Copy the rest of the app
