@@ -391,3 +391,39 @@
     </script>
   {% endif %}
 {% endblock extra_js %}
+
+
+<div>
+  Total: <span id="cart-total" data-value="{{ cart.total }}">₹{{ cart.total }}</span>
+</div>
+<form id="checkout-form" method="POST" action="{% url 'checkout' %}">
+  {% csrf_token %}
+  <!-- Other form fields -->
+</form>
+{% block scripts %}
+<script>
+document.getElementById("checkout-form").addEventListener("submit", async function (e) {
+    const totalEl = document.getElementById("cart-total");
+    const total = parseFloat(totalEl.dataset.value);
+
+    if (total === 0) {
+        e.preventDefault();
+
+        const response = await fetch("{% url 'free_checkout' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/json"
+            }
+        });
+
+        const result = await response.json();
+        if (result.status === "success") {
+            window.location.href = "{% url 'checkout_success' %}";
+        } else {
+            alert("Error: " + result.error);
+        }
+    }
+});
+</script>
+{% endblock %}

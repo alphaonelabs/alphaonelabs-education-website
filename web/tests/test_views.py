@@ -649,3 +649,13 @@ class CourseDetailTests(TestCase):
         response = self.client.get(reverse("course_detail", args=[course.slug]))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, reverse("update_course", args=[course.slug]))
+
+
+# Test to verify that free checkout works correctly via the new view
+def test_free_checkout_flow(self):
+    cart = Cart.objects.create(user=self.user)
+    CartItem.objects.create(cart=cart, goods=self.free_course, price=0)
+
+    response = self.client.post(reverse("free_checkout"))
+    self.assertEqual(response.status_code, 200)
+    self.assertIn("success", response.json()["status"])
