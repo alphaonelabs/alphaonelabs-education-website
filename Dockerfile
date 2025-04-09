@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN python -m pip install --no-cache-dir --upgrade pip wheel mysqlclient && \
     python -m pip install --no-cache-dir -r requirements.txt
-    
+
 # Copy project files
 COPY . .
 
