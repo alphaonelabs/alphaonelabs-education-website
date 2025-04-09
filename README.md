@@ -30,7 +30,7 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 - 📧 Email marketing capabilities
 - 🔔 Automated notifications
 
-### Technical Features
+### Technical Features test
 
 - 🔒 Secure authentication system
 - 🌐 Internationalization support
