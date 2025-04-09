@@ -42,6 +42,15 @@
           </p>
         </div>
         <!-- Featured Courses (3 across) -->
+        <div class="relative flex py-5 items-center mb-6">
+          <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+          <div class="flex-shrink mx-4 flex items-center text-xl font-bold text-gray-800 dark:text-gray-200">
+            <i class="fas fa-graduation-cap text-teal-300 dark:text-teal-300 mr-3"></i>
+            Featured Courses
+            <i class="fas fa-star text-yellow-400 ml-2"></i>
+          </div>
+          <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
           <!-- Course Card 1 -->
           {% for course in featured_courses %}
@@ -173,126 +182,36 @@
             <i class="fas fa-arrow-right ml-2"></i>
           </a>
         </div>
-        <!-- Quiz Banner -->
-        <div class="mt-4 mb-6 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg overflow-hidden shadow-md">
-          <div class="flex flex-col md:flex-row">
-            <div class="p-4 md:p-5 md:w-2/3 text-white">
-              <h2 class="text-sm md:text-base font-semibold mb-1">Test Your Knowledge with Our Quizzes!</h2>
-              <p class="mb-3 text-blue-100 text-xs md:text-sm">
-                Challenge yourself with our interactive quizzes. Perfect for testing your understanding.
-              </p>
-              <div class="flex flex-wrap gap-2">
-                <a href="{% url 'quiz_list' %}"
-                   class="bg-white text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md text-xs font-medium shadow-sm transition duration-200 inline-flex items-center">
-                  <i class="fas fa-puzzle-piece mr-1.5"></i> Browse Quizzes
-                </a>
-                {% if user.is_authenticated %}
-                  <a href="{% url 'create_quiz' %}"
-                     class="bg-transparent hover:bg-white/20 border border-white px-3 py-1.5 rounded-md text-xs font-medium transition duration-200 inline-flex items-center">
-                    <i class="fas fa-plus mr-1.5"></i> Create Quiz
-                  </a>
-                {% endif %}
-              </div>
-            </div>
-            <div class="hidden md:block md:w-1/3 relative">
-              <div class="absolute inset-0 bg-contain bg-no-repeat bg-center opacity-80"
-                   style="background-image: url('{% static "images/quiz-illustration.svg" %}')"></div>
-            </div>
-          </div>
-          <div class="bg-blue-700/30 py-1.5 px-4">
-            <div class="flex flex-wrap items-center justify-between text-xs text-white">
-              <div class="flex items-center mb-1 md:mb-0">
-                <i class="fas fa-chart-line mr-1"></i>
-                <span>Track progress</span>
-              </div>
-              <div class="flex items-center mb-1 md:mb-0">
-                <i class="fas fa-medal mr-1"></i>
-                <span>Earn badges</span>
-              </div>
-              <div class="flex items-center">
-                <i class="fas fa-share-alt mr-1"></i>
-                <span>Share results</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Peer Challenges Section -->
-        <div class="mb-6 bg-gradient-to-r from-purple-600 to-pink-500 rounded-lg overflow-hidden shadow-md">
-          <div class="flex flex-col md:flex-row">
-            <div class="p-4 md:w-3/4 text-white relative overflow-hidden">
-              <div class="relative z-10">
-                <div class="flex items-center mb-1">
-                  <span class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">New Feature</span>
-                </div>
-                <h2 class="text-lg md:text-xl font-bold mb-2">Challenge Your Friends with Peer Quizzes!</h2>
-                <p class="mb-3 text-pink-100 text-sm">
-                  Create personalized quiz challenges, invite friends, and compete on the leaderboard!
-                </p>
-                <div class="flex flex-wrap gap-2">
-                  <a href="{% url 'challenge_list' %}"
-                     class="bg-white text-purple-600 hover:bg-purple-50 px-3 py-1.5 rounded-lg text-sm font-medium shadow-sm transition duration-200 inline-flex items-center">
-                    <i class="fas fa-trophy mr-1.5"></i> View Challenges
-                  </a>
-                  {% if user.is_authenticated %}
-                    <a href="{% url 'create_challenge' %}"
-                       class="bg-transparent hover:bg-white/20 border border-white px-3 py-1.5 rounded-lg text-sm font-medium transition duration-200 inline-flex items-center">
-                      <i class="fas fa-plus mr-1.5"></i> Create Challenge
-                    </a>
-                  {% endif %}
-                </div>
-              </div>
-            </div>
-            <div class="hidden md:block md:w-1/4 bg-gradient-to-br from-purple-500/30 to-pink-500/30 p-2 relative">
-              <!-- Single Challenge Card visual -->
-              <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                <div class="bg-white/90 dark:bg-gray-800/90 rounded-lg shadow-md p-2 w-36 border-t-4 border-yellow-500">
-                  <div class="flex justify-between items-center mb-1">
-                    <span class="text-xs font-bold text-purple-600 dark:text-purple-400">Math Challenge</span>
-                    <span class="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded-full">1st</span>
-                  </div>
-                  <div class="text-xs text-gray-600 dark:text-gray-300">
-                    <div class="flex items-center">
-                      <i class="fas fa-user-friends mr-1 text-xs"></i> 8 Participants
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="bg-purple-700/30 py-1.5 px-4">
-            <div class="flex flex-wrap items-center justify-between text-xs text-white">
-              <div class="flex items-center">
-                <i class="fas fa-users mr-1"></i>
-                <span>Challenge friends</span>
-              </div>
-              <div class="flex items-center">
-                <i class="fas fa-crown mr-1"></i>
-                <span>Compete</span>
-              </div>
-              <div class="flex items-center">
-                <i class="fas fa-chart-bar mr-1"></i>
-                <span>Track results</span>
-              </div>
-            </div>
-          </div>
-        </div>
         <!-- Featured Products Section -->
+        <div class="relative flex py-5 items-center mb-6">
+          <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+          <div class="flex-shrink mx-4 flex items-center text-xl font-bold text-gray-800 dark:text-gray-200">
+            <i class="fas fa-shopping-bag text-teal-300 dark:text-teal-300 mr-3"></i>
+            Featured Goods
+            <i class="fas fa-gift text-orange-400 ml-2"></i>
+          </div>
+          <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {% for product in featured_products %}
             <div class="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
               <!-- Product Image -->
               <div class="relative aspect-square w-full overflow-hidden">
-                {% if product.image %}
+                {% if product.image_url %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
-                    <img src="{{ product.image.url }}"
+                    <img src="{{ product.image_url }}"
                          alt="{{ product.name }}"
-                         class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
+                         class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                         width="300"
+                         height="300" />
                   </a>
                 {% else %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
                     <img src="{% static 'images/placeholder.png' %}"
                          alt="{{ product.name }}"
-                         class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
+                         class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                         width="300"
+                         height="300" />
                   </a>
                 {% endif %}
               </div>
@@ -347,32 +266,6 @@
             <span>View More Products</span>
             <i class="fas fa-arrow-right ml-2"></i>
           </a>
-        </div>
-        <!-- GSoC Announcement -->
-        <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white shadow-lg my-8">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center space-x-4">
-              <div class="hidden sm:block">
-                <img src="{% static 'images/gsoc-logo.png' %}"
-                     alt="Google Summer of Code"
-                     class="h-16 w-16 object-contain"
-                     onerror="this.src='https://summerofcode.withgoogle.com/assets/media/gsoc-2024-badge.svg'"
-                     height="64"
-                     width="64" />
-              </div>
-              <div>
-                <h3 class="text-xl font-bold mb-2">Join us for Google Summer of Code 2025! 🚀</h3>
-                <p class="text-blue-100">
-                  Alpha One Labs has applied to participate in this year's Google Summer of Code. Check out our project ideas and get involved!
-                </p>
-              </div>
-            </div>
-            <a href="{% url 'gsoc_landing_page' %}"
-               class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
-              <span>Get Started with GSoC</span>
-              <i class="fas fa-arrow-right ml-2"></i>
-            </a>
-          </div>
         </div>
         <!-- Two cards next to each other: For Learners & For Teachers -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -435,110 +328,6 @@
             </ul>
           </div>
         </div>
-        {% if user.is_authenticated %}
-          <!-- Team Collaboration Section -->
-          <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg shadow-lg p-6 mt-8">
-            <div class="flex items-center justify-between mb-6">
-              <h2 class="text-2xl font-bold text-white">Team Collaboration</h2>
-              <a href="{% url 'team_goals' %}"
-                 class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
-                <span>View All</span>
-                <i class="fas fa-arrow-right ml-2"></i>
-              </a>
-            </div>
-            {% if user.is_authenticated %}
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <!-- My Team Goals -->
-                <div class="space-y-4">
-                  <h3 class="text-lg font-semibold text-white">My Team Goals</h3>
-                  {% if user_team_goals %}
-                    <div class="space-y-3">
-                      {% for goal in user_team_goals|slice:":3" %}
-                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition duration-200">
-                          <h4 class="font-medium text-white">{{ goal.title }}</h4>
-                          <p class="text-sm text-gray-200 mt-1">{{ goal.description|truncatechars:100 }}</p>
-                          {% if goal.deadline %}
-                            <div class="text-sm text-gray-200 mt-2">
-                              <i class="fas fa-calendar-alt mr-1"></i>
-                              {% load i18n %}
-
-                              <span>{% trans "Due" %}: {{ goal.deadline|date:"M j, Y" }}</span>
-                              {% if goal.deadline < now %}
-                                <span class="text-red-300 ml-1">({% trans "Overdue" %})</span>
-                              {% else %}
-                                <span class="text-gray-300 ml-1">({{ goal.deadline|timeuntil }} {% trans "left" %})</span>
-                              {% endif %}
-                            </div>
-                          {% endif %}
-                          <div class="flex items-center justify-between mt-3">
-                            <span class="text-sm text-gray-200">
-                              <i class="fas fa-users mr-1"></i>
-                              {{ goal.members.count }} members
-                            </span>
-                            <a href="{% url 'team_goal_detail' goal.id %}"
-                               class="text-white hover:text-gray-200 text-sm">View Details</a>
-                          </div>
-                        </div>
-                      {% endfor %}
-                    </div>
-                  {% else %}
-                    <p class="text-gray-200">You haven't created or joined any team goals yet.</p>
-                  {% endif %}
-                  <a href="{% url 'create_team_goal' %}"
-                     class="inline-flex items-center px-4 py-2 bg-white text-blue-600 hover:bg-gray-100 rounded-lg transition duration-200">
-                    <i class="fas fa-plus mr-2"></i>
-                    Create New Team Goal
-                  </a>
-                </div>
-                <!-- Team Invitations -->
-                <div class="space-y-4">
-                  <h3 class="text-lg font-semibold text-white">Team Invitations</h3>
-                  {% if team_invites %}
-                    <div class="space-y-3">
-                      {% for invite in team_invites|slice:":3" %}
-                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4 hover:bg-white/20 transition duration-200">
-                          <h4 class="font-medium text-white">{{ invite.goal.title }}</h4>
-                          <p class="text-sm text-gray-200 mt-1">Invited by {{ invite.sender.username }}</p>
-                          <div class="flex items-center space-x-2 mt-3">
-                            <form method="post"
-                                  action="{% url 'accept_team_invite' invite.id %}"
-                                  class="inline">
-                              {% csrf_token %}
-                              <button type="submit"
-                                      class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition duration-200">
-                                Accept
-                              </button>
-                            </form>
-                            <form method="post"
-                                  action="{% url 'decline_team_invite' invite.id %}"
-                                  class="inline">
-                              {% csrf_token %}
-                              <button type="submit"
-                                      class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition duration-200">
-                                Decline
-                              </button>
-                            </form>
-                          </div>
-                        </div>
-                      {% endfor %}
-                    </div>
-                  {% else %}
-                    <p class="text-gray-200">You have no pending team invitations.</p>
-                  {% endif %}
-                </div>
-              </div>
-            {% else %}
-              <div class="text-center py-8">
-                <p class="text-gray-200 mb-4">Sign in to create or join team goals and collaborate with others!</p>
-                <a href="{% url 'login' %}"
-                   class="inline-flex items-center px-6 py-3 bg-white text-blue-600 hover:bg-gray-100 rounded-lg transition duration-200">
-                  <i class="fas fa-sign-in-alt mr-2"></i>
-                  Sign In to Get Started
-                </a>
-              </div>
-            {% endif %}
-          </div>
-        {% endif %}
         <!-- Affiliations Section -->
         <div class="border border-gradient-to-r from-purple-500 to-pink-400 p-1 rounded-md shadow-md mb-4 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800 mb-6">
           <h2 class="text-xl font-semibold flex items-center mb-4">
