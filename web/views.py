@@ -4,9 +4,11 @@ import ipaddress
 import json
 import logging
 import os
+import random
 import re
 import shutil
 import socket
+import string
 import subprocess
 import time
 from collections import Counter, defaultdict
@@ -39,6 +41,7 @@ from django.http import (
     Http404,
     HttpRequest,
     HttpResponse,
+    HttpResponseBadRequest,
     HttpResponseForbidden,
     JsonResponse,
 )
@@ -118,6 +121,7 @@ from .models import (
     Course,
     CourseMaterial,
     CourseProgress,
+    Discount,
     Donation,
     EducationalVideo,
     Enrollment,
@@ -126,6 +130,7 @@ from .models import (
     ForumCategory,
     ForumReply,
     ForumTopic,
+    ForumVote,
     Goods,
     GradeableLink,
     LearningStreak,
@@ -164,6 +169,7 @@ from .models import (
     UserBadge,
     WaitingRoom,
     WebRequest,
+    default_valid_until,
 )
 from .notifications import (
     notify_session_reminder,
@@ -678,8 +684,8 @@ def profile(request):
     if request.method == "POST":
         form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
-            form.save()  # Save the form data including the is_profile_public field
-            request.user.profile.refresh_from_db()  # Refresh the instance so updated Profile is loaded
+            form.save()  # Save the form data
+            request.user.profile.refresh_from_db()  # Refresh to load updated profile
             messages.success(request, "Profile updated successfully!")
             return redirect("profile")
         else:
@@ -687,7 +693,6 @@ def profile(request):
                 for error in errors:
                     messages.error(request, f"Error in {field}: {error}")
     else:
-        # Use the instance so the form loads all updated fields from the database.
         form = ProfileUpdateForm(instance=request.user)
 
     badges = UserBadge.objects.filter(user=request.user).select_related("badge")
@@ -716,7 +721,6 @@ def profile(request):
                 "avg_rating": avg_rating,
             }
         )
-    # Student-specific stats
     else:
         enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
         completed_courses = enrollments.filter(status="completed").count()
@@ -736,9 +740,13 @@ def profile(request):
             }
         )
 
-    # Add created calendars with time slots if applicable
+    # Get created calendars if applicable
     created_calendars = request.user.created_calendars.prefetch_related("time_slots").order_by("-created_at")
     context["created_calendars"] = created_calendars
+
+    # *** Add Discount Codes ***
+    discount_codes = Discount.objects.filter(user=request.user, used=False, valid_until__gte=timezone.now())
+    context["discount_codes"] = discount_codes
 
     return render(request, "profile.html", context)
 
@@ -994,6 +1002,12 @@ def course_detail(request, slug):
     for item in rating_counts:
         rating_distribution[item["rating"]] = item["count"]
 
+    # Build the absolute discount URL using the discount view's URL name.
+    from urllib.parse import urlencode
+
+    discount_relative = reverse("apply_discount_via_referrer")
+    discount_params = urlencode({"course_id": course.id})
+    discount_url = request.build_absolute_uri(f"{discount_relative}?{discount_params}")
     context = {
         "course": course,
         "sessions": sessions,
@@ -1015,6 +1029,7 @@ def course_detail(request, slug):
         "user_review": user_review,
         "rating_distribution": rating_distribution,
         "reviews_num": reviews_num,
+        "discount_url": discount_url,
     }
 
     return render(request, "courses/detail.html", context)
@@ -2053,28 +2068,51 @@ def forum_topic(request, category_slug, topic_id):
     topic.views = view_count
     topic.save()
 
-    # Handle POST requests for replies, etc.
+    # Handle POST requests for replies, voting, and deletion
     if request.method == "POST":
         action = request.POST.get("action")
+
         if action == "add_reply" and request.user.is_authenticated:
             content = request.POST.get("content")
             if content:
                 ForumReply.objects.create(topic=topic, author=request.user, content=content)
                 messages.success(request, "Reply added successfully.")
                 return redirect("forum_topic", category_slug=category_slug, topic_id=topic_id)
+
         elif action == "delete_reply" and request.user.is_authenticated:
             reply_id = request.POST.get("reply_id")
             reply = get_object_or_404(ForumReply, id=reply_id, author=request.user)
             reply.delete()
             messages.success(request, "Reply deleted successfully.")
             return redirect("forum_topic", category_slug=category_slug, topic_id=topic_id)
+
         elif action == "delete_topic" and request.user == topic.author:
             topic.delete()
             messages.success(request, "Topic deleted successfully.")
             return redirect("forum_category", slug=category_slug)
 
+    # Fetch replies after POST handling
     replies = topic.replies.select_related("author").order_by("created_at")
-    return render(request, "web/forum/topic.html", {"topic": topic, "replies": replies, "categories": categories})
+
+    # Votes handling
+    if request.user.is_authenticated:
+        user_topic_vote = topic.user_vote(request.user)
+        user_reply_votes = {reply.id: reply.user_vote(request.user) for reply in replies}
+    else:
+        user_topic_vote = None
+        user_reply_votes = {}
+
+    return render(
+        request,
+        "web/forum/topic.html",
+        {
+            "topic": topic,
+            "replies": replies,
+            "categories": categories,
+            "user_topic_vote": user_topic_vote,
+            "user_reply_votes": user_reply_votes,
+        },
+    )
 
 
 @login_required
@@ -2626,9 +2664,9 @@ def custom_404(request, exception):
     return render(request, "404.html", status=404)
 
 
-def custom_500(request):
-    """Custom 500 error handler"""
-    return render(request, "500.html", status=500)
+# def custom_500(request):
+#     """Custom 500 error handler"""
+#     return render(request, "500.html", status=500)
 
 
 def custom_429(request, exception=None):
@@ -2805,21 +2843,33 @@ def checkout_success(request):
         # Process enrollments
         for item in cart.items.all():
             if item.course:
-                # Create enrollment for full course
+                # Check for an active discount coupon for this course
+                discount = Discount.objects.filter(
+                    user=user, course=item.course, used=False, valid_until__gte=timezone.now()
+                ).first()
+                if discount:
+                    # Calculate the discounted price
+                    discount_amount = (discount.discount_percentage / 100) * item.course.price
+                    effective_price = item.course.price - discount_amount
+                    # Mark the coupon as used
+                    discount.used = True
+                    discount.save()
+                else:
+                    effective_price = item.course.price
+
+                # Create enrollment for the course
                 enrollment = Enrollment.objects.create(
                     student=user, course=item.course, status="approved", payment_intent_id=payment_intent_id
                 )
-                # Create progress tracker
-                CourseProgress.objects.create(enrollment=enrollment)
                 enrollments.append(enrollment)
-                total_amount += item.course.price
+                total_amount += effective_price
 
-                # Send confirmation emails
+                # Optionally, you can send confirmation emails with discount details
                 send_enrollment_confirmation(enrollment)
                 notify_teacher_new_enrollment(enrollment)
 
             elif item.session:
-                # Create enrollment for individual session
+                # Process individual session enrollments (no discount logic here)
                 session_enrollment = SessionEnrollment.objects.create(
                     student=user, session=item.session, status="approved", payment_intent_id=payment_intent_id
                 )
@@ -2827,11 +2877,8 @@ def checkout_success(request):
                 total_amount += item.session.price
 
             elif item.goods:
-                # Track goods items for the receipt
                 goods_items.append(item)
                 total_amount += item.final_price
-
-                # Create order item for goods
                 OrderItem.objects.create(
                     order=order,
                     goods=item.goods,
@@ -2839,7 +2886,6 @@ def checkout_success(request):
                     price_at_purchase=item.goods.price,
                     discounted_price_at_purchase=item.goods.discount_price,
                 )
-                # Capture storefront from the first goods item
                 if not storefront:
                     storefront = item.goods.storefront
 
@@ -3072,15 +3118,16 @@ def create_forum_category(request):
     if request.method == "POST":
         form = ForumCategoryForm(request.POST)
         if form.is_valid():
-            category = form.save()
+            category = form.save(commit=False)
             if not category.slug:
                 category.slug = slugify(category.name)
             category.save()
             messages.success(request, f"Forum category '{category.name}' created successfully!")
             return redirect("forum_category", slug=category.slug)
+        else:
+            print(form.errors)
     else:
         form = ForumCategoryForm()
-        print(form.errors)
 
     return render(request, "web/forum/create_category.html", {"form": form})
 
@@ -3347,7 +3394,7 @@ def system_status(request):
 @login_required
 @teacher_required
 def message_enrolled_students(request, slug):
-    """Send an email to all enrolled students in a course."""
+    """Send an email to all enrolled students in a course with encrypted content."""
     course = get_object_or_404(Course, slug=slug, teacher=request.user)
 
     if request.method == "POST":
@@ -3355,16 +3402,22 @@ def message_enrolled_students(request, slug):
         message = request.POST.get("message")
 
         if title and message:
+            # Import the encryption function from our secure messaging module
+            from web.secure_messaging import encrypt_message
+
+            # Encrypt the message using Fernet and decode to string for email content
+            encrypted_message = encrypt_message(message).decode("utf-8")
+
             # Get all enrolled students
             enrolled_students = User.objects.filter(
                 enrollments__course=course, enrollments__status="approved"
             ).distinct()
 
-            # Send email to each student
+            # Send email to each student with the encrypted message
             for student in enrolled_students:
                 send_mail(
                     subject=f"[{course.title}] {title}",
-                    message=message,
+                    message=encrypted_message,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[student.email],
                     fail_silently=True,
@@ -3379,7 +3432,7 @@ def message_enrolled_students(request, slug):
 
 
 def message_teacher(request, teacher_id):
-    """Send a message to a teacher."""
+    """Send a message to a teacher with secure encryption."""
     teacher = get_object_or_404(get_user_model(), id=teacher_id)
     if not teacher.profile.is_teacher:
         messages.error(request, "This user is not a teacher.")
@@ -3388,6 +3441,10 @@ def message_teacher(request, teacher_id):
     if request.method == "POST":
         form = MessageTeacherForm(request.POST, user=request.user)
         if form.is_valid():
+            # The MessageTeacherForm's clean_message method encrypts the message,
+            # so form.cleaned_data["message"] already contains the encrypted text.
+            encrypted_message = form.cleaned_data["message"]
+
             # Prepare email content
             if request.user.is_authenticated:
                 sender_name = request.user.get_full_name() or request.user.username
@@ -3396,25 +3453,25 @@ def message_teacher(request, teacher_id):
                 sender_name = form.cleaned_data["name"]
                 sender_email = form.cleaned_data["email"]
 
-            # Send email to teacher
+            # Send email to teacher using the encrypted message
             context = {
                 "sender_name": sender_name,
                 "sender_email": sender_email,
-                "message": form.cleaned_data["message"],
+                "message": encrypted_message,
             }
             html_message = render_to_string("web/emails/teacher_message.html", context)
 
             try:
                 send_mail(
                     subject=f"New message from {sender_name}",
-                    message=form.cleaned_data["message"],
+                    message=encrypted_message,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[teacher.email],
                     html_message=html_message,
                 )
                 messages.success(request, "Your message has been sent successfully!")
 
-                # Get the next URL from query params, default to course search if not provided
+                # Optionally redirect based on next URL parameter
                 next_url = request.GET.get("next")
                 if next_url:
                     try:
@@ -3844,6 +3901,8 @@ class GoodsDetailView(generic.DetailView):
         context = super().get_context_data(**kwargs)
         context["product_images"] = self.object.goods_images.all()  # Get all images related to the product
         context["other_products"] = Goods.objects.exclude(pk=self.object.pk)[:12]  # Fetch other products
+        view_data = WebRequest.objects.filter(path=self.request.path).aggregate(total_views=Coalesce(Sum("count"), 0))
+        context["view_count"] = view_data["total_views"]
         return context
 
 
@@ -7141,7 +7200,7 @@ def get_twitter_client():
     return tweepy.API(auth)
 
 
-@user_passes_test(social_media_manager_required)
+@user_passes_test(social_media_manager_required, login_url="/accounts/login/")
 def social_media_dashboard(request):
     # Fetch all posts that haven't been posted yet
     posts = ScheduledPost.objects.filter(posted=False).order_by("-id")
@@ -7193,6 +7252,57 @@ def delete_post(request, post_id):
     return redirect("social_media_dashboard")
 
 
+def generate_discount_code(length=8):
+    return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+
+@login_required
+def apply_discount_via_referrer(request) -> HttpResponse:
+    """Apply a discount code when a user shares a course on Twitter.
+
+    Args:
+        request: The HTTP request object
+
+    Returns:
+        HttpResponse: A redirect to the profile page or an error response
+    """
+    if request.method == "GET":
+        course_id = request.GET.get("course_id")
+        if not course_id:
+            return HttpResponseBadRequest("Course ID not provided.")
+
+        course = get_object_or_404(Course, id=course_id)
+
+        # Validate that the referrer is from Twitter
+        referrer = request.META.get("HTTP_REFERER", "").lower()
+        valid_twitter_domains = ["twitter.com", "t.co", "x.com"]
+        is_valid_referrer = any(domain in referrer for domain in valid_twitter_domains)
+
+        # Skip the referrer check in development environment for testing
+        if settings.DEBUG:
+            logger.warning("Bypassing Twitter referrer check in DEBUG mode")
+        elif not is_valid_referrer:
+            messages.error(request, "You must click the link from Twitter to claim your discount.")
+            return redirect("profile")
+        # Create or retrieve an existing discount record.
+        discount = Discount.objects.filter(user=request.user, course=course, used=False).first()
+        if discount is None:
+            discount = Discount.objects.create(
+                user=request.user,
+                course=course,
+                code=generate_discount_code(),
+                discount_percentage=5.00,
+                valid_from=timezone.now(),
+                valid_until=default_valid_until(),
+            )
+
+        messages.success(request, "Thank you for sharing! Your discount code is now available in your profile.")
+        # Redirect user to their profile where discount codes are rendered.
+        return redirect("profile")
+    else:
+        return HttpResponseBadRequest("Invalid request method.")
+
+
 def users_list(request: HttpRequest) -> HttpResponse:
     """
     Display a list of users who have their profile set to public,
@@ -7202,7 +7312,7 @@ def users_list(request: HttpRequest) -> HttpResponse:
 
     # Add statistics for each user to create fun scorecards
     for profile in profiles:
-        if profile.user.is_teacher:
+        if profile.is_teacher:
             # Teacher stats
             courses = Course.objects.filter(teacher=profile.user).prefetch_related("enrollments", "reviews")
             profile.total_courses = courses.count()
@@ -7246,3 +7356,109 @@ def users_list(request: HttpRequest) -> HttpResponse:
     }
 
     return render(request, "users_list.html", context)
+
+
+@login_required
+def topic_vote(request, pk):
+    """Handle voting on a topic."""
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST method allowed"}, status=405)
+
+    try:
+        topic = ForumTopic.objects.get(pk=pk)
+        vote_type = request.POST.get("vote_type")
+
+        if vote_type not in ["up", "down"]:
+            # For form submissions, redirect back with an error message if needed
+            messages.error(request, "Invalid vote type")
+            return redirect("topic_vote", pk=topic.id)
+
+        # Check if user already voted on this topic
+        vote, created = ForumVote.objects.get_or_create(
+            user=request.user, topic=topic, defaults={"vote_type": vote_type}
+        )
+
+        if not created:
+            # User already voted, check if they're changing their vote
+            if vote.vote_type == vote_type:
+                # Same vote type, so remove the vote
+                vote.delete()
+            else:
+                # Different vote type, so update the vote
+                vote.vote_type = vote_type
+                vote.save()
+
+        # After processing the vote, redirect back to the topic page
+        return redirect("forum_topic", category_slug=topic.category.slug, topic_id=topic.id)
+
+    except ForumTopic.DoesNotExist:
+        # Handle case when topic doesn't exist
+        messages.error(request, "Topic not found")
+        return redirect("forum_categories")
+
+
+@login_required
+def reply_vote(request, pk):
+    """Handle voting on a reply."""
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST method allowed"}, status=405)
+
+    try:
+        reply = ForumReply.objects.get(pk=pk)
+        vote_type = request.POST.get("vote_type")
+
+        if vote_type not in ["up", "down"]:
+            messages.error(request, "Invalid vote type")
+            return redirect("forum_topic", category_slug=reply.topic.category.slug, topic_id=reply.topic.id)
+
+        # Check if user already voted on this reply
+        vote, created = ForumVote.objects.get_or_create(
+            user=request.user, reply=reply, defaults={"vote_type": vote_type}
+        )
+
+        if not created:
+            # User already voted, check if they're changing their vote
+            if vote.vote_type == vote_type:
+                # Same vote type, so remove the vote
+                vote.delete()
+            else:
+                # Different vote type, so update the vote
+                vote.vote_type = vote_type
+                vote.save()
+
+        # After processing the vote, redirect back to the topic page
+        return redirect("forum_topic", category_slug=reply.topic.category.slug, topic_id=reply.topic.id)
+
+    except ForumReply.DoesNotExist:
+        messages.error(request, "Reply not found")
+        return redirect("forum_categories")
+
+
+def topic_detail(request, pk):
+    topic = get_object_or_404(ForumTopic, pk=pk)
+
+    # Get the user's vote on this topic if any
+    user_topic_vote = None
+    if request.user.is_authenticated:
+        try:
+            vote = ForumVote.objects.get(topic=topic, user=request.user)
+            user_topic_vote = vote.vote_type
+        except ForumVote.DoesNotExist:
+            pass
+
+    # Get user votes on replies
+    user_reply_votes = {}
+    if request.user.is_authenticated:
+        reply_votes = ForumVote.objects.filter(reply__topic=topic, user=request.user).values_list(
+            "reply_id", "vote_type"
+        )
+        user_reply_votes = dict(reply_votes)
+
+    context = {
+        "topic": topic,
+        "user_topic_vote": user_topic_vote,
+        "user_reply_votes": user_reply_votes,
+        # other context variables
+    }
+
+    return render(request, "web/forum/topic.html", context)

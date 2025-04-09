@@ -282,17 +282,21 @@
             <div class="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden hover:shadow-xl transition-shadow duration-300">
               <!-- Product Image -->
               <div class="relative aspect-square w-full overflow-hidden">
-                {% if product.image %}
+                {% if product.image_url %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
-                    <img src="{{ product.image.url }}"
+                    <img src="{{ product.image_url }}"
                          alt="{{ product.name }}"
-                         class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
+                         class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                         width="300"
+                         height="300" />
                   </a>
                 {% else %}
                   <a href="{% url 'goods_detail' pk=product.id %}">
                     <img src="{% static 'images/placeholder.png' %}"
                          alt="{{ product.name }}"
-                         class="w-full h-full object-cover transition-transform duration-300 hover:scale-105" />
+                         class="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                         width="300"
+                         height="300" />
                   </a>
                 {% endif %}
               </div>
