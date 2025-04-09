@@ -1184,7 +1184,7 @@ class ForumTopicForm(forms.Form):
 
     def clean_github_milestone_url(self):
         url = self.cleaned_data.get("github_milestone_url")
-        if url and (not url.startswith("https://github.com/") or "/milestone/" not in url):
+        if url and (not url.startswith("https://github.com/") or "milestone" not in url):
             raise forms.ValidationError("Please enter a valid GitHub milestone URL")
         return url
 

@@ -2912,13 +2912,25 @@ def edit_topic(request, topic_id):
     categories = ForumCategory.objects.all()
 
     if request.method == "POST":
-        form = ForumTopicForm(request.POST, instance=topic)
+        form = ForumTopicForm(request.POST)
         if form.is_valid():
-            form.save()
+            # Manually update the topic instance with form data.
+            topic.title = form.cleaned_data["title"]
+            topic.content = form.cleaned_data["content"]
+            topic.github_issue_url = form.cleaned_data.get("github_issue_url", "")
+            topic.github_milestone_url = form.cleaned_data.get("github_milestone_url", "")
+            topic.save()
             messages.success(request, "Topic updated successfully!")
             return redirect("forum_topic", category_slug=topic.category.slug, topic_id=topic.id)
     else:
-        form = ForumTopicForm(instance=topic)
+        # Prepopulate the form with the topic's current data.
+        initial_data = {
+            "title": topic.title,
+            "content": topic.content,
+            "github_issue_url": topic.github_issue_url,
+            "github_milestone_url": topic.github_milestone_url,
+        }
+        form = ForumTopicForm(initial=initial_data)
 
     return render(request, "web/forum/edit_topic.html", {"topic": topic, "form": form, "categories": categories})
 
