@@ -61,7 +61,7 @@
                 </div>
               </div>
               <div>
-                <span class="font-medium text-gray-700">Participants:</span> {{ waiting_room.participants.count }}
+                <span class="font-medium text-gray-700">Participants:</span> {{ waiting_room.participants.count|add:"1" }}
               </div>
             </div>
           </div>
