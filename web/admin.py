@@ -33,6 +33,8 @@ from .models import (
     Order,
     OrderItem,
     Payment,
+    PDFSubmission,
+    PDFType,
     PeerChallenge,
     PeerChallengeInvitation,
     Points,
@@ -769,6 +771,47 @@ class QuizOptionAdmin(admin.ModelAdmin):
     list_filter = ("is_correct",)
     search_fields = ("text", "question__text")
     autocomplete_fields = ["question"]
+
+
+@admin.register(PDFType)
+class PDFTypeAdmin(admin.ModelAdmin):
+    list_display = ("name", "description", "icon_class")
+    search_fields = ("name", "description")
+    list_editable = ("icon_class",)
+
+    def get_submissions_count(self, obj):
+        return obj.submissions.count()
+
+    get_submissions_count.short_description = "Submissions"
+
+
+@admin.register(PDFSubmission)
+class PDFSubmissionAdmin(admin.ModelAdmin):
+    list_display = ("title", "student", "pdf_type", "subject", "status", "submitted_at", "file_size_display")
+    list_filter = ("status", "pdf_type", "subject")
+    search_fields = ("title", "student__username", "subject", "assignment")
+    readonly_fields = ("file_size", "submitted_at", "updated_at", "reviewed_at")
+
+    fieldsets = (
+        (
+            "Submission Information",
+            {
+                "fields": (
+                    "title",
+                    "student",
+                    "pdf_type",
+                    "subject",
+                    "assignment",
+                    "due_date",
+                    "description",
+                    "pdf_file",
+                    "file_size_display",
+                )
+            },
+        ),
+        ("Review Information", {"fields": ("status", "feedback", "reviewed_by", "reviewed_at")}),
+        ("Timestamps", {"fields": ("submitted_at", "updated_at"), "classes": ("collapse",)}),
+    )
 
 
 @admin.register(MembershipPlan)
