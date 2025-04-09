@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements and install Python dependencies here
 COPY requirements.txt .
 RUN python -m pip install --upgrade pip && \
+    python -m pip install wheel && \
     python -m pip install -r requirements.txt
 
 # Copy project files
