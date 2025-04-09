@@ -1,5 +1,5 @@
 # Python base image
-FROM python:3.10.13-slim@sha256:ab5e9ec8c2a5ee5cc5f3c2f9c3d3d1e5e5e6c7f09ed1cf45bb97c3c5cf4aa0c7
+FROM python:3.10-slim@sha256:4ea43f29b66b24db2a82dfc1a8b93c00ed1893fdb6991b9373e2fd54b4705e9a
 
 
 # Set working directory
