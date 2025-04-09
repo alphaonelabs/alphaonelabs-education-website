@@ -4,11 +4,16 @@ FROM python:3.10-slim
 # Set working directory
 WORKDIR /app
 
-# Install dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
+    build-essential \
+    python3-dev \
+    libssl-dev \
+    libffi-dev \
     curl \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
-
+    
 # Copy requirements and install Python dependencies
 COPY requirements.txt .
 RUN python -m pip install --no-cache-dir --upgrade pip wheel mysqlclient && \
