@@ -1,7 +1,22 @@
 {% extends "allauth/layouts/base.html" %}
 
 {% load static %}
+{% load i18n %}
+{% load allauth %}
 
+{% block title %}
+  Sign Up | Join Alpha One Labs Education Platform
+{% endblock title %}
+{% block meta_description %}
+  Create your free account on Alpha One Labs. Join our education platform to access courses, quizzes, community forums, and more learning resources.
+{% endblock %}
+{% block meta_keywords %}
+  sign up, register, create account, join, Alpha One Labs, education platform, free account
+{% endblock %}
+{% block og_title %}Sign Up | Join Alpha One Labs Education Platform{% endblock %}
+{% block og_description %}
+  Create your free account on Alpha One Labs. Join our education platform to access courses, quizzes, community forums, and more learning resources.
+{% endblock %}
 {% block extra_head %}
   {{ block.super }}
   <style>

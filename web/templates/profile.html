@@ -3,8 +3,19 @@
 {% load static %}
 
 {% block title %}
-  Profile - {{ user.username }}
+  Your Profile | Alpha One Labs Account
 {% endblock title %}
+{% block meta_description %}
+  Manage your Alpha One Labs profile. Update your personal information, track your courses, view your achievements, and manage your account settings.
+{% endblock %}
+{% block meta_keywords %}
+  profile, user account, education profile, Alpha One Labs, personal dashboard, learning progress
+{% endblock %}
+{% block og_title %}Your Profile | Alpha One Labs Account{% endblock %}
+{% block og_description %}
+  Manage your Alpha One Labs profile. Update your personal information, track your courses, view your achievements, and manage your account settings.
+{% endblock %}
+{% block og_type %}profile{% endblock %}
 {% block content %}
   <div class="container mx-auto px-4 py-6">
     <!-- Messages -->
