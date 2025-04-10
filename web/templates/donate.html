@@ -6,57 +6,59 @@
   {% trans "Donate" %} | {{ block.super }}
 {% endblock title %}
 {% block content %}
-  <div class="container mx-auto px-4 py-12">
+  <div class="container mx-auto px-4 py-8 sm:py-12">
     <div class="max-w-5xl mx-auto">
       <!-- Header Section -->
-      <div class="text-center mb-12">
-        <h1 class="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-4">{% trans "Support Our Mission" %}</h1>
-        <p class="text-xl text-gray-600 dark:text-gray-300 mb-6">
+      <div class="text-center mb-8 sm:mb-12">
+        <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 dark:text-gray-100 mb-4">{% trans "Support Our Mission" %}</h1>
+        <p class="text-lg sm:text-xl text-gray-600 dark:text-gray-300 mb-6 max-w-3xl mx-auto">
           {% trans "Your donation helps us provide quality education to more students around the world." %}
         </p>
-        {% if total_donations > 0 %}
-          <div class="bg-blue-50 dark:bg-gray-800 rounded-lg p-4 inline-block">
-            <p class="text-blue-600 dark:text-blue-400 font-medium">
-              {% trans "Total donations so far:" %} ${{ total_donations }}
-            </p>
-          </div>
-        {% endif %}
       </div>
       <!-- Main Content -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-12">
         <!-- Donation Form -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-          <div class="mb-6">
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">{% trans "Make a Donation" %}</h2>
-            <!-- Donation Type Tabs -->
-            <div class="flex border-b border-gray-200 dark:border-gray-700 mb-6">
-              <button id="one-time-tab"
-                      class="py-2 px-4 font-medium text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400">
-                {% trans "One-time" %}
-              </button>
-              <button id="monthly-tab"
-                      class="py-2 px-4 font-medium text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
-                {% trans "Monthly" %}
-              </button>
-            </div>
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8 h-fit">
+          <div class="flex flex-col">
+            <h2 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-gray-100 mb-6">{% trans "Make a Donation" %}</h2>
             <!-- Donation Form -->
-            <form id="donation-form" class="space-y-6">
+            <form id="donation-form" class="space-y-4 sm:space-y-6">
+              <!-- Donation Type Toggle -->
+              <div class="flex flex-col space-y-4">
+                <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Donation Type</h2>
+                <div class="flex rounded-lg bg-gray-100 dark:bg-gray-700 p-1">
+                  <button type="button"
+                          id="one-time-btn"
+                          class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                          data-type="one_time">{% trans "One-time" %}</button>
+                  <button type="button"
+                          id="monthly-btn"
+                          class="flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500"
+                          data-type="subscription">{% trans "Monthly" %}</button>
+                </div>
+                <p id="donation-type-description"
+                   class="text-sm text-gray-600 dark:text-gray-400">
+                  {% trans "Support our mission with a one-time donation" %}
+                </p>
+              </div>
               <!-- Amount Selection -->
-              <div>
-                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{% trans "Select Amount" %}</label>
-                <div class="grid grid-cols-3 gap-2 mb-3">
+              <div class="space-y-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">{% trans "Select Amount" %}</label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {% for amount in donation_amounts %}
                     <button type="button"
-                            class="amount-btn bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 py-2 px-4 rounded-lg transition duration-200"
-                            data-amount="{{ amount }}">${{ amount }}</button>
+                            class="amount-btn w-full flex items-center justify-center bg-gray-50 hover:bg-teal-50 dark:bg-gray-700 dark:hover:bg-teal-900 text-gray-700 dark:text-gray-300 py-3 px-4 rounded-lg transition-all duration-200 shadow-sm border border-gray-200 dark:border-gray-600 hover:border-teal-300 dark:hover:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400"
+                            data-amount="{{ amount }}">
+                      <span class="text-lg font-semibold">{{ DEFAULT_CURRENCY_SYMBOL|default:"$" }}{{ amount }}</span>
+                    </button>
                   {% endfor %}
                 </div>
                 <div class="relative">
-                  <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-700 dark:text-gray-300">$</span>
+                  <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-gray-500 dark:text-gray-400 text-lg font-medium">$</span>
                   <input type="number"
                          id="custom-amount"
-                         class="w-full px-4 py-2 pl-8 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300"
-                         placeholder="Custom amount" />
+                         class="w-full pl-8 pr-4 py-3 text-lg border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                         placeholder="{{ _("Or enter custom amount") }}" />
                 </div>
               </div>
               <!-- Personal Information -->
@@ -68,7 +70,8 @@
                   </label>
                   <input type="email"
                          id="donation-email"
-                         class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300"
+                         required
+                         class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                          {% if user.is_authenticated %}value="{{ user.email }}" readonly{% endif %} />
                 </div>
                 <div>
@@ -78,107 +81,206 @@
                   </label>
                   <textarea id="donation-message"
                             rows="3"
-                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-300"
+                            class="w-full px-4 py-3 text-base border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-teal-500 dark:focus:border-teal-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                             placeholder="{% trans 'Share why you\'re donating...' %}"></textarea>
                 </div>
                 <div class="flex items-center">
                   <input type="checkbox"
                          id="anonymous-donation"
-                         class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
+                         class="h-5 w-5 text-teal-500 focus:ring-teal-400 border-gray-300 rounded" />
                   <label for="anonymous-donation"
-                         class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                         class="ml-3 block text-sm text-gray-700 dark:text-gray-300">
                     {% trans "Make my donation anonymous" %}
                   </label>
                 </div>
               </div>
-              <!-- Payment Information -->
-              <div id="one-time-payment" class="space-y-4">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{% trans "Card Information" %}</label>
-                  <div id="card-element"
-                       class="p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
-                  </div>
-                  <div id="card-errors" class="mt-2 text-red-600 text-sm"></div>
-                </div>
-                <button type="submit"
-                        id="submit-one-time"
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
-                  <span id="button-text">{% trans "Donate Now" %}</span>
-                  <div id="spinner" class="hidden">
-                    <svg class="animate-spin h-5 w-5 text-white ml-2"
-                         xmlns="http://www.w3.org/2000/svg"
-                         fill="none"
-                         viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                      </path>
-                    </svg>
-                  </div>
-                </button>
+              <!-- Final Donation Amount -->
+              <div class="bg-teal-50 dark:bg-teal-900/20 p-4 rounded-lg border border-teal-200 dark:border-teal-800">
+                <p class="flex justify-between items-center">
+                  <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{% trans "Final Donation Amount:" %}</span>
+                  <span id="final-amount-display"
+                        class="text-2xl font-bold text-teal-600 dark:text-teal-400">$0.00</span>
+                </p>
               </div>
-              <!-- Subscription Payment (Hidden by default) -->
-              <div id="subscription-payment" class="hidden space-y-4">
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{% trans "Card Information" %}</label>
-                  <div id="subscription-card-element"
-                       class="p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700">
-                  </div>
-                  <div id="subscription-card-errors" class="mt-2 text-red-600 text-sm"></div>
+              <!-- Payment Information -->
+              <div id="payment-element" class="relative">
+                <!-- Loading State -->
+                <div id="payment-loading"
+                     class="hidden absolute inset-0 flex flex-col items-center justify-center bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm z-10 rounded-lg">
+                  <div class="animate-spin rounded-full h-12 w-12 border-4 border-teal-500 border-t-transparent mb-4"></div>
+                  <p id="payment-loading-text"
+                     class="text-teal-600 dark:text-teal-400 font-medium text-center">
+                    {% trans "Initializing payment system..." %}
+                  </p>
                 </div>
-                <button type="submit"
-                        id="submit-subscription"
-                        class="w-full bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
-                  <span id="subscription-button-text">{% trans "Subscribe Monthly" %}</span>
-                  <div id="subscription-spinner" class="hidden">
-                    <svg class="animate-spin h-5 w-5 text-white ml-2"
-                         xmlns="http://www.w3.org/2000/svg"
-                         fill="none"
-                         viewBox="0 0 24 24">
-                      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                      </path>
-                    </svg>
-                  </div>
-                </button>
+                <!-- Stripe Elements will be inserted here -->
+              </div>
+              <!-- Error Messages -->
+              <div id="payment-message" class="text-sm text-center"></div>
+              <!-- Submit Button -->
+              <button type="submit"
+                      id="submit-button"
+                      class="w-full bg-teal-500 hover:bg-teal-600 dark:bg-teal-600 dark:hover:bg-teal-700 text-white text-lg font-semibold px-6 py-4 rounded-lg transition duration-200 flex items-center justify-center relative mb-2">
+                <span id="button-text" class="transition-opacity duration-200">{% trans "Donate Now" %}</span>
+                <div id="spinner"
+                     class="absolute inset-0 flex items-center justify-center hidden">
+                  <svg class="animate-spin h-6 w-6 text-white"
+                       xmlns="http://www.w3.org/2000/svg"
+                       fill="none"
+                       viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                    </path>
+                  </svg>
+                </div>
+              </button>
+              <!-- Subscription Notice -->
+              <div id="subscription-notice"
+                   class="hidden text-sm text-gray-600 dark:text-gray-400 text-center px-2 pb-2">
+                {% trans "You will be charged this amount monthly. You can cancel anytime." %}
               </div>
             </form>
           </div>
         </div>
         <!-- Information and Recent Donations -->
-        <div class="space-y-8">
+        <div class="space-y-6 sm:space-y-8 self-start">
           <!-- Why Donate Section -->
-          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-            <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">{% trans "Why Donate?" %}</h2>
-            <div class="space-y-4 text-gray-600 dark:text-gray-300">
-              <p>{% trans "Your donation helps us:" %}</p>
-              <ul class="list-disc pl-5 space-y-2">
-                <li>{% trans "Provide scholarships to students in need" %}</li>
-                <li>{% trans "Develop new educational content and resources" %}</li>
-                <li>{% trans "Improve our platform and technology" %}</li>
-                <li>{% trans "Expand our reach to underserved communities" %}</li>
+          <div class="bg-teal-50 dark:bg-teal-900/20 rounded-xl shadow-lg p-6 sm:p-8 border border-teal-200 dark:border-teal-800">
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">{% trans "Why Donate?" %}</h2>
+            <div class="space-y-4">
+              <p class="text-base sm:text-lg text-gray-700 dark:text-gray-300">{% trans "Your donation helps us:" %}</p>
+              <ul class="list-none space-y-3">
+                <li class="flex items-start">
+                  <svg class="h-6 w-6 text-teal-600 mr-2 mt-0.5"
+                       fill="none"
+                       stroke="currentColor"
+                       viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z">
+                    </path>
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">{% trans "Provide scholarships to students in need" %}</span>
+                </li>
+                <li class="flex items-start">
+                  <svg class="h-6 w-6 text-teal-600 mr-2 mt-0.5"
+                       fill="none"
+                       stroke="currentColor"
+                       viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z">
+                    </path>
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">{% trans "Develop new educational content and resources" %}</span>
+                </li>
+                <li class="flex items-start">
+                  <svg class="h-6 w-6 text-teal-600 mr-2 mt-0.5"
+                       fill="none"
+                       stroke="currentColor"
+                       viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z">
+                    </path>
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">{% trans "Improve our platform and technology" %}</span>
+                </li>
+                <li class="flex items-start">
+                  <svg class="h-6 w-6 text-teal-600 mr-2 mt-0.5"
+                       fill="none"
+                       stroke="currentColor"
+                       viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z">
+                    </path>
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">{% trans "Expand our reach to underserved communities" %}</span>
+                </li>
               </ul>
-              <p class="mt-4">
+              <p class="mt-6 text-base sm:text-lg font-medium text-gray-700 dark:text-gray-300">
                 {% trans "We're committed to making quality education accessible to everyone, regardless of their financial situation." %}
               </p>
             </div>
           </div>
+          <!-- Monthly Donation Benefits Section -->
+          <div id="monthly-benefits-card"
+               class="bg-teal-50 dark:bg-teal-900/20 rounded-xl shadow-lg p-6 sm:p-8 border border-teal-200 dark:border-teal-800">
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">{% trans "Why Donate Monthly?" %}</h2>
+            <div class="space-y-4">
+              <p class="text-base sm:text-lg text-gray-700 dark:text-gray-300">
+                {% trans "Monthly donations provide sustainable support that helps us:" %}
+              </p>
+              <ul class="list-none space-y-3">
+                <li class="flex items-start">
+                  <svg class="h-6 w-6 text-teal-600 mr-2 mt-0.5"
+                       fill="none"
+                       stroke="currentColor"
+                       viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z">
+                    </path>
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">{% trans "Plan long-term educational programs" %}</span>
+                </li>
+                <li class="flex items-start">
+                  <svg class="h-6 w-6 text-teal-600 mr-2 mt-0.5"
+                       fill="none"
+                       stroke="currentColor"
+                       viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z">
+                    </path>
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">{% trans "Maintain consistent support for students" %}</span>
+                </li>
+                <li class="flex items-start">
+                  <svg class="h-6 w-6 text-teal-600 mr-2 mt-0.5"
+                       fill="none"
+                       stroke="currentColor"
+                       viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z">
+                    </path>
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">{% trans "Develop new educational resources continuously" %}</span>
+                </li>
+                <li class="flex items-start">
+                  <svg class="h-6 w-6 text-teal-600 mr-2 mt-0.5"
+                       fill="none"
+                       stroke="currentColor"
+                       viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z">
+                    </path>
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300">{% trans "Make long-term commitments to communities" %}</span>
+                </li>
+              </ul>
+              <p class="mt-4 text-base text-gray-700 dark:text-gray-300 italic">
+                {% trans "Your monthly support creates a foundation for sustainable education." %}
+              </p>
+            </div>
+          </div>
+          <!-- Total Donations Section -->
+          {% if total_donations > 0 %}
+            <div class="bg-teal-50 dark:bg-teal-900/20 rounded-xl shadow-lg p-6 sm:p-8 border border-teal-200 dark:border-teal-800">
+              <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">{% trans "Community Impact" %}</h3>
+              <div class="mb-4">
+                <p class="text-sm text-gray-700 dark:text-gray-400">{% trans "Total donations so far" %}</p>
+                <p class="text-4xl font-bold text-teal-600 dark:text-teal-400">${{ total_donations }}</p>
+              </div>
+              <p class="text-gray-700 dark:text-gray-300 text-sm">
+                {% trans "Thank you to all our generous donors who make our mission possible!" %}
+              </p>
+            </div>
+          {% endif %}
           <!-- Recent Donations -->
           {% if recent_donations %}
-            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-              <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">{% trans "Recent Donations" %}</h2>
-              <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+            <div class="bg-teal-50 dark:bg-teal-900/20 rounded-xl shadow-lg p-6 sm:p-8 border border-teal-200 dark:border-teal-800">
+              <h2 class="text-xl sm:text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6">{% trans "Recent Donations" %}</h2>
+              <ul class="divide-y divide-teal-200/50 dark:divide-teal-800/50">
                 {% for donation in recent_donations %}
-                  <li class="py-3">
-                    <div class="flex justify-between">
+                  <li class="py-4">
+                    <div class="flex justify-between items-start">
                       <div>
                         <p class="font-medium text-gray-800 dark:text-gray-200">{{ donation.display_name }}</p>
                         {% if donation.message %}
-                          <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ donation.message }}</p>
+                          <p class="text-sm text-gray-700 dark:text-gray-400 mt-1">{{ donation.message }}</p>
                         {% endif %}
+                        <p class="text-xs text-gray-600 dark:text-gray-500 mt-1">{{ donation.created_at|date:"M d, Y" }}</p>
                       </div>
-                      <div class="text-right">
-                        <p class="font-medium text-gray-800 dark:text-gray-200">${{ donation.amount }}</p>
-                        <p class="text-xs text-gray-500 dark:text-gray-500">{{ donation.created_at|date:"M d, Y" }}</p>
+                      <div class="ml-4">
+                        <p class="font-semibold text-lg text-teal-600 dark:text-teal-400">${{ donation.amount }}</p>
                       </div>
                     </div>
                   </li>
@@ -196,133 +298,186 @@
   <script src="https://js.stripe.com/v3/"></script>
   <script>
       document.addEventListener('DOMContentLoaded', function() {
-          // Initialize Stripe
-          const stripe = Stripe('{{ stripe_public_key }}');
+          let stripe;
+          let elements;
+          let donation_id;
+          const amountButtons = document.querySelectorAll('.amount-btn');
+          const customAmountInput = document.getElementById('custom-amount');
+          const finalAmountDisplay = document.getElementById('final-amount-display');
+          const form = document.getElementById('donation-form');
+          const emailInput = document.getElementById('donation-email');
 
-          // Create Elements instances
-          const elements = stripe.elements({
-              appearance: {
-                  theme: document.documentElement.classList.contains('dark') ? 'night' : 'stripe',
-                  variables: {
-                      colorPrimary: '#3b82f6',
+          // Currency formatting configuration
+          const currencyFormatter = new Intl.NumberFormat('{{ LANGUAGE_CODE|default:"en-US" }}', {
+              style: 'currency',
+              currency: '{{ DEFAULT_CURRENCY|default:"USD" }}',
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+          });
+
+          function updateFinalAmount(amount) {
+              if (!isNaN(amount) && amount > 0) {
+                  try {
+                      const numericAmount = parseFloat(amount);
+                      if (numericAmount > 999999.99) {
+                          showMessage("{% trans 'Please enter an amount less than 1,000,000' %}", "error");
+                          finalAmountDisplay.textContent = currencyFormatter.format(0);
+                          return false;
+                      }
+                      finalAmountDisplay.textContent = currencyFormatter.format(numericAmount);
+                      return true;
+                  } catch (error) {
+                      console.error('Error formatting amount:', error);
+                      finalAmountDisplay.textContent = currencyFormatter.format(0);
+                      return false;
+                  }
+              } else {
+                  finalAmountDisplay.textContent = currencyFormatter.format(0);
+                  return false;
+              }
+          }
+
+          // Debounce function to prevent rapid re-initialization
+          function debounce(func, wait) {
+              let timeout;
+              return function executedFunction(...args) {
+                  const later = () => {
+                      clearTimeout(timeout);
+                      func(...args);
+                  };
+                  clearTimeout(timeout);
+                  timeout = setTimeout(later, wait);
+              };
+          }
+
+          // Function to check if we can initialize payment
+          function canInitializePayment() {
+              const amount = getSelectedAmount();
+              const email = emailInput.value.trim();
+
+              // Clear any existing error messages if email is valid
+              if (email) {
+                  showMessage("", "info"); // Clear the message
+              }
+
+              return amount && parseFloat(amount) > 0 && email;
+          }
+
+          // Update initialize references to use debounced version
+          customAmountInput.addEventListener('input', function() {
+              const customAmount = this.value;
+              amountButtons.forEach(btn => {
+                  btn.classList.remove('bg-teal-50', 'dark:bg-teal-900/20', 'border-teal-300', 'dark:border-teal-600');
+                  btn.classList.add('bg-gray-50', 'dark:bg-gray-700', 'border-gray-200', 'dark:border-gray-600');
+              });
+
+              if (updateFinalAmount(customAmount)) {
+                  if (canInitializePayment()) {
+                      debouncedInitialize();
                   }
               }
           });
 
-          // Create card Elements
-          const cardElement = elements.create('card');
-          cardElement.mount('#card-element');
-
-          const subscriptionCardElement = elements.create('card');
-          subscriptionCardElement.mount('#subscription-card-element');
-
-          // Handle tab switching
-          const oneTimeTab = document.getElementById('one-time-tab');
-          const monthlyTab = document.getElementById('monthly-tab');
-          const oneTimePayment = document.getElementById('one-time-payment');
-          const subscriptionPayment = document.getElementById('subscription-payment');
-
-          oneTimeTab.addEventListener('click', function() {
-              oneTimeTab.classList.add('text-blue-600', 'dark:text-blue-400', 'border-b-2', 'border-blue-600', 'dark:border-blue-400');
-              oneTimeTab.classList.remove('text-gray-500', 'dark:text-gray-400');
-
-              monthlyTab.classList.remove('text-blue-600', 'dark:text-blue-400', 'border-b-2', 'border-blue-600', 'dark:border-blue-400');
-              monthlyTab.classList.add('text-gray-500', 'dark:text-gray-400');
-
-              oneTimePayment.classList.remove('hidden');
-              subscriptionPayment.classList.add('hidden');
+          // Email input handler
+          emailInput.addEventListener('input', function() {
+              const email = this.value.trim();
+              if (email) {
+                  showMessage("", "info"); // Clear any email-related error message
+              }
+              if (canInitializePayment()) {
+                  debouncedInitialize();
+              }
           });
 
-          monthlyTab.addEventListener('click', function() {
-              monthlyTab.classList.add('text-blue-600', 'dark:text-blue-400', 'border-b-2', 'border-blue-600', 'dark:border-blue-400');
-              monthlyTab.classList.remove('text-gray-500', 'dark:text-gray-400');
-
-              oneTimeTab.classList.remove('text-blue-600', 'dark:text-blue-400', 'border-b-2', 'border-blue-600', 'dark:border-blue-400');
-              oneTimeTab.classList.add('text-gray-500', 'dark:text-gray-400');
-
-              subscriptionPayment.classList.remove('hidden');
-              oneTimePayment.classList.add('hidden');
-          });
-
-          // Handle amount selection
-          const amountButtons = document.querySelectorAll('.amount-btn');
-          const customAmountInput = document.getElementById('custom-amount');
-
+          // Update amount button click handlers
           amountButtons.forEach(button => {
               button.addEventListener('click', function() {
-                  // Remove active class from all buttons
                   amountButtons.forEach(btn => {
-                      btn.classList.remove('bg-blue-100', 'dark:bg-blue-900', 'text-blue-700', 'dark:text-blue-300');
-                      btn.classList.add('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+                      btn.classList.remove('bg-teal-50', 'dark:bg-teal-900/20', 'border-teal-300', 'dark:border-teal-600');
+                      btn.classList.add('bg-gray-50', 'dark:bg-gray-700', 'border-gray-200', 'dark:border-gray-600');
                   });
 
-                  // Add active class to clicked button
-                  this.classList.remove('bg-gray-100', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
-                  this.classList.add('bg-blue-100', 'dark:bg-blue-900', 'text-blue-700', 'dark:text-blue-300');
+                  this.classList.remove('bg-gray-50', 'dark:bg-gray-700', 'border-gray-200', 'dark:border-gray-600');
+                  this.classList.add('bg-teal-50', 'dark:bg-teal-900/20', 'border-teal-300', 'dark:border-teal-600');
 
-                  // Set custom amount input to empty
                   customAmountInput.value = '';
+                  const selectedAmount = this.getAttribute('data-amount');
+                  if (updateFinalAmount(selectedAmount)) {
+                      if (canInitializePayment()) {
+                          debouncedInitialize();
+                      }
+                  }
               });
           });
 
-          // Handle form submission for one-time donation
-          const donationForm = document.getElementById('donation-form');
-          const submitButton = document.getElementById('submit-one-time');
-          const buttonText = document.getElementById('button-text');
-          const spinner = document.getElementById('spinner');
-          const cardErrors = document.getElementById('card-errors');
+          let donationType = 'one_time';
+          const oneTimeBtn = document.getElementById('one-time-btn');
+          const monthlyBtn = document.getElementById('monthly-btn');
+          const typeDescription = document.getElementById('donation-type-description');
 
-          donationForm.addEventListener('submit', async function(event) {
-              event.preventDefault();
+          function updateDonationTypeUI(type) {
+              donationType = type;
 
-              // Determine if it's a one-time or subscription payment
-              const isSubscription = !oneTimePayment.classList.contains('hidden');
+              // Reset both buttons
+              [oneTimeBtn, monthlyBtn].forEach(btn => {
+                  btn.classList.remove("bg-teal-500", "text-white", "hover:bg-teal-600");
+                  btn.classList.add("hover:bg-gray-200", "dark:hover:bg-gray-600", "text-gray-700", "dark:text-gray-300");
+              });
 
-              // Get amount
-              let amount = customAmountInput.value;
-              if (!amount) {
-                  const activeButton = document.querySelector('.amount-btn.bg-blue-100, .amount-btn.dark\\:bg-blue-900');
-                  if (activeButton) {
-                      amount = activeButton.getAttribute('data-amount');
-                  }
-              }
+              // Style active button
+              const activeBtn = type === "one_time" ? oneTimeBtn : monthlyBtn;
+              activeBtn.classList.remove("hover:bg-gray-200", "dark:hover:bg-gray-600", "text-gray-700", "dark:text-gray-300");
+              activeBtn.classList.add("bg-teal-500", "text-white", "hover:bg-teal-600");
 
-              if (!amount || parseFloat(amount) <= 0) {
-                  cardErrors.textContent = '{% trans "Please select or enter a valid donation amount." %}';
-                  return;
-              }
+              // Update description and button text
+              typeDescription.textContent = type === "one_time" ?
+                  "{% trans 'Support our mission with a one-time donation' %}" :
+                  "{% trans 'Provide sustainable support with automatic monthly donations' %}";
 
-              // Get email
-              const email = document.getElementById('donation-email').value;
-              if (!email) {
-                  cardErrors.textContent = '{% trans "Please enter your email address." %}';
-                  return;
-              }
+              document.getElementById('button-text').textContent = type === "one_time" ?
+                  "{% trans 'Donate Now' %}" :
+                  "{% trans 'Start Monthly Donation' %}";
 
-              // Get message and anonymous status
-              const message = document.getElementById('donation-message').value;
-              const anonymous = document.getElementById('anonymous-donation').checked;
+              // Toggle subscription notice
+              const subscriptionNotice = document.getElementById('subscription-notice');
+              subscriptionNotice.classList.toggle('hidden', type === "one_time");
 
-              if (isSubscription) {
-                  // Handle subscription payment
-                  handleSubscriptionPayment(amount, email, message, anonymous);
-              } else {
-                  // Handle one-time payment
-                  handleOneTimePayment(amount, email, message, anonymous);
-              }
-          });
+              // Reset payment form
+              resetPaymentForm();
+          }
 
-          // Handle one-time payment
-          async function handleOneTimePayment(amount, email, message, anonymous) {
-              // Show loading state
-              submitButton.disabled = true;
-              buttonText.textContent = '{% trans "Processing..." %}';
-              spinner.classList.remove('hidden');
-              cardErrors.textContent = '';
-
+          // Update the debouncedInitialize function
+          const debouncedInitialize = debounce(async function() {
               try {
-                  // Create payment intent
-                  const response = await fetch('{% url "create_donation_payment_intent" %}', {
+                  const amount = getSelectedAmount();
+                  const email = emailInput.value.trim();
+                  const isSubscription = donationType === "subscription";
+
+                  if (!amount || parseFloat(amount) <= 0) {
+                      showMessage("{% trans 'Please select or enter a valid donation amount' %}", "error");
+                      return;
+                  }
+
+                  if (!email) {
+                      showMessage("{% trans 'Please enter your email address' %}", "error");
+                      return;
+                  }
+
+                  // Show loading state
+                  const loadingElement = document.getElementById('payment-loading');
+                  const loadingText = document.getElementById('payment-loading-text');
+                  const paymentElement = document.getElementById('payment-element');
+
+                  loadingElement.classList.remove('hidden');
+                  loadingElement.style.display = 'flex';
+                  loadingElement.style.opacity = '1';
+                  paymentElement.style.minHeight = '150px';
+
+                  loadingText.textContent = "{% trans 'Initializing payment system...' %}";
+                  showMessage("", "info");
+
+                  // Create payment intent or subscription
+                  const response = await fetch(isSubscription ? "{% url 'create_donation_subscription' %}" : "{% url 'create_donation_payment_intent' %}", {
                       method: 'POST',
                       headers: {
                           'Content-Type': 'application/json',
@@ -330,117 +485,323 @@
                       },
                       body: JSON.stringify({
                           amount: amount,
-                          message: message,
-                          anonymous: anonymous
+                          email: email,
+                          message: document.getElementById('donation-message').value,
+                          anonymous: document.getElementById('anonymous-donation').checked,
+                          donation_type: donationType
                       })
                   });
 
-                  const data = await response.json();
+                  if (!response.ok) {
+                      throw new Error(await response.text());
+                  }
 
+                  const data = await response.json();
                   if (data.error) {
                       throw new Error(data.error);
                   }
 
-                  // Confirm payment
+                  // Initialize Stripe if needed
+                  if (!stripe) {
+                      if (!('{{ stripe_public_key }}')) {
+                          throw new Error('Stripe public key is missing');
+                      }
+                      stripe = Stripe('{{ stripe_public_key }}');
+                  }
+
+                  // Initialize Elements
+                  if (elements) {
+                      elements.unmount();
+                  }
+
+                  elements = stripe.elements({
+                      clientSecret: data.clientSecret,
+                      appearance: {
+                          theme: 'stripe',
+                          variables: {
+                              colorPrimary: '#0d9488',
+                              colorBackground: document.documentElement.classList.contains('dark') ? '#1f2937' : '#ffffff',
+                              colorText: document.documentElement.classList.contains('dark') ? '#f3f4f6' : '#1f2937',
+                          }
+                      }
+                  });
+
+                  // Create and mount payment element with proper subscription handling
+                  const payment = elements.create('payment', {
+                      layout: "tabs",
+                      defaultValues: {
+                          billingDetails: {
+                              email: email,
+                          }
+                      },
+                      terms: isSubscription ? {
+                          card: 'always',
+                          auBecsDebit: 'always',
+                          sepaDebit: 'always',
+                          bancontact: 'always',
+                          ideal: 'always',
+                          sofort: 'always'
+                      } : undefined,
+                      wallets: {
+                          applePay: 'auto',
+                          googlePay: 'auto'
+                      }
+                  });
+
+                  try {
+                      await payment.mount('#payment-element');
+                      hideLoadingState();
+                      showMessage("", "info");
+                  } catch (mountError) {
+                      console.error('Payment Element Mount Error:', mountError);
+                      throw new Error('Failed to initialize payment form');
+                  }
+
+              } catch (error) {
+                  console.error('Payment Initialization Error:', error);
+                  hideLoadingState();
+                  showMessage(error.message || "{% trans 'Failed to initialize payment. Please try again.' %}", "error");
+              }
+          }, 500);
+
+          // Update event listeners for donation type buttons
+          oneTimeBtn.addEventListener('click', () => {
+              if (donationType !== "one_time") {
+                  updateDonationTypeUI("one_time");
+              }
+          });
+
+          monthlyBtn.addEventListener('click', () => {
+              if (donationType !== "subscription") {
+                  updateDonationTypeUI("subscription");
+              }
+          });
+
+          // Style configurations for amount buttons
+          const buttonStyles = {
+              inactive: {
+                  remove: [
+                      'bg-blue-100', 'dark:bg-blue-900', 'text-blue-700', 'dark:text-blue-300',
+                      'bg-teal-50', 'dark:bg-teal-900/20', 'border-teal-300', 'dark:border-teal-600'
+                  ],
+                  add: [
+                      'bg-gray-50', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300',
+                      'border-gray-200', 'dark:border-gray-600'
+                  ]
+              },
+              active: {
+                  remove: [
+                      'bg-gray-50', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300',
+                      'border-gray-200', 'dark:border-gray-600'
+                  ],
+                  add: [
+                      'bg-teal-50', 'dark:bg-teal-900/20', 'text-teal-700', 'dark:text-teal-300',
+                      'border-teal-300', 'dark:border-teal-600'
+                  ]
+              }
+          };
+
+          // Function to update button styles
+          function updateButtonStyles(buttons, activeButton = null) {
+              buttons.forEach(button => {
+                  const styles = button === activeButton ? buttonStyles.active : buttonStyles.inactive;
+                  button.classList.remove(...styles.remove);
+                  button.classList.add(...styles.add);
+              });
+          }
+
+          // Debounced amount selection handler
+          const handleAmountSelection = debounce((amount) => {
+              if (updateFinalAmount(amount)) {
+                  debouncedInitialize();
+              }
+          }, 300);
+
+          // Event listeners for amount buttons
+          amountButtons.forEach(button => {
+              button.addEventListener('click', function() {
+                  updateButtonStyles(amountButtons, this);
+                  customAmountInput.value = '';
+                  const selectedAmount = this.getAttribute('data-amount');
+                  handleAmountSelection(selectedAmount);
+              });
+          });
+
+          // Event listener for custom amount input
+          customAmountInput.addEventListener('input', function() {
+              updateButtonStyles(amountButtons); // Reset all buttons
+              handleAmountSelection(this.value);
+          });
+
+          try {
+              if (!('{{ stripe_public_key }}')) {
+                  throw new Error('Stripe public key is missing');
+              }
+
+              stripe = Stripe('{{ stripe_public_key }}');
+              form.addEventListener("submit", handleSubmit);
+          } catch (error) {
+              console.error('[Fatal Error]', error);
+              showMessage("Payment system initialization failed. Please try again later.");
+          }
+
+          async function handleSubmit(e) {
+              e.preventDefault();
+              setLoading(true);
+
+              try {
+                  if (!elements) {
+                      throw new Error("{% trans 'Payment system not initialized. Please try again.' %}");
+                  }
+
+                  const amount = getSelectedAmount();
+                  const email = emailInput.value.trim();
+                  const isSubscription = donationType === "subscription";
+
+                  // Submit the payment element first
                   const {
-                      error,
-                      paymentIntent
-                  } = await stripe.confirmCardPayment(data.clientSecret, {
-                      payment_method: {
-                          card: cardElement,
-                          billing_details: {
-                              email: email
+                      error: submitError
+                  } = await elements.submit();
+                  if (submitError) {
+                      throw submitError;
+                  }
+
+                  // Create payment intent or subscription
+                  const response = await fetch(isSubscription ? "{% url 'create_donation_subscription' %}" : "{% url 'create_donation_payment_intent' %}", {
+                      method: 'POST',
+                      headers: {
+                          'Content-Type': 'application/json',
+                          'X-CSRFToken': getCookie('csrftoken')
+                      },
+                      body: JSON.stringify({
+                          amount: amount,
+                          email: email,
+                          message: document.getElementById('donation-message').value,
+                          anonymous: document.getElementById('anonymous-donation').checked,
+                          donation_type: donationType
+                      })
+                  });
+
+                  if (!response.ok) {
+                      const errorText = await response.text();
+                      throw new Error(errorText);
+                  }
+
+                  const data = await response.json();
+                  if (data.error) {
+                      throw new Error(data.error);
+                  }
+
+                  // Use confirmPayment for both one-time and subscription
+                  const {
+                      error
+                  } = await stripe.confirmPayment({
+                      elements,
+                      confirmParams: {
+                          return_url: window.location.origin + "{% url 'donation_success' %}?donation_id=" + data.donation_id,
+                          payment_method_data: {
+                              billing_details: {
+                                  email: email
+                              }
                           }
                       }
                   });
 
                   if (error) {
-                      throw new Error(error.message);
+                      throw error;
                   }
 
-                  // Payment succeeded, redirect to success page
-                  window.location.href = `{% url "donation_success" %}?donation_id=${data.donation_id}`;
+                  showMessage(isSubscription ?
+                      "{% trans 'Setting up your monthly donation...' %}" :
+                      "{% trans 'Processing your donation...' %}", "success");
 
               } catch (error) {
-                  cardErrors.textContent = error.message;
-                  submitButton.disabled = false;
-                  buttonText.textContent = '{% trans "Donate Now" %}';
-                  spinner.classList.add('hidden');
+                  console.error('Payment Error:', error);
+                  let errorMessage;
+
+                  if (error.type === "card_error" || error.type === "validation_error") {
+                      errorMessage = error.message;
+                  } else if (error.type === "invalid_request_error") {
+                      errorMessage = "{% trans 'Invalid payment request. Please check your details and try again.' %}";
+                  } else {
+                      errorMessage = error.message || "{% trans 'An unexpected error occurred. Please try again.' %}";
+                  }
+
+                  showMessage(errorMessage, "error");
+              } finally {
+                  setLoading(false);
               }
           }
 
-          // Handle subscription payment
-          async function handleSubscriptionPayment(amount, email, message, anonymous) {
-              // Show loading state
-              const subscriptionButton = document.getElementById('submit-subscription');
-              const subscriptionButtonText = document.getElementById('subscription-button-text');
-              const subscriptionSpinner = document.getElementById('subscription-spinner');
-              const subscriptionCardErrors = document.getElementById('subscription-card-errors');
+          function showMessage(messageText, type = "error") {
+              const messageDiv = document.querySelector("#payment-message");
+              if (!messageDiv) return;
 
-              subscriptionButton.disabled = true;
-              subscriptionButtonText.textContent = '{% trans "Processing..." %}';
-              subscriptionSpinner.classList.remove('hidden');
-              subscriptionCardErrors.textContent = '';
+              messageDiv.textContent = messageText;
+              messageDiv.classList.remove(
+                  "text-red-500", "text-green-500", "text-blue-500",
+                  "bg-red-50", "bg-green-50", "bg-blue-50",
+                  "border", "border-red-200", "border-green-200", "border-blue-200",
+                  "dark:bg-red-900/20", "dark:bg-green-900/20", "dark:bg-blue-900/20",
+                  "dark:border-red-800", "dark:border-green-800", "dark:border-blue-800",
+                  "dark:text-red-400", "dark:text-green-400", "dark:text-blue-400"
+              );
 
-              try {
-                  // Create payment method
-                  const {
-                      paymentMethod,
-                      error
-                  } = await stripe.createPaymentMethod({
-                      type: 'card',
-                      card: subscriptionCardElement,
-                      billing_details: {
-                          email: email
-                      }
-                  });
+              if (messageText) {
+                  messageDiv.classList.add(
+                      "p-4", "rounded-lg", "border", "text-sm", "font-medium"
+                  );
 
-                  if (error) {
-                      throw new Error(error.message);
+                  if (type === "success") {
+                      messageDiv.classList.add(
+                          "bg-green-50", "border-green-200", "text-green-500",
+                          "dark:bg-green-900/20", "dark:border-green-800", "dark:text-green-400"
+                      );
+                  } else if (type === "info") {
+                      messageDiv.classList.add(
+                          "bg-blue-50", "border-blue-200", "text-blue-500",
+                          "dark:bg-blue-900/20", "dark:border-blue-800", "dark:text-blue-400"
+                      );
+                  } else {
+                      messageDiv.classList.add(
+                          "bg-red-50", "border-red-200", "text-red-500",
+                          "dark:bg-red-900/20", "dark:border-red-800", "dark:text-red-400"
+                      );
                   }
-
-                  // Create subscription
-                  const response = await fetch('{% url "create_donation_subscription" %}', {
-                      method: 'POST',
-                      headers: {
-                          'Content-Type': 'application/json',
-                          'X-CSRFToken': getCookie('csrftoken')
-                      },
-                      body: JSON.stringify({
-                          amount: amount,
-                          message: message,
-                          anonymous: anonymous,
-                          payment_method_id: paymentMethod.id
-                      })
-                  });
-
-                  const data = await response.json();
-
-                  if (data.error) {
-                      throw new Error(data.error);
-                  }
-
-                  // Confirm subscription
-                  const {
-                      error: confirmError
-                  } = await stripe.confirmCardPayment(data.client_secret);
-
-                  if (confirmError) {
-                      throw new Error(confirmError.message);
-                  }
-
-                  // Subscription succeeded, redirect to success page
-                  window.location.href = `{% url "donation_success" %}?donation_id=${data.donation_id}`;
-
-              } catch (error) {
-                  subscriptionCardErrors.textContent = error.message;
-                  subscriptionButton.disabled = false;
-                  subscriptionButtonText.textContent = '{% trans "Subscribe Monthly" %}';
-                  subscriptionSpinner.classList.add('hidden');
               }
           }
 
-          // Helper function to get CSRF token
+          function setLoading(isLoading) {
+              const submitButton = document.querySelector("#submit-button");
+              const spinner = document.querySelector("#spinner");
+              const buttonText = document.querySelector("#button-text");
+
+              if (!submitButton || !spinner || !buttonText) return;
+
+              submitButton.disabled = isLoading;
+              submitButton.setAttribute('aria-busy', isLoading);
+
+              if (isLoading) {
+                  spinner.classList.remove("hidden");
+                  buttonText.classList.add("opacity-0");
+                  submitButton.classList.add("cursor-not-allowed");
+              } else {
+                  spinner.classList.add("hidden");
+                  buttonText.classList.remove("opacity-0");
+                  submitButton.classList.remove("cursor-not-allowed");
+              }
+          }
+
+          function getSelectedAmount() {
+              const customAmount = document.getElementById('custom-amount')?.value;
+              if (customAmount) {
+                  return customAmount;
+              }
+
+              const activeButton = document.querySelector('.amount-btn.bg-teal-50, .amount-btn.dark\\:bg-teal-900\\/20');
+              return activeButton ? activeButton.getAttribute('data-amount') : null;
+          }
+
           function getCookie(name) {
               let cookieValue = null;
               if (document.cookie && document.cookie !== '') {
@@ -455,6 +816,64 @@
               }
               return cookieValue;
           }
+
+          // Initialize with default value if available
+          const defaultAmount = getSelectedAmount();
+          if (defaultAmount) {
+              updateFinalAmount(defaultAmount);
+          }
+
+          // Initialize UI with one-time donation as default
+          updateDonationTypeUI("one_time");
+
+          // Initialize payment if we have the required fields
+          if (canInitializePayment()) {
+              debouncedInitialize();
+          }
       });
+
+      // Add helper function to hide loading state
+      function hideLoadingState() {
+          const loadingElement = document.getElementById('payment-loading');
+          const paymentElement = document.getElementById('payment-element');
+
+          loadingElement.style.opacity = '0';
+          setTimeout(() => {
+              loadingElement.style.display = 'none';
+              loadingElement.classList.add('hidden');
+
+              // Adjust payment element height after loading
+              if (elements) {
+                  paymentElement.style.minHeight = 'auto';
+              } else {
+                  paymentElement.style.minHeight = '0';
+              }
+          }, 300);
+      }
+
+      // Update resetPaymentForm function
+      function resetPaymentForm() {
+          // Clear any existing payment elements
+          if (elements) {
+              elements.unmount();
+              elements = null;
+          }
+
+          // Reset payment element container
+          const paymentElement = document.getElementById('payment-element');
+          paymentElement.innerHTML = '';
+          paymentElement.style.minHeight = '0';
+
+          // Hide loading indicator
+          hideLoadingState();
+
+          // Clear any error messages
+          showMessage("", "info");
+
+          // If we have an amount and email, initialize new payment
+          if (canInitializePayment()) {
+              debouncedInitialize();
+          }
+      }
   </script>
 {% endblock extra_js %}
