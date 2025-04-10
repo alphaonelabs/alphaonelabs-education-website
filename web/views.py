@@ -3633,16 +3633,20 @@ def fetch_video_title(request):
         if not title:
             # Try to extract title from HTML content
             content = response.text
-            title_match = re.search(r"<title>(.*?)</title>", content)
-            title = title_match.group(1) if title_match else "Untitled Video"
+            title_match = re.search(r"<title>(.*?)</title>", content, re.IGNORECASE | re.DOTALL)
+            title = title_match.group(1).strip() if title_match else "Untitled Video"
 
             # Sanitize the title
             title = html.escape(title)
 
         return JsonResponse({"title": title})
 
-    except requests.RequestException:
-        return JsonResponse({"error": "Failed to fetch video title:"}, status=500)
+    except requests.RequestException as e:
+        logger.error(f"Error fetching video title from {url}: {str(e)}")
+        return JsonResponse({"error": f"Failed to fetch video title: {str(e)}"}, status=500)
+    except Exception as e:
+        logger.error(f"Unexpected error fetching video title from {url}: {str(e)}")
+        return JsonResponse({"error": "An unexpected error occurred while fetching the title"}, status=500)
 
 
 def get_referral_stats():
