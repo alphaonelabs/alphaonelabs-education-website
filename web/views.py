@@ -4794,10 +4794,12 @@ def donation_webhook(request):
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
         logger.info("Received Stripe webhook: %s", event.type)
     except ValueError as e:
-        logger.exception("Invalid payload: %s", str(e))
+        logger.error(f"ValueError occurred: {e}")
+        logger.exception("Invalid payload")
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError as e:
-        logger.exception("Invalid signature: %s", str(e))
+        logger.error(f"Signature verification failed: {e}")
+        logger.exception("Invalid signature")
         return HttpResponse(status=400)
 
     try:
@@ -5010,7 +5012,6 @@ def donation_success(request):
 
     try:
         donation = Donation.objects.get(id=donation_id)
-
         # If we got here from a successful redirect, update the status
         if redirect_status == "succeeded" and payment_intent:
             # Double check with Stripe that the payment was successful
@@ -5019,13 +5020,12 @@ def donation_success(request):
                 if stripe_payment.status == "succeeded":
                     donation.status = "completed"
                     donation.save()
-
                     # Send thank you email if not already sent
                     send_donation_thank_you_email(donation)
             except stripe.error.StripeError:
                 logger.exception("Error verifying payment intent")
-                # Continue to show the success page even if verification fails
-                # The webhook will eventually update the status
+                # Continue to show the success page even if verification fails;
+                # the webhook will eventually update the status
 
         if donation.status == "completed":
             context = {
@@ -5039,9 +5039,13 @@ def donation_success(request):
     except Donation.DoesNotExist:
         messages.error(request, "Invalid donation ID.")
         return redirect("donate")
+    except stripe.error.StripeError:
+        logger.exception("Stripe error in donation_success view")
+        messages.error(request, "A payment processing error occurred. Please check your payment details.")
+        return redirect("donate")
     except Exception:
-        logger.exception("Error in donation_success view")
-        messages.error(request, "An error occurred while processing your donation.")
+        logger.exception("Unexpected error in donation_success view")
+        messages.error(request, "An unexpected error occurred while processing your donation.")
         return redirect("donate")
 
 
