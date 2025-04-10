@@ -315,37 +315,36 @@ def add_question(request, quiz_id):
         # Handle true/false questions differently
         question_type = request.POST.get('question_type')
         
-        if question_type == 'true_false':
-            # For true/false questions, we'll handle the formset differently
-            if form.is_valid():
-                with transaction.atomic():
-                    question = form.save(commit=True)
-                    question.order = next_order
-                    question.save()
-                    
-                    # Create "True" and "False" options
-                    true_option = QuizOption(
-                        question=question,
-                        text="True",
-                        is_correct=request.POST.get('true_false_answer') == 'true',
-                        order=0
-                    )
-                    true_option.save()
-                    
-                    false_option = QuizOption(
-                        question=question,
-                        text="False",
-                        is_correct=request.POST.get('true_false_answer') == 'false',
-                        order=1
-                    )
-                    false_option.save()
+        # Handle true/false questions differently
+        if form.is_valid() and form.cleaned_data['question_type'] == 'true_false':
+            with transaction.atomic():
+                question = form.save(commit=True)
+                question.order = next_order
+                question.save()
                 
-                messages.success(request, "Question added successfully.")
+                # Create "True" and "False" options
+                true_correct = request.POST.get('true_false_answer') == 'true'
                 
-                # Check if we should redirect to add another question
-                if 'save_and_add' in request.POST:
-                    return redirect('add_question', quiz_id=quiz.id)
-                return redirect('quiz_detail', quiz_id=quiz.id)
+                # Create or update the "True" option
+                true_option = QuizOption(
+                    question=question,
+                    text="True",
+                    is_correct=true_correct,
+                    order=0
+                )
+                true_option.save()
+                
+                # Create or update the "False" option
+                false_option = QuizOption(
+                    question=question,
+                    text="False",
+                    is_correct=not true_correct,
+                    order=1
+                )
+                false_option.save()
+                
+            messages.success(request, "Question added successfully.")
+            return redirect('quiz_detail', quiz_id=quiz.id)
         else:
             # For other question types, use the formset as before
             formset = QuizOptionFormSet(request.POST, request.FILES, prefix="options")

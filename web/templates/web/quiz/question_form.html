@@ -282,32 +282,29 @@
             </p>
           </div>
           <!-- True/False Options -->
-          <div id="true-false-options"
-               class="mb-8 {% if not question.type or question.type != 'true_false' %}hidden{% endif %}">
+          <div id="true-false-options" class="mb-8 hidden">
             <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Correct Answer</h2>
             <div class="space-y-3">
               <div class="flex items-center">
                 <input type="radio"
-                       name="true_false_answer"
-                       id="true_answer"
-                       value="true"
-                       {% if question.type == 'true_false' and question.options.first.is_correct %}checked{% endif %}
-                       class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
-                       required />
+                      name="true_false_answer"
+                      id="true_answer"
+                      value="true"
+                      class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300" />
                 <label for="true_answer" class="ml-3 block text-gray-700 dark:text-gray-300">True</label>
               </div>
               <div class="flex items-center">
                 <input type="radio"
-                       name="true_false_answer"
-                       id="false_answer"
-                       value="false"
-                       {% if question.type == 'true_false' and question.options.last.is_correct %}checked{% endif %}
-                       class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
-                       required />
-                <label for="false_answer"
-                       class="ml-3 block text-gray-700 dark:text-gray-300">False</label>
+                      name="true_false_answer"
+                      id="false_answer"
+                      value="false"
+                      class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300" />
+                <label for="false_answer" class="ml-3 block text-gray-700 dark:text-gray-300">False</label>
               </div>
             </div>
+            <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+              Select the correct answer for this true/false question.
+            </p>
           </div>
           <!-- Short Answer Options -->
           <div id="short-answer-options"
