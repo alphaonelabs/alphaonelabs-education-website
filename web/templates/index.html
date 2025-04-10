@@ -549,20 +549,70 @@
         </div>
         <!-- Educational Videos -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800 mb-6">
-          <h2 class="text-xl font-semibold flex items-center">
-            <span class="mr-2">🎬</span> Educational Videos
+          <h2 class="text-xl font-semibold flex items-center justify-between">
+            <div class="flex items-center">
+              <span class="mr-2">🎬</span> Educational Videos
+            </div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <i class="fas fa-video mr-1"></i>
+              <span>{{ video_count|default:"0" }} videos</span>
+            </div>
           </h2>
-          <div class="col-span-full text-center">
-            <div class="pt-6 text-center">
+          <div class="col-span-full">
+            <div class="pt-4 text-center">
               <p class="text-gray-600 dark:text-gray-300 mb-4 max-w-lg mx-auto">
                 Discover a wide range of educational videos shared by our community of teachers and learners.
                 From science and technology to arts and languages, find videos that help you learn new skills and concepts.
               </p>
-              <div class="mt-4 flex gap-4">
+              {% if user.is_authenticated %}
+                <!-- Quick Add Video Form -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4 max-w-lg mx-auto">
+                  <h3 class="text-sm font-semibold mb-2 text-left">Quick Add YouTube Video</h3>
+                  <form id="quick-video-form" class="flex flex-col gap-3">
+                    {% csrf_token %}
+                    <div class="flex gap-2">
+                      <div class="flex-grow">
+                        <input type="url"
+                               id="video-url"
+                               name="video_url"
+                               placeholder="Paste YouTube URL here"
+                               required
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                      </div>
+                      <button type="button"
+                              id="fetch-title-btn"
+                              class="bg-teal-300 hover:bg-teal-400 text-white px-3 py-2 rounded-lg transition duration-200">
+                        <i class="fas fa-search"></i>
+                      </button>
+                    </div>
+                    <input type="text"
+                           id="video-title"
+                           name="title"
+                           placeholder="Video title (auto-filled)"
+                           required
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                    <div class="flex gap-2">
+                      <select id="video-category"
+                              name="category"
+                              required
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                        <option value="">Select a category</option>
+                        {% for subject in subjects %}<option value="{{ subject.id }}">{{ subject.name }}</option>{% endfor %}
+                      </select>
+                      <button type="submit"
+                              class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Add
+                      </button>
+                    </div>
+                    <div id="quick-add-message" class="text-left text-sm hidden"></div>
+                  </form>
+                </div>
+              {% endif %}
+              <div class="mt-4 flex justify-center gap-4">
                 {% if user.is_authenticated %}
                   <a href="{% url 'upload_educational_video' %}"
                      class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full flex items-center">
-                    <i class="fas fa-upload mr-2"></i> Share
+                    <i class="fas fa-upload mr-2"></i> Upload
                   </a>
                 {% endif %}
                 <a href="{% url 'educational_videos_list' %}"
@@ -1121,3 +1171,126 @@
       });
   </script>
 {% endblock content %}
+{% block extra_js %}
+  {{ block.super }}
+  <!-- Quick Add Video JavaScript -->
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          const quickForm = document.getElementById('quick-video-form');
+          const videoUrlInput = document.getElementById('video-url');
+          const videoTitleInput = document.getElementById('video-title');
+          const fetchTitleBtn = document.getElementById('fetch-title-btn');
+          const messageDiv = document.getElementById('quick-add-message');
+
+          if (fetchTitleBtn) {
+              fetchTitleBtn.addEventListener('click', function() {
+                  const url = videoUrlInput.value.trim();
+                  if (!url) {
+                      showMessage('Please enter a YouTube URL', 'error');
+                      return;
+                  }
+
+                  // Show loading state
+                  fetchTitleBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                  fetchTitleBtn.disabled = true;
+
+                  // Fetch the video title
+                  fetch(`/fetch-video-title/?url=${encodeURIComponent(url)}`)
+                      .then(response => response.json())
+                      .then(data => {
+                          fetchTitleBtn.innerHTML = '<i class="fas fa-search"></i>';
+                          fetchTitleBtn.disabled = false;
+
+                          if (data.error) {
+                              showMessage(data.error, 'error');
+                          } else {
+                              videoTitleInput.value = data.title;
+                              showMessage('Title fetched successfully!', 'success');
+                          }
+                      })
+                      .catch(error => {
+                          fetchTitleBtn.innerHTML = '<i class="fas fa-search"></i>';
+                          fetchTitleBtn.disabled = false;
+                          showMessage('Failed to fetch video title', 'error');
+                          console.error('Error:', error);
+                      });
+              });
+          }
+
+          if (quickForm) {
+              quickForm.addEventListener('submit', function(e) {
+                  e.preventDefault();
+
+                  const formData = new FormData(quickForm);
+
+                  // Disable the submit button
+                  const submitBtn = quickForm.querySelector('button[type="submit"]');
+                  const originalBtnContent = submitBtn.innerHTML;
+                  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+                  submitBtn.disabled = true;
+
+                  // Get CSRF token from the form
+                  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                  fetch('/videos/upload/', {
+                          method: 'POST',
+                          body: formData,
+                          headers: {
+                              'X-Requested-With': 'XMLHttpRequest',
+                              'X-CSRFToken': csrfToken
+                          }
+                      })
+                      .then(response => {
+                          if (!response.ok) {
+                              throw new Error('Network response was not ok');
+                          }
+                          return response.json();
+                      })
+                      .then(data => {
+                          submitBtn.innerHTML = originalBtnContent;
+                          submitBtn.disabled = false;
+
+                          if (data.success) {
+                              // Reset the form
+                              quickForm.reset();
+                              showMessage('Video added successfully!', 'success');
+
+                              // Update the video count
+                              const countElement = document.querySelector('h2 span:last-child');
+                              if (countElement) {
+                                  const currentCount = parseInt(countElement.textContent.split(' ')[0]) || 0;
+                                  countElement.textContent = `${currentCount + 1} videos`;
+                              }
+                          } else {
+                              showMessage(data.error || 'Failed to add video', 'error');
+                          }
+                      })
+                      .catch(error => {
+                          submitBtn.innerHTML = originalBtnContent;
+                          submitBtn.disabled = false;
+                          showMessage('Error adding video', 'error');
+                          console.error('Error:', error);
+                      });
+              });
+          }
+
+          function showMessage(message, type) {
+              if (!messageDiv) return;
+
+              messageDiv.textContent = message;
+              messageDiv.classList.remove('hidden', 'text-green-600', 'text-red-600');
+
+              if (type === 'success') {
+                  messageDiv.classList.add('text-green-600', 'dark:text-green-400');
+              } else {
+                  messageDiv.classList.add('text-red-600', 'dark:text-red-400');
+              }
+
+              // Hide the message after 5 seconds
+              setTimeout(() => {
+                  messageDiv.classList.add('hidden');
+              }, 5000);
+          }
+      });
+  </script>
+{% endblock extra_js %}

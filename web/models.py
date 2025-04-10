@@ -711,7 +711,14 @@ class EducationalVideo(models.Model):
     description = models.TextField()
     video_url = models.URLField(help_text="URL for external content like YouTube videos")
     category = models.ForeignKey(Subject, on_delete=models.PROTECT, related_name="educational_videos")
-    uploader = models.ForeignKey(User, on_delete=models.CASCADE, related_name="educational_videos")
+    uploader = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="educational_videos",
+        null=True,
+        blank=True,
+        help_text="User who uploaded the video. If null, the submission is considered anonymous.",
+    )
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
