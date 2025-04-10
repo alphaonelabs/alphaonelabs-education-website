@@ -5,7 +5,7 @@ import time
 import uuid
 from datetime import datetime, timedelta
 from io import BytesIO
-from typing import ClassVar, List, Tuple
+from typing import ClassVar
 
 from allauth.account.signals import user_signed_up
 from django.conf import settings
@@ -2076,19 +2076,8 @@ class LearningStreak(models.Model):
 class Quiz(models.Model):
     """Model for storing custom quizzes created by users."""
 
-    class ExamType(models.TextChoices):
-        SESSION = "session", "Session Exam"
-        COURSE = "course", "Course Exam"
-        QUIZ = "quiz", "Quiz"
-
-    exam_type = models.CharField(
-        max_length=10,
-        choices=ExamType.choices,
-        default=ExamType.QUIZ,
-    )
-
     STATUS_CHOICES = [("draft", "Draft"), ("published", "Published"), ("private", "Private")]
-    EXAM_TYPES: ClassVar[List[Tuple[str, str]]] = [
+    EXAM_TYPES: ClassVar[list[tuple[str, str]]] = [
         ("session", "Session Exam"),
         ("course", "Course Exam"),
         ("quiz", "Quiz"),
@@ -2125,7 +2114,7 @@ class Quiz(models.Model):
 class QuizQuestion(models.Model):
     """Model for storing quiz questions."""
 
-    QUESTION_TYPES: ClassVar[List[Tuple[str, str]]] = [
+    QUESTION_TYPES: ClassVar[list[tuple[str, str]]] = [
         ("multiple", "Multiple Choice"),
         ("true_false", "True/False"),
         ("short", "Short Answer"),

@@ -1359,7 +1359,7 @@
       });
 
 
-      function loadCalendar(year, month) {
+            function loadCalendar(year, month) {
           fetch(`/courses/{{ course.slug }}/calendar/?year=${year}&month=${month}`)
               .then(response => response.json())
               .then(data => {
@@ -1374,21 +1374,6 @@
                       week.forEach(day => {
                           const today = day.is_today ? 'bg-gray-100 dark:bg-gray-700' : '';
                           html += `
-<<<<<<< HEAD
-			<div class="p-2 border-b border-r dark:border-gray-700 ${today}">
-			${day.date ? `
-				<div class="relative">
-				<span class="${day.has_session ? 'font-bold text-teal-600 dark:text-teal-400' : ''}">
-					${new Date(day.date).getDate()}
-				</span>
-				${day.has_session ? `
-					<div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-teal-500 dark:bg-teal-400 rounded-full"></div>
-				` : ''}
-				</div>
-			` : ''}
-			</div>
-		`;
-=======
             <div class="p-2 border-b border-r dark:border-gray-700 ${today}">
               ${day.date ? `
                 <div class="relative">
@@ -1402,7 +1387,6 @@
               ` : ''}
             </div>
           `;
->>>>>>> e024b06889f3b81f5ce9673a742c17fa217645d0
                       });
                   });
 

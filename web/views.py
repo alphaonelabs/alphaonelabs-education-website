@@ -782,13 +782,9 @@ def course_detail(request, slug):
     for item in rating_counts:
         rating_distribution[item["rating"]] = item["count"]
 
-<<<<<<< HEAD
-    #  # Get materials
-    # materials = Material.objects.filter(course=course)
-
     # NEW CODE: Prepare exam data in the view
     # 1. Get course-level exams (not associated with specific sessions)
-    course_exams = course.exams.filter(exam_type="course", session__isnull=True)
+    course_exams = course.exams.filter(exam_type="course", session__isnull=True).prefetch_related('user_quizzes')
 
     # 2. Process each course exam (with user attempts and submission counts)
     course_exam_data = []
@@ -796,12 +792,12 @@ def course_detail(request, slug):
         # Get user's attempts for this exam
         user_attempt = None
         if request.user.is_authenticated:
-            user_attempt = exam.user_quizzes.filter(user=request.user).first()
+            user_attempt = next((q for q in exam.user_quizzes.all() if q.user == request.user), None)
 
         # Get submission count for teachers
         submission_count = 0
         if is_teacher:
-            submission_count = exam.user_quizzes.filter(completed=True).count()
+            submission_count = sum(1 for q in exam.user_quizzes.all() if q.completed)
 
         course_exam_data.append(
             {
@@ -815,14 +811,14 @@ def course_detail(request, slug):
     session_data = []
     for session in sessions:
         # Get all exams for this session
-        session_exams = session.exams.all()
+        session_exams = session.exams.all().prefetch_related('user_quizzes')
         session_exam_data = []
 
         # Process each exam in this session
         for exam in session_exams:
             user_attempt = None
             if request.user.is_authenticated:
-                user_attempt = exam.user_quizzes.filter(user=request.user).first()
+                user_attempt = next((q for q in exam.user_quizzes.all() if q.user == request.user), None)
 
             session_exam_data.append(
                 {
@@ -838,14 +834,12 @@ def course_detail(request, slug):
             }
         )
 
-=======
     # Build the absolute discount URL using the discount view's URL name.
     from urllib.parse import urlencode
 
     discount_relative = reverse("apply_discount_via_referrer")
     discount_params = urlencode({"course_id": course.id})
     discount_url = request.build_absolute_uri(f"{discount_relative}?{discount_params}")
->>>>>>> e024b06889f3b81f5ce9673a742c17fa217645d0
     context = {
         "course": course,
         "sessions": sessions,
@@ -867,13 +861,10 @@ def course_detail(request, slug):
         "user_review": user_review,
         "rating_distribution": rating_distribution,
         "reviews_num": reviews_num,
-<<<<<<< HEAD
         "course_exams": course_exams,
         "course_exam_data": course_exam_data,
         "session_data": session_data,
-=======
         "discount_url": discount_url,
->>>>>>> e024b06889f3b81f5ce9673a742c17fa217645d0
     }
 
     return render(request, "courses/detail.html", context)
@@ -3650,13 +3641,21 @@ def challenge_submit(request, challenge_id):
         if form.is_valid():
             try:
                 ai_response = ai_assignment_corrector(challenge_detail)
-            except Exception as e:
+            except (ValueError, AttributeError) as e:
                 # Log the error but continue with default values
-                logger.error(f"AI correction failed: {str(e)}")
+                logger.exception("AI correction failed: %s", str(e))
                 ai_response = {
                     "student_feedback": "Automatic feedback unavailable at this time.",
                     "teacher_feedback": "AI evaluation service encountered an error.",
-                    "degree": 0,  # Default score
+                    "degree": 0,
+                }
+            except Exception as e:
+                # Handle unexpected errors
+                logger.exception("Unexpected error in AI correction: %s", str(e))
+                ai_response = {
+                    "student_feedback": "System error occurred during evaluation.",
+                    "teacher_feedback": "Unexpected error in AI evaluation service.",
+                    "degree": 0,
                 }
 
             submission = form.save(commit=False)

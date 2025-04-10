@@ -13,10 +13,11 @@
 
           // Function to toggle options visibility
           function toggleOptionsVisibility() {
-              if (questionTypeField.value === 'short') {
-                  optionsSection.classList.add('hidden');
-              } else {
+              if (questionTypeField.value === 'multiple' || questionTypeField.value === 'true_false') {
                   optionsSection.classList.remove('hidden');
+              } else {
+                  // optionsSection.classList.remove('hidden');
+                  optionsSection.classList.add('hidden');
               }
           }
 
