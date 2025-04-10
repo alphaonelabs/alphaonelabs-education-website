@@ -2577,13 +2577,13 @@ def checkout_success(request):
 
             # Create a new user account with transaction and better username generation
             with transaction.atomic():
-                base_username = email.split("@")[0][:15]  # Limit length
+                # Generate a random username without using the email
                 timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
-                username = f"{base_username}_{timestamp}"
+                username = f"user_{timestamp}"
 
                 # In the unlikely case of a collision, append random string
                 while User.objects.filter(username=username).exists():
-                    username = f"{base_username}_{timestamp}_{get_random_string(4)}"
+                    username = f"user_{timestamp}_{get_random_string(6)}"
 
                 # Create the user
                 user = User.objects.create_user(
@@ -4562,13 +4562,14 @@ def add_student_to_course(request, slug):
             if User.objects.filter(email=email).exists():
                 form.add_error("email", "A user with this email already exists.")
             else:
-                # Generate a username by combining the first name and the email prefix.
-                email_prefix = email.split("@")[0]
-                generated_username = f"{first_name}_{email_prefix}".lower()
+                # Generate a username without using the email address
+                timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
+                generated_username = f"user_{timestamp}"
 
-                # Ensure the username is unique; if not, append a random string.
+                # Ensure the username is unique
                 while User.objects.filter(username=generated_username).exists():
-                    generated_username = f"{generated_username}{get_random_string(4)}"
+                    generated_username = f"user_{timestamp}_{get_random_string(6)}"
+
                 # Create a new student account with an auto-generated password.
                 random_password = get_random_string(10)
                 try:

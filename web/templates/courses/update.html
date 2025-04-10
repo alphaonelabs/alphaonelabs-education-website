@@ -19,7 +19,10 @@
         <h1 class="text-3xl font-bold">Edit Course</h1>
       </div>
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <form method="post" enctype="multipart/form-data" class="space-y-6">
+        <form method="post"
+              enctype="multipart/form-data"
+              class="space-y-6"
+              id="updateCourseForm">
           {% csrf_token %}
           {% for field in form %}
             <div class="space-y-2">
@@ -49,9 +52,12 @@
   </div>
   <script>
       document.addEventListener('DOMContentLoaded', function() {
+          // Store references to all EasyMDE instances
+          const editors = new Map();
+
           // Initialize EasyMDE for markdown fields
           document.querySelectorAll('.markdown-editor textarea').forEach(textarea => {
-              new EasyMDE({
+              const editor = new EasyMDE({
                   element: textarea,
                   spellChecker: false,
                   status: ['lines', 'words', 'cursor'],
@@ -65,6 +71,14 @@
                       'guide'
                   ],
                   theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+              });
+
+              // Store the editor instance
+              editors.set(textarea.name, editor);
+
+              // Add change handler to update the hidden textarea
+              editor.codemirror.on('change', () => {
+                  textarea.value = editor.value();
               });
           });
 
