@@ -1283,7 +1283,8 @@
                           body: formData,
                           headers: {
                               'X-Requested-With': 'XMLHttpRequest',
-                              'X-CSRFToken': csrfToken
+                              'X-CSRFToken': csrfToken,
+                              'Accept': 'application/json, text/javascript, */*; q=0.01'
                           },
                           credentials: 'same-origin'
                       })
@@ -1291,13 +1292,50 @@
                           console.log('Response status:', response.status);
                           console.log('Response headers:', [...response.headers]);
 
+                          // Check content type to see if we got JSON or HTML
+                          const contentType = response.headers.get('content-type');
+
                           if (!response.ok) {
                               return response.text().then(text => {
                                   console.error('Error response body:', text);
                                   throw new Error(`Server responded with status: ${response.status}`);
                               });
                           }
-                          return response.json();
+
+                          // If we got HTML instead of JSON (possibly a redirect or error page)
+                          if (contentType && contentType.includes('text/html')) {
+                              return response.text().then(html => {
+                                  console.log('Received HTML response instead of JSON');
+                                  // Try to extract error messages if any
+                                  if (html.includes('errorlist')) {
+                                      const tempDiv = document.createElement('div');
+                                      tempDiv.innerHTML = html;
+                                      const errors = Array.from(tempDiv.querySelectorAll('.errorlist li'))
+                                          .map(el => el.textContent).join(', ');
+                                      return {
+                                          success: false,
+                                          error: errors || 'Form validation failed'
+                                      };
+                                  }
+                                  // If it's a success page
+                                  if (html.includes('success') || html.includes('Video added')) {
+                                      return {
+                                          success: true,
+                                          message: 'Video added successfully!'
+                                      };
+                                  }
+                                  return {
+                                      success: false,
+                                      error: 'Unexpected server response'
+                                  };
+                              });
+                          }
+
+                          // Regular JSON response
+                          return response.json().catch(e => {
+                              console.error('Error parsing JSON:', e);
+                              throw new Error('Invalid JSON in response');
+                          });
                       })
                       .then(data => {
                           submitBtn.innerHTML = originalBtnContent;
@@ -1314,6 +1352,11 @@
                               if (countElement) {
                                   const currentCount = parseInt(countElement.textContent.split(' ')[0]) || 0;
                                   countElement.textContent = `${currentCount + 1} videos`;
+                              }
+
+                              // If we received a redirect URL, we can navigate there
+                              if (data.redirect_url) {
+                                  window.location.href = data.redirect_url;
                               }
                           } else {
                               showMessage(data.error || 'Failed to add video', 'error');

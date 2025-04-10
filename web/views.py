@@ -5108,9 +5108,24 @@ def upload_educational_video(request):
             return redirect("educational_videos_list")
         elif request.headers.get("X-Requested-With") == "XMLHttpRequest":
             # Return form errors for AJAX requests
-            return JsonResponse({"success": False, "error": form.errors.as_text()})
+            error_dict = {}
+            for field, errors in form.errors.items():
+                error_dict[field] = [str(error) for error in errors]
+
+            # Better error formatting for display
+            error_text = ""
+            for field, field_errors in error_dict.items():
+                field_name = field.replace("_", " ").title() if field != "__all__" else "Error"
+                error_text += f"{field_name}: {', '.join(field_errors)}. "
+
+            return JsonResponse({"success": False, "error": error_text, "detailed_errors": error_dict}, status=400)
     else:
         form = EducationalVideoForm()
+
+    # For regular GET requests
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        # AJAX GET request should get a JSON response
+        return JsonResponse({"success": False, "error": "Please submit the form with POST"}, status=400)
 
     return render(request, "videos/upload.html", {"form": form})
 
