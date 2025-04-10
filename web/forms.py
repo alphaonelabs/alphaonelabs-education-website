@@ -90,7 +90,6 @@ __all__ = [
     "EducationalVideoForm",
     "ProgressTrackerForm",
     "SuccessStoryForm",
-    "SurveyForm",
     "TeamGoalForm",
     "TeamInviteForm",
     "MemeForm",
@@ -102,6 +101,7 @@ __all__ = [
     "GradeableLinkForm",
     "LinkGradeForm",
     "AwardAchievementForm",
+    "SurveyForm",
 ]
 
 fernet = Fernet(settings.SECURE_MESSAGE_KEY)

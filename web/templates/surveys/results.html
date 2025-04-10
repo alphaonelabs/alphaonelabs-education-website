@@ -5,7 +5,6 @@
 {% block title %}
   {{ object.title }} Results
 {% endblock title %}
-
 {% block content %}
   <main class="flex-1 w-full max-w-[90rem] mx-auto mt-6 px-4 md:px-6">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -45,9 +44,8 @@
                       <div class="text-xs font-semibold inline-block text-blue-600">{{ response_rate|floatformat:0 }}% Complete</div>
                     </div>
                     <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200 dark:bg-gray-600">
-                      <div style="width:{{ response_rate }}%"
-                           class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500">
-                      </div>
+                      <div class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500 progress-bar"
+                           data-progress="{{ response_rate|default:0 }}"></div>
                     </div>
                   </div>
                 </div>
@@ -93,13 +91,13 @@
             <div class="p-4">
               {% if result.total > 0 %}
                 <div class="chart-toggle-buttons flex justify-center mb-4">
-                  <button class="chart-toggle px-3 py-1 mx-1 rounded-md bg-gray-100 dark:bg-gray-700 active-chart" 
-                          data-question-id="{{ result.question.id }}" 
+                  <button class="chart-toggle px-3 py-1 mx-1 rounded-md bg-gray-100 dark:bg-gray-700 active-chart"
+                          data-question-id="{{ result.question.id }}"
                           data-chart-type="pie">
                     <i class="fa-solid fa-chart-pie mr-1"></i> Pie
                   </button>
-                  <button class="chart-toggle px-3 py-1 mx-1 rounded-md bg-gray-100 dark:bg-gray-700" 
-                          data-question-id="{{ result.question.id }}" 
+                  <button class="chart-toggle px-3 py-1 mx-1 rounded-md bg-gray-100 dark:bg-gray-700"
+                          data-question-id="{{ result.question.id }}"
                           data-chart-type="bar">
                     <i class="fa-solid fa-bars mr-1"></i> Bar
                   </button>
@@ -163,171 +161,170 @@
             document.write('<script src="{% static "js/chart.min.js" %}"><\/script>');
         }
     </script>
-    
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Parse chart data
-            const chartData = JSON.parse('{{ chart_data_json|safe }}');
-            
-            // Store chart instances
-            const chartInstances = {};
-            
-            // Chart colors
-            const chartColors = [
-                '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
-                '#EC4899', '#06B6D4', '#14B8A6', '#F97316', '#6366F1'
-            ];
-            
-            // Create charts for each question
-            chartData.forEach(questionData => {
-                if (questionData.data.length > 0) {
-                    createChart(questionData.question_id, 'pie');
-                }
-            });
-            
-            // Function to create chart
-            function createChart(questionId, chartType) {
-                // Find the chart data
-                const questionData = chartData.find(item => item.question_id == questionId);
-                if (!questionData) return;
-                
-                // Get the chart container
-                const container = document.getElementById(`chart-${questionId}`);
-                if (!container) return;
-                
-                // Clear container
-                container.innerHTML = '';
-                
-                // Create canvas
-                const canvas = document.createElement('canvas');
-                container.appendChild(canvas);
-                
-                // Destroy previous chart if exists
-                if (chartInstances[questionId]) {
-                    chartInstances[questionId].destroy();
-                }
-                
-                // Chart config based on type
-                let chartConfig;
-                
-                if (chartType === 'pie') {
-                    chartConfig = {
-                        type: 'doughnut',
-                        data: {
-                            labels: questionData.labels,
-                            datasets: [{
-                                data: questionData.data,
-                                backgroundColor: chartColors.slice(0, questionData.labels.length),
-                                borderWidth: 2,
-                                borderColor: '#ffffff',
-                                hoverOffset: 10
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    position: 'bottom',
-                                    labels: {
-                                        padding: 15,
-                                        usePointStyle: true,
-                                        pointStyle: 'circle'
-                                    }
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(context) {
-                                            const label = context.label || '';
-                                            const value = context.raw || 0;
-                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                            const percentage = Math.round((value / total) * 100);
-                                            return `${label}: ${value} (${percentage}%)`;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    };
-                } else if (chartType === 'bar') {
-                    chartConfig = {
-                        type: 'bar',
-                        data: {
-                            labels: questionData.labels,
-                            datasets: [{
-                                data: questionData.data,
-                                backgroundColor: chartColors.slice(0, questionData.labels.length),
-                                borderWidth: 0,
-                                borderRadius: 4,
-                                maxBarThickness: 50
-                            }]
-                        },
-                        options: {
-                            indexAxis: 'y',
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    display: false
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(context) {
-                                            const value = context.raw || 0;
-                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                                            const percentage = Math.round((value / total) * 100);
-                                            return `${value} responses (${percentage}%)`;
-                                        }
-                                    }
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Parse chart data
+        const chartData = JSON.parse('{{ chart_data_json|safe }}');
+
+        // Store chart instances
+        const chartInstances = {};
+
+        // Chart colors
+        const chartColors = [
+            '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+            '#EC4899', '#06B6D4', '#14B8A6', '#F97316', '#6366F1'
+        ];
+
+        // Create charts for each question
+        chartData.forEach(questionData => {
+            if (questionData.data.length > 0) {
+                createChart(questionData.question_id, 'pie');
+            }
+        });
+
+        // Function to create chart
+        function createChart(questionId, chartType) {
+            // Find the chart data
+            const questionData = chartData.find(item => item.question_id == questionId);
+            if (!questionData) return;
+
+            // Get the chart container
+            const container = document.getElementById(`chart-${questionId}`);
+            if (!container) return;
+
+            // Clear container
+            container.innerHTML = '';
+
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            container.appendChild(canvas);
+
+            // Destroy previous chart if exists
+            if (chartInstances[questionId]) {
+                chartInstances[questionId].destroy();
+            }
+
+            // Chart config based on type
+            let chartConfig;
+
+            if (chartType === 'pie') {
+                chartConfig = {
+                    type: 'doughnut',
+                    data: {
+                        labels: questionData.labels,
+                        datasets: [{
+                            data: questionData.data,
+                            backgroundColor: chartColors.slice(0, questionData.labels.length),
+                            borderWidth: 2,
+                            borderColor: '#ffffff',
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle'
                                 }
                             },
-                            scales: {
-                                x: {
-                                    beginAtZero: true,
-                                    grid: {
-                                        display: false
-                                    }
-                                },
-                                y: {
-                                    grid: {
-                                        display: false
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = Math.round((value / total) * 100);
+                                        return `${label}: ${value} (${percentage}%)`;
                                     }
                                 }
                             }
                         }
-                    };
-                }
-                
-                // Create the chart
-                try {
-                    chartInstances[questionId] = new Chart(canvas, chartConfig);
-                } catch (error) {
-                    console.error(`Failed to create chart for question ${questionId}:`, error);
-                    container.innerHTML = '<div class="p-4 text-center text-red-500">Failed to load chart</div>';
-                }
+                    }
+                };
+            } else if (chartType === 'bar') {
+                chartConfig = {
+                    type: 'bar',
+                    data: {
+                        labels: questionData.labels,
+                        datasets: [{
+                            data: questionData.data,
+                            backgroundColor: chartColors.slice(0, questionData.labels.length),
+                            borderWidth: 0,
+                            borderRadius: 4,
+                            maxBarThickness: 50
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = Math.round((value / total) * 100);
+                                        return `${value} responses (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                grid: {
+                                    display: false
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                };
             }
-            
-            // Add event listeners to toggle buttons
-            document.querySelectorAll('.chart-toggle').forEach(button => {
-                button.addEventListener('click', function() {
-                    const questionId = this.getAttribute('data-question-id');
-                    const chartType = this.getAttribute('data-chart-type');
-                    
-                    // Update active state on buttons
-                    const buttonGroup = this.parentNode;
-                    buttonGroup.querySelectorAll('.chart-toggle').forEach(btn => {
-                        btn.classList.remove('active-chart');
-                    });
-                    this.classList.add('active-chart');
-                    
-                    // Create the chart with selected type
-                    createChart(questionId, chartType);
+
+            // Create the chart
+            try {
+                chartInstances[questionId] = new Chart(canvas, chartConfig);
+            } catch (error) {
+                console.error(`Failed to create chart for question ${questionId}:`, error);
+                container.innerHTML = '<div class="p-4 text-center text-red-500">Failed to load chart</div>';
+            }
+        }
+
+        // Add event listeners to toggle buttons
+        document.querySelectorAll('.chart-toggle').forEach(button => {
+            button.addEventListener('click', function() {
+                const questionId = this.getAttribute('data-question-id');
+                const chartType = this.getAttribute('data-chart-type');
+
+                // Update active state on buttons
+                const buttonGroup = this.parentNode;
+                buttonGroup.querySelectorAll('.chart-toggle').forEach(btn => {
+                    btn.classList.remove('active-chart');
                 });
+                this.classList.add('active-chart');
+
+                // Create the chart with selected type
+                createChart(questionId, chartType);
             });
-            
-            // Style for active button
-            const style = document.createElement('style');
-            style.textContent = `
+        });
+
+        // Style for active button
+        const style = document.createElement('style');
+        style.textContent = `
                 .active-chart {
                     background-color: #0ea5e9 !important;
                     color: white !important;
@@ -337,8 +334,8 @@
                     color: white !important;
                 }
             `;
-            document.head.appendChild(style);
-        });
-    </script>
-  {% endblock extra_js %}
+        document.head.appendChild(style);
+    });
+</script>
+{% endblock extra_js %}
 {% endblock content %}
