@@ -22,7 +22,8 @@
         <form method="post"
               enctype="multipart/form-data"
               class="space-y-6"
-              id="updateCourseForm">
+              id="updateCourseForm"
+              novalidate>
           {% csrf_token %}
           {% for field in form %}
             <div class="space-y-2">
