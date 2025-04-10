@@ -9,15 +9,24 @@
   <script>
       document.addEventListener('DOMContentLoaded', function() {
           const questionTypeField = document.getElementById('id_question_type');
-          const optionsSection = document.getElementById('options-section');
+          const multiple_choice = document.getElementById('multiple-choice-options');
+          const true_false = document.getElementById('true-false-options');
+          const short_answer = document.getElementById('short-answer-options');
 
           // Function to toggle options visibility
           function toggleOptionsVisibility() {
-              if (questionTypeField.value === 'multiple' || questionTypeField.value === 'true_false') {
-                  optionsSection.classList.remove('hidden');
+              if (questionTypeField.value === 'multiple' ) {
+                  multiple_choice.classList.remove('hidden');
+                  true_false.classList.add('hidden');
+                  short_answer.classList.add('hidden');
+              } else if(questionTypeField.value === 'true_false') {
+                  true_false.classList.remove('hidden');
+                  multiple_choice.classList.add('hidden');
+                  short_answer.classList.add('hidden');
               } else {
-                  // optionsSection.classList.remove('hidden');
-                  optionsSection.classList.add('hidden');
+                  short_answer.classList.remove('hidden');
+                  true_false.classList.add('hidden');
+                  multiple_choice.classList.add('hidden');
               }
           }
 
@@ -40,6 +49,7 @@
 
                   // Clone the first option form
                   const formTemplate = document.querySelector('.option-form').cloneNode(true);
+                  console.log(formTemplate)
 
                   // Update all IDs and names to use the new index
                   const inputs = formTemplate.querySelectorAll('input, select, textarea');
@@ -119,12 +129,12 @@
               </div>
               <!-- Question Type -->
               <div>
-                <label for="{{ form.question_type.id_for_label }}"
+                <label for="id_question_type"
                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Question Type <span class="text-red-600">*</span>
                 </label>
                 <select name="{{ form.question_type.html_name }}"
-                        id="{{ form.question_type.id_for_label }}"
+                        id="id_question_type"
                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
                         required>
                   {% for choice in form.question_type.field.choices %}
@@ -170,57 +180,153 @@
               </div>
             </div>
           </div>
-          <!-- Answer Options -->
-          <div id="options-section" class="mb-8">
+          <!-- Multiple Choice Options -->
+          <div id="multiple-choice-options"
+               class="hidden">
             <div class="flex justify-between items-center mb-4">
               <h2 class="text-xl font-bold text-gray-800 dark:text-white">Answer Options</h2>
-              <button id="add-option-btn"
-                      class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded-lg text-sm">
+              <button type="button"
+                      id="add-option-btn"
+                      class="bg-teal-600 hover:bg-teal-700 text-white py-1 px-3 rounded-lg text-sm flex items-center">
                 <i class="fas fa-plus mr-1"></i> Add Option
               </button>
             </div>
-            <!-- Management form for formset -->
-            {{ formset.management_form }}
-            <div id="options-container" class="space-y-4">
-              {% for option_form in formset %}
-                <div class="option-form bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                  <div class="grid grid-cols-12 gap-4">
-                    <div class="col-span-10">
-                      <label for="{{ option_form.text.id_for_label }}"
-                             class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        Option Text
-                        {% if forloop.first %}<span class="text-red-600">*</span>{% endif %}
-                      </label>
+            <div id="options-container" class="space-y-3">
+              {% if question.type == 'multiple_choice' and question.options.all %}
+                {% for option in question.options.all %}
+                  <div class="option-item flex items-start space-x-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                    <div class="flex items-center h-5 pt-2">
+                      <input type="radio"
+                             name="correct_option"
+                             id="correct_option_{{ forloop.counter0 }}"
+                             value="{{ forloop.counter0 }}"
+                             {% if option.is_correct %}checked{% endif %}
+                             class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
+                             required />
+                    </div>
+                    <div class="flex-grow">
+                      <label for="correct_option_{{ forloop.counter0 }}"
+                             class="text-sm font-medium text-gray-700 dark:text-gray-300">Correct Answer</label>
                       <input type="text"
-                             name="{{ option_form.text.html_name }}"
-                             id="{{ option_form.text.id_for_label }}"
-                             value="{{ option_form.text.value|default:'' }}"
-                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
-                             {% if forloop.first %}required{% endif %} />
-                      {% if option_form.text.errors %}
-                        <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ option_form.text.errors.0 }}</p>
-                      {% endif %}
+                             name="option_text_{{ forloop.counter0 }}"
+                             id="option_text_{{ forloop.counter0 }}"
+                             value="{{ option.text }}"
+                             class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                             placeholder="Option text"
+                             required />
                     </div>
-                    <div class="col-span-2 flex items-center justify-center pt-6">
-                      <div class="flex items-center">
-                        <input type="checkbox"
-                               name="{{ option_form.is_correct.html_name }}"
-                               id="{{ option_form.is_correct.id_for_label }}"
-                               {% if option_form.is_correct.value %}checked{% endif %}
-                               class="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
-                        <label for="{{ option_form.is_correct.id_for_label }}"
-                               class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Correct</label>
-                      </div>
-                    </div>
+                    <button type="button"
+                            class="delete-option-btn text-gray-400 hover:text-red-600 pt-2"
+                            {% if forloop.counter <= 2 %}disabled{% endif %}>
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
                   </div>
-                  <!-- Hidden fields -->
-                  {% for hidden in option_form.hidden_fields %}{{ hidden }}{% endfor %}
+                {% endfor %}
+              {% else %}
+                <!-- Default options if creating new question -->
+                <div class="option-item flex items-start space-x-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div class="flex items-center h-5 pt-2">
+                    <input type="radio"
+                           name="correct_option"
+                           id="correct_option_0"
+                           value="0"
+                           checked
+                           class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
+                           required />
+                  </div>
+                  <div class="flex-grow">
+                    <label for="correct_option_0"
+                           class="text-sm font-medium text-gray-700 dark:text-gray-300">Correct Answer</label>
+                    <input type="text"
+                           name="option_text_0"
+                           id="option_text_0"
+                           class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                           placeholder="Correct option"
+                           required />
+                  </div>
+                  <button type="button"
+                          class="delete-option-btn text-gray-400 hover:text-red-600 pt-2"
+                          disabled>
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
                 </div>
-              {% endfor %}
+                <div class="option-item flex items-start space-x-3 p-3 border border-gray-200 dark:border-gray-700 rounded-lg">
+                  <div class="flex items-center h-5 pt-2">
+                    <input type="radio"
+                           name="correct_option"
+                           id="correct_option_1"
+                           value="1"
+                           class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
+                           required />
+                  </div>
+                  <div class="flex-grow">
+                    <label for="correct_option_1"
+                           class="text-sm font-medium text-gray-700 dark:text-gray-300">Correct Answer</label>
+                    <input type="text"
+                           name="option_text_1"
+                           id="option_text_1"
+                           class="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                           placeholder="Incorrect option"
+                           required />
+                  </div>
+                  <button type="button"
+                          class="delete-option-btn text-gray-400 hover:text-red-600 pt-2"
+                          disabled>
+                    <i class="fas fa-trash-alt"></i>
+                  </button>
+                </div>
+              {% endif %}
             </div>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
-              For multiple choice questions, select all correct options. For true/false, mark only one option as correct.
+            <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">
+              You must have at least 2 options. Select the radio button next to the correct answer.
             </p>
+          </div>
+          <!-- True/False Options -->
+          <div id="true-false-options"
+               class="mb-8 {% if not question.type or question.type != 'true_false' %}hidden{% endif %}">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Correct Answer</h2>
+            <div class="space-y-3">
+              <div class="flex items-center">
+                <input type="radio"
+                       name="true_false_answer"
+                       id="true_answer"
+                       value="true"
+                       {% if question.type == 'true_false' and question.options.first.is_correct %}checked{% endif %}
+                       class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
+                       required />
+                <label for="true_answer" class="ml-3 block text-gray-700 dark:text-gray-300">True</label>
+              </div>
+              <div class="flex items-center">
+                <input type="radio"
+                       name="true_false_answer"
+                       id="false_answer"
+                       value="false"
+                       {% if question.type == 'true_false' and question.options.last.is_correct %}checked{% endif %}
+                       class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300"
+                       required />
+                <label for="false_answer"
+                       class="ml-3 block text-gray-700 dark:text-gray-300">False</label>
+              </div>
+            </div>
+          </div>
+          <!-- Short Answer Options -->
+          <div id="short-answer-options"
+               class="mb-8 {% if not question.type or question.type != 'short_answer' %}hidden{% endif %}">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Correct Answer</h2>
+            <div>
+              <label for="short-answer"
+                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                Answer Key (for reference)
+              </label>
+              <textarea name="short_answer"
+                        id="short-answer"
+                        rows="3"
+                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                        placeholder="Enter the expected answer here for your reference">{{ question.correct_answer|default:'' }}</textarea>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Note: For short answers, you will need to manually grade student responses.
+              </p>
+            </div>
           </div>
           <!-- Form Buttons -->
           <div class="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">

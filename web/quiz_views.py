@@ -311,50 +311,75 @@ def add_question(request, quiz_id):
         form = QuizQuestionForm(request.POST, request.FILES)
         # Set the quiz ID explicitly in the form data
         form.instance.quiz_id = quiz.id
-        formset = QuizOptionFormSet(request.POST, request.FILES, prefix="options")
-
-        # Validate form and formset
-        form_valid = form.is_valid()
-        formset_valid = formset.is_valid()
-
-        if form_valid and formset_valid:
-            try:
+        
+        # Handle true/false questions differently
+        question_type = request.POST.get('question_type')
+        
+        if question_type == 'true_false':
+            # For true/false questions, we'll handle the formset differently
+            if form.is_valid():
                 with transaction.atomic():
-                    # Save the question
-                    question = form.save(commit=False)
-                    question.quiz = quiz
+                    question = form.save(commit=True)
                     question.order = next_order
                     question.save()
-
-                    # Save the options
-                    formset.instance = question
-
-                    for i, option_form in enumerate(formset):
-                        if option_form.cleaned_data and not option_form.cleaned_data.get("DELETE", False):
-                            option = option_form.save(commit=False)
-                            option.question = question
-                            option.order = i  # Set order value based on position in the formset
-                            option.save()
-
+                    
+                    # Create "True" and "False" options
+                    true_option = QuizOption(
+                        question=question,
+                        text="True",
+                        is_correct=request.POST.get('true_false_answer') == 'true',
+                        order=0
+                    )
+                    true_option.save()
+                    
+                    false_option = QuizOption(
+                        question=question,
+                        text="False",
+                        is_correct=request.POST.get('true_false_answer') == 'false',
+                        order=1
+                    )
+                    false_option.save()
+                
                 messages.success(request, "Question added successfully.")
-
-                # Redirect based on the button clicked
-                if "save_and_add" in request.POST:
-                    return redirect("add_question", quiz_id=quiz.id)
-            except Exception as e:
-                print(e)
-                # Re-raise the exception
-                raise
+                
+                # Check if we should redirect to add another question
+                if 'save_and_add' in request.POST:
+                    return redirect('add_question', quiz_id=quiz.id)
+                return redirect('quiz_detail', quiz_id=quiz.id)
+        else:
+            # For other question types, use the formset as before
+            formset = QuizOptionFormSet(request.POST, request.FILES, prefix="options")
+            print("$$$$", formset)
+            if form.is_valid() and formset.is_valid():
+                with transaction.atomic():
+                    question = form.save(commit=True)
+                    question.order = next_order
+                    question.save()
+                    
+                    # Save formset with the question as the instance
+                    formset.instance = question
+                    formset.save()
+                
+                messages.success(request, "Question added successfully.")
+                
+                # Check if we should redirect to add another question
+                if 'save_and_add' in request.POST:
+                    return redirect('add_question', quiz_id=quiz.id)
+                return redirect('quiz_detail', quiz_id=quiz.id)
     else:
-        form = QuizQuestionForm()
+        form = QuizQuestionForm(initial={'order': next_order})
         formset = QuizOptionFormSet(prefix="options")
-
+    print("$$$$", formset)
     return render(
         request,
         "web/quiz/question_form.html",
-        {"form": form, "formset": formset, "quiz": quiz, "title": "Add Question"},
+        {
+            'form': form,
+            'formset': formset,
+            'quiz': quiz,
+            'question': None,
+        }
     )
-
 
 @login_required
 def edit_question(request, question_id):
@@ -367,24 +392,72 @@ def edit_question(request, question_id):
         return HttpResponseForbidden("You don't have permission to edit this question.")
 
     if request.method == "POST":
-        form = QuizQuestionForm(request.POST, instance=question)
-        formset = QuizOptionFormSet(request.POST, instance=question, prefix="options")
+        form = QuizQuestionForm(request.POST, request.FILES, instance=question)
+        
+        # Handle true/false questions differently
+        question_type = request.POST.get('question_type')
+        
+        if question_type == 'true_false':
+            if form.is_valid():
+                with transaction.atomic():
+                    form.save()
+                    
+                    # Get or create true/false options
+                    true_option, created_true = QuizOption.objects.get_or_create(
+                        question=question,
+                        text="True",
+                        defaults={'order': 0}
+                    )
+                    false_option, created_false = QuizOption.objects.get_or_create(
+                        question=question,
+                        text="False",
+                        defaults={'order': 1}
+                    )
+                    
+                    # Update is_correct based on the selection
+                    true_option.is_correct = request.POST.get('true_false_answer') == 'true'
+                    false_option.is_correct = request.POST.get('true_false_answer') == 'false'
+                    
+                    true_option.save()
+                    false_option.save()
+                    
+                    # Delete any other options that might exist
+                    QuizOption.objects.filter(question=question).exclude(
+                        id__in=[true_option.id, false_option.id]
+                    ).delete()
+                
+                messages.success(request, "Question updated successfully.")
+                return redirect("quiz_detail", quiz_id=quiz.id)
+        else:
+            formset = QuizOptionFormSet(request.POST, request.FILES, instance=question, prefix="options")
+            if form.is_valid() and formset.is_valid():
+                with transaction.atomic():
+                    form.save()
+                    formset.save()
 
-        if form.is_valid() and formset.is_valid():
-            with transaction.atomic():
-                form.save()
-                formset.save()
-
-            messages.success(request, "Question updated successfully.")
-            return redirect("quiz_detail", quiz_id=quiz.id)
+                messages.success(request, "Question updated successfully.")
+                return redirect("quiz_detail", quiz_id=quiz.id)
     else:
         form = QuizQuestionForm(instance=question)
         formset = QuizOptionFormSet(instance=question, prefix="options")
 
+    # Determine which option is correct for true/false questions
+    true_is_correct = False
+    if question.question_type == 'true_false':
+        true_option = question.options.filter(text="True").first()
+        if true_option:
+            true_is_correct = true_option.is_correct
+
     return render(
         request,
-        "web/quiz/question_form.html",
-        {"form": form, "formset": formset, "quiz": quiz, "question": question, "title": "Edit Question"},
+        'web/quiz/add_question.html',
+        {
+            'form': form,
+            'formset': formset,
+            'quiz': quiz,
+            'question': question,
+            'true_is_correct': true_is_correct,
+        }
     )
 
 
