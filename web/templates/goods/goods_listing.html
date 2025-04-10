@@ -103,8 +103,12 @@
             <!-- Store info badge -->
             <div class="mt-2 flex items-center">
               <i class="fas fa-store text-teal-600 dark:text-teal-400 mr-1 text-xs"></i>
-              <a href="{% url 'storefront_detail' slug=product.storefront.store_slug %}"
-                 class="text-xs text-teal-600 dark:text-teal-400 hover:underline">{{ product.storefront.name }}</a>
+              {% if product.storefront %}
+                <a href="{% url 'storefront_detail' store_slug=product.storefront.store_slug %}"
+                   class="text-xs inline-block bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-300 px-2 py-1 rounded-full hover:bg-teal-200 dark:hover:bg-teal-800 transition-colors">
+                  {{ product.storefront.name }}
+                </a>
+              {% endif %}
             </div>
             <div class="mt-2">
               {% if product.discount_price %}
