@@ -63,14 +63,9 @@
         <h3>Additional Requirements:</h3>
         <p>{{ message }}</p>
       {% endif %}
-      <p class="action-link" style="margin-top: 20px;">
+      <p class="action-link mt-5">
         <a href="{% url 'create_course_from_waiting_room' waiting_room_id %}"
-           style="background-color: #f97316;
-                  color: white;
-                  padding: 10px 20px;
-                  text-decoration: none;
-                  border-radius: 5px;
-                  display: inline-block">Create Course from this Request</a>
+           class="bg-orange-500 text-white px-5 py-2.5 rounded no-underline inline-block">Teach This Course</a>
       </p>
     </div>
     <div class="footer">

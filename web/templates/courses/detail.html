@@ -207,13 +207,15 @@
                   {% if course.teacher.profile.expertise %}
                     <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">{{ course.teacher.profile.expertise }}</p>
                   {% endif %}
-                  <a href="{% url 'message_teacher' course.teacher.id %}"
-                     class="inline-flex items-center px-3 py-1.5 text-sm bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition duration-200">
-                    <i class="fas fa-envelope mr-2"></i>
-                    Message Teacher
-                  </a>
+                  {% if user != course.teacher %}
+                    <a href="{% url 'message_teacher' course.teacher.id %}"
+                       class="inline-flex items-center px-3 py-1.5 text-sm bg-teal-500 hover:bg-teal-600 text-white rounded-lg transition duration-200">
+                      <i class="fas fa-envelope mr-2"></i>
+                      Message Teacher
+                    </a>
+                  {% endif %}
                   <a href="{% url 'public_profile' course.teacher.username %}"
-                     class="inline-flex items-center px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg ml-2 transition duration-200">
+                     class="inline-flex items-center px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg {% if user != course.teacher %}ml-2{% endif %} transition duration-200">
                     <i class="fas fa-user mr-2"></i>
                     View Profile
                   </a>
@@ -407,7 +409,7 @@
                   <div class="grid grid-cols-7 text-center text-sm" id="calendar-grid">
                     {% for week in calendar_weeks %}
                       {% for day in week %}
-                        <div class="p-2 border-b border-r dark:border-gray-700 {% if day.date == today %}bg-gray-100 dark:bg-gray-700{% endif %}">
+                        <div class="p-2 border-b border-r dark:border-gray-700 {% if day.is_today %}bg-gray-100 dark:bg-gray-700{% endif %}">
                           {% if day.date %}
                             <div class="relative">
                               <span class="{% if day.has_session %}font-bold text-teal-600 dark:text-teal-400{% endif %}">
@@ -1438,7 +1440,7 @@
               ${day.date ? `
                 <div class="relative">
                   <span class="${day.has_session ? 'font-bold text-teal-600 dark:text-teal-400' : ''}">
-                    ${new Date(day.date).getDate()}
+                    ${day.date.split('-')[2].replace(/^0/, '')}
                   </span>
                   ${day.has_session ? `
                     <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-teal-500 dark:bg-teal-400 rounded-full"></div>

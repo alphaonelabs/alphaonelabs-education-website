@@ -145,6 +145,7 @@ from .models import (
     NotificationPreference,
     Order,
     OrderItem,
+    Payment,
     PeerConnection,
     PeerMessage,
     ProductImage,
@@ -1540,6 +1541,17 @@ def handle_successful_payment(payment_intent):
     enrollment.status = "approved"
     enrollment.save()
 
+    # Create a payment record for tracking teacher earnings
+    # Convert amount from cents to dollars
+    amount = Decimal(str(payment_intent.amount)) / 100
+    Payment.objects.create(
+        enrollment=enrollment,
+        amount=amount,
+        currency=payment_intent.currency.upper(),
+        stripe_payment_intent_id=payment_intent.id,
+        status="completed",
+    )
+
     # Send notifications
     send_enrollment_confirmation(enrollment)
     notify_teacher_new_enrollment(enrollment)
@@ -1570,6 +1582,7 @@ def update_course(request, slug):
         form = CourseForm(request.POST, request.FILES, instance=course)
         if form.is_valid():
             form.save()
+            messages.success(request, "Course updated successfully!")
             return redirect("course_detail", slug=course.slug)
     else:
         form = CourseForm(instance=course)
@@ -2453,7 +2466,12 @@ def student_dashboard(request):
 @login_required
 @teacher_required
 def teacher_dashboard(request):
-    """Dashboard view for teachers showing their courses, student progress, and upcoming sessions."""
+    """Dashboard view for teachers showing their courses, student progress, and upcoming sessions.
+
+    The earnings calculation is based on completed payment records, not just enrollments.
+    This ensures that earnings accurately reflect actual transactions rather than just the
+    number of enrolled students. Each payment has a 90% teacher commission rate applied.
+    """
     courses = Course.objects.filter(teacher=request.user)
     upcoming_sessions = Session.objects.filter(course__teacher=request.user, start_time__gt=timezone.now()).order_by(
         "start_time"
@@ -2470,8 +2488,18 @@ def teacher_dashboard(request):
         course_completed = enrollments.filter(status="completed").count()
         total_students += course_total_students
         total_completed += course_completed
-        # Calculate earnings (90% of course price for each enrollment, 10% platform fee)
-        course_earnings = Decimal(str(course_total_students)) * course.price * Decimal("0.9")
+
+        # Calculate earnings based on completed payments instead of enrollment count
+        # Each payment has an amount field which represents the actual amount paid
+        # We apply the teacher's commission rate (90% by default, 10% platform fee)
+        course_earnings = Decimal("0.00")
+        for enrollment in enrollments:
+            # Get all completed payments for this enrollment
+            completed_payments = enrollment.payments.filter(status="completed")
+            for payment in completed_payments:
+                # Apply the 90% teacher commission
+                course_earnings += payment.amount * Decimal("0.9")
+
         total_earnings += course_earnings
         course_stats.append(
             {
@@ -2614,13 +2642,13 @@ def checkout_success(request):
 
             # Create a new user account with transaction and better username generation
             with transaction.atomic():
-                base_username = email.split("@")[0][:15]  # Limit length
+                # Generate a random username without using the email
                 timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
-                username = f"{base_username}_{timestamp}"
+                username = f"user_{timestamp}"
 
                 # In the unlikely case of a collision, append random string
                 while User.objects.filter(username=username).exists():
-                    username = f"{base_username}_{timestamp}_{get_random_string(4)}"
+                    username = f"user_{timestamp}_{get_random_string(6)}"
 
                 # Create the user
                 user = User.objects.create_user(
@@ -2702,6 +2730,15 @@ def checkout_success(request):
                 )
                 enrollments.append(enrollment)
                 total_amount += effective_price
+
+                # Create payment record for teacher earnings calculation
+                Payment.objects.create(
+                    enrollment=enrollment,
+                    amount=effective_price,
+                    currency="USD",
+                    stripe_payment_intent_id=payment_intent_id,
+                    status="completed",
+                )
 
                 # Optionally, you can send confirmation emails with discount details
                 send_enrollment_confirmation(enrollment)
@@ -3686,16 +3723,20 @@ def fetch_video_title(request):
         if not title:
             # Try to extract title from HTML content
             content = response.text
-            title_match = re.search(r"<title>(.*?)</title>", content)
-            title = title_match.group(1) if title_match else "Untitled Video"
+            title_match = re.search(r"<title>(.*?)</title>", content, re.IGNORECASE | re.DOTALL)
+            title = title_match.group(1).strip() if title_match else "Untitled Video"
 
             # Sanitize the title
             title = html.escape(title)
 
         return JsonResponse({"title": title})
 
-    except requests.RequestException:
-        return JsonResponse({"error": "Failed to fetch video title:"}, status=500)
+    except requests.RequestException as e:
+        logger.error(f"Error fetching video title from {url}: {str(e)}")
+        return JsonResponse({"error": f"Failed to fetch video title: {str(e)}"}, status=500)
+    except Exception as e:
+        logger.error(f"Unexpected error fetching video title from {url}: {str(e)}")
+        return JsonResponse({"error": "An unexpected error occurred while fetching the title"}, status=500)
 
 
 def get_referral_stats():
@@ -4575,13 +4616,14 @@ def add_student_to_course(request, slug):
             if User.objects.filter(email=email).exists():
                 form.add_error("email", "A user with this email already exists.")
             else:
-                # Generate a username by combining the first name and the email prefix.
-                email_prefix = email.split("@")[0]
-                generated_username = f"{first_name}_{email_prefix}".lower()
+                # Generate a username without using the email address
+                timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
+                generated_username = f"user_{timestamp}"
 
-                # Ensure the username is unique; if not, append a random string.
+                # Ensure the username is unique
                 while User.objects.filter(username=generated_username).exists():
-                    generated_username = f"{generated_username}{get_random_string(4)}"
+                    generated_username = f"user_{timestamp}_{get_random_string(6)}"
+
                 # Create a new student account with an auto-generated password.
                 random_password = get_random_string(10)
                 try:
@@ -5265,7 +5307,7 @@ def waiting_room_detail(request, waiting_room_id):
         "is_participant": is_participant,
         "is_creator": is_creator,
         "is_teacher": is_teacher,
-        "participant_count": waiting_room.participants.count(),
+        "participant_count": waiting_room.participants.count() + 1,  # Add 1 to include the creator
         "topic_list": [topic.strip() for topic in waiting_room.topics.split(",") if topic.strip()],
     }
     return render(request, "waiting_room/detail.html", context)
@@ -7791,3 +7833,138 @@ def topic_detail(request, pk):
 
     return render(request, "web/forum/topic.html", context)
 
+
+def contributors_list_view(request):
+    # Check if cached data is available
+    cached_context = cache.get("contributors_context")
+    if cached_context:
+        return render(request, "web/contributors_list.html", cached_context)
+
+    # Initialize a dictionary to track contributor stats
+    contributor_stats = {}
+
+    # Function to add a contributor to our stats dictionary
+    def add_contributor(username, avatar_url, profile_url):
+        if username not in contributor_stats:
+            contributor_stats[username] = {
+                "username": username,
+                "avatar_url": avatar_url,
+                "profile_url": profile_url,
+                "merged_pr_count": 0,
+                "closed_pr_count": 0,
+                "open_pr_count": 0,
+                "total_pr_count": 0,
+                "prs_url": f"https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:{username}",
+            }
+
+    try:
+        # Fetch closed PRs first (includes both merged and non-merged closed PRs)
+        closed_prs = []
+        for page in range(1, 11):  # Limit to 10 pages to prevent hitting API rate limits
+            response = github_api_request(
+                f"{GITHUB_API_BASE}/repos/AlphaOneLabs/education-website/pulls",
+                params={"state": "closed", "per_page": 100, "page": page},
+            )
+            if not response or len(response) == 0:
+                break
+
+            closed_prs.extend(response)
+            time.sleep(0.5)  # Add delay to avoid hitting rate limits
+
+        # Process closed PRs
+        for pr in closed_prs:
+            username = pr["user"]["login"]
+
+            # Skip bots and specific users
+            if "[bot]" in username or "dependabot" in username or username == "A1L13N":
+                continue
+
+            avatar_url = pr["user"]["avatar_url"]
+            profile_url = pr["user"]["html_url"]
+
+            # Add to our tracking
+            add_contributor(username, avatar_url, profile_url)
+
+            # Update the appropriate count based on whether it was merged
+            if pr["merged_at"]:
+                contributor_stats[username]["merged_pr_count"] += 1
+            else:
+                contributor_stats[username]["closed_pr_count"] += 1
+
+        # Now fetch open PRs
+        open_prs = []
+        for page in range(1, 6):  # Limit to 5 pages for open PRs
+            response = github_api_request(
+                f"{GITHUB_API_BASE}/repos/AlphaOneLabs/education-website/pulls",
+                params={"state": "open", "per_page": 100, "page": page},
+            )
+            if not response or len(response) == 0:
+                break
+
+            open_prs.extend(response)
+            time.sleep(0.5)  # Add delay to avoid hitting rate limits
+
+        # Process open PRs
+        for pr in open_prs:
+            username = pr["user"]["login"]
+
+            # Skip bots and specific users
+            if "[bot]" in username or "dependabot" in username or username == "A1L13N":
+                continue
+
+            avatar_url = pr["user"]["avatar_url"]
+            profile_url = pr["user"]["html_url"]
+
+            # Add to our tracking
+            add_contributor(username, avatar_url, profile_url)
+
+            # Update open PR count
+            contributor_stats[username]["open_pr_count"] += 1
+
+        # Calculate total PR count and filter out users with no merged PRs
+        contributors = []
+        for username, stats in contributor_stats.items():
+            # Skip contributors with no merged PRs
+            if stats["merged_pr_count"] == 0:
+                continue
+
+            # Calculate total PR count
+            stats["total_pr_count"] = stats["merged_pr_count"] + stats["closed_pr_count"] + stats["open_pr_count"]
+
+            # Calculate a smart score that prioritizes merged PRs but penalizes imbalances
+            # Formula: (merged_pr_count * 10) - penalties for imbalanced contributions
+            smart_score = stats["merged_pr_count"] * 10
+
+            # Penalize if closed PRs are more than half of merged PRs (could indicate issues with code quality)
+            if stats["closed_pr_count"] > (stats["merged_pr_count"] / 2):
+                smart_score -= (stats["closed_pr_count"] - (stats["merged_pr_count"] / 2)) * 2
+
+            # Penalize if open PRs are more than merged PRs (could indicate abandonment issues)
+            if stats["open_pr_count"] > stats["merged_pr_count"]:
+                smart_score -= stats["open_pr_count"] - stats["merged_pr_count"]
+
+            # Calculate a contribution ratio: merged/(total) - higher is better
+            if stats["total_pr_count"] > 0:
+                stats["contribution_ratio"] = stats["merged_pr_count"] / stats["total_pr_count"]
+            else:
+                stats["contribution_ratio"] = 0
+
+            # Store the smart score
+            stats["smart_score"] = smart_score
+
+            contributors.append(stats)
+
+        # Sort by smart score (primary) and then by merged PR count (secondary)
+        contributors.sort(key=lambda x: (x["smart_score"], x["merged_pr_count"]), reverse=True)
+
+        # Store the context in cache for 12 hours
+        context = {"contributors": contributors}
+        cache.set("contributors_context", context, 12 * 60 * 60)
+
+        return render(request, "web/contributors_list.html", context)
+
+    except Exception as e:
+        # Log the error
+        print(f"Error fetching contributors: {e}")
+        # Return an empty list in case of error
+        return render(request, "web/contributors_list.html", {"contributors": []})

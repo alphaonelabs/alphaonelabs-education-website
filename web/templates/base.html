@@ -254,11 +254,9 @@
                   </a>
                   <a href="{% url 'users_list' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
-                    <i class="fas fa-clipboard-list mr-2 text-teal-500"></i>Fun Scorecards
+                    <i class="fas fa-users mr-2 text-teal-500"></i>Users
                   </a>
-                  <a href="#"
-                     a
-                     href="{% url 'success_story_list' %}"
+                  <a href="{% url 'success_story_list' %}"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-star mr-2 text-teal-500"></i>Success Stories
                   </a>
@@ -266,7 +264,7 @@
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-user-friends mr-2 text-teal-500"></i>Peer Network
                   </a>
-                  <a href="{% url 'team_goals' %}"
+                  <a href="{% url 'team_goals' %}?view=teams"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-users-cog mr-2 text-teal-500"></i>Teams
                   </a>
@@ -318,7 +316,7 @@
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-circle-info mr-2 text-teal-500"></i>Our Mission
                   </a>
-                  <a href="{% url 'terms' %}"
+                  <a href="{% url 'terms' %}#general"
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-file-contract mr-2 text-teal-500"></i>Terms
                   </a>
@@ -449,6 +447,10 @@
                   <div class="text-sm text-gray-500 dark:text-gray-400 truncate"
                        title="{{ user.email }}">{{ user.email }}</div>
                 </div>
+                <a href="{% url 'profile' %}"
+                   class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <i class="fas fa-user-edit mr-2"></i> Edit Profile
+                </a>
                 <a href="{% url 'create_course' %}"
                    class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
                   <i class="fas fa-plus-circle mr-2"></i> Create Course
@@ -636,7 +638,7 @@
                       <i class="fas fa-user-friends mr-2 text-teal-500"></i>
                       <span>Peer Network</span>
                     </a>
-                    <a href="{% url 'team_goals' %}"
+                    <a href="{% url 'team_goals' %}?view=teams"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-users-cog mr-2 text-teal-500"></i>
                       <span>Teams</span>
@@ -695,7 +697,7 @@
                       <i class="fas fa-circle-info mr-2 text-teal-500"></i>
                       <span>Our Mission</span>
                     </a>
-                    <a href="{% url 'terms' %}"
+                    <a href="{% url 'terms' %}#general"
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-file-contract mr-2 text-teal-500"></i>
                       <span>Terms</span>
@@ -742,6 +744,11 @@
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-user-circle mr-2 text-teal-500"></i>
                       <span>Profile</span>
+                    </a>
+                    <a href="{% url 'profile' %}"
+                       class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                      <i class="fas fa-user-edit mr-2 text-teal-500"></i>
+                      <span>Edit Profile</span>
                     </a>
                     {% if request.user.is_teacher %}
                       <a href="{% url 'teacher_dashboard' %}"
@@ -795,7 +802,7 @@
                     <a href="{% url 'account_signup' %}"
                        class="flex items-center py-2 px-3 bg-orange-500 hover:bg-orange-600 text-white rounded-md">
                       <i class="fa-solid fa-user-plus mr-2"></i>
-                      <span>Signup</span>
+                      <span class="hidden sm:inline">Signup</span>
                     </a>
                   </div>
                 {% endif %}
@@ -907,9 +914,7 @@
                 </a>
               </li>
               <li>
-                <a href="#"
-                   a
-                   href="{% url 'success_story_list' %}"
+                <a href="{% url 'success_story_list' %}"
                    class="text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 flex items-center">
                   <i class="fas fa-star mr-2 text-teal-500 w-5 text-center"></i>Success Stories
                 </a>
@@ -941,7 +946,7 @@
                 </a>
               </li>
               <li>
-                <a href="{% url 'terms' %}"
+                <a href="{% url 'terms' %}#general"
                    class="text-gray-600 dark:text-gray-300 hover:text-teal-600 dark:hover:text-teal-400 flex items-center">
                   <i class="fas fa-file-contract mr-2 text-teal-500 w-5 text-center"></i>Terms
                 </a>
@@ -1011,7 +1016,7 @@
             <div class="flex space-x-4 text-sm text-gray-500 dark:text-gray-400">
               <a href="{% url 'about' %}"
                  class="hover:text-teal-600 dark:hover:text-teal-400">About Us</a>
-              <a href="{% url 'terms' %}"
+              <a href="{% url 'terms' %}#terms"
                  class="hover:text-teal-600 dark:hover:text-teal-400">Terms & Conditions</a>
               <a href="{% url 'terms' %}#privacy"
                  class="hover:text-teal-600 dark:hover:text-teal-400">Privacy Policy</a>

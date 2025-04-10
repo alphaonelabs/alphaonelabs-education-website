@@ -35,6 +35,7 @@ from .views import (
 urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs
     path("captcha/", include("captcha.urls")),  # CAPTCHA URLs should not be language-prefixed
+    path("markdownx/", include("markdownx.urls")),
 ]
 
 if settings.DEBUG:
@@ -267,7 +268,6 @@ urlpatterns += i18n_patterns(
     path("cart/remove/<int:item_id>/", views.remove_from_cart, name="remove_from_cart"),
     path("cart/payment-intent/", views.create_cart_payment_intent, name="create_cart_payment_intent"),
     path("cart/checkout/success/", views.checkout_success, name="checkout_success"),
-    path("markdownx/", include("markdownx.urls")),
     # Course Invitation URLs
     path("courses/<int:course_id>/invite/", views.invite_student, name="invite_student"),
     path("terms/", views.terms, name="terms"),
@@ -333,6 +333,7 @@ urlpatterns += i18n_patterns(
     path("memes/<slug:slug>/", views.meme_detail, name="meme_detail"),
     path("whiteboard/", views.whiteboard, name="whiteboard"),
     path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
+    path("sync_github_milestones/", views.sync_github_milestones, name="sync_github_milestones"),
     # Team Collaboration URLs
     path("teams/", views.team_goals, name="team_goals"),
     path("teams/create/", views.create_team_goal, name="create_team_goal"),
@@ -450,6 +451,8 @@ urlpatterns += i18n_patterns(
     path("features/", features_page, name="features"),
     path("features/vote/", feature_vote, name="feature_vote"),
     path("features/vote-count/", feature_vote_count, name="feature_vote_count"),
+    # Contributors
+    path("contributors/", views.contributors_list_view, name="contributors_list_view"),
     path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
     # Membership URLs
     path("membership/checkout/<int:plan_id>/", views.membership_checkout, name="membership_checkout"),
