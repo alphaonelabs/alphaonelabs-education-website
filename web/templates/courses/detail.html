@@ -399,7 +399,7 @@
                   <div class="grid grid-cols-7 text-center text-sm" id="calendar-grid">
                     {% for week in calendar_weeks %}
                       {% for day in week %}
-                        <div class="p-2 border-b border-r dark:border-gray-700 {% if day.date == today %}bg-gray-100 dark:bg-gray-700{% endif %}">
+                        <div class="p-2 border-b border-r dark:border-gray-700 {% if day.is_today %}bg-gray-100 dark:bg-gray-700{% endif %}">
                           {% if day.date %}
                             <div class="relative">
                               <span class="{% if day.has_session %}font-bold text-teal-600 dark:text-teal-400{% endif %}">
@@ -1424,7 +1424,7 @@
               ${day.date ? `
                 <div class="relative">
                   <span class="${day.has_session ? 'font-bold text-teal-600 dark:text-teal-400' : ''}">
-                    ${new Date(day.date).getDate()}
+                    ${day.date.split('-')[2].replace(/^0/, '')}
                   </span>
                   ${day.has_session ? `
                     <div class="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-teal-500 dark:bg-teal-400 rounded-full"></div>
