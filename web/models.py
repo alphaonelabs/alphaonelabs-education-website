@@ -2921,3 +2921,51 @@ class Discount(models.Model):
 
     def __str__(self):
         return f"{self.code} for {self.user.username} on {self.course.title}"
+
+
+class Survey(models.Model):
+    title = models.CharField(max_length=200)
+    author = models.ForeignKey(User, on_delete=models.SET_NULL, blank=True, null=True)  # Added null=True
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.title
+
+
+class Question(models.Model):
+    QUESTION_TYPES = [
+        ("mcq", "Multiple Choice"),
+        ("checkbox", "Checkbox (Multiple Answers)"),
+        ("text", "Text Answer"),
+        ("true_false", "True/False"),
+        ("scale", "Scale Rating"),
+    ]
+
+    survey = models.ForeignKey("Survey", on_delete=models.CASCADE)
+    text = models.TextField()
+    type = models.CharField(max_length=20, choices=QUESTION_TYPES, default="mcq")
+    required = models.BooleanField(default=True)
+    scale_min = models.IntegerField(default=1)
+    scale_max = models.IntegerField(default=5)
+
+    def __str__(self):
+        return self.text
+
+
+class Choice(models.Model):
+    question = models.ForeignKey("Question", on_delete=models.CASCADE)
+    text = models.CharField(max_length=200)
+
+    def __str__(self):
+        return self.text
+
+
+class Response(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    question = models.ForeignKey("Question", on_delete=models.CASCADE)
+    choice = models.ForeignKey("Choice", on_delete=models.CASCADE, blank=True, null=True)
+    text_answer = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Response by {self.user.username} to {self.question.text}"

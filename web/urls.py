@@ -19,6 +19,11 @@ from .views import (
     GradeableLinkCreateView,
     GradeableLinkDetailView,
     GradeableLinkListView,
+    SurveyCreateView,
+    SurveyDeleteView,
+    SurveyDetailView,
+    SurveyListView,
+    SurveyResultsView,
     add_goods_to_cart,
     apply_discount_via_referrer,
     feature_vote,
@@ -29,6 +34,7 @@ from .views import (
     sales_analytics,
     sales_data,
     streak_detail,
+    submit_survey,
 )
 
 # Non-prefixed URLs
@@ -117,6 +123,13 @@ urlpatterns += i18n_patterns(
     path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
     path("social-media/create/", views.create_scheduled_post, name="create_scheduled_post"),
     path("social-media/delete/<int:post_id>/", views.delete_post, name="delete_post"),
+    # SURVEY URLs
+    path("surveys/", SurveyListView.as_view(), name="surveys"),
+    path("surveys/create/", SurveyCreateView.as_view(), name="survey-create"),
+    path("surveys/<int:pk>/", SurveyDetailView.as_view(), name="survey-detail"),
+    path("surveys/<int:pk>/delete/", SurveyDeleteView.as_view(), name="survey-delete"),
+    path("surveys/<int:survey_id>/submit/", submit_survey, name="submit-survey"),
+    path("surveys/<int:pk>/results/", SurveyResultsView.as_view(), name="survey-results"),
     # Payment URLs
     path(
         "courses/<slug:slug>/create-payment-intent/",
