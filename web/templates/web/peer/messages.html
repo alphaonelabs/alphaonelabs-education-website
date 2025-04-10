@@ -52,42 +52,4 @@
       </div>
     </div>
   </div>
-  <!-- Load CryptoJS from CDN -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-  <script>
-      // Prompt the user for the decryption key
-      var decryptionKey = prompt("Enter decryption key to view messages:");
-      if (decryptionKey) {
-          // For each element with the 'message-content' class, decrypt the ciphertext
-          var messageElems = document.querySelectorAll('.message-content');
-          messageElems.forEach(function(elem) {
-              var ciphertext = elem.getAttribute('data-ciphertext');
-              try {
-                  var bytes = CryptoJS.AES.decrypt(ciphertext, decryptionKey);
-                  var plaintext = bytes.toString(CryptoJS.enc.Utf8);
-                  // Replace the content with decrypted plaintext if successful
-                  if (plaintext) {
-                      elem.textContent = plaintext;
-                  } else {
-                      elem.textContent = "[Decryption failed]";
-                  }
-              } catch (error) {
-                  console.error("Decryption error:", error);
-                  elem.textContent = "[Error decrypting message]";
-              }
-          });
-      } else {
-          alert("No decryption key provided. Messages will remain encrypted.");
-      }
-
-      // Auto-scroll functionality
-      const messagesContainer = document.getElementById('messages-container');
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-      const messageForm = document.querySelector('form');
-      messageForm.addEventListener('submit', () => {
-          setTimeout(() => {
-              messagesContainer.scrollTop = messagesContainer.scrollHeight;
-          }, 100);
-      });
-  </script>
 {% endblock content %}

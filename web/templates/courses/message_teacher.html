@@ -104,36 +104,6 @@
                 iv: arrayBufferToBase64(iv)
             };
         }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            var form = document.getElementById('teacherMessageForm');
-            if (form) {
-                form.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    var messageField = document.getElementById('id_message');
-                    var plaintext = messageField.value;
-                    // Prompt the user for an encryption key
-                    var encryptionKey = prompt("Enter encryption key to secure your message:");
-                    if (!encryptionKey) {
-                        alert("Encryption key is required to send a secure message.");
-                        return;
-                    }
-                    try {
-                        const key = await deriveKeyFromPassword(encryptionKey);
-                        const encrypted = await encryptMessage(plaintext, key);
-                        // Replace the plaintext with the encrypted message
-                        messageField.value = encrypted.ciphertext;
-                        // Set the IV in the hidden input field
-                        document.getElementById('id_iv').value = encrypted.iv;
-                        // Submit the form
-                        form.submit();
-                    } catch (error) {
-                        console.error("Encryption error:", error);
-                        alert("Encryption failed. Please try again.");
-                    }
-                });
-            }
-        });
     </script>
     {% block content %}
     {% endblock content %}
