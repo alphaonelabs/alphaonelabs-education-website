@@ -500,6 +500,7 @@ def profile(request):
                 "avg_rating": avg_rating,
             }
         )
+    # Student-specific stats
     else:
         enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
         completed_courses = enrollments.filter(status="completed").count()
@@ -3230,11 +3231,7 @@ def message_enrolled_students(request, slug):
         message = request.POST.get("message")
 
         if title and message:
-            # Import the encryption function from our secure messaging module
-            from web.secure_messaging import encrypt_message
-
-            # Encrypt the message using Fernet and decode to string for email content
-            encrypted_message = encrypt_message(message).decode("utf-8")
+            original_message = message
 
             # Get all enrolled students
             enrolled_students = User.objects.filter(
@@ -3245,7 +3242,7 @@ def message_enrolled_students(request, slug):
             for student in enrolled_students:
                 send_mail(
                     subject=f"[{course.title}] {title}",
-                    message=encrypted_message,
+                    message=original_message,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[student.email],
                     fail_silently=True,
@@ -3269,9 +3266,7 @@ def message_teacher(request, teacher_id):
     if request.method == "POST":
         form = MessageTeacherForm(request.POST, user=request.user)
         if form.is_valid():
-            # The MessageTeacherForm's clean_message method encrypts the message,
-            # so form.cleaned_data["message"] already contains the encrypted text.
-            encrypted_message = form.cleaned_data["message"]
+            original_message = request.POST.get("message")
 
             # Prepare email content
             if request.user.is_authenticated:
@@ -3285,14 +3280,14 @@ def message_teacher(request, teacher_id):
             context = {
                 "sender_name": sender_name,
                 "sender_email": sender_email,
-                "message": encrypted_message,
+                "message": original_message,
             }
             html_message = render_to_string("web/emails/teacher_message.html", context)
 
             try:
                 send_mail(
                     subject=f"New message from {sender_name}",
-                    message=encrypted_message,
+                    message=original_message,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[teacher.email],
                     html_message=html_message,
