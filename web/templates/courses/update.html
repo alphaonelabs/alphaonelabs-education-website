@@ -70,7 +70,25 @@
                       'preview', 'side-by-side', 'fullscreen', '|',
                       'guide'
                   ],
-                  theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+                  theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
+                  // Use language-agnostic URL
+                  previewRender: function(plainText) {
+                      // Create a temporary form
+                      const formData = new FormData();
+                      formData.append('content', plainText);
+
+                      // Use a synchronous request to get the rendered HTML
+                      const xhr = new XMLHttpRequest();
+                      xhr.open('POST', '{% url "markdownx_markdownify" %}', false); // synchronous request
+                      xhr.setRequestHeader('X-CSRFToken', getCookie('csrftoken'));
+                      xhr.send(formData);
+
+                      if (xhr.status === 200) {
+                          return xhr.responseText;
+                      }
+
+                      return 'Error rendering markdown';
+                  }
               });
 
               // Store the editor instance
@@ -81,6 +99,22 @@
                   textarea.value = editor.value();
               });
           });
+
+          // Helper function to get CSRF token from cookies
+          function getCookie(name) {
+              let cookieValue = null;
+              if (document.cookie && document.cookie !== '') {
+                  const cookies = document.cookie.split(';');
+                  for (let i = 0; i < cookies.length; i++) {
+                      const cookie = cookies[i].trim();
+                      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                          break;
+                      }
+                  }
+              }
+              return cookieValue;
+          }
 
           // Fix form submission for hidden required textareas
           const form = document.getElementById('updateCourseForm');

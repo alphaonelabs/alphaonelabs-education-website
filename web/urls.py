@@ -35,6 +35,7 @@ from .views import (
 urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs
     path("captcha/", include("captcha.urls")),  # CAPTCHA URLs should not be language-prefixed
+    path("markdownx/", include("markdownx.urls")),
 ]
 
 if settings.DEBUG:
@@ -260,7 +261,6 @@ urlpatterns += i18n_patterns(
     path("cart/remove/<int:item_id>/", views.remove_from_cart, name="remove_from_cart"),
     path("cart/payment-intent/", views.create_cart_payment_intent, name="create_cart_payment_intent"),
     path("cart/checkout/success/", views.checkout_success, name="checkout_success"),
-    path("markdownx/", include("markdownx.urls")),
     # Course Invitation URLs
     path("courses/<int:course_id>/invite/", views.invite_student, name="invite_student"),
     path("terms/", views.terms, name="terms"),
