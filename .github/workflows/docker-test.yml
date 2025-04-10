@@ -125,6 +125,7 @@ jobs:
 
           # Now run migrations and setup database inside the container
           docker exec education-app python manage.py migrate
+          sleep 10
           docker exec education-app python manage.py create_test_data
 
           # Create superuser if needed
