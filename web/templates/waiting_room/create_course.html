@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block title %}
-  Create Course from Waiting Room
+  Teach This Course
 {% endblock title %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
@@ -20,7 +20,7 @@
     <div class="max-w-4xl mx-auto">
       <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 mb-8">
         <div class="p-6">
-          <h1 class="text-2xl font-bold text-gray-800 mb-6">Create Course from Waiting Room</h1>
+          <h1 class="text-2xl font-bold text-gray-800 mb-6">Teach This Course</h1>
           <div class="mb-8 bg-blue-50 border-l-4 border-blue-500 p-4">
             <div class="flex">
               <div class="flex-shrink-0">
@@ -61,7 +61,7 @@
                 </div>
               </div>
               <div>
-                <span class="font-medium text-gray-700">Participants:</span> {{ waiting_room.participants.count }}
+                <span class="font-medium text-gray-700">Participants:</span> {{ waiting_room.participants.count|add:"1" }}
               </div>
             </div>
           </div>
@@ -115,7 +115,7 @@
             <div class="pt-4">
               <button type="submit"
                       class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                Create Course
+                Teach This Course
               </button>
             </div>
           </form>
