@@ -7104,10 +7104,12 @@ def users_list(request: HttpRequest) -> HttpResponse:
 
     return render(request, "users_list.html", context)
 
-#Function free_checkout to handle enrollments without payment
+
+# Function free_checkout to handle enrollments without payment
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
 from .models import Cart, Enrollment
+
 
 @require_POST
 def free_checkout(request):
@@ -7117,10 +7119,7 @@ def free_checkout(request):
             return JsonResponse({"error": "Cart is not free"}, status=400)
 
         for item in cart.items.all():
-            Enrollment.objects.get_or_create(
-                user=request.user,
-                course=item.course  # Adjust field name as necessary
-            )
+            Enrollment.objects.get_or_create(user=request.user, course=item.course)  # Adjust field name as necessary
 
         cart.items.all().delete()  # Clear the cart
         return JsonResponse({"status": "success"})

@@ -455,7 +455,7 @@ urlpatterns += i18n_patterns(
 handler404 = "web.views.custom_404"
 handler429 = "web.views.custom_429"
 
-#Registered the free_checkout URL Route to trigger the new view
+# Registered the free_checkout URL Route to trigger the new view
 from . import views
 
 urlpatterns += [
