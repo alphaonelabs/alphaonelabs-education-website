@@ -3253,8 +3253,6 @@ def message_teacher(request, teacher_id):
     if request.method == "POST":
         form = MessageTeacherForm(request.POST, user=request.user)
         if form.is_valid():
-            # The MessageTeacherForm's clean_message method encrypts the message,
-            # so form.cleaned_data["message"] already contains the encrypted text.
             original_message = request.POST.get("message")
 
             # Prepare email content

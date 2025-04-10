@@ -173,6 +173,15 @@ class UserRegistrationForm(SignupForm):
         label="Profile Visibility",
         help_text="Select whether your profile details will be public or private.",
     )
+    # NEW: Add radio buttons for profile visibility.
+    is_profile_public = forms.TypedChoiceField(
+        required=True,
+        choices=(("True", "Public"), ("False", "Private")),
+        coerce=lambda x: x == "True",  # Convert string to Boolean.
+        widget=forms.RadioSelect,
+        label="Profile Visibility",
+        help_text="Select whether your profile details will be public or private.",
+    )
 
     def __init__(self, *args, **kwargs):
         request = kwargs.pop("request", None)
@@ -213,6 +222,14 @@ class UserRegistrationForm(SignupForm):
             for field_name in ["first_name", "last_name", "email", "referral_code", "username"]:
                 if field_name in self.data and field_name in self.fields:
                     self.fields[field_name].widget.attrs["value"] = self.data[field_name]
+
+            # Initialize how_did_you_hear_about_us if provided
+            if "how_did_you_hear_about_us" in self.data:
+                self.fields["how_did_you_hear_about_us"].initial = self.data["how_did_you_hear_about_us"]
+
+        # Set a default for the new field if not provided.
+        if "is_profile_public" not in self.initial:
+            self.initial["is_profile_public"] = "False"  # Default to Private.
 
             # Initialize how_did_you_hear_about_us if provided
             if "how_did_you_hear_about_us" in self.data:
@@ -695,6 +712,28 @@ class ProfileUpdateForm(forms.ModelForm):
         widget=forms.RadioSelect,
         help_text="Select whether your profile details are public or private.",
     )
+    discord_username = forms.CharField(
+        max_length=50,
+        required=False,
+        widget=TailwindInput(),
+        help_text="Discord username (visible if profile is public)",
+    )
+    slack_username = forms.CharField(
+        max_length=50, required=False, widget=TailwindInput(), help_text="Slack username (visible if profile is public)"
+    )
+    github_username = forms.CharField(
+        max_length=50,
+        required=False,
+        widget=TailwindInput(),
+        help_text="GitHub username (visible if profile is public)",
+    )
+    is_profile_public = forms.TypedChoiceField(
+        required=True,
+        choices=(("True", "Public"), ("False", "Private")),
+        coerce=lambda x: x == "True",
+        widget=forms.RadioSelect,
+        help_text="Select whether your profile details are public or private.",
+    )
 
     class Meta:
         model = User
@@ -707,6 +746,11 @@ class ProfileUpdateForm(forms.ModelForm):
                 profile = self.instance.profile
                 self.fields["bio"].initial = profile.bio
                 self.fields["expertise"].initial = profile.expertise
+                self.fields["discord_username"].initial = profile.discord_username
+                self.fields["slack_username"].initial = profile.slack_username
+                self.fields["github_username"].initial = profile.github_username
+                # Set initial value as a string.
+                self.initial["is_profile_public"] = "True" if profile.is_profile_public else "False"
                 self.fields["discord_username"].initial = profile.discord_username
                 self.fields["slack_username"].initial = profile.slack_username
                 self.fields["github_username"].initial = profile.github_username
@@ -732,6 +776,13 @@ class ProfileUpdateForm(forms.ModelForm):
             profile.expertise = self.cleaned_data["expertise"]
             if self.cleaned_data.get("avatar"):
                 profile.avatar = self.cleaned_data["avatar"]
+
+            # Get the is_profile_public value and ensure it's a boolean
+            is_public = self.cleaned_data.get("is_profile_public")
+            profile.discord_username = self.cleaned_data["discord_username"]
+            profile.slack_username = self.cleaned_data["slack_username"]
+            profile.github_username = self.cleaned_data["github_username"]
+            profile.is_profile_public = is_public
 
             # Get the is_profile_public value and ensure it's a boolean
             is_public = self.cleaned_data.get("is_profile_public")
