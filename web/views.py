@@ -266,6 +266,10 @@ def index(request):
     if not request.user.is_authenticated or not request.user.profile.is_teacher:
         form = TeacherSignupForm()
 
+    # Get video count and subjects for the quick add video form
+    video_count = EducationalVideo.objects.count()
+    subjects = Subject.objects.all().order_by("order", "name")
+
     context = {
         "profile": profile,
         "featured_courses": featured_courses,
@@ -278,6 +282,8 @@ def index(request):
         "top_leaderboard_users": top_leaderboard_users,
         "form": form,
         "is_debug": settings.DEBUG,
+        "video_count": video_count,
+        "subjects": subjects,
     }
     if request.user.is_authenticated:
         user_team_goals = (
@@ -3729,6 +3735,15 @@ class GoodsDetailView(generic.DetailView):
         context["other_products"] = Goods.objects.exclude(pk=self.object.pk)[:12]  # Fetch other products
         view_data = WebRequest.objects.filter(path=self.request.path).aggregate(total_views=Coalesce(Sum("count"), 0))
         context["view_count"] = view_data["total_views"]
+
+        # Add cart count for each product
+        products_with_cart_count = []
+        for product in context["other_products"]:
+            product.cart_count = product.cart_items.count()
+            products_with_cart_count.append(product)
+
+        context["other_products"] = products_with_cart_count
+
         return context
 
 
@@ -3854,6 +3869,15 @@ class GoodsListingView(ListView):
         context = super().get_context_data(**kwargs)
         context["store_names"] = Storefront.objects.values_list("name", flat=True).distinct()
         context["categories"] = Goods.objects.values_list("category", flat=True).distinct()
+
+        # Add cart count for each product
+        products_with_cart_count = []
+        for product in context["products"]:
+            product.cart_count = product.cart_items.count()
+            products_with_cart_count.append(product)
+
+        context["products"] = products_with_cart_count
+
         return context
 
 
@@ -5065,10 +5089,26 @@ def upload_educational_video(request):
         form = EducationalVideoForm(request.POST)
         if form.is_valid():
             video = form.save(commit=False)
-            video.uploader = request.user
+
+            # Handle anonymous submissions
+            if request.user.is_authenticated:
+                video.uploader = request.user
+            else:
+                # For anonymous submissions, store optional submitter name
+                submitter_name = request.POST.get("submitter_name", "")
+                if submitter_name:
+                    video.submitter_name = submitter_name
+
             video.save()
 
+            # Check if this is an AJAX request (from quick add form)
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return JsonResponse({"success": True, "message": "Video added successfully!"})
+
             return redirect("educational_videos_list")
+        elif request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            # Return form errors for AJAX requests
+            return JsonResponse({"success": False, "error": form.errors.as_text()})
     else:
         form = EducationalVideoForm()
 
