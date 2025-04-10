@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Create Waiting Room
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="mb-6">
+      <a href="{% url 'waiting_room_list' %}"
+         class="text-blue-600 hover:text-blue-800 flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             class="h-5 w-5 mr-1"
+             viewBox="0 0 20 20"
+             fill="currentColor">
+          <path fill-rule="evenodd" d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z" clip-rule="evenodd" />
+        </svg>
+        Back to Waiting Rooms
+      </a>
+    </div>
+    <div class="max-w-2xl mx-auto bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+      <div class="p-6">
+        <h1 class="text-2xl font-bold text-gray-800 mb-6">Create a Waiting Room</h1>
+        <div class="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4">
+          <div class="flex">
+            <div class="flex-shrink-0">
+              <svg class="h-5 w-5 text-blue-600"
+                   xmlns="http://www.w3.org/2000/svg"
+                   viewBox="0 0 20 20"
+                   fill="currentColor">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div class="ml-3">
+              <p class="text-sm text-blue-700">
+                Create a waiting room to express interest in subjects and topics you want to learn.
+                Other students can join your waiting room, and teachers can create courses based on popular demand.
+              </p>
+            </div>
+          </div>
+        </div>
+        <form method="post" class="space-y-6">
+          {% csrf_token %}
+          <div class="space-y-4">
+            <div>
+              <label for="{{ form.title.id_for_label }}"
+                     class="block text-sm font-medium text-gray-700">Title</label>
+              <div class="mt-1">{{ form.title }}</div>
+              {% if form.title.errors %}<p class="mt-2 text-sm text-red-600">{{ form.title.errors.0 }}</p>{% endif %}
+            </div>
+            <div>
+              <label for="{{ form.description.id_for_label }}"
+                     class="block text-sm font-medium text-gray-700">Description</label>
+              <div class="mt-1">{{ form.description }}</div>
+              {% if form.description.errors %}<p class="mt-2 text-sm text-red-600">{{ form.description.errors.0 }}</p>{% endif %}
+              <p class="mt-1 text-sm text-gray-500">Describe what you want to learn in more detail.</p>
+            </div>
+            <div>
+              <label for="{{ form.subject.id_for_label }}"
+                     class="block text-sm font-medium text-gray-700">Subject</label>
+              <div class="mt-1">{{ form.subject }}</div>
+              {% if form.subject.errors %}<p class="mt-2 text-sm text-red-600">{{ form.subject.errors.0 }}</p>{% endif %}
+              <p class="mt-1 text-sm text-gray-500">Main subject area (e.g., Mathematics, Programming, Art)</p>
+            </div>
+            <div>
+              <label for="{{ form.topics.id_for_label }}"
+                     class="block text-sm font-medium text-gray-700">Topics</label>
+              <div class="mt-1">{{ form.topics }}</div>
+              {% if form.topics.errors %}<p class="mt-2 text-sm text-red-600">{{ form.topics.errors.0 }}</p>{% endif %}
+              <p class="mt-1 text-sm text-gray-500">Enter comma-separated topics (e.g., Python, Machine Learning, Data Science)</p>
+            </div>
+          </div>
+          <div class="pt-4">
+            <button type="submit"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+              Create Waiting Room
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% block extra_js %}
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize tag input for topics
+            const tagInput = document.querySelector('.tag-input');
+            if (tagInput) {
+                // Simple tag input functionality
+                tagInput.addEventListener('keydown', function(e) {
+                    if (e.key === ',' || e.key === 'Enter') {
+                        e.preventDefault();
+                        const value = this.value.trim();
+                        if (value) {
+                            // Add the tag
+                            const currentValue = this.value;
+                            if (!currentValue.endsWith(',')) {
+                                this.value = currentValue + ',';
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+  {% endblock extra_js %}
+{% endblock content %}

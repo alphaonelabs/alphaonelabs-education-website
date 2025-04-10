@@ -79,11 +79,11 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/education-website.git
-   cd education-website
+   git clone https://github.com/yourusername/alphaonelabs-education-website.git
+   cd alphaonelabs-education-website
    ```
 
-2. Set up a virtual environment:
+2. Set up virtual environment:
 
    ```bash
    python -m venv venv
@@ -98,6 +98,13 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 
    # Using poetry
    poetry install
+
+   If you are having isues on windows try;
+   poetry lock
+   poetry install
+   poetry self add poetry-plugin shell
+   poetry shell
+   poetry run pre-commit run --all-files
    ```
 
 4. Set up environment variables:
@@ -184,14 +191,25 @@ Copy `.env.sample` to `.env` and configure the variables.
   python manage.py test
   ```
 
-### Pre-commit Hooks
+### Pre-commit Hooks (Important)
 
-We use pre-commit hooks to ensure code quality:
+We use pre-commit hooks to ensure code quality and automatically format code:
 
 ```bash
+# Install pre-commit
+pip install pre-commit
+
+# Install the git hooks
 pre-commit install
-pre-commit run --all-files
+
+# Automatically fix formatting issues
+poetry run pre-commit run --hook-stage commit
+
+# Run all checks on all files
+poetry run pre-commit run --all-files
 ```
+
+See [PRE-COMMIT-README.md](PRE-COMMIT-README.md) for detailed information about our pre-commit workflow and configuration.
 
 ### Documentation
 

@@ -41,17 +41,32 @@
   </head>
   <body>
     <div class="header">
-      <h1>New Learning Interest</h1>
+      <h1>New Learning Request</h1>
     </div>
     <div class="content">
-      <h2>Subject Interest: {{ subject }}</h2>
+      <h2>{{ title }}</h2>
+      <p>
+        <strong>Waiting Room ID:</strong> {{ waiting_room_id }}
+      </p>
+      <p>
+        <strong>Subject:</strong> {{ subject }}
+      </p>
+      <p>
+        <strong>Topics:</strong> {{ topics }}
+      </p>
       <p>
         <strong>From:</strong> {{ email }}
       </p>
+      <h3>Description:</h3>
+      <p>{{ description }}</p>
       {% if message %}
-        <h3>Additional Information:</h3>
+        <h3>Additional Requirements:</h3>
         <p>{{ message }}</p>
       {% endif %}
+      <p class="action-link mt-5">
+        <a href="{% url 'create_course_from_waiting_room' waiting_room_id %}"
+           class="bg-orange-500 text-white px-5 py-2.5 rounded no-underline inline-block">Teach This Course</a>
+      </p>
     </div>
     <div class="footer">
       <p>This is an automated message from Alpha One Labs Learning Platform</p>

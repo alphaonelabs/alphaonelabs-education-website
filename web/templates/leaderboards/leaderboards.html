@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  Leaderboards -
+  Alpha One Labs
+{% endblock %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="mb-8 text-center">
+      <h1 class="text-3xl font-bold mb-2">Leaderboards</h1>
+      <p class="text-gray-600 dark:text-gray-400">Track your progress and compete with others</p>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Global Leaderboard -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-4 flex justify-between items-center">
+          <div>
+            <h2 class="font-bold text-xl">Global Leaderboard</h2>
+            <p class="text-blue-100 text-sm">Top performers overall</p>
+          </div>
+          {% if user_rank %}<div class="bg-blue-700 px-3 py-1 rounded-full text-sm">Your Rank: #{{ user_rank }}</div>{% endif %}
+        </div>
+        <div class="p-4">
+          {% if global_entries %}
+            <div class="overflow-x-auto">
+              <table class="min-w-full">
+                <thead>
+                  <tr class="text-left border-b border-gray-200 dark:border-gray-700">
+                    <th class="px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-300">Rank</th>
+                    <th class="px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-300">User</th>
+                    <th class="px-4 py-3 text-sm font-semibold text-right text-gray-600 dark:text-gray-300">Points</th>
+                    <th class="px-4 py-3 text-sm font-semibold text-right text-gray-600 dark:text-gray-300">Challenges</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for entry in global_entries %}
+                    <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 {% if entry.user == request.user %}bg-blue-200 dark:bg-blue-900{% endif %}">
+                      <td class="px-4 py-3">{{ forloop.counter }}</td>
+                      {% if entry.user.username == user.username %}
+                        <td class="px-4 py-3 font-medium">You</td>
+                      {% else %}
+                        <td class="px-4 py-3 font-medium">{{ entry.user.username }}</td>
+                      {% endif %}
+                      <td class="px-4 py-3 text-right">{{ entry.points }}</td>
+                      <td class="px-4 py-3 text-right">{{ entry.challenge_count }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-center py-8">
+              <p class="text-gray-500 dark:text-gray-400">No entries yet. Complete challenges to earn your spot!</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      <!-- Weekly Leaderboard -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-green-600 to-green-500 text-white px-4 py-4 flex justify-between items-center">
+          <div>
+            <h2 class="font-bold text-xl">Weekly Stars</h2>
+            <p class="text-green-100 text-sm">Top performers this week</p>
+          </div>
+          {% if user_weekly_rank %}
+            <div class="bg-green-700 px-3 py-1 rounded-full text-sm">Weekly Rank: #{{ user_weekly_rank }}</div>
+          {% endif %}
+        </div>
+        <div class="p-4">
+          {% if weekly_entries %}
+            <div class="overflow-x-auto">
+              <table class="min-w-full">
+                <thead>
+                  <tr class="text-left border-b border-gray-200 dark:border-gray-700">
+                    <th class="px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-300">Rank</th>
+                    <th class="px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-300">User</th>
+                    <th class="px-4 py-3 text-sm font-semibold text-right text-gray-600 dark:text-gray-300">Weekly Points</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for entry in weekly_entries %}
+                    <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 {% if entry.user == request.user %}bg-green-200 dark:bg-green-900{% endif %}">
+                      <td class="px-4 py-3">{{ forloop.counter }}</td>
+                      {% if entry.user.username == user.username %}
+                        <td class="px-4 py-3 font-medium">You</td>
+                      {% else %}
+                        <td class="px-4 py-3 font-medium">{{ entry.user.username }}</td>
+                      {% endif %}
+                      <td class="px-4 py-3 text-right">{{ entry.weekly_points }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-center py-8">
+              <p class="text-gray-500 dark:text-gray-400">No weekly points earned yet. Be the first!</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      <!-- Monthly Leaderboard -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-purple-600 to-purple-500 text-white px-4 py-4 flex justify-between items-center">
+          <div>
+            <h2 class="font-bold text-xl">Monthly Champions</h2>
+            <p class="text-purple-100 text-sm">Top performers this month</p>
+          </div>
+          {% if user_monthly_rank %}
+            <div class="bg-purple-700 px-3 py-1 rounded-full text-sm">Monthly Rank: #{{ user_monthly_rank }}</div>
+          {% endif %}
+        </div>
+        <div class="p-4">
+          {% if monthly_entries %}
+            <div class="overflow-x-auto">
+              <table class="min-w-full">
+                <thead>
+                  <tr class="text-left border-b border-gray-200 dark:border-gray-700">
+                    <th class="px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-300">Rank</th>
+                    <th class="px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-300">User</th>
+                    <th class="px-4 py-3 text-sm font-semibold text-right text-gray-600 dark:text-gray-300">Monthly Points</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for entry in monthly_entries %}
+                    <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 {% if entry.user == request.user %}bg-purple-200 dark:bg-purple-900{% endif %}">
+                      <td class="px-4 py-3">{{ forloop.counter }}</td>
+                      {% if entry.user.username == user.username %}
+                        <td class="px-4 py-3 font-medium">You</td>
+                      {% else %}
+                        <td class="px-4 py-3 font-medium">{{ entry.user.username }}</td>
+                      {% endif %}
+                      <td class="px-4 py-3 text-right">{{ entry.monthly_points }}</td>
+                    </tr>
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+          {% else %}
+            <div class="text-center py-8">
+              <p class="text-gray-500 dark:text-gray-400">No monthly points earned yet. Be the first!</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      <!-- Friend Leaderboard (Only for authenticated users) -->
+      {% if request.user.is_authenticated %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+          <div class="bg-gradient-to-r from-teal-600 to-teal-500 text-white px-4 py-4">
+            <h2 class="font-bold text-xl">Your Friends</h2>
+            <p class="text-teal-100 text-sm">See how your friends are performing</p>
+          </div>
+          <div class="p-4">
+            {% if friend_entries %}
+              <div class="overflow-x-auto">
+                <table class="min-w-full">
+                  <thead>
+                    <tr class="text-left border-b border-gray-200 dark:border-gray-700">
+                      <th class="px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-300">Rank</th>
+                      <th class="px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-300">Friend</th>
+                      <th class="px-4 py-3 text-sm font-semibold text-right text-gray-600 dark:text-gray-300">Points</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for entry in friend_entries %}
+                      <tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
+                        <td class="px-4 py-3">{{ forloop.counter }}</td>
+                        <td class="px-4 py-3 font-medium">{{ entry.user.username }}</td>
+                        <td class="px-4 py-3 text-right">{{ entry.points }}</td>
+                      </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <div class="text-center py-8">
+                <p class="text-gray-500 dark:text-gray-400">
+                  You haven't connected with any friends yet, or none of your friends
+                  have earned points.
+                </p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

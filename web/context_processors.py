@@ -14,3 +14,10 @@ def last_modified(request):
         last_modified_time = "Unknown"
 
     return {"last_modified": last_modified_time}
+
+
+def invitation_notifications(request):
+    if request.user.is_authenticated:
+        pending_invites = request.user.received_group_invites.filter(status="pending").count()
+        return {"pending_invites_count": pending_invites}
+    return {}

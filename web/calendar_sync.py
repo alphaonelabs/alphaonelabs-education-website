@@ -271,8 +271,6 @@ def get_user_calendar_events(user, start_date=None, end_date=None):
     except Exception as e:
         logger.error(f"Failed to get calendar events: {str(e)}")
         return []
-        logger.error(f"Failed to get calendar events: {str(e)}")
-        return []
 
 
 def update_calendar_event(session):

@@ -3,6 +3,7 @@ import random
 import string
 import time
 import uuid
+from datetime import datetime, timedelta
 from io import BytesIO
 
 from allauth.account.signals import user_signed_up
@@ -21,6 +22,8 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from markdownx.models import MarkdownxField
 from PIL import Image
+
+from web.utils import calculate_and_update_user_streak
 
 
 class Notification(models.Model):
@@ -50,8 +53,16 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     bio = models.TextField(max_length=500, blank=True)
     expertise = models.CharField(max_length=200, blank=True)
-    avatar = models.ImageField(upload_to="avatars/", blank=True, default="")
+    # Avatar fields
+    avatar = models.ImageField(upload_to="avatars", blank=True, default="")
+    custom_avatar = models.OneToOneField(
+        "Avatar", on_delete=models.SET_NULL, null=True, blank=True, related_name="profile"
+    )
     is_teacher = models.BooleanField(default=False)
+    is_social_media_manager = models.BooleanField(default=False)
+    discord_username = models.CharField(max_length=50, blank=True, help_text="Your Discord username (e.g., User#1234)")
+    slack_username = models.CharField(max_length=50, blank=True, help_text="Your Slack username")
+    github_username = models.CharField(max_length=50, blank=True, help_text="Your GitHub username (without @)")
     referral_code = models.CharField(max_length=20, unique=True, blank=True)
     referred_by = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="referrals")
     referral_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
@@ -78,6 +89,12 @@ class Profile(models.Model):
     is_profile_public = models.BooleanField(
         default=False, help_text="Toggle to make your profile public so your details and stats are visible."
     )
+    how_did_you_hear_about_us = models.TextField(
+        blank=True, help_text="How did you hear about us? You can enter text or a link."
+    )
+    is_profile_public = models.BooleanField(
+        default=False, help_text="Toggle to make your profile public so your details and stats are visible."
+    )
 
     def __str__(self):
         visibility = "Public" if self.is_profile_public else "Private"
@@ -86,20 +103,7 @@ class Profile(models.Model):
     def save(self, *args, **kwargs):
         if not self.referral_code:
             self.referral_code = self.generate_referral_code()
-        if self.avatar:
-            img = Image.open(self.avatar)
-            if img.mode != "RGB":
-                img = img.convert("RGB")
-            # Resize to a square avatar
-            size = (200, 200)
-            img = img.resize(size, Image.Resampling.LANCZOS)
-            # Save the resized image
-            buffer = BytesIO()
-            img.save(buffer, format="JPEG", quality=90)
-            # Update the ImageField
-            file_name = self.avatar.name
-            self.avatar.delete(save=False)  # Delete old image
-            self.avatar.save(file_name, ContentFile(buffer.getvalue()), save=False)
+        # Skip image processing for SVG files
         super().save(*args, **kwargs)
 
     def generate_referral_code(self):
@@ -131,6 +135,66 @@ class Profile(models.Model):
     @property
     def can_receive_payments(self):
         return self.is_teacher and self.stripe_account_id and self.stripe_account_status == "verified"
+
+
+class Avatar(models.Model):
+    style = models.CharField(max_length=50, default="circle")
+    background_color = models.CharField(max_length=7, default="#FFFFFF")
+    top = models.CharField(max_length=50, default="short_flat")
+    eyebrows = models.CharField(max_length=50, default="default")
+    eyes = models.CharField(max_length=50, default="default")
+    nose = models.CharField(max_length=50, default="default")
+    mouth = models.CharField(max_length=50, default="default")
+    facial_hair = models.CharField(max_length=50, default="none")
+    skin_color = models.CharField(max_length=50, default="light")
+    hair_color = models.CharField(max_length=7, default="#000000")
+    accessory = models.CharField(max_length=50, default="none")
+    clothing = models.CharField(max_length=50, default="hoodie")
+    clothing_color = models.CharField(max_length=7, default="#0000FF")
+    svg = models.TextField(blank=True, help_text="Stored SVG string of the custom avatar")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Avatar for {self.profile.user.username if hasattr(self, 'profile') and self.profile else 'No Profile'}"
+
+    def save(self, *args, **kwargs):
+        from python_avatars import (
+            AccessoryType,
+        )
+        from python_avatars import Avatar as PythonAvatar
+        from python_avatars import (
+            AvatarStyle,
+            ClothingType,
+            EyebrowType,
+            EyeType,
+            FacialHairType,
+            HairType,
+            MouthType,
+            NoseType,
+            SkinColor,
+        )
+
+        # Create avatar using python_avatars
+        avatar = PythonAvatar(
+            style=getattr(AvatarStyle, self.style.upper(), AvatarStyle.CIRCLE),
+            background_color=self.background_color,
+            top=getattr(HairType, self.top.upper(), HairType.SHORT_FLAT),
+            eyebrows=getattr(EyebrowType, self.eyebrows.upper(), EyebrowType.DEFAULT),
+            eyes=getattr(EyeType, self.eyes.upper(), EyeType.DEFAULT),
+            nose=getattr(NoseType, self.nose.upper(), NoseType.DEFAULT),
+            mouth=getattr(MouthType, self.mouth.upper(), MouthType.DEFAULT),
+            facial_hair=getattr(FacialHairType, self.facial_hair.upper(), FacialHairType.NONE),
+            skin_color=getattr(SkinColor, self.skin_color.upper(), SkinColor.LIGHT),
+            hair_color=self.hair_color,
+            accessory=getattr(AccessoryType, self.accessory.upper(), AccessoryType.NONE),
+            clothing=getattr(ClothingType, self.clothing.upper(), ClothingType.HOODIE),
+            clothing_color=self.clothing_color,
+        )
+
+        # Save SVG string
+        self.svg = avatar.render()
+        super().save(*args, **kwargs)
 
 
 class Subject(models.Model):
@@ -305,6 +369,34 @@ class Session(models.Model):
     teacher_confirmed = models.BooleanField(
         default=False, help_text="Whether the teacher has confirmed the rolled over dates"
     )
+    latitude = models.DecimalField(
+        blank=True,
+        decimal_places=6,
+        help_text="Latitude coordinate for mapping",
+        max_digits=9,
+        null=True,
+        validators=[MinValueValidator(-90), MaxValueValidator(90)],
+    )
+    longitude = models.DecimalField(
+        blank=True,
+        decimal_places=6,
+        help_text="Longitude coordinate for mapping",
+        max_digits=9,
+        null=True,
+        validators=[MinValueValidator(-180), MaxValueValidator(180)],
+    )
+    teaching_style = models.CharField(
+        max_length=20,
+        choices=[
+            ("lecture", "Lecture Based"),
+            ("student-centered", "Student Centered"),
+            ("hybrid", "Hybrid Learning"),
+            ("practical", "Practical Learning"),
+        ],
+        default="hybrid",
+        blank=True,
+        help_text="What is the teachng style of session",
+    )
 
     class Meta:
         ordering = ["start_time"]
@@ -314,6 +406,11 @@ class Session(models.Model):
 
     def save(self, *args, **kwargs):
         # Store original times when first created
+        # calculate the lat and longitiude dynamically
+
+        if self.location and (self.latitude is None or self.longitude is None):
+            self.fetch_coordinates()
+
         if not self.pk and not self.original_start_time and not self.original_end_time:
             self.original_start_time = self.start_time
             self.original_end_time = self.end_time
@@ -378,6 +475,36 @@ class Session(models.Model):
             delete_calendar_event(self)
         super().delete(*args, **kwargs)
 
+    def fetch_coordinates(self):
+        """Fetch latitude and longitude using OpenStreetMap's Nominatim API."""
+        from .utils import geocode_address
+
+        if not self.location:
+            return
+        try:
+            coordinates = geocode_address(self.location)
+            if coordinates:
+                self.latitude, self.longitude = coordinates
+                print("location store:", self.latitude, self.longitude)
+            else:
+                print(
+                    f"Skipping session {self.id} due to invalid coordinates:",
+                    f"lat={self.latitude}, \n lng={self.longitude}",
+                )
+        except Exception as e:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.error("Error geocoding session %s location '%s': %s", self.id, self.location, str(e))
+
+    def is_live(self):
+        """Returns True if the session is live right now."""
+        now = timezone.now()
+        return self.start_time <= now <= self.end_time
+
+    def get_absolute_url(self):
+        return reverse("course_detail", kwargs={"slug": self.course.slug})
+
 
 class CourseMaterial(models.Model):
     MATERIAL_TYPES = [
@@ -411,6 +538,11 @@ class CourseMaterial(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # New fields for assignment deadlines and reminder tracking
+    due_date = models.DateTimeField(null=True, blank=True, help_text="Deadline for assignment submission")
+    reminder_sent = models.BooleanField(default=False, help_text="Whether an early reminder has been sent")
+    final_reminder_sent = models.BooleanField(default=False, help_text="Whether a final reminder has been sent")
 
     class Meta:
         ordering = ["order", "created_at"]
@@ -534,7 +666,14 @@ class EducationalVideo(models.Model):
     description = models.TextField()
     video_url = models.URLField(help_text="URL for external content like YouTube videos")
     category = models.ForeignKey(Subject, on_delete=models.PROTECT, related_name="educational_videos")
-    uploader = models.ForeignKey(User, on_delete=models.CASCADE, related_name="educational_videos")
+    uploader = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="educational_videos",
+        null=True,
+        blank=True,
+        help_text="User who uploaded the video. If null, the submission is considered anonymous.",
+    )
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -556,18 +695,24 @@ class Achievement(models.Model):
         ("streak", "Daily Learning Streak"),
     ]
 
+    BADGE_ICONS = [
+        ("fas fa-trophy", "Trophy"),
+        ("fas fa-medal", "Medal"),
+        ("fas fa-award", "Award"),
+        ("fas fa-star", "Star"),
+        ("fas fa-certificate", "Certificate"),
+        ("fas fa-graduation-cap", "Graduation Cap"),
+    ]
+
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="achievements")
-    # Making Course optional for streak badges and quiz
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="achievements", null=True, blank=True)
     achievement_type = models.CharField(max_length=20, choices=TYPES)
     title = models.CharField(max_length=200)
     description = models.TextField()
     awarded_at = models.DateTimeField(auto_now_add=True)
-    # Fields for icon-Based badges:
     badge_icon = models.CharField(
         max_length=100, blank=True, help_text="Icon class for the badge (e.g., 'fas fa-trophy')"
     )
-    # Fields for criteria-based badges:(100% for course completion, 90 for quiz, 7 or 30 for streak)
     criteria_threshold = models.PositiveIntegerField(
         null=True, blank=True, help_text="Optional threshold required to earn this badge"
     )
@@ -583,6 +728,7 @@ class Review(models.Model):
     comment = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_featured = models.BooleanField(default=False, db_index=True)
 
     class Meta:
         unique_together = ["student", "course"]
@@ -663,6 +809,29 @@ class ForumTopic(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # Add these methods to the ForumTopic class
+    def upvote_count(self):
+        """Return the number of upvotes for this topic."""
+        return self.votes.filter(vote_type="up").count()
+
+    def downvote_count(self):
+        """Return the number of downvotes for this topic."""
+        return self.votes.filter(vote_type="down").count()
+
+    def vote_score(self):
+        """Return the total vote score (upvotes - downvotes)."""
+        return self.upvote_count() - self.downvote_count()
+
+    def user_vote(self, user):
+        """Return the user's vote type for this topic, or None if not voted."""
+        if not user.is_authenticated:
+            return None
+        try:
+            vote = self.votes.get(user=user)
+            return vote.vote_type
+        except ForumVote.DoesNotExist:
+            return None
+
     class Meta:
         ordering = ["-is_pinned", "-created_at"]
 
@@ -679,6 +848,29 @@ class ForumReply(models.Model):
     is_solution = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # Add the same methods to the ForumReply class
+    def upvote_count(self):
+        """Return the number of upvotes for this reply."""
+        return self.votes.filter(vote_type="up").count()
+
+    def downvote_count(self):
+        """Return the number of downvotes for this reply."""
+        return self.votes.filter(vote_type="down").count()
+
+    def vote_score(self):
+        """Return the total vote score (upvotes - downvotes)."""
+        return self.upvote_count() - self.downvote_count()
+
+    def user_vote(self, user):
+        """Return the user's vote type for this reply, or None if not voted."""
+        if not user.is_authenticated:
+            return None
+        try:
+            vote = self.votes.get(user=user)
+            return vote.vote_type
+        except ForumVote.DoesNotExist:
+            return None
 
     class Meta:
         verbose_name_plural = "Forum Replies"
@@ -717,7 +909,10 @@ class PeerMessage(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
     content = models.TextField()
+    encrypted_key = models.TextField(blank=True, default="")  # Using default empty string instead of null
     is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    starred = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -725,6 +920,13 @@ class PeerMessage(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender.username} to {self.receiver.username}"
+
+    def save(self, *args, **kwargs):
+        if self.read_at and not self.is_read:
+            self.is_read = True
+        elif self.is_read and not self.read_at:
+            self.read_at = timezone.now()
+        super().save(*args, **kwargs)
 
 
 class StudyGroup(models.Model):
@@ -734,7 +936,7 @@ class StudyGroup(models.Model):
     description = models.TextField()
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="study_groups")
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_groups")
-    members = models.ManyToManyField(User, related_name="joined_groups")
+    members = models.ManyToManyField(User, related_name="joined_groups", blank=True)
     max_members = models.IntegerField(default=10)
     is_private = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -742,6 +944,58 @@ class StudyGroup(models.Model):
 
     def __str__(self):
         return self.name
+
+    def can_add_member(self):
+        return self.members.count() < self.max_members
+
+    def add_member(self, user):
+        if self.can_add_member():
+            self.members.add(user)
+            return True
+        return False
+
+    def is_full(self):
+        return self.members.count() >= self.max_members
+
+
+class StudyGroupInvite(models.Model):
+    """Invitations to join study groups."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, related_name="invites")
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_group_invites")
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_group_invites")
+    created_at = models.DateTimeField(auto_now_add=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
+    STATUS_CHOICES = [("pending", "Pending"), ("accepted", "Accepted"), ("declined", "Declined")]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+
+    class Meta:
+        unique_together = ["group", "recipient"]
+
+    def __str__(self):
+        return f"Invitation to {self.group.name} for {self.recipient.username}"
+
+    def accept(self):
+        """Accept the invitation and add the recipient to the study group."""
+        self.status = "accepted"
+        self.responded_at = timezone.now()
+        self.save()
+        member_added = self.group.add_member(self.recipient)
+        if not member_added:
+            # Group is full, create notification or handle this case
+            Notification.objects.create(
+                user=self.recipient,
+                title="Group Full",
+                message=f"Could not join {self.group.name} as it's already full",
+                notification_type="warning",
+            )
+
+    def decline(self):
+        """Decline the invitation."""
+        self.status = "declined"
+        self.responded_at = timezone.now()
+        self.save()
 
 
 @receiver(post_save, sender=User)
@@ -964,6 +1218,11 @@ class Goods(models.Model):
     images = models.ManyToManyField("ProductImage", related_name="goods_images", blank=True)
     storefront = models.ForeignKey(Storefront, on_delete=models.CASCADE, related_name="goods")
     is_available = models.BooleanField(default=True, help_text="Show/hide product from store")
+    is_reward = models.BooleanField(default=False, help_text="Can be unlocked as achievement reward")
+    featured = models.BooleanField(default=False, help_text="Mark this product as featured")  # New field
+    points_required = models.PositiveIntegerField(
+        blank=True, null=True, help_text="Points needed to unlock this reward"
+    )
     sku = models.CharField(
         max_length=50, unique=True, blank=True, null=True, help_text="Inventory tracking ID (auto-generated)"
     )
@@ -1004,6 +1263,10 @@ class Goods(models.Model):
         # Validate physical product constraints
         if self.product_type == "physical" and self.stock is None:
             raise ValidationError("Physical products must have a stock quantity.")
+
+        # Validate reward items
+        if self.is_reward and (self.points_required is None or self.points_required <= 0):
+            raise ValidationError("Reward items must have a positive 'points_required' value.")
 
     def save(self, *args, **kwargs):
         if not self.sku:
@@ -1158,14 +1421,37 @@ class SearchLog(models.Model):
 
 
 class Challenge(models.Model):
+    # defining two types of models
+    CHALLENGE_TYPE_CHOICES = [
+        ("weekly", "Weekly Challenge"),
+        ("one_time", "One-time Challenge"),
+    ]
+
     title = models.CharField(max_length=200)
     description = models.TextField()
-    week_number = models.PositiveIntegerField(unique=True)
+    challenge_type = models.CharField(max_length=10, choices=CHALLENGE_TYPE_CHOICES, default="weekly")
+    week_number = models.PositiveIntegerField(null=True, blank=True)
     start_date = models.DateField()
     end_date = models.DateField()
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["week_number"],
+                condition=models.Q(challenge_type="weekly"),
+                name="unique_week_number_for_weekly_challenges",
+            )
+        ]
+
     def __str__(self):
-        return f"Week {self.week_number}: {self.title}"
+        if self.challenge_type == "weekly":
+            return f"Week {self.week_number}: {self.title}"
+        return f"One-time: {self.title}"
+
+    def clean(self):
+        super().clean()
+        if self.challenge_type == "weekly" and not self.week_number:
+            raise ValidationError({"week_number": "Week number is required for weekly challenges."})
 
 
 class ChallengeSubmission(models.Model):
@@ -1173,9 +1459,103 @@ class ChallengeSubmission(models.Model):
     challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE)
     submission_text = models.TextField()
     submitted_at = models.DateTimeField(auto_now_add=True)
+    points_awarded = models.PositiveIntegerField(default=10)
+
+    class Meta:
+        unique_together = ["user", "challenge"]
 
     def __str__(self):
-        return f"{self.user.username}'s submission for Week {self.challenge.week_number}"
+        if self.challenge.challenge_type == "weekly":
+            return f"{self.user.username}'s submission for Week {self.challenge.week_number}"
+        return f"{self.user.username}'s submission for {self.challenge.title}"
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        from django.db import transaction
+
+        with transaction.atomic():
+            super().save(*args, **kwargs)
+
+            if is_new:
+                # Add regular points for completing the challenge
+                Points.objects.create(
+                    user=self.user,
+                    challenge=self.challenge,
+                    amount=self.points_awarded,
+                    reason=f"Completed challenge: Week {self.challenge.week_number}",
+                    point_type="regular",
+                )
+
+                # Calculate and update streak with error handling
+                try:
+                    calculate_and_update_user_streak(self.user, self.challenge)
+                except Exception as e:
+                    # Log the error but don't prevent submission from being saved
+                    import logging
+
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Error calculating streak for user {self.user.id}: {e}")
+
+
+class Points(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="points")
+    challenge = models.ForeignKey(
+        "Challenge", on_delete=models.CASCADE, null=True, blank=True, related_name="points_awarded"
+    )
+    amount = models.PositiveIntegerField(default=0)
+    reason = models.CharField(max_length=255, help_text="Reason for awarding points")
+    point_type = models.CharField(
+        max_length=20,
+        default="regular",
+        choices=[("regular", "Regular Points"), ("streak", "Streak Points"), ("bonus", "Bonus Points")],
+    )
+    awarded_at = models.DateTimeField(auto_now_add=True)
+    current_streak = models.PositiveIntegerField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username}: {self.amount} points for {self.reason}"
+
+    class Meta:
+        verbose_name_plural = "Points"
+        indexes = [
+            models.Index(fields=["user", "awarded_at"]),
+            models.Index(fields=["awarded_at"]),
+        ]
+
+    @classmethod
+    def add_points(cls, user, amount, reason, point_type="regular", challenge=None):
+        """Atomic method to add points to a user"""
+        from django.db import transaction
+
+        with transaction.atomic():
+            return cls.objects.create(
+                user=user, challenge=challenge, amount=amount, reason=reason, point_type=point_type
+            )
+
+    @classmethod
+    def get_user_points_summary(cls, user, period=None):
+        """Get summary of user points by period (daily, weekly, monthly, or all-time)"""
+        import datetime
+
+        from django.db.models import Sum
+        from django.utils import timezone
+
+        query = cls.objects.filter(user=user)
+
+        if period == "daily":
+            today = timezone.now().date()
+            query = query.filter(awarded_at__date=today)
+        elif period == "weekly":
+            today = timezone.now().date()
+            start_of_week = today - datetime.timedelta(days=today.weekday())
+            query = query.filter(awarded_at__date__gte=start_of_week)
+        elif period == "monthly":
+            today = timezone.now().date()
+            start_of_month = today.replace(day=1)
+            query = query.filter(awarded_at__date__gte=start_of_month)
+
+        return query.aggregate(total=Sum("amount"))["total"] or 0
 
 
 class ProductImage(models.Model):
@@ -1279,7 +1659,9 @@ class TeamGoalMember(models.Model):
     joined_at = models.DateTimeField(auto_now_add=True)
     completed = models.BooleanField(default=False)
     completed_at = models.DateTimeField(null=True, blank=True)
-
+    completion_image = models.ImageField(upload_to="proof_images/", blank=True)
+    completion_link = models.URLField(max_length=200, blank=True)
+    completion_notes = models.TextField(blank=True)
     ROLE_CHOICES = [("leader", "Team Leader"), ("member", "Team Member")]
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="member")
 
@@ -1380,9 +1762,21 @@ class Meme(models.Model):
     uploader = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, related_name="memes", null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    slug = models.SlugField(max_length=255, unique=True, blank=True)
 
     def __str__(self):
         return self.title
+
+    def save(self, *args, **kwargs) -> None:
+        if not self.slug:
+            self.slug = slugify(self.title)
+            # it has to be unique
+            original_slug = self.slug
+            counter = 1
+            while Meme.objects.filter(slug=self.slug).exists():
+                self.slug = f"{original_slug}-{counter}"
+                counter += 1
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ["-created_at"]
@@ -1417,6 +1811,10 @@ class Donation(models.Model):
     stripe_customer_id = models.CharField(max_length=100, blank=True, default="")
     message = models.TextField(blank=True)
     anonymous = models.BooleanField(default=False)
+    award_points = models.BooleanField(default=True, help_text="Award points to user for donation")
+    points_multiplier = models.DecimalField(
+        decimal_places=2, max_digits=5, default=1.0, help_text="Points per dollar multiplier"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -1437,6 +1835,139 @@ class Donation(models.Model):
         if self.user:
             return self.user.get_full_name() or self.user.username
         return self.email.split("@")[0]  # Use part before @ in email
+
+
+class Badge(models.Model):
+    BADGE_TYPES = [
+        ("challenge", "Challenge Completion"),
+        ("course", "Course Completion"),
+        ("achievement", "Special Achievement"),
+        ("teacher_awarded", "Teacher Awarded"),
+    ]
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    image = models.ImageField(upload_to="badges/")
+    badge_type = models.CharField(max_length=20, choices=BADGE_TYPES)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, null=True, blank=True, related_name="badges")
+    challenge = models.ForeignKey(Challenge, on_delete=models.CASCADE, null=True, blank=True, related_name="badges")
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_badges")
+    is_active = models.BooleanField(default=True)
+    criteria = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.name
+
+    def save(self, *args, **kwargs):
+        if self.image:
+            img = Image.open(self.image)
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+            img = img.resize((200, 200), Image.Resampling.LANCZOS)
+            buffer = BytesIO()
+            img.save(buffer, format="PNG", quality=90)
+            file_name = self.image.name
+            self.image.delete(save=False)
+            self.image.save(file_name, ContentFile(buffer.getvalue()), save=False)
+        super().save(*args, **kwargs)
+
+    class Meta:
+        ordering = ["badge_type", "name"]
+
+
+class UserBadge(models.Model):
+    AWARD_METHODS = [
+        ("challenge_completion", "Challenge Completion"),
+        ("course_completion", "Course Completion"),
+        ("teacher_awarded", "Teacher Awarded"),
+        ("system_awarded", "System Awarded"),
+    ]
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="badges")
+    badge = models.ForeignKey(Badge, on_delete=models.CASCADE, related_name="awarded_to")
+    award_method = models.CharField(max_length=20, choices=AWARD_METHODS)
+    awarded_at = models.DateTimeField(auto_now_add=True)
+    challenge_submission = models.ForeignKey(
+        ChallengeSubmission, on_delete=models.SET_NULL, null=True, blank=True, related_name="badges"
+    )
+    course_enrollment = models.ForeignKey(
+        Enrollment, on_delete=models.SET_NULL, null=True, blank=True, related_name="badges"
+    )
+    awarded_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="awarded_badges"
+    )
+    award_message = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.badge.name}"
+
+    class Meta:
+        unique_together = ["user", "badge"]
+        ordering = ["-awarded_at"]
+
+
+@receiver(post_save, sender=ChallengeSubmission)
+def award_challenge_badge(sender, instance, created, **kwargs):
+    if created:
+        challenge_badges = Badge.objects.filter(challenge=instance.challenge, badge_type="challenge", is_active=True)
+        for badge in challenge_badges:
+            if not UserBadge.objects.filter(user=instance.user, badge=badge).exists():
+                UserBadge.objects.create(
+                    user=instance.user, badge=badge, award_method="challenge_completion", challenge_submission=instance
+                )
+                Notification.objects.create(
+                    user=instance.user,
+                    title=f"New Badge: {badge.name}",
+                    message=f"Congrats! You've earned {badge.name} for completing {instance.challenge.title}",
+                    notification_type="success",
+                )
+
+
+@receiver(post_save, sender=Enrollment)
+def award_course_completion_badge(sender, instance, **kwargs):
+    if instance.status == "completed":
+        course_badges = Badge.objects.filter(course=instance.course, badge_type="course", is_active=True)
+        for badge in course_badges:
+            if not UserBadge.objects.filter(user=instance.student, badge=badge).exists():
+                UserBadge.objects.create(
+                    user=instance.student, badge=badge, award_method="course_completion", course_enrollment=instance
+                )
+                Notification.objects.create(
+                    user=instance.student,
+                    title=f"New Badge: {badge.name}",
+                    message=f"Congrats! You've earned {badge.name} for completing {instance.course.title}",
+                    notification_type="success",
+                )
+
+
+def award_badge_to_student(badge_id, student_id, teacher_id, message=""):
+    try:
+        badge = Badge.objects.get(id=badge_id)
+        student = User.objects.get(id=student_id)
+        teacher = User.objects.get(id=teacher_id)
+        if not teacher.profile.is_teacher:
+            return None
+        if UserBadge.objects.filter(user=student, badge=badge).exists():
+            return None
+        user_badge = UserBadge.objects.create(
+            user=student, badge=badge, award_method="teacher_awarded", awarded_by=teacher, award_message=message
+        )
+        Notification.objects.create(
+            user=student,
+            title=f"New Badge: {badge.name}",
+            message=f"You were awarded {badge.name} by {teacher.username}. {message}",
+            notification_type="success",
+        )
+        return user_badge
+    except (Badge.DoesNotExist, User.DoesNotExist):
+        return None
+
+
+def get_user_badges(self):
+    return UserBadge.objects.filter(user=self.user)
+
+
+Profile.get_user_badges = get_user_badges
 
 
 class Certificate(models.Model):
@@ -1770,6 +2301,28 @@ class UserQuiz(models.Model):
         return self.start_time
 
 
+class WaitingRoom(models.Model):
+    """Model for storing waiting room requests for courses on specific subjects."""
+
+    STATUS_CHOICES = [("open", "Open"), ("closed", "Closed"), ("fulfilled", "Fulfilled")]
+
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    subject = models.CharField(max_length=100)
+    topics = models.TextField(help_text="Comma-separated list of topics")
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_waiting_rooms")
+    participants = models.ManyToManyField(User, related_name="joined_waiting_rooms", blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="open")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    fulfilled_course = models.ForeignKey(
+        "Course", on_delete=models.SET_NULL, null=True, blank=True, related_name="fulfilled_waiting_rooms"
+    )
+
+    def __str__(self):
+        return self.title
+
+
 class GradeableLink(models.Model):
     """Model for storing links that users want to get grades on."""
 
@@ -1794,6 +2347,24 @@ class GradeableLink(models.Model):
 
     def __str__(self):
         return self.title
+
+    def participant_count(self):
+        """Return the number of participants in the waiting room."""
+        return self.participants.count()
+
+    def topic_list(self):
+        """Return the list of topics as a list."""
+        return [topic.strip() for topic in self.topics.split(",") if topic.strip()]
+
+    def mark_as_fulfilled(self, course=None):
+        """Mark the waiting room as fulfilled and notify participants."""
+        self.status = "fulfilled"
+        self.save()
+
+        if course:
+            from .notifications import notify_waiting_room_fulfilled
+
+            notify_waiting_room_fulfilled(self, course)
 
     def get_absolute_url(self):
         return reverse("gradeable_link_detail", kwargs={"pk": self.pk})
@@ -1915,3 +2486,441 @@ class LinkGrade(models.Model):
         """Validate that comments are provided for lower grades."""
         if self.grade not in ["A+", "A"] and not self.comment:
             raise ValidationError("A comment is required for grades below A.")
+
+
+class PeerChallenge(models.Model):
+    """Model for challenges between users for quizzes or tasks."""
+
+    STATUS_CHOICES = [
+        ("active", "Active"),
+        ("completed", "Completed"),
+        ("cancelled", "Cancelled"),
+    ]
+
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="peer_challenges")
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_challenges")
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Peer Challenge"
+        verbose_name_plural = "Peer Challenges"
+
+    def __str__(self):
+        return f"{self.title} by {self.creator.username}"
+
+    @property
+    def is_expired(self):
+        """Check if the challenge has expired."""
+        if self.expires_at and timezone.now() > self.expires_at:
+            return True
+        return False
+
+    @property
+    def total_participants(self):
+        """Get the total number of participants in this challenge."""
+        return self.invitations.filter(status__in=["accepted", "completed"]).count() + 1  # +1 for creator
+
+    @property
+    def leaderboard(self):
+        """Get sorted list of participants by score."""
+        participants = []
+
+        # Add creator's best attempt
+        creator_attempts = (
+            UserQuiz.objects.filter(quiz=self.quiz, user=self.creator, completed=True, start_time__gte=self.created_at)
+            .order_by("-score")
+            .first()
+        )
+
+        if creator_attempts:
+            participants.append(
+                {
+                    "user": self.creator,
+                    "score": creator_attempts.score,
+                    "max_score": creator_attempts.max_score,
+                    "completion_time": creator_attempts.end_time,
+                    "is_creator": True,
+                }
+            )
+
+        # Add invited participants' best attempts
+        for invitation in self.invitations.filter(status="completed"):
+            participant_attempt = invitation.user_quiz
+            if participant_attempt and participant_attempt.completed:
+                participants.append(
+                    {
+                        "user": invitation.participant,
+                        "score": participant_attempt.score,
+                        "max_score": participant_attempt.max_score,
+                        "completion_time": participant_attempt.end_time,
+                        "is_creator": False,
+                    }
+                )
+
+        # Sort by score (descending) and completion time (ascending)
+        return sorted(participants, key=lambda x: (-x["score"], x["completion_time"]))
+
+
+class PeerChallengeInvitation(models.Model):
+    """Model for invitations to peer challenges."""
+
+    STATUS_CHOICES = [
+        ("pending", "Pending"),
+        ("accepted", "Accepted"),
+        ("completed", "Completed"),
+        ("declined", "Declined"),
+        ("expired", "Expired"),
+    ]
+
+    challenge = models.ForeignKey(PeerChallenge, on_delete=models.CASCADE, related_name="invitations")
+    participant = models.ForeignKey(User, on_delete=models.CASCADE, related_name="challenge_invitations")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
+    user_quiz = models.ForeignKey(
+        UserQuiz, on_delete=models.SET_NULL, null=True, blank=True, related_name="challenge_invitation"
+    )
+    message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        unique_together = ["challenge", "participant"]
+
+    def __str__(self):
+        return f"{self.challenge.title} invitation for {self.participant.username}"
+
+    def accept(self):
+        """Accept the challenge invitation."""
+        self.status = "accepted"
+        self.save()
+
+        # Create notification for challenge creator
+        Notification.objects.create(
+            user=self.challenge.creator,
+            title="Challenge Accepted",
+            message=f"{self.participant.username} has accepted your challenge: {self.challenge.title}",
+            notification_type="info",
+        )
+
+    def decline(self):
+        """Decline the challenge invitation."""
+        self.status = "declined"
+        self.save()
+
+        # Create notification for challenge creator
+        Notification.objects.create(
+            user=self.challenge.creator,
+            title="Challenge Declined",
+            message=f"{self.participant.username} has declined your challenge: {self.challenge.title}",
+            notification_type="info",
+        )
+
+    def complete(self, user_quiz):
+        """Mark the challenge as completed."""
+        self.status = "completed"
+        self.user_quiz = user_quiz
+        self.save()
+
+        # Create notification for challenge creator
+        Notification.objects.create(
+            user=self.challenge.creator,
+            title="Challenge Completed",
+            message=f"{self.participant.username} has completed your challenge: {self.challenge.title}",
+            notification_type="success",
+        )
+
+
+class NoteHistory(models.Model):
+    """Model for tracking changes to teacher notes on enrollments."""
+
+    enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE, related_name="note_history")
+    content = models.TextField()
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="note_history_entries")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.created_by.username} updated notes for {self.enrollment.student.username}"
+
+
+class NotificationPreference(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="notification_preferences")
+    reminder_days_before = models.IntegerField(default=3, help_text="Days before deadline to send first reminder")
+    reminder_hours_before = models.IntegerField(default=24, help_text="Hours before deadline to send final reminder")
+    email_notifications = models.BooleanField(default=True)
+    in_app_notifications = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"Notification preferences for {self.user.username}"
+
+
+class FeatureVote(models.Model):
+    VOTE_CHOICES = (
+        ("up", "Thumbs Up"),
+        ("down", "Thumbs Down"),
+    )
+
+    feature_id = models.CharField(max_length=100)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    vote = models.CharField(max_length=4, choices=VOTE_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["feature_id", "user"], name="web_feature_feature_9fbd0b_idx"),
+            models.Index(fields=["feature_id", "ip_address"], name="web_feature_feature_988c48_idx"),
+        ]
+        verbose_name = "Feature Vote"
+        verbose_name_plural = "Feature Votes"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["feature_id", "user"],
+                name="unique_user_feature_vote",
+                condition=models.Q(user__isnull=False),
+            ),
+            models.UniqueConstraint(
+                fields=["feature_id", "ip_address"],
+                name="unique_ip_feature_vote",
+                condition=models.Q(ip_address__isnull=False),
+            ),
+        ]
+
+    def clean(self):
+        """Validate that a user or IP address hasn't already voted on this feature."""
+        if not self.feature_id:
+            raise ValidationError({"feature_id": "Feature ID is required"})
+
+        if not self.vote:
+            raise ValidationError({"vote": "Vote is required"})
+
+        if not self.user and not self.ip_address:
+            raise ValidationError("Either user or IP address must be provided")
+
+        if self.user and self.ip_address:
+            raise ValidationError("Cannot provide both user and IP address")
+
+        if self.user:
+            # Check for existing user vote
+            existing_vote = (
+                FeatureVote.objects.filter(feature_id=self.feature_id, user=self.user).exclude(pk=self.pk).first()
+            )
+            if existing_vote:
+                raise ValidationError(
+                    {"user": f"User has already voted on this feature with a {existing_vote.get_vote_display()}"}
+                )
+        elif self.ip_address:
+            # Check for existing IP vote
+            existing_vote = (
+                FeatureVote.objects.filter(feature_id=self.feature_id, ip_address=self.ip_address, user__isnull=True)
+                .exclude(pk=self.pk)
+                .first()
+            )
+            if existing_vote:
+                raise ValidationError(
+                    {
+                        "ip_address": (
+                            f"IP address has already voted on this feature with a "
+                            f"{existing_vote.get_vote_display()}"
+                        )
+                    }
+                )
+
+    def save(self, *args, **kwargs):
+        """Ensure clean() is called before saving."""
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        voter = self.user.username if self.user else self.ip_address
+        return f"{self.get_vote_display()} for {self.feature_id} by {voter}"
+
+
+class MembershipPlan(models.Model):
+    BILLING_PERIOD_CHOICES = [
+        ("monthly", "Monthly"),
+        ("yearly", "Yearly"),
+    ]
+
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100, unique=True)
+    description = models.TextField(blank=True)
+    features = models.JSONField(default=list)
+    price_monthly = models.DecimalField(max_digits=10, decimal_places=2)
+    price_yearly = models.DecimalField(max_digits=10, decimal_places=2)
+    billing_period = models.CharField(max_length=10, choices=BILLING_PERIOD_CHOICES, default="monthly")
+    stripe_monthly_price_id = models.CharField(max_length=100, blank=True)
+    stripe_yearly_price_id = models.CharField(max_length=100, blank=True)
+    is_active = models.BooleanField(default=True)
+    is_popular = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+    @property
+    def yearly_savings(self):
+        if self.price_monthly and self.price_yearly:
+            monthly_total = self.price_monthly * 12
+            savings = monthly_total - self.price_yearly
+            if savings > 0:
+                return int((savings / monthly_total) * 100)
+        return 0
+
+    def __str__(self):
+        return f"{self.name} - ${self.price_monthly}/month or ${self.price_yearly}/year"
+
+
+class UserMembership(models.Model):
+    STATUS_CHOICES = [
+        ("active", "Active"),
+        ("past_due", "Past Due"),
+        ("canceled", "Canceled"),
+        ("trialing", "Trialing"),
+        ("unpaid", "Unpaid"),
+        ("incomplete", "Incomplete"),
+        ("expired", "Expired"),
+    ]
+
+    BILLING_PERIOD_CHOICES = [
+        ("monthly", "Monthly"),
+        ("yearly", "Yearly"),
+    ]
+
+    user = models.OneToOneField("auth.User", on_delete=models.CASCADE, related_name="membership")
+    plan = models.ForeignKey(MembershipPlan, on_delete=models.PROTECT, related_name="user_memberships")
+    stripe_customer_id = models.CharField(max_length=100, blank=True)
+    stripe_subscription_id = models.CharField(max_length=100, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="active")
+    billing_period = models.CharField(max_length=10, choices=BILLING_PERIOD_CHOICES, default="monthly")
+    start_date = models.DateTimeField(default=timezone.now)
+    end_date = models.DateTimeField(null=True, blank=True)
+    cancel_at_period_end = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def is_active(self):
+        active_statuses = ["active", "trialing"]
+        return self.status in active_statuses and (self.end_date is None or self.end_date > timezone.now())
+
+    @property
+    def is_canceled(self):
+        return self.status == "canceled" or self.cancel_at_period_end
+
+    @property
+    def days_until_expiration(self):
+        if not self.end_date:
+            return None
+        now = timezone.now()
+        if now > self.end_date:
+            return -1
+        return (self.end_date - now).days
+
+    def get_next_billing_date(self):
+        if self.end_date:
+            return self.end_date
+        return None
+
+    def __str__(self):
+        return f"{self.user.email} - {self.plan.name} ({self.status})"
+
+
+class MembershipSubscriptionEvent(models.Model):
+    EVENT_TYPE_CHOICES = [
+        ("created", "Created"),
+        ("updated", "Updated"),
+        ("canceled", "Canceled"),
+        ("payment_succeeded", "Payment Succeeded"),
+        ("payment_failed", "Payment Failed"),
+        ("reactivated", "Reactivated"),
+    ]
+
+    user = models.ForeignKey("auth.User", on_delete=models.CASCADE, related_name="membership_events")
+    membership = models.ForeignKey(UserMembership, on_delete=models.SET_NULL, null=True, related_name="events")
+    event_type = models.CharField(max_length=50, choices=EVENT_TYPE_CHOICES)
+    stripe_event_id = models.CharField(max_length=100, blank=True)
+    data = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.event_type} - {self.user.email} - {self.created_at}"
+
+
+class ScheduledPost(models.Model):
+    content = models.CharField(max_length=280)
+    image = models.ImageField(upload_to="scheduled_posts/", blank=True)
+    scheduled_time = models.DateTimeField()
+    posted = models.BooleanField(default=False)
+    posted_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return self.content
+
+
+class ForumVote(models.Model):
+    """Model for storing votes on forum topics and replies."""
+
+    VOTE_TYPES = [
+        ("up", "Upvote"),
+        ("down", "Downvote"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="forum_votes")
+    topic = models.ForeignKey("ForumTopic", on_delete=models.CASCADE, related_name="votes", null=True, blank=True)
+    reply = models.ForeignKey("ForumReply", on_delete=models.CASCADE, related_name="votes", null=True, blank=True)
+    vote_type = models.CharField(max_length=4, choices=VOTE_TYPES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [("user", "topic"), ("user", "reply")]
+        constraints = [
+            models.CheckConstraint(
+                check=(
+                    models.Q(topic__isnull=False, reply__isnull=True)
+                    | models.Q(topic__isnull=True, reply__isnull=False)
+                ),
+                name="vote_topic_xor_reply",
+            )
+        ]
+
+    def __str__(self):
+        if self.topic:
+            return f"{self.user.username} {self.vote_type}voted topic #{self.topic.id}"
+        elif self.reply:
+            return f"{self.user.username} {self.vote_type}voted reply #{self.reply.id}"
+        return f"{self.user.username} cast a vote"
+
+
+def default_valid_until() -> datetime:
+    return timezone.now() + timedelta(days=30)
+
+
+class Discount(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    code = models.CharField(max_length=20, unique=True)
+    discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=5.00)
+    valid_from = models.DateTimeField(default=timezone.now)
+    valid_until = models.DateTimeField(default=default_valid_until)
+    used = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.code} for {self.user.username} on {self.course.title}"

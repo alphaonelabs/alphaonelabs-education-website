@@ -14,7 +14,9 @@
           {% if profile.avatar %}
             <img src="{{ profile.avatar.url }}"
                  alt="{{ profile.user.username }}'s avatar"
-                 class="rounded-full w-32 h-32 object-cover border-4 border-white" />
+                 class="rounded-full w-32 h-32 object-cover border-4 border-white"
+                 width="128"
+                 height="128" />
           {% else %}
             <div class="w-32 h-32 rounded-full bg-gray-300 flex items-center justify-center text-4xl font-bold">
               {{ profile.user.username|first|upper }}
@@ -24,14 +26,9 @@
         <!-- Profile Details Section -->
         <div class="md:w-2/3 p-6">
           <h1 class="text-3xl font-bold mb-2">{{ profile.user.username }}</h1>
-          {% if profile.user.get_full_name %}
-            <p class="text-lg text-gray-700 dark:text-gray-300 mb-4">{{ profile.user.get_full_name }}</p>
-          {% endif %}
+          {% if profile.expertise %}<p class="text-gray-600 dark:text-gray-400 mb-4">{{ profile.expertise }}</p>{% endif %}
           <p class="mb-4">
             <strong>Bio:</strong> {{ profile.bio|default:"No bio provided." }}
-          </p>
-          <p class="mb-4">
-            <strong>Expertise:</strong> {{ profile.expertise|default:"No expertise listed." }}
           </p>
           {% if profile.is_teacher %}
             <div class="mt-6">
@@ -77,6 +74,34 @@
             </div>
           {% endif %}
         </div>
+        {% if profile.is_profile_public %}
+          <!-- Social Media Links -->
+          <div class="mb-4">
+            <h3 class="text-lg font-semibold mb-2">Social Profiles</h3>
+            <div class="flex gap-4">
+              {% if profile.discord_username %}
+                <div class="flex items-center">
+                  <i class="fab fa-discord mr-2"></i>
+                  <span>{{ profile.discord_username }}</span>
+                </div>
+              {% endif %}
+              {% if profile.slack_username %}
+                <div class="flex items-center">
+                  <i class="fab fa-slack mr-2"></i>
+                  <span>{{ profile.slack_username }}</span>
+                </div>
+              {% endif %}
+              {% if profile.github_username %}
+                <div class="flex items-center">
+                  <i class="fab fa-github mr-2"></i>
+                  <a href="https://github.com/{{ profile.github_username }}"
+                     target="_blank"
+                     class="hover:underline">@{{ profile.github_username }}</a>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endif %}
       </div>
     </div>
   </div>

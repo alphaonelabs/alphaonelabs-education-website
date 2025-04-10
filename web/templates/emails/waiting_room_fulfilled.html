@@ -1,0 +1,59 @@
+{% extends "emails/base_email.html" %}
+
+{% block content %}
+  <tr>
+    <td style="padding: 20px; font-family: Arial, sans-serif; color: #333;">
+      <h2 style="color: #4a6cf7; margin-bottom: 20px;">New Course Created!</h2>
+      <p>Hello {{ user.username }},</p>
+      <p>Great news! A new course has been created based on a waiting room you joined:</p>
+      <div style="background-color: #f7f9fc;
+                  padding: 15px;
+                  border-radius: 8px;
+                  margin: 15px 0">
+        <p>
+          <strong>Waiting Room:</strong> {{ waiting_room.title }}
+        </p>
+        <p>
+          <strong>Subject:</strong> {{ waiting_room.subject }}
+        </p>
+        <p>
+          <strong>Topics:</strong> {{ waiting_room.topics }}
+        </p>
+      </div>
+      <p>The following course is now available for enrollment:</p>
+      <div style="background-color: #eef2ff;
+                  padding: 15px;
+                  border-radius: 8px;
+                  margin: 15px 0;
+                  border-left: 4px solid #4a6cf7">
+        <h3 style="color: #4a6cf7; margin-top: 0;">{{ course.title }}</h3>
+        <p>{{ course.description|truncatewords:50 }}</p>
+        <p>
+          <strong>Teacher:</strong> {{ course.teacher.username }}
+        </p>
+        {% if course.price == 0 %}
+          <p>
+            <strong>Price:</strong> Free
+          </p>
+        {% else %}
+          <p>
+            <strong>Price:</strong> ${{ course.price }}
+          </p>
+        {% endif %}
+      </div>
+      <p>Don't miss this opportunity to learn exactly what you've been looking for!</p>
+      <div style="text-align: center; margin: 25px 0;">
+        <a href="{{ site_url }}{% url 'course_detail' course.slug %}"
+           style="background-color: #4a6cf7;
+                  color: white;
+                  padding: 12px 24px;
+                  text-decoration: none;
+                  border-radius: 4px;
+                  font-weight: bold;
+                  display: inline-block">View Course Details</a>
+      </div>
+      <p>Happy learning!</p>
+      <p>The Alpha One Labs Team</p>
+    </td>
+  </tr>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="min-h-screen bg-gray-100 dark:bg-gray-900 py-12">
+    <div class="container mx-auto px-4">
+      <!-- Page Header -->
+      <div class="text-center mb-12">
+        <h1 class="text-5xl font-extrabold text-gray-900 dark:text-gray-100">Social Media Dashboard</h1>
+        <p class="mt-4 text-xl text-gray-600 dark:text-gray-300">
+          Create and manage your posts before sending them out on X (formerly Twitter).
+        </p>
+      </div>
+      <!-- Two-Column Layout -->
+      <div class="flex flex-col lg:flex-row lg:space-x-12">
+        <!-- Left Column: Posts List -->
+        <div class="flex-1 mb-8 lg:mb-0">
+          <h2 class="text-3xl font-semibold text-gray-800 dark:text-gray-100 mb-6">Posts</h2>
+          {% if posts %}
+            <ul class="divide-y divide-gray-300 dark:divide-gray-700">
+              {% for post in posts %}
+                <li class="py-6 flex flex-col md:flex-row md:justify-between md:items-center">
+                  <div>
+                    <p class="text-lg text-gray-800 dark:text-gray-100 mb-4 md:mb-0">{{ post.content }}</p>
+                    {% if post.image %}
+                      <div class="mt-4">
+                        <img src="{{ post.image.url }}"
+                             alt="Post image"
+                             style="display: block;
+                                    width: auto;
+                                    height: auto" />
+                        <div class="text-xs text-gray-500"></div>
+                      </div>
+                    {% else %}
+                      <p class="text-red-500">No image attached</p>
+                    {% endif %}
+                  </div>
+                  <div class="flex space-x-4 mt-4 md:mt-0">
+                    <!-- Post Now Button -->
+                    <form method="post" action="{% url 'post_to_twitter' post.id %}">
+                      {% csrf_token %}
+                      <button type="submit"
+                              class="py-3 px-6 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg transition-colors duration-200">
+                        Post Now
+                      </button>
+                    </form>
+                    <!-- Delete Button -->
+                    <form method="post" action="{% url 'delete_post' post.id %}">
+                      {% csrf_token %}
+                      <button type="submit"
+                              class="py-3 px-6 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-lg transition-colors duration-200">
+                        Delete
+                      </button>
+                    </form>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="text-center py-8">
+              <p class="text-2xl text-gray-600 dark:text-gray-300">No posts available.</p>
+            </div>
+          {% endif %}
+        </div>
+        <!-- Right Column: New Post Form (Smaller) -->
+        <div class="lg:w-1/3">
+          <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-6">
+            <h2 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-6">Add New Post</h2>
+            <form action="{% url 'create_scheduled_post' %}"
+                  method="post"
+                  enctype="multipart/form-data">
+              {% csrf_token %}
+              <div class="mb-4">
+                <label for="content"
+                       class="block text-2xl font-medium text-gray-700 dark:text-gray-200 mb-2">Post Content</label>
+                <textarea id="content"
+                          name="content"
+                          rows="5"
+                          placeholder="What's on your mind?"
+                          class="w-full p-3 border border-gray-300 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400 dark:bg-gray-700 dark:text-gray-100"></textarea>
+              </div>
+              <div class="mb-4">
+                <label for="image"
+                       class="block text-2xl font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  Upload Image (optional)
+                </label>
+                <input id="image"
+                       name="image"
+                       type="file"
+                       accept="image/*"
+                       class="w-full p-2 border border-gray-300 dark:border-gray-700 rounded-xl" />
+              </div>
+              <button type="submit"
+                      class="w-full py-3 bg-green-500 hover:bg-green-600 text-white text-2xl font-bold rounded-xl transition-colors duration-200">
+                Add Post
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}

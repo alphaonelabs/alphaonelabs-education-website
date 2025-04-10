@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}
+  All Study Groups
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-7xl mx-auto">
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold mb-4">Study Groups</h1>
+        <p class="text-gray-600 dark:text-gray-300">
+          Join or create study groups to learn together with other students from various courses
+        </p>
+      </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Study Groups List -->
+        <div class="lg:col-span-2">
+          {% if courses_with_groups %}
+            <div class="space-y-6">
+              {% for course, groups in courses_with_groups.items %}
+                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+                  <div class="bg-teal-600 dark:bg-teal-700 px-6 py-4">
+                    <h2 class="text-xl font-semibold text-white">{{ course.title }}</h2>
+                  </div>
+                  <div class="p-6">
+                    {% for group in groups %}
+                      <div class="{% if not forloop.last %}border-b dark:border-gray-700 pb-4 mb-4{% endif %}">
+                        <div class="flex justify-between items-start">
+                          <div>
+                            <h3 class="text-lg font-medium">
+                              <a href="{% url 'study_group_detail' group_id=group.id %}"
+                                 class="text-teal-600 dark:text-teal-400 hover:underline">{{ group.name }}</a>
+                            </h3>
+                            <p class="text-gray-600 dark:text-gray-400 text-sm mt-1">{{ group.description }}</p>
+                            <div class="mt-2 flex flex-wrap items-center space-x-4 text-sm">
+                              <span class="text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-users mr-1"></i> {{ group.members.count }}/{{ group.max_members }}
+                              </span>
+                              <span class="text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-user-circle mr-1"></i> {{ group.creator.username }}
+                              </span>
+                              <span class="text-gray-500 dark:text-gray-400">
+                                <i class="fas fa-clock mr-1"></i> Created {{ group.created_at|timesince }} ago
+                              </span>
+                              {% if group.is_private %}
+                                <span class="text-gray-500 dark:text-gray-400">
+                                  <i class="fas fa-lock mr-1"></i> Private
+                                </span>
+                              {% endif %}
+                            </div>
+                          </div>
+                          <div>
+                            {% if request.user in group.members.all %}
+                              <a href="{% url 'study_group_detail' group_id=group.id %}"
+                                 class="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300">
+                                View Group
+                              </a>
+                            {% elif group.can_add_member %}
+                              <form method="post"
+                                    action="{% url 'study_group_detail' group_id=group.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="join" />
+                                <button type="submit"
+                                        class="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300">
+                                  Join Group
+                                </button>
+                              </form>
+                            {% else %}
+                              <span class="text-gray-500 dark:text-gray-400">Group Full</span>
+                            {% endif %}
+                          </div>
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% else %}
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <p class="text-gray-500 dark:text-gray-400">No study groups available yet. Be the first to create one!</p>
+            </div>
+          {% endif %}
+        </div>
+        <!-- Create Group Form -->
+        <div class="lg:col-span-1">
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg sticky top-24">
+            <div class="bg-teal-600 dark:bg-teal-700 px-6 py-4">
+              <h2 class="text-xl font-semibold text-white">Create New Group</h2>
+            </div>
+            <div class="p-6">
+              {% if enrolled_courses %}
+                <form method="post" class="space-y-4">
+                  {% csrf_token %}
+                  <div>
+                    <label for="course"
+                           class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Course</label>
+                    <select name="course"
+                            id="course"
+                            required
+                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white">
+                      <option value="">Select a course</option>
+                      {% for course in enrolled_courses %}<option value="{{ course.id }}">{{ course.title }}</option>{% endfor %}
+                    </select>
+                  </div>
+                  <div>
+                    <label for="name"
+                           class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Group Name</label>
+                    <input type="text"
+                           name="name"
+                           id="name"
+                           required
+                           placeholder="Enter a name for your group"
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white" />
+                  </div>
+                  <div>
+                    <label for="description"
+                           class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Description</label>
+                    <textarea name="description"
+                              id="description"
+                              rows="3"
+                              required
+                              placeholder="What is this study group about?"
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white"></textarea>
+                  </div>
+                  <div>
+                    <label for="max_members"
+                           class="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
+                      Maximum Members
+                    </label>
+                    <input type="number"
+                           name="max_members"
+                           id="max_members"
+                           min="2"
+                           max="50"
+                           value="10"
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-white" />
+                  </div>
+                  <div class="flex items-center">
+                    <input type="checkbox"
+                           name="is_private"
+                           id="is_private"
+                           class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
+                    <label for="is_private"
+                           class="ml-2 block text-sm text-gray-700 dark:text-gray-300">Make this group private</label>
+                  </div>
+                  <button type="submit"
+                          class="w-full bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition duration-200">
+                    Create Group
+                  </button>
+                </form>
+              {% else %}
+                <div class="bg-yellow-50 dark:bg-yellow-900 border-l-4 border-yellow-400 p-4">
+                  <div class="flex">
+                    <div class="flex-shrink-0">
+                      <svg class="h-5 w-5 text-yellow-400"
+                           viewBox="0 0 20 20"
+                           fill="currentColor">
+                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                    <div class="ml-3">
+                      <p class="text-sm text-yellow-700 dark:text-yellow-200">
+                        You need to be enrolled in a course to create a study group.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-4">
+                  <a href="{% url 'course_search' %}"
+                     class="inline-block w-full text-center bg-teal-600 hover:bg-teal-700 text-white font-medium py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 transition duration-200">
+                    Browse Courses
+                  </a>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+
+{% load dict_filters %}
+
+{% block title %}
+  Waiting Rooms
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">Waiting Rooms</h1>
+      <a href="{% url "learn" %}"
+         class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">Create Learning Request</a>
+    </div>
+    <div class="mb-10">
+      <h2 class="text-2xl font-semibold mb-4 text-gray-700">What are Waiting Rooms?</h2>
+      <p class="text-gray-600 mb-4">
+        Waiting rooms allow you to express interest in subjects and topics you want to learn.
+        Join existing waiting rooms or create your own to find others interested in the same topics.
+        Teachers can see these waiting rooms and create courses based on popular demand.
+      </p>
+    </div>
+    <!-- Open Waiting Rooms -->
+    {% if open_rooms %}
+      <div class="mb-10">
+        <div class="flex items-center gap-3 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-700">Open Waiting Rooms</h2>
+          <span class="bg-green-100 text-green-800 text-sm font-medium px-2.5 py-1 rounded-full">{{ open_rooms.count }}</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {% for room in open_rooms %}
+            <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-300">
+              {% include "waiting_room/room_card.html" with room=room room_topics=room_topics %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+    <!-- Fulfilled Waiting Rooms -->
+    {% if fulfilled_rooms %}
+      <div class="mb-10">
+        <div class="flex items-center gap-3 mb-4">
+          <h2 class="text-2xl font-semibold text-gray-700">Fulfilled Waiting Rooms</h2>
+          <span class="bg-blue-100 text-blue-800 text-sm font-medium px-2.5 py-1 rounded-full">{{ fulfilled_rooms.count }}</span>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {% for room in fulfilled_rooms %}
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg shadow-md overflow-hidden border border-blue-200 hover:shadow-lg transition-shadow duration-300">
+              {% include "waiting_room/room_card.html" with room=room room_topics=room_topics %}
+              {% if room.fulfilled_course %}
+                <div class="px-6 py-4 bg-blue-100/50 border-t border-blue-200">
+                  <div class="flex flex-col sm:flex-row gap-3">
+                    <a href="{% url "course_detail" slug=room.fulfilled_course.slug %}"
+                       class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-150 flex-1 text-center">
+                      <svg xmlns="http://www.w3.org/2000/svg"
+                           class="h-4 w-4 mr-2"
+                           viewBox="0 0 20 20"
+                           fill="currentColor">
+                        <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                        <path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd" />
+                      </svg>
+                      View Course
+                    </a>
+                    <a href="{% url "enroll_course" course_slug=room.fulfilled_course.slug %}"
+                       class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-150 flex-1 text-center">
+                      <svg xmlns="http://www.w3.org/2000/svg"
+                           class="h-4 w-4 mr-2"
+                           viewBox="0 0 20 20"
+                           fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+                      </svg>
+                      Enroll Now
+                    </a>
+                  </div>
+                </div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+    <!-- Your Waiting Rooms -->
+    {% if user_created_rooms or user_joined_rooms %}
+      <div class="mb-10">
+        <h2 class="text-2xl font-semibold mb-4 text-gray-700">Your Waiting Rooms</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {% for room in user_created_rooms %}
+            <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-300">
+              <div class="p-6">
+                <div class="flex justify-between items-start">
+                  <h3 class="text-xl font-semibold text-gray-800 mb-2">{{ room.title }}</h3>
+                  <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">Created by you</span>
+                </div>
+                <p class="text-gray-600 mb-4">{{ room.description|truncatechars:100 }}</p>
+                <div class="mb-4">
+                  <span class="font-medium text-gray-700">Subject:</span> {{ room.subject }}
+                </div>
+                <div class="mb-4">
+                  <span class="font-medium text-gray-700">Topics:</span>
+                  <div class="flex flex-wrap gap-2 mt-1">
+                    {% for topic in room_topics|get_item:room.id %}
+                      <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">{{ topic }}</span>
+                    {% endfor %}
+                  </div>
+                </div>
+                <div class="flex justify-between items-center">
+                  <span class="text-sm text-gray-500">{{ room.participants.count|add:"1" }} participant{{ room.participants.count|add:"1"|pluralize }}</span>
+                  <a href="{% url "waiting_room_detail" room.id %}"
+                     class="text-blue-600 hover:text-blue-800 font-medium">View Details</a>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+          {% for room in user_joined_rooms %}
+            {% if room.creator != user %}
+              <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow duration-300">
+                <div class="p-6">
+                  <div class="flex justify-between items-start">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">{{ room.title }}</h3>
+                    <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">Joined</span>
+                  </div>
+                  <p class="text-gray-600 mb-4">{{ room.description|truncatechars:100 }}</p>
+                  <div class="mb-4">
+                    <span class="font-medium text-gray-700">Subject:</span> {{ room.subject }}
+                  </div>
+                  <div class="mb-4">
+                    <span class="font-medium text-gray-700">Topics:</span>
+                    <div class="flex flex-wrap gap-2 mt-1">
+                      {% for topic in room_topics|get_item:room.id %}
+                        <span class="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded">{{ topic }}</span>
+                      {% endfor %}
+                    </div>
+                  </div>
+                  <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-500">{{ room.participants.count|add:"1" }} participant{{ room.participants.count|add:"1"|pluralize }}</span>
+                    <a href="{% url "waiting_room_detail" room.id %}"
+                       class="text-blue-600 hover:text-blue-800 font-medium">View Details</a>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endblock content %}

@@ -10,6 +10,7 @@ from django.utils.html import format_html
 
 from .models import (
     Achievement,
+    Badge,
     BlogComment,
     BlogPost,
     Cart,
@@ -26,10 +27,15 @@ from .models import (
     ForumTopic,
     Goods,
     LearningStreak,
+    MembershipPlan,
+    MembershipSubscriptionEvent,
     Notification,
     Order,
     OrderItem,
     Payment,
+    PeerChallenge,
+    PeerChallengeInvitation,
+    Points,
     ProductImage,
     Profile,
     ProgressTracker,
@@ -43,6 +49,9 @@ from .models import (
     Storefront,
     Subject,
     SuccessStory,
+    UserBadge,
+    UserMembership,
+    WaitingRoom,
     WebRequest,
 )
 
@@ -62,6 +71,7 @@ class ProfileInline(admin.StackedInline):
         "referred_by",
         "referral_earnings",
         "commission_rate",
+        "how_did_you_hear_about_us",
     )
     raw_id_fields = ("referred_by",)
 
@@ -80,6 +90,16 @@ class EmailAddressInline(admin.TabularInline):
     extra = 1
 
 
+@admin.register(WaitingRoom)
+class WaitingRoomAdmin(admin.ModelAdmin):
+    list_display = ("title", "subject", "creator", "status", "created_at")
+    list_filter = ("status", "subject")
+    search_fields = ("title", "description", "subject", "topics")
+    date_hierarchy = "created_at"
+    raw_id_fields = ("creator", "participants", "fulfilled_course")
+    readonly_fields = ("created_at", "updated_at")
+
+
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
     list_display = ("user", "is_teacher", "expertise", "created_at", "updated_at")
@@ -90,7 +110,10 @@ class ProfileAdmin(admin.ModelAdmin):
     readonly_fields = ("created_at", "updated_at")
     fieldsets = (
         (None, {"fields": ("user", "is_teacher")}),
-        ("Profile Information", {"fields": ("bio", "expertise", "avatar")}),
+        (
+            "Profile Information",
+            {"fields": ("bio", "expertise", "avatar", "is_profile_public", "how_did_you_hear_about_us")},
+        ),
         ("Stripe Information", {"fields": ("stripe_account_id", "stripe_account_status", "commission_rate")}),
         (
             "Timestamps",
@@ -131,8 +154,10 @@ class CustomUserAdmin(BaseUserAdmin):
         "is_staff",
         "email_verified",
         "get_enrollment_count",
+        "formatted_date_joined",
+        "formatted_last_login",
     )
-    list_filter = BaseUserAdmin.list_filter + (EmailVerifiedFilter,)
+    list_filter = BaseUserAdmin.list_filter + (EmailVerifiedFilter, "date_joined", "last_login")
 
     # Add email to the add_fieldsets
     add_fieldsets = (
@@ -144,6 +169,30 @@ class CustomUserAdmin(BaseUserAdmin):
             },
         ),
     )
+
+    # Override the fieldsets to include the signup date and last login in a separate section
+    fieldsets = (
+        (None, {"fields": ("username", "password")}),
+        ("Personal info", {"fields": ("first_name", "last_name", "email")}),
+        ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
+        ("Important dates", {"fields": ("last_login", "date_joined")}),
+    )
+
+    def formatted_date_joined(self, obj):
+        if obj.date_joined:
+            return obj.date_joined.strftime("%B %d, %Y %H:%M")
+        return "-"
+
+    formatted_date_joined.short_description = "Signup Date"
+    formatted_date_joined.admin_order_field = "date_joined"
+
+    def formatted_last_login(self, obj):
+        if obj.last_login:
+            return obj.last_login.strftime("%B %d, %Y %H:%M")
+        return "Never logged in"
+
+    formatted_last_login.short_description = "Last Login"
+    formatted_last_login.admin_order_field = "last_login"
 
     def email_verified(self, obj):
         from django.utils.html import format_html
@@ -259,7 +308,38 @@ class CourseAdmin(admin.ModelAdmin):
 
 @admin.register(Session)
 class SessionAdmin(admin.ModelAdmin):
-    list_display = ("title", "course", "start_time", "end_time", "is_virtual")
+    fieldsets = (
+        (None, {"fields": ("course", "title", "description", "start_time", "end_time")}),
+        (
+            "Location Information",
+            {
+                "fields": ("is_virtual", "meeting_link", "meeting_id", "location", "latitude", "longitude"),
+                "classes": ("collapse",),
+            },
+        ),
+        (
+            "Pricing",
+            {
+                "fields": ("price",),
+                "classes": ("collapse",),
+            },
+        ),
+        (
+            "Rollover Settings",
+            {
+                "fields": (
+                    "enable_rollover",
+                    "rollover_pattern",
+                    "original_start_time",
+                    "original_end_time",
+                    "is_rolled_over",
+                    "teacher_confirmed",
+                ),
+                "classes": ("collapse",),
+            },
+        ),
+    )
+    list_display = ("title", "course", "start_time", "end_time", "is_virtual", "teaching_style")
     list_filter = ("is_virtual", "start_time")
     search_fields = ("title", "description", "course__title")
 
@@ -479,15 +559,14 @@ class StorefrontAdmin(admin.ModelAdmin):
 
 @admin.register(Goods)
 class GoodsAdmin(admin.ModelAdmin):
-    list_display = ("name", "storefront", "price", "stock_status", "product_type", "is_available")
-    list_filter = ("product_type", "is_available", "created_at")
+    list_display = ("name", "storefront", "price", "stock_status", "product_type", "is_available", "featured")
+    list_filter = ("product_type", "is_available", "featured", "created_at")
     search_fields = ("name", "description", "sku", "storefront__store_name")
     readonly_fields = ("sku", "created_at", "updated_at")
     raw_id_fields = ("storefront",)
-    list_editable = ("is_available",)
-    date_hierarchy = "created_at"
+    list_editable = ("is_available", "featured")
     fieldsets = (
-        (None, {"fields": ("name", "storefront", "is_available")}),
+        (None, {"fields": ("name", "storefront", "is_available", "featured")}),
         ("Pricing", {"fields": ("price", "discount_price")}),
         ("Inventory", {"fields": ("product_type", "stock", "sku", "file")}),
         ("Content", {"fields": ("description", "category", "images")}),
@@ -617,10 +696,54 @@ class DonationAdmin(admin.ModelAdmin):
     display_name.short_description = "Name"
 
 
+@admin.register(Badge)
+class BadgeAdmin(admin.ModelAdmin):
+    list_display = ("name", "badge_type", "is_active", "created_by", "created_at")
+    list_filter = ("badge_type", "is_active")
+    search_fields = ("name", "description")
+
+
+@admin.register(UserBadge)
+class UserBadgeAdmin(admin.ModelAdmin):
+    list_display = ("user", "badge", "award_method", "awarded_at")
+    list_filter = ("award_method", "badge__badge_type")
+    search_fields = ("user__username", "badge__name")
+    date_hierarchy = "awarded_at"
+
+
 @admin.register(LearningStreak)
 class LearningStreakAdmin(admin.ModelAdmin):
     list_display = ("user", "current_streak", "longest_streak", "last_engagement")
     search_fields = ("user__username",)
+
+
+# Register Peer Challenge models
+@admin.register(PeerChallenge)
+class PeerChallengeAdmin(admin.ModelAdmin):
+    list_display = ("title", "creator", "quiz", "status", "created_at", "expires_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("title", "description", "creator__username")
+    raw_id_fields = ("creator", "quiz")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (None, {"fields": ("creator", "quiz", "title", "description")}),
+        ("Status", {"fields": ("status", "expires_at")}),
+        ("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
+
+
+@admin.register(PeerChallengeInvitation)
+class PeerChallengeInvitationAdmin(admin.ModelAdmin):
+    list_display = ("challenge", "participant", "status", "created_at")
+    list_filter = ("status", "created_at")
+    search_fields = ("challenge__title", "participant__username", "participant__email")
+    raw_id_fields = ("challenge", "participant", "user_quiz")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (None, {"fields": ("challenge", "participant")}),
+        ("Status", {"fields": ("status", "user_quiz")}),
+        ("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
 
 
 # Register Quiz-related models
@@ -646,3 +769,45 @@ class QuizOptionAdmin(admin.ModelAdmin):
     list_filter = ("is_correct",)
     search_fields = ("text", "question__text")
     autocomplete_fields = ["question"]
+
+
+@admin.register(MembershipPlan)
+class MembershipPlanAdmin(admin.ModelAdmin):
+    list_display = ("name", "price_monthly", "price_yearly", "billing_period", "is_active", "is_popular", "order")
+    list_filter = ("is_active", "is_popular", "billing_period")
+    search_fields = ("name", "description")
+    prepopulated_fields = {"slug": ("name",)}
+    ordering = ("order", "name")
+
+
+@admin.register(UserMembership)
+class UserMembershipAdmin(admin.ModelAdmin):
+    list_display = ("user", "plan", "status", "billing_period", "start_date", "end_date", "is_active")
+    list_filter = ("status", "billing_period", "plan")
+    search_fields = ("user__email", "user__username", "stripe_customer_id", "stripe_subscription_id")
+    raw_id_fields = ("user", "plan")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(MembershipSubscriptionEvent)
+class MembershipSubscriptionEventAdmin(admin.ModelAdmin):
+    list_display = ("user", "event_type", "created_at")
+    list_filter = ("event_type", "created_at")
+    search_fields = ("user__email", "user__username", "stripe_event_id")
+    raw_id_fields = ("user", "membership")
+    readonly_fields = ("created_at",)
+
+
+@admin.register(Points)
+class PointsAdmin(admin.ModelAdmin):
+    list_display = ("user", "amount", "reason", "point_type", "awarded_at", "challenge")
+    list_filter = ("point_type", "awarded_at")
+    search_fields = ("user__username", "user__email", "reason")
+    raw_id_fields = ("user", "challenge")
+    readonly_fields = ("awarded_at", "updated_at")
+    date_hierarchy = "awarded_at"
+    fieldsets = (
+        (None, {"fields": ("user", "amount", "reason", "point_type")}),
+        ("Related Data", {"fields": ("challenge", "current_streak")}),
+        ("Timestamps", {"fields": ("awarded_at", "updated_at"), "classes": ("collapse",)}),
+    )

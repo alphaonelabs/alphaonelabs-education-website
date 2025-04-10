@@ -8,23 +8,17 @@
       .auth-container {
           max-width: 800px;
           margin: 1.5rem auto;
-          padding: 1.5rem;
+          padding: 2rem;
           background: white;
           border-radius: 0.5rem;
           box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-      }
-
-      @media (prefers-color-scheme: dark) {
-          .auth-container {
-              background-color: #1f2937;
-          }
       }
   </style>
   <!-- Add password toggle script -->
   <script src="{% static 'js/password-toggle.js' %}"></script>
 {% endblock extra_head %}
 {% block content %}
-  <div class="grid md:grid-cols-5 gap-4 items-center">
+  <div class="grid bg-white dark:bg-[#1f2937] md:grid-cols-5 gap-10 items-center">
     <!-- Left side illustration -->
     <div class="md:col-span-2 text-center hidden md:block">
       <div class="flex flex-col items-center space-y-3">
@@ -128,6 +122,22 @@
             <p class="mt-1 text-xs text-red-600">{{ form.referral_code.errors|join:", " }}</p>
           {% endif %}
           <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.referral_code.help_text }}</p>
+        </div>
+        <!-- How did you hear about us -->
+        <div>
+          <label for="id_how_did_you_hear_about_us"
+                 class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <i class="fas fa-bullhorn text-gray-400 mr-1"></i> How did you hear about us?
+          </label>
+          <textarea name="how_did_you_hear_about_us"
+                    id="id_how_did_you_hear_about_us"
+                    rows="2"
+                    class="mt-1 block w-full px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-orange-500 focus:border-orange-500 dark:bg-gray-700 dark:text-white sm:text-sm"
+                    placeholder="How did you hear about us? You can enter text or a link.">{{ form.how_did_you_hear_about_us.value|default:'' }}</textarea>
+          {% if form.how_did_you_hear_about_us.errors %}
+            <p class="mt-1 text-xs text-red-600">{{ form.how_did_you_hear_about_us.errors|join:", " }}</p>
+          {% endif %}
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ form.how_did_you_hear_about_us.help_text }}</p>
         </div>
         <!-- Profile Visibility Section -->
         <div class="border border-orange-500 p-4 rounded mt-4">
