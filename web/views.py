@@ -4,9 +4,11 @@ import ipaddress
 import json
 import logging
 import os
+import random
 import re
 import shutil
 import socket
+import string
 import subprocess
 import time
 from collections import Counter, defaultdict
@@ -39,6 +41,7 @@ from django.http import (
     Http404,
     HttpRequest,
     HttpResponse,
+    HttpResponseBadRequest,
     HttpResponseForbidden,
     JsonResponse,
 )
@@ -116,6 +119,7 @@ from .models import (
     Course,
     CourseMaterial,
     CourseProgress,
+    Discount,
     Donation,
     EducationalVideo,
     Enrollment,
@@ -124,6 +128,7 @@ from .models import (
     ForumCategory,
     ForumReply,
     ForumTopic,
+    ForumVote,
     Goods,
     GradeableLink,
     LearningStreak,
@@ -136,6 +141,7 @@ from .models import (
     NotificationPreference,
     Order,
     OrderItem,
+    Payment,
     PeerConnection,
     PeerMessage,
     ProductImage,
@@ -159,6 +165,7 @@ from .models import (
     UserBadge,
     WaitingRoom,
     WebRequest,
+    default_valid_until,
 )
 from .notifications import (
     notify_session_reminder,
@@ -229,6 +236,9 @@ def index(request):
     # Get featured courses
     featured_courses = Course.objects.filter(status="published", is_featured=True).order_by("-created_at")[:3]
 
+    # Get featured goods
+    featured_goods = Goods.objects.filter(featured=True, is_available=True).order_by("-created_at")[:3]
+
     # Get current challenge
     current_challenge_obj = Challenge.objects.filter(
         start_date__lte=timezone.now(), end_date__gte=timezone.now()
@@ -240,6 +250,9 @@ def index(request):
 
     # Get latest success story
     latest_success_story = SuccessStory.objects.filter(status="published").order_by("-published_at").first()
+
+    # Get last two waiting room requests
+    latest_waiting_room_requests = WaitingRoom.objects.filter(status="open").order_by("-created_at")[:2]
 
     # Get top latest 3 leaderboard users
     try:
@@ -254,16 +267,24 @@ def index(request):
     if not request.user.is_authenticated or not request.user.profile.is_teacher:
         form = TeacherSignupForm()
 
+    # Get video count and subjects for the quick add video form
+    video_count = EducationalVideo.objects.count()
+    subjects = Subject.objects.all().order_by("order", "name")
+
     context = {
         "profile": profile,
         "featured_courses": featured_courses,
+        "featured_products": featured_goods,
         "current_challenge": current_challenge,
         "latest_post": latest_post,
         "latest_success_story": latest_success_story,
+        "latest_waiting_room_requests": latest_waiting_room_requests,
         "top_referrers": top_referrers,
         "top_leaderboard_users": top_leaderboard_users,
         "form": form,
         "is_debug": settings.DEBUG,
+        "video_count": video_count,
+        "subjects": subjects,
     }
     if request.user.is_authenticated:
         user_team_goals = (
@@ -443,8 +464,8 @@ def profile(request):
     if request.method == "POST":
         form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
-            form.save()  # Save the form data including the is_profile_public field
-            request.user.profile.refresh_from_db()  # Refresh the instance so updated Profile is loaded
+            form.save()  # Save the form data
+            request.user.profile.refresh_from_db()  # Refresh to load updated profile
             messages.success(request, "Profile updated successfully!")
             return redirect("profile")
         else:
@@ -452,7 +473,6 @@ def profile(request):
                 for error in errors:
                     messages.error(request, f"Error in {field}: {error}")
     else:
-        # Use the instance so the form loads all updated fields from the database.
         form = ProfileUpdateForm(instance=request.user)
 
     badges = UserBadge.objects.filter(user=request.user).select_related("badge")
@@ -481,7 +501,6 @@ def profile(request):
                 "avg_rating": avg_rating,
             }
         )
-    # Student-specific stats
     else:
         enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
         completed_courses = enrollments.filter(status="completed").count()
@@ -501,9 +520,13 @@ def profile(request):
             }
         )
 
-    # Add created calendars with time slots if applicable
+    # Get created calendars if applicable
     created_calendars = request.user.created_calendars.prefetch_related("time_slots").order_by("-created_at")
     context["created_calendars"] = created_calendars
+
+    # *** Add Discount Codes ***
+    discount_codes = Discount.objects.filter(user=request.user, used=False, valid_until__gte=timezone.now())
+    context["discount_codes"] = discount_codes
 
     return render(request, "profile.html", context)
 
@@ -759,6 +782,7 @@ def course_detail(request, slug):
     for item in rating_counts:
         rating_distribution[item["rating"]] = item["count"]
 
+<<<<<<< HEAD
     #  # Get materials
     # materials = Material.objects.filter(course=course)
 
@@ -814,6 +838,14 @@ def course_detail(request, slug):
             }
         )
 
+=======
+    # Build the absolute discount URL using the discount view's URL name.
+    from urllib.parse import urlencode
+
+    discount_relative = reverse("apply_discount_via_referrer")
+    discount_params = urlencode({"course_id": course.id})
+    discount_url = request.build_absolute_uri(f"{discount_relative}?{discount_params}")
+>>>>>>> e024b06889f3b81f5ce9673a742c17fa217645d0
     context = {
         "course": course,
         "sessions": sessions,
@@ -835,9 +867,13 @@ def course_detail(request, slug):
         "user_review": user_review,
         "rating_distribution": rating_distribution,
         "reviews_num": reviews_num,
+<<<<<<< HEAD
         "course_exams": course_exams,
         "course_exam_data": course_exam_data,
         "session_data": session_data,
+=======
+        "discount_url": discount_url,
+>>>>>>> e024b06889f3b81f5ce9673a742c17fa217645d0
     }
 
     return render(request, "courses/detail.html", context)
@@ -1509,6 +1545,17 @@ def handle_successful_payment(payment_intent):
     enrollment.status = "approved"
     enrollment.save()
 
+    # Create a payment record for tracking teacher earnings
+    # Convert amount from cents to dollars
+    amount = Decimal(str(payment_intent.amount)) / 100
+    Payment.objects.create(
+        enrollment=enrollment,
+        amount=amount,
+        currency=payment_intent.currency.upper(),
+        stripe_payment_intent_id=payment_intent.id,
+        status="completed",
+    )
+
     # Send notifications
     send_enrollment_confirmation(enrollment)
     notify_teacher_new_enrollment(enrollment)
@@ -1539,6 +1586,7 @@ def update_course(request, slug):
         form = CourseForm(request.POST, request.FILES, instance=course)
         if form.is_valid():
             form.save()
+            messages.success(request, "Course updated successfully!")
             return redirect("course_detail", slug=course.slug)
     else:
         form = CourseForm(instance=course)
@@ -1876,28 +1924,51 @@ def forum_topic(request, category_slug, topic_id):
     topic.views = view_count
     topic.save()
 
-    # Handle POST requests for replies, etc.
+    # Handle POST requests for replies, voting, and deletion
     if request.method == "POST":
         action = request.POST.get("action")
+
         if action == "add_reply" and request.user.is_authenticated:
             content = request.POST.get("content")
             if content:
                 ForumReply.objects.create(topic=topic, author=request.user, content=content)
                 messages.success(request, "Reply added successfully.")
                 return redirect("forum_topic", category_slug=category_slug, topic_id=topic_id)
+
         elif action == "delete_reply" and request.user.is_authenticated:
             reply_id = request.POST.get("reply_id")
             reply = get_object_or_404(ForumReply, id=reply_id, author=request.user)
             reply.delete()
             messages.success(request, "Reply deleted successfully.")
             return redirect("forum_topic", category_slug=category_slug, topic_id=topic_id)
+
         elif action == "delete_topic" and request.user == topic.author:
             topic.delete()
             messages.success(request, "Topic deleted successfully.")
             return redirect("forum_category", slug=category_slug)
 
+    # Fetch replies after POST handling
     replies = topic.replies.select_related("author").order_by("created_at")
-    return render(request, "web/forum/topic.html", {"topic": topic, "replies": replies, "categories": categories})
+
+    # Votes handling
+    if request.user.is_authenticated:
+        user_topic_vote = topic.user_vote(request.user)
+        user_reply_votes = {reply.id: reply.user_vote(request.user) for reply in replies}
+    else:
+        user_topic_vote = None
+        user_reply_votes = {}
+
+    return render(
+        request,
+        "web/forum/topic.html",
+        {
+            "topic": topic,
+            "replies": replies,
+            "categories": categories,
+            "user_topic_vote": user_topic_vote,
+            "user_reply_votes": user_reply_votes,
+        },
+    )
 
 
 @login_required
@@ -2399,7 +2470,12 @@ def student_dashboard(request):
 @login_required
 @teacher_required
 def teacher_dashboard(request):
-    """Dashboard view for teachers showing their courses, student progress, and upcoming sessions."""
+    """Dashboard view for teachers showing their courses, student progress, and upcoming sessions.
+
+    The earnings calculation is based on completed payment records, not just enrollments.
+    This ensures that earnings accurately reflect actual transactions rather than just the
+    number of enrolled students. Each payment has a 90% teacher commission rate applied.
+    """
     courses = Course.objects.filter(teacher=request.user)
     upcoming_sessions = Session.objects.filter(course__teacher=request.user, start_time__gt=timezone.now()).order_by(
         "start_time"
@@ -2416,8 +2492,18 @@ def teacher_dashboard(request):
         course_completed = enrollments.filter(status="completed").count()
         total_students += course_total_students
         total_completed += course_completed
-        # Calculate earnings (90% of course price for each enrollment, 10% platform fee)
-        course_earnings = Decimal(str(course_total_students)) * course.price * Decimal("0.9")
+
+        # Calculate earnings based on completed payments instead of enrollment count
+        # Each payment has an amount field which represents the actual amount paid
+        # We apply the teacher's commission rate (90% by default, 10% platform fee)
+        course_earnings = Decimal("0.00")
+        for enrollment in enrollments:
+            # Get all completed payments for this enrollment
+            completed_payments = enrollment.payments.filter(status="completed")
+            for payment in completed_payments:
+                # Apply the 90% teacher commission
+                course_earnings += payment.amount * Decimal("0.9")
+
         total_earnings += course_earnings
         course_stats.append(
             {
@@ -2449,9 +2535,9 @@ def custom_404(request, exception):
     return render(request, "404.html", status=404)
 
 
-def custom_500(request):
-    """Custom 500 error handler"""
-    return render(request, "500.html", status=500)
+# def custom_500(request):
+#     """Custom 500 error handler"""
+#     return render(request, "500.html", status=500)
 
 
 def custom_429(request, exception=None):
@@ -2560,13 +2646,13 @@ def checkout_success(request):
 
             # Create a new user account with transaction and better username generation
             with transaction.atomic():
-                base_username = email.split("@")[0][:15]  # Limit length
+                # Generate a random username without using the email
                 timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
-                username = f"{base_username}_{timestamp}"
+                username = f"user_{timestamp}"
 
                 # In the unlikely case of a collision, append random string
                 while User.objects.filter(username=username).exists():
-                    username = f"{base_username}_{timestamp}_{get_random_string(4)}"
+                    username = f"user_{timestamp}_{get_random_string(6)}"
 
                 # Create the user
                 user = User.objects.create_user(
@@ -2628,21 +2714,42 @@ def checkout_success(request):
         # Process enrollments
         for item in cart.items.all():
             if item.course:
-                # Create enrollment for full course
+                # Check for an active discount coupon for this course
+                discount = Discount.objects.filter(
+                    user=user, course=item.course, used=False, valid_until__gte=timezone.now()
+                ).first()
+                if discount:
+                    # Calculate the discounted price
+                    discount_amount = (discount.discount_percentage / 100) * item.course.price
+                    effective_price = item.course.price - discount_amount
+                    # Mark the coupon as used
+                    discount.used = True
+                    discount.save()
+                else:
+                    effective_price = item.course.price
+
+                # Create enrollment for the course
                 enrollment = Enrollment.objects.create(
                     student=user, course=item.course, status="approved", payment_intent_id=payment_intent_id
                 )
-                # Create progress tracker
-                CourseProgress.objects.create(enrollment=enrollment)
                 enrollments.append(enrollment)
-                total_amount += item.course.price
+                total_amount += effective_price
 
-                # Send confirmation emails
+                # Create payment record for teacher earnings calculation
+                Payment.objects.create(
+                    enrollment=enrollment,
+                    amount=effective_price,
+                    currency="USD",
+                    stripe_payment_intent_id=payment_intent_id,
+                    status="completed",
+                )
+
+                # Optionally, you can send confirmation emails with discount details
                 send_enrollment_confirmation(enrollment)
                 notify_teacher_new_enrollment(enrollment)
 
             elif item.session:
-                # Create enrollment for individual session
+                # Process individual session enrollments (no discount logic here)
                 session_enrollment = SessionEnrollment.objects.create(
                     student=user, session=item.session, status="approved", payment_intent_id=payment_intent_id
                 )
@@ -2650,11 +2757,8 @@ def checkout_success(request):
                 total_amount += item.session.price
 
             elif item.goods:
-                # Track goods items for the receipt
                 goods_items.append(item)
                 total_amount += item.final_price
-
-                # Create order item for goods
                 OrderItem.objects.create(
                     order=order,
                     goods=item.goods,
@@ -2662,7 +2766,6 @@ def checkout_success(request):
                     price_at_purchase=item.goods.price,
                     discounted_price_at_purchase=item.goods.discount_price,
                 )
-                # Capture storefront from the first goods item
                 if not storefront:
                     storefront = item.goods.storefront
 
@@ -2895,15 +2998,16 @@ def create_forum_category(request):
     if request.method == "POST":
         form = ForumCategoryForm(request.POST)
         if form.is_valid():
-            category = form.save()
+            category = form.save(commit=False)
             if not category.slug:
                 category.slug = slugify(category.name)
             category.save()
             messages.success(request, f"Forum category '{category.name}' created successfully!")
             return redirect("forum_category", slug=category.slug)
+        else:
+            print(form.errors)
     else:
         form = ForumCategoryForm()
-        print(form.errors)
 
     return render(request, "web/forum/create_category.html", {"form": form})
 
@@ -3170,7 +3274,7 @@ def system_status(request):
 @login_required
 @teacher_required
 def message_enrolled_students(request, slug):
-    """Send an email to all enrolled students in a course."""
+    """Send an email to all enrolled students in a course with encrypted content."""
     course = get_object_or_404(Course, slug=slug, teacher=request.user)
 
     if request.method == "POST":
@@ -3178,16 +3282,22 @@ def message_enrolled_students(request, slug):
         message = request.POST.get("message")
 
         if title and message:
+            # Import the encryption function from our secure messaging module
+            from web.secure_messaging import encrypt_message
+
+            # Encrypt the message using Fernet and decode to string for email content
+            encrypted_message = encrypt_message(message).decode("utf-8")
+
             # Get all enrolled students
             enrolled_students = User.objects.filter(
                 enrollments__course=course, enrollments__status="approved"
             ).distinct()
 
-            # Send email to each student
+            # Send email to each student with the encrypted message
             for student in enrolled_students:
                 send_mail(
                     subject=f"[{course.title}] {title}",
-                    message=message,
+                    message=encrypted_message,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[student.email],
                     fail_silently=True,
@@ -3202,7 +3312,7 @@ def message_enrolled_students(request, slug):
 
 
 def message_teacher(request, teacher_id):
-    """Send a message to a teacher."""
+    """Send a message to a teacher with secure encryption."""
     teacher = get_object_or_404(get_user_model(), id=teacher_id)
     if not teacher.profile.is_teacher:
         messages.error(request, "This user is not a teacher.")
@@ -3211,6 +3321,10 @@ def message_teacher(request, teacher_id):
     if request.method == "POST":
         form = MessageTeacherForm(request.POST, user=request.user)
         if form.is_valid():
+            # The MessageTeacherForm's clean_message method encrypts the message,
+            # so form.cleaned_data["message"] already contains the encrypted text.
+            encrypted_message = form.cleaned_data["message"]
+
             # Prepare email content
             if request.user.is_authenticated:
                 sender_name = request.user.get_full_name() or request.user.username
@@ -3219,25 +3333,25 @@ def message_teacher(request, teacher_id):
                 sender_name = form.cleaned_data["name"]
                 sender_email = form.cleaned_data["email"]
 
-            # Send email to teacher
+            # Send email to teacher using the encrypted message
             context = {
                 "sender_name": sender_name,
                 "sender_email": sender_email,
-                "message": form.cleaned_data["message"],
+                "message": encrypted_message,
             }
             html_message = render_to_string("web/emails/teacher_message.html", context)
 
             try:
                 send_mail(
                     subject=f"New message from {sender_name}",
-                    message=form.cleaned_data["message"],
+                    message=encrypted_message,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[teacher.email],
                     html_message=html_message,
                 )
                 messages.success(request, "Your message has been sent successfully!")
 
-                # Get the next URL from query params, default to course search if not provided
+                # Optionally redirect based on next URL parameter
                 next_url = request.GET.get("next")
                 if next_url:
                     try:
@@ -3635,16 +3749,20 @@ def fetch_video_title(request):
         if not title:
             # Try to extract title from HTML content
             content = response.text
-            title_match = re.search(r"<title>(.*?)</title>", content)
-            title = title_match.group(1) if title_match else "Untitled Video"
+            title_match = re.search(r"<title>(.*?)</title>", content, re.IGNORECASE | re.DOTALL)
+            title = title_match.group(1).strip() if title_match else "Untitled Video"
 
             # Sanitize the title
             title = html.escape(title)
 
         return JsonResponse({"title": title})
 
-    except requests.RequestException:
-        return JsonResponse({"error": "Failed to fetch video title:"}, status=500)
+    except requests.RequestException as e:
+        logger.error(f"Error fetching video title from {url}: {str(e)}")
+        return JsonResponse({"error": f"Failed to fetch video title: {str(e)}"}, status=500)
+    except Exception as e:
+        logger.error(f"Unexpected error fetching video title from {url}: {str(e)}")
+        return JsonResponse({"error": "An unexpected error occurred while fetching the title"}, status=500)
 
 
 def get_referral_stats():
@@ -3689,6 +3807,17 @@ class GoodsDetailView(generic.DetailView):
         context = super().get_context_data(**kwargs)
         context["product_images"] = self.object.goods_images.all()  # Get all images related to the product
         context["other_products"] = Goods.objects.exclude(pk=self.object.pk)[:12]  # Fetch other products
+        view_data = WebRequest.objects.filter(path=self.request.path).aggregate(total_views=Coalesce(Sum("count"), 0))
+        context["view_count"] = view_data["total_views"]
+
+        # Add cart count for each product
+        products_with_cart_count = []
+        for product in context["other_products"]:
+            product.cart_count = product.cart_items.count()
+            products_with_cart_count.append(product)
+
+        context["other_products"] = products_with_cart_count
+
         return context
 
 
@@ -3814,6 +3943,15 @@ class GoodsListingView(ListView):
         context = super().get_context_data(**kwargs)
         context["store_names"] = Storefront.objects.values_list("name", flat=True).distinct()
         context["categories"] = Goods.objects.values_list("category", flat=True).distinct()
+
+        # Add cart count for each product
+        products_with_cart_count = []
+        for product in context["products"]:
+            product.cart_count = product.cart_items.count()
+            products_with_cart_count.append(product)
+
+        context["products"] = products_with_cart_count
+
         return context
 
 
@@ -4522,13 +4660,14 @@ def add_student_to_course(request, slug):
             if User.objects.filter(email=email).exists():
                 form.add_error("email", "A user with this email already exists.")
             else:
-                # Generate a username by combining the first name and the email prefix.
-                email_prefix = email.split("@")[0]
-                generated_username = f"{first_name}_{email_prefix}".lower()
+                # Generate a username without using the email address
+                timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
+                generated_username = f"user_{timestamp}"
 
-                # Ensure the username is unique; if not, append a random string.
+                # Ensure the username is unique
                 while User.objects.filter(username=generated_username).exists():
-                    generated_username = f"{generated_username}{get_random_string(4)}"
+                    generated_username = f"user_{timestamp}_{get_random_string(6)}"
+
                 # Create a new student account with an auto-generated password.
                 random_password = get_random_string(10)
                 try:
@@ -5024,12 +5163,43 @@ def upload_educational_video(request):
         form = EducationalVideoForm(request.POST)
         if form.is_valid():
             video = form.save(commit=False)
-            video.uploader = request.user
+
+            # Handle anonymous submissions
+            if request.user.is_authenticated:
+                video.uploader = request.user
+            else:
+                # For anonymous submissions, store optional submitter name
+                submitter_name = request.POST.get("submitter_name", "")
+                if submitter_name:
+                    video.submitter_name = submitter_name
+
             video.save()
 
+            # Check if this is an AJAX request (from quick add form)
+            if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+                return JsonResponse({"success": True, "message": "Video added successfully!"})
+
             return redirect("educational_videos_list")
+        elif request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            # Return form errors for AJAX requests
+            error_dict = {}
+            for field, errors in form.errors.items():
+                error_dict[field] = [str(error) for error in errors]
+
+            # Better error formatting for display
+            error_text = ""
+            for field, field_errors in error_dict.items():
+                field_name = field.replace("_", " ").title() if field != "__all__" else "Error"
+                error_text += f"{field_name}: {', '.join(field_errors)}. "
+
+            return JsonResponse({"success": False, "error": error_text, "detailed_errors": error_dict}, status=400)
     else:
         form = EducationalVideoForm()
+
+    # For regular GET requests
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        # AJAX GET request should get a JSON response
+        return JsonResponse({"success": False, "error": "Please submit the form with POST"}, status=400)
 
     return render(request, "videos/upload.html", {"form": form})
 
@@ -5212,7 +5382,7 @@ def waiting_room_detail(request, waiting_room_id):
         "is_participant": is_participant,
         "is_creator": is_creator,
         "is_teacher": is_teacher,
-        "participant_count": waiting_room.participants.count(),
+        "participant_count": waiting_room.participants.count() + 1,  # Add 1 to include the creator
         "topic_list": [topic.strip() for topic in waiting_room.topics.split(",") if topic.strip()],
     }
     return render(request, "waiting_room/detail.html", context)
@@ -6986,7 +7156,7 @@ def get_twitter_client():
     return tweepy.API(auth)
 
 
-@user_passes_test(social_media_manager_required)
+@user_passes_test(social_media_manager_required, login_url="/accounts/login/")
 def social_media_dashboard(request):
     # Fetch all posts that haven't been posted yet
     posts = ScheduledPost.objects.filter(posted=False).order_by("-id")
@@ -7036,3 +7206,351 @@ def delete_post(request, post_id):
     if request.method == "POST":
         post.delete()
     return redirect("social_media_dashboard")
+
+
+def generate_discount_code(length=8):
+    return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
+
+
+@login_required
+def apply_discount_via_referrer(request) -> HttpResponse:
+    """Apply a discount code when a user shares a course on Twitter.
+
+    Args:
+        request: The HTTP request object
+
+    Returns:
+        HttpResponse: A redirect to the profile page or an error response
+    """
+    if request.method == "GET":
+        course_id = request.GET.get("course_id")
+        if not course_id:
+            return HttpResponseBadRequest("Course ID not provided.")
+
+        course = get_object_or_404(Course, id=course_id)
+
+        # Validate that the referrer is from Twitter
+        referrer = request.META.get("HTTP_REFERER", "").lower()
+        valid_twitter_domains = ["twitter.com", "t.co", "x.com"]
+        is_valid_referrer = any(domain in referrer for domain in valid_twitter_domains)
+
+        # Skip the referrer check in development environment for testing
+        if settings.DEBUG:
+            logger.warning("Bypassing Twitter referrer check in DEBUG mode")
+        elif not is_valid_referrer:
+            messages.error(request, "You must click the link from Twitter to claim your discount.")
+            return redirect("profile")
+        # Create or retrieve an existing discount record.
+        discount = Discount.objects.filter(user=request.user, course=course, used=False).first()
+        if discount is None:
+            discount = Discount.objects.create(
+                user=request.user,
+                course=course,
+                code=generate_discount_code(),
+                discount_percentage=5.00,
+                valid_from=timezone.now(),
+                valid_until=default_valid_until(),
+            )
+
+        messages.success(request, "Thank you for sharing! Your discount code is now available in your profile.")
+        # Redirect user to their profile where discount codes are rendered.
+        return redirect("profile")
+    else:
+        return HttpResponseBadRequest("Invalid request method.")
+
+
+def users_list(request: HttpRequest) -> HttpResponse:
+    """
+    Display a list of users who have their profile set to public,
+    ordered by most recent updates.
+    """
+    profiles = Profile.objects.filter(is_profile_public=True).select_related("user").order_by("-updated_at")
+
+    # Add statistics for each user to create fun scorecards
+    for profile in profiles:
+        if profile.is_teacher:
+            # Teacher stats
+            courses = Course.objects.filter(teacher=profile.user).prefetch_related("enrollments", "reviews")
+            profile.total_courses = courses.count()
+            profile.total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
+            # Get average rating across all courses
+            course_ratings = [course.average_rating for course in courses if course.average_rating > 0]
+            profile.avg_rating = round(sum(course_ratings) / len(course_ratings), 1) if course_ratings else 0
+        else:
+            # Student stats
+            enrollments = Enrollment.objects.filter(student=profile.user).select_related("course")
+            profile.total_courses = enrollments.count()
+            completed_enrollments = enrollments.filter(status="completed")
+            profile.total_completed = completed_enrollments.count()
+
+            # Calculate average progress across all courses
+            total_progress = 0
+            progress_count = 0
+            enrollment_ids = [e.id for e in enrollments]
+            existing_progresses = {
+                p.enrollment_id: p for p in CourseProgress.objects.filter(enrollment_id__in=enrollment_ids)
+            }
+
+            for enrollment in enrollments:
+                progress = existing_progresses.get(enrollment.id)
+                if not progress:
+                    progress = CourseProgress.objects.create(enrollment=enrollment)
+                total_progress += progress.completion_percentage
+                progress_count += 1
+            profile.avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+
+            # Add achievements count
+            profile.achievements_count = Achievement.objects.filter(student=profile.user).count()
+
+    # Pagination: 12 profiles per page
+    paginator = Paginator(profiles, 12)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        "page_obj": page_obj,
+    }
+
+    return render(request, "users_list.html", context)
+
+
+@login_required
+def topic_vote(request, pk):
+    """Handle voting on a topic."""
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST method allowed"}, status=405)
+
+    try:
+        topic = ForumTopic.objects.get(pk=pk)
+        vote_type = request.POST.get("vote_type")
+
+        if vote_type not in ["up", "down"]:
+            # For form submissions, redirect back with an error message if needed
+            messages.error(request, "Invalid vote type")
+            return redirect("topic_vote", pk=topic.id)
+
+        # Check if user already voted on this topic
+        vote, created = ForumVote.objects.get_or_create(
+            user=request.user, topic=topic, defaults={"vote_type": vote_type}
+        )
+
+        if not created:
+            # User already voted, check if they're changing their vote
+            if vote.vote_type == vote_type:
+                # Same vote type, so remove the vote
+                vote.delete()
+            else:
+                # Different vote type, so update the vote
+                vote.vote_type = vote_type
+                vote.save()
+
+        # After processing the vote, redirect back to the topic page
+        return redirect("forum_topic", category_slug=topic.category.slug, topic_id=topic.id)
+
+    except ForumTopic.DoesNotExist:
+        # Handle case when topic doesn't exist
+        messages.error(request, "Topic not found")
+        return redirect("forum_categories")
+
+
+@login_required
+def reply_vote(request, pk):
+    """Handle voting on a reply."""
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST method allowed"}, status=405)
+
+    try:
+        reply = ForumReply.objects.get(pk=pk)
+        vote_type = request.POST.get("vote_type")
+
+        if vote_type not in ["up", "down"]:
+            messages.error(request, "Invalid vote type")
+            return redirect("forum_topic", category_slug=reply.topic.category.slug, topic_id=reply.topic.id)
+
+        # Check if user already voted on this reply
+        vote, created = ForumVote.objects.get_or_create(
+            user=request.user, reply=reply, defaults={"vote_type": vote_type}
+        )
+
+        if not created:
+            # User already voted, check if they're changing their vote
+            if vote.vote_type == vote_type:
+                # Same vote type, so remove the vote
+                vote.delete()
+            else:
+                # Different vote type, so update the vote
+                vote.vote_type = vote_type
+                vote.save()
+
+        # After processing the vote, redirect back to the topic page
+        return redirect("forum_topic", category_slug=reply.topic.category.slug, topic_id=reply.topic.id)
+
+    except ForumReply.DoesNotExist:
+        messages.error(request, "Reply not found")
+        return redirect("forum_categories")
+
+
+def topic_detail(request, pk):
+    topic = get_object_or_404(ForumTopic, pk=pk)
+
+    # Get the user's vote on this topic if any
+    user_topic_vote = None
+    if request.user.is_authenticated:
+        try:
+            vote = ForumVote.objects.get(topic=topic, user=request.user)
+            user_topic_vote = vote.vote_type
+        except ForumVote.DoesNotExist:
+            pass
+
+    # Get user votes on replies
+    user_reply_votes = {}
+    if request.user.is_authenticated:
+        reply_votes = ForumVote.objects.filter(reply__topic=topic, user=request.user).values_list(
+            "reply_id", "vote_type"
+        )
+        user_reply_votes = dict(reply_votes)
+
+    context = {
+        "topic": topic,
+        "user_topic_vote": user_topic_vote,
+        "user_reply_votes": user_reply_votes,
+        # other context variables
+    }
+
+    return render(request, "web/forum/topic.html", context)
+
+
+def contributors_list_view(request):
+    # Check if cached data is available
+    cached_context = cache.get("contributors_context")
+    if cached_context:
+        return render(request, "web/contributors_list.html", cached_context)
+
+    # Initialize a dictionary to track contributor stats
+    contributor_stats = {}
+
+    # Function to add a contributor to our stats dictionary
+    def add_contributor(username, avatar_url, profile_url):
+        if username not in contributor_stats:
+            contributor_stats[username] = {
+                "username": username,
+                "avatar_url": avatar_url,
+                "profile_url": profile_url,
+                "merged_pr_count": 0,
+                "closed_pr_count": 0,
+                "open_pr_count": 0,
+                "total_pr_count": 0,
+                "prs_url": f"https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:{username}",
+            }
+
+    try:
+        # Fetch closed PRs first (includes both merged and non-merged closed PRs)
+        closed_prs = []
+        for page in range(1, 11):  # Limit to 10 pages to prevent hitting API rate limits
+            response = github_api_request(
+                f"{GITHUB_API_BASE}/repos/AlphaOneLabs/education-website/pulls",
+                params={"state": "closed", "per_page": 100, "page": page},
+            )
+            if not response or len(response) == 0:
+                break
+
+            closed_prs.extend(response)
+            time.sleep(0.5)  # Add delay to avoid hitting rate limits
+
+        # Process closed PRs
+        for pr in closed_prs:
+            username = pr["user"]["login"]
+
+            # Skip bots and specific users
+            if "[bot]" in username or "dependabot" in username or username == "A1L13N":
+                continue
+
+            avatar_url = pr["user"]["avatar_url"]
+            profile_url = pr["user"]["html_url"]
+
+            # Add to our tracking
+            add_contributor(username, avatar_url, profile_url)
+
+            # Update the appropriate count based on whether it was merged
+            if pr["merged_at"]:
+                contributor_stats[username]["merged_pr_count"] += 1
+            else:
+                contributor_stats[username]["closed_pr_count"] += 1
+
+        # Now fetch open PRs
+        open_prs = []
+        for page in range(1, 6):  # Limit to 5 pages for open PRs
+            response = github_api_request(
+                f"{GITHUB_API_BASE}/repos/AlphaOneLabs/education-website/pulls",
+                params={"state": "open", "per_page": 100, "page": page},
+            )
+            if not response or len(response) == 0:
+                break
+
+            open_prs.extend(response)
+            time.sleep(0.5)  # Add delay to avoid hitting rate limits
+
+        # Process open PRs
+        for pr in open_prs:
+            username = pr["user"]["login"]
+
+            # Skip bots and specific users
+            if "[bot]" in username or "dependabot" in username or username == "A1L13N":
+                continue
+
+            avatar_url = pr["user"]["avatar_url"]
+            profile_url = pr["user"]["html_url"]
+
+            # Add to our tracking
+            add_contributor(username, avatar_url, profile_url)
+
+            # Update open PR count
+            contributor_stats[username]["open_pr_count"] += 1
+
+        # Calculate total PR count and filter out users with no merged PRs
+        contributors = []
+        for username, stats in contributor_stats.items():
+            # Skip contributors with no merged PRs
+            if stats["merged_pr_count"] == 0:
+                continue
+
+            # Calculate total PR count
+            stats["total_pr_count"] = stats["merged_pr_count"] + stats["closed_pr_count"] + stats["open_pr_count"]
+
+            # Calculate a smart score that prioritizes merged PRs but penalizes imbalances
+            # Formula: (merged_pr_count * 10) - penalties for imbalanced contributions
+            smart_score = stats["merged_pr_count"] * 10
+
+            # Penalize if closed PRs are more than half of merged PRs (could indicate issues with code quality)
+            if stats["closed_pr_count"] > (stats["merged_pr_count"] / 2):
+                smart_score -= (stats["closed_pr_count"] - (stats["merged_pr_count"] / 2)) * 2
+
+            # Penalize if open PRs are more than merged PRs (could indicate abandonment issues)
+            if stats["open_pr_count"] > stats["merged_pr_count"]:
+                smart_score -= stats["open_pr_count"] - stats["merged_pr_count"]
+
+            # Calculate a contribution ratio: merged/(total) - higher is better
+            if stats["total_pr_count"] > 0:
+                stats["contribution_ratio"] = stats["merged_pr_count"] / stats["total_pr_count"]
+            else:
+                stats["contribution_ratio"] = 0
+
+            # Store the smart score
+            stats["smart_score"] = smart_score
+
+            contributors.append(stats)
+
+        # Sort by smart score (primary) and then by merged PR count (secondary)
+        contributors.sort(key=lambda x: (x["smart_score"], x["merged_pr_count"]), reverse=True)
+
+        # Store the context in cache for 12 hours
+        context = {"contributors": contributors}
+        cache.set("contributors_context", context, 12 * 60 * 60)
+
+        return render(request, "web/contributors_list.html", context)
+
+    except Exception as e:
+        # Log the error
+        print(f"Error fetching contributors: {e}")
+        # Return an empty list in case of error
+        return render(request, "web/contributors_list.html", {"contributors": []})
