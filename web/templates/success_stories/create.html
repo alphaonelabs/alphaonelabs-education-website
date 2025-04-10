@@ -9,11 +9,15 @@
     Create
   {% endif %}
   Success Story
-{% endblock %}
+{% endblock title %}
 {% block extra_head %}
+  <!-- EasyMDE -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
   {{ form.media }}
   <link rel="stylesheet" href="{% static 'css/markdown.css' %}" />
-{% endblock %}
+{% endblock extra_head %}
 {% block content %}
   <main class="flex-1 w-full max-w-4xl mx-auto px-4 md:px-6 py-8">
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 md:p-8">
@@ -25,7 +29,10 @@
         {% endif %}
         Success Story
       </h1>
-      <form method="post" enctype="multipart/form-data" class="space-y-6">
+      <form method="post"
+            enctype="multipart/form-data"
+            class="space-y-6"
+            id="successStoryForm">
         {% csrf_token %}
         {% if form.non_field_errors %}
           <div class="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 p-4 rounded-md mb-6">
@@ -50,7 +57,7 @@
                    class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Content <span class="text-red-500">*</span>
             </label>
-            {{ form.content }}
+            <div class="markdown-editor">{{ form.content }}</div>
             {% if form.content.errors %}
               <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.content.errors }}</p>
             {% endif %}
@@ -76,7 +83,9 @@
               <div class="mb-2">
                 <img src="{{ success_story.featured_image.url }}"
                      alt="Current featured image"
-                     class="h-32 object-cover rounded-md" />
+                     class="h-32 object-cover rounded-md"
+                     width="300"
+                     height="128" />
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Current image</p>
               </div>
             {% endif %}
@@ -116,4 +125,90 @@
       </form>
     </div>
   </main>
-{% endblock %}
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          // Store references to all EasyMDE instances
+          const editors = new Map();
+
+          // Initialize EasyMDE for markdown fields
+          document.querySelectorAll('.markdown-editor textarea').forEach(textarea => {
+              const editor = new EasyMDE({
+                  element: textarea,
+                  spellChecker: false,
+                  status: ['lines', 'words', 'cursor'],
+                  maxHeight: '400px',
+                  minHeight: '200px',
+                  toolbar: [
+                      'bold', 'italic', 'heading', '|',
+                      'quote', 'unordered-list', 'ordered-list', '|',
+                      'link', 'image', '|',
+                      'preview', 'side-by-side', 'fullscreen', '|',
+                      'guide'
+                  ],
+                  theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+              });
+
+              // Store the editor instance
+              editors.set(textarea.name, editor);
+
+              // Add change handler to update the hidden textarea
+              editor.codemirror.on('change', () => {
+                  textarea.value = editor.value();
+              });
+          });
+
+          // Fix form submission for hidden required textareas
+          const form = document.getElementById('successStoryForm');
+          form.addEventListener('submit', function(event) {
+              // Ensure all markdown editors have their content synced to the textarea
+              editors.forEach((editor, fieldName) => {
+                  const textarea = document.querySelector(`textarea[name="${fieldName}"]`);
+                  if (textarea) {
+                      textarea.value = editor.value();
+
+                      // Temporarily remove required attribute if there's content
+                      // This prevents the "not focusable" validation error
+                      if (textarea.value.trim().length > 0 && textarea.hasAttribute('required')) {
+                          textarea.setAttribute('data-was-required', 'true');
+                          textarea.removeAttribute('required');
+                      }
+                  }
+              });
+          });
+      });
+  </script>
+  <style>
+      /* Dark mode styles for EasyMDE */
+      .dark .EasyMDEContainer {
+          background-color: #1f2937;
+      }
+
+      .dark .EasyMDEContainer .CodeMirror {
+          background-color: #374151;
+          color: #e5e7eb;
+          border-color: #4b5563;
+      }
+
+      .dark .editor-toolbar {
+          background-color: #1f2937;
+          border-color: #4b5563;
+      }
+
+      .dark .editor-toolbar button {
+          color: #e5e7eb !important;
+      }
+
+      .dark .editor-toolbar button:hover {
+          background-color: #374151;
+      }
+
+      .dark .editor-preview {
+          background-color: #1f2937;
+          color: #e5e7eb;
+      }
+
+      .dark .editor-statusbar {
+          color: #9ca3af;
+      }
+  </style>
+{% endblock content %}
