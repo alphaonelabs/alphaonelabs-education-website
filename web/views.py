@@ -141,6 +141,7 @@ from .models import (
     NotificationPreference,
     Order,
     OrderItem,
+    Payment,
     PeerConnection,
     PeerMessage,
     ProductImage,
@@ -1473,6 +1474,17 @@ def handle_successful_payment(payment_intent):
     enrollment.status = "approved"
     enrollment.save()
 
+    # Create a payment record for tracking teacher earnings
+    # Convert amount from cents to dollars
+    amount = Decimal(str(payment_intent.amount)) / 100
+    Payment.objects.create(
+        enrollment=enrollment,
+        amount=amount,
+        currency=payment_intent.currency.upper(),
+        stripe_payment_intent_id=payment_intent.id,
+        status="completed",
+    )
+
     # Send notifications
     send_enrollment_confirmation(enrollment)
     notify_teacher_new_enrollment(enrollment)
@@ -2389,7 +2401,12 @@ def student_dashboard(request):
 @login_required
 @teacher_required
 def teacher_dashboard(request):
-    """Dashboard view for teachers showing their courses, student progress, and upcoming sessions."""
+    """Dashboard view for teachers showing their courses, student progress, and upcoming sessions.
+
+    The earnings calculation is based on completed payment records, not just enrollments.
+    This ensures that earnings accurately reflect actual transactions rather than just the
+    number of enrolled students. Each payment has a 90% teacher commission rate applied.
+    """
     courses = Course.objects.filter(teacher=request.user)
     upcoming_sessions = Session.objects.filter(course__teacher=request.user, start_time__gt=timezone.now()).order_by(
         "start_time"
@@ -2406,8 +2423,18 @@ def teacher_dashboard(request):
         course_completed = enrollments.filter(status="completed").count()
         total_students += course_total_students
         total_completed += course_completed
-        # Calculate earnings (90% of course price for each enrollment, 10% platform fee)
-        course_earnings = Decimal(str(course_total_students)) * course.price * Decimal("0.9")
+
+        # Calculate earnings based on completed payments instead of enrollment count
+        # Each payment has an amount field which represents the actual amount paid
+        # We apply the teacher's commission rate (90% by default, 10% platform fee)
+        course_earnings = Decimal("0.00")
+        for enrollment in enrollments:
+            # Get all completed payments for this enrollment
+            completed_payments = enrollment.payments.filter(status="completed")
+            for payment in completed_payments:
+                # Apply the 90% teacher commission
+                course_earnings += payment.amount * Decimal("0.9")
+
         total_earnings += course_earnings
         course_stats.append(
             {
@@ -2638,6 +2665,15 @@ def checkout_success(request):
                 )
                 enrollments.append(enrollment)
                 total_amount += effective_price
+
+                # Create payment record for teacher earnings calculation
+                Payment.objects.create(
+                    enrollment=enrollment,
+                    amount=effective_price,
+                    currency="USD",
+                    stripe_payment_intent_id=payment_intent_id,
+                    status="completed",
+                )
 
                 # Optionally, you can send confirmation emails with discount details
                 send_enrollment_confirmation(enrollment)
