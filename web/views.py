@@ -5011,6 +5011,7 @@ def donation_success(request):
     payment_intent = request.GET.get("payment_intent")
     redirect_status = request.GET.get("redirect_status")
 
+    # Ensure we have the required donation_id
     if not donation_id:
         messages.error(request, "No donation information found.")
         return redirect("donate")
@@ -5018,10 +5019,11 @@ def donation_success(request):
     try:
         donation = Donation.objects.get(id=donation_id)
 
-        # If we got here from a successful redirect, update the status
+        # If the redirect indicates success and a payment intent exists, verify with Stripe.
         if redirect_status == "succeeded" and payment_intent:
             # Double check with Stripe that the payment was successful
             try:
+                # Retrieve PaymentIntent from Stripe to confirm payment status.
                 stripe_payment = stripe.PaymentIntent.retrieve(payment_intent)
                 if stripe_payment.status == "succeeded":
                     donation.status = "completed"
@@ -5031,7 +5033,7 @@ def donation_success(request):
             except stripe.error.StripeError:
                 logger.exception("Error verifying payment intent")
 
-                # Retry logic for temporary Stripe failures
+                # Retry logic for temporary Stripe failures using Django's cache.
                 cache_key = f"retry_verify_payment_{payment_intent}"
                 retry_count = cache.get(cache_key, 0)
 
@@ -5039,19 +5041,21 @@ def donation_success(request):
                     cache.set(cache_key, retry_count + 1, 3600)  # Retry after 1 hour
                     # You could enqueue a Celery task or use another background task system
                     # to retry the verification process
-                    logger.warning(f"Retry {retry_count + 1}/3 scheduled for payment verification: {payment_intent}")
+                    logger.warning("Retry %d/3 scheduled for payment verification: %s", retry_count + 1, payment_intent)
                 else:
-                    logger.error(f"Max retries reached for payment verification: {payment_intent}")
+                    logger.error("Max retries reached for payment verification: %s", payment_intent)
 
                 # Continue to show the success page even if verification fails;
                 # the webhook will eventually update the status
 
+        # If the donation status is now completed, show the success page.
         if donation.status == "completed":
             context = {
                 "donation": donation,
             }
             return render(request, "donation_success.html", context)
 
+        # If donation status is not completed, alert the user and redirect.
         messages.error(request, "Donation has not been successfully processed.")
         return redirect("donate")
 
