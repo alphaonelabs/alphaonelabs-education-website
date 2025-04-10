@@ -549,20 +549,72 @@
         </div>
         <!-- Educational Videos -->
         <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-lg bg-white dark:bg-gray-800 mb-6">
-          <h2 class="text-xl font-semibold flex items-center">
-            <span class="mr-2">🎬</span> Educational Videos
+          <h2 class="text-xl font-semibold flex items-center justify-between">
+            <div class="flex items-center">
+              <span class="mr-2">🎬</span> Educational Videos
+            </div>
+            <div class="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <i class="fas fa-video mr-1"></i>
+              <span>{{ video_count|default:"0" }} videos</span>
+            </div>
           </h2>
-          <div class="col-span-full text-center">
-            <div class="pt-6 text-center">
+          <div class="col-span-full">
+            <div class="pt-4 text-center">
               <p class="text-gray-600 dark:text-gray-300 mb-4 max-w-lg mx-auto">
                 Discover a wide range of educational videos shared by our community of teachers and learners.
                 From science and technology to arts and languages, find videos that help you learn new skills and concepts.
               </p>
-              <div class="mt-4 flex gap-4">
+              {% if user.is_authenticated %}
+                <!-- Quick Add Video Form -->
+                <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4 max-w-lg mx-auto">
+                  <h3 class="text-sm font-semibold mb-2 text-left">Quick Add YouTube Video</h3>
+                  <form id="quick-video-form" class="flex flex-col gap-3">
+                    {% csrf_token %}
+                    <div class="flex gap-2">
+                      <div class="flex-grow">
+                        <input type="url"
+                               id="video-url"
+                               name="video_url"
+                               placeholder="Paste YouTube URL here"
+                               required
+                               class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                      </div>
+                      <button type="button"
+                              id="fetch-title-btn"
+                              class="bg-teal-300 hover:bg-teal-400 text-white px-3 py-2 rounded-lg transition duration-200">
+                        <i class="fas fa-search"></i>
+                      </button>
+                    </div>
+                    <input type="text"
+                           id="video-title"
+                           name="title"
+                           placeholder="Video title (auto-filled)"
+                           required
+                           class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                    <!-- Hidden description field that gets auto-filled with YouTube data -->
+                    <input type="hidden" id="video-description" name="description" value="" />
+                    <div class="flex gap-2">
+                      <select id="video-category"
+                              name="category"
+                              required
+                              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                        <option value="">Select a category</option>
+                        {% for subject in subjects %}<option value="{{ subject.id }}">{{ subject.name }}</option>{% endfor %}
+                      </select>
+                      <button type="submit"
+                              class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center">
+                        <i class="fas fa-plus mr-2"></i> Add
+                      </button>
+                    </div>
+                    <div id="quick-add-message" class="text-left text-sm hidden"></div>
+                  </form>
+                </div>
+              {% endif %}
+              <div class="mt-4 flex justify-center gap-4">
                 {% if user.is_authenticated %}
                   <a href="{% url 'upload_educational_video' %}"
                      class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full flex items-center">
-                    <i class="fas fa-upload mr-2"></i> Share
+                    <i class="fas fa-upload mr-2"></i> Upload
                   </a>
                 {% endif %}
                 <a href="{% url 'educational_videos_list' %}"
@@ -1121,3 +1173,222 @@
       });
   </script>
 {% endblock content %}
+{% block extra_js %}
+  {{ block.super }}
+  <!-- Quick Add Video JavaScript -->
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          const quickForm = document.getElementById('quick-video-form');
+          const videoUrlInput = document.getElementById('video-url');
+          const videoTitleInput = document.getElementById('video-title');
+          const fetchTitleBtn = document.getElementById('fetch-title-btn');
+          const messageDiv = document.getElementById('quick-add-message');
+
+          if (fetchTitleBtn) {
+              fetchTitleBtn.addEventListener('click', function() {
+                  const url = videoUrlInput.value.trim();
+                  if (!url) {
+                      showMessage('Please enter a YouTube URL', 'error');
+                      return;
+                  }
+
+                  // Show loading state
+                  fetchTitleBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                  fetchTitleBtn.disabled = true;
+
+                  // Extract the YouTube video ID from the URL
+                  const videoId = extractYouTubeId(url);
+
+                  if (!videoId) {
+                      fetchTitleBtn.innerHTML = '<i class="fas fa-search"></i>';
+                      fetchTitleBtn.disabled = false;
+                      showMessage('Invalid YouTube URL format', 'error');
+                      return;
+                  }
+
+                  // Use YouTube's oEmbed API to fetch the video title (client-side)
+                  const oEmbedUrl = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`;
+
+                  fetch(oEmbedUrl)
+                      .then(response => {
+                          if (!response.ok) {
+                              throw new Error('Failed to fetch video information');
+                          }
+                          return response.json();
+                      })
+                      .then(data => {
+                          fetchTitleBtn.innerHTML = '<i class="fas fa-search"></i>';
+                          fetchTitleBtn.disabled = false;
+
+                          if (data.title) {
+                              // Set the title field
+                              videoTitleInput.value = data.title;
+
+                              // Set the description field with author info and description
+                              const descriptionField = document.getElementById('video-description');
+                              let description = `Video by ${data.author_name || 'YouTube creator'}`;
+
+                              if (data.description) {
+                                  description += `\n\n${data.description}`;
+                              } else {
+                                  description += `\n\nA video about ${data.title}`;
+                              }
+
+                              descriptionField.value = description;
+
+                              showMessage('Video information fetched successfully!', 'success');
+                          } else {
+                              showMessage('Could not retrieve video information', 'error');
+                          }
+                      })
+                      .catch(error => {
+                          fetchTitleBtn.innerHTML = '<i class="fas fa-search"></i>';
+                          fetchTitleBtn.disabled = false;
+                          showMessage('Failed to fetch video information. Check if the URL is correct.', 'error');
+                          console.error('Error fetching video information:', error);
+                      });
+              });
+          }
+
+          // Function to extract YouTube video ID from various URL formats
+          function extractYouTubeId(url) {
+              const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+              const match = url.match(regExp);
+              return (match && match[2].length === 11) ? match[2] : null;
+          }
+
+          if (quickForm) {
+              quickForm.addEventListener('submit', function(e) {
+                  e.preventDefault();
+
+                  const formData = new FormData(quickForm);
+
+                  // Disable the submit button
+                  const submitBtn = quickForm.querySelector('button[type="submit"]');
+                  const originalBtnContent = submitBtn.innerHTML;
+                  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+                  submitBtn.disabled = true;
+
+                  // Get CSRF token from the form
+                  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+
+                  // Log the form data for debugging
+                  console.log('Form data being submitted:');
+                  for (let pair of formData.entries()) {
+                      console.log(pair[0] + ': ' + pair[1]);
+                  }
+
+                  fetch('/videos/upload/', {
+                          method: 'POST',
+                          body: formData,
+                          headers: {
+                              'X-Requested-With': 'XMLHttpRequest',
+                              'X-CSRFToken': csrfToken,
+                              'Accept': 'application/json, text/javascript, */*; q=0.01'
+                          },
+                          credentials: 'same-origin'
+                      })
+                      .then(response => {
+                          console.log('Response status:', response.status);
+                          console.log('Response headers:', [...response.headers]);
+
+                          // Check content type to see if we got JSON or HTML
+                          const contentType = response.headers.get('content-type');
+
+                          if (!response.ok) {
+                              return response.text().then(text => {
+                                  console.error('Error response body:', text);
+                                  throw new Error(`Server responded with status: ${response.status}`);
+                              });
+                          }
+
+                          // If we got HTML instead of JSON (possibly a redirect or error page)
+                          if (contentType && contentType.includes('text/html')) {
+                              return response.text().then(html => {
+                                  console.log('Received HTML response instead of JSON');
+                                  // Try to extract error messages if any
+                                  if (html.includes('errorlist')) {
+                                      const tempDiv = document.createElement('div');
+                                      tempDiv.innerHTML = html;
+                                      const errors = Array.from(tempDiv.querySelectorAll('.errorlist li'))
+                                          .map(el => el.textContent).join(', ');
+                                      return {
+                                          success: false,
+                                          error: errors || 'Form validation failed'
+                                      };
+                                  }
+                                  // If it's a success page
+                                  if (html.includes('success') || html.includes('Video added')) {
+                                      return {
+                                          success: true,
+                                          message: 'Video added successfully!'
+                                      };
+                                  }
+                                  return {
+                                      success: false,
+                                      error: 'Unexpected server response'
+                                  };
+                              });
+                          }
+
+                          // Regular JSON response
+                          return response.json().catch(e => {
+                              console.error('Error parsing JSON:', e);
+                              throw new Error('Invalid JSON in response');
+                          });
+                      })
+                      .then(data => {
+                          submitBtn.innerHTML = originalBtnContent;
+                          submitBtn.disabled = false;
+                          console.log('Success response:', data);
+
+                          if (data.success) {
+                              // Reset the form
+                              quickForm.reset();
+                              showMessage('Video added successfully!', 'success');
+
+                              // Update the video count
+                              const countElement = document.querySelector('h2 span:last-child');
+                              if (countElement) {
+                                  const currentCount = parseInt(countElement.textContent.split(' ')[0]) || 0;
+                                  countElement.textContent = `${currentCount + 1} videos`;
+                              }
+
+                              // If we received a redirect URL, we can navigate there
+                              if (data.redirect_url) {
+                                  window.location.href = data.redirect_url;
+                              }
+                          } else {
+                              showMessage(data.error || 'Failed to add video', 'error');
+                              console.error('Error details from server:', data);
+                          }
+                      })
+                      .catch(error => {
+                          submitBtn.innerHTML = originalBtnContent;
+                          submitBtn.disabled = false;
+                          showMessage('Error adding video: ' + error.message, 'error');
+                          console.error('Fetch error:', error);
+                      });
+              });
+          }
+
+          function showMessage(message, type) {
+              if (!messageDiv) return;
+
+              messageDiv.textContent = message;
+              messageDiv.classList.remove('hidden', 'text-green-600', 'text-red-600');
+
+              if (type === 'success') {
+                  messageDiv.classList.add('text-green-600', 'dark:text-green-400');
+              } else {
+                  messageDiv.classList.add('text-red-600', 'dark:text-red-400');
+              }
+
+              // Hide the message after 5 seconds
+              setTimeout(() => {
+                  messageDiv.classList.add('hidden');
+              }, 5000);
+          }
+      });
+  </script>
+{% endblock extra_js %}
