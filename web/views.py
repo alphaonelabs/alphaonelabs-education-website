@@ -4730,12 +4730,13 @@ def create_donation_subscription(request: HttpRequest) -> JsonResponse:
 
         # Create or get customer
         customer = None
+        # Try to retrieve existing customer for authenticated users
         if request.user.is_authenticated and hasattr(request.user, "stripe_customer_id"):
-            try:
-                customer = stripe.Customer.retrieve(request.user.stripe_customer_id)
-            except stripe.error.InvalidRequestError:
-                pass
+            from contextlib import suppress
 
+            with suppress(stripe.error.InvalidRequestError):
+                customer = stripe.Customer.retrieve(request.user.stripe_customer_id)
+        # Create new customer if needed
         if not customer:
             customer = stripe.Customer.create(
                 email=email,
@@ -4793,10 +4794,10 @@ def donation_webhook(request):
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
         logger.info("Received Stripe webhook: %s", event.type)
     except ValueError as e:
-        logger.error("Invalid payload: %s", str(e))
+        logger.exception("Invalid payload: %s", str(e))
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError as e:
-        logger.error("Invalid signature: %s", str(e))
+        logger.exception("Invalid signature: %s", str(e))
         return HttpResponse(status=400)
 
     try:
@@ -4838,7 +4839,7 @@ def donation_webhook(request):
         return HttpResponse(status=500)
 
 
-def handle_successful_donation_payment(payment_intent):
+def handle_successful_donation_payment(payment_intent: stripe.PaymentIntent) -> None:
     """Handle successful one-time donation payments."""
     try:
         logger.info("Finding donation for payment intent: %s", payment_intent.id)
