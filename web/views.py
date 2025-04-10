@@ -1503,6 +1503,7 @@ def update_course(request, slug):
         form = CourseForm(request.POST, request.FILES, instance=course)
         if form.is_valid():
             form.save()
+            messages.success(request, "Course updated successfully!")
             return redirect("course_detail", slug=course.slug)
     else:
         form = CourseForm(instance=course)
