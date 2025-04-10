@@ -735,9 +735,20 @@
 
           function showMessage(messageText, type = "error") {
               const messageDiv = document.querySelector("#payment-message");
+              const paymentElement = document.getElementById('payment-element');
               if (!messageDiv) return;
 
               messageDiv.textContent = messageText;
+
+              // Reset payment element height when showing error
+              if (type === "error") {
+                  paymentElement.style.minHeight = '0';
+                  if (elements) {
+                      elements.unmount();
+                      elements = null;
+                  }
+              }
+
               messageDiv.classList.remove(
                   "text-red-500", "text-green-500", "text-blue-500",
                   "bg-red-50", "bg-green-50", "bg-blue-50",
@@ -842,8 +853,8 @@
               loadingElement.style.display = 'none';
               loadingElement.classList.add('hidden');
 
-              // Adjust payment element height after loading
-              if (elements) {
+              // Only set auto height if elements exist and no error is shown
+              if (elements && !document.querySelector("#payment-message").textContent) {
                   paymentElement.style.minHeight = 'auto';
               } else {
                   paymentElement.style.minHeight = '0';

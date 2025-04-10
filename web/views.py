@@ -4794,12 +4794,10 @@ def donation_webhook(request):
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
         logger.info("Received Stripe webhook: %s", event.type)
     except ValueError as e:
-        logger.error("ValueError occurred: %s", str(e))
-        logger.exception("Invalid payload")
+        logger.exception("Invalid payload: %s", str(e))
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError as e:
-        logger.error("Signature verification failed: %s", str(e))
-        logger.exception("Invalid signature")
+        logger.exception("Invalid signature: %s", str(e))
         return HttpResponse(status=400)
 
     try:
