@@ -591,6 +591,8 @@
                            placeholder="Video title (auto-filled)"
                            required
                            class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
+                    <!-- Hidden description field that gets auto-filled with YouTube data -->
+                    <input type="hidden" id="video-description" name="description" value="" />
                     <div class="flex gap-2">
                       <select id="video-category"
                               name="category"
@@ -1219,17 +1221,31 @@
                           fetchTitleBtn.disabled = false;
 
                           if (data.title) {
+                              // Set the title field
                               videoTitleInput.value = data.title;
-                              showMessage('Title fetched successfully!', 'success');
+
+                              // Set the description field with author info and description
+                              const descriptionField = document.getElementById('video-description');
+                              let description = `Video by ${data.author_name || 'YouTube creator'}`;
+
+                              if (data.description) {
+                                  description += `\n\n${data.description}`;
+                              } else {
+                                  description += `\n\nA video about ${data.title}`;
+                              }
+
+                              descriptionField.value = description;
+
+                              showMessage('Video information fetched successfully!', 'success');
                           } else {
-                              showMessage('Could not retrieve video title', 'error');
+                              showMessage('Could not retrieve video information', 'error');
                           }
                       })
                       .catch(error => {
                           fetchTitleBtn.innerHTML = '<i class="fas fa-search"></i>';
                           fetchTitleBtn.disabled = false;
-                          showMessage('Failed to fetch video title. Check if the URL is correct.', 'error');
-                          console.error('Error fetching video title:', error);
+                          showMessage('Failed to fetch video information. Check if the URL is correct.', 'error');
+                          console.error('Error fetching video information:', error);
                       });
               });
           }
@@ -1256,23 +1272,75 @@
                   // Get CSRF token from the form
                   const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
 
+                  // Log the form data for debugging
+                  console.log('Form data being submitted:');
+                  for (let pair of formData.entries()) {
+                      console.log(pair[0] + ': ' + pair[1]);
+                  }
+
                   fetch('/videos/upload/', {
                           method: 'POST',
                           body: formData,
                           headers: {
                               'X-Requested-With': 'XMLHttpRequest',
-                              'X-CSRFToken': csrfToken
-                          }
+                              'X-CSRFToken': csrfToken,
+                              'Accept': 'application/json, text/javascript, */*; q=0.01'
+                          },
+                          credentials: 'same-origin'
                       })
                       .then(response => {
+                          console.log('Response status:', response.status);
+                          console.log('Response headers:', [...response.headers]);
+
+                          // Check content type to see if we got JSON or HTML
+                          const contentType = response.headers.get('content-type');
+
                           if (!response.ok) {
-                              throw new Error('Network response was not ok');
+                              return response.text().then(text => {
+                                  console.error('Error response body:', text);
+                                  throw new Error(`Server responded with status: ${response.status}`);
+                              });
                           }
-                          return response.json();
+
+                          // If we got HTML instead of JSON (possibly a redirect or error page)
+                          if (contentType && contentType.includes('text/html')) {
+                              return response.text().then(html => {
+                                  console.log('Received HTML response instead of JSON');
+                                  // Try to extract error messages if any
+                                  if (html.includes('errorlist')) {
+                                      const tempDiv = document.createElement('div');
+                                      tempDiv.innerHTML = html;
+                                      const errors = Array.from(tempDiv.querySelectorAll('.errorlist li'))
+                                          .map(el => el.textContent).join(', ');
+                                      return {
+                                          success: false,
+                                          error: errors || 'Form validation failed'
+                                      };
+                                  }
+                                  // If it's a success page
+                                  if (html.includes('success') || html.includes('Video added')) {
+                                      return {
+                                          success: true,
+                                          message: 'Video added successfully!'
+                                      };
+                                  }
+                                  return {
+                                      success: false,
+                                      error: 'Unexpected server response'
+                                  };
+                              });
+                          }
+
+                          // Regular JSON response
+                          return response.json().catch(e => {
+                              console.error('Error parsing JSON:', e);
+                              throw new Error('Invalid JSON in response');
+                          });
                       })
                       .then(data => {
                           submitBtn.innerHTML = originalBtnContent;
                           submitBtn.disabled = false;
+                          console.log('Success response:', data);
 
                           if (data.success) {
                               // Reset the form
@@ -1285,15 +1353,21 @@
                                   const currentCount = parseInt(countElement.textContent.split(' ')[0]) || 0;
                                   countElement.textContent = `${currentCount + 1} videos`;
                               }
+
+                              // If we received a redirect URL, we can navigate there
+                              if (data.redirect_url) {
+                                  window.location.href = data.redirect_url;
+                              }
                           } else {
                               showMessage(data.error || 'Failed to add video', 'error');
+                              console.error('Error details from server:', data);
                           }
                       })
                       .catch(error => {
                           submitBtn.innerHTML = originalBtnContent;
                           submitBtn.disabled = false;
-                          showMessage('Error adding video', 'error');
-                          console.error('Error:', error);
+                          showMessage('Error adding video: ' + error.message, 'error');
+                          console.error('Fetch error:', error);
                       });
               });
           }
