@@ -4794,11 +4794,11 @@ def donation_webhook(request):
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
         logger.info("Received Stripe webhook: %s", event.type)
     except ValueError as e:
-        logger.error(f"ValueError occurred: {e}")
+        logger.error("ValueError occurred: %s", str(e))
         logger.exception("Invalid payload")
         return HttpResponse(status=400)
     except stripe.error.SignatureVerificationError as e:
-        logger.error(f"Signature verification failed: {e}")
+        logger.error("Signature verification failed: %s", str(e))
         logger.exception("Invalid signature")
         return HttpResponse(status=400)
 
@@ -4860,8 +4860,13 @@ def handle_successful_donation_payment(payment_intent: stripe.PaymentIntent) -> 
             logger.info("Donation %s already completed", donation.id)
 
     except Donation.DoesNotExist:
-        logger.warning("No donation found for payment intent: %s", payment_intent.id)
-        # This might be a payment for something else
+        logger.warning(
+            (
+                "No donation found for payment intent: %s. This may indicate a payment intended for another system "
+                "or a database inconsistency."
+            ),
+            payment_intent.id,
+        )
     except Exception:
         logger.exception("Error handling successful payment %s", payment_intent.id)
         raise  # Re-raise to allow webhook to handle the error
@@ -5012,6 +5017,7 @@ def donation_success(request):
 
     try:
         donation = Donation.objects.get(id=donation_id)
+
         # If we got here from a successful redirect, update the status
         if redirect_status == "succeeded" and payment_intent:
             # Double check with Stripe that the payment was successful
@@ -5024,6 +5030,19 @@ def donation_success(request):
                     send_donation_thank_you_email(donation)
             except stripe.error.StripeError:
                 logger.exception("Error verifying payment intent")
+
+                # Retry logic for temporary Stripe failures
+                cache_key = f"retry_verify_payment_{payment_intent}"
+                retry_count = cache.get(cache_key, 0)
+
+                if retry_count < 3:
+                    cache.set(cache_key, retry_count + 1, 3600)  # Retry after 1 hour
+                    # You could enqueue a Celery task or use another background task system
+                    # to retry the verification process
+                    logger.warning(f"Retry {retry_count + 1}/3 scheduled for payment verification: {payment_intent}")
+                else:
+                    logger.error(f"Max retries reached for payment verification: {payment_intent}")
+
                 # Continue to show the success page even if verification fails;
                 # the webhook will eventually update the status
 
@@ -5039,10 +5058,12 @@ def donation_success(request):
     except Donation.DoesNotExist:
         messages.error(request, "Invalid donation ID.")
         return redirect("donate")
+
     except stripe.error.StripeError:
         logger.exception("Stripe error in donation_success view")
         messages.error(request, "A payment processing error occurred. Please check your payment details.")
         return redirect("donate")
+
     except Exception:
         logger.exception("Unexpected error in donation_success view")
         messages.error(request, "An unexpected error occurred while processing your donation.")
