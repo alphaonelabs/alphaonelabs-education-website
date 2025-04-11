@@ -46,6 +46,10 @@
                 <button type="button"
                         id="add-session-time"
                         class="mt-2 text-indigo-500 hover:text-indigo-600">+ Add Another Session Time</button>
+              {% elif field.name == "email" and user.is_authenticated %}
+                <!-- Skip rendering email field for authenticated users -->
+              {% elif field.name == "captcha" and user.is_authenticated %}
+                <!-- Skip rendering captcha field for authenticated users -->
               {% else %}
                 {{ field }}
               {% endif %}
