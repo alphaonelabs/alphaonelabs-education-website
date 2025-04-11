@@ -312,6 +312,11 @@ class Course(models.Model):
 
         super().save(*args, **kwargs)
 
+    def delete(self, *args, **kwargs):
+        if self.image:
+            self.image.delete(save=False)
+        super().delete(*args, **kwargs)
+
     def __str__(self):
         return self.title
 
