@@ -13,7 +13,11 @@
             Are you sure you want to delete "{{ course.title }}"? This action cannot be undone.
           </p>
         </div>
-        <form method="post" class="space-y-6">
+        <form method="post"
+              action="{% url 'delete_course' course.id %}"
+              class="space-y-6">
+          {% csrf_token %}
+          <input type="hidden" name="course_id" value="{{ course.id }}" />
           {% csrf_token %}
           <div class="flex justify-center space-x-4">
             <a href="{% url 'course_detail' course.slug %}"

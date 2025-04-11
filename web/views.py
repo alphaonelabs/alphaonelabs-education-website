@@ -906,15 +906,23 @@ def add_review(request, slug):
 
 @login_required
 def delete_course(request, slug):
+    """Handle course deletion, including image deletion."""
     course = get_object_or_404(Course, slug=slug)
+
+    # Ensure only the course teacher can delete the course
     if request.user != course.teacher:
-        messages.error(request, "Only the course teacher can delete the course!")
+        messages.error(request, "You are not authorized to delete this course.")
         return redirect("course_detail", slug=slug)
 
     if request.method == "POST":
+        # Delete the course image if it exists
+        if course.image and os.path.isfile(course.image.path):
+            os.remove(course.image.path)
+
+        # Delete the course
         course.delete()
         messages.success(request, "Course deleted successfully!")
-        return redirect("profile")
+        return redirect("profile")  # Redirect to the profile page or another success page
 
     return render(request, "courses/delete_confirm.html", {"course": course})
 
