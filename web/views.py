@@ -1125,14 +1125,6 @@ def teach(request):
                 # For authenticated users, always use the logged-in user
                 user = request.user
 
-                # Validate that the provided email matches the logged-in user's email
-                if email != user.email:
-                    form.add_error(
-                        "email",
-                        "The provided email does not match your account email. Please use your account email.",
-                    )
-                    return render(request, "teach.html", {"form": form})
-
                 # Backend validation: Check for duplicate course titles for the logged-in user
                 if Course.objects.filter(title__iexact=course_title, teacher=user).exists():
                     form.add_error("course_title", "You already have a course with this title.")

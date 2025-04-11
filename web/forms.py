@@ -946,6 +946,14 @@ class TeachForm(forms.Form):
         )
     )
 
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        # If the user is authenticated, remove email and captcha fields
+        if user and user.is_authenticated:
+            del self.fields["email"]
+            del self.fields["captcha"]
+
     def clean_course_title(self):
         """Validate and clean the course_title field."""
         title = self.cleaned_data.get("course_title")
