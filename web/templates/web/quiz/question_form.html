@@ -8,6 +8,8 @@
 {% block extra_head %}
   <script>
       document.addEventListener('DOMContentLoaded', function() {
+
+          const questionTypeSelect = document.getElementById('id_question_type');
           const questionTypeField = document.getElementById('id_question_type');
           const multiple_choice = document.getElementById('multiple-choice-options');
           const true_false = document.getElementById('true-false-options');
@@ -15,18 +17,18 @@
 
           // Function to toggle options visibility
           function toggleOptionsVisibility() {
+              const selectedType = questionTypeSelect.value;
+
+              true_false.classList.add('hidden');
+              short_answer.classList.add('hidden');
+              multiple_choice.classList.add('hidden');
+
               if (questionTypeField.value === 'multiple' ) {
                   multiple_choice.classList.remove('hidden');
-                  true_false.classList.add('hidden');
-                  short_answer.classList.add('hidden');
               } else if(questionTypeField.value === 'true_false') {
                   true_false.classList.remove('hidden');
-                  multiple_choice.classList.add('hidden');
-                  short_answer.classList.add('hidden');
               } else {
                   short_answer.classList.remove('hidden');
-                  true_false.classList.add('hidden');
-                  multiple_choice.classList.add('hidden');
               }
           }
 
@@ -39,43 +41,62 @@
           // Add option button functionality
           const addOptionBtn = document.getElementById('add-option-btn');
           if (addOptionBtn) {
-              addOptionBtn.addEventListener('click', function(e) {
-                  e.preventDefault();
-                  const totalFormsField = document.getElementById('id_options-TOTAL_FORMS');
-                  const optionsContainer = document.getElementById('options-container');
+                        addOptionBtn.addEventListener('click', function() {
+                            const newOption = optionTemplate.content.cloneNode(true);
+                            const optionCount = optionsContainer.children.length;
 
-                  // Get current form count
-                  let formCount = parseInt(totalFormsField.value);
+                            // Update the new option's ID and name attributes
+                            const inputs = newOption.querySelectorAll('input');
+                            inputs.forEach(function(input) {
+                                if (input.type === 'text') {
+                                    input.name = `option_text_${optionCount}`;
+                                    input.id = `option_text_${optionCount}`;
+                                } else if (input.type === 'radio') {
+                                    input.name = 'correct_option';
+                                    input.id = `correct_option_${optionCount}`;
+                                    input.value = optionCount;
+                                }
+                            });
 
-                  // Clone the first option form
-                  const formTemplate = document.querySelector('.option-form').cloneNode(true);
-                  console.log(formTemplate)
+                            const label = newOption.querySelector('label');
+                            if (label) {
+                                label.setAttribute('for', `correct_option_${optionCount}`);
+                            }
 
-                  // Update all IDs and names to use the new index
-                  const inputs = formTemplate.querySelectorAll('input, select, textarea');
-                  inputs.forEach(input => {
-                      input.id = input.id.replace('-0-', `-${formCount}-`);
-                      input.name = input.name.replace('-0-', `-${formCount}-`);
+                            // Add delete button functionality
+                            const deleteBtn = newOption.querySelector('.delete-option-btn');
+                            if (deleteBtn) {
+                                deleteBtn.addEventListener('click', function() {
+                                    this.closest('.option-item').remove();
 
-                      // Clear values except for hidden inputs
-                      if (!input.classList.contains('keep-value')) {
-                          input.value = '';
-                      }
+                                    // Renumber remaining options
+                                    const optionItems = optionsContainer.querySelectorAll('.option-item');
+                                    optionItems.forEach(function(item, index) {
+                                        const textInput = item.querySelector('input[type="text"]');
+                                        const radioInput = item.querySelector('input[type="radio"]');
+                                        const itemLabel = item.querySelector('label');
 
-                      // Uncheck checkboxes
-                      if (input.type === 'checkbox') {
-                          input.checked = false;
-                      }
-                  });
+                                        if (textInput) {
+                                            textInput.name = `option_text_${index}`;
+                                            textInput.id = `option_text_${index}`;
+                                        }
 
-                  // Update form count
-                  totalFormsField.value = formCount + 1;
+                                        if (radioInput) {
+                                            radioInput.id = `correct_option_${index}`;
+                                            radioInput.value = index;
+                                        }
 
-                  // Add the new form
-                  optionsContainer.appendChild(formTemplate);
-              });
-          }
-      });
+                                        if (itemLabel) {
+                                            itemLabel.setAttribute('for', `correct_option_${index}`);
+                                        }
+                                    });
+                                });
+                            }
+
+                            optionsContainer.appendChild(newOption);
+                        });
+                    }
+                });
   </script>
 {% endblock extra_head %}
 {% block content %}

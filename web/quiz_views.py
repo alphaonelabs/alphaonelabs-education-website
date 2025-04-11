@@ -348,7 +348,7 @@ def add_question(request, quiz_id):
         else:
             # For other question types, use the formset as before
             formset = QuizOptionFormSet(request.POST, request.FILES, prefix="options")
-            print("$$$$", formset)
+            print("######", formset)
             if form.is_valid() and formset.is_valid():
                 with transaction.atomic():
                     question = form.save(commit=True)
@@ -363,7 +363,7 @@ def add_question(request, quiz_id):
                 
                 # Check if we should redirect to add another question
                 if 'save_and_add' in request.POST:
-                    return redirect('add_question', quiz_id=quiz.id)
+                    return redirect('question_form', quiz_id=quiz.id)
                 return redirect('quiz_detail', quiz_id=quiz.id)
     else:
         form = QuizQuestionForm(initial={'order': next_order})
