@@ -9,6 +9,20 @@
   <script>
       document.addEventListener('DOMContentLoaded', function() {
 
+            // Initialize formset management fields with default values
+          const totalFormsField = document.getElementById('id_options-TOTAL_FORMS');
+          const initialFormsField = document.getElementById('id_options-INITIAL_FORMS');
+          
+          // Set default values if they're empty
+          if (totalFormsField && !totalFormsField.value) {
+              totalFormsField.value = '0';
+          }
+          
+          if (initialFormsField && !initialFormsField.value) {
+              initialFormsField.value = '0';
+          }
+
+
           const questionTypeSelect = document.getElementById('id_question_type');
           const questionTypeField = document.getElementById('id_question_type');
           const multiple_choice = document.getElementById('multiple-choice-options');
@@ -128,6 +142,8 @@
               {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
             </div>
           {% endif %}
+
+          {{ formset.management_form }}
           <!-- Question Information -->
           <div class="mb-8">
             <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Question Information</h2>

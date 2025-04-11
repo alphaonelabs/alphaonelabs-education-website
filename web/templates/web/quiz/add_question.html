@@ -12,7 +12,27 @@
 {% block extra_head %}
   <script>
        document.addEventListener('DOMContentLoaded', function() {
-          const questionTypeField = document.getElementById('id_question_type');
+
+            // Initialize formset management fields with default values
+          const totalFormsField = document.getElementById('id_options-TOTAL_FORMS');
+          const initialFormsField = document.getElementById('id_options-INITIAL_FORMS');
+          
+          // Set default values if they're empty
+          if (totalFormsField && !totalFormsField.value) {
+              totalFormsField.value = '0';
+          }
+          
+          if (initialFormsField && !initialFormsField.value) {
+              initialFormsField.value = '0';
+          }
+          
+          // const questionTypeSelect = document.getElementById('id_question_type');
+          // const questionTypeField = document.getElementById('id_question_type');
+          // const multiple_choice = document.getElementById('multiple-choice-options');
+          // const true_false = document.getElementById('true-false-options');
+          // const short_answer = document.getElementById('short-answer-options');
+
+
           const optionsSection = document.getElementById('options-section');
 
           // Function to toggle options visibility
@@ -113,13 +133,15 @@
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
       <div class="p-6">
         <form method="post"
-              action="{% if question %}{% url 'edit_question' question.id %}{% else %}{% url 'add_question' quiz.id %}{% endif %}">
+              action="{% if question %}{% url 'edit_question' question.id %}{% else %}{% url 'add_question' quiz.id %}{% endif %}" enctype="multipart/form-data">
           {% csrf_token %}
           {% if form.non_field_errors %}
             <div class="mb-6 p-4 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300 rounded-lg">
               {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
             </div>
           {% endif %}
+
+          {{ formset.management_form }}
           <!-- Question Information -->
           <div class="mb-8">
             <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Question Information</h2>
