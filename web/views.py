@@ -1107,10 +1107,12 @@ def learn(request):
 def teach(request):
     """Handles the course creation process for both authenticated and unauthenticated users."""
     if request.method == "POST":
-        form = TeachForm(request.POST, request.FILES)
+        form = TeachForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             # Extract cleaned data
-            email = form.cleaned_data["email"]
+            email = form.cleaned_data.get("email", None)
+            if email is None and request.user.is_authenticated:
+                email = request.user.email
             course_title = form.cleaned_data["course_title"]
             course_description = form.cleaned_data["course_description"]
             course_image = form.cleaned_data.get("course_image")
@@ -1247,7 +1249,7 @@ def teach(request):
         initial_data = {}
         if request.GET.get("subject"):
             initial_data["course_title"] = request.GET.get("subject")
-        form = TeachForm(initial=initial_data)
+        form = TeachForm(initial=initial_data, user=request.user)
 
     return render(request, "teach.html", {"form": form})
 
