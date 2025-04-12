@@ -1921,8 +1921,8 @@ def create_topic(request, category_slug):
                 author=request.user,
                 title=form.cleaned_data["title"],
                 content=form.cleaned_data["content"],
-                github_issue_url=form.cleaned_data.get("github_issue_url"),
-                github_milestone_url=form.cleaned_data.get("github_milestone_url"),
+                github_issue_url=form.cleaned_data.get("github_issue_url", ""),
+                github_milestone_url=form.cleaned_data.get("github_milestone_url", ""),
             )
             messages.success(request, "Topic created successfully!")
             return redirect("forum_topic", category_slug=category_slug, topic_id=topic.id)
