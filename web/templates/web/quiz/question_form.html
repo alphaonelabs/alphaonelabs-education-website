@@ -6,18 +6,27 @@
   {{ title }} | Quiz Management
 {% endblock title %}
 {% block extra_head %}
-  <script>
+<script>
       document.addEventListener('DOMContentLoaded', function() {
           const questionTypeField = document.getElementById('id_question_type');
-          const optionsSection = document.getElementById('options-section');
+          const multipleChoiceOptions = document.getElementById('multiple-choice-options');
+          const trueFalseOptions = document.getElementById('true-false-options');
+          const shortAnswerOptions = document.getElementById('short-answer-options');
 
           // Function to toggle options visibility
           function toggleOptionsVisibility() {
-            
-              if (questionTypeField.value === 'short') {
-                  optionsSection.classList.add('hidden');
-              } else {
-                  optionsSection.classList.remove('hidden');
+              // Hide all option sections first
+              multipleChoiceOptions.classList.add('hidden');
+              trueFalseOptions.classList.add('hidden');
+              shortAnswerOptions.classList.add('hidden');
+              
+              // Show relevant section based on selection
+              if (questionTypeField.value === 'multiple') {
+                  multipleChoiceOptions.classList.remove('hidden');
+              } else if (questionTypeField.value === 'true_false') {
+                  trueFalseOptions.classList.remove('hidden');
+              } else if (questionTypeField.value === 'short') {
+                  shortAnswerOptions.classList.remove('hidden');
               }
           }
 
@@ -222,6 +231,91 @@
               For multiple choice questions, select all correct options. For true/false, mark only one option as correct.
             </p>
           </div>
+                    <!-- True/False Options -->
+          <div id="true-false-options" class="mb-8 hidden">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">True/False Answer</h2>
+            <!-- Management form for formset - reusing the same formset -->
+            {{ formset.management_form }}
+            <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+              <div class="space-y-4">
+                <div class="flex items-center">
+                  <input type="radio"
+                         name="true_false_answer"
+                         id="true_answer"
+                         value="true"
+                         class="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300"
+                         required />
+                  <label for="true_answer" class="ml-3 block text-gray-700 dark:text-gray-300 font-medium">True</label>
+                </div>
+                <div class="flex items-center">
+                  <input type="radio"
+                         name="true_false_answer"
+                         id="false_answer"
+                         value="false"
+                         class="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300"
+                         required />
+                  <label for="false_answer" class="ml-3 block text-gray-700 dark:text-gray-300 font-medium">False</label>
+                </div>
+              </div>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                Select the correct answer for this true/false question.
+              </p>
+              
+              <!-- Hidden fields to store the true/false answer in the formset format -->
+              <div class="hidden">
+                <input type="hidden" name="options-0-text" value="True" />
+                <input type="hidden" name="options-0-is_correct" id="true_is_correct" value="0" />
+                <input type="hidden" name="options-1-text" value="False" />
+                <input type="hidden" name="options-1-is_correct" id="false_is_correct" value="0" />
+                <script>
+                  document.addEventListener('DOMContentLoaded', function() {
+                    const trueRadio = document.getElementById('true_answer');
+                    const falseRadio = document.getElementById('false_answer');
+                    const trueCorrect = document.getElementById('true_is_correct');
+                    const falseCorrect = document.getElementById('false_is_correct');
+                    
+                    function updateHiddenValues() {
+                      if(trueRadio.checked) {
+                        trueCorrect.value = '1';
+                        falseCorrect.value = '0';
+                      } else {
+                        trueCorrect.value = '0';
+                        falseCorrect.value = '1';
+                      }
+                    }
+                    
+                    trueRadio.addEventListener('change', updateHiddenValues);
+                    falseRadio.addEventListener('change', updateHiddenValues);
+                    
+                    // Initialize values on load
+                    updateHiddenValues();
+                  });
+                </script>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Short Answer Options -->
+          <div id="short-answer-options" class="mb-8 hidden">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Short Answer Reference</h2>
+            <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+              <div>
+                <label for="short-answer-reference"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Answer Reference (for grading)
+                </label>
+                <textarea name="short_answer_reference"
+                          id="short-answer-reference"
+                          rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                          placeholder="Enter the expected answer here for your reference"></textarea>
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  This reference answer will be stored for your grading purposes only. Short answer questions require manual grading.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <!-- Form Buttons -->
           <div class="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">
             <a href="{% url 'quiz_detail' quiz.id %}"
