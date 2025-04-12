@@ -7629,7 +7629,8 @@ def handle_invoice_payment_failed(invoice):
             logger.exception("No user found for customer %s", invoice["customer"])
         except Exception:
             logger.error("Error handling invoice.payment_failed")
-            
+
+
 def generate_discount_code(length=8):
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
 
