@@ -127,6 +127,22 @@
                           <i class="fas fa-edit mr-1"></i>
                           Edit
                         </a>
+                        {% if user.is_superuser %}
+                          <span class="mx-2">•</span>
+                          <a href="{% url 'admin:web_forumtopic_change' topic.id %}"
+                             class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                             target="_blank">
+                            <i class="fas fa-cog mr-1"></i>
+                            Admin
+                          </a>
+                          <span class="mx-2">•</span>
+                          <a href="{% url 'admin:web_forumtopic_delete' topic.id %}"
+                             class="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300"
+                             target="_blank">
+                            <i class="fas fa-trash mr-1"></i>
+                            Delete
+                          </a>
+                        {% endif %}
                       </div>
                     </div>
                     <h2 class="text-lg font-semibold mb-1">

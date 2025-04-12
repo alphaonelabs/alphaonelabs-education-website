@@ -13,7 +13,8 @@
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg">
         <div class="p-6">
           <h1 class="text-2xl font-bold mb-6">Message Enrolled Students</h1>
-          <form method="post" class="space-y-6">
+          <!-- Form now includes an id for JavaScript to hook on -->
+          <form id="studentMessageForm" method="post" class="space-y-6">
             {% csrf_token %}
             <div>
               <label for="title"

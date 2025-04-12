@@ -6,12 +6,21 @@ from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
 from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
+from .secure_messaging import (
+    compose_message,
+    download_message,
+    inbox,
+    messaging_dashboard,
+    send_encrypted_message,
+    toggle_star_message,
+)
 from .views import (
     GoodsListingView,
     GradeableLinkCreateView,
     GradeableLinkDetailView,
     GradeableLinkListView,
     add_goods_to_cart,
+    apply_discount_via_referrer,
     feature_vote,
     feature_vote_count,
     features_page,
@@ -26,6 +35,7 @@ from .views import (
 urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs
     path("captcha/", include("captcha.urls")),  # CAPTCHA URLs should not be language-prefixed
+    path("markdownx/", include("markdownx.urls")),
 ]
 
 if settings.DEBUG:
@@ -96,6 +106,12 @@ urlpatterns += i18n_patterns(
     ),
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
     path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session"),
+    path("messaging/dashboard/", messaging_dashboard, name="messaging_dashboard"),
+    path("messaging/compose/", compose_message, name="compose_message"),
+    path("secure/send/", send_encrypted_message, name="send_encrypted_message"),
+    path("secure/inbox/", inbox, name="inbox"),
+    path("secure/download/<int:message_id>/", download_message, name="download_message"),
+    path("secure/toggle_star/<int:message_id>/", toggle_star_message, name="toggle_star_message"),
     # Social media sharing URLs
     path("social-media/", views.social_media_dashboard, name="social_media_dashboard"),
     # path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
@@ -108,6 +124,8 @@ urlpatterns += i18n_patterns(
         name="create_payment_intent",
     ),
     path("stripe-webhook/", views.stripe_webhook, name="stripe_webhook"),
+    # discount
+    path("discounts/apply/", apply_discount_via_referrer, name="apply_discount_via_referrer"),
     # Avatar customization
     path("avatar/customize/", views_avatar.customize_avatar, name="customize_avatar"),
     path("avatar/set-as-profile/", views_avatar.set_avatar_as_profile_pic, name="set_avatar_as_profile_pic"),
@@ -198,6 +216,8 @@ urlpatterns += i18n_patterns(
     path("forum/my-topics/", views.my_forum_topics, name="my_forum_topics"),
     path("forum/my-replies/", views.my_forum_replies, name="my_forum_replies"),
     path("forum/sync-milestones/", views.sync_github_milestones, name="sync_github_milestones"),
+    path("forum/topic/<int:pk>/vote/", views.topic_vote, name="topic_vote"),
+    path("forum/reply/<int:pk>/vote/", views.reply_vote, name="reply_vote"),
     # Peer Networking URLs
     path("peers/", views.peer_connections, name="peer_connections"),
     path(
@@ -241,7 +261,6 @@ urlpatterns += i18n_patterns(
     path("cart/remove/<int:item_id>/", views.remove_from_cart, name="remove_from_cart"),
     path("cart/payment-intent/", views.create_cart_payment_intent, name="create_cart_payment_intent"),
     path("cart/checkout/success/", views.checkout_success, name="checkout_success"),
-    path("markdownx/", include("markdownx.urls")),
     # Course Invitation URLs
     path("courses/<int:course_id>/invite/", views.invite_student, name="invite_student"),
     path("terms/", views.terms, name="terms"),
@@ -261,9 +280,9 @@ urlpatterns += i18n_patterns(
     path("challenges/<int:challenge_id>/submit/", views.challenge_submit, name="challenge_submit"),
     path("current-weekly-challenge/", views.current_weekly_challenge, name="current_weekly_challenge"),
     # Educational Videos URLs
-    path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),
     path("videos/", views.educational_videos_list, name="educational_videos_list"),
     path("videos/upload/", login_required(views.upload_educational_video), name="upload_educational_video"),
+    path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),
     # Storefront Management
     path("store/create/", login_required(views.StorefrontCreateView.as_view()), name="storefront_create"),
     path(
@@ -307,6 +326,7 @@ urlpatterns += i18n_patterns(
     path("memes/<slug:slug>/", views.meme_detail, name="meme_detail"),
     path("whiteboard/", views.whiteboard, name="whiteboard"),
     path("gsoc/", views.gsoc_landing_page, name="gsoc_landing_page"),
+    path("sync_github_milestones/", views.sync_github_milestones, name="sync_github_milestones"),
     # Team Collaboration URLs
     path("teams/", views.team_goals, name="team_goals"),
     path("teams/create/", views.create_team_goal, name="create_team_goal"),
@@ -417,6 +437,8 @@ urlpatterns += i18n_patterns(
     path("features/", features_page, name="features"),
     path("features/vote/", feature_vote, name="feature_vote"),
     path("features/vote-count/", feature_vote_count, name="feature_vote_count"),
+    # Contributors
+    path("contributors/", views.contributors_list_view, name="contributors_list_view"),
     path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
     # Membership URLs
     path("membership/checkout/<int:plan_id>/", views.membership_checkout, name="membership_checkout"),
@@ -448,5 +470,4 @@ urlpatterns += i18n_patterns(
 )
 
 handler404 = "web.views.custom_404"
-handler500 = "web.views.custom_500"
 handler429 = "web.views.custom_429"
