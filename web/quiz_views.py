@@ -18,7 +18,7 @@ from .forms import (
     QuizQuestionSpecializedForm,
     TakeQuizForm,
 )
-from .models import Course, Quiz, QuizQuestion, Session, UserQuiz
+from .models import Course, Quiz, QuizQuestion, Session, UserQuiz, QuizOption
 
 
 @login_required
@@ -449,7 +449,7 @@ def edit_question(request, question_id):
 
     return render(
         request,
-        'web/quiz/add_question.html',
+        'web/quiz/question_form.html',
         {
             'form': form,
             'formset': formset,

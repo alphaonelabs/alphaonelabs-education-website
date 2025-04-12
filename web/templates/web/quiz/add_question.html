@@ -11,84 +11,129 @@
 {% endblock title %}
 {% block extra_head %}
   <script>
-       document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', function() {
+          const questionTypeSelect = document.getElementById('question-type');
+          const multipleChoiceOptions = document.getElementById('multiple-choice-options');
+          const trueFalseOptions = document.getElementById('true-false-options');
+          const shortAnswerOptions = document.getElementById('short-answer-options');
 
-            // Initialize formset management fields with default values
-          const totalFormsField = document.getElementById('id_options-TOTAL_FORMS');
-          const initialFormsField = document.getElementById('id_options-INITIAL_FORMS');
-          
-          // Set default values if they're empty
-          if (totalFormsField && !totalFormsField.value) {
-              totalFormsField.value = '0';
-          }
-          
-          if (initialFormsField && !initialFormsField.value) {
-              initialFormsField.value = '0';
-          }
-          
-          // const questionTypeSelect = document.getElementById('id_question_type');
-          // const questionTypeField = document.getElementById('id_question_type');
-          // const multiple_choice = document.getElementById('multiple-choice-options');
-          // const true_false = document.getElementById('true-false-options');
-          // const short_answer = document.getElementById('short-answer-options');
+          // Function to show relevant form sections based on question type
+          function updateFormVisibility() {
+              const selectedType = questionTypeSelect.value;
 
+              // Hide all option sections first
+              multipleChoiceOptions.classList.add('hidden');
+              trueFalseOptions.classList.add('hidden');
+              shortAnswerOptions.classList.add('hidden');
 
-          const optionsSection = document.getElementById('options-section');
-
-          // Function to toggle options visibility
-          function toggleOptionsVisibility() {
-              if (questionTypeField.value === 'multiple' || questionTypeField.value === 'true_false') {
-                  optionsSection.classList.remove('hidden');
-              } else {
-                  // optionsSection.classList.remove('hidden');
-                  optionsSection.classList.add('hidden');
+              // Show relevant section based on selection
+              if (selectedType === 'multiple_choice') {
+                  multipleChoiceOptions.classList.remove('hidden');
+              } else if (selectedType === 'true_false') {
+                  console.log("selectedType")
+                  trueFalseOptions.classList.remove('hidden');
+              } else if (selectedType === 'short_answer') {
+                  shortAnswerOptions.classList.remove('hidden');
               }
           }
 
-          // Set initial state
-          toggleOptionsVisibility();
+          // Update on page load
+          updateFormVisibility();
 
-          // Add event listener for changes
-          questionTypeField.addEventListener('change', toggleOptionsVisibility);
+          // Update when selection changes
+          questionTypeSelect.addEventListener('change', updateFormVisibility);
 
-          // Add option button functionality
+          // Add option functionality for multiple choice
           const addOptionBtn = document.getElementById('add-option-btn');
+          const optionsContainer = document.getElementById('options-container');
+          const optionTemplate = document.getElementById('option-template');
+
           if (addOptionBtn) {
-              addOptionBtn.addEventListener('click', function(e) {
-                  e.preventDefault();
-                  const totalFormsField = document.getElementById('id_options-TOTAL_FORMS');
-                  const optionsContainer = document.getElementById('options-container');
+              addOptionBtn.addEventListener('click', function() {
+                  const newOption = optionTemplate.content.cloneNode(true);
+                  const optionCount = optionsContainer.children.length;
 
-                  // Get current form count
-                  let formCount = parseInt(totalFormsField.value);
-
-                  // Clone the first option form
-                  const formTemplate = document.querySelector('.option-form').cloneNode(true);
-
-                  // Update all IDs and names to use the new index
-                  const inputs = formTemplate.querySelectorAll('input, select, textarea');
-                  inputs.forEach(input => {
-                      input.id = input.id.replace('-0-', `-${formCount}-`);
-                      input.name = input.name.replace('-0-', `-${formCount}-`);
-
-                      // Clear values except for hidden inputs
-                      if (!input.classList.contains('keep-value')) {
-                          input.value = '';
-                      }
-
-                      // Uncheck checkboxes
-                      if (input.type === 'checkbox') {
-                          input.checked = false;
+                  // Update the new option's ID and name attributes
+                  const inputs = newOption.querySelectorAll('input');
+                  inputs.forEach(function(input) {
+                      if (input.type === 'text') {
+                          input.name = `option_text_${optionCount}`;
+                          input.id = `option_text_${optionCount}`;
+                      } else if (input.type === 'radio') {
+                          input.name = 'correct_option';
+                          input.id = `correct_option_${optionCount}`;
+                          input.value = optionCount;
                       }
                   });
 
-                  // Update form count
-                  totalFormsField.value = formCount + 1;
+                  const label = newOption.querySelector('label');
+                  if (label) {
+                      label.setAttribute('for', `correct_option_${optionCount}`);
+                  }
 
-                  // Add the new form
-                  optionsContainer.appendChild(formTemplate);
+                  // Add delete button functionality
+                  const deleteBtn = newOption.querySelector('.delete-option-btn');
+                  if (deleteBtn) {
+                      deleteBtn.addEventListener('click', function() {
+                          this.closest('.option-item').remove();
+
+                          // Renumber remaining options
+                          const optionItems = optionsContainer.querySelectorAll('.option-item');
+                          optionItems.forEach(function(item, index) {
+                              const textInput = item.querySelector('input[type="text"]');
+                              const radioInput = item.querySelector('input[type="radio"]');
+                              const itemLabel = item.querySelector('label');
+
+                              if (textInput) {
+                                  textInput.name = `option_text_${index}`;
+                                  textInput.id = `option_text_${index}`;
+                              }
+
+                              if (radioInput) {
+                                  radioInput.id = `correct_option_${index}`;
+                                  radioInput.value = index;
+                              }
+
+                              if (itemLabel) {
+                                  itemLabel.setAttribute('for', `correct_option_${index}`);
+                              }
+                          });
+                      });
+                  }
+
+                  optionsContainer.appendChild(newOption);
               });
           }
+
+          // Add delete functionality to existing options
+          const deleteOptionBtns = document.querySelectorAll('.delete-option-btn');
+          deleteOptionBtns.forEach(function(btn) {
+              btn.addEventListener('click', function() {
+                  this.closest('.option-item').remove();
+
+                  // Renumber remaining options
+                  const optionItems = optionsContainer.querySelectorAll('.option-item');
+                  optionItems.forEach(function(item, index) {
+                      const textInput = item.querySelector('input[type="text"]');
+                      const radioInput = item.querySelector('input[type="radio"]');
+                      const itemLabel = item.querySelector('label');
+
+                      if (textInput) {
+                          textInput.name = `option_text_${index}`;
+                          textInput.id = `option_text_${index}`;
+                      }
+
+                      if (radioInput) {
+                          radioInput.id = `correct_option_${index}`;
+                          radioInput.value = index;
+                      }
+
+                      if (itemLabel) {
+                          itemLabel.setAttribute('for', `correct_option_${index}`);
+                      }
+                  });
+              });
+          });
       });
   </script>
 {% endblock extra_head %}
@@ -133,37 +178,36 @@
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
       <div class="p-6">
         <form method="post"
-              action="{% if question %}{% url 'edit_question' question.id %}{% else %}{% url 'add_question' quiz.id %}{% endif %}" enctype="multipart/form-data">
+              action="{% if question %}{% url 'edit_question' question.id %}{% else %}{% url 'add_question' quiz.id %}{% endif %}">
           {% csrf_token %}
           {% if form.non_field_errors %}
             <div class="mb-6 p-4 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300 rounded-lg">
               {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
             </div>
           {% endif %}
-
-          {{ formset.management_form }}
           <!-- Question Information -->
           <div class="mb-8">
             <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Question Information</h2>
             <div class="space-y-6">
               <!-- Question Type -->
               <div>
-                <label for="{{ form.question_type.id_for_label }}"
+                <label for="question-type"
                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Question Type <span class="text-red-600">*</span>
                 </label>
-                <select name="{{ form.question_type.html_name }}"
-                        id="{{ form.question_type.id_for_label }}"
+                <select name="type"
+                        id="question-type"
                         class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
                         required>
-                  {% for choice in form.question_type.field.choices %}
-                    <option value="{{ choice.0 }}"
-                            {% if form.question_type.value == choice.0 %}selected{% endif %}>{{ choice.1 }}</option>
-                  {% endfor %}
+                  <option value="multiple_choice"
+                          {% if question.type == 'multiple_choice' or not question %}selected{% endif %}>
+                    Multiple Choice
+                  </option>
+                  <option value="true_false"
+                          {% if question.type == 'true_false' %}selected{% endif %}>True/False</option>
+                  <option value="short_answer"
+                          {% if question.type == 'short_answer' %}selected{% endif %}>Short Answer</option>
                 </select>
-                {% if form.question_type.errors %}
-                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.question_type.errors.0 }}</p>
-                {% endif %}
               </div>
               <!-- Question Text -->
               <div>
