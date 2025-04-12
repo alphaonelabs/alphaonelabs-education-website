@@ -12,29 +12,45 @@
           const multipleChoiceOptions = document.getElementById('multiple-choice-options');
           const trueFalseOptions = document.getElementById('true-false-options');
           const shortAnswerOptions = document.getElementById('short-answer-options');
+          const trueAnswerRadio = document.getElementById('true_answer');
+          const falseAnswerRadio = document.getElementById('false_answer');
+          const shortAnswerRef = document.getElementById('short-answer-reference');
 
-          // Function to toggle options visibility
-          function toggleOptionsVisibility() {
-              // Hide all option sections first
-              multipleChoiceOptions.classList.add('hidden');
-              trueFalseOptions.classList.add('hidden');
-              shortAnswerOptions.classList.add('hidden');
-              
-              // Show relevant section based on selection
-              if (questionTypeField.value === 'multiple') {
-                  multipleChoiceOptions.classList.remove('hidden');
-              } else if (questionTypeField.value === 'true_false') {
-                  trueFalseOptions.classList.remove('hidden');
-              } else if (questionTypeField.value === 'short') {
-                  shortAnswerOptions.classList.remove('hidden');
-              }
-          }
+          // Function to toggle options visibility and required fields
+            function toggleOptionsVisibility() {
+            // Hide all option sections first
+            if (multipleChoiceOptions) multipleChoiceOptions.classList.add('hidden');
+            if (trueFalseOptions) trueFalseOptions.classList.add('hidden');
+            if (shortAnswerOptions) shortAnswerOptions.classList.add('hidden');
+            
+            // Get the first option text input (the one with the required attribute)
+            const firstOptionText = document.querySelector('#id_options-0-text');
+            
+            // Remove required attribute from all option fields
+            if (firstOptionText) firstOptionText.required = false;
+            
+            // Show relevant section based on selection
+            if (questionTypeField.value === 'multiple') {
+                if (multipleChoiceOptions) {
+                    multipleChoiceOptions.classList.remove('hidden');
+                    // Only make the first option required when multiple choice is selected
+                    if (firstOptionText) firstOptionText.required = true;
+                }
+            } else if (questionTypeField.value === 'true_false') {
+                if (trueFalseOptions) trueFalseOptions.classList.remove('hidden');
+            } else if (questionTypeField.value === 'short') {
+                if (shortAnswerOptions) shortAnswerOptions.classList.remove('hidden');
+            }
+        }
+
 
           // Set initial state
-          toggleOptionsVisibility();
-
-          // Add event listener for changes
-          questionTypeField.addEventListener('change', toggleOptionsVisibility);
+          if (questionTypeField) {
+              toggleOptionsVisibility();
+              
+              // Add event listener for changes
+              questionTypeField.addEventListener('change', toggleOptionsVisibility);
+          }
 
           // Add option button functionality
           const addOptionBtn = document.getElementById('add-option-btn');
@@ -180,7 +196,7 @@
             </div>
           </div>
           <!-- Answer Options -->
-          <div id="options-section" class="mb-8">
+          <div id="multiple-choice-options" class="mb-8">
             <div class="flex justify-between items-center mb-4">
               <h2 class="text-xl font-bold text-gray-800 dark:text-white">Answer Options</h2>
               <button id="add-option-btn"
@@ -231,7 +247,7 @@
               For multiple choice questions, select all correct options. For true/false, mark only one option as correct.
             </p>
           </div>
-                    <!-- True/False Options -->
+          <!-- True/False Options -->
           <div id="true-false-options" class="mb-8 hidden">
             <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">True/False Answer</h2>
             <!-- Management form for formset - reusing the same formset -->
@@ -244,7 +260,7 @@
                          id="true_answer"
                          value="true"
                          class="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300"
-                         required />
+                          />
                   <label for="true_answer" class="ml-3 block text-gray-700 dark:text-gray-300 font-medium">True</label>
                 </div>
                 <div class="flex items-center">
@@ -253,7 +269,7 @@
                          id="false_answer"
                          value="false"
                          class="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300"
-                         required />
+                          />
                   <label for="false_answer" class="ml-3 block text-gray-700 dark:text-gray-300 font-medium">False</label>
                 </div>
               </div>
