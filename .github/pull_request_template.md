@@ -32,7 +32,7 @@ Fixes #issue_number
 <!-- Complete the checklist below. Replace the dots inside [.] as follows: -->
 <!-- [x] done, [ ] not done, [/ ] not applicable -->
 
-- [x] I own the copyright of the code submitted and license it under the [MIT license](https://github.com/alphaonelabs/alphaonelabs-education-website/blob/main/LICENSE).
+- [x] I own the copyright of the code submitted and license it under the [GNU General Public License](https://github.com/alphaonelabs/alphaonelabs-education-website/blob/main/LICENSE).
 - [.] Created tests for changes (if applicable).
 - [.] Manually tested the changes in a running environment.
 - [.] Added screenshots to the PR description (if applicable).
