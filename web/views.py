@@ -7379,7 +7379,7 @@ def reactivate_user_subscription(user):
 
 
 @login_required
-def membership_plans(request):
+def membership_plans(request: HttpRequest) -> HttpResponse:
     """Display the available membership plans."""
     plans = MembershipPlan.objects.filter(is_active=True).order_by("order")
 
@@ -7397,7 +7397,7 @@ def membership_plans(request):
     messages_list = []
     if "payment_success" in request.GET:
         messages_list.append(
-            {"type": "success", "text": "Your payment was successful. Welcome to your new membership!"}
+            {"type": "success", "text": "Your payment was successful. Welcome to your new membership!"},
         )
     elif "payment_canceled" in request.GET:
         messages_list.append({"type": "info", "text": "Your payment was canceled. No charges were made."})
@@ -7595,7 +7595,7 @@ def handle_invoice_payment_succeeded(invoice):
             logger.exception("Error handling invoice.payment_succeeded")
 
 
-def handle_invoice_payment_failed(invoice):
+def handle_invoice_payment_failed(invoice: dict) -> None:
     """Handle invoice payment failed webhook event."""
     if invoice.get("subscription"):
         from django.contrib.auth import get_user_model
@@ -7628,7 +7628,7 @@ def handle_invoice_payment_failed(invoice):
         except User.DoesNotExist:
             logger.exception("No user found for customer %s", invoice["customer"])
         except Exception:
-            logger.error("Error handling invoice.payment_failed")
+            logger.exception("Error handling invoice.payment_failed")
 
 
 def generate_discount_code(length=8):
