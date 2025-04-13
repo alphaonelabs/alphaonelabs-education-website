@@ -308,19 +308,15 @@ def add_question(request, quiz_id):
         next_order = quiz.questions.order_by("-order").first().order + 1
 
     if request.method == "POST":
-        print("POST ####", request.POST)
         form = QuizQuestionForm(request.POST, request.FILES)
-        # print("FORM ####", form)
         # Set the quiz ID explicitly in the form data
         form.instance.quiz_id = quiz.id
         
         # Handle true/false questions differently
         question_type = request.POST.get('question_type')
         
-        print("request.POST.get('question_type') ####", request.POST.get('question_type'))
-        # print("form.cleaned_data ####", form.cleaned_data['question_type'])
         # Handle true/false questions differently
-        if form.is_valid() and form.cleaned_data['question_type'] == 'true_false':
+        if form.is_valid() and question_type == 'true_false':
             with transaction.atomic():
                 question = form.save(commit=True)
                 question.order = next_order
@@ -352,7 +348,11 @@ def add_question(request, quiz_id):
         else:
             # For other question types, use the formset as before
             formset = QuizOptionFormSet(request.POST, request.FILES, prefix="options")
-            # print("######", formset)
+            print("######", form.is_valid(), formset.is_valid())
+            if not formset.is_valid():
+                if formset.management_form.errors:
+                    print("Management form errors:")
+                    print(formset.management_form.errors)
             if form.is_valid() and formset.is_valid():
                 with transaction.atomic():
                     question = form.save(commit=True)
@@ -375,7 +375,8 @@ def add_question(request, quiz_id):
     else:
         form = QuizQuestionForm(initial={'order': next_order})
         formset = QuizOptionFormSet(prefix="options")
-    # print("$$$$", formset)
+        # print("$$$$", form)
+        # print("####", formset)
     return render(
         request,
         "web/quiz/question_form.html",
@@ -386,6 +387,7 @@ def add_question(request, quiz_id):
             'question': None,
         }
     )
+
 
 @login_required
 def edit_question(request, question_id):
@@ -408,25 +410,26 @@ def edit_question(request, question_id):
                 with transaction.atomic():
                     form.save()
                     
+                    true_correct = request.POST.get('true_false_answer') == 'true'
+                    print("true_correct", true_correct)
+
                     # Get or create true/false options
                     true_option, created_true = QuizOption.objects.get_or_create(
                         question=question,
                         text="True",
-                        defaults={'order': 0}
+                        is_correct=true_correct,
+                        order=0
                     )
+                    true_option.save()
+
                     false_option, created_false = QuizOption.objects.get_or_create(
                         question=question,
                         text="False",
-                        defaults={'order': 1}
+                        is_correct=not true_correct,
+                        order=1
                     )
-                    
-                    # Update is_correct based on the selection
-                    true_option.is_correct = request.POST.get('true_false_answer') == 'true'
-                    false_option.is_correct = request.POST.get('true_false_answer') == 'false'
-                    
-                    true_option.save()
                     false_option.save()
-                    
+
                     # Delete any other options that might exist
                     QuizOption.objects.filter(question=question).exclude(
                         id__in=[true_option.id, false_option.id]
