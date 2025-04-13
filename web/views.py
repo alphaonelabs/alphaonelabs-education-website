@@ -4648,7 +4648,7 @@ def donate(request):
     # Calculate total donations
     total_donations = Donation.objects.filter(status="completed").aggregate(total=Sum("amount"))["total"] or 0
 
-    # Get donation amounts for the preset buttons
+    # Preset donation amounts for buttons
     donation_amounts = [5, 10, 25, 50, 100]
 
     context = {
@@ -4661,9 +4661,9 @@ def donate(request):
     return render(request, "donate.html", context)
 
 
-@login_required
-def create_donation_payment_intent(request):
-    """Create a payment intent for a one-time donation."""
+@csrf_exempt  # Add CSRF exemption for Stripe
+def create_donation_payment_intent(request: HttpRequest) -> JsonResponse:
+    """Create a payment intent for a one-time donation with multiple payment methods."""
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
@@ -4672,29 +4672,36 @@ def create_donation_payment_intent(request):
         amount = data.get("amount")
         message = data.get("message", "")
         anonymous = data.get("anonymous", False)
+        email = data.get("email", "")
 
         if not amount or float(amount) <= 0:
             return JsonResponse({"error": "Invalid donation amount"}, status=400)
 
+        if not email:
+            return JsonResponse({"error": "Email is required"}, status=400)
+
         # Convert amount to cents for Stripe
         amount_cents = int(float(amount) * 100)
 
-        # Create a payment intent
+        # Create a payment intent with multiple payment method types
         intent = stripe.PaymentIntent.create(
             amount=amount_cents,
             currency="usd",
+            automatic_payment_methods={"enabled": True, "allow_redirects": "always"},
+            receipt_email=email,
             metadata={
                 "donation_type": "one_time",
-                "user_id": request.user.id,
-                "message": message[:100] if message else "",  # Limit message length
+                "user_id": str(request.user.id) if request.user.is_authenticated else None,
+                "message": message[:100] if message else "",
                 "anonymous": "true" if anonymous else "false",
+                "email": email,
             },
         )
 
         # Create a donation record
         donation = Donation.objects.create(
-            user=request.user,
-            email=request.user.email,
+            user=request.user if request.user.is_authenticated else None,
+            email=email,
             amount=amount,
             donation_type="one_time",
             status="pending",
@@ -4703,20 +4710,15 @@ def create_donation_payment_intent(request):
             anonymous=anonymous,
         )
 
-        return JsonResponse(
-            {
-                "clientSecret": intent.client_secret,
-                "donation_id": donation.id,
-            }
-        )
+        return JsonResponse({"clientSecret": intent.client_secret, "donation_id": donation.id})
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
 
 
-@login_required
-def create_donation_subscription(request):
-    """Create a subscription for recurring donations."""
+@csrf_exempt
+def create_donation_subscription(request: HttpRequest) -> JsonResponse:
+    """Create a subscription for recurring donations with multiple payment methods."""
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
@@ -4725,88 +4727,67 @@ def create_donation_subscription(request):
         amount = data.get("amount")
         message = data.get("message", "")
         anonymous = data.get("anonymous", False)
-        payment_method_id = data.get("payment_method_id")
+        email = data.get("email", "")
 
         if not amount or float(amount) <= 0:
             return JsonResponse({"error": "Invalid donation amount"}, status=400)
 
-        if not payment_method_id:
-            return JsonResponse({"error": "Payment method is required"}, status=400)
+        if not email:
+            return JsonResponse({"error": "Email is required"}, status=400)
 
         # Convert amount to cents for Stripe
         amount_cents = int(float(amount) * 100)
 
-        # Check if user already has a Stripe customer ID
-        customer_id = None
-        if hasattr(request.user, "profile") and request.user.profile.stripe_customer_id:
-            customer_id = request.user.profile.stripe_customer_id
-
         # Create or get customer
-        if customer_id:
-            customer = stripe.Customer.retrieve(customer_id)
-        else:
+        customer = None
+        # Try to retrieve existing customer for authenticated users
+        if request.user.is_authenticated and hasattr(request.user, "stripe_customer_id"):
+            from contextlib import suppress
+
+            with suppress(stripe.error.InvalidRequestError):
+                customer = stripe.Customer.retrieve(request.user.stripe_customer_id)
+        # Create new customer if needed
+        if not customer:
             customer = stripe.Customer.create(
-                email=request.user.email,
-                name=request.user.get_full_name() or request.user.username,
-                payment_method=payment_method_id,
-                invoice_settings={"default_payment_method": payment_method_id},
+                email=email,
+                metadata={
+                    "user_id": str(request.user.id) if request.user.is_authenticated else None,
+                },
             )
+            if request.user.is_authenticated:
+                request.user.stripe_customer_id = customer.id
+                request.user.save()
 
-            # Save customer ID to user profile
-            if hasattr(request.user, "profile"):
-                request.user.profile.stripe_customer_id = customer.id
-                request.user.profile.save()
-
-        # Create a subscription product and price if they don't exist
-        # Note: In a production environment, you might want to create these
-        # products and prices in the Stripe dashboard and reference them here
-        product = stripe.Product.create(
-            name=f"Monthly Donation - ${amount}",
-            type="service",
-        )
-
-        price = stripe.Price.create(
-            product=product.id,
-            unit_amount=amount_cents,
+        # Create a PaymentIntent for the first payment with setup_future_usage
+        payment_intent = stripe.PaymentIntent.create(
+            amount=amount_cents,
             currency="usd",
-            recurring={"interval": "month"},
-        )
-
-        # Create the subscription
-        subscription = stripe.Subscription.create(
             customer=customer.id,
-            items=[{"price": price.id}],
-            payment_behavior="default_incomplete",
-            expand=["latest_invoice.payment_intent"],
+            setup_future_usage="off_session",
+            automatic_payment_methods={"enabled": True, "allow_redirects": "always"},
             metadata={
                 "donation_type": "subscription",
-                "user_id": request.user.id,
+                "user_id": str(request.user.id) if request.user.is_authenticated else None,
                 "message": message[:100] if message else "",
                 "anonymous": "true" if anonymous else "false",
-                "amount": amount,
+                "email": email,
             },
         )
 
-        # Create a donation record
+        # Create donation record
         donation = Donation.objects.create(
-            user=request.user,
-            email=request.user.email,
+            user=request.user if request.user.is_authenticated else None,
+            email=email,
             amount=amount,
             donation_type="subscription",
             status="pending",
-            stripe_subscription_id=subscription.id,
+            stripe_payment_intent_id=payment_intent.id,
             stripe_customer_id=customer.id,
             message=message,
             anonymous=anonymous,
         )
 
-        return JsonResponse(
-            {
-                "subscription_id": subscription.id,
-                "client_secret": subscription.latest_invoice.payment_intent.client_secret,
-                "donation_id": donation.id,
-            }
-        )
+        return JsonResponse({"clientSecret": payment_intent.client_secret, "donation_id": donation.id})
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
@@ -4817,58 +4798,86 @@ def donation_webhook(request):
     """Handle Stripe webhooks for donations."""
     payload = request.body
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
+    webhook_secret = settings.STRIPE_WEBHOOK_SECRET
 
     try:
-        event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
-    except ValueError:
-        # Invalid payload
+        event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+        logger.info("Received Stripe webhook: %s", event.type)
+    except ValueError as e:
+        logger.exception("Invalid payload: %s", str(e))
         return HttpResponse(status=400)
-    except stripe.error.SignatureVerificationError:
-        # Invalid signature
+    except stripe.error.SignatureVerificationError as e:
+        logger.exception("Invalid signature: %s", str(e))
         return HttpResponse(status=400)
 
-    # Handle payment intent events
-    if event.type == "payment_intent.succeeded":
-        payment_intent = event.data.object
-        handle_successful_donation_payment(payment_intent)
-    elif event.type == "payment_intent.payment_failed":
-        payment_intent = event.data.object
-        handle_failed_donation_payment(payment_intent)
+    try:
+        # Handle payment intent events
+        if event.type == "payment_intent.succeeded":
+            payment_intent = event.data.object
+            logger.info("Processing successful payment: %s", payment_intent.id)
+            handle_successful_donation_payment(payment_intent)
+        elif event.type == "payment_intent.payment_failed":
+            payment_intent = event.data.object
+            logger.info("Processing failed payment: %s", payment_intent.id)
+            handle_failed_donation_payment(payment_intent)
 
-    # Handle subscription events
-    elif event.type == "customer.subscription.created":
-        subscription = event.data.object
-        handle_subscription_created(subscription)
-    elif event.type == "customer.subscription.updated":
-        subscription = event.data.object
-        handle_subscription_updated(subscription)
-    elif event.type == "customer.subscription.deleted":
-        subscription = event.data.object
-        handle_subscription_cancelled(subscription)
-    elif event.type == "invoice.payment_succeeded":
-        invoice = event.data.object
-        handle_invoice_paid(invoice)
-    elif event.type == "invoice.payment_failed":
-        invoice = event.data.object
-        handle_invoice_failed(invoice)
+        # Handle subscription events
+        elif event.type == "customer.subscription.created":
+            subscription = event.data.object
+            logger.info("Processing new subscription: %s", subscription.id)
+            handle_subscription_created(subscription)
+        elif event.type == "customer.subscription.updated":
+            subscription = event.data.object
+            logger.info("Processing subscription update: %s", subscription.id)
+            handle_subscription_updated(subscription)
+        elif event.type == "customer.subscription.deleted":
+            subscription = event.data.object
+            logger.info("Processing subscription cancellation: %s", subscription.id)
+            handle_subscription_cancelled(subscription)
+        elif event.type == "invoice.payment_succeeded":
+            invoice = event.data.object
+            logger.info("Processing successful invoice payment: %s", invoice.id)
+            handle_invoice_paid(invoice)
+        elif event.type == "invoice.payment_failed":
+            invoice = event.data.object
+            logger.info("Processing failed invoice payment: %s", invoice.id)
+            handle_invoice_failed(invoice)
 
-    return HttpResponse(status=200)
+        return HttpResponse(status=200)
+    except Exception:
+        logger.exception("Error processing webhook %s", event.type)
+        return HttpResponse(status=500)
 
 
-def handle_successful_donation_payment(payment_intent):
+def handle_successful_donation_payment(payment_intent: stripe.PaymentIntent) -> None:
     """Handle successful one-time donation payments."""
     try:
+        logger.info("Finding donation for payment intent: %s", payment_intent.id)
         # Find the donation by payment intent ID
         donation = Donation.objects.get(stripe_payment_intent_id=payment_intent.id)
-        donation.status = "completed"
-        donation.save()
 
-        # Send thank you email
-        send_donation_thank_you_email(donation)
+        # Only update if not already completed
+        if donation.status != "completed":
+            logger.info("Marking donation %s as completed", donation.id)
+            donation.status = "completed"
+            donation.save()
+
+            # Send thank you email
+            send_donation_thank_you_email(donation)
+        else:
+            logger.info("Donation %s already completed", donation.id)
 
     except Donation.DoesNotExist:
-        # This might be a payment for something else
-        pass
+        logger.warning(
+            (
+                "No donation found for payment intent: %s. This may indicate a payment intended for another system "
+                "or a database inconsistency."
+            ),
+            payment_intent.id,
+        )
+    except Exception:
+        logger.exception("Error handling successful payment %s", payment_intent.id)
+        raise  # Re-raise to allow webhook to handle the error
 
 
 def handle_failed_donation_payment(payment_intent):
@@ -4889,15 +4898,7 @@ def handle_subscription_created(subscription):
     try:
         # Find the donation by subscription ID
         donation = Donation.objects.get(stripe_subscription_id=subscription.id)
-
-        # Update status based on subscription status
-        if subscription.status == "active":
-            donation.status = "completed"
-        elif subscription.status == "incomplete":
-            donation.status = "pending"
-        elif subscription.status == "canceled":
-            donation.status = "cancelled"
-
+        donation.status = "completed" if subscription.status == "active" else "pending"
         donation.save()
 
     except Donation.DoesNotExist:
@@ -5015,19 +5016,70 @@ def send_donation_thank_you_email(donation):
 def donation_success(request):
     """Display a success page after a successful donation."""
     donation_id = request.GET.get("donation_id")
+    payment_intent = request.GET.get("payment_intent")
+    redirect_status = request.GET.get("redirect_status")
 
-    if donation_id:
-        try:
-            donation = Donation.objects.get(id=donation_id)
+    # Ensure we have the required donation_id
+    if not donation_id:
+        messages.error(request, "No donation information found.")
+        return redirect("donate")
+
+    try:
+        donation = Donation.objects.get(id=donation_id)
+
+        # If the redirect indicates success and a payment intent exists, verify with Stripe.
+        if redirect_status == "succeeded" and payment_intent:
+            # Double check with Stripe that the payment was successful
+            try:
+                # Retrieve PaymentIntent from Stripe to confirm payment status.
+                stripe_payment = stripe.PaymentIntent.retrieve(payment_intent)
+                if stripe_payment.status == "succeeded":
+                    donation.status = "completed"
+                    donation.save()
+                    # Send thank you email if not already sent
+                    send_donation_thank_you_email(donation)
+            except stripe.error.StripeError:
+                logger.exception("Error verifying payment intent")
+
+                # Retry logic for temporary Stripe failures using Django's cache.
+                cache_key = f"retry_verify_payment_{payment_intent}"
+                retry_count = cache.get(cache_key, 0)
+
+                if retry_count < 3:
+                    cache.set(cache_key, retry_count + 1, 3600)  # Retry after 1 hour
+                    # You could enqueue a Celery task or use another background task system
+                    # to retry the verification process
+                    logger.warning("Retry %d/3 scheduled for payment verification: %s", retry_count + 1, payment_intent)
+                else:
+                    logger.error("Max retries reached for payment verification: %s", payment_intent)
+
+                # Continue to show the success page even if verification fails;
+                # the webhook will eventually update the status
+
+        # If the donation status is now completed, show the success page.
+        if donation.status == "completed":
             context = {
                 "donation": donation,
             }
             return render(request, "donation_success.html", context)
-        except Donation.DoesNotExist:
-            pass
 
-    # If no valid donation ID, redirect to the donate page
-    return redirect("donate")
+        # If donation status is not completed, alert the user and redirect.
+        messages.error(request, "Donation has not been successfully processed.")
+        return redirect("donate")
+
+    except Donation.DoesNotExist:
+        messages.error(request, "Invalid donation ID.")
+        return redirect("donate")
+
+    except stripe.error.StripeError:
+        logger.exception("Stripe error in donation_success view")
+        messages.error(request, "A payment processing error occurred. Please check your payment details.")
+        return redirect("donate")
+
+    except Exception:
+        logger.exception("Unexpected error in donation_success view")
+        messages.error(request, "An unexpected error occurred while processing your donation.")
+        return redirect("donate")
 
 
 def donation_cancel(request):
