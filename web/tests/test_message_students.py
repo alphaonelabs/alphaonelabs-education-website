@@ -133,9 +133,8 @@ class MessageEnrolledStudentsTest(TestCase):
         try:
             decrypted_email = decrypt_message(mail.outbox[0].body.encode("utf-8"))
             self.assertEqual(decrypted_email, message_data["message"])
-        except Exception as e:
+        except (ValueError, TypeError) as e:  # Specify expected exception types
             self.fail(f"Failed to decrypt email content: {e}")
-
     def test_send_message_to_nonexistent_student(self):
         """Test sending a message to a non-existent student."""
         # Clear the mail outbox
