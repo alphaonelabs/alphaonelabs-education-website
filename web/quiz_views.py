@@ -345,10 +345,10 @@ def add_question(request, quiz_id):
                 
             messages.success(request, "Question added successfully.")
             return redirect('quiz_detail', quiz_id=quiz.id)
-        else:
-            # For other question types, use the formset as before
+        
+        elif question_type == 'multiple':
+             # For other question types, use the formset as before
             formset = QuizOptionFormSet(request.POST, request.FILES, prefix="options")
-            print("######", form.is_valid(), formset.is_valid())
             if not formset.is_valid():
                 if formset.management_form.errors:
                     print("Management form errors:")
@@ -371,7 +371,36 @@ def add_question(request, quiz_id):
                 # Check if we should redirect to add another question
                 if 'save_and_add' in request.POST:
                     return redirect('question_form', quiz_id=quiz.id)
+                print("####################")
+                messages.success(request, "Question added successfully.")
                 return redirect('quiz_detail', quiz_id=quiz.id)
+
+        else:
+            # Handle short answer questions
+            with transaction.atomic():
+                question = form.save(commit=True)
+                question.order = next_order
+                question.save()
+                
+                # Get the reference answer
+                reference_answer = request.POST.get('short_answer_reference', '')
+                
+                # Create the reference option
+                option = QuizOption(
+                    question=question,
+                    text=reference_answer,
+                    is_correct=True,
+                    order=0
+                )
+                option.save()
+            
+            messages.success(request, "Question added successfully.")
+            
+            if 'save_and_add' in request.POST:
+                return redirect('question_form', quiz_id=quiz.id)
+            return redirect('quiz_detail', quiz_id=quiz.id)
+
+           
     else:
         form = QuizQuestionForm(initial={'order': next_order})
         formset = QuizOptionFormSet(prefix="options")
@@ -480,6 +509,7 @@ def delete_question(request, question_id):
     if quiz.creator != request.user:
         return HttpResponseForbidden("You don't have permission to delete this question.")
 
+    print(request.method)
     if request.method == "POST":
         quiz_id = quiz.id
         question.delete()

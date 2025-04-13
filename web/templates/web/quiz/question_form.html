@@ -34,7 +34,7 @@
           setupTrueFalseOptions();
           HandleInputsWithQuestionType(questionTypeField.value)
           break;
-          case 'short':
+          default: 
             shortAnswerOptions.classList.remove('hidden');
             HandleInputsWithQuestionType(questionTypeField.value)
             document.getElementById('id_options-TOTAL_FORMS').value = '0';
@@ -136,7 +136,7 @@
     // Form submission validation
     form.addEventListener('submit', function(e) {
       const questionType = questionTypeField.value;
-      e.preventDefault();
+      // e.preventDefault();
       const formData = new FormData(form);
 
       for (const [key, value] of formData.entries()) {
@@ -301,7 +301,7 @@
               </div>
             </div>
           </div>
-          
+          {{ formset.management_form }}
           <!-- Multiple Choice Options -->
           <div id="multiple-choice-options" class="mb-8">
             <div class="flex justify-between items-center mb-4">
@@ -311,9 +311,6 @@
                 <i class="fas fa-plus mr-1"></i> Add Option
               </button>
             </div>
-            
-            <!-- Management form for formset -->
-            {{ formset.management_form }}
             
             <div id="options-container" class="space-y-4">
               {% for option_form in formset %}
