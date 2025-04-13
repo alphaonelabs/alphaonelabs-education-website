@@ -3240,7 +3240,7 @@ def message_enrolled_students(request, slug):
                     success_message = f"Email sent successfully to {student.username}!"
                 except User.DoesNotExist:
                     messages.error(request, "Selected student not found!")
-                    return redirect("message_enrolled_students", slug=slug)
+                    return redirect("message_students", slug=slug)
 
             # Send email to each recipient
             for student in recipients:
