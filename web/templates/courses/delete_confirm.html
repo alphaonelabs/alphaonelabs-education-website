@@ -14,10 +14,8 @@
           </p>
         </div>
         <form method="post"
-              action="{% url 'delete_course' course.id %}"
+              action="{% url 'delete_course' slug=course.slug %}"
               class="space-y-6">
-          {% csrf_token %}
-          <input type="hidden" name="course_id" value="{{ course.id }}" />
           {% csrf_token %}
           <div class="flex justify-center space-x-4">
             <a href="{% url 'course_detail' course.slug %}"
