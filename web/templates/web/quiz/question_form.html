@@ -6,7 +6,7 @@
   {{ title }} | Quiz Management
 {% endblock title %}
 {% block extra_head %}
-<script>
+<!-- <script>
       document.addEventListener('DOMContentLoaded', function() {
           const questionTypeField = document.getElementById('id_question_type');
           const multipleChoiceOptions = document.getElementById('multiple-choice-options');
@@ -15,34 +15,34 @@
           const trueAnswerRadio = document.getElementById('true_answer');
           const falseAnswerRadio = document.getElementById('false_answer');
           const shortAnswerRef = document.getElementById('short-answer-reference');
+          const form = document.querySelector('#form');
 
           // Function to toggle options visibility and required fields
-            function toggleOptionsVisibility() {
-            // Hide all option sections first
-            if (multipleChoiceOptions) multipleChoiceOptions.classList.add('hidden');
-            if (trueFalseOptions) trueFalseOptions.classList.add('hidden');
-            if (shortAnswerOptions) shortAnswerOptions.classList.add('hidden');
-            
-            // Get the first option text input (the one with the required attribute)
-            const firstOptionText = document.querySelector('#id_options-0-text');
-            
-            // Remove required attribute from all option fields
-            if (firstOptionText) firstOptionText.required = false;
-            
-            // Show relevant section based on selection
-            if (questionTypeField.value === 'multiple') {
-                if (multipleChoiceOptions) {
-                    multipleChoiceOptions.classList.remove('hidden');
-                    // Only make the first option required when multiple choice is selected
-                    if (firstOptionText) firstOptionText.required = true;
-                }
-            } else if (questionTypeField.value === 'true_false') {
-                if (trueFalseOptions) trueFalseOptions.classList.remove('hidden');
-            } else if (questionTypeField.value === 'short') {
-                if (shortAnswerOptions) shortAnswerOptions.classList.remove('hidden');
-            }
-        }
-
+          function toggleOptionsVisibility() {
+              // Hide all option sections first
+              if (multipleChoiceOptions) multipleChoiceOptions.classList.add('hidden');
+              if (trueFalseOptions) trueFalseOptions.classList.add('hidden');
+              if (shortAnswerOptions) shortAnswerOptions.classList.add('hidden');
+              
+              // Get the first option text input (the one with the required attribute)
+              const firstOptionText = document.querySelector('#id_options-0-text');
+              
+              // Remove required attribute from all option fields
+              if (firstOptionText) firstOptionText.required = false;
+              
+              // Show relevant section based on selection
+              if (questionTypeField.value === 'multiple') {
+                  if (multipleChoiceOptions) {
+                      multipleChoiceOptions.classList.remove('hidden');
+                      // Only make the first option required when multiple choice is selected
+                      if (firstOptionText) firstOptionText.required = true;
+                  }
+              } else if (questionTypeField.value === 'true_false') {
+                  if (trueFalseOptions) trueFalseOptions.classList.remove('hidden');
+              } else if (questionTypeField.value === 'short') {
+                  if (shortAnswerOptions) shortAnswerOptions.classList.remove('hidden');
+              }
+          }
 
           // Set initial state
           if (questionTypeField) {
@@ -56,7 +56,7 @@
           const addOptionBtn = document.getElementById('add-option-btn');
           if (addOptionBtn) {
               addOptionBtn.addEventListener('click', function(e) {
-                  e.preventDefault();
+                  // e.preventDefault();
                   const totalFormsField = document.getElementById('id_options-TOTAL_FORMS');
                   const optionsContainer = document.getElementById('options-container');
 
@@ -90,8 +90,93 @@
                   optionsContainer.appendChild(formTemplate);
               });
           }
+          
+          // Track form submission
+          if (form) {
+              form.addEventListener('submit', function(e) {
+                  // e.preventDefault();
+                  const formData = new FormData(form);
+                      for (const [key, value] of formData.entries()) {
+                          console.log(key, " - " ,value);
+                      }
+
+                  // For multiple choice questions
+                  if (questionTypeField.value === 'multiple') {
+                      // Check if at least one option is marked as correct
+                      const correctCheckboxes = document.querySelectorAll('input[name$="-is_correct"]:checked');
+                      console.log("correctCheckboxes", correctCheckboxes)
+                      if (correctCheckboxes.length === 0) {
+                          e.preventDefault();
+                          alert('Please select at least one correct answer for multiple choice questions.');
+                          return false;
+                      }
+                      
+                      // Make sure only the selected checkboxes are submitted as checked
+                      document.querySelectorAll('input[name$="-is_correct"]').forEach(checkbox => {
+                          // This ensures the checkbox state is explicitly set before submission
+                          checkbox.value = checkbox.checked ? "1" : "0";
+                          console.log("last", checkbox, checkbox.checked)
+                      });
+                  }
+                  
+                  // For true/false questions
+                  if (questionTypeField.value === 'true_false') {
+                      // Ensure a radio button is selected
+                      if (!trueAnswerRadio.checked && !falseAnswerRadio.checked) {
+                          e.preventDefault();
+                          alert('Please select either True or False as the correct answer.');
+                          return false;
+                      }
+                      
+                      // Update hidden field values
+                      updateHiddenValues();
+                  }
+                  
+                  // For short answer questions
+                  if (questionTypeField.value === 'short') {
+                      const reference = shortAnswerRef.value.trim();
+                      // Copy reference to hidden field
+                      const firstOptionText = document.getElementById('id_options-0-text');
+                      if (firstOptionText) {
+                          firstOptionText.value = reference;
+                      }
+                      // Mark as correct
+                      const firstOptionCorrect = document.getElementById('id_options-0-is_correct');
+                      if (firstOptionCorrect) {
+                          firstOptionCorrect.checked = true;
+                      }
+                  }
+              });
+          }
+          
+          // Function to update hidden values for true/false questions
+          function updateHiddenValues() {
+              if(trueAnswerRadio && falseAnswerRadio) {
+                  const trueCorrect = document.getElementById('true_is_correct');
+                  const falseCorrect = document.getElementById('false_is_correct');
+                  
+                  if(trueAnswerRadio.checked) {
+                      if (trueCorrect) trueCorrect.value = '1';
+                      if (falseCorrect) falseCorrect.value = '0';
+                  } else if(falseAnswerRadio.checked) {
+                      if (trueCorrect) trueCorrect.value = '0';
+                      if (falseCorrect) falseCorrect.value = '1';
+                  }
+              }
+          }
+          
+          // Initialize true/false radio buttons
+          if (trueAnswerRadio && falseAnswerRadio) {
+              trueAnswerRadio.addEventListener('change', updateHiddenValues);
+              falseAnswerRadio.addEventListener('change', updateHiddenValues);
+              
+              // Set initial values if one is checked
+              if (trueAnswerRadio.checked || falseAnswerRadio.checked) {
+                  updateHiddenValues();
+              }
+          }
       });
-  </script>
+  </script> -->
 {% endblock extra_head %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
@@ -115,7 +200,7 @@
     <!-- Question Form -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
       <div class="p-6">
-        <form method="post" enctype="multipart/form-data">
+        <form id="form" method="post" enctype="multipart/form-data">
           {% csrf_token %}
           {% if form.non_field_errors %}
             <div class="mb-6 p-4 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300 rounded-lg">
@@ -195,7 +280,7 @@
               </div>
             </div>
           </div>
-          <!-- Answer Options -->
+          <!-- multiple Options -->
           <div id="multiple-choice-options" class="mb-8">
             <div class="flex justify-between items-center mb-4">
               <h2 class="text-xl font-bold text-gray-800 dark:text-white">Answer Options</h2>
@@ -224,6 +309,7 @@
                              {% if forloop.first %}required{% endif %} />
                       {% if option_form.text.errors %}
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ option_form.text.errors.0 }}</p>
+                        
                       {% endif %}
                     </div>
                     <div class="col-span-2 flex items-center justify-center pt-6">
@@ -231,15 +317,15 @@
                         <input type="checkbox"
                                name="{{ option_form.is_correct.html_name }}"
                                id="{{ option_form.is_correct.id_for_label }}"
-                               {% if option_form.is_correct.value %}checked{% endif %}
-                               class="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
+                               class="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" 
+                               />
                         <label for="{{ option_form.is_correct.id_for_label }}"
                                class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">Correct</label>
                       </div>
                     </div>
                   </div>
                   <!-- Hidden fields -->
-                  {% for hidden in option_form.hidden_fields %}{{ hidden }}{% endfor %}
+                  {% for hidden in option_form.hidden_fields %} TEST {{ hidden }}{% endfor %}
                 </div>
               {% endfor %}
             </div>
@@ -283,7 +369,7 @@
                 <input type="hidden" name="options-0-is_correct" id="true_is_correct" value="0" />
                 <input type="hidden" name="options-1-text" value="False" />
                 <input type="hidden" name="options-1-is_correct" id="false_is_correct" value="0" />
-                <script>
+                <!-- <script>
                   document.addEventListener('DOMContentLoaded', function() {
                     const trueRadio = document.getElementById('true_answer');
                     const falseRadio = document.getElementById('false_answer');
@@ -291,6 +377,7 @@
                     const falseCorrect = document.getElementById('false_is_correct');
                     
                     function updateHiddenValues() {
+                      console.log("updateHiddenValues - true-false", trueRadio, falseCorrect)
                       if(trueRadio.checked) {
                         trueCorrect.value = '1';
                         falseCorrect.value = '0';
@@ -306,7 +393,7 @@
                     // Initialize values on load
                     updateHiddenValues();
                   });
-                </script>
+                </script> -->
               </div>
             </div>
           </div>

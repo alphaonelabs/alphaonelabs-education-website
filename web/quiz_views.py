@@ -308,13 +308,17 @@ def add_question(request, quiz_id):
         next_order = quiz.questions.order_by("-order").first().order + 1
 
     if request.method == "POST":
+        print("POST ####", request.POST)
         form = QuizQuestionForm(request.POST, request.FILES)
+        # print("FORM ####", form)
         # Set the quiz ID explicitly in the form data
         form.instance.quiz_id = quiz.id
         
         # Handle true/false questions differently
         question_type = request.POST.get('question_type')
         
+        print("request.POST.get('question_type') ####", request.POST.get('question_type'))
+        # print("form.cleaned_data ####", form.cleaned_data['question_type'])
         # Handle true/false questions differently
         if form.is_valid() and form.cleaned_data['question_type'] == 'true_false':
             with transaction.atomic():
@@ -348,13 +352,16 @@ def add_question(request, quiz_id):
         else:
             # For other question types, use the formset as before
             formset = QuizOptionFormSet(request.POST, request.FILES, prefix="options")
-            print("######", formset)
+            # print("######", formset)
             if form.is_valid() and formset.is_valid():
                 with transaction.atomic():
                     question = form.save(commit=True)
                     question.order = next_order
                     question.save()
                     
+                    print("question ####", question)
+                    print("formset ####", formset)
+                    print("formset.instance ####", formset.instance)
                     # Save formset with the question as the instance
                     formset.instance = question
                     formset.save()
@@ -368,7 +375,7 @@ def add_question(request, quiz_id):
     else:
         form = QuizQuestionForm(initial={'order': next_order})
         formset = QuizOptionFormSet(prefix="options")
-    print("$$$$", formset)
+    # print("$$$$", formset)
     return render(
         request,
         "web/quiz/question_form.html",
