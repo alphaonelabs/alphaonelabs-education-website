@@ -14,8 +14,7 @@
     const trueFalseOptions = document.getElementById('true-false-options');
     const shortAnswerOptions = document.getElementById('short-answer-options');
     const form = document.getElementById('form');
-    console.log(form);
-    
+
     // Function to toggle question type sections
     function toggleQuestionType() {
       // Hide all sections first
@@ -86,9 +85,6 @@
       const falseRadio = document.getElementById('false_answer');
       const trueOptionValue = document.getElementById('true_is_correct');
       const falseOptionValue = document.getElementById('false_is_correct');
-      
-      console.log(trueRadio.checked)
-      console.log(falseRadio.checked)
 
       if (trueRadio.checked) {
         trueOptionValue.value = '1';
@@ -141,12 +137,14 @@
     // Form submission validation
     form.addEventListener('submit', function(e) {
       const questionType = questionTypeField.value;
-      // e.preventDefault();
+
+      e.preventDefault();
       const formData = new FormData(form);
 
-      for (const [key, value] of formData.entries()) {
-          console.log(key, value);
-      }
+      // // For testing
+      // for (const [key, value] of formData.entries()) {
+      //     console.log(key, value);
+      // }
 
       if (questionType === 'multiple') {
         // Check if at least one option is marked as correct
@@ -156,6 +154,21 @@
           alert('Please select at least one correct answer for multiple choice questions.');
           return false;
         }
+        let allChoices = document.querySelectorAll(".option-form")
+        let counter = 0;
+        allChoices.forEach(element => {
+          let textInput = element.querySelector('input[name^="options-"]')
+          // console.log(textInput.value.trim().length)
+          if (textInput.value.trim().length == 0) {
+            console.log(element)
+            element.remove()
+          }
+        });
+        // For testing
+        for (const [key, value] of formData.entries()) {
+            console.log(key, value);
+        }
+        e.preventDefault();
       } 
       else if (questionType === 'true_false') {
         // Ensure a radio button is selected for true/false
@@ -402,7 +415,7 @@
           <!-- Short Answer Options -->
           <div id="short-answer-options" class="mb-8 hidden">
 
-            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Short Answer Reference</h2>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Answer Reference</h2>
             <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
               <div>
                 <label for="short-answer-reference" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -413,7 +426,6 @@
                   rows="3"
                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
                   placeholder="Enter the expected answer here for your reference">{{ formset.0.text.value|default:'' }}</textarea>
-                  <h1> ## {{ formset.0.text.value|default:'' }} ##</h1>
                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
                   This reference answer will be stored for your grading purposes only. Short answer questions require manual grading.
                 </p>
