@@ -451,8 +451,6 @@ class Command(BaseCommand):
                     title=f"Topic {j + 1}",
                     content=f"Content for topic {j + 1}",
                     author=random.choice(students + teachers),
-                    github_issue_url="https://github.com/",
-                    github_milestone_url="https://github.com/",
                 )
 
                 # Create replies

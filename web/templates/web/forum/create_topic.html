@@ -67,24 +67,6 @@
               <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.content.errors }}</div>
             {% endif %}
           </div>
-          <!-- GitHub Issue URL Field -->
-          <div>
-            <label for="{{ form.github_issue_url.id_for_label }}"
-                   class="block text-sm font-medium mb-2">GitHub Issue URL</label>
-            {{ form.github_issue_url }}
-            {% if form.github_issue_url.errors %}
-              <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.github_issue_url.errors }}</div>
-            {% endif %}
-          </div>
-          <!-- GitHub Milestone URL Field -->
-          <div>
-            <label for="{{ form.github_milestone_url.id_for_label }}"
-                   class="block text-sm font-medium mb-2">GitHub Milestone URL</label>
-            {{ form.github_milestone_url }}
-            {% if form.github_milestone_url.errors %}
-              <div class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.github_milestone_url.errors }}</div>
-            {% endif %}
-          </div>
           <div class="flex justify-end space-x-4">
             <a href="{% if is_edit %}{% url 'forum_topic' topic.category.slug topic.id %}{% else %}{% url 'forum_category' category.slug %}{% endif %}"
                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">

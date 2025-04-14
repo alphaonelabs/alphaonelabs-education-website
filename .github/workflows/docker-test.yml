@@ -147,7 +147,7 @@ jobs:
 
       - name: Run Django tests in container
         run: |
-          docker exec education-app python manage.py test --verbosity=3
+          docker exec education-app python manage.py test
 
       - name: Stop Docker container
         if: always()

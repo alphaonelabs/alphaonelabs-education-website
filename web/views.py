@@ -1979,8 +1979,6 @@ def create_topic(request, category_slug):
                 author=request.user,
                 title=form.cleaned_data["title"],
                 content=form.cleaned_data["content"],
-                github_issue_url=form.cleaned_data.get("github_issue_url", ""),
-                github_milestone_url=form.cleaned_data.get("github_milestone_url", ""),
             )
             messages.success(request, "Topic created successfully!")
             return redirect("forum_topic", category_slug=category_slug, topic_id=topic.id)
@@ -3010,29 +3008,18 @@ def create_forum_category(request):
 
 @login_required
 def edit_topic(request, topic_id):
+    """Edit an existing forum topic."""
     topic = get_object_or_404(ForumTopic, id=topic_id, author=request.user)
     categories = ForumCategory.objects.all()
 
     if request.method == "POST":
-        form = ForumTopicForm(request.POST)
+        form = ForumTopicForm(request.POST, instance=topic)
         if form.is_valid():
-            # Manually update the topic instance with form data.
-            topic.title = form.cleaned_data["title"]
-            topic.content = form.cleaned_data["content"]
-            topic.github_issue_url = form.cleaned_data.get("github_issue_url", "")
-            topic.github_milestone_url = form.cleaned_data.get("github_milestone_url", "")
-            topic.save()
+            form.save()
             messages.success(request, "Topic updated successfully!")
             return redirect("forum_topic", category_slug=topic.category.slug, topic_id=topic.id)
     else:
-        # Prepopulate the form with the topic's current data.
-        initial_data = {
-            "title": topic.title,
-            "content": topic.content,
-            "github_issue_url": topic.github_issue_url,
-            "github_milestone_url": topic.github_milestone_url,
-        }
-        form = ForumTopicForm(initial=initial_data)
+        form = ForumTopicForm(instance=topic)
 
     return render(request, "web/forum/edit_topic.html", {"topic": topic, "form": form, "categories": categories})
 
