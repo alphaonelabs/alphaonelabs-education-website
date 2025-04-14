@@ -24,21 +24,6 @@ jobs:
 
             console.log(`Checking PR #${prNumber} for HTML changes and media attachments`);
 
-            // Exempt PRs with specific labels or title prefixes
-            const exemptLabels = ['dependencies', 'documentation', 'typo', 'ci', 'chore'];
-            const hasExemptLabel = pr.labels &&
-              pr.labels.some(label =>
-                exemptLabels.includes(label.name.toLowerCase())
-              );
-            const exemptPrefixes = ['docs:', 'chore:', 'deps:', 'ci:'];
-            const hasExemptPrefix = exemptPrefixes.some(prefix =>
-              pr.title.toLowerCase().startsWith(prefix)
-            );
-            if (hasExemptLabel || hasExemptPrefix) {
-              console.log(`PR is exempt from media attachment requirement`);
-              return;
-            }
-
             // Get the list of files changed in the PR using pagination
             const files = await github.paginate(github.rest.pulls.listFiles, {
               owner: repo.owner,
