@@ -14,7 +14,8 @@ jobs:
     name: Check PR for media attachments when HTML files change
     steps:
       - name: Verify PR has media attachments
-        uses: actions/github-script@v6
+-        uses: actions/github-script@v6
++        uses: actions/github-script@v6.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
