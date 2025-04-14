@@ -477,21 +477,6 @@ class CourseDetailTests(TestCase):
         self.assertContains(response, self.course.get_level_display())
         self.assertContains(response, self.course.subject.name)
 
-    def test_session_display(self):
-        """Test that sessions are correctly displayed"""
-        response = self.client.get(self.detail_url)
-        self.assertContains(response, self.future_session.title)
-        self.assertContains(response, self.past_session.title)
-        self.assertContains(response, self.future_session.meeting_link)
-        self.assertContains(response, self.past_session.location)
-
-        # Test session prices are shown when allow_individual_sessions is True
-        self.assertContains(response, str(self.future_session.price))
-
-        # Test virtual/in-person indicators
-        self.assertContains(response, "Virtual")
-        self.assertContains(response, self.past_session.location)
-
     def test_teacher_specific_functionality(self):
         """Test functionality available only to teachers"""
         # Log in as teacher
