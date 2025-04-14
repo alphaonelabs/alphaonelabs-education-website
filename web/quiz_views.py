@@ -345,23 +345,16 @@ def add_question(request, quiz_id):
                 
             messages.success(request, "Question added successfully.")
             return redirect('quiz_detail', quiz_id=quiz.id)
-        
         elif question_type == 'multiple':
-             # For other question types, use the formset as before
+            # For other question types, use the formset as before
             formset = QuizOptionFormSet(request.POST, request.FILES, prefix="options")
-            if not formset.is_valid():
-                if formset.management_form.errors:
-                    print("Management form errors:")
-                    print(formset.management_form.errors)
+
             if form.is_valid() and formset.is_valid():
                 with transaction.atomic():
                     question = form.save(commit=True)
                     question.order = next_order
                     question.save()
                     
-                    print("question ####", question)
-                    print("formset ####", formset)
-                    print("formset.instance ####", formset.instance)
                     # Save formset with the question as the instance
                     formset.instance = question
                     formset.save()
@@ -371,20 +364,19 @@ def add_question(request, quiz_id):
                 # Check if we should redirect to add another question
                 if 'save_and_add' in request.POST:
                     return redirect('question_form', quiz_id=quiz.id)
-                print("####################")
                 messages.success(request, "Question added successfully.")
                 return redirect('quiz_detail', quiz_id=quiz.id)
-
         else:
             # Handle short answer questions
             with transaction.atomic():
                 question = form.save(commit=True)
                 question.order = next_order
                 question.save()
-                
+                print("%%%%%%%", question)
                 # Get the reference answer
                 reference_answer = request.POST.get('short_answer_reference', '')
                 
+                print("reference_answer", reference_answer)
                 # Create the reference option
                 option = QuizOption(
                     question=question,
@@ -393,6 +385,7 @@ def add_question(request, quiz_id):
                     order=0
                 )
                 option.save()
+                print("%%%%%%%", option, "----", reference_answer)
             
             messages.success(request, "Question added successfully.")
             
@@ -400,12 +393,10 @@ def add_question(request, quiz_id):
                 return redirect('question_form', quiz_id=quiz.id)
             return redirect('quiz_detail', quiz_id=quiz.id)
 
-           
     else:
         form = QuizQuestionForm(initial={'order': next_order})
         formset = QuizOptionFormSet(prefix="options")
-        # print("$$$$", form)
-        # print("####", formset)
+
     return render(
         request,
         "web/quiz/question_form.html",
@@ -467,11 +458,29 @@ def edit_question(request, question_id):
                 messages.success(request, "Question updated successfully.")
                 return redirect("quiz_detail", quiz_id=quiz.id)
         else:
+            # handle any other question type
             formset = QuizOptionFormSet(request.POST, request.FILES, instance=question, prefix="options")
-            if form.is_valid() and formset.is_valid():
+            #  and formset.is_valid()
+            if form.is_valid():
                 with transaction.atomic():
                     form.save()
-                    formset.save()
+                    # formset.save()
+                    question = form.save(commit=True)
+                    # question.order = next_order
+                    question.save()
+                    print("%%%%%%%", question)
+                    # Get the reference answer
+                    reference_answer = request.POST.get('short_answer_reference', '')
+                    
+                    print("reference_answer", reference_answer)
+                    # Create the reference option
+                    option = QuizOption(
+                        question=question,
+                        text=reference_answer,
+                        is_correct=True,
+                        order=0
+                    )
+                    option.save()
 
                 messages.success(request, "Question updated successfully.")
                 return redirect("quiz_detail", quiz_id=quiz.id)
@@ -485,7 +494,7 @@ def edit_question(request, question_id):
         true_option = question.options.filter(text="True").first()
         if true_option:
             true_is_correct = true_option.is_correct
-
+    # print("$$$$$", form.short_answer_reference )
     return render(
         request,
         'web/quiz/question_form.html',
@@ -495,6 +504,7 @@ def edit_question(request, question_id):
             'quiz': quiz,
             'question': question,
             'true_is_correct': true_is_correct,
+            "reference_answer": request.POST.get('short_answer_reference', '')
         }
     )
 

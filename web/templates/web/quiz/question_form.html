@@ -37,18 +37,19 @@
           default: 
             shortAnswerOptions.classList.remove('hidden');
             HandleInputsWithQuestionType(questionTypeField.value)
-            document.getElementById('id_options-TOTAL_FORMS').value = '0';
+            document.getElementById('id_options-TOTAL_FORMS').value = '1';
           break;
       }
     }
 
     function HandleInputsWithQuestionType(question_type){
           trueFalseOptions.querySelectorAll("input").forEach(element => {
-            // console.log(element)
             element.disabled = true
           });
           multipleChoiceOptions.querySelectorAll("input").forEach(element => {
-            // console.log(element)
+            element.disabled = true
+          });
+          shortAnswerOptions.querySelectorAll("input").forEach(element => {
             element.disabled = true
           });
 
@@ -60,6 +61,10 @@
             trueFalseOptions.querySelectorAll("input").forEach(element => {
               element.disabled = false
             });
+          } else {
+            shortAnswerOptions.querySelectorAll("input").forEach(element => {
+            element.disabled = false
+          });
           }
     }
     
@@ -142,8 +147,6 @@
       for (const [key, value] of formData.entries()) {
           console.log(key, value);
       }
-      // document.getElementById('id_options-TOTAL_FORMS').value
-      // document.getElementById('id_options-INITIAL_FORMS').value
 
       if (questionType === 'multiple') {
         // Check if at least one option is marked as correct
@@ -301,7 +304,9 @@
               </div>
             </div>
           </div>
+
           {{ formset.management_form }}
+
           <!-- Multiple Choice Options -->
           <div id="multiple-choice-options" class="mb-8">
             <div class="flex justify-between items-center mb-4">
@@ -396,21 +401,27 @@
           
           <!-- Short Answer Options -->
           <div id="short-answer-options" class="mb-8 hidden">
+
             <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Short Answer Reference</h2>
-            
             <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
               <div>
                 <label for="short-answer-reference" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Answer Reference (for grading)
                 </label>
                 <textarea name="short_answer_reference"
-                          id="short-answer-reference"
-                          rows="3"
-                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
-                          placeholder="Enter the expected answer here for your reference">{{ short_answer_reference|default:'' }}</textarea>
+                  id="short-answer-reference"
+                  rows="3"
+                  class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                  placeholder="Enter the expected answer here for your reference">{{ formset.0.text.value|default:'' }}</textarea>
+                  <h1> ## {{ formset.0.text.value|default:'' }} ##</h1>
                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
                   This reference answer will be stored for your grading purposes only. Short answer questions require manual grading.
                 </p>
+                <!-- Hidden fields to pass formset format -->
+                <div class="hidden">
+                  <input type="hidden" name="options-0-text" />
+                  <input type="hidden" name="options-0-is_correct"/>
+                </div>
               </div>
             </div>
           </div>
