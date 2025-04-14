@@ -14,7 +14,7 @@ jobs:
     name: Check PR for media attachments when HTML files change
     steps:
       - name: Verify PR has media attachments
-        uses: actions/github-script@v6
+        uses: actions/github-script@v6.1.0
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -34,18 +34,17 @@ jobs:
             const hasExemptPrefix = exemptPrefixes.some(prefix =>
               pr.title.toLowerCase().startsWith(prefix)
             );
-
             if (hasExemptLabel || hasExemptPrefix) {
               console.log(`PR is exempt from media attachment requirement`);
               return;
             }
 
-            // Get the list of files changed in the PR
-            const { data: files } = await github.rest.pulls.listFiles({
+            // Get the list of files changed in the PR using pagination
+            const files = await github.paginate(github.rest.pulls.listFiles, {
               owner: repo.owner,
               repo: repo.repo,
               pull_number: prNumber,
-              per_page: 100 // Adjust if needed for larger PRs
+              per_page: 100 // We'll get all pages automatically
             });
 
             // Check if any HTML files are modified
