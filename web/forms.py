@@ -1750,7 +1750,7 @@ QuizOptionFormSet = forms.inlineformset_factory(
         "text": TailwindInput(attrs={"placeholder": "Option text"}),
         "is_correct": TailwindCheckboxInput(),
     },
-    extra=4,
+    extra=1,
     can_delete=True,
     validate_min=True,
     min_num=1,

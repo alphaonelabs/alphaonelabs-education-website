@@ -95,6 +95,71 @@
       }
     }
     
+    function handleDeleteOptions(event) {
+      const clickedButton = event.target;
+      let optionForm = clickedButton.closest(".option-form")
+
+      let optionNum = document.querySelectorAll(".option-form").length
+
+      console.log("optionNum", optionNum)
+      // check for at least two options
+      if (optionNum <= 2){
+        alert('There must be at least two answers to multiple-choice questions.');
+        return false;
+      }
+
+      const deleteInput = optionForm.querySelector('input[name$="-DELETE"]');
+      
+      console.log(deleteInput)
+      if (deleteInput) {
+        // Mark for deletion in database and hide
+        deleteInput.value = 'on';
+        optionForm.style.display = 'none';
+      } else {
+        // New option, just remove from DOM
+        console.log('deleted', optionForm)
+        optionForm.remove();
+      }
+      
+      // Update form count
+      updateOptionCount();
+      reindexOptionForms()
+    }
+
+    // Update option count and indices
+    function updateOptionCount() {
+      const totalFormsField = document.getElementById('id_options-TOTAL_FORMS');
+      const visibleOptions = document.querySelectorAll('.option-form:not([style*="display: none"])');
+      
+      // Update the total forms count
+      totalFormsField.value = visibleOptions.length;
+    }
+
+    let allDeleteOptionsButtons = document.querySelectorAll(".delete-option-btn")
+    allDeleteOptionsButtons.forEach(element => {
+      element.addEventListener('click', handleDeleteOptions);
+    });
+
+    function reindexOptionForms() {
+      const optionForms = document.querySelectorAll('.option-form');
+      
+      optionForms.forEach((form, index) => {
+        if (form.style.display === 'none') return; // Skip hidden forms if needed
+
+        // Update input, checkbox, and hidden inputs
+        const inputs = form.querySelectorAll('input, label');
+
+        inputs.forEach((input) => {
+            ['name', 'id', 'for'].forEach((attr) => {
+                if (input.hasAttribute(attr)) {
+                    input.setAttribute(attr, input.getAttribute(attr).replace(/options-\d+-/, `options-${index}-`));
+                }
+            });
+        });
+      });
+    }
+
+
     // Event listeners for true/false radio buttons
     document.getElementById('true_answer').addEventListener('change', updateTrueFalseHiddenValues);
     document.getElementById('false_answer').addEventListener('change', updateTrueFalseHiddenValues);
@@ -127,6 +192,8 @@
         }
       });
       
+      formTemplate.querySelector(".delete-option-btn").addEventListener('click', handleDeleteOptions);
+
       // Update form count
       totalFormsField.value = formCount + 1;
       
@@ -150,26 +217,66 @@
         // Check if at least one option is marked as correct
         const correctCheckboxes = document.querySelectorAll('input[name$="-is_correct"]:checked');
         if (correctCheckboxes.length === 0) {
-          e.preventDefault();
           alert('Please select at least one correct answer for multiple choice questions.');
           return false;
         }
-        let allChoices = document.querySelectorAll(".option-form")
-        let counter = 0;
+        
+        // Get all option forms
+        let allChoices = document.querySelectorAll(".option-form");
+        let validOptions = [];
+        let emptyInputs = []
+        
+        // First, identify all non-empty options
         allChoices.forEach(element => {
-          let textInput = element.querySelector('input[name^="options-"]')
-          // console.log(textInput.value.trim().length)
-          if (textInput.value.trim().length == 0) {
-            console.log(element)
-            element.remove()
+          let textInput = element.querySelector('input[type="text"]');
+          if (textInput.value.trim().length > 0) {
+            validOptions.push(element);
+          } else {
+            emptyInputs.push(element)
           }
         });
-        // For testing
-        for (const [key, value] of formData.entries()) {
-            console.log(key, value);
+        
+        // Update the total forms count
+        const totalFormsField = document.getElementById('id_options-TOTAL_FORMS');
+        totalFormsField.value = validOptions.length;
+        
+        console.log("validOptions length", validOptions.length)
+        if (validOptions.length < 2) {
+          alert('Please add at least two non-empty option for multiple choice questions.');
+          return false;
         }
+
+        emptyInputs.forEach(element => {
+          element.remove()
+        });
+
+        // Now reindex the valid options and show them
+        validOptions.forEach((element, index) => {
+          // Update all input names and IDs
+          const inputs = element.querySelectorAll('input');
+          inputs.forEach(input => {
+            // Update ID and name attributes to use the new index
+            const oldName = input.name;
+            const newName = oldName.replace(/options-\d+/, `options-${index}`);
+            input.name = newName;
+            
+            if (input.id) {
+              const oldId = input.id;
+              const newId = oldId.replace(/options-\d+/, `options-${index}`);
+              input.id = newId;
+            }
+          });
+          
+        });
+        
+        const formData = new FormData(form);
+        for (const [key, value] of formData.entries()) {
+          console.log(key, value);
+        }
+        // Submit the form after processing
+        // form.submit();
         e.preventDefault();
-      } 
+      }
       else if (questionType === 'true_false') {
         // Ensure a radio button is selected for true/false
         const trueRadio = document.getElementById('true_answer');
@@ -332,7 +439,12 @@
             
             <div id="options-container" class="space-y-4">
               {% for option_form in formset %}
-                <div class="option-form bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <div class="reltive option-form bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <div class="text-end">
+                    <button type="button" class="delete-option-btn pl-[15px]">
+                      <i class="fas fa-trash text-red-600"></i>
+                    </button>
+                  </div>
                   <div class="grid grid-cols-12 gap-4">
                     <div class="col-span-10">
                       <label for="{{ option_form.text.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
