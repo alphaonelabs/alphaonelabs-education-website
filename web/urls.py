@@ -3,6 +3,7 @@ from django.conf.urls.i18n import i18n_patterns
 from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseNotFound
 from django.urls import include, path
 
 from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
@@ -445,7 +446,14 @@ urlpatterns += i18n_patterns(
     path("work-submissions/", views.work_submission_list, name="work_submission_list"),
     path("work-submissions/upload/", views.upload_work_submission, name="upload_work_submission"),
     path("work-submissions/<int:submission_id>/", views.work_submission_detail, name="work_submission_detail"),
-    path("direct-media/<path:file_path>/", views.serve_work_file, name="serve_work_file"),
+    path(
+        "direct-media/<path:file_path>/",
+        lambda request, file_path: (
+            views.serve_work_file(request, file_path) if settings.DEBUG else HttpResponseNotFound()
+        ),
+        name="serve_work_file",
+    ),
+    path("work-submissions/<int:submission_id>/delete/", views.delete_work_submission, name="delete_work_submission"),
     # API endpoint for dynamic form updates
     path("api/work-types/<int:work_type_id>/", views.work_type_detail_api, name="work_type_detail_api"),
     # Membership URLs

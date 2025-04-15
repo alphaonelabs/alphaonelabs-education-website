@@ -6943,7 +6943,6 @@ def upload_work_submission(request: HttpRequest) -> HttpResponse:
             submission = form.save(commit=False)
             submission.student = request.user
             submission.save()
-
             # Create notification for user
             Notification.objects.create(
                 user=request.user,
@@ -6951,25 +6950,27 @@ def upload_work_submission(request: HttpRequest) -> HttpResponse:
                 message=f"Your {submission.work_type.name} has been submitted successfully and is pending review.",
                 notification_type="success",
             )
-
             # Create notifications for teachers
             admin_users = User.objects.filter(profile__is_teacher=True)
+            notifications = []
             for admin in admin_users:
-                Notification.objects.create(
-                    user=admin,
-                    title="New Work Submission",
-                    message=(
-                        f"A new {submission.work_type.name} has been submitted by {request.user.username},"
-                        f" and needs review."
-                    ),
-                    notification_type="info",
+                notifications.append(
+                    Notification(
+                        user=admin,
+                        title="New Work Submission",
+                        message=(
+                            f"A new {submission.work_type.name} has been submitted by {request.user.username},"
+                            f" and needs review."
+                        ),
+                        notification_type="info",
+                    )
                 )
-
+            Notification.objects.bulk_create(notifications)
             messages.success(request, "Your document has been submitted successfully!")
             return redirect("work_submission_list")
     else:
         form = WorkSubmissionForm()
-
+        messages.info(request, "Please complete the form to submit your work.")
     return render(request, "web/work/upload_submission.html", {"form": form})
 
 
@@ -7008,15 +7009,12 @@ def work_submission_list(request: HttpRequest) -> HttpResponse:
 def work_submission_detail(request: HttpRequest, submission_id: int) -> HttpResponse:
     """View to see the details of a specific work submission and provide feedback."""
     submission = get_object_or_404(WorkSubmission, pk=submission_id)
-
     # Determine user role
     is_student = request.user == submission.student
-    is_reviewer = request.user.profile.is_teacher
-
+    is_reviewer = hasattr(request.user, "profile") and getattr(request.user.profile, "is_teacher", False)
     # Check if the user has access
     if not (is_student or is_reviewer):
-        raise PermissionDenied("You do not have permission to view this submission.")
-
+        raise PermissionDenied()  # Use default message or define in exception class
     if request.method == "POST" and is_reviewer:
         feedback = request.POST.get("feedback", "")
         new_status = request.POST.get("status", "")
@@ -7050,7 +7048,21 @@ def work_submission_detail(request: HttpRequest, submission_id: int) -> HttpResp
     return render(request, "web/work/submission_detail.html", context)
 
 
+@login_required
+def delete_work_submission(request, submission_id):
+    """Allow the owner to delete their work submission."""
+    submission = get_object_or_404(WorkSubmission, pk=submission_id)
+    if request.user != submission.student:
+        raise PermissionDenied("You do not have permission to delete this submission.")
+    if request.method == "POST":
+        submission.delete()
+        messages.success(request, "Your submission has been deleted.")
+        return redirect("work_submission_list")
+    return render(request, "web/work/confirm_delete.html", {"submission": submission})
+
+
 # Add this helper view to serve files directly (important for development)
+@login_required
 def serve_work_file(request: HttpRequest, file_path: str) -> HttpResponse:
     """Serve uploaded work files directly (for development only)."""
     import mimetypes
@@ -7080,6 +7092,7 @@ def serve_work_file(request: HttpRequest, file_path: str) -> HttpResponse:
 
 
 # API endpoint for dynamic form handling
+@login_required
 def work_type_detail_api(request: HttpRequest, work_type_id: int) -> JsonResponse:
     """API to get work type details for dynamic form updates."""
     try:
