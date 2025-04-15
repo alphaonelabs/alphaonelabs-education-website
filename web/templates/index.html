@@ -312,13 +312,13 @@
               </div>
             </div>
             {% if user.profile.is_teacher %}
-              <a href="{% url 'pdf_submission_list' %}"
+              <a href="{% url 'work_submission_list' %}"
                  class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
                 <span>Review Documents</span>
                 <i class="fas fa-clipboard-list ml-2"></i>
               </a>
             {% else %}
-              <a href="{% url 'pdf_submission_list' %}"
+              <a href="{% url 'work_submission_list' %}"
                  class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
                 <span>Upload Document</span>
                 <i class="fas fa-upload ml-2"></i>

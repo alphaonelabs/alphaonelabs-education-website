@@ -441,10 +441,13 @@ urlpatterns += i18n_patterns(
     # Contributors
     path("contributors/", views.contributors_list_view, name="contributors_list_view"),
     path("contributors/<str:username>/", views.contributor_detail_view, name="contributor_detail"),
-    # file review urls
-    path("pdf-submissions/", views.pdf_submission_list, name="pdf_submission_list"),
-    path("pdf-submissions/upload/", views.upload_pdf_submission, name="upload_pdf_submission"),
-    path("pdf-submissions/<int:submission_id>/", views.pdf_submission_detail, name="pdf_submission_detail"),
+    # Work review urls
+    path("work-submissions/", views.work_submission_list, name="work_submission_list"),
+    path("work-submissions/upload/", views.upload_work_submission, name="upload_work_submission"),
+    path("work-submissions/<int:submission_id>/", views.work_submission_detail, name="work_submission_detail"),
+    path("direct-media/<path:file_path>/", views.serve_work_file, name="serve_work_file"),
+    # API endpoint for dynamic form updates
+    path("api/work-types/<int:work_type_id>/", views.work_type_detail_api, name="work_type_detail_api"),
     # Membership URLs
     path("membership/checkout/<int:plan_id>/", views.membership_checkout, name="membership_checkout"),
     path(

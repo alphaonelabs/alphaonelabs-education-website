@@ -86,7 +86,6 @@ from .forms import (
     MemeForm,
     MessageTeacherForm,
     NotificationPreferencesForm,
-    PDFSubmissionForm,
     ProfileUpdateForm,
     ProgressTrackerForm,
     ReviewForm,
@@ -101,6 +100,7 @@ from .forms import (
     TeamGoalForm,
     TeamInviteForm,
     UserRegistrationForm,
+    WorkSubmissionForm,
 )
 from .marketing import (
     generate_social_share_content,
@@ -142,8 +142,6 @@ from .models import (
     NotificationPreference,
     Order,
     OrderItem,
-    PDFSubmission,
-    PDFType,
     Payment,
     PeerConnection,
     PeerMessage,
@@ -168,6 +166,8 @@ from .models import (
     UserBadge,
     WaitingRoom,
     WebRequest,
+    WorkSubmission,
+    WorkType,
     default_valid_until,
 )
 from .notifications import (
@@ -6931,58 +6931,58 @@ def all_study_groups(request):
     )
 
 
-# PDF submission views
+# Work submission views
 
 
 @login_required
-def upload_pdf_submission(request: HttpRequest) -> HttpResponse:
-    """View for students to upload their PDF documents."""
+def upload_work_submission(request: HttpRequest) -> HttpResponse:
+    """View for students to upload their work documents."""
     if request.method == "POST":
-        form = PDFSubmissionForm(request.POST, request.FILES)
+        form = WorkSubmissionForm(request.POST, request.FILES)
         if form.is_valid():
             submission = form.save(commit=False)
             submission.student = request.user
             submission.save()
+
             # Create notification for user
             Notification.objects.create(
                 user=request.user,
-                title="PDF Submission Received",
-                message=f"Your {submission.pdf_type.name} has been submitted successfully and is pending review.",
+                title="Work Submission Received",
+                message=f"Your {submission.work_type.name} has been submitted successfully and is pending review.",
                 notification_type="success",
             )
+
             # Create notifications for teachers
             admin_users = User.objects.filter(profile__is_teacher=True)
-            notifications = []
             for admin in admin_users:
-                notifications.append(
-                    Notification(
-                        user=admin,
-                        title="New PDF Submission",
-                        message=(
-                            f"A new {submission.pdf_type.name} has been submitted by "
-                            f"{request.user.username} and needs review."
-                        ),
-                        notification_type="info",
-                    )
+                Notification.objects.create(
+                    user=admin,
+                    title="New Work Submission",
+                    message=(
+                        f"A new {submission.work_type.name} has been submitted by {request.user.username},"
+                        f" and needs review."
+                    ),
+                    notification_type="info",
                 )
-            Notification.objects.bulk_create(notifications)
-            messages.success(request, "Your submission has been received and will be reviewed soon.")
-            return redirect("pdf_submission_list")
+
+            messages.success(request, "Your document has been submitted successfully!")
+            return redirect("work_submission_list")
     else:
-        form = PDFSubmissionForm()
-    return render(request, "web/pdf/upload_submission.html", {"form": form})
+        form = WorkSubmissionForm()
+
+    return render(request, "web/work/upload_submission.html", {"form": form})
 
 
 @login_required
-def pdf_submission_list(request: HttpRequest) -> HttpResponse:
-    """View to see all submitted PDF documents."""
+def work_submission_list(request: HttpRequest) -> HttpResponse:
+    """View to see all submitted work documents."""
     viewing_as = "student"
     if request.user.profile.is_teacher:
         viewing_as = "reviewer"
-        submissions_list = PDFSubmission.objects.select_related("student", "pdf_type").all().order_by("-submitted_at")
+        submissions_list = WorkSubmission.objects.select_related("student", "work_type").all().order_by("-submitted_at")
     else:
         submissions_list = (
-            PDFSubmission.objects.select_related("pdf_type").filter(student=request.user).order_by("-submitted_at")
+            WorkSubmission.objects.select_related("work_type").filter(student=request.user).order_by("-submitted_at")
         )
 
     # Pagination logic
@@ -6993,67 +6993,107 @@ def pdf_submission_list(request: HttpRequest) -> HttpResponse:
         submissions = paginator.page(page)
     except PageNotAnInteger:
         submissions = paginator.page(1)
-        messages.info(request, "Page number not valid. Showing first page of results.")
     except EmptyPage:
         submissions = paginator.page(paginator.num_pages)
-        messages.info(request, "Requested page is empty. Showing last page of results.")
 
     context = {
         "submissions": submissions,
         "viewing_as": viewing_as,
-        "pdf_types": PDFType.objects.all(),
+        "work_types": WorkType.objects.all(),
     }
-    return render(request, "web/pdf/submission_list.html", context)
+    return render(request, "web/work/submission_list.html", context)
 
 
 @login_required
-def pdf_submission_detail(request: HttpRequest, submission_id: int) -> HttpResponse:
-    """View to see the details of a specific PDF submission and provide feedback."""
-    submission = get_object_or_404(PDFSubmission, pk=submission_id)
+def work_submission_detail(request: HttpRequest, submission_id: int) -> HttpResponse:
+    """View to see the details of a specific work submission and provide feedback."""
+    submission = get_object_or_404(WorkSubmission, pk=submission_id)
 
     # Determine user role
     is_student = request.user == submission.student
-    is_reviewer = hasattr(request.user, "profile") and (
-        getattr(request.user.profile, "is_teacher", False) or getattr(request.user.profile, "is_reviewer", False)
-    )
-    # Access control
+    is_reviewer = request.user.profile.is_teacher
+
+    # Check if the user has access
     if not (is_student or is_reviewer):
         raise PermissionDenied("You do not have permission to view this submission.")
 
     if request.method == "POST" and is_reviewer:
         feedback = request.POST.get("feedback", "")
         new_status = request.POST.get("status", "")
-        if feedback or new_status:
-            with transaction.atomic():
-                if feedback:
-                    submission.feedback = feedback
-                if new_status:
-                    if new_status in dict(PDFSubmission.STATUS_CHOICES):
-                        submission.status = new_status
-                    else:
-                        messages.error(request, f"Invalid status: {new_status}")
-                        return redirect("pdf_submission_detail", submission_id=submission.id)
-                submission.reviewed_by = request.user
-                submission.reviewed_at = timezone.now()
-                submission.save()
-                print(submission)
-                # Create notification for student
-                Notification.objects.create(
-                    user=submission.student,
-                    title="Your PDF Submission Has Been Reviewed",
-                    message=f"Your {submission.pdf_type.name} has been reviewed. Check the feedback for details.",
-                    notification_type="info",
-                )
-                messages.success(request, "Feedback and status updated successfully.")
-            return redirect("pdf_submission_list")
+
+        if feedback:
+            submission.feedback = feedback
+
+        if new_status and new_status in dict(submission.STATUS_CHOICES):
+            submission.status = new_status
+            submission.reviewed_by = request.user
+
+        submission.save()
+
+        # Create notification for student
+        Notification.objects.create(
+            user=submission.student,
+            title="Your Work Submission Has Been Reviewed",
+            message=f"Your {submission.work_type.name} has been reviewed. Check the feedback for details.",
+            notification_type="info",
+        )
+
+        messages.success(request, "Feedback and status updated successfully.")
+        return redirect("work_submission_detail", submission_id=submission_id)
 
     context = {
-        "submission": submission,  # Rename to match template
-        "is_reviewer": is_reviewer,
-        "is_student": is_student,
+        "submission": submission,
         "status_choices": submission.get_status_choices(),
+        "is_student": is_student,
+        "is_reviewer": is_reviewer,
     }
-    return render(request, "web/pdf/submission_detail.html", context)
+    return render(request, "web/work/submission_detail.html", context)
+
+
+# Add this helper view to serve files directly (important for development)
+def serve_work_file(request: HttpRequest, file_path: str) -> HttpResponse:
+    """Serve uploaded work files directly (for development only)."""
+    import mimetypes
+    import os
+
+    from django.conf import settings
+    from django.http import FileResponse, Http404
+
+    # Construct the absolute file path
+    absolute_path = os.path.join(settings.MEDIA_ROOT, file_path)
+
+    # Security check: Ensure the path is within MEDIA_ROOT
+    if not os.path.abspath(absolute_path).startswith(os.path.abspath(settings.MEDIA_ROOT)):
+        raise Http404("Invalid file path")
+
+    # Check if file exists
+    if not os.path.exists(absolute_path) or not os.path.isfile(absolute_path):
+        raise Http404("File not found")
+
+    # Get content type based on file extension
+    content_type, encoding = mimetypes.guess_type(absolute_path)
+    if not content_type:
+        content_type = "application/octet-stream"
+
+    # Serve the file directly
+    return FileResponse(open(absolute_path, "rb"), content_type=content_type)
+
+
+# API endpoint for dynamic form handling
+def work_type_detail_api(request: HttpRequest, work_type_id: int) -> JsonResponse:
+    """API to get work type details for dynamic form updates."""
+    try:
+        work_type = WorkType.objects.get(pk=work_type_id)
+        return JsonResponse(
+            {
+                "id": work_type.id,
+                "name": work_type.name,
+                "allowed_file_types": work_type.allowed_file_types,
+                "max_file_size_mb": work_type.max_file_size_mb,
+            }
+        )
+    except WorkType.DoesNotExist:
+        return JsonResponse({"error": "Work type not found"}, status=404)
 
 
 @login_required
