@@ -211,8 +211,20 @@ def quiz_list(request):
 
 
 @login_required
-def create_quiz(request):
+def create_quiz(request, section_id, exam_type):
     """Create a new quiz."""
+    # Get the section and verify it exists
+    # if exam_type == "final":
+    course = get_object_or_404(Course, id=section_id)
+    #     print("@@@@@@@@@@@", course)
+        
+
+    section = get_object_or_404(Session, id=section_id)
+
+    # Check if user is the owner of the course
+    if course.teacher != request.user:
+        return HttpResponseForbidden("You don't have permission to create quizzes for this course.")
+
     if request.method == "POST":
         form = QuizForm(request.POST)
         if form.is_valid():
@@ -225,7 +237,12 @@ def create_quiz(request):
     else:
         form = QuizForm()
 
-    return render(request, "web/quiz/quiz_form.html", {"form": form, "title": "Create Quiz"})
+    return render(request, "web/quiz/quiz_form.html", {
+        "form": form, 
+        # "title": f"Create Quiz for {section.title}",
+        # "section": section,
+        "course": course
+    })
 
 
 @login_required
