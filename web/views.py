@@ -208,31 +208,89 @@ def sitemap(request):
     return render(request, "sitemap.html")
 
 
+def handle_referral(request, code):
+    """Handle referral link with the format /en/ref/CODE/ and redirect to homepage."""
+    # Store referral code in session
+    request.session["referral_code"] = code
+
+    # The WebRequestMiddleware will automatically log this request with the correct path
+    # containing the referral code, so we don't need to create a WebRequest manually
+
+    # Redirect to homepage
+    return redirect("index")
+
+
 def index(request):
     """Homepage view."""
     from django.conf import settings
 
-    # Store referral code in session if present in URL
+    # Store referral code in session if present in URL (for backward compatibility)
     ref_code = request.GET.get("ref")
 
     if ref_code:
         request.session["referral_code"] = ref_code
+        # The WebRequestMiddleware will track this request automatically
+        # with the query parameter in the path
 
-    # Get top referrers
-    top_referrers = Profile.objects.annotate(
-        total_signups=models.Count("referrals"),
+    # Get top referrers - including both those with referrals and those with clicks
+    # First, find all referral codes that have clicks in WebRequest
+    referral_codes_with_clicks = (
+        WebRequest.objects.filter(models.Q(path__contains="/ref/") | models.Q(path__contains="?ref="))
+        .values_list("path", flat=True)
+        .distinct()
+    )
+
+    # Extract referral codes from the paths
+    active_referral_codes = set()
+    for path in referral_codes_with_clicks:
+        if "/ref/" in path:
+            # Format: /en/ref/CODE/
+            parts = path.split("/ref/")
+            if len(parts) > 1:
+                code = parts[1].strip("/")
+                if code:
+                    active_referral_codes.add(code)
+        elif "?ref=" in path:
+            # Format: /?ref=CODE or ?ref=CODE&other=params
+            parts = path.split("?ref=")
+            if len(parts) > 1:
+                code = parts[1].split("&")[0]  # Handle additional parameters
+                if code:
+                    active_referral_codes.add(code)
+
+    # Get profiles with referrals and/or clicks
+    profiles_with_activity = Profile.objects.filter(
+        models.Q(referrals__isnull=False)  # Has referrals
+        | models.Q(referral_code__in=active_referral_codes)  # Has clicks
+    ).distinct()
+
+    # Annotate with signups and enrollments
+    top_referrers = profiles_with_activity.annotate(
+        total_signups=models.Count("referrals", distinct=True),
         total_enrollments=models.Count(
-            "referrals__user__enrollments", filter=models.Q(referrals__user__enrollments__status="approved")
+            "referrals__user__enrollments",
+            filter=models.Q(referrals__user__enrollments__status="approved"),
+            distinct=True,
         ),
-        total_clicks=models.Count(
-            "referrals__user",
-            filter=models.Q(
-                referrals__user__username__in=WebRequest.objects.filter(path__contains="ref=").values_list(
-                    "user", flat=True
-                )
-            ),
-        ),
-    ).order_by("-total_signups", "-total_enrollments")[:3]
+    ).order_by("-total_signups", "-total_enrollments")[
+        :10
+    ]  # Get more and then sort by clicks
+
+    # Add click counts manually since WebRequest.user is a CharField, not a ForeignKey
+    for referrer in top_referrers:
+        # Look for both new format /ref/CODE/ and old format ?ref=CODE
+        ref_code = referrer.referral_code
+        clicks = WebRequest.objects.filter(
+            models.Q(path__contains=f"/ref/{ref_code}/") | models.Q(path__contains=f"?ref={ref_code}")
+        ).count()
+        referrer.total_clicks = clicks
+
+    # Re-sort to include click count in ranking
+    top_referrers = sorted(
+        top_referrers, key=lambda x: (x.total_signups, x.total_enrollments, x.total_clicks), reverse=True
+    )[
+        :3
+    ]  # Take top 3 after sorting
 
     # Get current user's profile if authenticated
     profile = request.user.profile if request.user.is_authenticated else None
