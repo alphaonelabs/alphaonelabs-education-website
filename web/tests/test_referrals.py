@@ -122,3 +122,32 @@ class ReferralTests(TestCase):
         """Test that referral codes are unique"""
         used_codes = set(Profile.objects.values_list("referral_code", flat=True))
         self.assertEqual(len(used_codes), len(Profile.objects.all()))
+
+    def test_clicks_without_referrals_in_leaderboard(self):
+        """Test that users with clicks but no referrals appear in the leaderboard"""
+        # Create a new user with no referrals
+        user_with_clicks = User.objects.create_user(
+            username="clicks_user", email="clicks@example.com", password="testpass123"
+        )
+        user_with_clicks.profile.referral_code = "CLICKSCODE"
+        user_with_clicks.profile.save()
+
+        # Create some web requests for this user's referral code
+        WebRequest.objects.create(path="/ref/CLICKSCODE/", ip_address="127.0.0.1", user="anonymous", count=3)
+
+        # Get the homepage
+        response = self.client.get(reverse("index"))
+        self.assertEqual(response.status_code, 200)
+
+        # Get the top referrers from the context
+        top_referrers = response.context["top_referrers"]
+
+        # Check that the user with clicks is in the list
+        user_codes = [referrer.referral_code for referrer in top_referrers]
+        self.assertIn("CLICKSCODE", user_codes)
+
+        # Find the user in the list and check their click count
+        for referrer in top_referrers:
+            if referrer.referral_code == "CLICKSCODE":
+                self.assertEqual(referrer.total_signups, 0)  # No actual referrals
+                self.assertEqual(referrer.total_clicks, 1)  # But has clicks
