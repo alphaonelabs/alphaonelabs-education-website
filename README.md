@@ -78,6 +78,9 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 
 1. Clone the repository:
 
+   **Before cloning this repository using the git code below:**
+   - In the below code you see 'yourusername' in the part of the link, Change it to your GitHub username.
+   - For example:- Let's say your GitHub username is johnwilliam `...ub.com/yourusername/alp...` to `...ub.com/johnwilliam/alp...`.
    ```bash
    git clone https://github.com/yourusername/alphaonelabs-education-website.git
    cd alphaonelabs-education-website
