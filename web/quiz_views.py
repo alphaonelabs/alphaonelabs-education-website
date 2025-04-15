@@ -510,7 +510,6 @@ def edit_question(request, question_id):
     )
 
 
-@login_required
 def delete_question(request, question_id):
     """Delete a question from a quiz."""
     question = get_object_or_404(QuizQuestion, id=question_id)
@@ -520,7 +519,6 @@ def delete_question(request, question_id):
     if quiz.creator != request.user:
         return HttpResponseForbidden("You don't have permission to delete this question.")
 
-    print(request.method)
     if request.method == "POST":
         quiz_id = quiz.id
         question.delete()
@@ -530,7 +528,22 @@ def delete_question(request, question_id):
             q.order = i + 1
             q.save()
 
-        messages.success(request, "Question deleted successfully.")
+        # this message appears after page refresh
+        # messages.success(request, "Question deleted successfully.")
+        
+        # For HTMX requests, return an empty response (removes the element)
+        if request.headers.get('HX-Request') == 'true':
+            response = HttpResponse('')
+            response['HX-Trigger'] = json.dumps({
+                "show-toast": {
+                    "level": "success",
+                    "message": "Question deleted successfully."
+                }
+            })
+            return response
+
+        
+        # For regular requests, redirect to the quiz detail page
         return redirect("quiz_detail", quiz_id=quiz_id)
 
     return render(request, "web/quiz/delete_question.html", {"question": question, "quiz": quiz})

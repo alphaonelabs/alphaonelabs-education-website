@@ -2099,6 +2099,10 @@ class Quiz(models.Model):
     show_correct_answers = models.BooleanField(default=False, help_text="Show correct answers after quiz completion")
     randomize_questions = models.BooleanField(default=False, help_text="Randomize the order of questions")
     time_limit = models.PositiveIntegerField(null=True, blank=True, help_text="Time limit in minutes (optional)")
+    AI_auto_correction = models.BooleanField(
+        default=False, 
+        help_text="If enabled, AI will automatically attempt to correct open-ended questions"
+    )
 
     # New fields for exam functionality
     exam_type = models.CharField(max_length=10, choices=EXAM_TYPES, default="quiz")

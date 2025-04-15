@@ -187,6 +187,21 @@
                   <p class="text-gray-500 dark:text-gray-400">Allow users to take quiz without signing in</p>
                 </div>
               </div>
+              <!-- AI-Auto correction -->
+              <div class="flex items-start">
+                <div class="flex items-center h-5">
+                  <input type="checkbox"
+                         name="{{ form.AI_auto_correction.html_name }}"
+                         id="{{ form.AI_auto_correction.id_for_label }}"
+                         {% if form.AI_auto_correction.value %}checked{% endif %}
+                         class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
+                </div>
+                <div class="ml-3 text-sm">
+                  <label  for="{{ form.AI_auto_correction.id_for_label }}"
+                          class="font-medium text-gray-700 dark:text-gray-300">Allow AI-Auto correction</label>
+                  <p class="text-gray-500 dark:text-gray-400">Allow AI to auto correction students exams</p>
+                </div>
+              </div>
             </div>
           </div>
           <!-- Form Buttons -->

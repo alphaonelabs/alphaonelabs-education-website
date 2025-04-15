@@ -1703,6 +1703,7 @@ class QuizForm(forms.ModelForm):
             "show_correct_answers",
             "allow_anonymous",
             "max_attempts",
+            "AI_auto_correction",
         ]
         widgets = {
             "title": TailwindInput(attrs={"placeholder": "Quiz Title"}),
@@ -1715,6 +1716,7 @@ class QuizForm(forms.ModelForm):
             "randomize_questions": TailwindCheckboxInput(),
             "show_correct_answers": TailwindCheckboxInput(),
             "allow_anonymous": TailwindCheckboxInput(),
+            "AI_auto_correction": TailwindCheckboxInput(),
             "max_attempts": TailwindNumberInput(attrs={"min": "0", "placeholder": "0 for unlimited attempts"}),
         }
 
