@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
-from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
+from . import admin_views, peer_challenge_views, quiz_views, timezone_views, views, views_avatar
 from .secure_messaging import (
     compose_message,
     download_message,
@@ -455,6 +455,8 @@ urlpatterns += i18n_patterns(
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
     path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
+    # Timezone handling
+    path("set-timezone/", timezone_views.set_timezone, name="set_timezone"),
     prefix_default_language=True,
 )
 

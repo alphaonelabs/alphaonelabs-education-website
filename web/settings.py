@@ -83,7 +83,7 @@ ALLOWED_HOSTS = [
 ]
 
 # Timezone settings
-TIME_ZONE = "America/New_York"
+TIME_ZONE = "UTC"
 USE_TZ = True
 
 CSRF_TRUSTED_ORIGINS = [
@@ -134,6 +134,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "web.middleware.WebRequestMiddleware",
+    "web.middleware.TimeZoneMiddleware",
     # "web.middleware.GlobalExceptionMiddleware",
 ]
 

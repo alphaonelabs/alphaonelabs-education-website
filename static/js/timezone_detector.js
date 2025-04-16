@@ -1,0 +1,44 @@
+/**
+ * Timezone detector script
+ * Automatically detects the user's timezone and sends it to the server
+ */
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Detect user's timezone using Intl API
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    // Only proceed if we got a valid timezone
+    if (timezone) {
+        console.log('Detected timezone:', timezone);
+        sendTimezoneToServer(timezone);
+    } else {
+        console.error('Could not detect timezone');
+    }
+});
+
+/**
+ * Send the detected timezone to the server
+ * @param {string} timezone - The detected timezone (e.g., 'America/New_York')
+ */
+function sendTimezoneToServer(timezone) {
+    // Create form data for the request
+    const formData = new FormData();
+    formData.append('timezone', timezone);
+
+    // Send the request
+    fetch('/set-timezone/', {
+        method: 'POST',
+        body: formData
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                console.log('Timezone set successfully:', data.timezone);
+            } else {
+                console.error('Error setting timezone:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error sending timezone to server:', error);
+        });
+}

@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 
+{% load static %}
+{% load timezone_filters %}
+
 {% block title %}
   Student Dashboard - {{ user.get_full_name|default:user.username }}
 {% endblock title %}
@@ -107,7 +110,7 @@
                         <h4 class="font-medium">{{ session.title }}</h4>
                         <p class="text-sm text-gray-500 dark:text-gray-400">{{ session.course.title }}</p>
                         <p class="text-sm text-gray-500 dark:text-gray-400">
-                          {{ session.start_time|date:"M d, Y" }} at {{ session.start_time|time:"g:i A" }}
+                          {{ session.start_time|localtime_format:"M d, Y" }} at {{ session.start_time|localtime_format:"g:i A" }}
                         </p>
                         {% if session.is_virtual %}
                           <a href="{{ session.meeting_link }}"
