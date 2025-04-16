@@ -1719,6 +1719,7 @@ class QuizForm(forms.ModelForm):
             "AI_auto_correction": TailwindCheckboxInput(),
             "max_attempts": TailwindNumberInput(attrs={"min": "0", "placeholder": "0 for unlimited attempts"}),
         }
+        exclude = ['subject']  
 
     def __init__(self, *args, **kwargs):
         kwargs.pop("user", None)  # Use this if needed for filtering

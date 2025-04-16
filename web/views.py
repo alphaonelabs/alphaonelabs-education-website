@@ -682,6 +682,7 @@ def delete_review(request, slug, review_id):
 
 
 def course_detail(request, slug):
+    print("slug", slug)
     course = get_object_or_404(Course, slug=slug)
     sessions = course.sessions.all().order_by("start_time")
     now = timezone.now()

@@ -226,13 +226,6 @@
 
       if (questionType === 'multiple') {
         // Check if at least one option is marked as correct
-        const correctCheckboxes = document.querySelectorAll('input[name$="-is_correct"]:checked');
-        if (correctCheckboxes.length === 0) {
-          alert('Please select at least one correct answer for multiple choice questions.');
-          e.preventDefault();
-          return;
-        }
-        // todo after this error the form submitted direct
         
         // Get all option forms
         let allChoices = document.querySelectorAll(".option-form");
@@ -243,11 +236,11 @@
         allChoices.forEach(element => {
           // Add this check for options marked for deletion
           const deleteInput = element.querySelector('input[name$="-DELETE"]');
-          const isMarkedForDeletion = deleteInput && deleteInput.value === 'on';
+          // const isMarkedForDeletion = deleteInput && deleteInput.value === 'on'
           
           let textInput = element.querySelector('input[type="text"]');
           // Include options that either have text OR are marked for deletion
-          if (textInput.value.trim().length > 0 || isMarkedForDeletion) {
+          if ((getComputedStyle(element).display !== 'none' && textInput.value.trim().length > 0)) {
             validOptions.push(element);
           } else {
             emptyInputs.push(element)
@@ -263,10 +256,33 @@
           e.preventDefault();
           return;
         }
-
-        emptyInputs.forEach(element => {
-          element.remove()
+        
+        // emptyInputs.forEach(element => {
+          // element.remove()
+        // });
+        
+        // All option-form that didn`t deleted
+        const visibleOptions = [...document.querySelectorAll('.option-form')].filter(el => getComputedStyle(el).display !== 'none');
+        
+        let correctCheckboxes = [];
+        visibleOptions.forEach(option => {
+            const checked = option.querySelectorAll('input[name$="-is_correct"]:checked');
+            correctCheckboxes.push(...checked);
         });
+
+        if (correctCheckboxes.length === 0) {
+          alert('Please select at least one correct answer for multiple choice questions.');
+          e.preventDefault();
+          return;
+        }
+        // todo after this error the form submitted direct
+        
+        const formData = new FormData(form);
+        
+        for (const [name, value] of formData.entries()) {
+          console.log(`${name} = ${value}`);
+        }
+        // e.preventDefault();
 
         // Now reindex the valid options and show them
         validOptions.forEach((element, index) => {

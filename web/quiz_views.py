@@ -19,6 +19,7 @@ from .forms import (
     TakeQuizForm,
 )
 from .models import Course, Quiz, QuizQuestion, Session, UserQuiz, QuizOption
+from .views import course_detail
 
 
 @login_required
@@ -55,6 +56,7 @@ def create_course_exam(
             quiz.exam_type = exam_type
             quiz.course = course
             quiz.session = session
+            quiz.subject = course.subject
             quiz.save()
 
             messages.success(request, "Exam created successfully. Now add some questions!")
@@ -66,7 +68,7 @@ def create_course_exam(
             "time_limit": 60 if exam_type == "session" else 120,
             "title": f"Quiz - {session.title}" if session else f"Final Exam - {course.title}",
             "description": f"Quiz for {session.title}" if session else f"Final comprehensive exam for {course.title}",
-            "status": "draft",
+            "status": "published",
         }
         form = QuizForm(initial=initial_data)
 
@@ -208,41 +210,6 @@ def quiz_list(request):
     }
 
     return render(request, "web/quiz/quiz_list.html", context)
-
-
-@login_required
-def create_quiz(request, section_id, exam_type):
-    """Create a new quiz."""
-    # Get the section and verify it exists
-    # if exam_type == "final":
-    course = get_object_or_404(Course, id=section_id)
-    #     print("@@@@@@@@@@@", course)
-        
-
-    section = get_object_or_404(Session, id=section_id)
-
-    # Check if user is the owner of the course
-    if course.teacher != request.user:
-        return HttpResponseForbidden("You don't have permission to create quizzes for this course.")
-
-    if request.method == "POST":
-        form = QuizForm(request.POST)
-        if form.is_valid():
-            quiz = form.save(commit=False)
-            quiz.creator = request.user
-            quiz.share_code = get_random_string(8)
-            quiz.save()
-            messages.success(request, "Quiz created successfully. Now add some questions!")
-            return redirect("quiz_detail", quiz_id=quiz.id)
-    else:
-        form = QuizForm()
-
-    return render(request, "web/quiz/quiz_form.html", {
-        "form": form, 
-        # "title": f"Create Quiz for {section.title}",
-        # "section": section,
-        "course": course
-    })
 
 
 @login_required
@@ -569,8 +536,11 @@ def delete_question(request, question_id):
 @login_required
 def delete_quiz(request, quiz_id):
     """Delete an entire quiz."""
-    quiz = get_object_or_404(Quiz, id=quiz_id)
+    quiz = Quiz.objects.filter(id=quiz_id).first()
 
+    if not quiz:
+        return HttpResponseForbidden("There is no exam with this id.")
+    
     # Check if user can delete this quiz
     if quiz.creator != request.user:
         return HttpResponseForbidden("You don't have permission to delete this quiz.")
@@ -578,7 +548,7 @@ def delete_quiz(request, quiz_id):
     if request.method == "POST":
         quiz.delete()
         messages.success(request, "Quiz deleted successfully.")
-        return redirect("quiz_list")
+        return redirect(course_detail, quiz.course.slug)
 
     return render(request, "web/quiz/delete_quiz.html", {"quiz": quiz})
 

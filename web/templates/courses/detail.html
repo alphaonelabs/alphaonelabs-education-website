@@ -1139,15 +1139,8 @@
                      role="tabpanel"
                      aria-labelledby="tab-exams">
                   <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
-                    <div class="flex justify-between items-center mb-4">
+                    <div class="flex justify-center items-center mb-4">
                       <h2 class="text-xl font-bold">Course Exams and Quizzes</h2>
-                      {% if user == course.teacher %}
-                      <h1>######## {{ course.id }} ###########</h1>
-                        <a href="{% url 'create_quiz' course.id %}?exam_type=final"
-                           class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg transition duration-200 text-sm">
-                          <i class="fas fa-plus mr-1"></i>Add Course Exam
-                        </a>
-                      {% endif %}
                     </div>
                     <!-- Final Course Exam Section -->
                     <div>
@@ -1207,7 +1200,15 @@
                           {% endfor %}
                         </div>
                       {% else %}
-                        <!-- Empty state code here -->
+                        <div class="flex justify-between bg-gray-50 dark:bg-gray-700 rounded-lg p-5 mb-5">
+                          <h4 class="font-small">There is no Final Exam yet.</h4>
+                          {% if user == course.teacher %}
+                            <a href="{% url 'create_course_exam' course.id %}"
+                              class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg transition duration-200 text-sm">
+                              <i class="fas fa-plus mr-1"></i>Add Final Course Exam
+                            </a>
+                          {% endif %}
+                          </div>
                       {% endif %}
                     </div>
                     <!-- Session Exams Section -->
@@ -1262,7 +1263,7 @@
                               <div class="bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 p-2">
                                 <div class="flex justify-end items-start">
                                   <div class="flex gap-1 items-center">
-                                    <a href="{% url 'create_quiz' item.session.id %}?exam_type=session"
+                                    <a href="{% url 'create_session_exam' course.id item.session.id %}"
                                         class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
                                       <i class="fas fa-add"></i> Add Quiz
                                     </a>

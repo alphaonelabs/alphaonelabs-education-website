@@ -30,7 +30,7 @@
     <!-- Quiz Form -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
       <div class="p-6">
-        <form method="post">
+        <form id="form" method="post">
           {% csrf_token %}
           {% if form.non_field_errors %}
             <div class="mb-6 p-4 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300 rounded-lg">
@@ -77,23 +77,13 @@
                        class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Subject <span class="text-red-600">*</span>
                 </label>
-                <select name="{{ form.subject.html_name }}"
-                        id="{{ form.subject.id_for_label }}"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
-                        required>
-                  <option value="">Select a subject</option>
-                  {% for choice in form.subject.field.choices %}
-                    {% if choice.0 %}
-                      <option value="{{ choice.0 }}"
-                              {% if form.subject.value|stringformat:"s" == choice.0|stringformat:"s" %}selected{% endif %}>
-                        {{ choice.1 }}
-                      </option>
-                    {% endif %}
-                  {% endfor %}
-                </select>
-                {% if form.subject.errors %}
-                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.subject.errors.0 }}</p>
-                {% endif %}
+                <div class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white">
+                  {% if course.subject %}
+                    <h1>{{ course.subject }}</h1>
+                  {% else %}
+                    <h1>Unknown subject</h1>
+                  {% endif %}
+                </div>
               </div>
               <!-- Status -->
               <div>

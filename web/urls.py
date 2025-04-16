@@ -358,8 +358,6 @@ urlpatterns += i18n_patterns(
     path("trackers/embed/<str:embed_code>/", views.embed_tracker, name="embed_tracker"),
     # Quiz URLs
     path("quizzes/", quiz_views.quiz_list, name="quiz_list"),
-    # path("quizzes/create/<int:section_id>", quiz_views.create_quiz, name="create_quiz"),
-    path("quizzes/create/<int:id>", quiz_views.create_quiz, name="create_quiz"),
     path("quizzes/<int:quiz_id>/", quiz_views.quiz_detail, name="quiz_detail"),
     path("quizzes/<int:quiz_id>/update/", quiz_views.update_quiz, name="update_quiz"),
     path("quizzes/<int:quiz_id>/delete/", quiz_views.delete_quiz, name="delete_quiz"),

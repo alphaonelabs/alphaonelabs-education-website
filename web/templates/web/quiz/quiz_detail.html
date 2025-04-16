@@ -53,6 +53,9 @@
       <a href="{% url 'quiz_list' %}"
          class="text-blue-600 hover:text-blue-800">Quizzes</a>
       <span class="mx-2">/</span>
+      <a href="{% url 'course_detail' quiz.course.slug %}"
+         class="text-blue-600 hover:text-blue-800">{{ quiz.course }}</a>
+      <span class="mx-2">/</span>
       <span class="text-gray-600">{{ quiz.title }}</span>
     </nav>
     <!-- Quiz Details -->
