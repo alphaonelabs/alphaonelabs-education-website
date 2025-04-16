@@ -36,7 +36,7 @@
         default: 
             shortAnswerOptions.classList.remove('hidden');
             HandleInputsWithQuestionType(questionTypeField.value)
-            document.getElementById('id_options-TOTAL_FORMS').value = '1';
+            document.getElementById('id_options-TOTAL_FORMS').value = '2';
           break;
       }
     }
@@ -96,12 +96,14 @@
     }
     
     function handleDeleteOptions(event) {
-      const clickedButton = event.target;
-      let optionForm = clickedButton.closest(".option-form")
-      let optionNum = document.querySelectorAll(".option-form").length
+      const clickedButton = event.target.closest(".delete-option-btn");
+      if (!clickedButton) return false;
+      
+      let optionForm = clickedButton.closest(".option-form");
+      let visibleOptions = document.querySelectorAll(".option-form:not([style*='display: none'])").length;
 
       // check for at least two options
-      if (optionNum <= 2){
+      if (visibleOptions <= 2) {
         alert('There must be at least two answers to multiple-choice questions.');
         return false;
       }
@@ -113,43 +115,40 @@
         deleteInput.value = 'on';
         optionForm.style.display = 'none';
       } else {
-        // extract question number
-        const hiddenInput = optionForm.querySelector("input[type=hidden]")
-        const nameAttr = hiddenInput.name; // e.g., "options-0-id"
-        // Use RegEx to extract the number between hyphens
-        const match = nameAttr.match(/^options-(\d+)-/);
-        console.log("hiddenInput", match[1])
+        // Try to find any input to determine the index
+        const anyInput = optionForm.querySelector("input[name^='options-']");
         
-        let deleteInput = document.createElement("input")
-        deleteInput.type = "hidden"
-        // new name value for new delete input
-        let nameParts = hiddenInput.name.split("-")
-        nameParts[nameParts.length - 1] = "DELETE"
-        nameParts = nameParts.join("-")
-        deleteInput.name = nameParts
-        // new name value for new delete input
-        let idParts = hiddenInput.id.split("-")
-        idParts[idParts.length - 1] = "DELETE"
-        idParts = idParts.join("-")
-        deleteInput.id = idParts
-        deleteInput.value = "on"
-        hiddenInput.after(deleteInput);
-        // hide the input to delete
+        if (anyInput) {
+          const match = anyInput.name.match(/^options-(\d+)-/);
+          
+          if (match) {
+            const deleteInput = document.createElement("input");
+            deleteInput.type = "hidden";
+            deleteInput.name = `options-${match[1]}-DELETE`;
+            deleteInput.id = `id_options-${match[1]}-DELETE`;
+            deleteInput.value = "on";
+            optionForm.appendChild(deleteInput);
+          }
+        }
+        
+        // hide the form
         optionForm.style.display = 'none';
       }
       
-      // Update form count
+      // Update form count and reindex
       updateOptionCount();
-      reindexOptionForms()
+      reindexOptionForms();
     }
 
     // Update option count and indices
     function updateOptionCount() {
       const totalFormsField = document.getElementById('id_options-TOTAL_FORMS');
+      const initialFormsField = document.getElementById('id_options-INITIAL_FORMS');
       const visibleOptions = document.querySelectorAll('.option-form:not([style*="display: none"])');
       
       // Update the total forms count
       totalFormsField.value = visibleOptions.length;
+      initialFormsField.value = visibleOptions.length;
     }
 
     let allDeleteOptionsButtons = document.querySelectorAll(".delete-option-btn")
@@ -249,7 +248,7 @@
         
         // Update the total forms count
         const totalFormsField = document.getElementById('id_options-TOTAL_FORMS');
-        totalFormsField.value = validOptions.length;
+        totalFormsField.value = allChoices.length;
         
         if (validOptions.length < 2) {
           alert('Please add at least two non-empty option for multiple choice questions.');
@@ -279,10 +278,6 @@
         
         const formData = new FormData(form);
         
-        for (const [name, value] of formData.entries()) {
-          console.log(`${name} = ${value}`);
-        }
-        // e.preventDefault();
 
         // Now reindex the valid options and show them
         validOptions.forEach((element, index) => {
@@ -302,6 +297,11 @@
           });
           
         });
+
+        for (const [name, value] of formData.entries()) {
+          console.log(`${name} = ${value}`);
+        }
+        e.preventDefault();
         
       }
       else if (questionType === 'true_false') {
