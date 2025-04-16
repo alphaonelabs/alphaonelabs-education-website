@@ -41,6 +41,7 @@ _Describe how you tested the changes. Include:_
 
 _Visual proof of UI changes (if applicable). Annotate to highlight changes._  
 **Example:**  
+
 | Before | After |  
 |----------------|---------------|  
 | ![Before](url) | ![After](url) |
