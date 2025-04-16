@@ -324,7 +324,8 @@ class Course(models.Model):
         reviews = self.reviews.all()
         if not reviews:
             return 0
-        return sum(review.rating for review in reviews) / len(reviews)
+        average = sum(review.rating for review in reviews) / len(reviews)
+        return round(average, 2)
 
 
 class Session(models.Model):
