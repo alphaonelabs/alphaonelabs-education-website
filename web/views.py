@@ -808,13 +808,15 @@ def course_detail(request, slug):
             }
         )
 
+    print("$$$$$", sessions)
     # 3. Process each session with its exams
     session_data = []
     for session in sessions:
         # Get all exams for this session
         session_exams = session.exams.all().prefetch_related('user_quizzes')
         session_exam_data = []
-
+        print("@@@@@@", session.exams.all().prefetch_related('user_quizzes'))
+        
         # Process each exam in this session
         for exam in session_exams:
             user_attempt = None

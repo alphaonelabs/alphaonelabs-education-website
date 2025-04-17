@@ -71,20 +71,6 @@
                   <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.description.errors.0 }}</p>
                 {% endif %}
               </div>
-              <!-- Subject -->
-              <div>
-                <label for="{{ form.subject.id_for_label }}"
-                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Subject <span class="text-red-600">*</span>
-                </label>
-                <div class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white">
-                  {% if course.subject %}
-                    <h1>{{ course.subject }}</h1>
-                  {% else %}
-                    <h1>Unknown subject</h1>
-                  {% endif %}
-                </div>
-              </div>
               <!-- Status -->
               <div>
                 <label for="{{ form.status.id_for_label }}"

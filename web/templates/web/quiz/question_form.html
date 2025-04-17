@@ -137,7 +137,6 @@
       
       // Update form count and reindex
       updateOptionCount();
-      reindexOptionForms();
     }
 
     // Update option count and indices
@@ -155,25 +154,6 @@
     allDeleteOptionsButtons.forEach(element => {
       element.addEventListener('click', handleDeleteOptions);
     });
-
-    function reindexOptionForms() {
-      const optionForms = document.querySelectorAll('.option-form');
-      
-      optionForms.forEach((form, index) => {
-        if (form.style.display === 'none') return; // Skip hidden forms if needed
-
-        // Update input, checkbox, and hidden inputs
-        const inputs = form.querySelectorAll('input, label');
-
-        inputs.forEach((input) => {
-            ['name', 'id', 'for'].forEach((attr) => {
-                if (input.hasAttribute(attr)) {
-                    input.setAttribute(attr, input.getAttribute(attr).replace(/options-\d+-/, `options-${index}-`));
-                }
-            });
-        });
-      });
-    }
 
     // Event listeners for true/false radio buttons
     document.getElementById('true_answer').addEventListener('change', updateTrueFalseHiddenValues);
@@ -256,10 +236,6 @@
           return;
         }
         
-        // emptyInputs.forEach(element => {
-          // element.remove()
-        // });
-        
         // All option-form that didn`t deleted
         const visibleOptions = [...document.querySelectorAll('.option-form')].filter(el => getComputedStyle(el).display !== 'none');
         
@@ -279,29 +255,11 @@
         const formData = new FormData(form);
         
 
-        // Now reindex the valid options and show them
-        validOptions.forEach((element, index) => {
-          // Update all input names and IDs
-          const inputs = element.querySelectorAll('input');
-          inputs.forEach(input => {
-            // Update ID and name attributes to use the new index
-            const oldName = input.name;
-            const newName = oldName.replace(/options-\d+/, `options-${index}`);
-            input.name = newName;
-            
-            if (input.id) {
-              const oldId = input.id;
-              const newId = oldId.replace(/options-\d+/, `options-${index}`);
-              input.id = newId;
-            }
-          });
-          
-        });
 
         for (const [name, value] of formData.entries()) {
           console.log(`${name} = ${value}`);
         }
-        e.preventDefault();
+        // e.preventDefault();
         
       }
       else if (questionType === 'true_false') {

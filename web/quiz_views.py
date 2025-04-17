@@ -21,7 +21,6 @@ from .forms import (
 from .models import Course, Quiz, QuizQuestion, Session, UserQuiz, QuizOption
 from .views import course_detail
 
-
 @login_required
 def create_course_exam(
     request: HttpRequest, course_id: int | None = None, session_id: int | None = None
