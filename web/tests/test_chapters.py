@@ -66,7 +66,7 @@ class ChapterModelTests(TestCase):
             content=b"file content",
             content_type="application/pdf"
         )
-        
+
         resource = ChapterResource.objects.create(
             chapter=self.chapter,
             title="Test Resource",
@@ -318,6 +318,7 @@ class ChapterApplicationTests(TestCase):
             description="Test description",
             proposed_activities="Test activities",
             experience="Test experience",
+        )
 
         # Login as admin and approve the application
         self.client.login(username="admin", password="test-password")
