@@ -65,7 +65,7 @@ class ChapterModelTests(TestCase):
         test_file = SimpleUploadedFile(
             name="test_document.pdf",
             content=b"file content",
-            content_type="application/pdf"
+            content_type="application/pdf",
         )
 
         resource = ChapterResource.objects.create(
@@ -81,7 +81,6 @@ class ChapterModelTests(TestCase):
         assert resource.title == "Test Resource"
         assert resource.description == "A test resource"
         assert resource.resource_type == "document"
-        # File‑based resources should *not* have an external URL
         assert resource.external_url in ("", None)
         assert resource.created_by == self.user
 
@@ -191,7 +190,7 @@ class ChapterViewTests(TestCase):
 
     def test_creating_chapter_event(self) -> None:
         # Login as chapter lead
-        self.client.login(username="adminuser", password="password123")
+        self.client.login(username="adminuser", password="test-password")
 
         # Get the create event page
         response = self.client.get(reverse("create_chapter_event", args=[self.chapter.slug]))
@@ -218,7 +217,7 @@ class ChapterViewTests(TestCase):
 
     def test_adding_chapter_resource(self) -> None:
         # Login as chapter lead
-        self.client.login(username="adminuser", password="password123")
+        self.client.login(username="adminuser", password="test-password")
 
         # Get the add resource page
         response = self.client.get(reverse("add_chapter_resource", args=[self.chapter.slug]))
@@ -239,7 +238,7 @@ class ChapterViewTests(TestCase):
 
     def test_chapter_application(self) -> None:
         # Login as normal user
-        self.client.login(username="testuser", password="password123")
+        self.client.login(username="testuser", password="test-password")
 
         # Get the application page
         response = self.client.get(reverse("apply_for_chapter"))
@@ -411,11 +410,6 @@ class ChapterEventTests(TestCase):
         user1 = User.objects.create_user(
             username="user1",
             email="user1@example.com",
-            password="test-password",
-        )
-        user2 = User.objects.create_user(
-            username="user2",
-            email="user2@example.com",
             password="test-password",
         )
 
