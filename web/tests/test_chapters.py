@@ -180,7 +180,7 @@ class ChapterViewTests(TestCase):
         self.assertContains(response, "Test Chapter")
 
         # Normal users shouldn't be able to access management page
-        self.client.login(username="testuser", password="password123")
+        self.client.login(username="testuser", password="test-password")
 
         # First create a membership for the test user
         ChapterMembership.objects.create(chapter=self.chapter, user=self.user, role="member", is_approved=True)
