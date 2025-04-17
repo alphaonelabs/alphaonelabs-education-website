@@ -43,6 +43,59 @@
                 <span class="font-medium">{{ session.location }}</span>
               </div>
             </div>
+            <!-- Session Materials Section -->
+            <div class="mt-8">
+              <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <div class="flex justify-between items-center mb-4">
+                  <h2 class="text-xl font-bold">{% trans "Session Materials" %}</h2>
+                  {% if is_teacher %}
+                    <a href="{% url 'upload_material' session.course.slug %}?session_id={{ session.id }}"
+                       class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg text-sm">
+                      <i class="fas fa-plus mr-1"></i>{% trans "Add Material" %}
+                    </a>
+                  {% endif %}
+                </div>
+                {% if session.materials.exists %}
+                  <div class="space-y-3 max-h-96 overflow-y-auto">
+                    {% for material in session.materials.all %}
+                      <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 shadow-sm">
+                        <div class="flex justify-between items-start">
+                          <div>
+                            <h3 class="font-semibold text-sm">
+                              {% if material.external_url %}
+                                <a href="{{ material.external_url }}" target="_blank"
+                                   class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                  {{ material.title }}
+                                  <i class="fas fa-external-link-alt ml-1 text-xs"></i>
+                                </a>
+                              {% else %}
+                                <a href="{% url 'download_material' session.course.slug material.id %}"
+                                   class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                  {{ material.title }}
+                                  <i class="fas fa-download ml-1 text-xs"></i>
+                                </a>
+                              {% endif %}
+                            </h3>
+                            {% if material.description %}
+                              <p class="text-xs text-gray-600 dark:text-gray-300 mt-1">{{ material.description|truncatechars:50 }}</p>
+                            {% endif %}
+                          </div>
+                          {% if is_teacher %}
+                            <a href="{% url 'delete_material' session.course.slug material.id %}"
+                               class="text-red-500 hover:text-red-700">
+                              <i class="fas fa-trash"></i>
+                            </a>
+                          {% endif %}
+                        </div>
+                      </div>
+                    {% endfor %}
+                  </div>
+                {% else %}
+                  <p class="text-gray-500 dark:text-gray-400 italic">{% trans "No materials available for this session yet." %}</p>
+                {% endif %}
+              </div>
+            </div>
+
           {% endif %}
           {% if is_teacher %}
             <div class="mt-6 flex space-x-4">
@@ -60,6 +113,29 @@
             </div>
           {% endif %}
         </div>
+          <!-- Session Materials Section -->
+          <div class="mt-8">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+              <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-bold">Session Materials</h2>
+                {% if is_teacher %}
+                  <a href="{% url 'upload_material' session.course.slug %}?session_id={{ session.id }}" class="bg-teal-500 hover:bg-teal-600 text-white px-3 py-1 rounded-lg text-sm"><i class="fas fa-plus mr-1"></i>Add Material</a>
+                {% endif %}
+              </div>
+              {% if session.materials.exists %}
+                <div class="space-y-3 max-h-96 overflow-y-auto">
+                  {% for material in session.materials.all %}
+                    <div class="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 shadow-sm">
+                      <!-- Material rendering block as per existing patterns -->
+                    </div>
+                  {% endfor %}
+                </div>
+              {% else %}
+                <p class="text-gray-500 italic">No materials available for this session yet.</p>
+              {% endif %}
+            </div>
+          </div>
+
       </div>
     </div>
   </main>

@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.auth.models import User
 
-from .models import BlogComment, Course, CourseMaterial, Review, StudyGroup
+from .models import BlogComment, Course, CourseMaterial, Review, StudyGroup, Session
 from .widgets import (
     TailwindCheckboxInput,
     TailwindEmailInput,
@@ -11,7 +11,6 @@ from .widgets import (
     TailwindSelect,
     TailwindTextarea,
 )
-
 
 class BlogCommentForm(forms.ModelForm):
     class Meta:
@@ -189,11 +188,25 @@ class MaterialUploadForm(forms.ModelForm):
             "description": TailwindTextarea(attrs={"rows": 3}),
             "material_type": TailwindSelect(),
             "file": TailwindFileInput(),
-            "session": TailwindSelect(),
+            "session": TailwindSelect(attrs={"placeholder": "Optional: Select a session to attach this material to"}),
             "is_downloadable": TailwindCheckboxInput(),
             "order": TailwindNumberInput(attrs={"min": "0"}),
         }
+        labels = {
+            "session": "Attach to Session (Optional)",
+        }
+        help_texts = {
+            "session": "Select a session to associate this material with",
+        }
 
+    def __init__(self, *args, course=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Filter sessions by course when provided
+        if course:
+            self.fields["session"].queryset = Session.objects.filter(course=course).order_by("start_time")
+            # Append hint if there are no sessions
+            if not self.fields["session"].queryset.exists():
+                self.fields["session"].help_text += " (No sessions available for this course yet)"
 
 class TopicCreationForm(forms.Form):
     title = forms.CharField(max_length=200, widget=TailwindInput(attrs={"placeholder": "Topic title"}))

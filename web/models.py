@@ -521,6 +521,16 @@ class CourseMaterial(models.Model):
     material_type = models.CharField(max_length=20, choices=MATERIAL_TYPES)
     file = models.FileField(upload_to="course_materials/", blank=True)
     external_url = models.URLField(blank=True, help_text="URL for external content like YouTube videos")
+
+    session = models.ForeignKey(
+        Session,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="materials",
+        help_text="Optional: Associate this material with a specific session"
+    )
+
     session = models.ForeignKey(
         Session,
         on_delete=models.SET_NULL,

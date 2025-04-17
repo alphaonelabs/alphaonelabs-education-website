@@ -17,13 +17,13 @@ from django.utils.text import slugify
 from django.utils.translation import gettext_lazy as _
 from markdownx.fields import MarkdownxFormField
 
+from .models import CourseMaterial, Session
 from .models import (
     Achievement,
     Avatar,
     BlogPost,
     ChallengeSubmission,
     Course,
-    CourseMaterial,
     EducationalVideo,
     ForumCategory,
     Goods,
@@ -573,31 +573,36 @@ class CourseMaterialForm(forms.ModelForm):
             "is_downloadable",
             "order",
         )
-        widgets = {
-            "title": TailwindInput(),
-            "description": TailwindTextarea(attrs={"rows": 3}),
-            "material_type": TailwindSelect(),
-            "file": TailwindFileInput(),
-            "external_url": TailwindInput(attrs={"placeholder": "Enter video URL"}),  # Add widget for external_url
-            "session": TailwindSelect(),
+            "session": TailwindSelect(attrs={"class": "form-select", "data-placeholder": "Select a session (optional)"}),
             "is_downloadable": TailwindCheckboxInput(),
             "order": TailwindNumberInput(attrs={"min": 0}),
         }
         labels = {
-            "external_url": "External URL",  # Update label
+            "external_url": "External URL",
+            "session": "Attach to Session (Optional)",
+        }
+        help_texts = {
+            "session": "Optional: Select a session to associate this material with",
         }
 
-    def __init__(self, *args, course=None, **kwargs):
+        def __init__(self, *args, course=None, **kwargs):
         super().__init__(*args, **kwargs)
-        if course:
-            self.fields["session"].queryset = course.sessions.all()
+        self.fields["session"].label = "Attach to Session (Optional)"
+        self.fields["session"].help_text = "Optional: Select a session to associate this material with"
+        if course is not None:
+            self.fields["session"].queryset = Session.objects.filter(course=course).order_by("start_time")
+            course = kwargs.pop("course", None)
+            super().__init__(*args, **kwargs)
+            from django.utils.translation import gettext_lazy as _
 
+            self.fields["session"].label = _("Attach to Session (Optional)")
+            self.fields["session"].help_text = _("Optional: Select a session to associate this material with")
 
-class TeacherSignupForm(forms.Form):
-    email = forms.EmailField(widget=TailwindEmailInput())
-    username = forms.CharField(
-        max_length=150,
-        widget=TailwindInput(attrs={"placeholder": "Choose a username"}),
+            if course:
+            queryset = course.sessions.all().order_by("start_time")
+            self.fields["session"].queryset = queryset
+            if not queryset.exists():
+                self.fields["session"].help_text += _(" (No sessions available for this course yet)")
         help_text="This will be your unique identifier on the platform.",
     )
     subject = forms.CharField(max_length=100, widget=TailwindInput())

@@ -28,6 +28,7 @@ from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
+from .models import Course, Session
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
@@ -58,6 +59,12 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_GET, require_POST
 from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
     CreateView,
     DeleteView,
     DetailView,
@@ -1752,10 +1759,21 @@ def course_progress_overview(request, slug):
 
 
 @login_required
+
+@login_required
 def upload_material(request, slug):
     course = get_object_or_404(Course, slug=slug)
     if request.user != course.teacher:
         return HttpResponseForbidden("You are not authorized to upload materials for this course.")
+
+    # Retrieve optional session from GET parameters
+    session_id = request.GET.get("session_id")
+    session = None
+    if session_id:
+        try:
+            session = Session.objects.get(id=session_id, course=course)
+        except Session.DoesNotExist:
+            session = None
 
     if request.method == "POST":
         form = CourseMaterialForm(request.POST, request.FILES, course=course)
@@ -1764,11 +1782,24 @@ def upload_material(request, slug):
             material.course = course
             material.save()
             messages.success(request, "Course material uploaded successfully!")
+            # Redirect to session_detail if a session was provided
+            if form.cleaned_data.get("session"):
+                return redirect("session_detail", session_id=form.cleaned_data["session"].id)
+            if session:
+                return redirect("session_detail", session_id=session.id)
             return redirect("course_detail", slug=course.slug)
     else:
-        form = CourseMaterialForm(course=course)
+        # Instantiate form with initial session if available
+        initial = {}
+        if session:
+            initial["session"] = session
+        form = CourseMaterialForm(initial=initial, course=course)
 
-    return render(request, "courses/upload_material.html", {"form": form, "course": course})
+    return render(
+        request,
+        "courses/upload_material.html",
+        {"form": form, "course": course, "session": session},
+    )
 
 
 @login_required
