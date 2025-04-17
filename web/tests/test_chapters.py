@@ -407,7 +407,17 @@ class ChapterEventTests(TestCase):
         )
 
         # Create users
-        user1 = User.objects.create_user(username="user1", email="user1@example.com", password="test-password")
+        # Create users
+        user1 = User.objects.create_user(
+            username="user1",
+            email="user1@example.com",
+            password="test-password",
+        )
+        user2 = User.objects.create_user(
+            username="user2",
+            email="user2@example.com",
+            password="test-password",
+        )
 
         # RSVP as first user
         self.client.login(username="user1", password="test-password")
