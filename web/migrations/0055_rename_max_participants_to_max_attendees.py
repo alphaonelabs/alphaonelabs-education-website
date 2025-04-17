@@ -8,4 +8,10 @@ class Migration(migrations.Migration):
         ("web", "0054_chapter_chapterapplication_chapterevent_and_more"),
     ]
 
-    operations = []
+    operations = [
+        migrations.RenameField(
+            model_name="chapterevent",
+            old_name="max_participants",
+            new_name="max_attendees",
+        ),
+    ]
