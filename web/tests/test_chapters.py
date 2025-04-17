@@ -4,7 +4,7 @@ from django.contrib.auth.models import User
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
-+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 from web.models import (
     Chapter,
@@ -61,7 +61,7 @@ class ChapterModelTests(TestCase):
         assert event.location == "Test Location"
         assert event.organizer == self.user
 
-    def test_resource_creation_with_file(self):
+    def test_resource_creation_with_file(self) -> None:
         test_file = SimpleUploadedFile(
             name="test_document.pdf",
             content=b"file content",
