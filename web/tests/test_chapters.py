@@ -1,5 +1,4 @@
 import datetime
-from typing import Any
 
 from django.contrib.auth.models import User
 from django.test import Client, TestCase
@@ -18,10 +17,10 @@ from web.models import (
 
 class ChapterModelTests(TestCase):
     def setUp(self) -> None:
-        self.user = User.objects.create_user(username="testuser", email="test@example.com", password="password123")
+        self.user = User.objects.create_user(username="testuser", email="test@example.com", password="test-password")
 
         self.chapter = Chapter.objects.create(
-            name="Test Chapter", description="A test chapter for unit testing", region="Test Region"
+            name="Test Chapter", description="A test chapter for unit testing", region="Test Region",
         )
 
     def test_chapter_creation(self) -> None:
@@ -33,7 +32,7 @@ class ChapterModelTests(TestCase):
 
     def test_membership_creation(self) -> None:
         membership = ChapterMembership.objects.create(
-            chapter=self.chapter, user=self.user, role="lead", bio="Test bio", is_approved=True
+            chapter=self.chapter, user=self.user, role="lead", bio="Test bio", is_approved=True,
         )
 
         assert membership.user == self.user
@@ -51,7 +50,7 @@ class ChapterModelTests(TestCase):
             start_time=timezone.now() + datetime.timedelta(days=1),
             end_time=timezone.now() + datetime.timedelta(days=1, hours=2),
             location="Test Location",
-            organizer=self.user
+            organizer=self.user,
         )
 
         assert event.chapter == self.chapter
@@ -61,14 +60,20 @@ class ChapterModelTests(TestCase):
         assert event.location == "Test Location"
         assert event.organizer == self.user
 
-    def test_resource_creation(self) -> None:
+    def test_resource_creation_with_file(self):
+        test_file = SimpleUploadedFile(
+            name="test_document.pdf",
+            content=b"file content",
+            content_type="application/pdf"
+        )
+        
         resource = ChapterResource.objects.create(
             chapter=self.chapter,
             title="Test Resource",
             description="A test resource",
             resource_type="document",
-            external_url="https://example.com/resource",
-            created_by=self.user
+            file=test_file,
+            created_by=self.user,
         )
 
         assert resource.chapter == self.chapter
@@ -99,20 +104,20 @@ class ChapterViewTests(TestCase):
         self.client = Client()
 
         # Create test users
-        self.user = User.objects.create_user(username="testuser", email="test@example.com", password="password123")
+        self.user = User.objects.create_user(username="testuser", email="test@example.com", password="test-password")
 
         self.admin_user = User.objects.create_user(
-            username="adminuser", email="admin@example.com", password="password123", is_staff=True
+            username="adminuser", email="admin@example.com", password="test-password", is_staff=True,
         )
 
         # Create test chapter
         self.chapter = Chapter.objects.create(
-            name="Test Chapter", description="A test chapter for integration testing", region="Test Region"
+            name="Test Chapter", description="A test chapter for integration testing", region="Test Region",
         )
 
         # Create lead membership
         self.lead_membership = ChapterMembership.objects.create(
-            chapter=self.chapter, user=self.admin_user, role="lead", is_approved=True
+            chapter=self.chapter, user=self.admin_user, role="lead", is_approved=True,
         )
 
         # Create an event
@@ -123,7 +128,7 @@ class ChapterViewTests(TestCase):
             event_type="meetup",
             start_time=timezone.now() + datetime.timedelta(days=1),
             end_time=timezone.now() + datetime.timedelta(days=1, hours=2),
-            organizer=self.admin_user
+            organizer=self.admin_user,
         )
 
         # Create a resource
@@ -150,7 +155,7 @@ class ChapterViewTests(TestCase):
 
     def test_join_chapter_view(self) -> None:
         # Login as normal user
-        self.client.login(username="testuser", password="password123")
+        self.client.login(username="testuser", password="test-password")
 
         # Get the join page
         response = self.client.get(reverse("join_chapter", args=[self.chapter.slug]))
@@ -167,7 +172,7 @@ class ChapterViewTests(TestCase):
 
     def test_chapter_management_view(self) -> None:
         # Login as chapter lead
-        self.client.login(username="adminuser", password="password123")
+        self.client.login(username="adminuser", password="test-password")
 
         response = self.client.get(reverse("manage_chapter", args=[self.chapter.slug]))
         assert response.status_code == 200
@@ -258,27 +263,23 @@ class ChapterApplicationTests(TestCase):
         self.client = Client()
 
         self.user = User.objects.create_user(
-            username="testuser", email="test@example.com", password="password123",
+            username="testuser", email="test@example.com", password="test-password",
         )
 
     def test_only_verified_members_can_apply(self) -> None:
-        # Create a non-verified user
-        non_verified = User.objects.create_user(
-            username="nonverified", email="nonverified@example.com", password="password123",
-        )
 
         # Try to apply with non-verified user
-        self.client.login(username="nonverified", password="password123")
+        self.client.login(username="nonverified", password="test-password")
         response = self.client.get(reverse("apply_for_chapter"))
         assert response.status_code == 302  # Should redirect to login or profile
 
         # Try with verified user
-        self.client.login(username="testuser", password="password123")
+        self.client.login(username="testuser", password="test-password")
         response = self.client.get(reverse("apply_for_chapter"))
         assert response.status_code == 200
 
     def test_chapter_application_fields(self) -> None:
-        self.client.login(username="testuser", password="password123")
+        self.client.login(username="testuser", password="test-password")
 
         # Submit with missing fields
         response = self.client.post(
@@ -317,19 +318,9 @@ class ChapterApplicationTests(TestCase):
             description="Test description",
             proposed_activities="Test activities",
             experience="Test experience",
-        )
-
-        # Create admin user
-        admin = User.objects.create_user(
-            username="admin",
-            email="admin@example.com",
-            password="password123",
-            is_staff=True,
-            is_superuser=True,
-        )
 
         # Login as admin and approve the application
-        self.client.login(username="admin", password="password123")
+        self.client.login(username="admin", password="test-password")
 
         # Assuming you have an approval view
         response = self.client.post(
@@ -355,11 +346,11 @@ class ChapterEventTests(TestCase):
         self.client = Client()
 
         self.user = User.objects.create_user(
-            username="testuser", email="test@example.com", password="password123",
+            username="testuser", email="test@example.com", password="test-password",
         )
 
     def test_chapter_can_host_different_event_types(self) -> None:
-        self.client.login(username="testuser", password="password123")
+        self.client.login(username="testuser", password="test-password")
 
         # Create a chapter with the user as lead
         chapter = Chapter.objects.create(
@@ -413,22 +404,21 @@ class ChapterEventTests(TestCase):
         )
 
         # Create users
-        user1 = User.objects.create_user(username="user1", email="user1@example.com", password="password123")
-        user2 = User.objects.create_user(username="user2", email="user2@example.com", password="password123")
+        user1 = User.objects.create_user(username="user1", email="user1@example.com", password="test-password")
 
         # RSVP as first user
-        self.client.login(username="user1", password="password123")
+        self.client.login(username="user1", password="test-password")
         self.client.post(reverse("rsvp_event", args=[chapter.slug, event.id]))
 
         # Check that user1 is on the attendees list
         assert ChapterEventAttendee.objects.filter(event=event, user=user1).exists()
 
         # RSVP as second user
-        self.client.login(username="user2", password="password123")
+        self.client.login(username="user2", password="test-password")
         self.client.post(reverse("rsvp_event", args=[chapter.slug, event.id]))
 
         # Try to RSVP as the initial test user - should fail due to max attendees
-        self.client.login(username="testuser", password="password123")
+        self.client.login(username="testuser", password="test-password")
         self.client.post(reverse("rsvp_event", args=[chapter.slug, event.id]))
 
         # Verify that testuser is not on the list
@@ -448,19 +438,19 @@ class ChapterMemberRolesTests(TestCase):
 
         # Create users with different roles
         self.lead_user = User.objects.create_user(
-            username="lead", email="lead@example.com", password="password123",
+            username="lead", email="lead@example.com", password="test-password",
         )
 
         self.co_org_user = User.objects.create_user(
-            username="co_organizer", email="co_org@example.com", password="password123",
+            username="co_organizer", email="co_org@example.com", password="test-password",
         )
 
         self.volunteer_user = User.objects.create_user(
-            username="volunteer", email="volunteer@example.com", password="password123",
+            username="volunteer", email="volunteer@example.com", password="test-password",
         )
 
         self.member_user = User.objects.create_user(
-            username="member", email="member@example.com", password="password123",
+            username="member", email="member@example.com", password="test-password",
         )
 
         # Create memberships
@@ -482,22 +472,22 @@ class ChapterMemberRolesTests(TestCase):
 
     def test_role_permissions(self) -> None:
         # Test chapter lead privileges
-        self.client.login(username="lead", password="password123")
+        self.client.login(username="lead", password="test-password")
         response = self.client.get(reverse("manage_chapter", args=[self.chapter.slug]))
         assert response.status_code == 200
 
         # Test co-organizer privileges
-        self.client.login(username="co_organizer", password="password123")
+        self.client.login(username="co_organizer", password="test-password")
         response = self.client.get(reverse("manage_chapter", args=[self.chapter.slug]))
         assert response.status_code == 200
 
         # Test volunteer privileges - should have limited access
-        self.client.login(username="volunteer", password="password123")
+        self.client.login(username="volunteer", password="test-password")
         response = self.client.get(reverse("manage_chapter", args=[self.chapter.slug]))
         assert response.status_code == 302  # redirect
 
         # Test regular member - should have no management access
-        self.client.login(username="member", password="password123")
+        self.client.login(username="member", password="test-password")
         response = self.client.get(reverse("manage_chapter", args=[self.chapter.slug]))
         assert response.status_code == 302  # redirect
 
@@ -525,10 +515,10 @@ class ChapterResourceSharingTests(TestCase):
 
         # Create users
         self.lead_user = User.objects.create_user(
-            username="lead", email="lead@example.com", password="password123",
+            username="lead", email="lead@example.com", password="test-password",
         )
         self.member_user = User.objects.create_user(
-            username="member", email="member@example.com", password="password123",
+            username="member", email="member@example.com", password="test-password",
         )
 
         # Create memberships
@@ -541,7 +531,7 @@ class ChapterResourceSharingTests(TestCase):
         )
 
     def test_resource_types(self) -> None:
-        self.client.login(username="lead", password="password123")
+        self.client.login(username="lead", password="test-password")
 
         # Create resources of different types
         resource_types = [
@@ -573,14 +563,6 @@ class ChapterResourceSharingTests(TestCase):
 
     def test_member_access_to_resources(self) -> None:
         # Create a resource
-        resource = ChapterResource.objects.create(
-            chapter=self.chapter,
-            title="Member Access Test",
-            description="Testing member access to resources",
-            resource_type="document",
-            external_url="https://example.com/access-test",
-            created_by=self.lead_user,
-        )
 
         # Public users should be able to see resources exist
         response = self.client.get(reverse("chapter_detail", args=[self.chapter.slug]))
@@ -588,7 +570,7 @@ class ChapterResourceSharingTests(TestCase):
         assert "Member Access Test" in str(response.content)
 
         # Non-members should not be able to click through to resources or edit
-        self.client.login(username="testuser", password="password123")
+        self.client.login(username="testuser", password="test-password")
 
         # Assuming there's a resource detail view
         response = self.client.get(reverse("chapter_detail", args=[self.chapter.slug]))
