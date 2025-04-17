@@ -80,7 +80,8 @@ class ChapterModelTests(TestCase):
         assert resource.title == "Test Resource"
         assert resource.description == "A test resource"
         assert resource.resource_type == "document"
-        assert resource.external_url == "https://example.com/resource"
+        # File‑based resources should *not* have an external URL
+        assert resource.external_url in ("", None)
         assert resource.created_by == self.user
 
     def test_application_creation(self) -> None:
