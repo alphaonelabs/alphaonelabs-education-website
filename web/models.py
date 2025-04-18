@@ -92,6 +92,17 @@ class Profile(models.Model):
     how_did_you_hear_about_us = models.TextField(
         blank=True, help_text="How did you hear about us? You can enter text or a link."
     )
+    # Email status tracking fields
+    last_email_sent_at = models.DateTimeField(null=True, blank=True)
+    last_email_event = models.CharField(max_length=50, blank=True, default="")
+    last_email_event_time = models.DateTimeField(null=True, blank=True)
+    email_bounce_count = models.PositiveIntegerField(default=0)
+    email_delivered_count = models.PositiveIntegerField(default=0)
+    email_open_count = models.PositiveIntegerField(default=0)
+    email_click_count = models.PositiveIntegerField(default=0)
+    email_drop_count = models.PositiveIntegerField(default=0)
+    email_spam_report_count = models.PositiveIntegerField(default=0)
+    email_last_event_data = models.JSONField(default=dict, blank=True)
 
     def __str__(self):
         visibility = "Public" if self.is_profile_public else "Private"
@@ -2857,7 +2868,7 @@ class MembershipSubscriptionEvent(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"{self.event_type} - {self.user.email} - {self.created_at}"
+        return f"{self.user.email} - {self.event_type} ({self.created_at.strftime('%Y-%m-%d %H:%M')})"
 
 
 class ScheduledPost(models.Model):
@@ -2921,3 +2932,44 @@ class Discount(models.Model):
 
     def __str__(self):
         return f"{self.code} for {self.user.username} on {self.course.title}"
+
+
+class EmailEvent(models.Model):
+    """Model to track email events from SendGrid webhook."""
+
+    EVENT_TYPES = [
+        ("processed", "Processed"),
+        ("deferred", "Deferred"),
+        ("delivered", "Delivered"),
+        ("open", "Opened"),
+        ("click", "Clicked"),
+        ("bounce", "Bounced"),
+        ("dropped", "Dropped"),
+        ("spamreport", "Spam Report"),
+        ("unsubscribe", "Unsubscribed"),
+        ("group_unsubscribe", "Group Unsubscribed"),
+        ("group_resubscribe", "Group Resubscribed"),
+        ("blocked", "Blocked"),
+        ("other", "Other"),
+    ]
+
+    email = models.EmailField()
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="email_events", null=True, blank=True)
+    event_type = models.CharField(max_length=50, choices=EVENT_TYPES)
+    timestamp = models.DateTimeField()
+    sg_message_id = models.CharField(max_length=255, blank=True)
+    sg_event_id = models.CharField(max_length=255, blank=True)
+    event_data = models.JSONField(default=dict)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["email"]),
+            models.Index(fields=["event_type"]),
+            models.Index(fields=["timestamp"]),
+            models.Index(fields=["sg_message_id"]),
+        ]
+        ordering = ["-timestamp"]
+
+    def __str__(self):
+        return f"{self.email} - {self.event_type} ({self.timestamp.strftime('%Y-%m-%d %H:%M')})"

@@ -22,6 +22,7 @@ from .models import (
     CourseMaterial,
     CourseProgress,
     Donation,
+    EmailEvent,
     Enrollment,
     ForumCategory,
     ForumReply,
@@ -119,12 +120,23 @@ class WaitingRoomAdmin(admin.ModelAdmin):
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
-    list_display = ("user", "is_teacher", "expertise", "created_at", "updated_at")
+    list_display = ("user", "is_teacher", "expertise", "email_status", "created_at", "updated_at")
     list_filter = ("is_teacher", "created_at", "updated_at")
     search_fields = ("user__username", "user__email", "expertise", "bio")
     ordering = ("-created_at",)
     raw_id_fields = ("user",)
-    readonly_fields = ("created_at", "updated_at")
+    readonly_fields = (
+        "created_at",
+        "updated_at",
+        "last_email_event",
+        "last_email_event_time",
+        "email_bounce_count",
+        "email_delivered_count",
+        "email_open_count",
+        "email_click_count",
+        "email_drop_count",
+        "email_spam_report_count",
+    )
     fieldsets = (
         (None, {"fields": ("user", "is_teacher")}),
         (
@@ -133,10 +145,49 @@ class ProfileAdmin(admin.ModelAdmin):
         ),
         ("Stripe Information", {"fields": ("stripe_account_id", "stripe_account_status", "commission_rate")}),
         (
+            "Email Status",
+            {
+                "fields": (
+                    "last_email_sent_at",
+                    "last_email_event",
+                    "last_email_event_time",
+                    "email_bounce_count",
+                    "email_delivered_count",
+                    "email_open_count",
+                    "email_click_count",
+                    "email_drop_count",
+                    "email_spam_report_count",
+                )
+            },
+        ),
+        (
             "Timestamps",
             {"fields": ("created_at", "updated_at"), "classes": ("collapse",)},
         ),
     )
+
+    def email_status(self, obj):
+        if not obj.last_email_event:
+            return "No events"
+
+        status_classes = {
+            "delivered": "success",
+            "open": "success",
+            "click": "success",
+            "bounce": "danger",
+            "dropped": "danger",
+            "spamreport": "danger",
+            "deferred": "warning",
+            "processed": "info",
+        }
+
+        status_class = status_classes.get(obj.last_email_event, "info")
+        color = {"success": "green", "danger": "red", "warning": "orange", "info": "blue"}.get(status_class, "gray")
+
+        time_str = obj.last_email_event_time.strftime("%Y-%m-%d %H:%M") if obj.last_email_event_time else ""
+        return format_html('<span style="color: {};">● {}</span> {}', color, obj.last_email_event.title(), time_str)
+
+    email_status.short_description = "Email Status"
 
 
 class EmailVerifiedFilter(admin.SimpleListFilter):
@@ -170,12 +221,18 @@ class CustomUserAdmin(BaseUserAdmin):
         "last_name",
         "is_staff",
         "email_verified",
+        "email_status",
         "get_enrollment_count",
         "formatted_date_joined",
         "formatted_last_login",
         "rate_limit_status",
     )
-    list_filter = BaseUserAdmin.list_filter + (EmailVerifiedFilter, "date_joined", "last_login")
+    list_filter = BaseUserAdmin.list_filter + (
+        EmailVerifiedFilter,
+        "date_joined",
+        "last_login",
+        "profile__last_email_event",
+    )
     actions = ["unlock_user"]
 
     # Add email to the add_fieldsets
@@ -357,6 +414,33 @@ class CustomUserAdmin(BaseUserAdmin):
             return format_html('<span style="color: green;">&#x1F513; Unlocked</span>')
 
     rate_limit_status.short_description = "Login Status"
+
+    def email_status(self, obj):
+        """Display email delivery status from the profile."""
+        try:
+            profile = obj.profile
+            if not profile.last_email_event:
+                return "-"
+
+            status_classes = {
+                "delivered": "success",
+                "open": "success",
+                "click": "success",
+                "bounce": "danger",
+                "dropped": "danger",
+                "spamreport": "danger",
+                "deferred": "warning",
+                "processed": "info",
+            }
+
+            status_class = status_classes.get(profile.last_email_event, "info")
+            color = {"success": "green", "danger": "red", "warning": "orange", "info": "blue"}.get(status_class, "gray")
+
+            return format_html('<span style="color: {};">● {}</span>', color, profile.last_email_event.title())
+        except Profile.DoesNotExist:
+            return "-"
+
+    email_status.short_description = "Email Status"
 
 
 class SessionInline(admin.TabularInline):
@@ -881,3 +965,32 @@ class PointsAdmin(admin.ModelAdmin):
         ("Related Data", {"fields": ("challenge", "current_streak")}),
         ("Timestamps", {"fields": ("awarded_at", "updated_at"), "classes": ("collapse",)}),
     )
+
+
+@admin.register(EmailEvent)
+class EmailEventAdmin(admin.ModelAdmin):
+    list_display = ("email", "user", "event_type", "timestamp", "created_at")
+    list_filter = ("event_type", "timestamp", "created_at")
+    search_fields = ("email", "user__username", "user__email", "sg_message_id", "sg_event_id")
+    readonly_fields = (
+        "email",
+        "user",
+        "event_type",
+        "timestamp",
+        "sg_message_id",
+        "sg_event_id",
+        "event_data",
+        "created_at",
+    )
+    fieldsets = (
+        (None, {"fields": ("email", "user", "event_type", "timestamp")}),
+        ("SendGrid Information", {"fields": ("sg_message_id", "sg_event_id")}),
+        ("Event Data", {"fields": ("event_data",)}),
+        ("Metadata", {"fields": ("created_at",)}),
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
