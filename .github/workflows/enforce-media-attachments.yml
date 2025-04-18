@@ -1,0 +1,97 @@
+name: Enforce Media Attachments for HTML Changes
+
+on:
+  pull_request_target:
+    types: [opened, reopened, edited, synchronize]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  check-media-attachments:
+    runs-on: ubuntu-latest
+    name: Check PR for media attachments when HTML files change
+    steps:
+      - name: Verify PR has media attachments
+        uses: actions/github-script@v6.1.0
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            const prNumber = pr.number;
+            const repo = context.repo;
+
+            console.log(`Checking PR #${prNumber} for HTML changes and media attachments`);
+
+            // Get the list of files changed in the PR using pagination
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: repo.owner,
+              repo: repo.repo,
+              pull_number: prNumber,
+              per_page: 100 // We'll get all pages automatically
+            });
+
+            // Check if any HTML files are modified
+            const htmlFiles = files.filter(file =>
+              file.filename.endsWith('.html') ||
+              file.filename.endsWith('.htm')
+            );
+
+            if (htmlFiles.length === 0) {
+              console.log('No HTML files modified in this PR, skipping media check');
+              return;
+            }
+
+            console.log(`Found ${htmlFiles.length} HTML files modified, checking for media attachments`);
+
+            // Check for media attachments in PR body
+            const body = pr.body || '';
+            const hasMarkdownImage = /!\[.*?\]\(.*?\)/i.test(body);
+            const hasDirectImageLink = /https?:\/\/.*?\.(png|jpe?g|gif|webp)/i.test(body);
+            const hasVideoLink = /https?:\/\/.*?\.(mp4|webm|mov)/i.test(body);
+            const hasGitHubUpload = /https:\/\/github\.com\/.*?\/pull\/.*?\/assets\/.*?\.(png|jpe?g|gif|webp|mp4|webm|mov)/i.test(body);
+
+            if (hasMarkdownImage || hasDirectImageLink || hasVideoLink || hasGitHubUpload) {
+              console.log(`Found media attachments in PR #${prNumber}`);
+              return;
+            }
+
+            // Check for any existing bot comment on missing media
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: repo.owner,
+              repo: repo.repo,
+              issue_number: prNumber,
+            });
+            const botUserName = 'github-actions[bot]';
+            const previousBotComment = comments.find(comment =>
+              comment.user.login === botUserName &&
+              comment.body.includes('Missing Media Attachments')
+            );
+
+            // Post a comment if no media is found and no comment was posted earlier
+            if (!previousBotComment) {
+              const modifiedHtmlList = htmlFiles.map(file => `- \`${file.filename}\``).join('\n');
+
+              await github.rest.issues.createComment({
+                owner: repo.owner,
+                repo: repo.repo,
+                issue_number: prNumber,
+                body: |
+                  ## Missing Media Attachments
+
+                  This PR modifies HTML files but does not include any screenshots or videos showing the visual changes.
+
+                  ### Modified HTML files:
+                  ${modifiedHtmlList}
+
+                  Please add screenshots or videos to help reviewers understand your changes better.
+
+                  You can:
+                  - Upload images/videos directly in the PR description
+                  - Use Markdown image syntax: `![description](image-url)`
+                  - Paste screenshots directly into the PR description
+
+                  Thank you for your contribution!
+                });
+                console.log(`Added comment about missing media to PR #${prNumber}`);
