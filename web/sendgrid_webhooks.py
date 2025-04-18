@@ -16,11 +16,29 @@ from .slack import send_slack_notification
 logger = logging.getLogger(__name__)
 
 
+from django.http import HttpResponse, HttpResponseForbidden
+from django.conf import settings
+from sendgrid.helpers.eventwebhook import EventWebhook, EventWebhookHeader
+
+event_verifier = EventWebhook()
+
 @csrf_exempt
 def sendgrid_webhook(request):
     """Process SendGrid webhook events."""
     if request.method != "POST":
         return HttpResponse(status=405)  # Method not allowed
+
+    # 1️⃣  Verify signature
+    try:
+        signature = request.headers.get(EventWebhookHeader.SIGNATURE)
+        timestamp = request.headers.get(EventWebhookHeader.TIMESTAMP)
+        public_key = settings.SENDGRID_WEBHOOK_PUBLIC_KEY
+        if not event_verifier.verify_signature(request.body, signature, timestamp, public_key):
+            logger.warning("SendGrid webhook signature verification failed")
+            return HttpResponseForbidden()
+    except Exception:
+        logger.exception("Error verifying SendGrid webhook signature")
+        return HttpResponseForbidden()
 
     try:
         # Parse the incoming JSON
@@ -42,7 +60,6 @@ def sendgrid_webhook(request):
     except Exception as e:
         logger.exception(f"Error processing SendGrid webhook: {e}")
         return HttpResponse(status=500)  # Internal server error
-
 
 def process_sendgrid_event(event):
     """Process a single SendGrid event and update user records."""
