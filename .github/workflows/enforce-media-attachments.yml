@@ -77,21 +77,6 @@ jobs:
                 owner: repo.owner,
                 repo: repo.repo,
                 issue_number: prNumber,
-                body: |
-                  ## Missing Media Attachments
-
-                  This PR modifies HTML files but does not include any screenshots or videos showing the visual changes.
-
-                  ### Modified HTML files:
-                  ${modifiedHtmlList}
-
-                  Please add screenshots or videos to help reviewers understand your changes better.
-
-                  You can:
-                  - Upload images/videos directly in the PR description
-                  - Use Markdown image syntax: `![description](image-url)`
-                  - Paste screenshots directly into the PR description
-
-                  Thank you for your contribution!
-                });
-                console.log(`Added comment about missing media to PR #${prNumber}`);
+                body: `\n                ## Missing Media Attachments\n\n                This PR modifies HTML files but does not include any screenshots or videos showing the visual changes.\n\n                ### Modified HTML files:\n                ${modifiedHtmlList}\n\n                Please add screenshots or videos to help reviewers understand your changes better.\n\n                You can:\n                - Upload images/videos directly in the PR description\n                - Use Markdown image syntax: \`![description](image-url)\`\n                - Paste screenshots directly into the PR description\n\n                Thank you for your contribution!\n              `
+              });
+              console.log(`Added comment about missing media to PR #${prNumber}`);
