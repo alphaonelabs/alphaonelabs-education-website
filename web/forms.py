@@ -10,6 +10,7 @@ from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.db import IntegrityError
+from django.forms.widgets import URLInput
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.text import slugify
@@ -283,6 +284,23 @@ class UserRegistrationForm(SignupForm):
             email_address.send_confirmation(request)
 
         return user
+
+
+class TailwindInput(forms.widgets.Input):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("attrs", {}).update(
+            {"class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"}
+        )
+        super().__init__(*args, **kwargs)
+
+
+class TailwindURLInput(URLInput):
+    # This widget, subclassing URLInput, ensures input type="url"
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("attrs", {}).update(
+            {"class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"}
+        )
+        super().__init__(*args, **kwargs)
 
 
 class AwardAchievementForm(forms.Form):
@@ -1157,6 +1175,28 @@ class ForumTopicForm(forms.Form):
             }
         ),
     )
+    github_issue_url = forms.URLField(
+        required=False,
+        widget=TailwindURLInput(attrs={"placeholder": "https://github.com/your-org/your-repo/issues/123"}),
+        help_text="Link to a related GitHub issue (optional)",
+    )
+    github_milestone_url = forms.URLField(
+        required=False,
+        widget=TailwindURLInput(attrs={"placeholder": "https://github.com/your-org/your-repo/milestone/1"}),
+        help_text="Link to a related GitHub milestone (optional)",
+    )
+
+    def clean_github_issue_url(self):
+        url = self.cleaned_data.get("github_issue_url")
+        if url and (not url.startswith("https://github.com/") or "/issues/" not in url):
+            raise forms.ValidationError("Please enter a valid GitHub issue URL")
+        return url
+
+    def clean_github_milestone_url(self):
+        url = self.cleaned_data.get("github_milestone_url")
+        if url and (not url.startswith("https://github.com/") or "milestone" not in url):
+            raise forms.ValidationError("Please enter a valid GitHub milestone URL")
+        return url
 
 
 class AvatarForm(forms.ModelForm):
@@ -1343,14 +1383,6 @@ class ChallengeSubmissionForm(forms.ModelForm):
                 attrs={"rows": 5, "placeholder": "Describe your results or reflections..."}
             ),
         }
-
-
-class TailwindInput(forms.widgets.Input):
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("attrs", {}).update(
-            {"class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"}
-        )
-        super().__init__(*args, **kwargs)
 
 
 class TailwindTextarea(forms.widgets.Textarea):
