@@ -3,6 +3,29 @@
 {% block content %}
   {% load static %}
 
+  <!-- Z-INDEX FIX FOR MAP AND DROPDOWNS -->
+  <style>
+    /* Ensure the filter form and its dropdowns are above the map */
+    #filter-form {
+      position: relative;
+      z-index: 20;
+    }
+    #filter-form select {
+      position: relative;
+      z-index: 21;
+      background: #fff;
+    }
+    /* Make sure the map is below the filter form */
+    #map, .leaflet-container {
+      z-index: 1 !important;
+      position: relative;
+    }
+    /* Dark mode support */
+    .dark #filter-form select {
+      background: #1f2937;
+    }
+  </style>
+
   <div class="container mx-auto px-6 py-8">
     <!-- Title -->
     <h2 class="text-4xl font-bold text-gray-900 dark:text-white text-center mb-8">🎓 Live Classes Near You</h2>
