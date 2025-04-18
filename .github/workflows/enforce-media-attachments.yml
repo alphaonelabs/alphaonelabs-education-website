@@ -73,24 +73,25 @@ jobs:
             if (!previousBotComment) {
               const modifiedHtmlList = htmlFiles.map(file => `- \`${file.filename}\``).join('\n');
 
-            await github.rest.issues.createComment({
-              owner: repo.owner,
-              repo: repo.repo,
-              issue_number: prNumber,
-              body: `## Missing Media Attachments
+              await github.rest.issues.createComment({
+                owner: repo.owner,
+                repo: repo.repo,
+                issue_number: prNumber,
+                body: |
+                  ## Missing Media Attachments
 
-            This PR modifies HTML files but does not include any screenshots or videos showing the visual changes.
+                  This PR modifies HTML files but does not include any screenshots or videos showing the visual changes.
 
-            ### Modified HTML files:
-            ${modifiedHtmlList}
+                  ### Modified HTML files:
+                  ${modifiedHtmlList}
 
-            Please add screenshots or videos to help reviewers understand your changes better.
+                  Please add screenshots or videos to help reviewers understand your changes better.
 
-            You can:
-            - Upload images/videos directly in the PR description
-            - Use Markdown image syntax: \`![description](image-url)\`
-            - Paste screenshots directly into the PR description
+                  You can:
+                  - Upload images/videos directly in the PR description
+                  - Use Markdown image syntax: `![description](image-url)`
+                  - Paste screenshots directly into the PR description
 
-            Thank you for your contribution!`
-            });
-            console.log(`Added comment about missing media to PR #${prNumber}`);
+                  Thank you for your contribution!
+                });
+                console.log(`Added comment about missing media to PR #${prNumber}`);
