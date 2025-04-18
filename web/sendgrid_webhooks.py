@@ -31,15 +31,19 @@ def sendgrid_webhook(request):
     # 1️⃣  Verify signature
     try:
         signature = request.headers.get(EventWebhookHeader.SIGNATURE)
-        timestamp = request.headers.get(EventWebhookHeader.TIMESTAMP)
+        timestamp  = request.headers.get(EventWebhookHeader.TIMESTAMP)
         public_key = settings.SENDGRID_WEBHOOK_PUBLIC_KEY
+
+        if not (signature and timestamp and public_key):
+            logger.warning("Missing SendGrid webhook signature headers")
+            return HttpResponseForbidden()
+
         if not event_verifier.verify_signature(request.body, signature, timestamp, public_key):
             logger.warning("SendGrid webhook signature verification failed")
             return HttpResponseForbidden()
     except Exception:
         logger.exception("Error verifying SendGrid webhook signature")
         return HttpResponseForbidden()
-
     try:
         # Parse the incoming JSON
         data = json.loads(request.body)
