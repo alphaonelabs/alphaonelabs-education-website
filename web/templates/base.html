@@ -37,87 +37,43 @@
         // Logging helper
         function log(message) {
             if (DEBUG) {
-                console.log(`[DarkMode] ${message}`);
-            }
-        }
+                <a href="{% url 'profile' %}" class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                <i class="fas fa-user-edit mr-2 text-teal-500"></i>
+                <span>Edit Profile</span>
+                </a>
+                <a href="{% url 'teacher_dashboard' %}" class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                <i class="fas fa-chalkboard-teacher mr-2 text-teal-500"></i>
+                <span>Teacher Dashboard</span>
+                </a>
+                <a href="{% url 'student_dashboard' %}" class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                <i class="fas fa-graduation-cap mr-2 text-teal-500"></i>
+                <span>Student Dashboard</span>
+                </a>
+                <a href="{% url 'create_course' %}" class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                <i class="fas fa-plus-circle mr-2 text-teal-500"></i>
+                <span>Create Course</span>
+                </a>
 
-        // Initialize dark mode from localStorage only
-        function initializeDarkMode() {
-            log('Initializing dark mode');
-            const darkModeEnabled = localStorage.getItem('darkMode') === 'true';
-            log(`Dark mode enabled in localStorage: ${darkModeEnabled}`);
+            <a href="{% url 'profile' %}" class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+            <i class="fas fa-user-edit mr-2 text-teal-500"></i>
+            <span>Edit Profile</span>
+            </a>
 
-            if (darkModeEnabled) {
-                document.documentElement.classList.add('dark');
-                log('Added dark class to HTML element');
-            } else if (localStorage.getItem('darkMode') === null) {
-                // Set default to light mode if no preference is set
-                localStorage.setItem('darkMode', 'false');
-                log('No preference found, defaulting to light mode');
-            }
-            updateDarkModeIcon();
-        }
+            <a href="{% url 'teacher_dashboard' %}" class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+            <i class="fas fa-chalkboard-teacher mr-2 text-teal-500"></i>
+            <span>Teacher Dashboard</span>
+            </a>
 
-        function toggleDarkMode() {
-            log('Toggle dark mode called');
-            const isDark = document.documentElement.classList.toggle('dark');
-            localStorage.setItem('darkMode', isDark.toString());
-            log(`Dark mode toggled to: ${isDark}`);
-            updateDarkModeIcon();
-        }
+            <a href="{% url 'student_dashboard' %}" class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+            <i class="fas fa-graduation-cap mr-2 text-teal-500"></i>
+            <span>Student Dashboard</span>
+            </a>
 
-        function updateDarkModeIcon() {
-            const isDark = document.documentElement.classList.contains('dark');
-            const icon = document.getElementById('darkModeIcon');
-            log(`Updating icon. Dark mode is: ${isDark}`);
+            <a href="{% url 'create_course' %}" class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+            <i class="fas fa-plus-circle mr-2 text-teal-500"></i>
+            <span>Create Course</span>
+            </a>
 
-            if (icon) {
-                icon.className = isDark ? 'fas fa-sun' : 'fas fa-moon';
-                icon.title = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
-                log('Icon updated successfully');
-            } else {
-                log('Warning: Dark mode icon element not found');
-            }
-        }
-
-        // Initialize dark mode immediately and after DOM content loads
-        initializeDarkMode();
-        document.addEventListener('DOMContentLoaded', initializeDarkMode);
-    </script>
-    <!-- Font Awesome (Free CDN) -->
-    <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
-          integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA=="
-          crossorigin="anonymous"
-          referrerpolicy="no-referrer" />
-    <!-- jQuery (required for captcha refresh) -->
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
-            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
-            crossorigin="anonymous"></script>
-    <script>
-        // Toggle the language dropdown
-        function toggleLanguageDropdown() {
-            document.getElementById('language-dropdown').classList.toggle('hidden');
-        }
-        // Toggle the user dropdown
-        function toggleUserDropdown() {
-            document.getElementById('user-dropdown').classList.toggle('hidden');
-        }
-        // Close dropdowns when clicking outside
-        document.addEventListener('click', function(event) {
-            const languageDropdown = document.getElementById('language-dropdown');
-            const userDropdown = document.getElementById('user-dropdown');
-            const languageButton = event.target.closest('[onclick="toggleLanguageDropdown()"]');
-            const userButton = event.target.closest('[onclick="toggleUserDropdown()"]');
-
-            if (!languageButton && !languageDropdown.contains(event.target)) {
-                languageDropdown.classList.add('hidden');
-            }
-
-            if (userDropdown && !userButton && !userDropdown.contains(event.target)) {
-                userDropdown.classList.add('hidden');
-            }
-        });
     </script>
     <style>
         /* Force dark mode styles */
@@ -448,48 +404,29 @@
                        title="{{ user.email }}">{{ user.email }}</div>
                 </div>
                 <a href="{% url 'profile' %}"
-                   class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                  <i class="fas fa-user-edit mr-2"></i> Edit Profile
+                   class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                  <i class="fas fa-user-edit mr-2 text-teal-500"></i>
+                  <span>Edit Profile</span>
                 </a>
-                <a href="{% url 'create_course' %}"
-                   class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                  <i class="fas fa-plus-circle mr-2"></i> Create Course
-                </a>
-                {% if user.is_superuser %}
-                  <a href="{% url 'admin:index' %}"
-                     class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                    <i class="fas fa-cog mr-2"></i> Admin Panel
-                  </a>
-                {% endif %}
-                <a href="{% url 'messaging_dashboard' %}"
-                   title="Messages"
-                   class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                  <i class="fas fa-comments mr-2 text-xl"></i>Messages
-                </a>
-                <!-- Add the Notification Preferences link here -->
-                <a href="{% url 'notification_preferences' %}"
-                   class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                  <i class="fas fa-bell mr-2"></i> Notification Preferences
-                </a>
+
                 <a href="{% url 'teacher_dashboard' %}"
-                   class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                  <i class="fas fa-chalkboard-teacher mr-2"></i> Teacher Dashboard
+                   class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                  <i class="fas fa-chalkboard-teacher mr-2 text-teal-500"></i>
+                  <span>Teacher Dashboard</span>
                 </a>
+
                 <a href="{% url 'student_dashboard' %}"
-                   class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                  <i class="fas fa-graduation-cap mr-2"></i> Student Dashboard
+                   class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                  <i class="fas fa-graduation-cap mr-2 text-teal-500"></i>
+                  <span>Student Dashboard</span>
                 </a>
-                <a href="{% url 'progress_visualization' %}"
-                   class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                  <i class="fas fa-chart-line mr-2"></i> Progress Chart
+
+                <a href="{% url 'create_course' %}"
+                   class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                  <i class="fas fa-plus-circle mr-2 text-teal-500"></i>
+                  <span>Create Course</span>
                 </a>
-                <form method="post" action="{% url 'account_logout' %}" class="block">
-                  {% csrf_token %}
-                  <button type="submit"
-                          class="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                    <i class="fas fa-sign-out-alt mr-2"></i> Logout
-                  </button>
-                </form>
+
               </div>
             </div>
           {% else %}
@@ -750,33 +687,22 @@
                       <i class="fas fa-user-edit mr-2 text-teal-500"></i>
                       <span>Edit Profile</span>
                     </a>
-                    {% if request.user.is_teacher %}
-                      <a href="{% url 'teacher_dashboard' %}"
-                         class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                        <i class="fas fa-chalkboard-teacher mr-2 text-teal-500"></i>
-                        <span>Teacher Dashboard</span>
-                      </a>
-                    {% endif %}
-                    {% if request.user.enrollments.exists %}
-                      <a href="{% url 'student_dashboard' %}"
-                         class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                        <i class="fas fa-graduation-cap mr-2 text-teal-500"></i>
-                        <span>Student Dashboard</span>
-                      </a>
-                    {% endif %}
-                    {% if request.user.is_teacher %}
-                      <a href="{% url 'create_course' %}"
-                         class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                        <i class="fas fa-plus-circle mr-2 text-teal-500"></i>
-                        <span>Create Course</span>
-                      </a>
-                    {% endif %}
-                    {% if user.is_superuser %}
-                      <a href="{% url 'admin:index' %}"
-                         class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
-                        <i class="fas fa-cog mr-2 text-teal-500"></i>
-                        <span>Admin Panel</span>
-                      </a>
+                    <a href="{% url 'teacher_dashboard' %}"
+                       class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                      <i class="fas fa-chalkboard-teacher mr-2 text-teal-500"></i>
+                      <span>Teacher Dashboard</span>
+                    </a>
+                    <a href="{% url 'student_dashboard' %}"
+                       class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                      <i class="fas fa-graduation-cap mr-2 text-teal-500"></i>
+                      <span>Student Dashboard</span>
+                    </a>
+                    <a href="{% url 'create_course' %}"
+                       class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                      <i class="fas fa-plus-circle mr-2 text-teal-500"></i>
+                      <span>Create Course</span>
+                    </a>
+
                       <a href="{% url 'admin:index' %}/dashboard"
                          class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                         <i class="fas fa-cog mr-2 text-teal-500"></i>

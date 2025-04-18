@@ -4,16 +4,19 @@ import string
 import time
 import uuid
 from datetime import datetime, timedelta
-from io import BytesIO
 
-from allauth.account.signals import user_signed_up
-from django.conf import settings
-from django.contrib.auth.models import User
-from django.core.exceptions import ValidationError
-from django.core.files.base import ContentFile
-from django.core.mail import send_mail
-from django.core.validators import MaxValueValidator, MinValueValidator
-from django.db import models
+# Everyone can be both teacher and student, so this field is now just for UI preferences
+preferred_role = models.CharField(
+    max_length=20,
+    choices=[
+        ("student", "Student"),
+        ("teacher", "Teacher"),
+        ("both", "Both"),
+    ],
+    default="both",
+    help_text="Preferred role for UI display purposes. All users can both teach and take courses."
+)
+
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
@@ -58,7 +61,47 @@ class Profile(models.Model):
     custom_avatar = models.OneToOneField(
         "Avatar", on_delete=models.SET_NULL, null=True, blank=True, related_name="profile"
     )
-    is_teacher = models.BooleanField(default=False)
+    # Everyone can be both teacher and student, so this field is now just for UI preferences
+    preferred_role = models.CharField(
+        max_length=20,
+        choices=[
+            ("student", "Student"),
+            ("teacher", "Teacher"),
+            ("both", "Both"),
+        ],
+        default="both",
+        help_text="Preferred role for UI display purposes. All users can both teach and take courses."
+    )
+    preferred_role = models.CharField(
+        max_length=20,
+        choices=[
+            ("student", "Student"),
+            ("teacher", "Teacher"),
+            ("both", "Both"),
+        ],
+        default="both",
+        help_text="Preferred role for UI display purposes. All users can both teach and take courses."
+    )
+    preferred_role = models.CharField(
+        max_length=20,
+        choices=[
+            ("student", "Student"),
+            ("teacher", "Teacher"),
+            ("both", "Both"),
+        ],
+        default="both",
+        help_text="Preferred role for UI display purposes. All users can both teach and take courses."
+    )
+    preferred_role = models.CharField(
+        max_length=20,
+        choices=[
+            ("student", "Student"),
+            ("teacher", "Teacher"),
+            ("both", "Both"),
+        ],
+        default="both",
+        help_text="Preferred role for UI display purposes. All users can both teach and take courses."
+    )
     is_social_media_manager = models.BooleanField(default=False)
     discord_username = models.CharField(max_length=50, blank=True, help_text="Your Discord username (e.g., User#1234)")
     slack_username = models.CharField(max_length=50, blank=True, help_text="Your Slack username")
@@ -131,7 +174,7 @@ class Profile(models.Model):
 
     @property
     def can_receive_payments(self):
-        return self.is_teacher and self.stripe_account_id and self.stripe_account_status == "verified"
+        return self.stripe_account_id and self.stripe_account_status == "verified"
 
 
 class Avatar(models.Model):

@@ -25,9 +25,10 @@ from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.utils import NestedObjects
 from django.contrib.auth import get_user_model, login, logout
-from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
+from django.shortcuts import redirect
 from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.mail import send_mail
@@ -66,7 +67,7 @@ from django.views.generic import (
 )
 
 from .calendar_sync import generate_google_calendar_link, generate_ical_feed, generate_outlook_calendar_link
-from .decorators import teacher_required
+
 from .forms import (
     AccountDeleteForm,
     AwardAchievementForm,
@@ -100,14 +101,14 @@ from .forms import (
     TeamGoalForm,
     TeamInviteForm,
     UserRegistrationForm,
-)
-from .marketing import (
+    )
+    from .marketing import (
     generate_social_share_content,
     get_course_analytics,
     get_promotion_recommendations,
     send_course_promotion_email,
-)
-from .models import (
+    )
+    from .models import (
     Achievement,
     Badge,
     BlogComment,
@@ -318,9 +319,8 @@ def index(request):
         logger = logging.getLogger(__name__)
         logger.error(f"Error getting leaderboard data: {e}")
         top_leaderboard_users = []
-
-    # Get signup form if needed
-    form = None
+    # Removed teacher-exclusive check; all authenticated users are allowed.
+    form = TeacherSignupForm()
     if not request.user.is_authenticated or not request.user.profile.is_teacher:
         form = TeacherSignupForm()
 

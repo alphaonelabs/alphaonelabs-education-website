@@ -1,4 +1,6 @@
+
 from functools import wraps
+
 
 from django.core.exceptions import PermissionDenied
 from django.shortcuts import redirect
@@ -15,8 +17,8 @@ def teacher_required(view_func):
         if not request.user.is_authenticated:
             return redirect(reverse("account_login"))
 
-        # Allow access if user has is_teacher flag OR has any courses they teach
-        is_teacher = hasattr(request.user, "profile") and request.user.profile.is_teacher
+        # Allow access if user has preferred role of teacher or both, or has any courses they teach
+        is_teacher = hasattr(request.user, "profile") and request.user.profile.preferred_role in ("teacher", "both")
         has_courses = hasattr(request.user, "courses_teaching") and request.user.courses_teaching.exists()
 
         if not (is_teacher or has_courses):
