@@ -16,10 +16,11 @@ from .slack import send_slack_notification
 logger = logging.getLogger(__name__)
 
 
-from django.http import HttpResponse, HttpResponseForbidden
 from django.conf import settings
+from django.http import HttpResponse, HttpResponseForbidden
 from sendgrid.helpers.eventwebhook import EventWebhook, EventWebhookHeader
 
+logger = logging.getLogger(__name__)
 event_verifier = EventWebhook()
 
 @csrf_exempt
