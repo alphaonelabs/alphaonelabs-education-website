@@ -6,9 +6,8 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('web', '0058_forumtopic_github_issue_url_and_more'),
-        ('web', '0058_question_choice_response_survey_question_survey'),
+        ("web", "0058_forumtopic_github_issue_url_and_more"),
+        ("web", "0058_question_choice_response_survey_question_survey"),
     ]
 
-    operations = [
-    ]
+    operations = []
