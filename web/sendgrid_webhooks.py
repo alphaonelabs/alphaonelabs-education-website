@@ -5,23 +5,19 @@ import logging
 from datetime import datetime
 
 import pytz
+from django.conf import settings
 from django.contrib.auth.models import User
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseForbidden
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
+from sendgrid.helpers.eventwebhook import EventWebhook, EventWebhookHeader
 
 from .models import EmailEvent
 from .slack import send_slack_notification
 
 logger = logging.getLogger(__name__)
-
-
-from django.conf import settings
-from django.http import HttpResponse, HttpResponseForbidden
-from sendgrid.helpers.eventwebhook import EventWebhook, EventWebhookHeader
-
-logger = logging.getLogger(__name__)
 event_verifier = EventWebhook()
+
 
 @csrf_exempt
 def sendgrid_webhook(request):
@@ -32,7 +28,7 @@ def sendgrid_webhook(request):
     # 1️⃣  Verify signature
     try:
         signature = request.headers.get(EventWebhookHeader.SIGNATURE)
-        timestamp  = request.headers.get(EventWebhookHeader.TIMESTAMP)
+        timestamp = request.headers.get(EventWebhookHeader.TIMESTAMP)
         public_key = settings.SENDGRID_WEBHOOK_PUBLIC_KEY
 
         if not (signature and timestamp and public_key):
@@ -65,6 +61,7 @@ def sendgrid_webhook(request):
     except Exception as e:
         logger.exception(f"Error processing SendGrid webhook: {e}")
         return HttpResponse(status=500)  # Internal server error
+
 
 def process_sendgrid_event(event):
     """Process a single SendGrid event and update user records."""

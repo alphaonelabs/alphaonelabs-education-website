@@ -56,6 +56,7 @@ from .models import (
     WaitingRoom,
     WebRequest,
 )
+from .utils import get_email_status
 
 admin.site.unregister(EmailAddress)
 
@@ -167,25 +168,10 @@ class ProfileAdmin(admin.ModelAdmin):
     )
 
     def email_status(self, obj):
-        if not obj.last_email_event:
-            return "No events"
+        color, label, time_str = get_email_status(obj)
+        from django.utils.html import format_html
 
-        status_classes = {
-            "delivered": "success",
-            "open": "success",
-            "click": "success",
-            "bounce": "danger",
-            "dropped": "danger",
-            "spamreport": "danger",
-            "deferred": "warning",
-            "processed": "info",
-        }
-
-        status_class = status_classes.get(obj.last_email_event, "info")
-        color = {"success": "green", "danger": "red", "warning": "orange", "info": "blue"}.get(status_class, "gray")
-
-        time_str = obj.last_email_event_time.strftime("%Y-%m-%d %H:%M") if obj.last_email_event_time else ""
-        return format_html('<span style="color: {};">● {}</span> {}', color, obj.last_email_event.title(), time_str)
+        return format_html('<span style="color: {}">● {}</span> {}', color, label, time_str)
 
     email_status.short_description = "Email Status"
 
