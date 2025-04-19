@@ -150,10 +150,8 @@ class TimeZoneMiddleware:
     Middleware that activates the user's timezone preference for each request.
     It either uses the timezone stored in the session or defaults to TIME_ZONE from settings.
     """
-
-    def __init__(self, get_response):
+    def __init__(self, get_response) -> None:
         self.get_response = get_response
-
     def __call__(self, request):
         # Try to get the timezone from the session
         tzname = request.session.get("user_timezone")
