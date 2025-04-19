@@ -9,5 +9,5 @@ Fixes #issue_number
 <!-- [x] done, [ ] not done, [/ ] not applicable -->
 
 - [ ] Did you run the pre-commit? (If not, your PR will most likely not pass — please ensure it passes pre-commit)
-- [ ] Did you test the change? (Make sure you didn’t just prompt the AI and blindly commit — actually test the code and confirm it works)
+- [ ] Did you test the change? (Ensure you didn’t just prompt the AI and blindly commit — test the code and confirm it works)
 - [ ] Added screenshots to the PR description (if applicable).
