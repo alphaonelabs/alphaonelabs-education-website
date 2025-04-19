@@ -1165,10 +1165,12 @@ def learn(request):
 def teach(request):
     """Handles the course creation process for both authenticated and unauthenticated users."""
     if request.method == "POST":
-        form = TeachForm(request.POST, request.FILES)
+        form = TeachForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             # Extract cleaned data
-            email = form.cleaned_data["email"]
+            email = form.cleaned_data.get("email", None)
+            if email is None and request.user.is_authenticated:
+                email = request.user.email
             course_title = form.cleaned_data["course_title"]
             course_description = form.cleaned_data["course_description"]
             course_image = form.cleaned_data.get("course_image")
@@ -1182,14 +1184,6 @@ def teach(request):
             if request.user.is_authenticated:
                 # For authenticated users, always use the logged-in user
                 user = request.user
-
-                # Validate that the provided email matches the logged-in user's email
-                if email != user.email:
-                    form.add_error(
-                        "email",
-                        "The provided email does not match your account email. Please use your account email.",
-                    )
-                    return render(request, "teach.html", {"form": form})
 
                 # Backend validation: Check for duplicate course titles for the logged-in user
                 if Course.objects.filter(title__iexact=course_title, teacher=user).exists():
@@ -1313,7 +1307,7 @@ def teach(request):
         initial_data = {}
         if request.GET.get("subject"):
             initial_data["course_title"] = request.GET.get("subject")
-        form = TeachForm(initial=initial_data)
+        form = TeachForm(initial=initial_data, user=request.user)
 
     return render(request, "teach.html", {"form": form})
 
