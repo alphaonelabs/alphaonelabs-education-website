@@ -8,10 +8,12 @@ register = template.Library()
 
 
 @register.filter(name="localtime")
-def localtime_filter(value):
+def localtime_filter(value) -> any:
     """
     Convert a datetime to the user's local timezone.
     Usage: {{ value|localtime }}
+    Returns the converted datetime, the original value if not
+    a datetime, or an empty string if None.
     """
     if value is None:
         return ""
@@ -29,7 +31,6 @@ def localtime_filter(value):
             return value
 
     return localtime(value)
-
 
 @register.filter(name="localtime_format")
 def localtime_format(value, format_string=None):
