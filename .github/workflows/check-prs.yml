@@ -1,0 +1,76 @@
+name: Check Pull Requests
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # Run every day at midnight UTC
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  check-prs:
+    name: Close Inactive PRs and Notify Issues
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Check for inactive PRs
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Fetch all open pull requests
+            const prs = await github.pulls.list({
+              owner,
+              repo,
+              state: "open",
+            });
+
+            for (const pr of prs.data) {
+              // Calculate inactivity duration
+              const lastUpdated = new Date(pr.updated_at);
+              const now = new Date();
+              const daysSinceUpdate = (now - lastUpdated) / (1000 * 60 * 60 * 24);
+
+              if (daysSinceUpdate > 7) {
+                console.log(`PR #${pr.number} has been inactive for more than 7 days.`);
+
+                // Close the PR
+                await github.pulls.update({
+                  owner,
+                  repo,
+                  pull_number: pr.number,
+                  state: "closed",
+                });
+                console.log(`Closed PR #${pr.number} due to inactivity.`);
+
+                // Unassign the linked issue (if any)
+                if (pr.issue_url) {
+                  const issueNumber = pr.issue_url.split("/").pop();
+
+                  // Unassign the user from the issue
+                  await github.issues.removeAssignees({
+                    owner,
+                    repo,
+                    issue_number: issueNumber,
+                    assignees: [pr.user.login],
+                  });
+                  console.log(`Unassigned user from issue #${issueNumber}.`);
+
+                  // Comment on the issue to notify it's available again
+                  await github.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: issueNumber,
+                    body: `This issue is now available again as the related pull request #${pr.number} has been closed due to inactivity.`,
+                  });
+                  console.log(`Commented on issue #${issueNumber}.`);
+                }
+              }
+            }
