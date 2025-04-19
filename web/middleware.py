@@ -166,8 +166,5 @@ class TimeZoneMiddleware:
         else:
             # No timezone in session, use the default
             timezone.deactivate()
-
         # Process the request with the activated timezone
-        response = self.get_response(request)
-
-        return response
+        return self.get_response(request)
