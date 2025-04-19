@@ -1,0 +1,378 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  {{ object.title }} Results
+{% endblock title %}
+{% block content %}
+  <main class="flex-1 w-full max-w-[90rem] mx-auto mt-6 px-4 md:px-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+      <h1 class="text-2xl font-bold flex items-center">
+        <i class="fa-solid fa-chart-pie text-teal-600 dark:text-teal-400 mr-2"></i>
+        {{ object.title }} Results
+      </h1>
+      <a href="{% url 'surveys' %}"
+         class="text-teal-600 dark:text-teal-400 hover:underline flex items-center">
+        <i class="fa-solid fa-arrow-left mr-2"></i>
+        Back to surveys
+      </a>
+    </div>
+    {% if results %}
+      <!-- Survey Overview Section -->
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden mb-8 shadow-sm">
+        <div class="border-b border-gray-200 dark:border-gray-700 p-4">
+          <h2 class="text-lg font-semibold flex items-center">
+            <i class="fa-solid fa-chart-line text-teal-600 dark:text-teal-400 mr-2"></i>
+            Survey Overview
+          </h2>
+          <p class="text-sm text-gray-500 dark:text-gray-400">
+            Total questions: {{ results|length }} • Total participants: {{ total_participants }}
+          </p>
+        </div>
+        <div class="p-6">
+          <div class="flex flex-wrap -mx-2">
+            <div class="w-full md:w-1/2 p-2">
+              <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <div class="text-center">
+                  <div class="inline-flex items-center justify-center h-16 w-16 rounded-full bg-blue-100 dark:bg-blue-900/30 mb-3">
+                    <i class="fa-solid fa-users text-blue-600 dark:text-blue-400 text-xl"></i>
+                  </div>
+                  <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Response Rate</h3>
+                  <div class="relative pt-1 px-8 mt-4">
+                    <div class="flex items-center justify-between mb-2">
+                      <div class="text-xs font-semibold inline-block text-blue-600">{{ response_rate|floatformat:0 }}% Complete</div>
+                    </div>
+                    <div class="overflow-hidden h-2 mb-4 text-xs flex rounded bg-gray-200 dark:bg-gray-600">
+                      <div class="shadow-none flex flex-col text-center whitespace-nowrap text-white justify-center bg-blue-500 progress-bar"
+                           data-progress="{{ response_rate|default:0 }}"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="w-full md:w-1/2 p-2">
+              <div class="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <div class="text-center">
+                  <div class="inline-flex items-center justify-center h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 mb-3">
+                    <i class="fa-solid fa-gauge-high text-green-600 dark:text-green-400 text-xl"></i>
+                  </div>
+                  <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Engagement Score</h3>
+                  <p class="text-3xl font-bold text-green-600 dark:text-green-400 mt-2">
+                    {% if engagement_score %}
+                      {{ engagement_score }}%
+                    {% else %}
+                      N/A
+                    {% endif %}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Based on question completion rate</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Question Results Section -->
+      <h2 class="text-xl font-semibold mb-4 flex items-center">
+        <i class="fa-solid fa-list-ol text-teal-600 dark:text-teal-400 mr-2"></i>
+        Question Results
+      </h2>
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {% for result in results %}
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-sm">
+            <div class="border-b border-gray-200 dark:border-gray-700 p-4">
+              <div class="flex items-start justify-between">
+                <div class="pr-4">
+                  <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ result.question.text }}</h3>
+                  <p class="text-sm text-gray-500 dark:text-gray-400">Total responses: {{ result.total }}</p>
+                </div>
+              </div>
+            </div>
+            <div class="p-4">
+              {% if result.total > 0 %}
+                <div class="chart-toggle-buttons flex justify-center mb-4">
+                  <button class="chart-toggle px-3 py-1 mx-1 rounded-md bg-gray-100 dark:bg-gray-700 active-chart"
+                          data-question-id="{{ result.question.id }}"
+                          data-chart-type="pie">
+                    <i class="fa-solid fa-chart-pie mr-1"></i> Pie
+                  </button>
+                  <button class="chart-toggle px-3 py-1 mx-1 rounded-md bg-gray-100 dark:bg-gray-700"
+                          data-question-id="{{ result.question.id }}"
+                          data-chart-type="bar">
+                    <i class="fa-solid fa-bars mr-1"></i> Bar
+                  </button>
+                </div>
+                <div class="chart-container h-60" id="chart-{{ result.question.id }}"></div>
+              {% else %}
+                <div class="p-6 text-center text-gray-500">
+                  <i class="fa-solid fa-chart-simple text-2xl mb-2"></i>
+                  <p>No responses for this question yet</p>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      <!-- Response Summary Section -->
+      <div class="mt-8">
+        <h2 class="text-xl font-semibold mb-4 flex items-center">
+          <i class="fa-solid fa-comments text-teal-600 dark:text-teal-400 mr-2"></i>
+          Response Summary
+          <button id="export-data"
+                  class="ml-auto px-3 py-1 text-sm bg-teal-600 text-white rounded-md flex items-center">
+            <i class="fa-solid fa-download mr-1"></i> Export Data
+          </button>
+        </h2>
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm">
+          <div class="prose dark:prose-invert max-w-none">
+            {% if top_choice %}
+              <p>
+                Based on the survey results, {{ top_choice.text }} was the most popular choice with {{ top_choice.percentage|floatformat:0 }}% of responses.
+              </p>
+            {% endif %}
+            {% if bottom_choice %}
+              <p>
+                The least chosen option was {{ bottom_choice.text }} with only {{ bottom_choice.percentage|floatformat:0 }}% of total responses.
+              </p>
+            {% endif %}
+            <h3>Key Takeaways</h3>
+            <ul>
+              <li>{{ total_participants }} people participated in this survey</li>
+              <li>{{ results|length }} questions were answered</li>
+              {% if most_answered_question %}
+                <li>The highest engagement was on question "{{ most_answered_question.text }}"</li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
+      </div>
+    {% else %}
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-8 text-center shadow-sm">
+        <i class="fa-solid fa-chart-bar text-4xl text-gray-400 dark:text-gray-500 mb-4"></i>
+        <p class="text-gray-700 dark:text-gray-300">No responses have been submitted yet.</p>
+      </div>
+    {% endif %}
+  </main>
+  {% block extra_js %}
+    <!-- Include Chart.js from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"
+            integrity="sha512-ElRFoEQdI5Ht6kZvyzXhYG9NqjtkmlkfYk0wr6wHxU9JEHakS7UJZNeml5ALk+8IKlU6jDgMabC3vkumRokgJA=="
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"></script>
+    <!-- Fallback if CDN fails -->
+    <script>
+        if (typeof Chart === 'undefined' || parseFloat(Chart.version) < 3.9) {
+            document.write('<script src="{% static "js/chart.min.js" %}"><\/script>');
+        }
+    </script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Parse chart data
+        const chartData = JSON.parse('{{ chart_data_json|safe }}');
+
+        // Store chart instances
+        const chartInstances = {};
+
+        // Chart colors
+        const chartColors = [
+            '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+            '#EC4899', '#06B6D4', '#14B8A6', '#F97316', '#6366F1'
+        ];
+
+        // Create charts for each question
+        chartData.forEach(questionData => {
+            if (questionData.data.length > 0) {
+                createChart(questionData.question_id, 'pie');
+            }
+        });
+
+        // Function to create chart
+        function createChart(questionId, chartType) {
+            // Find the chart data
+            const questionData = chartData.find(item => item.question_id == questionId);
+            if (!questionData) return;
+
+            // Get the chart container
+            const container = document.getElementById(`chart-${questionId}`);
+            if (!container) return;
+
+            // Clear container
+            container.innerHTML = '';
+
+            // Create canvas
+            const canvas = document.createElement('canvas');
+            container.appendChild(canvas);
+
+            // Destroy previous chart if exists
+            if (chartInstances[questionId]) {
+                chartInstances[questionId].destroy();
+            }
+
+            // Chart config based on type
+            let chartConfig;
+
+            if (chartType === 'pie') {
+                chartConfig = {
+                    type: 'doughnut',
+                    data: {
+                        labels: questionData.labels,
+                        datasets: [{
+                            data: questionData.data,
+                            backgroundColor: chartColors.slice(0, questionData.labels.length),
+                            borderWidth: 2,
+                            borderColor: '#ffffff',
+                            hoverOffset: 10
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    usePointStyle: true,
+                                    pointStyle: 'circle'
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = Math.round((value / total) * 100);
+                                        return `${label}: ${value} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+            } else if (chartType === 'bar') {
+                chartConfig = {
+                    type: 'bar',
+                    data: {
+                        labels: questionData.labels,
+                        datasets: [{
+                            data: questionData.data,
+                            backgroundColor: chartColors.slice(0, questionData.labels.length),
+                            borderWidth: 0,
+                            borderRadius: 4,
+                            maxBarThickness: 50
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = Math.round((value / total) * 100);
+                                        return `${value} responses (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                grid: {
+                                    display: false
+                                }
+                            },
+                            y: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                };
+            }
+
+            // Create the chart
+            try {
+                chartInstances[questionId] = new Chart(canvas, chartConfig);
+            } catch (error) {
+                console.error(`Failed to create chart for question ${questionId}:`, error);
+                container.innerHTML = `
+                    <div class="p-4 text-center">
+                        <p class="text-red-500 mb-2">Failed to load chart: ${error.message}</p>
+                        <button id="retry-chart-${questionId}" class="px-3 py-1 bg-blue-500 text-white rounded-md">
+                            <i class="fa-solid fa-refresh mr-1"></i> Retry
+                        </button>
+                    </div>`;
+
+                // Add retry button event listener
+                document.getElementById(`retry-chart-${questionId}`).addEventListener('click', function() {
+                    createChart(questionId, chartType === 'pie' ? 'pie' : 'bar');
+                });
+
+            }
+        }
+
+        // Add event listeners to toggle buttons
+        document.querySelectorAll('.chart-toggle').forEach(button => {
+            button.addEventListener('click', function() {
+                const questionId = this.getAttribute('data-question-id');
+                const chartType = this.getAttribute('data-chart-type');
+
+                // Update active state on buttons
+                const buttonGroup = this.parentNode;
+                buttonGroup.querySelectorAll('.chart-toggle').forEach(btn => {
+                    btn.classList.remove('active-chart');
+                });
+                this.classList.add('active-chart');
+
+                // Create the chart with selected type
+                createChart(questionId, chartType);
+            });
+        });
+
+        // Style for active button
+        const style = document.createElement('style');
+        style.textContent = `
+                .active-chart {
+                    background-color: #0ea5e9 !important;
+                    color: white !important;
+                }
+                .dark .active-chart {
+                    background-color: #0284c7 !important;
+                    color: white !important;
+                }
+            `;
+        document.head.appendChild(style);
+        document.getElementById('export-data').addEventListener('click', function() {
+            const BOM = '\uFEFF';
+            let csvContent = `data:text/csv;charset=utf-8,${BOM}`;
+            csvContent += "Question,Option,Responses,Percentage\n";
+            chartData.forEach(questionData => {
+                const question = questionData.question_text;
+                const total = questionData.data.reduce((a, b) => a + b, 0);
+                questionData.labels.forEach((label, index) => {
+                    const count = questionData.data[index];
+                    const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+                    csvContent += `"${question}","${label}",${count},${percentage}%\n`;
+                });
+            });
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "survey_results.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+    });
+</script>
+{% endblock extra_js %}
+{% endblock content %}
