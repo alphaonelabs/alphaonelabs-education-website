@@ -152,14 +152,14 @@ class TimeZoneMiddleware:
     """
     def __init__(self, get_response) -> None:
         self.get_response = get_response
-    def __call__(self, request):
-        # Try to get the timezone from the session
-        tzname = request.session.get("user_timezone")
+     def __call__(self, request: HttpRequest) -> HttpResponse:
+         # Try to get the timezone from the session
+         tzname = request.session.get("user_timezone")
 
-        if tzname:
-            # If found, activate this timezone for the current request
-            try:
-                timezone.activate(pytz.timezone(tzname))
+         if tzname:
+             # If found, activate this timezone for the current request
+             try:
+                 timezone.activate(pytz.timezone(tzname))
             except (pytz.exceptions.UnknownTimeZoneError, AttributeError):
                 # If timezone is invalid, use the default
                 timezone.deactivate()
