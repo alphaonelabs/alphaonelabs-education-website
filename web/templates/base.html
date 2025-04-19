@@ -295,6 +295,10 @@
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-shopping-basket mr-2 text-teal-500"></i>Storefronts
                   </a>
+                  <a href="{% url 'membership_plans' %}"
+                     class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
+                    <i class="fas fa-crown mr-2 text-teal-500"></i>Membership
+                  </a>
                   <a href="https://github.com/alphaonelabs/education-website/wiki/GSOC-2025-Ideas"
                      target="_blank"
                      rel="noopener"
@@ -405,13 +409,14 @@
                     onclick="toggleDarkMode()">
               <i id="darkModeIcon" class="fas fa-moon"></i>
             </button>
+            <!-- Social media dashboard link with direct # href to avoid URL lookup -->
+            <!--
+            <a href="#" class="p-2 rounded-full inline-flex items-center ml-2">
+              <i class="fab fa-twitter text-xl"></i>
             <a href="{% url 'social_media_dashboard' %}">
-              <img src="{% static 'images/x-logo.svg' %}"
-                   alt="X (Twitter) Logo"
-                   class="w-4 h-4 filter invert"
-                   width="20"
-                   height="20" />
+              <img src="{% static 'images/x-logo.svg' %}" alt="X (Twitter) Logo" class="w-4 h-4 filter invert" width="20" height="20" />
             </a>
+            -->
           </div>
           <!-- Auth Buttons -->
           {% if user.is_authenticated %}
@@ -482,6 +487,10 @@
                 <a href="{% url 'progress_visualization' %}"
                    class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
                   <i class="fas fa-chart-line mr-2"></i> Progress Chart
+                </a>
+                <a href="{% url 'manage_membership' %}"
+                   class="block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <i class="fas fa-crown mr-2"></i> Manage Membership
                 </a>
                 <form method="post" action="{% url 'account_logout' %}" class="block">
                   {% csrf_token %}
@@ -674,6 +683,11 @@
                       <i class="fas fa-shopping-basket mr-2 text-teal-500"></i>
                       <span>Storefronts</span>
                     </a>
+                    <a href="{% url 'membership_plans' %}"
+                       class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                      <i class="fas fa-crown mr-2 text-teal-500"></i>
+                      <span>Membership</span>
+                    </a>
                     <a href="https://github.com/alphaonelabs/education-website/wiki/GSOC-2025-Ideas"
                        target="_blank"
                        rel="noopener"
@@ -783,6 +797,11 @@
                         <span>Admin Dashboard</span>
                       </a>
                     {% endif %}
+                    <a href="{% url 'manage_membership' %}"
+                       class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                      <i class="fas fa-crown mr-2 text-teal-500"></i>
+                      <span>Manage Membership</span>
+                    </a>
                     <form method="post" action="{% url 'account_logout' %}" class="block mt-2">
                       {% csrf_token %}
                       <button type="submit"
