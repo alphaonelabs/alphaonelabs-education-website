@@ -962,8 +962,5 @@ def get_email_status(profile):
     status_class = status_classes.get(profile.last_email_event, "info")
     color = {"success": "green", "danger": "red", "warning": "orange", "info": "blue"}.get(status_class, "gray")
     last_event_time = getattr(profile, "last_email_event_time", None)
-    if last_event_time:
-        time_str = last_event_time.strftime("%Y-%m-%d %H:%M")
-    else:
-        time_str = ""
+    time_str = last_event_time.strftime("%Y-%m-%d %H:%M") if last_event_time else ""
     return (color, profile.last_email_event.title(), time_str)
