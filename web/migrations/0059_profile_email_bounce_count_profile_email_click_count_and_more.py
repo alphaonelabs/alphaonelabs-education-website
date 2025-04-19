@@ -107,6 +107,8 @@ class Migration(migrations.Migration):
             ],
             options={
                 "ordering": ["-timestamp"],
+                "verbose_name": "Email Event",
+                "verbose_name_plural": "Email Events",
                 "indexes": [
                     models.Index(fields=["email"], name="web_emailev_email_a8e6a7_idx"),
                     models.Index(fields=["event_type"], name="web_emailev_event_t_02108b_idx"),
