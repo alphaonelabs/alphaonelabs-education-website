@@ -3,7 +3,6 @@ import html
 import ipaddress
 import json
 import logging
-import mimetypes
 import os
 import random
 import re
@@ -15,7 +14,6 @@ import time
 from collections import Counter, defaultdict
 from datetime import timedelta
 from decimal import Decimal
-from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
@@ -6977,6 +6975,8 @@ def upload_work_submission(request: HttpRequest) -> HttpResponse:
     else:
         form = WorkSubmissionForm()
         messages.info(request, "Please complete the form to submit your work.")
+    if form.errors:
+        messages.error(request, "Please fix the errors in the form and try again.")
     return render(request, "web/work/upload_submission.html", {"form": form})
 
 
@@ -7068,27 +7068,39 @@ def delete_work_submission(request, submission_id):
 
 
 @login_required
-def serve_work_file(request: HttpRequest, file_path: str) -> HttpResponse:
-    """Serve uploaded work files directly (for development only)."""
+def serve_work_file(request, file_path):
+    """
+    Securely serve uploaded work files for development only.
+    DO NOT use this in production—let your web server handle media files.
+    """
+    import mimetypes
+    import os
 
-    # Resolve the safe media root and the requested file path
-    media_root = Path(settings.MEDIA_ROOT).resolve()
-    requested_file = (media_root / file_path).resolve()
+    from django.conf import settings
+    from django.http import FileResponse, Http404
 
-    # Prevent path traversal by ensuring the resolved path starts with MEDIA_ROOT
-    if not str(requested_file).startswith(str(media_root)):
+    # Resolve symlinks and get absolute paths
+    media_root = os.path.realpath(settings.MEDIA_ROOT)
+    requested_path = os.path.realpath(os.path.join(media_root, file_path))
+
+    # Ensure the requested file is within MEDIA_ROOT
+    if not os.path.commonpath([requested_path, media_root]) == media_root:
         raise Http404("Invalid file path")
 
-    # Check if file exists and is a file
-    if not requested_file.exists() or not requested_file.is_file():
+    # Optionally, restrict allowed file extensions
+    allowed_extensions = {"pdf", "doc", "docx", "odt", "txt", "jpg", "jpeg", "png", "gif", "bmp"}
+    ext = os.path.splitext(requested_path)[1][1:].lower()
+    if ext not in allowed_extensions:
+        raise Http404("File type not allowed")
+
+    if not os.path.exists(requested_path) or not os.path.isfile(requested_path):
         raise Http404("File not found")
 
-    # Guess content type
-    content_type, _ = mimetypes.guess_type(str(requested_file))
-    content_type = content_type or "application/octet-stream"
+    content_type, _ = mimetypes.guess_type(requested_path)
+    if not content_type:
+        content_type = "application/octet-stream"
 
-    # Serve the file safely
-    return FileResponse(open(requested_file, "rb"), content_type=content_type)
+    return FileResponse(open(requested_path, "rb"), content_type=content_type)
 
 
 # API endpoint for dynamic form handling

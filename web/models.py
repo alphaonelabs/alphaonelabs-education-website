@@ -2738,7 +2738,7 @@ class WorkSubmission(models.Model):
     def __str__(self) -> str:
         return f"{self.student.username}'s {self.work_type.name}: {self.title}"
 
-    def save(self, *args, **kwargs):
+    def save(self, *args, **kwargs) -> None:
         # Set file size on save
         if self.work_file:
             self.file_size = self.work_file.size
@@ -2788,7 +2788,7 @@ class WorkSubmission(models.Model):
     @property
     def is_document(self) -> bool:
         """Check if the file is a document."""
-        return self.file_extension in ["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp", "tiff"]
+        return self.file_extension in ["pdf", "doc", "docx", "odt", "txt", "rtf", "md"]
 
     def get_status_choices(self):
         return self.STATUS_CHOICES
