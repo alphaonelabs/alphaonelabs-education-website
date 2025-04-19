@@ -1,5 +1,5 @@
 # Python base image
-FROM python:3.10-slim
+FROM python:3.10-slim@sha256:f9fd9a142c9e3bc54d906053b756eb7e7e386ee1cf784d82c251cf640c502512
 
 # Set working directory
 WORKDIR /app
