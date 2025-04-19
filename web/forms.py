@@ -1,4 +1,5 @@
 import re
+from urllib.parse import parse_qs, urlparse
 
 from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
@@ -835,16 +836,37 @@ class EducationalVideoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-# Order subjects by 'order' first, then alphabetically by 'name'
+
+    # Order subjects by 'order' first, then alphabetically by 'name'
 
     def clean_video_url(self):
-        url = self.cleaned_data.get("video_url")
-        if url:
-            youtube_pattern = r"^(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)[\w-]{11}.*$"
-            vimeo_pattern = r"^(https?://)?(www\.)?vimeo\.com/\d+.*$"
-            if not (re.match(youtube_pattern, url) or re.match(vimeo_pattern, url)):
-                raise forms.ValidationError("Please enter a valid YouTube or Vimeo URL")
-        return url
+        url = self.cleaned_data.get("video_url", "").strip()
+        if not url:
+            return url  # let required validation handle empties
+
+        parsed = urlparse(url)
+        host = parsed.netloc.lower()
+
+        # 1) YouTube.com/watch?v=<id>
+        if "youtube.com" in host:
+            qs = parse_qs(parsed.query)
+            vid = qs.get("v", [""])[0]
+            if len(vid) == 11 and vid.isalnum():
+                return url
+
+        # 2) youtu.be/<id>
+        if "youtu.be" in host:
+            vid = parsed.path.lstrip("/")
+            if len(vid) == 11 and vid.isalnum():
+                return url
+
+        # 3) Vimeo.com/<digits>
+        if "vimeo.com" in host:
+            vid = parsed.path.lstrip("/").split("/")[0]
+            if vid.isdigit() and len(vid) >= 8:
+                return url
+
+        raise forms.ValidationError("Please enter a valid YouTube or Vimeo URL")
 
 
 class SuccessStoryForm(forms.ModelForm):
