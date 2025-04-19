@@ -170,7 +170,7 @@
                         <h4 class="font-medium">{{ session.title }}</h4>
                         <p class="text-sm text-gray-500 dark:text-gray-400">{{ session.course.title }}</p>
                         <p class="text-sm text-gray-500 dark:text-gray-400">
-                          {{ session.start_time|localtime_format:"M d, Y" }} at {{ session.start_time|localtime_format:"g:i A" }}
+                          {{ session.start_time|localtime_format:"M d, Y g:i A e" }}
                         </p>
                         {% if session.is_virtual %}
                           <a href="{{ session.meeting_link }}"
