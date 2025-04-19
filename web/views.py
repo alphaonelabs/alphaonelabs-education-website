@@ -1173,10 +1173,12 @@ def learn(request):
 def teach(request):
     """Handles the course creation process for both authenticated and unauthenticated users."""
     if request.method == "POST":
-        form = TeachForm(request.POST, request.FILES)
+        form = TeachForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             # Extract cleaned data
-            email = form.cleaned_data["email"]
+            email = form.cleaned_data.get("email", None)
+            if email is None and request.user.is_authenticated:
+                email = request.user.email
             course_title = form.cleaned_data["course_title"]
             course_description = form.cleaned_data["course_description"]
             course_image = form.cleaned_data.get("course_image")
@@ -1190,14 +1192,6 @@ def teach(request):
             if request.user.is_authenticated:
                 # For authenticated users, always use the logged-in user
                 user = request.user
-
-                # Validate that the provided email matches the logged-in user's email
-                if email != user.email:
-                    form.add_error(
-                        "email",
-                        "The provided email does not match your account email. Please use your account email.",
-                    )
-                    return render(request, "teach.html", {"form": form})
 
                 # Backend validation: Check for duplicate course titles for the logged-in user
                 if Course.objects.filter(title__iexact=course_title, teacher=user).exists():
@@ -1321,7 +1315,7 @@ def teach(request):
         initial_data = {}
         if request.GET.get("subject"):
             initial_data["course_title"] = request.GET.get("subject")
-        form = TeachForm(initial=initial_data)
+        form = TeachForm(initial=initial_data, user=request.user)
 
     return render(request, "teach.html", {"form": form})
 
@@ -1987,6 +1981,8 @@ def create_topic(request, category_slug):
                 author=request.user,
                 title=form.cleaned_data["title"],
                 content=form.cleaned_data["content"],
+                github_issue_url=form.cleaned_data.get("github_issue_url", ""),
+                github_milestone_url=form.cleaned_data.get("github_milestone_url", ""),
             )
             messages.success(request, "Topic created successfully!")
             return redirect("forum_topic", category_slug=category_slug, topic_id=topic.id)
@@ -3016,18 +3012,29 @@ def create_forum_category(request):
 
 @login_required
 def edit_topic(request, topic_id):
-    """Edit an existing forum topic."""
     topic = get_object_or_404(ForumTopic, id=topic_id, author=request.user)
     categories = ForumCategory.objects.all()
 
     if request.method == "POST":
-        form = ForumTopicForm(request.POST, instance=topic)
+        form = ForumTopicForm(request.POST)
         if form.is_valid():
-            form.save()
+            # Manually update the topic instance with form data.
+            topic.title = form.cleaned_data["title"]
+            topic.content = form.cleaned_data["content"]
+            topic.github_issue_url = form.cleaned_data.get("github_issue_url", "")
+            topic.github_milestone_url = form.cleaned_data.get("github_milestone_url", "")
+            topic.save()
             messages.success(request, "Topic updated successfully!")
             return redirect("forum_topic", category_slug=topic.category.slug, topic_id=topic.id)
     else:
-        form = ForumTopicForm(instance=topic)
+        # Prepopulate the form with the topic's current data.
+        initial_data = {
+            "title": topic.title,
+            "content": topic.content,
+            "github_issue_url": topic.github_issue_url,
+            "github_milestone_url": topic.github_milestone_url,
+        }
+        form = ForumTopicForm(initial=initial_data)
 
     return render(request, "web/forum/edit_topic.html", {"topic": topic, "form": form, "categories": categories})
 
