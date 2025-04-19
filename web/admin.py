@@ -214,7 +214,8 @@ class CustomUserAdmin(BaseUserAdmin):
         "formatted_last_login",
         "rate_limit_status",
     )
-    list_filter = BaseUserAdmin.list_filter + (
+    list_filter = (
+        *BaseUserAdmin.list_filter,
         EmailVerifiedFilter,
         "date_joined",
         "last_login",
