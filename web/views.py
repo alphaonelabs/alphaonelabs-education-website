@@ -7083,11 +7083,11 @@ def serve_work_file(request, file_path):
     media_root = os.path.realpath(settings.MEDIA_ROOT)
     requested_path = os.path.realpath(os.path.join(media_root, file_path))
 
-    # Ensure the requested file is within MEDIA_ROOT
-    if not os.path.commonpath([requested_path, media_root]) == media_root:
+    # Ensure the requested file is within MEDIA_ROOT (prevents path traversal)
+    if os.path.commonpath([requested_path, media_root]) != media_root:
         raise Http404("Invalid file path")
 
-    # Optionally, restrict allowed file extensions
+    # Restrict allowed file extensions
     allowed_extensions = {"pdf", "doc", "docx", "odt", "txt", "jpg", "jpeg", "png", "gif", "bmp"}
     ext = os.path.splitext(requested_path)[1][1:].lower()
     if ext not in allowed_extensions:
