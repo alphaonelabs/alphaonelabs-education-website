@@ -52,6 +52,8 @@ from .models import (
     SuccessStory,
     UserBadge,
     UserMembership,
+    VoiceChatParticipant,
+    VoiceChatRoom,
     WaitingRoom,
     WebRequest,
 )
@@ -881,3 +883,23 @@ class PointsAdmin(admin.ModelAdmin):
         ("Related Data", {"fields": ("challenge", "current_streak")}),
         ("Timestamps", {"fields": ("awarded_at", "updated_at"), "classes": ("collapse",)}),
     )
+
+
+@admin.register(VoiceChatRoom)
+class VoiceChatRoomAdmin(admin.ModelAdmin):
+    list_display = ("name", "created_by", "created_at", "is_active", "participant_count")
+    list_filter = ("is_active", "created_at")
+    search_fields = ("name", "created_by__username")
+    date_hierarchy = "created_at"
+
+    def participant_count(self, obj):
+        return obj.participants.count()
+
+    participant_count.short_description = "Participants"
+
+
+@admin.register(VoiceChatParticipant)
+class VoiceChatParticipantAdmin(admin.ModelAdmin):
+    list_display = ("user", "room", "joined_at", "is_speaking", "is_muted")
+    list_filter = ("is_speaking", "is_muted", "joined_at")
+    search_fields = ("user__username", "room__name")
