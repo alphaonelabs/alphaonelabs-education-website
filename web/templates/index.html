@@ -1309,7 +1309,11 @@
                   .then(r => r.ok ? r.json() : Promise.reject())
                   .then(data => {
                       titleIn.value = data.title;
-                      descIn.value = data.description || data.title;
+try {
+    descIn.value = data.description || data.title;
+} catch (e) {
+    showMessage("Failed to set description", "error");
+}
                       showMessage("Info fetched!", "success");
                   })
                   .catch(_ => showMessage("Failed to fetch video info", "error"));
