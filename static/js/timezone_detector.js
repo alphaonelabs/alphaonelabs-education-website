@@ -25,7 +25,6 @@ document.addEventListener('DOMContentLoaded', function () {
  * Send the detected timezone to the server
  * @param {string} timezone - The detected timezone (e.g., 'America/New_York')
  */
-
 function sendTimezoneToServer(timezone) {
     // Create form data for the request
     const formData = new FormData();
