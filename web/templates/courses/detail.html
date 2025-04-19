@@ -358,7 +358,7 @@
                               </span>
                             {% endif %}
                           {% endif %}
-                          {% if session.is_virtual and session.meeting_link and session.end_time >= now %}
+                          {% if session.is_virtual and session.meeting_link and session.end_time >= now and is_enrolled or is_teacher %}
                             <a href="{{ session.meeting_link }}"
                                target="_blank"
                                class="text-blue-600 hover:text-blue-700 dark:text-blue-400">

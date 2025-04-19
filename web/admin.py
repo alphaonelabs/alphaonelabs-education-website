@@ -3,6 +3,7 @@ from django.contrib import admin, messages
 from django.contrib.auth import login
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.db import models
 from django.http import HttpResponseRedirect
 from django.urls import path, reverse
@@ -59,6 +60,22 @@ from .models import (
 )
 
 admin.site.unregister(EmailAddress)
+
+
+# Create a custom EmailAddress admin
+@admin.register(EmailAddress)
+class EmailAddressAdmin(admin.ModelAdmin):
+    list_display = ("email", "user", "primary", "verified")
+    list_filter = ("primary", "verified")
+    search_fields = ("email", "user__username", "user__email")
+    raw_id_fields = ("user",)
+    ordering = ("-verified", "-primary", "email")
+
+    fieldsets = ((None, {"fields": ("user", "email", "primary", "verified")}),)
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        return qs.select_related("user")
 
 
 class ProfileInline(admin.StackedInline):
@@ -159,8 +176,10 @@ class CustomUserAdmin(BaseUserAdmin):
         "get_enrollment_count",
         "formatted_date_joined",
         "formatted_last_login",
+        "rate_limit_status",
     )
     list_filter = BaseUserAdmin.list_filter + (EmailVerifiedFilter, "date_joined", "last_login")
+    actions = ["unlock_user"]
 
     # Add email to the add_fieldsets
     add_fieldsets = (
@@ -180,6 +199,43 @@ class CustomUserAdmin(BaseUserAdmin):
         ("Permissions", {"fields": ("is_active", "is_staff", "is_superuser", "groups", "user_permissions")}),
         ("Important dates", {"fields": ("last_login", "date_joined")}),
     )
+
+    def get_ordering(self, request):
+        """Override default ordering to sort by most recent signup date"""
+        return ("-date_joined",)  # Descending order by date_joined
+
+    def unlock_user(self, request, queryset):
+        """
+        Admin action to reset rate limits for users who have been locked out due to failed login attempts
+        """
+        count = 0
+        # Rate limit types in django-allauth
+        rate_limit_types = ["login_attempt", "login_failed"]
+
+        for user in queryset:
+            # For each user, clear their rate limiting cache entries
+            for rate_limit_type in rate_limit_types:
+                # Both email and username can be used for login
+                identifiers = [user.username, user.email]
+
+                for identifier in identifiers:
+                    # Clear rate limits for this identifier
+                    cache_key = f"allauth/rl/{rate_limit_type}/{identifier}"
+                    cache.delete(cache_key)
+
+                # Also clear the IP-based rate limits if available
+                if hasattr(request, "META") and "REMOTE_ADDR" in request.META:
+                    ip = request.META.get("REMOTE_ADDR")
+                    ip_cache_key = f"allauth/rl/{rate_limit_type}/{ip}"
+                    cache.delete(ip_cache_key)
+
+            count += 1
+
+        self.message_user(
+            request, f"Successfully unlocked {count} user(s). They can now log in again.", messages.SUCCESS
+        )
+
+    unlock_user.short_description = "Unlock selected users (reset login rate limits)"
 
     def formatted_date_joined(self, obj):
         if obj.date_joined:
@@ -285,6 +341,25 @@ class CustomUserAdmin(BaseUserAdmin):
                 # Set the user's email field only
                 obj.email = email
                 obj.save()
+
+    def rate_limit_status(self, obj):
+        """Display if the user is currently rate limited for login attempts"""
+        from django.utils.html import format_html
+
+        # Check if user is rate limited for login attempts
+        login_attempt_key = f"allauth/rl/login_failed/{obj.email}"
+        login_failed_key = f"allauth/rl/login_attempt/{obj.email}"
+
+        # Check if rate limits exist in cache
+        is_limited_attempt = cache.get(login_attempt_key) is not None
+        is_limited_failed = cache.get(login_failed_key) is not None
+
+        if is_limited_attempt or is_limited_failed:
+            return format_html('<span style="color: red;">&#x1F512; Locked</span>')
+        else:
+            return format_html('<span style="color: green;">&#x1F513; Unlocked</span>')
+
+    rate_limit_status.short_description = "Login Status"
 
 
 class SessionInline(admin.TabularInline):
@@ -654,11 +729,6 @@ class OrderItemAdmin(admin.ModelAdmin):
         return f"${obj.price_at_purchase}"
 
     price_display.short_description = "Price"
-
-
-# Unregister the default User admin and register our custom one
-admin.site.unregister(User)
-admin.site.register(User, CustomUserAdmin)
 
 
 @admin.register(ProgressTracker)
