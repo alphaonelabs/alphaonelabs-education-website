@@ -660,7 +660,7 @@ class EducationalVideo(models.Model):
     """Model for educational videos shared by users."""
 
     title = models.CharField(max_length=200)
-    description = models.TextField()
+    description = models.TextField(blank=True, help_text="Optional – describe what viewers will learn from this video")
     video_url = models.URLField(help_text="URL for external content like YouTube videos")
     category = models.ForeignKey(Subject, on_delete=models.PROTECT, related_name="educational_videos")
     uploader = models.ForeignKey(

@@ -5187,51 +5187,39 @@ def educational_videos_list(request):
     return render(request, "videos/list.html", context)
 
 
-@login_required
 def upload_educational_video(request):
-    """View for uploading a new educational video."""
+    """
+    Handles:
+    - GET → render the upload page (or the index with quick‑add form)
+    - POST → create a new EducationalVideo (logged‑in users get attached; others remain anonymous)
+        • If XHR, return JSON success/failure
+        • Otherwise, redirect to the list view
+    """
     if request.method == "POST":
         form = EducationalVideoForm(request.POST)
         if form.is_valid():
             video = form.save(commit=False)
-
-            # Handle anonymous submissions
+            # Attach only if the user is logged in; leave None for anonymous
             if request.user.is_authenticated:
                 video.uploader = request.user
-            else:
-                # For anonymous submissions, store optional submitter name
-                submitter_name = request.POST.get("submitter_name", "")
-                if submitter_name:
-                    video.submitter_name = submitter_name
-
             video.save()
 
-            # Check if this is an AJAX request (from quick add form)
+            # AJAX quick‑add → JSON
             if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return JsonResponse({"success": True, "message": "Video added successfully!"})
 
+            # Normal POST → redirect
             return redirect("educational_videos_list")
-        elif request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            # Return form errors for AJAX requests
-            error_dict = {}
-            for field, errors in form.errors.items():
-                error_dict[field] = [str(error) for error in errors]
 
-            # Better error formatting for display
-            error_text = ""
-            for field, field_errors in error_dict.items():
-                field_name = field.replace("_", " ").title() if field != "__all__" else "Error"
-                error_text += f"{field_name}: {', '.join(field_errors)}. "
+        # Invalid form on AJAX → return field errors
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            error_text = " ".join(f"{field}: {', '.join(errs)}." for field, errs in form.errors.items())
+            return JsonResponse({"success": False, "error": error_text}, status=400)
 
-            return JsonResponse({"success": False, "error": error_text, "detailed_errors": error_dict}, status=400)
     else:
         form = EducationalVideoForm()
 
-    # For regular GET requests
-    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        # AJAX GET request should get a JSON response
-        return JsonResponse({"success": False, "error": "Please submit the form with POST"}, status=400)
-
+    # GET (normal or AJAX) → render the page with the form
     return render(request, "videos/upload.html", {"form": form})
 
 

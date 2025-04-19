@@ -802,20 +802,26 @@ class CustomLoginForm(LoginForm):
 class EducationalVideoForm(forms.ModelForm):
     """
     Form for creating and editing educational videos.
-    Validates that video URLs are from YouTube or Vimeo with proper video ID formats.
+    Validates that video URLs are from YouTube or Vimeo.
     """
+
+    # Make description optional in the form
+    description = forms.CharField(
+        required=False,
+        widget=TailwindTextarea(
+            attrs={
+                "rows": 4,
+                "placeholder": "Describe what viewers will learn from this video (optional)",
+            }
+        ),
+        help_text="Optional – what this video is about",
+    )
 
     class Meta:
         model = EducationalVideo
         fields = ["title", "description", "video_url", "category"]
         widgets = {
             "title": TailwindInput(attrs={"placeholder": "Video title"}),
-            "description": TailwindTextarea(
-                attrs={
-                    "rows": 4,
-                    "placeholder": "Describe what viewers will learn from this video",
-                }
-            ),
             "video_url": TailwindInput(attrs={"placeholder": "YouTube or Vimeo URL", "type": "url"}),
             "category": TailwindSelect(
                 attrs={
@@ -829,15 +835,14 @@ class EducationalVideoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Order subjects by name
+        # Order subjects by your preferred ordering
         self.fields["category"].queryset = Subject.objects.all().order_by("order", "name")
 
     def clean_video_url(self):
         url = self.cleaned_data.get("video_url")
         if url:
-            # More robust validation with regex
-            youtube_pattern = r"^(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)[a-zA-Z0-9_-]{11}.*$"
-            vimeo_pattern = r"^(https?://)?(www\.)?vimeo\.com/[0-9]{8,}.*$"
+            youtube_pattern = r"^(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)[\w-]{11}.*$"
+            vimeo_pattern = r"^(https?://)?(www\.)?vimeo\.com/\d+.*$"
             if not (re.match(youtube_pattern, url) or re.match(vimeo_pattern, url)):
                 raise forms.ValidationError("Please enter a valid YouTube or Vimeo URL")
         return url
