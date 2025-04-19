@@ -30,10 +30,35 @@ function sendTimezoneToServer(timezone) {
     const formData = new FormData();
     formData.append('timezone', timezone);
 
+function sendTimezoneToServer(timezone) {
+    // Create form data for the request
+    const formData = new FormData();
+    formData.append('timezone', timezone);
+
+    // Get CSRF token from cookie
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+
     // Send the request
     fetch('/set-timezone/', {
         method: 'POST',
-        body: formData
+        body: formData,
+        headers: {
+            'X-CSRFToken': csrftoken
+        }
     })
         .then(response => response.json())
         .then(data => {
