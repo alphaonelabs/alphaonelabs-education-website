@@ -3,6 +3,7 @@ import html
 import ipaddress
 import json
 import logging
+import mimetypes
 import os
 import random
 import re
@@ -14,6 +15,7 @@ import time
 from collections import Counter, defaultdict
 from datetime import timedelta
 from decimal import Decimal
+from pathlib import Path
 from urllib.parse import urlparse
 
 import requests
@@ -6938,43 +6940,40 @@ def all_study_groups(request):
     )
 
 
-# Work submission views
-
-
-@login_required
 def upload_work_submission(request: HttpRequest) -> HttpResponse:
     """View for students to upload their work documents."""
     if request.method == "POST":
         form = WorkSubmissionForm(request.POST, request.FILES)
         if form.is_valid():
-            submission = form.save(commit=False)
-            submission.student = request.user
-            submission.save()
-            # Create notification for user
-            Notification.objects.create(
-                user=request.user,
-                title="Work Submission Received",
-                message=f"Your {submission.work_type.name} has been submitted successfully and is pending review.",
-                notification_type="success",
-            )
-            # Create notifications for teachers
-            admin_users = User.objects.filter(profile__is_teacher=True)
-            notifications = []
-            for admin in admin_users:
-                notifications.append(
-                    Notification(
-                        user=admin,
-                        title="New Work Submission",
-                        message=(
-                            f"A new {submission.work_type.name} has been submitted by {request.user.username},"
-                            f" and needs review."
-                        ),
-                        notification_type="info",
-                    )
+            with transaction.atomic():
+                submission = form.save(commit=False)
+                submission.student = request.user
+                submission.save()
+                # Create notification for user
+                Notification.objects.create(
+                    user=request.user,
+                    title="Work Submission Received",
+                    message=f"Your {submission.work_type.name} has been submitted successfully and is pending review.",
+                    notification_type="success",
                 )
-            Notification.objects.bulk_create(notifications)
-            messages.success(request, "Your document has been submitted successfully!")
-            return redirect("work_submission_list")
+                # Create notifications for teachers
+                admin_users = User.objects.filter(profile__is_teacher=True)
+                notifications = []
+                for admin in admin_users:
+                    notifications.append(
+                        Notification(
+                            user=admin,
+                            title="New Work Submission",
+                            message=(
+                                f"A new {submission.work_type.name} has been submitted by {request.user.username},"
+                                f" and needs review."
+                            ),
+                            notification_type="info",
+                        ),
+                    )
+                Notification.objects.bulk_create(notifications)
+                messages.success(request, "Your document has been submitted successfully!")
+                return redirect("work_submission_list")
     else:
         form = WorkSubmissionForm()
         messages.info(request, "Please complete the form to submit your work.")
@@ -7068,34 +7067,28 @@ def delete_work_submission(request, submission_id):
     return render(request, "web/work/confirm_delete.html", {"submission": submission})
 
 
-# Add this helper view to serve files directly (important for development)
 @login_required
 def serve_work_file(request: HttpRequest, file_path: str) -> HttpResponse:
     """Serve uploaded work files directly (for development only)."""
-    import mimetypes
-    import os
 
-    from django.conf import settings
-    from django.http import FileResponse, Http404
+    # Resolve the safe media root and the requested file path
+    media_root = Path(settings.MEDIA_ROOT).resolve()
+    requested_file = (media_root / file_path).resolve()
 
-    # Construct the absolute file path
-    absolute_path = os.path.join(settings.MEDIA_ROOT, file_path)
-
-    # Security check: Ensure the path is within MEDIA_ROOT
-    if not os.path.abspath(absolute_path).startswith(os.path.abspath(settings.MEDIA_ROOT)):
+    # Prevent path traversal by ensuring the resolved path starts with MEDIA_ROOT
+    if not str(requested_file).startswith(str(media_root)):
         raise Http404("Invalid file path")
 
-    # Check if file exists
-    if not os.path.exists(absolute_path) or not os.path.isfile(absolute_path):
+    # Check if file exists and is a file
+    if not requested_file.exists() or not requested_file.is_file():
         raise Http404("File not found")
 
-    # Get content type based on file extension
-    content_type, encoding = mimetypes.guess_type(absolute_path)
-    if not content_type:
-        content_type = "application/octet-stream"
+    # Guess content type
+    content_type, _ = mimetypes.guess_type(str(requested_file))
+    content_type = content_type or "application/octet-stream"
 
-    # Serve the file directly
-    return FileResponse(open(absolute_path, "rb"), content_type=content_type)
+    # Serve the file safely
+    return FileResponse(open(requested_file, "rb"), content_type=content_type)
 
 
 # API endpoint for dynamic form handling

@@ -2680,10 +2680,10 @@ class WorkType(models.Model):
         verbose_name = "Work Type"
         verbose_name_plural = "Work Types"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
-    def get_allowed_extensions_list(self):
+    def get_allowed_extensions_list(self) -> list[str]:
         """Return list of allowed file extensions."""
         return [ext.strip() for ext in self.allowed_file_types.split(",")]
 
@@ -2735,7 +2735,7 @@ class WorkSubmission(models.Model):
         verbose_name = "Work Submission"
         verbose_name_plural = "Work Submissions"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.student.username}'s {self.work_type.name}: {self.title}"
 
     def save(self, *args, **kwargs):
@@ -2781,14 +2781,14 @@ class WorkSubmission(models.Model):
         return ""
 
     @property
-    def is_image(self):
+    def is_image(self) -> bool:
         """Check if the file is an image."""
         return self.file_extension in ["jpg", "jpeg", "png", "gif", "bmp"]
 
     @property
-    def is_document(self):
+    def is_document(self) -> bool:
         """Check if the file is a document."""
-        return self.file_extension in ["pdf", "doc", "docx", "odt", "txt"]
+        return self.file_extension in ["jpg", "jpeg", "png", "gif", "bmp", "svg", "webp", "tiff"]
 
     def get_status_choices(self):
         return self.STATUS_CHOICES

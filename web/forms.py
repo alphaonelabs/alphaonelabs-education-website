@@ -1856,7 +1856,7 @@ class WorkSubmissionForm(forms.ModelForm):
             attrs={
                 "class": "bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 "
                 "dark:border-gray-600 rounded-md p-2 focus:border-blue-500 focus:outline-none focus:ring-2 "
-                "focus:ring-blue-500 w-full"
+                "focus:ring-blue-500 w-full",
             }
         ),
         help_text="Choose the type of work submission",

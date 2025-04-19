@@ -856,7 +856,7 @@ class WorkTypeAdmin(admin.ModelAdmin):
     list_editable = ("icon_class", "allowed_file_types", "max_file_size_mb")
     search_fields = ("name", "description")
 
-    def get_submissions_count(self, obj):
+    def get_submissions_count(self, obj) -> int:
         return obj.submissions.count()
 
     get_submissions_count.short_description = "Submissions"
