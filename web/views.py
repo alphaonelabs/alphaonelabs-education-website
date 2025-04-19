@@ -7080,27 +7080,39 @@ def serve_work_file(request, file_path):
     from django.http import FileResponse, Http404
 
     # Resolve symlinks and get absolute paths
+    # Normalize and sanitize the file path, removing any path traversal attempts
+    safe_path = os.path.normpath(file_path).lstrip("/")
+
+    # Construct the absolute file path within MEDIA_ROOT only
+    absolute_path = os.path.join(settings.MEDIA_ROOT, safe_path)
+
+    # Use realpath to resolve symlinks, etc.
+    requested_path = os.path.realpath(absolute_path)
     media_root = os.path.realpath(settings.MEDIA_ROOT)
-    requested_path = os.path.realpath(os.path.join(media_root, file_path))
 
     # Ensure the requested file is within MEDIA_ROOT (prevents path traversal)
-    if os.path.commonpath([requested_path, media_root]) != media_root:
-        raise Http404("Invalid file path")
+    if not requested_path.startswith(media_root):
+        raise Http404()
 
     # Restrict allowed file extensions
     allowed_extensions = {"pdf", "doc", "docx", "odt", "txt", "jpg", "jpeg", "png", "gif", "bmp"}
     ext = os.path.splitext(requested_path)[1][1:].lower()
     if ext not in allowed_extensions:
-        raise Http404("File type not allowed")
+        raise Http404()
 
     if not os.path.exists(requested_path) or not os.path.isfile(requested_path):
-        raise Http404("File not found")
+        raise Http404()
 
     content_type, _ = mimetypes.guess_type(requested_path)
     if not content_type:
         content_type = "application/octet-stream"
 
-    return FileResponse(open(requested_path, "rb"), content_type=content_type)
+    # Use with statement to ensure file is properly closed
+    file_handle = open(requested_path, "rb")
+    response = FileResponse(file_handle, content_type=content_type)
+    # Ensure file is closed when response is done
+    response.close = lambda: file_handle.close()
+    return response
 
 
 # API endpoint for dynamic form handling
