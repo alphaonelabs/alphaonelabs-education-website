@@ -2662,6 +2662,138 @@ class NotificationPreference(models.Model):
         return f"Notification preferences for {self.user.username}"
 
 
+class WorkType(models.Model):
+    """Model for categorizing different types of work submissions."""
+
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    icon_class = models.CharField(max_length=50, blank=True, help_text="Font Awesome icon class")
+    # New fields for file type support
+    allowed_file_types = models.CharField(
+        max_length=200,
+        default="pdf",
+        help_text="Comma-separated list of allowed file extensions (e.g., 'pdf,doc,docx')",
+    )
+    max_file_size_mb = models.PositiveIntegerField(default=10, help_text="Maximum file size in MB")
+
+    class Meta:
+        verbose_name = "Work Type"
+        verbose_name_plural = "Work Types"
+
+    def __str__(self) -> str:
+        return self.name
+
+    def get_allowed_extensions_list(self) -> list[str]:
+        """Return list of allowed file extensions."""
+        return [ext.strip() for ext in self.allowed_file_types.split(",")]
+
+
+def validate_file_size(file, max_size_mb=10):
+    """Validate that the file doesn't exceed the maximum size."""
+    max_size = max_size_mb * 1024 * 1024  # Convert MB to bytes
+    if file.size > max_size:
+        raise ValidationError(f"File size exceeds {max_size_mb}MB limit.")
+
+
+class WorkSubmission(models.Model):
+    """Model for storing work submissions for review."""
+
+    STATUS_CHOICES = [
+        ("submitted", "Submitted"),
+        ("under_review", "Under Review"),
+        ("reviewed", "Reviewed"),
+        ("needs_revision", "Needs Revision"),
+        ("approved", "Approved"),
+        ("rejected", "Rejected"),
+    ]
+
+    title = models.CharField(max_length=200, help_text="Title of your document")
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="work_submissions")
+    work_type = models.ForeignKey(WorkType, on_delete=models.PROTECT, related_name="submissions")
+    work_file = models.FileField(
+        upload_to="work_submissions/",
+        help_text="Upload your document (file type and size restrictions apply)",
+    )
+    subject = models.CharField(max_length=200, help_text="Subject or department")
+    assignment = models.CharField(max_length=200, help_text="Assignment or topic")
+    due_date = models.DateField(null=True, blank=True, help_text="Due date (if applicable)")
+    description = models.TextField(help_text="Brief description of your submission", blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="submitted")
+    feedback = models.TextField(blank=True, help_text="Feedback from reviewers")
+
+    # Tracking fields
+    file_size = models.PositiveIntegerField(editable=False, default=0)
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="reviewed_submissions"
+    )
+
+    class Meta:
+        ordering = ["-submitted_at"]
+        verbose_name = "Work Submission"
+        verbose_name_plural = "Work Submissions"
+
+    def __str__(self) -> str:
+        return f"{self.student.username}'s {self.work_type.name}: {self.title}"
+
+    def save(self, *args, **kwargs) -> None:
+        # Set file size on save
+        if self.work_file:
+            self.file_size = self.work_file.size
+
+            # Validate file extension
+            if self.work_type:
+                ext = self.work_file.name.split(".")[-1].lower()
+                allowed_extensions = self.work_type.get_allowed_extensions_list()
+                if ext not in allowed_extensions:
+                    raise ValidationError(
+                        f"File type '.{ext}' is not allowed. Allowed types: {', '.join(allowed_extensions)}"
+                    )
+
+                # Validate file size
+                validate_file_size(self.work_file, self.work_type.max_file_size_mb)
+
+        # Set reviewed_at timestamp when status changes to "reviewed"
+        if self.pk:
+            try:
+                old_instance = WorkSubmission.objects.get(pk=self.pk)
+                if old_instance.status != "reviewed" and self.status == "reviewed":
+                    self.reviewed_at = timezone.now()
+            except WorkSubmission.DoesNotExist:
+                pass
+
+        super().save(*args, **kwargs)
+
+    @property
+    def file_size_display(self):
+        """Return file size in MB with two decimal places."""
+        if self.file_size:
+            return f"{self.file_size / (1024 * 1024):.2f} MB"
+        return "Unknown"
+
+    @property
+    def file_extension(self):
+        """Return the file extension of the work file."""
+        if self.work_file:
+            return self.work_file.name.split(".")[-1].lower()
+        return ""
+
+    @property
+    def is_image(self) -> bool:
+        """Check if the file is an image."""
+        return self.file_extension in ["jpg", "jpeg", "png", "gif", "bmp"]
+
+    @property
+    def is_document(self) -> bool:
+        """Check if the file is a document."""
+        return self.file_extension in ["pdf", "doc", "docx", "odt", "txt", "rtf", "md"]
+
+    def get_status_choices(self):
+        return self.STATUS_CHOICES
+
+
 class FeatureVote(models.Model):
     VOTE_CHOICES = (
         ("up", "Thumbs Up"),

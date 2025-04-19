@@ -267,6 +267,65 @@
             <i class="fas fa-arrow-right ml-2"></i>
           </a>
         </div>
+        <!-- Initial GSoC Announcement -->
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white shadow-lg my-8">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+              <div class="hidden sm:block">
+                <img src="{% static 'images/gsoc-logo.png' %}"
+                     alt="Google Summer of Code"
+                     class="h-16 w-16 object-contain"
+                     onerror="this.src='https://summerofcode.withgoogle.com/assets/media/gsoc-2024-badge.svg'"
+                     height="64"
+                     width="64" />
+              </div>
+              <div>
+                <h3 class="text-xl font-bold mb-2">Join us for Google Summer of Code 2025! 🚀</h3>
+                <p class="text-blue-100">
+                  Alpha One Labs has applied to participate in this year's Google Summer of Code. Check out our project ideas and get involved!
+                </p>
+              </div>
+            </div>
+            <a href="{% url 'gsoc_landing_page' %}"
+               class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
+              <span>Get Started with GSoC</span>
+              <i class="fas fa-arrow-right ml-2"></i>
+            </a>
+          </div>
+        </div>
+        <!-- PDF Submission/Review Announcement -->
+        <div class="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-6 text-white shadow-lg my-8 relative">
+          <!-- GSOC Proposal CTA -->
+          <div class="absolute top-0 right-0 m-2 bg-yellow-400 text-blue-900 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider transform rotate-6 shadow-lg">
+            GSOC Proposals Open!
+          </div>
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-4">
+              <div>
+                {% if user.profile.is_teacher %}
+                  <h3 class="text-xl font-bold mb-2">Review Student Documents 🔍</h3>
+                  <p class="text-blue-100">Review student submitted PDF documents and provide timely feedback.</p>
+                {% else %}
+                  <h3 class="text-xl font-bold mb-2">Submit Your Documents 📝</h3>
+                  <p class="text-blue-100">Submit your assignments, essays, reports, and other documents for review.</p>
+                {% endif %}
+              </div>
+            </div>
+            {% if user.profile.is_teacher %}
+              <a href="{% url 'work_submission_list' %}"
+                 class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
+                <span>Review Documents</span>
+                <i class="fas fa-clipboard-list ml-2"></i>
+              </a>
+            {% else %}
+              <a href="{% url 'work_submission_list' %}"
+                 class="inline-flex items-center px-6 py-2 bg-white text-blue-600 rounded-full font-semibold hover:bg-blue-50 transition-colors duration-200 whitespace-nowrap sm:inline-flex">
+                <span>Upload Document</span>
+                <i class="fas fa-upload ml-2"></i>
+              </a>
+            {% endif %}
+          </div>
+        </div>
         <!-- Two cards next to each other: For Learners & For Teachers -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <!-- For Learners -->
