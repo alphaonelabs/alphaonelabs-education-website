@@ -97,7 +97,7 @@ urlpatterns += i18n_patterns(
     path("surveys/create/", SurveyCreateView.as_view(), name="survey-create"),
     path("surveys/<int:pk>/", SurveyDetailView.as_view(), name="survey-detail"),
     path("surveys/<int:pk>/delete/", SurveyDeleteView.as_view(), name="survey-delete"),
-    path("surveys/<int:survey_id>/submit/", submit_survey, name="submit-survey"),
+    path("surveys/<int:pk>/submit/", submit_survey, name="submit-survey"),
     path("surveys/<int:pk>/results/", SurveyResultsView.as_view(), name="survey-results"),
     # Course Management
     path("courses/create/", views.create_course, name="create_course"),

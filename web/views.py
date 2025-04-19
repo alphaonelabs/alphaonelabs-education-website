@@ -7673,8 +7673,8 @@ class SurveyDetailView(LoginRequiredMixin, DetailView):
 
 
 @login_required
-def submit_survey(request, survey_id):
-    survey = get_object_or_404(Survey, pk=survey_id)
+def submit_survey(request, pk):
+    survey = get_object_or_404(Survey, pk=pk)
 
     # Check if user already submitted
     if Response.objects.filter(user=request.user, question__survey=survey).exists():
@@ -7694,6 +7694,9 @@ def submit_survey(request, survey_id):
                         choice = Choice.objects.get(id=choice_id)
                         if choice.question_id == question.id:
                             Response.objects.create(user=request.user, question=question, choice=choice)
+                        else:
+                            messages.error(request, "Invalid choice selected")
+                            return redirect("survey-detail", pk=survey.id)
                     except Choice.DoesNotExist:
                         messages.error(request, "Invalid choice selected")
                         return redirect("survey-detail", pk=survey.id)
