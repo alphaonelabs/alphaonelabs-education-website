@@ -17,7 +17,6 @@
               action="{% url 'delete_course' course.slug %}"
               class="space-y-6">
           {% csrf_token %}
-          <!-- Remove the duplicate CSRF token and unnecessary hidden input -->
           <div class="flex justify-center space-x-4">
             <a href="{% url 'course_detail' course.slug %}"
                class="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">

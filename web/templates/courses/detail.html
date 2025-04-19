@@ -540,8 +540,9 @@
                   <a href="{% url 'delete_course' course.slug %}"
                      aria-label="Delete course"
                      class="inline-flex items-center justify-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition duration-200">
-                    <i class="fas fa-trash-alt mr-2"></i>
-                    <span class="sr-only">Delete</span>
+                    <i class="fas fa-trash-alt mr-2" aria-hidden="true"></i>
+                    Delete
+                    <span class="sr-only">Delete course</span>
                   </a>
                 </div>
                 <!-- Status Information Alert -->
