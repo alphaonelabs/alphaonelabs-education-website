@@ -26,10 +26,11 @@ jobs:
             const repo = context.repo.repo;
 
             // Fetch all open pull requests
-            const prs = await github.pulls.list({
+            const prs = await github.paginate(github.pulls.list, {
               owner,
               repo,
               state: "open",
+              per_page: 100,
             });
 
             for (const pr of prs.data) {
@@ -51,8 +52,9 @@ jobs:
                 console.log(`Closed PR #${pr.number} due to inactivity.`);
 
                 // Unassign the linked issue (if any)
-                if (pr.issue_url) {
-                  const issueNumber = pr.issue_url.split("/").pop();
+                  const issueMatch = pr.body.match(/(?:Fixes|Closes) #(\d+)/i);
+                      if (issueMatch) {
+                    const issueNumber = issueMatch[1];
 
                   // Unassign the user from the issue
                   await github.issues.removeAssignees({
