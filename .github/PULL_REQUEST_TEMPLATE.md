@@ -1,4 +1,4 @@
-<!-- YOU HAVE TO MODIFY THE TEXT BELOW TO FIT YOUR PR. OTHERWISE, YOUR PR WILL BE CLOSED WITHOUT FURTHER COMMENT. -->
+<!-- Please customize the sections below to describe your changes. Pull requests that don't fill out this template may be closed without further notice. -->
 
 <!-- Link the issue using the "Fixes" keyword. Example: Fixes #1234 -->
 Fixes #issue_number
