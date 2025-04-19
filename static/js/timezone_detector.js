@@ -56,6 +56,14 @@ function sendTimezoneToServer(timezone) {
             'X-CSRFToken': csrftoken
         }
     })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // existing success/error handling logic
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
