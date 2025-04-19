@@ -112,7 +112,13 @@
                        class="hover:text-orange-500 transition-colors">{{ video.title }}</a>
                   </h3>
                   <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
-                    <span class="mr-2">{{ video.uploader.get_full_name|default:video.uploader.username }}</span>
+                    {% if video.uploader %}
+                      <span class="mr-2">{{ video.uploader.get_full_name|default:video.uploader.username }}</span>
+                    {% elif video.submitter_name %}
+                      <span class="mr-2">{{ video.submitter_name }}</span>
+                    {% else %}
+                      <span class="mr-2">Anonymous</span>
+                    {% endif %}
                     <span class="text-xs px-2 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">{{ video.category.name }}</span>
                   </div>
                   <p class="text-gray-600 dark:text-gray-300 text-sm line-clamp-3 mb-3">{{ video.description }}</p>
