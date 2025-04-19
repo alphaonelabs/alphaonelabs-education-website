@@ -6976,7 +6976,10 @@ def upload_work_submission(request: HttpRequest) -> HttpResponse:
         form = WorkSubmissionForm()
         messages.info(request, "Please complete the form to submit your work.")
     if form.errors:
-        messages.error(request, "Please fix the errors in the form and try again.")
+        if hasattr(form, "non_field_errors") and form.non_field_errors():
+            messages.error(request, form.non_field_errors()[0])
+        else:
+            messages.error(request, "Please fix the errors in the form and try again.")
     return render(request, "web/work/upload_submission.html", {"form": form})
 
 
