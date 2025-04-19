@@ -409,7 +409,8 @@ class CustomUserAdmin(BaseUserAdmin):
                 return "-"
 
             color, label, time_str = get_email_status(profile)
-            return format_html('<span style="color: {};">● {}</span>', color, label)
+-            return format_html('<span style="color: {};">● {}</span>', color, label)
++            return format_html('<span style="color: {};">● {}</span> {}', color, label, time_str)
         except Profile.DoesNotExist:
             return "-"
 
