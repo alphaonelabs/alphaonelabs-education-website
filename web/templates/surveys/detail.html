@@ -57,7 +57,7 @@
                            name="question_{{ question.id }}"
                            value="{{ choice.id }}"
                            class="mr-2"
-                           {% if question.required %}required{% endif %} />
+                           {% if question.required and forloop.first %}required{% endif %} />
                     {{ choice.text }}
                   </label>
                 {% endfor %}
@@ -103,4 +103,38 @@
       </div>
     {% endif %}
   </main>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          const form = document.querySelector('form');
+          if (!form) return; // Prevent error if no form (e.g., already submitted)
+
+          form.addEventListener('submit', function(e) {
+              const requiredCheckboxQuestions = [{
+                  %
+                  for question in object.question_set.all %
+              } {
+                  %
+                  if question.type == 'checkbox'
+                  and question.required %
+              } {
+                  id: "question_{{ question.id }}",
+                  text: "{{ question.text|escapejs }}"
+              }, {
+                  %
+                  endif %
+              } {
+                  %
+                  endfor %
+              }];
+
+              requiredCheckboxQuestions.forEach(function(question) {
+                  if (!document.querySelectorAll(`input[name="${question.id}"]:checked`).length) {
+                      e.preventDefault();
+                      alert(`Please answer: ${question.text}`);
+                      return false;
+                  }
+              });
+          });
+      });
+  </script>
 {% endblock content %}

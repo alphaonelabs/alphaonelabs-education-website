@@ -1852,5 +1852,5 @@ class SurveyForm(forms.ModelForm):
     def clean_title(self) -> str:
         title = self.cleaned_data.get("title")
         if len(title) < 5:
-            raise forms.ValidationError("Title too short", code="invalid_length", params={"min_length": 5})
+            raise forms.ValidationError(_("Title too short"), code="invalid_length", params={"min_length": 5})
         return title

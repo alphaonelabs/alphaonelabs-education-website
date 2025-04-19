@@ -165,10 +165,18 @@
             document.write('<script src="{% static "js/chart.min.js" %}"><\/script>');
         }
     </script>
+<script type="application/json" id="chart-data-json">
+    {
+        {
+            chart_data_json | safe
+        }
+    }
+</script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Parse chart data
-        const chartData = JSON.parse('{{ chart_data_json|safe }}');
+        const jsonEl = document.getElementById('chart-data-json');
+        const chartData = jsonEl ? JSON.parse(jsonEl.textContent) : [];
 
         // Store chart instances
         const chartInstances = {};
@@ -352,7 +360,8 @@
             `;
         document.head.appendChild(style);
         document.getElementById('export-data').addEventListener('click', function() {
-            let csvContent = "data:text/csv;charset=utf-8,";
+            const BOM = '\uFEFF';
+            let csvContent = `data:text/csv;charset=utf-8,${BOM}`;
             csvContent += "Question,Option,Responses,Percentage\n";
             chartData.forEach(questionData => {
                 const question = questionData.question_text;

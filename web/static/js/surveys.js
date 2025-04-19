@@ -22,10 +22,34 @@ document.addEventListener('DOMContentLoaded', function() {
         <input type="number" name="scale_max[]" placeholder="Max" min="2" max="100" class="w-1/2 p-2 ml-2 border rounded-md" />
       </div>
     </div>
-  `;
-
+    `;
         // Add type change handler
         newQuestion.querySelector('.question-type-selector').addEventListener('change', handleTypeChange);
+
+        // Add validation feedback for question text
+        const questionText = newQuestion.querySelector('input[name="question_text[]"]');
+        questionText.addEventListener('invalid', function() {
+            if (!this.validity.valid) {
+                this.classList.add('border-red-500');
+
+                // Add or update error message
+                let errorMsg = this.parentNode.querySelector('.question-error');
+                if (!errorMsg) {
+                    errorMsg = document.createElement('div');
+                    errorMsg.className = 'question-error text-sm text-red-600 mt-1';
+                    this.after(errorMsg);
+                }
+                errorMsg.textContent = 'Please enter a question text';
+            }
+        });
+
+        questionText.addEventListener('input', function() {
+            if (this.validity.valid) {
+                this.classList.remove('border-red-500');
+                const errorMsg = this.parentNode.querySelector('.question-error');
+                if (errorMsg) errorMsg.remove();
+            }
+        });
         document.getElementById('questions').appendChild(newQuestion);
     });
 
