@@ -835,8 +835,7 @@ class EducationalVideoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Order subjects by your preferred ordering
-        self.fields["category"].queryset = Subject.objects.all().order_by("order", "name")
+# Order subjects by 'order' first, then alphabetically by 'name'
 
     def clean_video_url(self):
         url = self.cleaned_data.get("video_url")
