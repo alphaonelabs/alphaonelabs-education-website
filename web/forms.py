@@ -847,21 +847,21 @@ class EducationalVideoForm(forms.ModelForm):
         parsed = urlparse(url)
         host = parsed.netloc.lower()
 
-        # 1) YouTube.com/watch?v=<id>
-        if "youtube.com" in host:
+        # YouTube validation
+        if host == "youtube.com" or host == "www.youtube.com":
             qs = parse_qs(parsed.query)
             vid = qs.get("v", [""])[0]
-            if len(vid) == 11 and vid.isalnum():
+            if len(vid) == 11 and re.match(r"^[A-Za-z0-9_-]{11}$", vid):
                 return url
 
-        # 2) youtu.be/<id>
-        if "youtu.be" in host:
+        # YouTube short URL validation
+        if host == "youtu.be":
             vid = parsed.path.lstrip("/")
-            if len(vid) == 11 and vid.isalnum():
+            if len(vid) == 11 and re.match(r"^[A-Za-z0-9_-]{11}$", vid):
                 return url
 
-        # 3) Vimeo.com/<digits>
-        if "vimeo.com" in host:
+        # Vimeo validation
+        if host == "vimeo.com" or host == "www.vimeo.com":
             vid = parsed.path.lstrip("/").split("/")[0]
             if vid.isdigit() and len(vid) >= 8:
                 return url
