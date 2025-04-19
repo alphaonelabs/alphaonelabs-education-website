@@ -6979,7 +6979,10 @@ def upload_work_submission(request: HttpRequest) -> HttpResponse:
         if hasattr(form, "non_field_errors") and form.non_field_errors():
             messages.error(request, form.non_field_errors()[0])
         else:
-            messages.error(request, "Please fix the errors in the form and try again.")
+            # Include the specific field errors in the message
+            error_msg = "Please fix the following errors: "
+            error_fields = ", ".join(form.errors.keys())
+            messages.error(request, f"{error_msg}{error_fields}")
     return render(request, "web/work/upload_submission.html", {"form": form})
 
 
