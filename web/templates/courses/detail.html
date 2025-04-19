@@ -350,7 +350,7 @@
                               </span>
                             {% endif %}
                           {% endif %}
-                          {% if session.is_virtual and session.meeting_link and session.end_time >= now %}
+                          {% if session.is_virtual and session.meeting_link and session.end_time >= now and is_enrolled or is_teacher %}
                             <a href="{{ session.meeting_link }}"
                                target="_blank"
                                class="text-blue-600 hover:text-blue-700 dark:text-blue-400">
@@ -537,10 +537,11 @@
                     <i class="fas fa-user-plus mr-2"></i>
                     Enroll Students
                   </a>
-                  <a href="{% url 'delete_course' slug=course.slug %}"
+                  <a href="{% url 'delete_course' course.slug %}"
+                     aria-label="Delete course"
                      class="inline-flex items-center justify-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition duration-200">
                     <i class="fas fa-trash-alt mr-2"></i>
-                    Delete
+                    <span class="sr-only">Delete</span>
                   </a>
                 </div>
                 <!-- Status Information Alert -->

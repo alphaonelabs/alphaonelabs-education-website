@@ -517,6 +517,109 @@
             </a>
           </div>
         </div>
+        <!-- Referral Program -->
+        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 mt-6">
+          <h2 class="text-lg font-semibold mb-4 flex items-center">
+            <i class="fa-solid fa-gift text-purple-600 dark:text-purple-400 mr-2"></i>
+            Referral Program
+          </h2>
+          <div class="space-y-4">
+            <div class="bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/30 dark:to-blue-900/30 rounded-lg p-4 border border-purple-100 dark:border-purple-800">
+              <h3 class="font-medium mb-2 text-purple-800 dark:text-purple-200">Share and Earn!</h3>
+              <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">
+                {% if user.is_authenticated %}
+                  {% if user.profile.is_teacher %}
+                    Get your first student and receive a $5 bonus! Share your unique referral link:
+                  {% else %}
+                    Get $5 when someone you refer enrolls in their first course! Share your unique referral link:
+                  {% endif %}
+                {% else %}
+                  Join our community and start earning rewards through our referral program!
+                {% endif %}
+              </p>
+              {% if user.is_authenticated %}
+                <div class="flex items-center space-x-2">
+                  <input type="text"
+                         value="{{ request.scheme }}://{{ request.get_host }}{% url 'handle_referral' code=user.profile.referral_code %}"
+                         class="text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded px-3 py-1.5 flex-1"
+                         readonly
+                         id="referralLink" />
+                  <button onclick="copyReferralLink()"
+                          class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded text-sm">
+                    <i class="fas fa-copy mr-1"></i>
+                    Copy
+                  </button>
+                </div>
+                <div class="mt-4 flex items-center justify-between">
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    Your total referral earnings: ${{ user.profile.referral_earnings|default:"0" }}
+                  </p>
+                </div>
+              {% else %}
+                <a href="{% url 'account_signup' %}"
+                   class="inline-flex items-center bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm">
+                  <i class="fas fa-user-plus mr-2"></i>
+                  Sign Up to Start Earning
+                </a>
+              {% endif %}
+              <!-- Mini Leaderboard -->
+              <div class="mt-4 border-t border-purple-100 dark:border-purple-800 pt-4">
+                <h4 class="text-sm font-semibold text-purple-800 dark:text-purple-200 mb-3">
+                  <i class="fas fa-crown text-yellow-500 mr-2"></i>
+                  Top Referral Activity
+                </h4>
+                <div class="space-y-2">
+                  {% for referrer in top_referrers %}
+                    <div class="flex items-center justify-between text-sm {% if forloop.counter == 1 %}text-yellow-600 dark:text-yellow-400 font-medium{% endif %}">
+                      <div class="flex items-center space-x-2">
+                        <span class="w-5 text-center">
+                          {% if forloop.counter == 1 %}
+                            👑
+                          {% elif forloop.counter == 2 %}
+                            🥈
+                          {% elif forloop.counter == 3 %}
+                            🥉
+                          {% else %}
+                            {{ forloop.counter }}
+                          {% endif %}
+                        </span>
+                        <span>{{ referrer.user.username }}</span>
+                      </div>
+                      <div class="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                        <span title="Signups"><i class="fas fa-user-plus mr-1"></i>{{ referrer.total_signups }}</span>
+                        <span title="Enrollments"><i class="fas fa-graduation-cap mr-1"></i>{{ referrer.total_enrollments }}</span>
+                        <span title="Clicks"><i class="fas fa-mouse-pointer mr-1"></i>{{ referrer.total_clicks }}</span>
+                      </div>
+                    </div>
+                  {% empty %}
+                    <p class="text-sm text-gray-500 dark:text-gray-400 text-center">
+                      No referral activity yet. Share your link to be the first!
+                    </p>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+          <script>
+              function copyReferralLink() {
+                  const linkInput = document.getElementById('referralLink');
+                  linkInput.select();
+                  document.execCommand('copy');
+
+                  // Show a temporary success message
+                  const button = event.target.closest('button');
+                  const originalText = button.innerHTML;
+                  button.innerHTML = '<i class="fas fa-check mr-1"></i>Copied!';
+                  button.classList.add('bg-green-600');
+
+                  setTimeout(() => {
+                      button.innerHTML = originalText;
+                      button.classList.remove('bg-green-600');
+                  }, 2000);
+              }
+          </script>
+        </div>
         <!-- Weekly Challenge -->
         <div class="container mx-auto px-4 py-8">
           <h1 class="text-3xl font-bold mb-6 text-center">🏆 Weekly Challenges</h1>
