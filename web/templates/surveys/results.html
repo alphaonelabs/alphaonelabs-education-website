@@ -165,18 +165,10 @@
             document.write('<script src="{% static "js/chart.min.js" %}"><\/script>');
         }
     </script>
-<script type="application/json" id="chart-data-json">
-    {
-        {
-            chart_data_json | safe
-        }
-    }
-</script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Parse chart data
-        const jsonEl = document.getElementById('chart-data-json');
-        const chartData = jsonEl ? JSON.parse(jsonEl.textContent) : [];
+        const chartData = JSON.parse('{{ chart_data_json|safe }}');
 
         // Store chart instances
         const chartInstances = {};
