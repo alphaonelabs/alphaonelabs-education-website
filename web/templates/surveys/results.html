@@ -352,7 +352,9 @@
             `;
         document.head.appendChild(style);
         document.getElementById('export-data').addEventListener('click', function() {
-            let csvContent = "data:text/csv;charset=utf-8,";
+-            let csvContent = "data:text/csv;charset=utf-8,";
++            const BOM = '\uFEFF';
++            let csvContent = `data:text/csv;charset=utf-8,${BOM}`;
             csvContent += "Question,Option,Responses,Percentage\n";
             chartData.forEach(questionData => {
                 const question = questionData.question_text;
