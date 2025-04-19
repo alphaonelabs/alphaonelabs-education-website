@@ -7,3 +7,4 @@ venv/
 /media
 .env*
 backup.json
+.qodo
