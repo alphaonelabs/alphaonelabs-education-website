@@ -14,6 +14,7 @@ jobs:
     name: Close Inactive PRs and Notify Issues
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pull-requests: write
       issues: write
 
@@ -38,49 +39,42 @@ jobs:
             });
             for (const pr of prs) {
               try {
-                // Calculate inactivity duration
-                const lastUpdated = new Date(pr.updated_at);
-                const now = new Date();
-                const daysSinceUpdate = (now - lastUpdated) / (1000 * 60 * 60 * 24);
-
+                // Calculate inactivity duration...
                 if (daysSinceUpdate > 7) {
-                  console.log(`PR #${pr.number} has been inactive for more than 7 days.`);
+                  // close PR, unassign, comment...
                 }
               } catch (error) {
-                console.log(`Error handling PR #${pr.number}: ${error}`);
+                console.log(`Error processing PR #${pr.number}: ${error}`);
                 continue;
               }
-                // Close the PR
-                await github.pulls.update({
-                  owner,
-                  repo,
-                  pull_number: pr.number,
-                  state: "closed",
-                });
-                console.log(`Closed PR #${pr.number} due to inactivity.`);
-
-                // Unassign the linked issue (if any)
-                  const issueMatch = (pr.body || "").match(/(?:Fixes|Closes) #(\d+)/i);
-                      if (issueMatch) {
-                    const issueNumber = issueMatch[1];
-
-                  // Unassign the user from the issue
-                  await github.issues.removeAssignees({
-                    owner,
-                    repo,
-                    issue_number: parseInt(issueNumber, 10),
-                    assignees: [pr.user.login],
-                  });
-                  console.log(`Unassigned user from issue #${issueNumber}.`);
-
-                  // Comment on the issue to notify it's available again
-                  await github.issues.createComment({
-                    owner,
-                    repo,
-                    issue_number: issueNumber,
-                    body: `This issue is now available again as the related pull request #${pr.number} has been closed due to inactivity.`,
-                  });
-                  console.log(`Commented on issue #${issueNumber}.`);
-                }
-              }
+            }
+            if (daysSinceUpdate > 7) {
+              console.log(`PR #${pr.number} has been inactive for more than 7 days.`);
+              // Close the PR
+              await github.pulls.update({
+                owner,
+                repo,
+                pull_number: pr.number,
+                state: "closed",
+              });
+            console.log(`Closed PR #${pr.number} due to inactivity.`);
+            // Unassign and comment on the linked issue, if any
+            const issueMatch = (pr.body || "").match(/(?:Fixes|Closes) #(\d+)/i);
+            if (issueMatch) {
+              const issueNumber = parseInt(issueMatch[1], 10);
+              await github.issues.removeAssignees({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                assignees: [pr.user.login],
+              });
+              console.log(`Unassigned user from issue #${issueNumber}.`);
+              await github.issues.createComment({
+                owner,
+                repo,
+                issue_number: issueNumber,
+                body: `This issue is now available again as the related pull request #${pr.number} has been closed due to inactivity.`,
+              });
+              console.log(`Commented on issue #${issueNumber}.`);
+            }
             }
