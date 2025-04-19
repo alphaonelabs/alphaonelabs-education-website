@@ -6525,7 +6525,7 @@ def classes_map(request):
     teaching_style = request.GET.get("teaching_style")
     # Apply filters
     if course_id:
-        sessions = sessions.filter(course_id=course_id, status="published")
+        sessions = sessions.filter(course_id=course_id)
     if teaching_style:
         sessions = sessions.filter(teaching_style=teaching_style)
     # Fetch only necessary course fields
