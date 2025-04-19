@@ -2,11 +2,15 @@ import re
 
 from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
+from cryptography.fernet import Fernet
 from django import forms
+from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.db import IntegrityError
+from django.forms.widgets import URLInput
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.text import slugify
@@ -98,6 +102,8 @@ __all__ = [
     "LinkGradeForm",
     "AwardAchievementForm",
 ]
+
+fernet = Fernet(settings.SECURE_MESSAGE_KEY)
 
 
 class AccountDeleteForm(forms.Form):
@@ -276,6 +282,23 @@ class UserRegistrationForm(SignupForm):
             email_address.send_confirmation(request)
 
         return user
+
+
+class TailwindInput(forms.widgets.Input):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("attrs", {}).update(
+            {"class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"}
+        )
+        super().__init__(*args, **kwargs)
+
+
+class TailwindURLInput(URLInput):
+    # This widget, subclassing URLInput, ensures input type="url"
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("attrs", {}).update(
+            {"class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"}
+        )
+        super().__init__(*args, **kwargs)
 
 
 class AwardAchievementForm(forms.Form):
@@ -941,6 +964,14 @@ class TeachForm(forms.Form):
         )
     )
 
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        # If the user is authenticated, remove email and captcha fields
+        if user and user.is_authenticated:
+            del self.fields["email"]
+            del self.fields["captcha"]
+
     def clean_course_title(self):
         """Validate and clean the course_title field."""
         title = self.cleaned_data.get("course_title")
@@ -1150,6 +1181,28 @@ class ForumTopicForm(forms.Form):
             }
         ),
     )
+    github_issue_url = forms.URLField(
+        required=False,
+        widget=TailwindURLInput(attrs={"placeholder": "https://github.com/your-org/your-repo/issues/123"}),
+        help_text="Link to a related GitHub issue (optional)",
+    )
+    github_milestone_url = forms.URLField(
+        required=False,
+        widget=TailwindURLInput(attrs={"placeholder": "https://github.com/your-org/your-repo/milestone/1"}),
+        help_text="Link to a related GitHub milestone (optional)",
+    )
+
+    def clean_github_issue_url(self):
+        url = self.cleaned_data.get("github_issue_url")
+        if url and (not url.startswith("https://github.com/") or "/issues/" not in url):
+            raise forms.ValidationError("Please enter a valid GitHub issue URL")
+        return url
+
+    def clean_github_milestone_url(self):
+        url = self.cleaned_data.get("github_milestone_url")
+        if url and (not url.startswith("https://github.com/") or "milestone" not in url):
+            raise forms.ValidationError("Please enter a valid GitHub milestone URL")
+        return url
 
 
 class AvatarForm(forms.ModelForm):
@@ -1218,8 +1271,6 @@ class BlogPostForm(forms.ModelForm):
 
 class MessageTeacherForm(forms.Form):
     name = forms.CharField(
-        max_length=100,
-        required=True,
         widget=TailwindInput(
             attrs={
                 "class": (
@@ -1230,7 +1281,6 @@ class MessageTeacherForm(forms.Form):
         ),
     )
     email = forms.EmailField(
-        required=True,
         widget=TailwindEmailInput(
             attrs={
                 "class": (
@@ -1267,12 +1317,25 @@ class MessageTeacherForm(forms.Form):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
-
-        # If user is authenticated, remove name, email and captcha fields
+        # If the user is authenticated, remove name, email, and captcha fields.
         if user and user.is_authenticated:
             del self.fields["name"]
             del self.fields["email"]
             del self.fields["captcha"]
+
+    def clean_message(self):
+        """
+        Encrypts the message field using Fernet before processing.
+        Returns the encrypted message as a decoded string.
+        """
+        message = self.cleaned_data.get("message")
+        if not message:
+            raise ValidationError("Message cannot be empty.")
+        try:
+            encrypted_message = fernet.encrypt(message.encode("utf-8"))
+            return encrypted_message.decode("utf-8")
+        except Exception as e:
+            raise ValidationError("Encryption failed: " + str(e))
 
 
 class FeedbackForm(forms.Form):
@@ -1326,14 +1389,6 @@ class ChallengeSubmissionForm(forms.ModelForm):
                 attrs={"rows": 5, "placeholder": "Describe your results or reflections..."}
             ),
         }
-
-
-class TailwindInput(forms.widgets.Input):
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("attrs", {}).update(
-            {"class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"}
-        )
-        super().__init__(*args, **kwargs)
 
 
 class TailwindTextarea(forms.widgets.Textarea):

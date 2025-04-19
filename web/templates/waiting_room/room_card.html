@@ -1,6 +1,6 @@
 {% load dict_filters %}
 
-<a href="{% url 'waiting_room_detail' room.id %}"
+<a href="{% url "waiting_room_detail" room.id %}"
    class="block bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
   <div class="p-6">
     <div class="flex items-center justify-between mb-3">
@@ -9,7 +9,7 @@
         <div class="flex items-center text-sm text-gray-500">
           <span>{{ room.subject }}</span>
           <span class="mx-2">•</span>
-          <span>{{ room.participants.count }} interested</span>
+          <span>{{ room.participants.count|add:"1" }} interested</span>
         </div>
       </div>
       <div>
@@ -33,7 +33,7 @@
     </div>
     {% if room.description %}<p class="text-gray-600 text-sm line-clamp-2 mb-4">{{ room.description }}</p>{% endif %}
     <div class="flex flex-wrap gap-2 mb-4">
-      {% for topic in room_topics %}
+      {% for topic in room_topics|get_item:room.id %}
         <span class="inline-block px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">{{ topic }}</span>
       {% endfor %}
     </div>

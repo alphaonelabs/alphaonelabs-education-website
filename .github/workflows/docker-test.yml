@@ -50,7 +50,7 @@ jobs:
         run: |
           cat > Dockerfile.test << EOF
           # Python base image
-          FROM python:3.10-slim
+          FROM python:3.10-slim@sha256:f9fd9a142c9e3bc54d906053b756eb7e7e386ee1cf784d82c251cf640c502512
 
           # Set working directory
           WORKDIR /app
@@ -147,7 +147,7 @@ jobs:
 
       - name: Run Django tests in container
         run: |
-          docker exec education-app python manage.py test
+          docker exec education-app python manage.py test --verbosity=3
 
       - name: Stop Docker container
         if: always()
