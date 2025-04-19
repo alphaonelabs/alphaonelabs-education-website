@@ -112,6 +112,8 @@ class Migration(migrations.Migration):
                     models.Index(fields=["event_type"], name="web_emailev_event_t_02108b_idx"),
                     models.Index(fields=["timestamp"], name="web_emailev_timesta_37604b_idx"),
                     models.Index(fields=["sg_message_id"], name="web_emailev_sg_mess_82b049_idx"),
+                    models.Index(fields=["email", "timestamp"], name="web_emailev_email_time_idx"),
+                    models.Index(fields=["email", "event_type"], name="web_emailev_email_event_idx"),
                 ],
             },
         ),
