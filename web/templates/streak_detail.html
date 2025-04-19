@@ -6,6 +6,13 @@
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <h1 class="text-3xl font-bold mb-4">{{ request.user.username }}'s Learning Streak</h1>
+    <div class="bg-teal-100 dark:bg-teal-900 rounded-lg p-4 mb-6">
+      <p class="text-gray-800 dark:text-gray-200">
+        <i class="fas fa-info-circle mr-2"></i> Learning streaks track your consecutive days of educational activity on the platform.
+        Maintaining a consistent streak helps build learning habits and improves knowledge retention. Every time you complete a session,
+        submit coursework, or engage with learning materials, your streak grows!
+      </p>
+    </div>
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
       <p class="text-xl mb-2">
         Current Streak: <span class="font-bold">{{ streak.current_streak }}</span> day{{ streak.current_streak|pluralize }}
@@ -64,4 +71,4 @@
     <a href="{% url 'student_dashboard' %}"
        class="inline-block mt-4 px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded">Back to Dashboard</a>
   </div>
-{% endblock %}
+{% endblock content %}

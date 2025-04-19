@@ -46,6 +46,10 @@
                 <button type="button"
                         id="add-session-time"
                         class="mt-2 text-indigo-500 hover:text-indigo-600">+ Add Another Session Time</button>
+              {% elif field.name == "email" and user.is_authenticated %}
+                <!-- Skip rendering email field for authenticated users -->
+              {% elif field.name == "captcha" and user.is_authenticated %}
+                <!-- Skip rendering captcha field for authenticated users -->
               {% else %}
                 {{ field }}
               {% endif %}
@@ -85,6 +89,25 @@
               editors.set(textarea.name, editor);
               editor.codemirror.on('change', () => {
                   textarea.value = editor.value();
+              });
+          });
+
+          // Fix form submission for hidden required textareas
+          const form = document.querySelector('form[enctype="multipart/form-data"]');
+          form.addEventListener('submit', function(event) {
+              // Ensure all markdown editors have their content synced to the textarea
+              editors.forEach((editor, fieldName) => {
+                  const textarea = document.querySelector(`textarea[name="${fieldName}"]`);
+                  if (textarea) {
+                      textarea.value = editor.value();
+
+                      // Temporarily remove required attribute if there's content
+                      // This prevents the "not focusable" validation error
+                      if (textarea.value.trim().length > 0 && textarea.hasAttribute('required')) {
+                          textarea.setAttribute('data-was-required', 'true');
+                          textarea.removeAttribute('required');
+                      }
+                  }
               });
           });
 

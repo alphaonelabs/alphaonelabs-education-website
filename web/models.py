@@ -3,6 +3,7 @@ import random
 import string
 import time
 import uuid
+from datetime import datetime, timedelta
 from io import BytesIO
 
 from allauth.account.signals import user_signed_up
@@ -662,7 +663,14 @@ class EducationalVideo(models.Model):
     description = models.TextField()
     video_url = models.URLField(help_text="URL for external content like YouTube videos")
     category = models.ForeignKey(Subject, on_delete=models.PROTECT, related_name="educational_videos")
-    uploader = models.ForeignKey(User, on_delete=models.CASCADE, related_name="educational_videos")
+    uploader = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="educational_videos",
+        null=True,
+        blank=True,
+        help_text="User who uploaded the video. If null, the submission is considered anonymous.",
+    )
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -794,9 +802,34 @@ class ForumTopic(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE, related_name="forum_topics")
     is_pinned = models.BooleanField(default=False)
     is_locked = models.BooleanField(default=False)
+    github_issue_url = models.URLField(blank=True, default="", help_text="Link to related GitHub issue")
+    github_milestone_url = models.URLField(blank=True, default="", help_text="Link to related GitHub milestone")
     views = models.IntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # Add these methods to the ForumTopic class
+    def upvote_count(self):
+        """Return the number of upvotes for this topic."""
+        return self.votes.filter(vote_type="up").count()
+
+    def downvote_count(self):
+        """Return the number of downvotes for this topic."""
+        return self.votes.filter(vote_type="down").count()
+
+    def vote_score(self):
+        """Return the total vote score (upvotes - downvotes)."""
+        return self.upvote_count() - self.downvote_count()
+
+    def user_vote(self, user):
+        """Return the user's vote type for this topic, or None if not voted."""
+        if not user.is_authenticated:
+            return None
+        try:
+            vote = self.votes.get(user=user)
+            return vote.vote_type
+        except ForumVote.DoesNotExist:
+            return None
 
     class Meta:
         ordering = ["-is_pinned", "-created_at"]
@@ -814,6 +847,29 @@ class ForumReply(models.Model):
     is_solution = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # Add the same methods to the ForumReply class
+    def upvote_count(self):
+        """Return the number of upvotes for this reply."""
+        return self.votes.filter(vote_type="up").count()
+
+    def downvote_count(self):
+        """Return the number of downvotes for this reply."""
+        return self.votes.filter(vote_type="down").count()
+
+    def vote_score(self):
+        """Return the total vote score (upvotes - downvotes)."""
+        return self.upvote_count() - self.downvote_count()
+
+    def user_vote(self, user):
+        """Return the user's vote type for this reply, or None if not voted."""
+        if not user.is_authenticated:
+            return None
+        try:
+            vote = self.votes.get(user=user)
+            return vote.vote_type
+        except ForumVote.DoesNotExist:
+            return None
 
     class Meta:
         verbose_name_plural = "Forum Replies"
@@ -852,7 +908,10 @@ class PeerMessage(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sent_messages")
     receiver = models.ForeignKey(User, on_delete=models.CASCADE, related_name="received_messages")
     content = models.TextField()
+    encrypted_key = models.TextField(blank=True, default="")  # Using default empty string instead of null
     is_read = models.BooleanField(default=False)
+    read_at = models.DateTimeField(null=True, blank=True)
+    starred = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -860,6 +919,13 @@ class PeerMessage(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender.username} to {self.receiver.username}"
+
+    def save(self, *args, **kwargs):
+        if self.read_at and not self.is_read:
+            self.is_read = True
+        elif self.is_read and not self.read_at:
+            self.read_at = timezone.now()
+        super().save(*args, **kwargs)
 
 
 class StudyGroup(models.Model):
@@ -2805,3 +2871,55 @@ class ScheduledPost(models.Model):
 
     def __str__(self):
         return self.content
+
+
+class ForumVote(models.Model):
+    """Model for storing votes on forum topics and replies."""
+
+    VOTE_TYPES = [
+        ("up", "Upvote"),
+        ("down", "Downvote"),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="forum_votes")
+    topic = models.ForeignKey("ForumTopic", on_delete=models.CASCADE, related_name="votes", null=True, blank=True)
+    reply = models.ForeignKey("ForumReply", on_delete=models.CASCADE, related_name="votes", null=True, blank=True)
+    vote_type = models.CharField(max_length=4, choices=VOTE_TYPES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [("user", "topic"), ("user", "reply")]
+        constraints = [
+            models.CheckConstraint(
+                check=(
+                    models.Q(topic__isnull=False, reply__isnull=True)
+                    | models.Q(topic__isnull=True, reply__isnull=False)
+                ),
+                name="vote_topic_xor_reply",
+            )
+        ]
+
+    def __str__(self):
+        if self.topic:
+            return f"{self.user.username} {self.vote_type}voted topic #{self.topic.id}"
+        elif self.reply:
+            return f"{self.user.username} {self.vote_type}voted reply #{self.reply.id}"
+        return f"{self.user.username} cast a vote"
+
+
+def default_valid_until() -> datetime:
+    return timezone.now() + timedelta(days=30)
+
+
+class Discount(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    code = models.CharField(max_length=20, unique=True)
+    discount_percentage = models.DecimalField(max_digits=5, decimal_places=2, default=5.00)
+    valid_from = models.DateTimeField(default=timezone.now)
+    valid_until = models.DateTimeField(default=default_valid_until)
+    used = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"{self.code} for {self.user.username} on {self.course.title}"
