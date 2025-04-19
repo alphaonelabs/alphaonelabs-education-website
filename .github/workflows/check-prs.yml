@@ -5,6 +5,10 @@ on:
     - cron: '0 0 * * *' # Run every day at midnight UTC
   workflow_dispatch: # Allows manual triggering
 
+concurrency:
+  group: check-prs-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check-prs:
     name: Close Inactive PRs and Notify Issues
@@ -32,16 +36,20 @@ jobs:
               state: "open",
               per_page: 100,
             });
+            for (const pr of prs) {
+              try {
+                // Calculate inactivity duration
+                const lastUpdated = new Date(pr.updated_at);
+                const now = new Date();
+                const daysSinceUpdate = (now - lastUpdated) / (1000 * 60 * 60 * 24);
 
-            for (const pr of prs.data) {
-              // Calculate inactivity duration
-              const lastUpdated = new Date(pr.updated_at);
-              const now = new Date();
-              const daysSinceUpdate = (now - lastUpdated) / (1000 * 60 * 60 * 24);
-
-              if (daysSinceUpdate > 7) {
-                console.log(`PR #${pr.number} has been inactive for more than 7 days.`);
-
+                if (daysSinceUpdate > 7) {
+                  console.log(`PR #${pr.number} has been inactive for more than 7 days.`);
+                }
+              } catch (error) {
+                console.log(`Error handling PR #${pr.number}: ${error}`);
+                continue;
+              }
                 // Close the PR
                 await github.pulls.update({
                   owner,
@@ -52,7 +60,7 @@ jobs:
                 console.log(`Closed PR #${pr.number} due to inactivity.`);
 
                 // Unassign the linked issue (if any)
-                  const issueMatch = pr.body.match(/(?:Fixes|Closes) #(\d+)/i);
+                  const issueMatch = (pr.body || "").match(/(?:Fixes|Closes) #(\d+)/i);
                       if (issueMatch) {
                     const issueNumber = issueMatch[1];
 
@@ -60,7 +68,7 @@ jobs:
                   await github.issues.removeAssignees({
                     owner,
                     repo,
-                    issue_number: issueNumber,
+                    issue_number: parseInt(issueNumber, 10),
                     assignees: [pr.user.login],
                   });
                   console.log(`Unassigned user from issue #${issueNumber}.`);
