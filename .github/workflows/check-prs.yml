@@ -20,10 +20,10 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Check for inactive PRs
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -39,7 +39,9 @@ jobs:
             });
             for (const pr of prs) {
               try {
-                // Calculate inactivity duration...
+                const lastUpdated = new Date(pr.updated_at);
+                const now = new Date();
+                const daysSinceUpdate = Math.floor((now - lastUpdated) / (1000 * 60 * 60 * 24));
                 if (daysSinceUpdate > 7) {
                   // close PR, unassign, comment...
                 }
