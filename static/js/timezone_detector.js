@@ -10,7 +10,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // Only proceed if we got a valid timezone
     if (timezone) {
         console.log('Detected timezone:', timezone);
-        sendTimezoneToServer(timezone);
+        // Check if timezone has changed to avoid unnecessary server requests
+        const storedTimezone = localStorage.getItem('userTimezone');
+        if (storedTimezone !== timezone) {
+            sendTimezoneToServer(timezone);
+            localStorage.setItem('userTimezone', timezone);
+        }
     } else {
         console.error('Could not detect timezone');
     }
