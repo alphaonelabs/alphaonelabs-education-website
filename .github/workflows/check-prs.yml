@@ -38,16 +38,28 @@ jobs:
               per_page: 100,
             });
             for (const pr of prs) {
-              try {
+             try {
                 const lastUpdated = new Date(pr.updated_at);
                 const now = new Date();
                 const daysSinceUpdate = Math.floor((now - lastUpdated) / (1000 * 60 * 60 * 24));
                 if (daysSinceUpdate > 7) {
-                  // close PR, unassign, comment...
+                  console.log(`PR #${pr.number} inactive for >7 days.`);
+                  await github.pulls.update({ owner, repo, pull_number: pr.number, state: "closed" });
+                  console.log(`Closed PR #${pr.number} due to inactivity.`);
+                  const issueMatch = (pr.body || "").match(/(?:Fixes|Closes) #(\d+)/i);
+                    if (issueMatch) {
+                      const issueNumber = parseInt(issueMatch[1], 10);
+                      await github.issues.removeAssignees({
+                      owner, repo, issue_number: issueNumber, assignees: [pr.user.login]
+                    });
+                    await github.issues.createComment({
+                      owner, repo, issue_number: issueNumber,
+                      body: `This issue is now available again as PR #${pr.number} was closed for inactivity.`
+                    });
+                  }
                 }
               } catch (error) {
                 console.log(`Error processing PR #${pr.number}: ${error}`);
-                continue;
               }
             }
             if (daysSinceUpdate > 7) {
