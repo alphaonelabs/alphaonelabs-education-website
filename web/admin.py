@@ -408,21 +408,8 @@ class CustomUserAdmin(BaseUserAdmin):
             if not profile.last_email_event:
                 return "-"
 
-            status_classes = {
-                "delivered": "success",
-                "open": "success",
-                "click": "success",
-                "bounce": "danger",
-                "dropped": "danger",
-                "spamreport": "danger",
-                "deferred": "warning",
-                "processed": "info",
-            }
-
-            status_class = status_classes.get(profile.last_email_event, "info")
-            color = {"success": "green", "danger": "red", "warning": "orange", "info": "blue"}.get(status_class, "gray")
-
-            return format_html('<span style="color: {};">● {}</span>', color, profile.last_email_event.title())
+            color, label, time_str = get_email_status(profile)
+            return format_html('<span style="color: {};">● {}</span>', color, label)
         except Profile.DoesNotExist:
             return "-"
 
