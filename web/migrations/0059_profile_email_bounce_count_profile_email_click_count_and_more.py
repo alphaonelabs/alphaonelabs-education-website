@@ -92,7 +92,7 @@ class Migration(migrations.Migration):
                 ("timestamp", models.DateTimeField()),
                 ("sg_message_id", models.CharField(blank=True, max_length=255)),
                 ("sg_event_id", models.CharField(blank=True, max_length=255)),
-                ("event_data", models.JSONField(default=dict)),
+                ("event_data", models.JSONField(default=dict, help_text="Raw JSON data received from SendGrid webhook")),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 (
                     "user",
