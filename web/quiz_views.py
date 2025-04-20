@@ -1240,16 +1240,7 @@ def student_exam_correction(
                 messages.success(request, f"Question graded successfully. Awarded {points_awarded} points.")
 
             # Redirect to avoid resubmission
-            # return redirect("student_exam_correction", course_id=course.id, quiz_id=quiz.id, user_quiz_id=user_quiz.id)
-            if request.headers.get('HX-Request') == 'true':
-                response = HttpResponse('')
-                response['HX-Trigger'] = json.dumps({
-                    "show-toast": {
-                        "level": "success",
-                        "message": "Question deleted successfully."
-                    }
-                })
-                return response
+            return redirect("student_exam_correction", course_id=course.id, quiz_id=quiz.id, user_quiz_id=user_quiz.id)
 
     # Prepare questions and answers for display
     questions = []
@@ -1289,10 +1280,6 @@ def student_exam_correction(
 
         questions.append(q_dict)
 
-    print("###########", UserQuiz.objects.filter(quiz=quiz, completed=True, id=user_quiz_id))
-    print("###########", user_quiz_id)
-    print("@" * 50)
-    # print("###########", questions)
     return render(
         request,
         "web/quiz/student_exam_correction.html",
