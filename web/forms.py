@@ -287,7 +287,7 @@ class UserRegistrationForm(SignupForm):
 class TailwindInput(forms.widgets.Input):
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("attrs", {}).update(
-            {"class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"}
+            {"class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-white border-gray-300 dark:border-gray-600 dark:focus:ring-blue-400"}
         )
         super().__init__(*args, **kwargs)
 
@@ -296,7 +296,7 @@ class TailwindURLInput(URLInput):
     # This widget, subclassing URLInput, ensures input type="url"
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("attrs", {}).update(
-            {"class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"}
+            {"class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-white border-gray-300 dark:border-gray-600 dark:focus:ring-blue-400"}
         )
         super().__init__(*args, **kwargs)
 
