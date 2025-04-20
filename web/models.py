@@ -322,7 +322,7 @@ class Course(models.Model):
 
     @property
     def average_rating(self):
-        avg = self.reviews.aggregate(avg=Avg("rating"))["avg"] or 0
+        avg = float(self.reviews.aggregate(avg=Avg("rating"))["avg"] or 0)
         return round(avg, 2)
 
 
