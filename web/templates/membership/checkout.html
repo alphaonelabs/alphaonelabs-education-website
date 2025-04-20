@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  Checkout - {{ plan.name }}
+{% endblock title %}
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/membership-animations.css' %}" />
+{% endblock extra_head %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="mb-6">
+      <a href="{% url 'subscribe_membership' plan.slug %}"
+         class="text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300 flex items-center">
+        <i class="fas fa-arrow-left mr-2"></i>
+        <span>Back to plan details</span>
+      </a>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+      <div class="p-6">
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-4">Complete Your {{ plan.name }} Subscription</h1>
+        <div class="mb-6 border-b border-gray-200 dark:border-gray-700 pb-6">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-800 dark:text-white">{{ plan.name }}</h2>
+              <p class="text-gray-600 dark:text-gray-300">{{ billing_period|title }} billing</p>
+            </div>
+            <div class="text-right">
+              <p class="text-xl font-bold text-gray-800 dark:text-white">${{ price }}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                {% if billing_period == 'monthly' %}
+                  Billed monthly
+                {% else %}
+                  Billed annually
+                {% endif %}
+              </p>
+            </div>
+          </div>
+          <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+            <h3 class="font-semibold text-gray-800 dark:text-white mb-2">Included in your subscription:</h3>
+            <ul class="space-y-2">
+              {% for benefit in plan.benefits.all %}
+                <li class="flex items-start">
+                  <i class="fas fa-check text-green-500 mt-1 mr-2"></i>
+                  <span class="text-gray-600 dark:text-gray-300">{{ benefit.description }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+        <form id="payment-form" class="space-y-6">
+          <div>
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Payment Information</h3>
+            <div id="card-element"
+                 class="p-4 border border-gray-300 dark:border-gray-600 rounded-lg"></div>
+            <div id="card-errors" class="text-red-500 text-sm mt-2" role="alert"></div>
+          </div>
+          <div class="mt-6">
+            <button id="submit-button"
+                    type="submit"
+                    class="w-full bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-4 rounded-lg flex justify-center items-center">
+              <span id="button-text">Complete Subscription</span>
+              <div id="spinner" class="hidden ml-2">
+                <i class="fas fa-spinner fa-spin"></i>
+              </div>
+            </button>
+          </div>
+          <p class="text-sm text-gray-500 dark:text-gray-400 text-center mt-4">
+            By subscribing, you agree to our <a href="/terms"
+    class="text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300">Terms of Service</a> and <a href="/privacy"
+    class="text-teal-600 hover:text-teal-800 dark:text-teal-400 dark:hover:text-teal-300">Privacy Policy</a>.
+          </p>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          // Initialize Stripe
+          const stripe = Stripe('{{ stripe_public_key }}');
+          const elements = stripe.elements();
+
+          // Create card element
+          const cardElement = elements.create('card', {
+              style: {
+                  base: {
+                      color: document.documentElement.classList.contains('dark') ? '#fff' : '#32325d',
+                      fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+                      fontSmoothing: 'antialiased',
+                      fontSize: '16px',
+                      '::placeholder': {
+                          color: document.documentElement.classList.contains('dark') ? '#aab7c4' : '#aab7c4'
+                      },
+                      backgroundColor: document.documentElement.classList.contains('dark') ? '#1f2937' : '#fff'
+                  },
+                  invalid: {
+                      color: '#fa755a',
+                      iconColor: '#fa755a'
+                  }
+              }
+          });
+
+          // Mount the card element
+          cardElement.mount('#card-element');
+
+          // Handle form submission
+          const form = document.getElementById('payment-form');
+          const submitButton = document.getElementById('submit-button');
+          const buttonText = document.getElementById('button-text');
+          const spinner = document.getElementById('spinner');
+          const cardErrors = document.getElementById('card-errors');
+
+          form.addEventListener('submit', async (event) => {
+              event.preventDefault();
+
+              // Disable the submit button to prevent repeated clicks
+              submitButton.disabled = true;
+              buttonText.textContent = 'Processing...';
+              spinner.classList.remove('hidden');
+
+              // Create payment method
+              try {
+                  const {
+                      paymentMethod,
+                      error
+                  } = await stripe.createPaymentMethod({
+                      type: 'card',
+                      card: cardElement
+                  });
+
+                  if (error) {
+                      // Show error to your customer
+                      cardErrors.textContent = error.message;
+                      submitButton.disabled = false;
+                      buttonText.textContent = 'Complete Subscription';
+                      spinner.classList.add('hidden');
+                  } else {
+                      // Send payment method ID to server
+                      const response = await fetch('{% url "create_membership_subscription" %}', {
+                          method: 'POST',
+                          headers: {
+                              'Content-Type': 'application/json',
+                              'X-CSRFToken': '{{ csrf_token }}'
+                          },
+                          body: JSON.stringify({
+                              plan_id: '{{ plan.id }}',
+                              billing_period: '{{ billing_period }}',
+                              payment_method_id: paymentMethod.id
+                          })
+                      });
+
+                      const result = await response.json();
+
+                      if (result.error) {
+                          // Show error to your customer
+                          cardErrors.textContent = result.error;
+                          submitButton.disabled = false;
+                          buttonText.textContent = 'Complete Subscription';
+                          spinner.classList.add('hidden');
+                      } else if (result.requires_action) {
+                          // Use Stripe.js to handle required card action
+                          const {
+                              error
+                          } = await stripe.confirmCardPayment(result.client_secret);
+
+                          if (error) {
+                              // Show error to your customer
+                              cardErrors.textContent = error.message;
+                              submitButton.disabled = false;
+                              buttonText.textContent = 'Complete Subscription';
+                              spinner.classList.add('hidden');
+                          } else {
+                              // The card action has been handled
+                              // The PaymentIntent can be confirmed again on the server
+                              window.location.href = '{% url "membership_success" %}';
+                          }
+                      } else {
+                          // Success!
+                          window.location.href = '{% url "membership_success" %}';
+                      }
+                  }
+              } catch (err) {
+                  cardErrors.textContent = 'An unexpected error occurred. Please try again.';
+                  submitButton.disabled = false;
+                  buttonText.textContent = 'Complete Subscription';
+                  spinner.classList.add('hidden');
+                  console.error(err);
+              }
+          });
+      });
+  </script>
+{% endblock content %}

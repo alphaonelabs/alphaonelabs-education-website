@@ -1,0 +1,260 @@
+/**
+ * Membership Animations CSS
+ * Consolidated animations for membership-related pages
+ */
+
+/* Fade animations */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Pulse animations */
+@keyframes pulseSlow {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
+}
+
+/* Bounce animations */
+@keyframes bounce-subtle {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Shimmer effect for buttons */
+@keyframes shimmer {
+    0% {
+        transform: translateX(-150%);
+    }
+    100% {
+        transform: translateX(150%);
+    }
+}
+
+/* Animation classes */
+.animate-fadeIn {
+    animation: fadeIn 1s ease forwards;
+}
+
+.animate-fadeInUp {
+    animation: fadeInUp 0.7s ease forwards;
+}
+
+.animate-pulse-slow {
+    animation: pulseSlow 3s ease-in-out infinite;
+}
+
+.animate-bounce-subtle {
+    animation: bounce-subtle 2s infinite;
+}
+
+.animate-shimmer {
+    animation: shimmer 2s infinite;
+}
+
+/* Text gradient effect */
+.text-gradient {
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    background-image: linear-gradient(135deg, #3B82F6, #8B5CF6);
+}
+
+/* Confetti styling for success page */
+.confetti-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+}
+
+.confetti {
+    width: 10px;
+    height: 10px;
+    position: absolute;
+    z-index: 1;
+}
+
+@keyframes fall {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(600px) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Media query for reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .animate-fadeIn,
+    .animate-fadeInUp,
+    .animate-pulse-slow,
+    .animate-bounce-subtle,
+    .animate-shimmer,
+    .animate-pulse {
+        animation: none !important;
+    }
+}
+
+/* Membership Animations CSS */
+/* A consolidated file for all animations used in membership pages */
+
+/* Fade In Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.animate-fadeIn {
+    animation: fadeIn 1s ease forwards;
+}
+
+/* Fade In Up Animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fadeInUp {
+    animation: fadeInUp 0.7s ease forwards;
+}
+
+/* Shimmer Animation (for buttons and highlights) */
+@keyframes shimmer {
+    0% {
+        transform: translateX(-150%);
+    }
+    100% {
+        transform: translateX(150%);
+    }
+}
+
+.animate-shimmer {
+    animation: shimmer 2s infinite;
+}
+
+/* Pulse Animation */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Pulse Slow Animation (for subtle emphasis) */
+@keyframes pulseSlow {
+    0%, 100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.8;
+        transform: scale(1.03);
+    }
+}
+
+.animate-pulse-slow {
+    animation: pulseSlow 4s ease-in-out infinite;
+}
+
+/* Bounce Animation */
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-25%);
+    }
+}
+
+.animate-bounce {
+    animation: bounce 1s infinite;
+}
+
+/* Subtle Bounce Animation */
+@keyframes bounce-subtle {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.animate-bounce-subtle {
+    animation: bounce-subtle 2s infinite;
+}
+
+/* Ping Animation for status indicators */
+@keyframes ping {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    75%, 100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+.animate-ping {
+    animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Accessibility - Respects user's reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+    .animate-fadeIn,
+    .animate-fadeInUp,
+    .animate-shimmer,
+    .animate-pulse,
+    .animate-pulse-slow,
+    .animate-bounce,
+    .animate-bounce-subtle,
+    .animate-ping {
+        animation: none;
+        transition: none;
+    }
+}

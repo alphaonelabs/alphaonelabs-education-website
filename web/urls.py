@@ -115,9 +115,9 @@ urlpatterns += i18n_patterns(
     path("secure/toggle_star/<int:message_id>/", toggle_star_message, name="toggle_star_message"),
     # Social media sharing URLs
     path("social-media/", views.social_media_dashboard, name="social_media_dashboard"),
-    path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
-    path("social-media/create/", views.create_scheduled_post, name="create_scheduled_post"),
-    path("social-media/delete/<int:post_id>/", views.delete_post, name="delete_post"),
+    # path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
+    # path("social-media/create/", views.create_scheduled_post, name="create_scheduled_post"),
+    # path("social-media/delete/<int:post_id>/", views.delete_post, name="delete_post"),
     # Payment URLs
     path(
         "courses/<slug:slug>/create-payment-intent/",
@@ -449,11 +449,23 @@ urlpatterns += i18n_patterns(
         name="create_membership_subscription",
     ),
     path("membership/success/", views.membership_success, name="membership_success"),
-    path("membership/settings/", views.membership_settings, name="membership_settings"),
-    path("membership/cancel/", views.cancel_membership, name="cancel_membership"),
-    path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
+    # New membership URLs
+    path("membership/plans/", views.membership_plans, name="membership_plans"),
+    path("membership/subscribe/<slug:plan_slug>/", views.subscribe_membership, name="subscribe_membership"),
+    path(
+        "membership/checkout/<slug:plan_slug>/<str:billing_period>/",
+        views.checkout_membership,
+        name="checkout_membership",
+    ),
+    path("membership/manage/", views.manage_membership, name="manage_membership"),
+    path("membership/change-plan/", views.change_membership_plan, name="change_membership_plan"),
+    path("membership/cancel/", views.membership_cancel, name="membership_cancel"),
+    path("membership/benefits/", views.membership_benefits, name="membership_benefits"),
+    path("membership/webhook/", views.membership_webhook, name="membership_webhook"),
+    path("membership/cancel-subscription/", views.cancel_subscription_view, name="cancel_subscription"),
+    path("membership/reactivate-subscription/", views.reactivate_subscription_view, name="reactivate_subscription"),
     path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
     prefix_default_language=True,
 )

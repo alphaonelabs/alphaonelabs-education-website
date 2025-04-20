@@ -1,0 +1,243 @@
+{% extends 'base.html' %}
+
+{% load static %}
+
+{% block title %}Subscribe to {{ plan.name }}{% endblock %}
+{% block extra_head %}
+  <link rel="stylesheet" href="{% static 'css/membership-animations.css' %}" />
+{% endblock extra_head %}
+{% block content %}
+  <!-- Decorative background elements -->
+  <div class="absolute inset-0 overflow-hidden pointer-events-none z-0">
+    <div class="absolute top-40 left-10 w-64 h-64 bg-blue-100 opacity-50 rounded-full filter blur-3xl"></div>
+    <div class="absolute bottom-40 right-10 w-80 h-80 bg-purple-100 opacity-40 rounded-full filter blur-3xl"></div>
+  </div>
+  <div class="container mx-auto px-4 py-12 relative z-10">
+    <div class="max-w-2xl mx-auto">
+      <h1 class="text-3xl font-bold mb-8 text-center bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-700 animate-fadeIn">
+        Subscribe to {{ plan.name }}
+      </h1>
+      <div class="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden mb-8 border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:shadow-xl animate-fadeInUp"
+           style="animation-delay: 200ms">
+        <div class="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900 dark:to-indigo-900 dark:bg-opacity-20 p-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-white flex items-center justify-center">
+            <i class="fas fa-crown mr-2 text-yellow-500"></i>
+            <span>Subscription Details</span>
+          </h2>
+        </div>
+        <div class="p-6">
+          <div class="mb-6">
+            <h2 class="font-bold text-xl mb-3 flex items-center">
+              <i class="fas fa-info-circle mr-2 text-blue-500 dark:text-blue-400"></i>
+              <span>Plan Details</span>
+            </h2>
+            <p class="text-gray-600 dark:text-gray-400 mb-4">{{ plan.description }}</p>
+            <div class="flex items-center justify-between mb-6 border-b dark:border-gray-700 pb-6">
+              <div>
+                <span class="text-lg font-semibold text-gray-700 dark:text-gray-300">Billing Period:</span>
+              </div>
+              <div class="flex items-center space-x-6 relative">
+                <fieldset class="flex items-center space-x-6"
+                          aria-label="Billing period selection">
+                  <legend class="sr-only">Select billing period</legend>
+                  <!-- Enhanced radio toggles with animation -->
+                  <div class="relative">
+                    <label class="flex items-center cursor-pointer group">
+                      <input type="radio"
+                             id="monthly-option"
+                             name="billing_period"
+                             value="monthly"
+                             class="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500 dark:focus:ring-blue-400 absolute opacity-0"
+                             aria-label="Monthly billing"
+                             {% if billing_period == 'monthly' %}checked aria-checked="true"{% else %}aria-checked="false"{% endif %} />
+                      <span class="relative inline-flex items-center justify-center w-full p-2 rounded-lg {% if billing_period == 'monthly' %}bg-blue-100 dark:bg-blue-900 dark:bg-opacity-40 border border-blue-200 dark:border-blue-700{% endif %} group-hover:bg-blue-50 dark:group-hover:bg-blue-900 dark:group-hover:bg-opacity-20 transition-all duration-300">
+                        <span class="{% if billing_period == 'monthly' %}text-blue-600 dark:text-blue-400 font-medium{% else %}text-gray-700 dark:text-gray-300{% endif %} group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">Monthly</span>
+                      </span>
+                    </label>
+                  </div>
+                  <div class="relative">
+                    <label class="flex items-center cursor-pointer group">
+                      <input type="radio"
+                             id="yearly-option"
+                             name="billing_period"
+                             value="yearly"
+                             class="form-radio h-4 w-4 text-green-600 focus:ring-green-500 dark:focus:ring-green-400 absolute opacity-0"
+                             aria-label="Yearly billing"
+                             {% if billing_period == 'yearly' %}checked aria-checked="true"{% else %}aria-checked="false"{% endif %} />
+                      <span class="relative inline-flex items-center justify-center w-full p-2 rounded-lg {% if billing_period == 'yearly' %}bg-green-100 dark:bg-green-900 dark:bg-opacity-40 border border-green-200 dark:border-green-700{% endif %} group-hover:bg-green-50 dark:group-hover:bg-green-900 dark:group-hover:bg-opacity-20 transition-all duration-300">
+                        <span class="{% if billing_period == 'yearly' %}text-green-600 dark:text-green-400 font-medium{% else %}text-gray-700 dark:text-gray-300{% endif %} group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors duration-300">Yearly</span>
+                        {% if plan.yearly_savings > 0 %}
+                          <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 animate-pulse"
+                                aria-label="Save {{ plan.yearly_savings }}% with yearly billing">Save {{ plan.yearly_savings }}%</span>
+                        {% endif %}
+                      </span>
+                    </label>
+                  </div>
+                </fieldset>
+              </div>
+            </div>
+            <div class="flex items-center justify-between bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+              <div>
+                <span class="text-lg font-semibold text-gray-700 dark:text-gray-300">Price:</span>
+              </div>
+              <div class="relative h-12">
+                <div id="monthly-price"
+                     class="text-2xl font-bold text-blue-600 dark:text-blue-400 absolute inset-0 flex items-center justify-center transition-all duration-500 transform {% if billing_period != 'monthly' %}opacity-0 translate-y-4{% endif %}">
+                  <span class="bg-clip-text text-transparent bg-gradient-to-r from-blue-500 to-blue-700">${{ plan.price_monthly }}/month</span>
+                </div>
+                <div id="yearly-price"
+                     class="text-2xl font-bold text-green-600 dark:text-green-400 absolute inset-0 flex items-center justify-center transition-all duration-500 transform {% if billing_period != 'yearly' %}opacity-0 translate-y-4{% endif %}">
+                  <span class="bg-clip-text text-transparent bg-gradient-to-r from-green-500 to-green-700">${{ plan.price_yearly }}/year</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mb-8">
+            <h2 class="font-bold text-xl mb-3 flex items-center">
+              <i class="fas fa-check-circle mr-2 text-green-500 dark:text-green-400"></i>
+              <span>Plan Features</span>
+            </h2>
+            <ul class="space-y-3">
+              {% for feature in plan.features %}
+                <li class="flex items-start group transform transition-all duration-300 hover:translate-x-1 p-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg">
+                  <svg class="h-5 w-5 text-green-500 dark:text-green-400 mr-2 mt-0.5 group-hover:scale-110 transition-transform duration-300"
+                       viewBox="0 0 20 20"
+                       fill="currentColor"
+                       aria-hidden="true"
+                       role="img">
+                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                  </svg>
+                  <span class="text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-200">{{ feature }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+          <a href="{% url 'checkout_membership' plan.slug billing_period %}"
+             id="checkout-button"
+             class="block w-full px-6 py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-md text-center transition-all duration-300 transform hover:scale-[1.02] hover:shadow-md relative overflow-hidden group"
+             data-plan-slug="{{ plan.slug }}"
+             data-billing-period="{{ billing_period }}"
+             data-base-url="{% url 'checkout_membership' plan_slug='PLAN_SLUG' billing_period='BILLING_PERIOD' %}">
+            <span class="relative z-10 flex items-center justify-center">
+              <i class="fas fa-credit-card mr-2 group-hover:animate-bounce"
+                 aria-hidden="true"></i>
+              Continue to Checkout
+            </span>
+            <div class="absolute inset-0 w-full h-full">
+              <div class="absolute top-0 left-0 w-full h-full bg-white opacity-10 transform -skew-x-45 translate-x-full group-hover:animate-shimmer">
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+      <div class="text-center animate-fadeIn" style="animation-delay: 400ms;">
+        <a href="{% url 'membership_plans' %}"
+           class="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors duration-300 group bg-white dark:bg-gray-800 px-4 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300">
+          <svg class="w-4 h-4 mr-2 transform transition-transform duration-300 group-hover:-translate-x-1"
+               fill="none"
+               stroke="currentColor"
+               viewBox="0 0 24 24"
+               aria-hidden="true"
+               role="img">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+          </svg>
+          Back to All Plans
+        </a>
+      </div>
+    </div>
+  </div>
+  <script>
+      document.addEventListener('DOMContentLoaded', function() {
+          const monthlyPrice = document.getElementById('monthly-price');
+          const yearlyPrice = document.getElementById('yearly-price');
+          const monthlyOption = document.getElementById('monthly-option');
+          const yearlyOption = document.getElementById('yearly-option');
+          const checkoutBtn = document.getElementById('checkout-button');
+
+          // Function to update price display
+          function updatePriceDisplay(showYearly) {
+              if (showYearly) {
+                  monthlyPrice.classList.add('opacity-0', 'translate-y-4');
+                  yearlyPrice.classList.remove('opacity-0', 'translate-y-4');
+              } else {
+                  monthlyPrice.classList.remove('opacity-0', 'translate-y-4');
+                  yearlyPrice.classList.add('opacity-0', 'translate-y-4');
+              }
+          }
+
+          // Function to update radio styling
+          function updateRadioStyling(isYearly) {
+              const monthlyLabel = monthlyOption.parentElement.querySelector('span');
+              const yearlyLabel = yearlyOption.parentElement.querySelector('span');
+
+              if (isYearly) {
+                  monthlyLabel.classList.remove('bg-blue-100', 'dark:bg-blue-900', 'dark:bg-opacity-40', 'border', 'border-blue-200', 'dark:border-blue-700');
+                  yearlyLabel.classList.add('bg-green-100', 'dark:bg-green-900', 'dark:bg-opacity-40', 'border', 'border-green-200', 'dark:border-green-700');
+              } else {
+                  monthlyLabel.classList.add('bg-blue-100', 'dark:bg-blue-900', 'dark:bg-opacity-40', 'border', 'border-blue-200', 'dark:border-blue-700');
+                  yearlyLabel.classList.remove('bg-green-100', 'dark:bg-green-900', 'dark:bg-opacity-40', 'border', 'border-green-200', 'dark:border-green-700');
+              }
+          }
+
+          // Function to update checkout URL based on billing period
+          function updateCheckoutUrl(billingPeriod) {
+              if (checkoutBtn) {
+                  const baseUrl = checkoutBtn.getAttribute('data-base-url');
+                  checkoutBtn.href = `${baseUrl}?billing_period=${billingPeriod}`;
+                  // Update only the text content while preserving the icon
+                  const btnText = checkoutBtn.querySelector('span.relative');
+                  if (btnText) {
+                      const icon = btnText.querySelector('i');
+                      btnText.innerHTML = '';
+                      if (icon) btnText.appendChild(icon);
+                      btnText.appendChild(document.createTextNode(` Subscribe ${billingPeriod === 'yearly' ? 'Yearly' : 'Monthly'}`));
+                  }
+                  // Set focus to the checkout button when selection changes
+                  setTimeout(() => checkoutBtn.focus(), 100);
+              }
+          }
+
+          // Add click event for monthly option
+          monthlyOption.addEventListener('change', function() {
+              if (this.checked) {
+                  updatePriceDisplay(false);
+                  updateRadioStyling(false);
+                  updateCheckoutUrl('monthly');
+              }
+          });
+
+          // Add click event for yearly option
+          yearlyOption.addEventListener('change', function() {
+              if (this.checked) {
+                  updatePriceDisplay(true);
+                  updateRadioStyling(true);
+                  updateCheckoutUrl('yearly');
+              }
+          });
+
+          // Add intersection observer for scroll animations
+          const observer = new IntersectionObserver((entries) => {
+              entries.forEach(entry => {
+                  if (entry.isIntersecting) {
+                      entry.target.classList.add('show');
+                      observer.unobserve(entry.target);
+                  }
+              });
+          }, {
+              threshold: 0.1
+          });
+
+          // Observe elements with animation classes
+          document.querySelectorAll('.animate-fadeIn, .animate-fadeInUp').forEach(el => {
+              observer.observe(el);
+          });
+
+          // Initialize styling based on current selection
+          updatePriceDisplay(yearlyOption.checked);
+          updateRadioStyling(yearlyOption.checked);
+
+          // Initialize checkout URL
+          updateCheckoutUrl(yearlyOption.checked ? 'yearly' : 'monthly');
+      });
+  </script>
+{% endblock %}
