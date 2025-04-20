@@ -129,14 +129,27 @@
                   <div class="text-gray-500 dark:text-gray-400">No answer provided</div>
                 {% endif %}
               {% elif question.question_type == 'true_false' %}
-                <div class="text-gray-800 dark:text-gray-200">
-                  {% if question.user_answer == 'true' %}
-                    True
-                  {% elif question.user_answer == 'false' %}
-                    False
-                  {% else %}
-                    No answer provided
-                  {% endif %}
+                <div class="space-y-2 mt-2">
+                  {% for option in question.options %}
+                    <div class="flex items-center">
+                      <input type="radio" class="w-5 mr-2 opacity-[0.7]" {% if option.id|stringformat:"i" in question.user_answer %} checked {% endif %} onclick="return false;">
+                      </input>
+                      <h4> {{ option.text }} </h4>
+                      <span class="text-gray-700 dark:text-gray-300 ml-2 {% if option.id|stringformat:"i" == answer.user_answer %}font-medium {% if option.is_correct %}text-green-700 dark:text-green-400 {% else %}text-red-700 dark:text-red-400{% endif %} {% elif option.is_correct %}font-medium text-green-700 dark:text-green-400{% endif %}">
+                        {% if option.id|stringformat:"i" in question.user_answer %}
+                          {% if option.id|stringformat:"i" in question.user_answer %}
+                            {% if option.is_correct %}
+                              <i class="fas fa-check-circle text-green-500"></i>
+                            {% else %}
+                              <i class="fas fa-times-circle text-red-500"></i>
+                            {% endif %}
+                          {% elif option.is_correct %}
+                            <i class="fas fa-check-circle text-green-500"></i>
+                          {% endif %}
+                        {% endif %}
+                      </span>
+                    </div>
+                  {% endfor %}
                 </div>
               {% else %}
                 {% if question.user_answer %}
@@ -180,6 +193,16 @@
                     <div class="w-full md:w-2/3 flex items-end">
                       <button type="submit"
                               class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded">Save Grade</button>
+
+                              <!-- 'student_exam_correction' quiz.course.id quiz.id attempt.id -->
+                      <button hx-post="{% url 'student_exam_correction' quiz.course.id attempt.id %}"
+                              hx-confirm="Are you sure you want to delete this question?"
+                              hx-target="#question-item-{{ question.id }}"
+                              hx-swap="outerHTML"
+                              hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                              class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded inline-flex items-center text-sm">
+                        <i class="fas fa-trash-alt mr-1"></i> Delete
+                      </button>
                     </div>
                   </div>
                 </form>

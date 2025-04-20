@@ -104,13 +104,16 @@ def ai_quiz_corrector(quiz_data: dict) -> Union[str, dict]:
 
     1.  **Grading:** Assign a numerical grade to the student's assignment on a scale of 0 to question_max_point, where
         question_max_point represents perfect completion and 0 represents no attempt or completely incorrect work.
+        compare the Student_answer with reference_answer and give him the grad in 
+        reference_answer is not empty or null. 
     2.  **Student Feedback:** Provide concise and constructive feedback to the student, focusing on areas of strength
         and areas for improvement. Be specific and actionable. Feedback for every question if it is correction required
-        or marked as false.
+        or marked as false. If there is no reference_answer you must give him a feedback. 
     3.  **Teacher Feedback:** Offer a brief summary of the student's performance for the teacher. Include observations
         about the student's understanding, effort, and any notable patterns or areas requiring further attention.
     4.  **Response Format:** correction: section must have every question, over all feedback: will be one only for all
         exam. Return your response as a JSON object strictly adhering to the following structure:
+    5.  **Notes:** student cannot see question id.
 
         ```json
         correction:
@@ -121,8 +124,8 @@ def ai_quiz_corrector(quiz_data: dict) -> Union[str, dict]:
                 "student_feedback": "<student feedback>",
                 "teacher_feedback": "<teacher feedback about student performance>"
             }
+            ...
         }
-        ...
         "over_all_feedback":
         {
             "student_feedback": "<over all exam student feedback about student performance>",

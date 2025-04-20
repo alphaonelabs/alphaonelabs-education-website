@@ -2141,12 +2141,7 @@ class QuizQuestion(models.Model):
     points = models.PositiveIntegerField(default=1)
     order = models.PositiveIntegerField(default=0)
     image = models.ImageField(upload_to="quiz_questions/", blank=True, default="")
-
-    # New fields for specialized question types
-    code_starter = models.TextField(blank=True, help_text="Starter code for coding questions")
-    expected_output = models.TextField(blank=True, help_text="Expected output for coding questions")
-    diagram_data = models.JSONField(null=True, blank=True, help_text="Data for diagram questions")
-    matching_items = models.JSONField(null=True, blank=True, help_text="Items to match")
+    reference_answer = models.TextField(null=True, blank=True, help_text="Reference answer for the questions, important when AI-auto correction")
 
     class Meta:
         ordering = ["order"]

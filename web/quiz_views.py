@@ -20,6 +20,7 @@ from .forms import (
 )
 from .models import Course, Quiz, QuizQuestion, Session, UserQuiz, QuizOption
 from .views import course_detail
+from .services.AI.ai_model import ai_quiz_corrector
 
 @login_required
 def create_course_exam(
@@ -66,6 +67,7 @@ def create_course_exam(
             "subject": course.subject,
             "time_limit": 60 if exam_type == "session" else 120,
             "title": f"Quiz - {session.title}" if session else f"Final Exam - {course.title}",
+            "passing_score": 60,
             "description": f"Quiz for {session.title}" if session else f"Final comprehensive exam for {course.title}",
             "status": "published",
         }
@@ -297,7 +299,7 @@ def add_question(request, quiz_id):
         
         # Handle true/false questions differently
         question_type = request.POST.get('question_type')
-        
+
         # Handle true/false questions differently
         if form.is_valid() and question_type == 'true_false':
             with transaction.atomic():
@@ -355,16 +357,6 @@ def add_question(request, quiz_id):
                 question.order = next_order
                 question.save()
                 # Get the reference answer
-                reference_answer = request.POST.get('short_answer_reference', '')
-                
-                # Create the reference option
-                option = QuizOption(
-                    question=question,
-                    text=reference_answer,
-                    is_correct=True,
-                    order=0
-                )
-                option.save()
             
             messages.success(request, "Question added successfully.")
             
@@ -586,6 +578,10 @@ def _process_quiz_taking(request, quiz):
     """Helper function to process quiz taking for both routes."""
     from .services.AI.ai_model import ai_quiz_corrector
 
+    # Create a new UserQuiz attempt record
+    user = request.user if request.user.is_authenticated else None
+    user_quiz = UserQuiz(quiz=quiz, user=user)
+
     # Check if the quiz has questions
     if not quiz.questions.exists():
         messages.error(request, "This quiz does not have any questions yet.")
@@ -598,9 +594,6 @@ def _process_quiz_taking(request, quiz):
     if quiz.randomize_questions:
         random.shuffle(questions)
 
-    # Create a new UserQuiz attempt record
-    user = request.user if request.user.is_authenticated else None
-
     # Check if user has already reached max attempts
     if user and quiz.max_attempts > 0:
         attempt_count = UserQuiz.objects.filter(quiz=quiz, user=user).count()
@@ -608,7 +601,7 @@ def _process_quiz_taking(request, quiz):
             messages.error(
                 request, f"You have reached the maximum number of attempts ({quiz.max_attempts}) for this quiz."
             )
-            return redirect("quiz_detail", quiz_id=quiz.id)
+            return redirect("quiz_results", user_quiz_id=user_quiz.id)
 
     # Prepare questions and options for display
     prepared_questions = []
@@ -638,16 +631,18 @@ def _process_quiz_taking(request, quiz):
         q_dict["options"] = clean_options
         prepared_questions.append(q_dict)
 
-    user_quiz = UserQuiz(quiz=quiz, user=user)
     if request.method == "POST":
         form = TakeQuizForm(request.POST, quiz=quiz)
 
         if form.is_valid():
             # Process answers
+            quiz_id = quiz.id
+            AI_auto_correction = quiz.AI_auto_correction
             answers = {}
             score = 0
             total_points = 0
-            correction_status = "completed"
+            correction_status = "not_needed" # Available states: not_needed - pending - in_progress - completed
+            ai_correction_results = None
 
             AI_data = {}
             for question in prepared_questions:
@@ -657,57 +652,64 @@ def _process_quiz_taking(request, quiz):
 
                 user_answer = form.cleaned_data.get(f"question_{q_id}", None)
                 User_answer_true_or_false = "Correction needed"
+                user_answer_value = None
+
                 if question_obj.question_type == "multiple":
+                    '''
+                    multiple choice question correction logic:
+                    (points/int(corr_ans)) * int(stu_corr_ans) - (points/total_options) * int(Stu_incorr_ans)
+                    ''' 
 
-                    # Handle case when user_answer is a list (multiple selections)
-                    if isinstance(user_answer, list):
-                        user_answer_ids = [int(ans) for ans in user_answer] if user_answer else []
-                        correct_options = list(
-                            question_obj.options.filter(is_correct=True).values_list("id", flat=True)
-                        )
+                    user_answers = []
+                    for key in request.POST:
+                        if key.startswith(f"question_{q_id}_option_"):
+                            user_answers.append(key[-3:])
 
-                        # Check if all user answers are in correct options AND all correct options are selected
-                        is_correct = False
-                        if user_answer_ids and correct_options:
-                            # For strict checking: all correct options must be selected and no incorrect ones
-                            is_correct = set(user_answer_ids) == set(correct_options)
+                    correct_options = list(
+                        question_obj.options.filter(is_correct=True).values_list("id", flat=True)
+                    )
+                    all_options = question_obj.options.all().values_list("id", flat=True)
+                    in_correct_options = len(all_options) - len(correct_options)
+                    student_correct_answers = 0
+                    student_wrong_answers = 0
+                    
+                    for option in user_answers:
+                        if int(option) in correct_options:
+                            student_correct_answers += 1
+                        else:
+                            student_wrong_answers += 1
+                    correct_points = (question_obj.points / len(correct_options)) * student_correct_answers
+                    wrong_points = (question_obj.points/in_correct_options) * student_wrong_answers
+                    student_score = correct_points - wrong_points
 
-                        User_answer_true_or_false = is_correct
-                        answers[q_id] = {
-                            "user_answer": user_answer,
-                            "correct_answer": correct_options,
-                            "is_correct": is_correct,
-                            "is_graded": True,
-                        }
+                    User_answer_true_or_false = True if student_score >= (question_obj.points / 2) else False
 
-                    # Handle case when user_answer is a single value (e.g., from radio button)
-                    else:
-                        user_answer_id = int(user_answer) if user_answer is not None else None
-                        correct_options = list(
-                            question_obj.options.filter(is_correct=True).values_list("id", flat=True)
-                        )
+                    answers[q_id] = {
+                        "user_answer": user_answers,
+                        "correct_answer": correct_options if correct_options else None,
+                        "is_correct": User_answer_true_or_false,
+                        "points_awarded": student_score if student_score >= 0 else 0,
+                        "is_graded": True,
+                    }
 
-                        answers[q_id] = {
-                            "user_answer": user_answer,
-                            "correct_answer": correct_options[0] if correct_options else None,
-                            "is_correct": user_answer_id in correct_options if user_answer_id is not None else False,
-                            "is_graded": True,
-                        }
-
-                    if answers[q_id]["is_correct"]:
-                        score += question_obj.points
+                    if student_score >= 0:
+                        score += student_score
 
                 elif question_obj.question_type == "true_false":
                     correct_answer = question_obj.options.filter(is_correct=True).first()
-
                     # For true/false, the view is receiving the option ID, not the text
                     correct_id = str(correct_answer.id) if correct_answer else None
 
-                    User_answer_true_or_false = user_answer == correct_answer if user_answer else False
+                    User_answer_true_or_false = user_answer == correct_id if user_answer else False
+
+                    if user_answer:
+                        user_answer_value = question_obj.options.filter(id=user_answer).first().text
+
                     answers[q_id] = {
                         "user_answer": user_answer,
                         "correct_answer": correct_id,
-                        "is_correct": user_answer == correct_answer if user_answer else False,
+                        "is_correct": User_answer_true_or_false,
+                        "points_awarded": question_obj.points if User_answer_true_or_false else 0,
                         "is_graded": True,
                     }
 
@@ -715,60 +717,55 @@ def _process_quiz_taking(request, quiz):
                         score += question_obj.points
 
                 else:
+                    correction_status = "in_progress"
+
                     answers[q_id] = {
                         "user_answer": user_answer,
                         "is_graded": False,  # need manual grading
                     }
                     # correction_status = 'in_progress'
 
-                AI_data[q_id] = {
-                    "question_title": question_obj.text,
-                    "question_explanation": question_obj.explanation,
-                    "question_max_point": question_obj.points,
-                    "question_type": question_obj.question_type,
-                    "user_answer": user_answer,
-                    "User_answer_true_or_false": User_answer_true_or_false,
-                    "Subject": quiz.subject,
-                }
+                if str(AI_auto_correction) == "True":
+                    AI_data[q_id] = {
+                        "question_title": question_obj.text,
+                        "question_explanation": question_obj.explanation,
+                        "question_max_point": question_obj.points,
+                        "question_type": question_obj.question_type,
+                        "reference_answer": question_obj.reference_answer,
+                        "Student_answer": user_answer_value if user_answer_value is not None else user_answer ,
+                        "User_answer_true_or_false": User_answer_true_or_false,
+                        "Subject": quiz.subject.name,
+                    }
 
-            ai_correction_results = json.loads(ai_quiz_corrector(AI_data))
-            print("######## <<ai_correction_results>>", ai_correction_results)
+            if str(AI_auto_correction) == "True" and correction_status == "in_progress":
+                correction_status = "completed"
+                ai_correction_results = json.loads(ai_quiz_corrector(AI_data))
 
-            # Loop through each question in prepared_questions
-            print("`" * 50)
-            for question in prepared_questions:
-                # Extract the question id
-                question_id = question.get("id")
+                # Loop through each question in prepared_questions
+                for question in prepared_questions:
+                    # Extract the question id
+                    question_id = str(question.get("id"))
 
-                # Convert id to string if necessary because AI_data keys are strings
-                question_id_str = str(question_id)
+                    # Retrieve corresponding AI data
+                    ai_question_data = ai_correction_results.get('correction', {}).get(question_id, '')
 
-                # Retrieve corresponding AI data safely using .get()
-                ai_question_data = AI_data.get(question_id_str)
+                    question_type = AI_data.get(question_id, '').get("question_type", '')
+                    answers_question = answers[question_id]
 
-                student_answer = ai_question_data.get("user_answer", "No answer provided")
-                answers[question_id_str]["user_answer"] = student_answer
-                answers[question_id_str]["points_awarded"] = ai_correction_results["correction"][question_id_str][
-                    "degree"
-                ]
-                answers[question_id_str]["student_feedback"] = ai_correction_results["correction"][question_id_str][
-                    "student_feedback"
-                ]
-                answers[question_id_str]["teacher_feedback"] = ai_correction_results["correction"][question_id_str][
-                    "teacher_feedback"
-                ]
-                answers[question_id_str]["is_graded"] = True
-                answers[question_id_str]["is_correct"] = True
-                score += ai_correction_results["correction"][question_id_str]["degree"]
+                    if not question_type == "multiple" and not question_type == "true_false":
+                        score += ai_question_data["degree"]
+                        answers_question["points_awarded"] = ai_question_data["degree"]
+                        answers_question["is_graded"] = True
+                        answers_question["is_correct"] = True if ai_question_data["degree"] >= question['points'] else False
 
-            percentage = (score) / total_points * 100
+                    answers_question["student_feedback"] = ai_question_data["student_feedback"]
+                    answers_question["teacher_feedback"] = ai_question_data["teacher_feedback"]
 
             # Update the UserQuiz record
             user_quiz.answers = json.dumps(answers)
-            if correction_status == "completed":
-                user_quiz.score = percentage
-            # user_quiz.correction_status = correction_status
-            user_quiz.correction_status = "completed"
+            user_quiz.correction_status = correction_status
+            user_quiz.score = score
+            user_quiz.max_score = total_points
             user_quiz.end_time = timezone.now()
             user_quiz.completed = True
             user_quiz.save()
@@ -783,6 +780,7 @@ def _process_quiz_taking(request, quiz):
         "questions": prepared_questions,
         "form": form,
         "user_quiz_id": user_quiz.id,
+        "quiz_id": quiz.id,
         "user_quiz": user_quiz,
         "time_limit": quiz.time_limit,
     }
@@ -809,9 +807,6 @@ def quiz_results(request, user_quiz_id):
     # Parse the answers JSON
     answers = json.loads(user_quiz.answers) if user_quiz.answers else {}
 
-    # Calculate stats
-    total_questions = quiz.questions.count()
-
     # Only count questions that have actual answers (not empty or None)
     questions_attempted = 0
     for q_id, ans_data in answers.items():
@@ -835,47 +830,6 @@ def quiz_results(request, user_quiz_id):
             duration = f"{seconds}s"
     else:
         duration = "N/A"
-
-    # Get the questions with their correct answers
-    questions = {}
-    for question in quiz.questions.order_by("order"):
-        q_dict = {
-            "id": question.id,
-            "text": question.text,
-            "question_type": question.question_type,
-            "explanation": question.explanation,
-            "points": question.points,
-        }
-
-        if question.question_type == "multiple":
-            q_dict["options"] = list(question.options.all())
-            q_dict["correct_options"] = list(question.options.filter(is_correct=True))
-
-        elif question.question_type == "true_false":
-            q_dict["options"] = list(question.options.all())
-            q_dict["correct_option"] = question.options.filter(is_correct=True).first()
-
-        # Add user's answer if available
-        q_id = str(question.id)
-        if q_id in answers:
-            q_dict["user_answer"] = answers[q_id].get("user_answer")
-            q_dict["is_correct"] = answers[q_id].get("is_correct", False)
-
-        # questions.append(q_dict)
-        questions[question.id] = q_dict
-
-    # Get all questions for the quiz to display in the questions section
-    all_quiz_questions = {}
-    for question in quiz.questions.order_by("order"):
-        q_info = {
-            "id": question.id,
-            "text": question.text,
-            "question_type": question.question_type,
-            "type_display": question.get_question_type_display(),
-            "explanation": question.explanation,
-            "options": list(question.options.all()) if question.question_type != "short" else None,
-        }
-        all_quiz_questions[question.id] = q_info
 
     # Update quiz completion status and score
     user_quiz.completed = True
@@ -903,30 +857,21 @@ def quiz_results(request, user_quiz_id):
     if request.user.is_authenticated:
         user_attempts = UserQuiz.objects.filter(quiz=quiz, user=request.user).count()
 
-    # Process user answers for display in the detailed results section
-    user_answers = []
-    for question in quiz.questions.order_by("order"):
-        q_id = str(question.id)
-        if q_id in answers:
-            answer_data = answers[q_id]
-            user_answer_obj = {
-                "question": question,
-                "user_answer": answer_data.get("user_answer", ""),
-                "is_correct": answer_data.get("is_correct", False),
-                "is_graded": answer_data.get("is_graded", False),
-                "points": (
-                    answer_data.get("points_awarded", 0)
-                    if answer_data.get("is_graded", False)
-                    else (question.points if answer_data.get("is_correct", False) else 0)
-                ),
-                "feedback": answer_data.get("feedback", ""),
-            }
-            user_answers.append(user_answer_obj)
+    # Get all questions for the quiz to display in the questions section
+    all_questions = quiz.questions.order_by("order")
+    total_questions = 0
+    for question in all_questions:
+        total_questions += 1
+        id = str(question.id)
+        options = question.options.all()
 
-    for id, _data in answers.items():
-        answers[id]["question_title"] = all_quiz_questions[int(id)]["text"]
-        answers[id]["type_display"] = all_quiz_questions[int(id)]["type_display"]
-        answers[id]["original_points"] = questions[int(id)]["points"]
+        answers[id]["question_title"] = question.text
+        answers[id]["type_display"] =  question.get_question_type_display()
+        answers[id]["question_type"] = question.question_type
+        answers[id]["options"] = options
+        answers[id]["original_points"] = question.points
+
+    Percentage = round((user_quiz.score / user_quiz.max_score) * 100, 1)
 
     context = {
         "user_quiz": user_quiz,
@@ -939,13 +884,8 @@ def quiz_results(request, user_quiz_id):
         "duration": duration,
         "answers": answers,
         "user_attempts": user_attempts,
-        # "quiz": quiz,
-        # "questions": questions,
-        # "all_quiz_questions": all_quiz_questions,
-        # "challenge_invitation": challenge_invitation,
-        # "user_answers":user_answers
+        "quiz_Percentage": Percentage,
     }
-
     return render(request, "web/quiz/quiz_results.html", context)
 
 
@@ -1300,7 +1240,16 @@ def student_exam_correction(
                 messages.success(request, f"Question graded successfully. Awarded {points_awarded} points.")
 
             # Redirect to avoid resubmission
-            return redirect("student_exam_correction", course_id=course.id, quiz_id=quiz.id, user_quiz_id=user_quiz.id)
+            # return redirect("student_exam_correction", course_id=course.id, quiz_id=quiz.id, user_quiz_id=user_quiz.id)
+            if request.headers.get('HX-Request') == 'true':
+                response = HttpResponse('')
+                response['HX-Trigger'] = json.dumps({
+                    "show-toast": {
+                        "level": "success",
+                        "message": "Question deleted successfully."
+                    }
+                })
+                return response
 
     # Prepare questions and answers for display
     questions = []
@@ -1325,6 +1274,8 @@ def student_exam_correction(
             q_dict["is_correct"] = answer_data.get("is_correct", False)
             q_dict["is_graded"] = answer_data.get("is_graded", False)
             q_dict["points_awarded"] = answer_data.get("points_awarded", 0)
+            print("!!!!!!!!!!!!!", list(question.options.all()))
+            q_dict["options"] = list(question.options.all())
             q_dict["needs_grading"] = question.question_type not in ["multiple", "true_false"] and not answer_data.get(
                 "is_graded",
                 False,
@@ -1338,7 +1289,10 @@ def student_exam_correction(
 
         questions.append(q_dict)
 
-    print("Done #########", request)
+    print("###########", UserQuiz.objects.filter(quiz=quiz, completed=True, id=user_quiz_id))
+    print("###########", user_quiz_id)
+    print("@" * 50)
+    # print("###########", questions)
     return render(
         request,
         "web/quiz/student_exam_correction.html",

@@ -114,6 +114,24 @@
                 {% endif %}
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Leave blank for no time limit</p>
               </div>
+              <!-- Passing Score -->
+              <div>
+                <label for="{{ form.passing_score.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Passing Score
+                </label>
+                <input type="number"
+                       name="{{ form.passing_score.html_name }}"
+                       id="{{ form.passing_score.id_for_label }}"
+                       value="{{ form.passing_score.value|default:'' }}"
+                       min="50"
+                       max="100"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                       placeholder="Passing Score" />
+                {% if form.passing_score.errors %}
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.passing_score.errors.0 }}</p>
+                {% endif %}
+              </div>
               <!-- Max Attempts -->
               <div>
                 <label for="{{ form.max_attempts.id_for_label }}"

@@ -1149,7 +1149,7 @@
                         <div class="space-y-3">
                           {% for item in course_exam_data %}
                             <div class="bg-white dark:bg-gray-800 rounded-lg border-2 border-teal-200 dark:border-teal-800 p-4">
-                              <div class="flex justify-between items-start">
+                              <div class="flex justify-between items-center">
                                 <div>
                                   <h4 class="font-semibold text-lg">{{ item.exam.title }}</h4>
                                   <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ item.exam.description|truncatechars:100 }}</p>
@@ -1212,7 +1212,7 @@
                       {% endif %}
                     </div>
                     <!-- Session Exams Section -->
-                    <div class="mb-6">
+                    <div class="mb-6 mt-6">
                       <h3 class="text-lg font-semibold mb-2">Session Quizzes</h3>
                       {% if session_data %}
                       <div class="space-y-3">
@@ -1226,9 +1226,12 @@
                                       <div class="flex justify-between items-start">
                                         <div>
                                           <span class="font-medium">{{ exam_item.exam.title }}</span>
-                                          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                                            <!-- Exam details -->
-                                          </div>
+                                          {% if exam_item.exam.AI_auto_correction == True %}
+                                            <span class="ml-2 font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-full text-sm">AI-Auto Correction</span>
+                                          {% endif %}
+                                          <span class="ml-2 font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full text-sm">Duration: {{ exam_item.exam.time_limit }}min</span>
+                                          <!-- <div class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                          </div> -->
                                         </div>
                                         <div class="flex gap-2 items-center">
                                           {% if is_teacher %}
@@ -1260,16 +1263,18 @@
                                 </div>
                               {% else %}
                               <!-- is there is not existing exam -->
-                              <div class="bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 p-2">
-                                <div class="flex justify-end items-start">
-                                  <div class="flex gap-1 items-center">
-                                    <a href="{% url 'create_session_exam' course.id item.session.id %}"
-                                        class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                      <i class="fas fa-add"></i> Add Quiz
-                                    </a>
+                                {% if is_teacher %}
+                                  <div class="bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 p-2">
+                                    <div class="flex justify-end items-start">
+                                      <div class="flex gap-1 items-center">
+                                        <a href="{% url 'create_session_exam' course.id item.session.id %}"
+                                            class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                          <i class="fas fa-add"></i> Add Quiz
+                                        </a>
+                                      </div>
+                                    </div>
                                   </div>
-                                </div>
-                              </div>
+                                {% endif %}
                               {% endif %}
                             </div>
                           {% endfor %}

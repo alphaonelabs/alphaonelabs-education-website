@@ -252,15 +252,6 @@
         }
         // todo after this error the form submitted direct
         
-        const formData = new FormData(form);
-        
-
-
-        for (const [name, value] of formData.entries()) {
-          console.log(`${name} = ${value}`);
-        }
-        // e.preventDefault();
-        
       }
       else if (questionType === 'true_false') {
         // Ensure a radio button is selected for true/false
@@ -293,6 +284,14 @@
         if (firstOptionCorrect) {
           firstOptionCorrect.checked = true;
         }
+
+        const formData = new FormData(form);
+
+        for (const [name, value] of formData.entries()) {
+          console.log(`${name} = ${value}`);
+        }
+        // e.preventDefault();
+        
       }
     });
     
@@ -518,11 +517,11 @@
                 <label for="short-answer-reference" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Answer Reference (for grading)
                 </label>
-                <textarea name="short_answer_reference"
+                <textarea name="reference_answer"
                   id="short-answer-reference"
                   rows="3"
                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
-                  placeholder="Enter the expected answer here for your reference">{{ formset.0.text.value|default:'' }}</textarea>
+                  placeholder="Enter the expected answer here for your reference">{{ form.reference_answer.value|default:'' }}</textarea>
                 <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
                   This reference answer will be stored for your grading purposes only. Short answer questions require manual grading.
                 </p>

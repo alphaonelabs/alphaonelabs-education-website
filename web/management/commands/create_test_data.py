@@ -647,7 +647,7 @@ class Command(BaseCommand):
 
                 question = QuizQuestion.objects.create(
                     quiz=course_exam,
-                    text=f"Question {i + 1}: {question_text} - {question_type}",
+                    text=f"Question {i + 1}: {question_text}",
                     question_type=question_type,
                     explanation=f"Explanation for question {i + 1}",
                     points=random.randint(1, 5),
@@ -705,6 +705,7 @@ class Command(BaseCommand):
                 passing_score=60,
                 randomize_questions=False,
                 show_correct_answers=True,
+                AI_auto_correction=True,
                 share_code=get_random_string(8),
             )
 
