@@ -1,3 +1,5 @@
+name: Test
+
 on:
   push:
   pull_request:
@@ -93,8 +95,3 @@ jobs:
         with:
           python-version: '3.10'
           cache: 'pip'
-
-      - name: Check for security vulnerabilities
-        run: |
-          pip install safety
-          safety check

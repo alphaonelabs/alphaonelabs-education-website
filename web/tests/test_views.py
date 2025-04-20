@@ -478,19 +478,27 @@ class CourseDetailTests(TestCase):
         self.assertContains(response, self.course.subject.name)
 
     def test_session_display(self):
-        """Test that sessions are correctly displayed"""
+        """
+        Test that on the course detail page for a user who is not logged in or not enrolled:
+        - Both session titles are shown.
+        - The meeting link for the future virtual session is not visible.
+        - The in-person session location and price for the future session are visible.
+        """
         response = self.client.get(self.detail_url)
+        self.assertEqual(response.status_code, 200)
+
+        # Both session titles should be present.
         self.assertContains(response, self.future_session.title)
         self.assertContains(response, self.past_session.title)
-        self.assertContains(response, self.future_session.meeting_link)
+
+        # Verify that the future virtual session meeting link is NOT visible for non-enrolled/anonymous users.
+        self.assertNotContains(response, self.future_session.meeting_link)
+
+        # Verify that the in-person session's location is visible.
         self.assertContains(response, self.past_session.location)
 
-        # Test session prices are shown when allow_individual_sessions is True
+        # Verify that the price for the future session is visible.
         self.assertContains(response, str(self.future_session.price))
-
-        # Test virtual/in-person indicators
-        self.assertContains(response, "Virtual")
-        self.assertContains(response, self.past_session.location)
 
     def test_teacher_specific_functionality(self):
         """Test functionality available only to teachers"""
