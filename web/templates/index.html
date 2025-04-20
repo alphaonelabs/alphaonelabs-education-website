@@ -693,8 +693,7 @@
                   <input type="text"
                          id="video-title"
                          name="title"
-                         placeholder="Video title (auto‑filled)"
-                         required
+                         placeholder="Video title "
                          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
                   <!-- Hidden description (filled by JS) -->
                   <input type="hidden" id="video-description" name="description" value="" />
@@ -1301,58 +1300,77 @@
               setTimeout(() => msgDiv.classList.add("hidden"), 5000);
           }
 
-          // 1) fetch via oEmbed
-          fetchBtn.addEventListener("click", () => {
-              const m = urlIn.value.trim().match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([\w-]{11})/);
-              if (!m) return showMessage("Enter a valid YouTube link", "error");
-              fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${m[1]}&format=json`)
-                  .then(r => r.ok ? r.json() : Promise.reject())
-                  .then(data => {
-                      titleIn.value = data.title;
-                      try {
-                          descIn.value = data.description || data.title;
-                      } catch (e) {
-                          showMessage("Failed to set description", "error");
-                      }
-                      showMessage("Info fetched!", "success");
-                  })
-                  .catch(_ => showMessage("Failed to fetch video info", "error"));
+          // 1) Fetch via oEmbed (YouTube or Vimeo)
+          fetchBtn.addEventListener("click", async () => {
+              const url = urlIn.value.trim();
+              let endpoint = null;
+
+              // YouTube ID
+              const yt = url.match(/(?:v=|youtu\.be\/|embed\/|shorts\/)([\w-]{11})/);
+              if (yt) {
+                  endpoint = `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${yt[1]}&format=json`;
+              }
+              // Vimeo numeric ID
+              const vm = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+              if (!endpoint && vm) {
+                  endpoint = `https://vimeo.com/api/oembed.json?url=${encodeURIComponent(url)}`;
+              }
+              if (!endpoint) {
+                  return showMessage("Enter a valid YouTube or Vimeo link", "error");
+              }
+
+              try {
+                  const r = await fetch(endpoint);
+                  if (!r.ok) throw new Error();
+                  const data = await r.json();
+                  titleIn.value = data.title || "";
+                  descIn.value = data.description || data.title || "";
+                  showMessage("Info fetched!", "success");
+              } catch {
+                  showMessage("Failed to fetch video info", "error");
+              }
           });
 
-          // 2) client‑side require category
-          form.addEventListener("submit", e => {
+          // 2+3) On submit: require category, auto-fetch title if blank, then AJAX POST
+          form.addEventListener("submit", async e => {
+              e.preventDefault();
+
               if (!catSelect.value) {
-                  e.preventDefault();
                   return showMessage("Please select a category", "error");
               }
-              // 3) then do AJAX POST
-              e.preventDefault();
+
+              // if title still empty, trigger our fetch‑button & wait a brief moment
+              if (!titleIn.value.trim()) {
+                  fetchBtn.click();
+                  await new Promise(r => setTimeout(r, 600));
+              }
+
               const orig = submitBtn.innerHTML;
               submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding…';
               submitBtn.disabled = true;
 
-              fetch(form.action, {
+              try {
+                  const resp = await fetch(form.action, {
                       method: form.method,
                       credentials: "same-origin",
                       headers: {
                           "X-Requested-With": "XMLHttpRequest"
                       },
-                      body: new FormData(form)
-                  })
-                  .then(r => r.json().then(data => [r.ok, data]))
-                  .then(([ok, data]) => {
-                      if (ok && data.success) {
-                          form.reset();
-                          showMessage(data.message || "Added!", "success");
-                      } else {
-                          showMessage(data.error || "Add failed", "error");
-                      }
-                  })
-                  .catch(_ => showMessage("Network error—try again", "error"))
-                  .finally(() => {
-                      submitBtn.innerHTML = orig;
-                      submitBtn.disabled = false;
+                      body: new FormData(form),
                   });
+                  const data = await resp.json();
+                  if (resp.ok && data.success) {
+                      form.reset();
+                      showMessage(data.message || "Added!", "success");
+                  } else {
+                      showMessage(data.error || "Add failed", "error");
+                  }
+              } catch {
+                  showMessage("Network error—try again", "error");
+              } finally {
+                  submitBtn.innerHTML = orig;
+                  submitBtn.disabled = false;
+              }
           });
       });
   </script>

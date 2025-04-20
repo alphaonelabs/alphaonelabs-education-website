@@ -5181,39 +5181,71 @@ def educational_videos_list(request):
     return render(request, "videos/list.html", context)
 
 
+def fetch_video_oembed(video_url):
+    """
+    Hits YouTube or Vimeo’s oEmbed endpoint and returns a dict
+    containing 'title' and 'description' (if available).
+    """
+    # YouTube IDs are always 11 chars
+    yt_match = re.search(r"(?:v=|youtu\.be/|embed/|shorts/)([\w-]{11})", video_url)
+    if yt_match:
+        video_id = yt_match.group(1)
+        endpoint = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
+    else:
+        # Vimeo URLs look like vimeo.com/12345678…
+        vm_match = re.search(r"vimeo\.com/(?:video/)?(\d+)", video_url)
+        if vm_match:
+            endpoint = f"https://vimeo.com/api/oembed.json?url={video_url}"
+        else:
+            return {}
+
+    try:
+        resp = requests.get(endpoint, timeout=3)
+        if resp.ok:
+            data = resp.json()
+            return {
+                "title": data.get("title", "").strip(),
+                "description": data.get("description", "").strip(),
+            }
+    except requests.RequestException:
+        pass
+
+    return {}
+
+
 def upload_educational_video(request):
     """
-    Handles:
-    - GET → render the upload page (or the index with quick‑add form)
-    - POST → create a new EducationalVideo (logged‑in users get attached; others remain anonymous)
-        • If XHR, return JSON success/failure
-        • Otherwise, redirect to the list view
+    Handles GET → render form, POST → save video.
+    If user leaves title/description blank, we back‑fill from YouTube/Vimeo.
     """
     if request.method == "POST":
         form = EducationalVideoForm(request.POST)
         if form.is_valid():
             video = form.save(commit=False)
-            # Attach only if the user is logged in; leave None for anonymous
             if request.user.is_authenticated:
                 video.uploader = request.user
+
+            # auto‑fetch metadata if missing
+            if not video.title.strip() or not video.description.strip():
+                info = fetch_video_oembed(video.video_url)
+                if not video.title.strip() and info.get("title"):
+                    video.title = info["title"]
+                if not video.description.strip() and info.get("description"):
+                    video.description = info["description"]
+
             video.save()
 
-            # AJAX quick‑add → JSON
             if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return JsonResponse({"success": True, "message": "Video added successfully!"})
-
-            # Normal POST → redirect
             return redirect("educational_videos_list")
 
-        # Invalid form on AJAX → return field errors
         if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            error_text = " ".join(f"{field}: {', '.join(errs)}." for field, errs in form.errors.items())
+            error_text = " ".join(f"{fld}: {', '.join(errs)}." for fld, errs in form.errors.items())
             return JsonResponse({"success": False, "error": error_text}, status=400)
 
     else:
         form = EducationalVideoForm()
 
-    # GET (normal or AJAX) → render the page with the form
     return render(request, "videos/upload.html", {"form": form})
 
 
