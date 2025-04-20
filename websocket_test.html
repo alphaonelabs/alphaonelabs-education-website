@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+  <meta name="description"
+        content="WebSocket test page for testing real-time connections" />
+  <meta name="keywords" content="websocket, test, real-time, connection, web" />
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocket Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+
+        #log {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+
+        .success {
+            color: green;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .info {
+            color: blue;
+        }
+    </style>
+  </head>
+  <body>
+    <h1>WebSocket Connection Test</h1>
+    <div>
+      <label for="wsUrl">WebSocket URL:</label>
+      <input type="text"
+             id="wsUrl"
+             class="wide-input"
+             value="ws://127.0.0.1:8000/ws/voice-chat/test-room-id/" />
+      <button onclick="connectWebSocket()">Connect</button>
+      <button onclick="disconnectWebSocket()">Disconnect</button>
+    </div>
+    <div>
+      <label for="message">Message:</label>
+      <input type="text"
+             id="message"
+             class="medium-input"
+             value='{"type":"join","userId":"test-user","roomId":"test-room-id"}' />
+      <button onclick="sendMessage()">Send</button>
+    </div>
+    <div id="log"></div>
+    <style>
+        .wide-input {
+            width: 400px;
+        }
+
+        .medium-input {
+            width: 300px;
+        }
+    </style>
+    <script>
+        let socket = null;
+
+        function log(message, type = 'info') {
+            const logElem = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = type;
+            entry.textContent = message;
+            logElem.appendChild(entry);
+            logElem.scrollTop = logElem.scrollHeight;
+        }
+
+        function connectWebSocket() {
+            try {
+                const wsUrl = document.getElementById('wsUrl').value;
+
+                if (socket && socket.readyState !== WebSocket.CLOSED) {
+                    log('Closing existing connection first...', 'info');
+                    socket.close();
+                }
+
+                log(`Connecting to ${wsUrl}...`, 'info');
+                socket = new WebSocket(wsUrl);
+
+                socket.onopen = function(event) {
+                    log('WebSocket connection established!', 'success');
+                };
+
+                socket.onmessage = function(event) {
+                    log(`Received: ${event.data}`, 'info');
+                };
+
+                socket.onclose = function(event) {
+                    log(`WebSocket disconnected. Code: ${event.code}, Reason: ${event.reason}`, 'info');
+                };
+
+                socket.onerror = function(error) {
+                    log('WebSocket error!', 'error');
+                    console.error(error);
+                };
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function disconnectWebSocket() {
+            if (socket) {
+                socket.close();
+                log('Disconnected from WebSocket.', 'info');
+            } else {
+                log('No active WebSocket connection.', 'error');
+            }
+        }
+
+        function sendMessage() {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                const message = document.getElementById('message').value;
+                socket.send(message);
+                log(`Sent: ${message}`, 'info');
+            } else {
+                log('Cannot send message. WebSocket is not connected.', 'error');
+            }
+        }
+    </script>
+  </body>
+</html>

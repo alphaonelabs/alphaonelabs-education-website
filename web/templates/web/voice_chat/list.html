@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  Voice Chat Rooms
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200">Voice Chat Rooms</h1>
+      <a href="{% url 'voice_chat_create' %}"
+         class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+        Create New Room
+      </a>
+    </div>
+    {% if rooms %}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for room in rooms %}
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition duration-200">
+            <div class="flex justify-between items-start">
+              <h2 class="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">{{ room.name }}</h2>
+              <span class="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-green-900 dark:text-green-300">
+                Active
+              </span>
+            </div>
+            <p class="text-gray-600 dark:text-gray-300 mb-4">Created by: {{ room.created_by.username }}</p>
+            <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">
+              {{ room.participants.count }} participant{{ room.participants.count|pluralize }}
+            </p>
+            <div class="mt-4">
+              <a href="{% url 'voice_chat_room' room_id=room.id %}"
+                 class="bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200">
+                Join Room
+              </a>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 text-center">
+        <p class="text-gray-600 dark:text-gray-300 mb-4">No active voice chat rooms found.</p>
+        <p class="text-gray-600 dark:text-gray-300">
+          <a href="{% url 'voice_chat_create' %}"
+             class="text-blue-600 hover:text-blue-800 dark:text-blue-400">Create a new room</a> to get started.
+        </p>
+      </div>
+    {% endif %}
+  </div>
+{% endblock content %}

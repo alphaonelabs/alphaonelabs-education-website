@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}
+  Voice Chat: {{ room.name }}
+{% endblock title %}
+{% block extra_head %}
+  <!-- FontAwesome for icons -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+  <!-- Username meta tag for JavaScript -->
+  <meta name="username" content="{{ request.user.username }}" />
+  <!-- Session token for WebSocket authentication -->
+  <meta name="session-token" content="{{ request.session.session_key }}" />
+  <!-- Voice chat specific JavaScript -->
+  <script src="{% static 'js/voice-chat.js' %}"></script>
+{% endblock extra_head %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <!-- Hidden inputs for JavaScript initialization -->
+    <input type="hidden" id="room-id" value="{{ room.id|escapejs }}" />
+    <input type="hidden" id="user-id" value="{{ request.user.id|escapejs }}" />
+    <!-- Room header -->
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200">{{ room.name }}</h1>
+        <p class="text-gray-600 dark:text-gray-400">
+          Created by {{ room.created_by.username }} on {{ room.created_at|date:"F j, Y" }}
+        </p>
+      </div>
+      <div class="flex flex-row space-x-2">
+        <div class="bg-teal-100 dark:bg-teal-900 rounded-lg p-3">
+          <p class="text-sm text-teal-800 dark:text-teal-300">
+            <i class="fas fa-users mr-2"></i> <strong class="participants-count">{{ participants_count }}</strong> participants in this room
+          </p>
+        </div>
+        {% if request.user.id == room.created_by.id %}
+          <form method="post"
+                action="{% url 'delete_voice_chat_room' room_id=room.id %}"
+                class="mb-0"
+                onsubmit="return confirm('Are you sure you want to delete this room? This will disconnect all participants and cannot be undone.');">
+            {% csrf_token %}
+            <button type="submit"
+                    class="flex items-center justify-center px-4 py-3 rounded-lg bg-red-600 hover:bg-red-700 text-white transition duration-200">
+              <i class="fas fa-trash-alt mr-2"></i> Delete Room
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+    <!-- Main content area -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <!-- Left column: Audio Controls -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h2 class="text-xl font-semibold mb-4 text-gray-800 dark:text-gray-200">Your Controls</h2>
+        <!-- Audio controls -->
+        <div class="flex flex-col space-y-4">
+          <button id="mute-button"
+                  class="flex items-center justify-center px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition duration-200">
+            <i class="fas fa-microphone mr-2"></i> Mute
+          </button>
+          <button id="leave-button"
+                  class="flex items-center justify-center px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white transition duration-200">
+            <i class="fas fa-sign-out-alt mr-2"></i> Leave Room
+          </button>
+        </div>
+        <!-- Audio visualizer for current user -->
+        <div class="mt-6">
+          <p class="text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">Your Audio Visualization</p>
+          <canvas id="local-visualizer"
+                  class="w-full h-32 bg-black dark:bg-gray-900 rounded"></canvas>
+        </div>
+        <!-- Connection Status -->
+        <div class="mt-4 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+          <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">Connection Status</h3>
+          <div id="connection-status"
+               class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span> Connected
+          </div>
+        </div>
+        <!-- Remote audio containers (hidden) -->
+        <div id="remote-audio-container" class="hidden"></div>
+        <div id="remote-visualizers" class="hidden"></div>
+      </div>
+      <!-- Right column: Participants -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">
+            Participants (<span class="participants-count">{{ participants_count }}</span>)
+          </h2>
+          <button id="refresh-participants"
+                  class="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
+                  title="Refresh participants list">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+        <!-- Participants grid -->
+        <div id="participants-container"
+             class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {% for participant in participants %}
+            <div id="participant-{{ participant.id }}"
+                 class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 w-28 flex flex-col items-center {% if participant.id == request.user.id %}ring-2 ring-teal-500 dark:ring-teal-400{% endif %}"
+                 data-username="{{ participant.username }}">
+              <div class="relative">
+                <div class="w-16 h-16 bg-teal-300 dark:bg-teal-500 rounded-full flex items-center justify-center mb-2 text-white text-xl">
+                  {{ participant.username|first|upper }}
+                </div>
+                <div id="speaking-indicator-{{ participant.id }}"
+                     class="absolute inset-0 border-2 border-green-600 dark:border-green-500 rounded-full hidden">
+                </div>
+                <div id="muted-indicator-{{ participant.id }}"
+                     class="absolute bottom-0 right-0 bg-red-600 dark:bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs hidden">
+                  <i class="fas fa-microphone-slash"></i>
+                </div>
+                {% if participant.id == request.user.id %}
+                  <div class="absolute -top-2 -right-2 bg-teal-500 dark:bg-teal-400 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">
+                    <i class="fas fa-user"></i>
+                  </div>
+                {% endif %}
+              </div>
+              <span class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {{ participant.username }}
+                {% if participant.id == request.user.id %}(You){% endif %}
+              </span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    <!-- Encryption notice -->
+    <div class="mt-8 bg-teal-100 dark:bg-teal-900 rounded-lg p-4">
+      <div class="flex items-start">
+        <div class="flex-shrink-0">
+          <i class="fas fa-lock text-teal-600 dark:text-teal-300 text-xl"></i>
+        </div>
+        <div class="ml-3">
+          <h3 class="text-sm font-medium text-teal-800 dark:text-teal-300">End-to-End Encrypted</h3>
+          <div class="mt-1 text-sm text-teal-700 dark:text-teal-400">
+            <p>All voice communications in this room are secured with end-to-end encryption.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
