@@ -29,10 +29,10 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.core.mail import send_mail
 from django.core.management import call_command
-from django.core.paginator import Paginator
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.db import IntegrityError, models, router, transaction
 from django.db.models import Avg, Count, Q, Sum
 from django.db.models.functions import Coalesce
@@ -100,6 +100,7 @@ from .forms import (
     TeamGoalForm,
     TeamInviteForm,
     UserRegistrationForm,
+    WorkSubmissionForm,
 )
 from .marketing import (
     generate_social_share_content,
@@ -165,6 +166,8 @@ from .models import (
     UserBadge,
     WaitingRoom,
     WebRequest,
+    WorkSubmission,
+    WorkType,
     default_valid_until,
 )
 from .notifications import (
@@ -6953,6 +6956,207 @@ def all_study_groups(request):
             "enrolled_courses": enrolled_courses,
         },
     )
+
+
+def upload_work_submission(request: HttpRequest) -> HttpResponse:
+    """View for students to upload their work documents."""
+    if request.method == "POST":
+        form = WorkSubmissionForm(request.POST, request.FILES)
+        if form.is_valid():
+            with transaction.atomic():
+                submission = form.save(commit=False)
+                submission.student = request.user
+                submission.save()
+                # Create notification for user
+                Notification.objects.create(
+                    user=request.user,
+                    title="Work Submission Received",
+                    message=f"Your {submission.work_type.name} has been submitted successfully and is pending review.",
+                    notification_type="success",
+                )
+                # Create notifications for teachers
+                admin_users = User.objects.filter(profile__is_teacher=True)
+                notifications = []
+                for admin in admin_users:
+                    notifications.append(
+                        Notification(
+                            user=admin,
+                            title="New Work Submission",
+                            message=(
+                                f"A new {submission.work_type.name} has been submitted by {request.user.username},"
+                                f" and needs review."
+                            ),
+                            notification_type="info",
+                        ),
+                    )
+                Notification.objects.bulk_create(notifications)
+                messages.success(request, "Your document has been submitted successfully!")
+                return redirect("work_submission_list")
+    else:
+        form = WorkSubmissionForm()
+        messages.info(request, "Please complete the form to submit your work.")
+    if form.errors:
+        if hasattr(form, "non_field_errors") and form.non_field_errors():
+            messages.error(request, form.non_field_errors()[0])
+        else:
+            # Include the specific field errors in the message
+            error_msg = "Please fix the following errors: "
+            error_fields = ", ".join(form.errors.keys())
+            messages.error(request, f"{error_msg}{error_fields}")
+    return render(request, "web/work/upload_submission.html", {"form": form})
+
+
+@login_required
+def work_submission_list(request: HttpRequest) -> HttpResponse:
+    """View to see all submitted work documents."""
+    viewing_as = "student"
+    if request.user.profile.is_teacher:
+        viewing_as = "reviewer"
+        submissions_list = WorkSubmission.objects.select_related("student", "work_type").all().order_by("-submitted_at")
+    else:
+        submissions_list = (
+            WorkSubmission.objects.select_related("work_type").filter(student=request.user).order_by("-submitted_at")
+        )
+
+    # Pagination logic
+    paginator = Paginator(submissions_list, 10)
+    page = request.GET.get("page")
+
+    try:
+        submissions = paginator.page(page)
+    except PageNotAnInteger:
+        submissions = paginator.page(1)
+    except EmptyPage:
+        submissions = paginator.page(paginator.num_pages)
+
+    context = {
+        "submissions": submissions,
+        "viewing_as": viewing_as,
+        "work_types": WorkType.objects.all(),
+    }
+    return render(request, "web/work/submission_list.html", context)
+
+
+@login_required
+def work_submission_detail(request: HttpRequest, submission_id: int) -> HttpResponse:
+    """View to see the details of a specific work submission and provide feedback."""
+    submission = get_object_or_404(WorkSubmission, pk=submission_id)
+    # Determine user role
+    is_student = request.user == submission.student
+    is_reviewer = hasattr(request.user, "profile") and getattr(request.user.profile, "is_teacher", False)
+    # Check if the user has access
+    if not (is_student or is_reviewer):
+        raise PermissionDenied()  # Use default message or define in exception class
+    if request.method == "POST" and is_reviewer:
+        feedback = request.POST.get("feedback", "")
+        new_status = request.POST.get("status", "")
+
+        if feedback:
+            submission.feedback = feedback
+
+        if new_status and new_status in dict(submission.STATUS_CHOICES):
+            submission.status = new_status
+            submission.reviewed_by = request.user
+
+        submission.save()
+
+        # Create notification for student
+        Notification.objects.create(
+            user=submission.student,
+            title="Your Work Submission Has Been Reviewed",
+            message=f"Your {submission.work_type.name} has been reviewed. Check the feedback for details.",
+            notification_type="info",
+        )
+
+        messages.success(request, "Feedback and status updated successfully.")
+        return redirect("work_submission_detail", submission_id=submission_id)
+
+    context = {
+        "submission": submission,
+        "status_choices": submission.get_status_choices(),
+        "is_student": is_student,
+        "is_reviewer": is_reviewer,
+    }
+    return render(request, "web/work/submission_detail.html", context)
+
+
+@login_required
+def delete_work_submission(request, submission_id):
+    """Allow the owner to delete their work submission."""
+    submission = get_object_or_404(WorkSubmission, pk=submission_id)
+    if request.user != submission.student:
+        raise PermissionDenied("You do not have permission to delete this submission.")
+    if request.method == "POST":
+        submission.delete()
+        messages.success(request, "Your submission has been deleted.")
+        return redirect("work_submission_list")
+    return render(request, "web/work/confirm_delete.html", {"submission": submission})
+
+
+@login_required
+def serve_work_file(request, file_path):
+    """
+    Securely serve uploaded work files for development only.
+    DO NOT use this in production—let your web server handle media files.
+    """
+    import mimetypes
+    import os
+
+    from django.conf import settings
+    from django.http import FileResponse, Http404
+
+    # Resolve symlinks and get absolute paths
+    # Normalize and sanitize the file path, removing any path traversal attempts
+    safe_path = os.path.normpath(file_path).lstrip("/")
+
+    # Construct the absolute file path within MEDIA_ROOT only
+    absolute_path = os.path.join(settings.MEDIA_ROOT, safe_path)
+
+    # Use realpath to resolve symlinks, etc.
+    requested_path = os.path.realpath(absolute_path)
+    media_root = os.path.realpath(settings.MEDIA_ROOT)
+
+    # Ensure the requested file is within MEDIA_ROOT (prevents path traversal)
+    if not requested_path.startswith(media_root):
+        raise Http404()
+
+    # Restrict allowed file extensions
+    allowed_extensions = {"pdf", "doc", "docx", "odt", "txt", "jpg", "jpeg", "png", "gif", "bmp"}
+    ext = os.path.splitext(requested_path)[1][1:].lower()
+    if ext not in allowed_extensions:
+        raise Http404()
+
+    if not os.path.exists(requested_path) or not os.path.isfile(requested_path):
+        raise Http404()
+
+    content_type, _ = mimetypes.guess_type(requested_path)
+    if not content_type:
+        content_type = "application/octet-stream"
+
+    # Use with statement to ensure file is properly closed
+    file_handle = open(requested_path, "rb")
+    response = FileResponse(file_handle, content_type=content_type)
+    # Ensure file is closed when response is done
+    response.close = lambda: file_handle.close()
+    return response
+
+
+# API endpoint for dynamic form handling
+@login_required
+def work_type_detail_api(request: HttpRequest, work_type_id: int) -> JsonResponse:
+    """API to get work type details for dynamic form updates."""
+    try:
+        work_type = WorkType.objects.get(pk=work_type_id)
+        return JsonResponse(
+            {
+                "id": work_type.id,
+                "name": work_type.name,
+                "allowed_file_types": work_type.allowed_file_types,
+                "max_file_size_mb": work_type.max_file_size_mb,
+            }
+        )
+    except WorkType.DoesNotExist:
+        return JsonResponse({"error": "Work type not found"}, status=404)
 
 
 @login_required

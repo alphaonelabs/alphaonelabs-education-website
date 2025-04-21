@@ -50,6 +50,8 @@ from .models import (
     TeamGoalMember,
     TeamInvite,
     WaitingRoom,
+    WorkSubmission,
+    WorkType,
 )
 from .referrals import handle_referral
 from .widgets import (
@@ -1869,3 +1871,70 @@ class StudyGroupForm(forms.ModelForm):
     class Meta:
         model = StudyGroup
         fields = ["name", "description", "course", "max_members", "is_private"]
+
+
+class WorkSubmissionForm(forms.ModelForm):
+    """Form for submitting work documents."""
+
+    work_type = forms.ModelChoiceField(
+        queryset=WorkType.objects.all(),
+        empty_label="Select Work Type",
+        widget=forms.Select(
+            attrs={
+                "class": "bg-white dark:bg-gray-800 text-gray-900 dark:text-white border border-gray-300 "
+                "dark:border-gray-600 rounded-md p-2 focus:border-blue-500 focus:outline-none focus:ring-2 "
+                "focus:ring-blue-500 w-full",
+            }
+        ),
+        help_text="Choose the type of work submission",
+    )
+
+    work_file = forms.FileField(
+        help_text="Upload your document (file type and size restrictions apply)",
+        widget=forms.FileInput(),
+    )
+
+    class Meta:
+        model = WorkSubmission
+        fields = ["title", "work_type", "subject", "assignment", "due_date", "description", "work_file"]
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Set dynamic attributes based on the selected work type
+        if "work_type" in self.data:
+            try:
+                work_type_id = int(self.data.get("work_type"))
+                work_type = WorkType.objects.get(pk=work_type_id)
+                allowed_extensions = work_type.get_allowed_extensions_list()
+                accept_types = ",".join([f".{ext}" for ext in allowed_extensions])
+                self.fields["work_file"].widget.attrs["accept"] = accept_types
+                self.fields["work_file"].help_text = (
+                    f"Upload your document (max {work_type.max_file_size_mb}MB, "
+                    f"allowed types: {', '.join(allowed_extensions)})"
+                )
+            except (ValueError, WorkType.DoesNotExist):
+                pass
+
+    def clean_work_file(self):
+        uploaded_file = self.cleaned_data.get("work_file")
+        work_type = self.cleaned_data.get("work_type")
+
+        if uploaded_file:
+            if work_type:
+                # Check file size
+                max_size = work_type.max_file_size_mb * 1024 * 1024
+                if uploaded_file.size > max_size:
+                    raise forms.ValidationError(f"File size must not exceed {work_type.max_file_size_mb}MB.")
+
+                # Verify file extension
+                ext = uploaded_file.name.split(".")[-1].lower()
+                allowed_extensions = work_type.get_allowed_extensions_list()
+                if ext not in allowed_extensions:
+                    raise forms.ValidationError(
+                        f"File type '.{ext}' is not allowed. Allowed types: {', '.join(allowed_extensions)}"
+                    )
+            else:
+                raise forms.ValidationError("Please select a work type")
+
+        return uploaded_file

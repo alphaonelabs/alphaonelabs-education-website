@@ -54,6 +54,8 @@ from .models import (
     UserMembership,
     WaitingRoom,
     WebRequest,
+    WorkSubmission,
+    WorkType,
 )
 
 admin.site.unregister(EmailAddress)
@@ -839,6 +841,54 @@ class QuizOptionAdmin(admin.ModelAdmin):
     list_filter = ("is_correct",)
     search_fields = ("text", "question__text")
     autocomplete_fields = ["question"]
+
+
+@admin.register(WorkType)
+class WorkTypeAdmin(admin.ModelAdmin):
+    list_display = (
+        "name",
+        "description",
+        "icon_class",
+        "allowed_file_types",
+        "max_file_size_mb",
+        "get_submissions_count",
+    )
+    list_editable = ("icon_class", "allowed_file_types", "max_file_size_mb")
+    search_fields = ("name", "description")
+
+    def get_submissions_count(self, obj) -> int:
+        return obj.submissions.count()
+
+    get_submissions_count.short_description = "Submissions"
+
+
+@admin.register(WorkSubmission)
+class WorkSubmissionAdmin(admin.ModelAdmin):
+    list_display = ("title", "student", "work_type", "subject", "status", "submitted_at", "file_size_display")
+    list_filter = ("status", "work_type", "subject")
+    search_fields = ("title", "student__username", "subject", "assignment")
+    readonly_fields = ("file_size", "submitted_at", "updated_at", "reviewed_at")
+
+    fieldsets = (
+        (
+            "Submission Information",
+            {
+                "fields": (
+                    "title",
+                    "student",
+                    "work_type",
+                    "subject",
+                    "assignment",
+                    "due_date",
+                    "description",
+                    "work_file",
+                    "file_size_display",
+                )
+            },
+        ),
+        ("Review Information", {"fields": ("status", "feedback", "reviewed_by", "reviewed_at")}),
+        ("Timestamps", {"fields": ("submitted_at", "updated_at"), "classes": ("collapse",)}),
+    )
 
 
 @admin.register(MembershipPlan)
