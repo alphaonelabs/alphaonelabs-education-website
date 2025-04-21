@@ -5181,50 +5181,70 @@ def educational_videos_list(request):
     return render(request, "videos/list.html", context)
 
 
-@login_required
+def fetch_video_oembed(video_url):
+    """
+    Hits YouTube or Vimeo’s oEmbed endpoint and returns a dict
+    containing 'title' and 'description' (if available).
+    """
+    # YouTube IDs are always 11 chars
+    yt_match = re.search(r"(?:v=|youtu\.be/|embed/|shorts/)([\w-]{11})", video_url)
+    if yt_match:
+        video_id = yt_match.group(1)
+        endpoint = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
+    else:
+        # Vimeo URLs look like vimeo.com/12345678…
+        vm_match = re.search(r"vimeo\.com/(?:video/)?(\d+)", video_url)
+        if vm_match:
+            endpoint = f"https://vimeo.com/api/oembed.json?url={video_url}"
+        else:
+            return {}
+
+    try:
+        resp = requests.get(endpoint, timeout=3)
+        if resp.ok:
+            data = resp.json()
+            return {
+                "title": data.get("title", "").strip(),
+                "description": data.get("description", "").strip(),
+            }
+    except requests.RequestException:
+        pass
+
+    return {}
+
+
 def upload_educational_video(request):
-    """View for uploading a new educational video."""
+    """
+    Handles GET → render form, POST → save video.
+    If user leaves title/description blank, we back‑fill from YouTube/Vimeo.
+    """
     if request.method == "POST":
         form = EducationalVideoForm(request.POST)
         if form.is_valid():
             video = form.save(commit=False)
-
-            # Handle anonymous submissions
             if request.user.is_authenticated:
                 video.uploader = request.user
-            else:
-                # For anonymous submissions, store optional submitter name
-                submitter_name = request.POST.get("submitter_name", "")
-                if submitter_name:
-                    video.submitter_name = submitter_name
+
+            # auto‑fetch metadata if missing
+            if not video.title.strip() or not video.description.strip():
+                info = fetch_video_oembed(video.video_url)
+                if not video.title.strip() and info.get("title"):
+                    video.title = info["title"]
+                if not video.description.strip() and info.get("description"):
+                    video.description = info["description"]
 
             video.save()
 
-            # Check if this is an AJAX request (from quick add form)
             if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return JsonResponse({"success": True, "message": "Video added successfully!"})
-
             return redirect("educational_videos_list")
-        elif request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            # Return form errors for AJAX requests
-            error_dict = {}
-            for field, errors in form.errors.items():
-                error_dict[field] = [str(error) for error in errors]
 
-            # Better error formatting for display
-            error_text = ""
-            for field, field_errors in error_dict.items():
-                field_name = field.replace("_", " ").title() if field != "__all__" else "Error"
-                error_text += f"{field_name}: {', '.join(field_errors)}. "
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            error_text = " ".join(f"{fld}: {', '.join(errs)}." for fld, errs in form.errors.items())
+            return JsonResponse({"success": False, "error": error_text}, status=400)
 
-            return JsonResponse({"success": False, "error": error_text, "detailed_errors": error_dict}, status=400)
     else:
         form = EducationalVideoForm()
-
-    # For regular GET requests
-    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        # AJAX GET request should get a JSON response
-        return JsonResponse({"success": False, "error": "Please submit the form with POST"}, status=400)
 
     return render(request, "videos/upload.html", {"form": form})
 
