@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime, timedelta
 from io import BytesIO
 from typing import ClassVar
+import json
 
 from allauth.account.signals import user_signed_up
 from django.conf import settings
@@ -2180,8 +2181,8 @@ class UserQuiz(models.Model):
     anonymous_id = models.CharField(
         max_length=36, blank=True, default="", help_text="Identifier for non-logged-in users"
     )
-    score = models.PositiveIntegerField(default=0)
-    max_score = models.PositiveIntegerField(default=0)
+    score = models.FloatField(default=0.0)
+    max_score = models.FloatField(default=0.0)
     completed = models.BooleanField(default=False)
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
@@ -2207,33 +2208,17 @@ class UserQuiz(models.Model):
         """Calculate the score based on answers."""
         score = 0
         max_score = 0
+        answers = json.loads(self.answers) if isinstance(self.answers, str) else self.answers
 
-        for q_id, answer_data in self.answers.items():
-            try:
-                question = QuizQuestion.objects.get(id=q_id)
-                max_score += question.points
+        for q_id, answer_data in answers.items():
+            question = QuizQuestion.objects.get(id=q_id)
+            max_score += question.points
 
-                if question.question_type == "multiple":
-                    # Check if selected options match correct options
-                    correct_options = set(question.options.filter(is_correct=True).values_list("id", flat=True))
-                    selected_options = set(answer_data.get("selected_options", []))
-                    if correct_options == selected_options:
-                        score += question.points
-                elif question.question_type == "true_false":
-                    # For true/false, there should be only one correct option
-                    correct_option = question.options.filter(is_correct=True).first()
-                    if correct_option and str(correct_option.id) == str(answer_data.get("selected_option")):
-                        score += question.points
-                elif question.question_type == "short":
-                    # Short answers require manual grading in this implementation
-                    # We could implement auto-grading logic here for simple cases
-                    pass
-            except QuizQuestion.DoesNotExist:
-                pass
+            score += answer_data.get("points_awarded", 0)
 
-        self.score = score
-        self.max_score = max_score
-        self.save()
+        quiz_Percentage = round((score / max_score) * 100, 1)
+
+        return quiz_Percentage
 
     def complete_quiz(self):
         """Mark the quiz as completed and calculate final score."""
@@ -2293,19 +2278,11 @@ class UserQuiz(models.Model):
 
         # Check if there's a passing score defined on the quiz
         passing_score = getattr(self.quiz, "passing_score", 0)
-        if passing_score and self.score >= passing_score:
+        Student_score_percentage = (self.score / self.max_score) * 100
+        if passing_score and Student_score_percentage >= self.max_score:
             return "passed"
         else:
             return "failed"
-
-    def get_status_display(self):
-        """Return a human-readable status."""
-        if self.status == "passed":
-            return "Passed"
-        elif self.status == "failed":
-            return "Failed"
-        else:
-            return "In Progress"
 
     @property
     def created_at(self):

@@ -36,20 +36,20 @@
                 In progress
               </div>
             {% else %}
-              <div class="text-5xl font-bold mb-2 {% if quiz_Percentage >= user_quiz.quiz.passing_score %}text-green-600 dark:text-green-400 {% else %}text-red-600 dark:text-red-400{% endif %}">
-                {{ quiz_Percentage }}%
+              <div class="text-5xl font-bold mb-2 {% if user_quiz.status == 'passed' %}text-green-600 dark:text-green-400 {% else %}text-red-600 dark:text-red-400{% endif %}">
+                {{ user_quiz.calculate_score }}%
               </div>
               <div class="text-gray-600 dark:text-gray-300">
                 {{ correct_count }} of {{ all_question_count }} answered questions correct
               </div>
               <div class="mt-4">
-                {% if quiz_Percentage >= user_quiz.quiz.passing_score %}
+                {% if user_quiz.status == 'passed' %}
                   <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                    <i class="fas fa-check-circle mr-2"></i> Passed
+                    <i class="fas fa-check-circle mr-2"></i> {{ user_quiz.status }}
                   </span>
                 {% else %}
                   <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300">
-                    <i class="fas fa-times-circle mr-2"></i> Failed
+                    <i class="fas fa-times-circle mr-2"></i> {{ user_quiz.status }}
                   </span>
                 {% endif %}
               </div>

@@ -1,0 +1,45 @@
+{# web/quiz/partials/graded_info.html #}
+<div
+  id="question-item-{{ question.id }}"
+  class="mt-4 bg-green-50 dark:bg-green-900/30 p-3 rounded-md"
+>
+  <div class="flex justify-between items-center">
+    <div class="flex items-center gap-[15px]">
+      <input type="hidden" class="hidden" id="user_score" value="{{ user_quiz.score }}" disabled>
+      <input type="hidden" class="hidden" id="correction_status" value="{{ user_quiz.correction_status }}" disabled>
+      <div id="correction_status_div" class="hidden mt-4 p-3 rounded-md {% if user_quiz.correction_status == 'completed' or user_quiz.correction_status == 'not_needed' %}bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200{% elif user_quiz.correction_status == 'pending' %}bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200{% else %}bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200{% endif %}">
+        <div class="font-medium">
+          <i class="fas {% if user_quiz.correction_status == 'completed' %}fa-check-circle{% elif user_quiz.correction_status == 'pending' %}fa-exclamation-circle{% else %}fa-spinner{% endif %} mr-2"></i>
+          Grading Status: {{ user_quiz.get_correction_status_display }}
+        </div>
+        <div class="text-sm mt-1">
+          {% if user_quiz.correction_status == 'pending' %}
+            This exam contains questions that need manual grading.
+            Please review all answers and assign points where needed.
+          {% elif user_quiz.correction_status == 'in_progress' %}
+            You've started grading but haven't finished all questions yet.
+          {% elif user_quiz.correction_status == 'completed' or user_quiz.correction_status == 'not_needed' %}
+            All questions have been graded. The final score has been calculated.
+          {% endif %}
+        </div>
+      </div>
+      <input type="hidden" class="hidden" id="question_correction_status" value="
+      {% if points_awarded >= half_question_points %} Correct {% else %} Incorrect {% endif %}" disabled>
+      <button onclick="appearInputField(event, '{{ question.id }}' )" 
+        hx-confirm="Are you sure you want to Save Grade for this question?"
+        hx-target="#question-item-{{ question.id }}"
+        hx-swap="outerHTML"
+        hx-headers='{"X-CSRFToken":"{{ csrf_token }}"}'
+        class="text-sm bg-blue-600 hover:bg-blue-700 text-white py-2 px-2 rounded"
+      >
+        Change Grade
+      </button>
+      <h3 class="text-sm font-semibold text-green-800 dark:text-green-300">
+        Grading Result:
+      </h3>
+    </div>
+    <div class="text-green-800 dark:text-green-300 font-bold">
+      {{ points_awarded }} / {{ question.points }} points
+    </div>
+  </div>
+</div>

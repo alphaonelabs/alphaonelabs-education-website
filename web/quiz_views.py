@@ -10,6 +10,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+from django.template.loader import render_to_string
 
 from .forms import (
     QuizForm,
@@ -663,7 +664,7 @@ def _process_quiz_taking(request, quiz):
                     user_answers = []
                     for key in request.POST:
                         if key.startswith(f"question_{q_id}_option_"):
-                            user_answers.append(key[-3:])
+                            user_answers.append(key[len(f"question_{q_id}_option_"):] )
 
                     correct_options = list(
                         question_obj.options.filter(is_correct=True).values_list("id", flat=True)
@@ -871,8 +872,6 @@ def quiz_results(request, user_quiz_id):
         answers[id]["options"] = options
         answers[id]["original_points"] = question.points
 
-    Percentage = round((user_quiz.score / user_quiz.max_score) * 100, 1)
-
     context = {
         "user_quiz": user_quiz,
         "show_answers": quiz.creator == request.user,
@@ -884,7 +883,6 @@ def quiz_results(request, user_quiz_id):
         "duration": duration,
         "answers": answers,
         "user_attempts": user_attempts,
-        "quiz_Percentage": Percentage,
     }
     return render(request, "web/quiz/quiz_results.html", context)
 
@@ -1046,16 +1044,16 @@ def quiz_analytics(request, quiz_id):
             user_attempt_dict[user_id] = {
                 "user": attempt.user,
                 "attempts": 0,
-                "best_score": 0,
+                "best_score": attempt.calculate_score(),
                 "total_score": 0,
             }
 
         user_data = user_attempt_dict[user_id]
         user_data["attempts"] += 1
         if attempt.score is not None:
-            user_data["total_score"] += attempt.score
-            if attempt.score > user_data["best_score"]:
-                user_data["best_score"] = attempt.score
+            user_data["total_score"] += attempt.calculate_score()
+            if attempt.calculate_score() > user_data["best_score"]:
+                user_data["best_score"] = attempt.calculate_score()
 
     for user_id, data in user_attempt_dict.items():
         if data["attempts"] > 0:
@@ -1198,25 +1196,18 @@ def student_exam_correction(
             if question_id in answers:
                 answers[question_id]["is_graded"] = True
                 answers[question_id]["points_awarded"] = points_awarded
-                answers[question_id]["is_correct"] = points_awarded == question.points
+                answers[question_id]["is_correct"] = True if points_awarded >= (question.points / 2) else False
 
-                # Calculate new total score
-                total_points = sum(q.points for q in quiz.questions.all())
                 current_score = 0
 
                 for q in quiz.questions.all():
                     q_id = str(q.id)
                     if q_id in answers:
-                        if answers[q_id].get("is_graded", False):
-                            # Use awarded points for manually graded answers
-                            current_score += answers[q_id].get("points_awarded", 0)
-                        elif answers[q_id].get("is_correct", False):
-                            # Use full points for auto-graded correct answers
-                            current_score += q.points
+                        current_score += answers[q_id].get("points_awarded", 0)
 
                 # Update user quiz
                 user_quiz.answers = json.dumps(answers)
-                user_quiz.score = (current_score / total_points * 100) if total_points > 0 else 0
+                user_quiz.score = current_score if current_score > 0 else 0
 
                 # Check if all questions are graded
                 all_graded = True
@@ -1237,10 +1228,24 @@ def student_exam_correction(
 
                 user_quiz.save()
 
-                messages.success(request, f"Question graded successfully. Awarded {points_awarded} points.")
+                # Check if this is an HTMX request
+                if request.headers.get('HX-Request') == 'true':
+                    html = render_to_string("web/quiz/partials/graded_info.html", {
+                        "question": question,
+                        "quiz": quiz,
+                        "user_quiz": user_quiz,
+                        "points_awarded": points_awarded,
+                        "half_question_points": (question.points / 2),
+                    }, request=request)
 
-            # Redirect to avoid resubmission
-            return redirect("student_exam_correction", course_id=course.id, quiz_id=quiz.id, user_quiz_id=user_quiz.id)
+                    response = HttpResponse(html)
+                    response["HX-Trigger"] = json.dumps({
+                        "show-toast": {
+                            "level": "success",
+                            "message": "Grade saved successfully."
+                        }
+                    })
+                    return response
 
     # Prepare questions and answers for display
     questions = []
@@ -1265,7 +1270,6 @@ def student_exam_correction(
             q_dict["is_correct"] = answer_data.get("is_correct", False)
             q_dict["is_graded"] = answer_data.get("is_graded", False)
             q_dict["points_awarded"] = answer_data.get("points_awarded", 0)
-            print("!!!!!!!!!!!!!", list(question.options.all()))
             q_dict["options"] = list(question.options.all())
             q_dict["needs_grading"] = question.question_type not in ["multiple", "true_false"] and not answer_data.get(
                 "is_graded",
@@ -1289,5 +1293,6 @@ def student_exam_correction(
             "user_quiz": user_quiz,
             "questions": questions,
             "student": user_quiz.user,
+            "attempt": user_quiz,
         },
     )

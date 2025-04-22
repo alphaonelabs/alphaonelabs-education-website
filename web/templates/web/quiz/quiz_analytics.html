@@ -239,12 +239,12 @@
                       <td class="py-3 px-4 text-sm font-medium text-blue-600 dark:text-red-400">In Progress</td>
                       <td class="py-3 px-4 text-sm">-</td>
                     {% else %}
-                      <td class="py-3 px-4 text-sm font-medium {% if attempt.score >= quiz.passing_score %}text-green-600 dark:text-green-400 {% else %}text-red-600 dark:text-red-400{% endif %}">
-                        {{ attempt.score }}%
+                      <td class="py-3 px-4 text-sm font-medium {% if attempt.status == 'passed' %}text-green-600 dark:text-green-400 {% else %}text-red-600 dark:text-red-400{% endif %}">
+                        {{ attempt.calculate_score }}%
                       </td>
                       <td class="py-3 px-4 text-sm">
                         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {% if attempt.status == 'passed' %}bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300 {% elif attempt.status == 'failed' %}bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300 {% elif attempt.status == 'in_progress' %}bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300 {% elif attempt.status == 'grading' %}bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300{% endif %}">
-                          {{ attempt.get_status_display }}
+                          {{ attempt.status }}
                         </span>
                       </td>
                     {% endif %}
@@ -253,12 +253,10 @@
                          class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
                         <i class="fas fa-eye mr-1"></i> View Results
                       </a>
-                      {% if attempt.correction_status == "in_progress" %}
-                        <a href="{% url 'student_exam_correction' quiz.course.id quiz.id attempt.id %}"
-                           class="text-red-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                          <i class="fas fa-pencil mr-1"></i> Correct
-                        </a>
-                      {% endif %}
+                      <a href="{% url 'student_exam_correction' quiz.course.id quiz.id attempt.id %}"
+                          class="text-red-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                        <i class="fas fa-pencil mr-1"></i> {% if attempt.correction_status == "in_progress" %} Correct {% else %} Edit Corrections {% endif %}
+                      </a>
                     </td>
                   </tr>
                 {% endfor %}
