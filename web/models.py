@@ -2278,8 +2278,7 @@ class UserQuiz(models.Model):
 
         # Check if there's a passing score defined on the quiz
         passing_score = getattr(self.quiz, "passing_score", 0)
-        Student_score_percentage = (self.score / self.max_score) * 100
-        if passing_score and Student_score_percentage >= self.max_score:
+        if self.calculate_score() >= passing_score:
             return "passed"
         else:
             return "failed"

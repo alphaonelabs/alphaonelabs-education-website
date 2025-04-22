@@ -4,7 +4,7 @@
 {% block content %}
 <script src="https://unpkg.com/htmx.org@1.9.2"></script>
 <script>
-function appearInputField(event, question_id) {
+window.appearInputField = function(event, question_id) {
     event.preventDefault(); // Prevent default form/button behavior
     
     const button = event.target;
@@ -18,13 +18,13 @@ function appearInputField(event, question_id) {
             console.log("Input field is now visible");
 
         } else {
-            console.log("&&&&& Works")
             console.log("Input field was already visible");
 
             const max_question_points = "{{ user_quiz.max_score }}"
             const gradeInput = changeGradeDiv.querySelector("input[type='number']");
             if (gradeInput && gradeInput.value <= max_question_points) {
                 // Simulate HTMX request if valid input exists
+                window.confirm("Are you sure you want to save this grade?")
                 htmx.ajax('POST', button.getAttribute('hx-post'), {
                     target: button.getAttribute('hx-target'),
                     swap: button.getAttribute('hx-swap'),
@@ -45,6 +45,12 @@ function appearInputField(event, question_id) {
 }
 
 document.body.addEventListener('htmx:afterSwap', function(event) {
+      // onclick="appearInputField(event, '{{ question.id }}' )" 
+    nweButton = event.target.querySelector("button")
+    question_id = nweButton.getAttribute("data-question_id")
+    console.log("#####", nweButton)
+    nweButton.addEventListener('click', (event) => appearInputField(event, question_id));
+    console.log("#####", nweButton)
     parent = event.target.parentElement
     // change question correction status
     question_correction_status = parent.querySelector("#question_correction_status")
@@ -266,12 +272,8 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
                       <input type="hidden" name="question_id" id="question_{{ question.id  }}" value="{{ question.id }}">
                     </div>
                     <div class="w-full md:w-2/3 flex items-end">
-                      <button hx-post="{% url 'student_exam_correction' quiz.course.id quiz.id attempt.id %}"
-                              hx-confirm="Are you sure you want to Save Grade for this question?"
+                      <button onclick="appearInputField(event, '{{ question.id }}' )" 
                               hx-include="#grade-input-{{ question.id }}, #question_{{ question.id  }}"
-                              hx-target="#question-item-{{ question.id }}"
-                              hx-swap="outerHTML"
-                              hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
                               class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"> Save Grade
                       </button>
                     </div>
@@ -299,7 +301,6 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
                     </div>
                     <button onclick="appearInputField(event, '{{ question.id }}' )" 
                       hx-target="#question-item-{{ question.id }}"
-                      hx-swap="outerHTML"
                       class="text-sm bg-blue-600 hover:bg-blue-700 text-white py-2 px-2 rounded"> Change Grade
                   </button>
                   <h3 class="text-sm font-semibold text-green-800 dark:text-green-300">Grading Result:</h3>

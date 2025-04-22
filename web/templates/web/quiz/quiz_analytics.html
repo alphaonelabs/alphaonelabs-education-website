@@ -8,6 +8,152 @@
 {% block extra_head %}
   <!-- Chart.js for analytics visualizations -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.2.1"></script>
+
+  {{ question_analysis|json_script:"question-analysis-data" }}
+  {{ score_distribution|json_script:"score-distribution-data" }}
+  {{ time_chart|json_script:"attempts-time-data" }}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+    // Set up Chart.js default styling
+    Chart.defaults.color = document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#374151';
+    Chart.defaults.borderColor = document.documentElement.classList.contains('dark') ? '#4b5563' : '#e5e7eb';
+
+    // Get question_analysis data from Django template
+    const questionAnalysisData = JSON.parse(document.getElementById('question-analysis-data').textContent || '[]')
+    const scoreDistributionData = JSON.parse(document.getElementById('score-distribution-data').textContent || '[]');
+    const attemptsTimeData = JSON.parse(document.getElementById('attempts-time-data').textContent || '[]');
+    // console.log(questionAnalysisData)
+    console.log(scoreDistributionData)
+    // console.log(attemptsTimeData)
+
+    // Score Distribution Chart
+    const scoreCtx = document.getElementById('scoreDistributionChart').getContext('2d');
+    new Chart(scoreCtx, {
+        type: 'bar',
+        data: {
+            labels: scoreDistributionData.labels,
+            datasets: [{
+                label: 'Number of Attempts',
+                data: scoreDistributionData.data,
+                backgroundColor: '#4c9be8',
+                borderColor: '#3b82f6',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.raw + ' attempt' + (context.raw !== 1 ? 's' : '');
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+   // Question Performance Chart - Now using questionAnalysisData
+    const questionCtx = document.getElementById('questionPerformanceChart').getContext('2d');
+    new Chart(questionCtx, {
+        type: 'bar',
+        data: {
+            // Use question text or "Question X" if text is too long
+            labels: questionAnalysisData.map((q, index) => 
+                q.text ? (q.text.length > 25 ? q.text.substring(0, 25) + '...' : q.text) : `Question ${index + 1}`
+            ),
+            datasets: [{
+                label: 'Correct Rate (%)',
+                data: questionAnalysisData.map(q => q.correct_rate),
+                backgroundColor: function(context) {
+                    const value = context.dataset.data[context.dataIndex];
+                    return value >= 70 ? '#34d399' : value >= 40 ? '#fbbf24' : '#ef4444';
+                },
+                borderColor: function(context) {
+                    const value = context.dataset.data[context.dataIndex];
+                    return value >= 70 ? '#10b981' : value >= 40 ? '#f59e0b' : '#dc2626';
+                },
+                borderWidth: 1
+            }]
+        },
+        options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    min: 0,
+                    max: 100
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.raw + '% correct';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Attempts Over Time Chart
+    const timeCtx = document.getElementById('attemptsTimeChart').getContext('2d');
+    new Chart(timeCtx, {
+        type: 'line',
+        data: {
+            labels: attemptsTimeData.labels,
+            datasets: [{
+                label: 'Attempts',
+                data: attemptsTimeData.data,
+                backgroundColor: 'rgba(139, 92, 246, 0.2)',
+                borderColor: 'rgba(139, 92, 246, 1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.raw + ' attempt' + (context.raw !== 1 ? 's' : '');
+                        }
+                    }
+                }
+            }
+        }
+    });
+});
+  </script>
 {% endblock extra_head %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
@@ -282,160 +428,5 @@
       </div>
     </div>
   </div>
-  <script>
-      document.addEventListener('DOMContentLoaded', function() {
 
-          // Set up Chart.js default styling
-          Chart.defaults.color = document.documentElement.classList.contains('dark') ? '#e5e7eb' : '#374151';
-          Chart.defaults.borderColor = document.documentElement.classList.contains('dark') ? '#4b5563' : '#e5e7eb';
-
-          // Score Distribution Chart
-          const scoreCtx = document.getElementById('scoreDistributionChart').getContext('2d');
-          new Chart(scoreCtx, {
-              type: 'bar',
-              data: {
-                  labels: {
-                      {
-                          score_distribution.labels | safe
-                      }
-                  },
-                  datasets: [{
-                      label: 'Number of Attempts',
-                      data: {
-                          {
-                              score_distribution.data | safe
-                          }
-                      },
-                      backgroundColor: '#4c9be8',
-                      borderColor: '#3b82f6',
-                      borderWidth: 1
-                  }]
-              },
-              options: {
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  scales: {
-                      y: {
-                          beginAtZero: true,
-                          ticks: {
-                              precision: 0
-                          }
-                      }
-                  },
-                  plugins: {
-                      legend: {
-                          display: false
-                      },
-                      tooltip: {
-                          callbacks: {
-                              label: function(context) {
-                                  return context.raw + ' attempt' + (context.raw !== 1 ? 's' : '');
-                              }
-                          }
-                      }
-                  }
-              }
-          });
-
-          // Question Performance Chart
-          const questionCtx = document.getElementById('questionPerformanceChart').getContext('2d');
-          new Chart(questionCtx, {
-              type: 'bar',
-              data: {
-                  labels: {
-                      {
-                          question_performance.labels | safe
-                      }
-                  },
-                  datasets: [{
-                      label: 'Correct Rate (%)',
-                      data: {
-                          {
-                              question_performance.data | safe
-                          }
-                      },
-                      backgroundColor: function(context) {
-                          const value = context.dataset.data[context.dataIndex];
-                          return value >= 70 ? '#34d399' : value >= 40 ? '#fbbf24' : '#ef4444';
-                      },
-                      borderColor: function(context) {
-                          const value = context.dataset.data[context.dataIndex];
-                          return value >= 70 ? '#10b981' : value >= 40 ? '#f59e0b' : '#dc2626';
-                      },
-                      borderWidth: 1
-                  }]
-              },
-              options: {
-                  indexAxis: 'y',
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  scales: {
-                      x: {
-                          min: 0,
-                          max: 100
-                      }
-                  },
-                  plugins: {
-                      legend: {
-                          display: false
-                      },
-                      tooltip: {
-                          callbacks: {
-                              label: function(context) {
-                                  return context.raw + '% correct';
-                              }
-                          }
-                      }
-                  }
-              }
-          });
-
-          // Attempts Time Chart
-          const timeCtx = document.getElementById('attemptsTimeChart').getContext('2d');
-          new Chart(timeCtx, {
-              type: 'line',
-              data: {
-                  labels: {
-                      {
-                          time_chart.labels | safe
-                      }
-                  },
-                  datasets: [{
-                      label: 'Attempts',
-                      data: {
-                          {
-                              time_chart.data | safe
-                          }
-                      },
-                      backgroundColor: 'rgba(139, 92, 246, 0.2)',
-                      borderColor: 'rgba(139, 92, 246, 1)',
-                      borderWidth: 2,
-                      tension: 0.4,
-                      fill: true
-                  }]
-              },
-              options: {
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  scales: {
-                      y: {
-                          beginAtZero: true,
-                          ticks: {
-                              precision: 0
-                          }
-                      }
-                  },
-                  plugins: {
-                      tooltip: {
-                          callbacks: {
-                              label: function(context) {
-                                  return context.raw + ' attempt' + (context.raw !== 1 ? 's' : '');
-                              }
-                          }
-                      }
-                  }
-              }
-          });
-      });
-  </script>
 {% endblock content %}

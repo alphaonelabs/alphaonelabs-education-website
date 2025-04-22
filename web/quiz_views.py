@@ -19,7 +19,7 @@ from .forms import (
     QuizQuestionSpecializedForm,
     TakeQuizForm,
 )
-from .models import Course, Quiz, QuizQuestion, Session, UserQuiz, QuizOption
+from .models import Course, Quiz, QuizQuestion, Session, UserQuiz, QuizOption, Enrollment
 from .views import course_detail
 from .services.AI.ai_model import ai_quiz_corrector
 
@@ -246,6 +246,37 @@ def quiz_detail(request, quiz_id):
 
     if not can_view:
         return HttpResponseForbidden("You don't have permission to view this quiz.")
+    
+    # Check if user can take the quiz (is a student)
+    can_take_quiz = False
+    if request.user.is_authenticated and not is_owner:
+        # User is logged in and not the creator (teacher)
+        can_take_quiz = True
+        
+        # Check if quiz is published
+        if quiz.status != "published":
+            can_take_quiz = False
+            
+        # Check if user already attempted this quiz (if retakes not allowed)
+        # Assuming you have a field for allowing retakes on Quiz model
+        has_attempted = UserQuiz.objects.filter(
+            quiz=quiz, 
+            user=request.user
+        ).exists()
+        
+        if has_attempted and getattr(quiz, 'allow_retakes', False) == False:
+            can_take_quiz = False
+            
+        # If quiz is associated with a course, check enrollment
+        if hasattr(quiz, 'course') and quiz.course:
+            is_enrolled = Enrollment.objects.filter(
+                student=request.user,
+                course=quiz.course,
+                status='active'
+            ).exists()
+            
+            if not is_enrolled:
+                can_take_quiz = False
 
     # Get questions with option counts
     questions = quiz.questions.annotate(option_count=Count("options")).order_by("order")
@@ -273,6 +304,7 @@ def quiz_detail(request, quiz_id):
         "user_attempts": user_attempts,
         "total_attempts": total_attempts,
         "average_score": average_score,
+        "can_take_quiz": can_take_quiz,
         "share_url": request.build_absolute_uri(reverse("quiz_take_shared", kwargs={"share_code": quiz.share_code})),
     }
 
@@ -964,16 +996,18 @@ def quiz_analytics(request, quiz_id):
 
     # Calculate overall statistics
     total_attempts = attempts.count()
-    average_score = attempts.exclude(score=None).values_list("score", flat=True)
+    average_score = [attempt.calculate_score() for attempt in attempts.exclude(score=None)]
     if average_score:
         average_score = sum(average_score) / len(average_score)
     else:
         average_score = 0
 
     # Calculate pass rate
-    pass_count = attempts.filter(score__gte=quiz.passing_score).count()
+    pass_count = sum(
+        1 for attempt in attempts
+        if attempt.calculate_score() > quiz.passing_score
+    )
     pass_rate = (pass_count / total_attempts * 100) if total_attempts > 0 else 0
-
     # We're not using JavaScript calculation anymore, so we don't need to prepare timing data
 
     # Calculate average time on the server side
@@ -1013,6 +1047,7 @@ def quiz_analytics(request, quiz_id):
             "attempt_count": 0,
             "success_rate": 0,
             "type": question.question_type,
+            "points": question.points,
         }
 
     for attempt in attempts:
@@ -1073,14 +1108,15 @@ def quiz_analytics(request, quiz_id):
     }
 
     for attempt in attempts:
-        if attempt.score is not None:
-            if attempt.score <= 20:
+        calculated_score = attempt.calculate_score()
+        if calculated_score is not None:
+            if calculated_score <= 20:
                 score_ranges["0-20"] += 1
-            elif attempt.score <= 40:
+            elif calculated_score <= 40:
                 score_ranges["21-40"] += 1
-            elif attempt.score <= 60:
+            elif calculated_score <= 60:
                 score_ranges["41-60"] += 1
-            elif attempt.score <= 80:
+            elif calculated_score <= 80:
                 score_ranges["61-80"] += 1
             else:
                 score_ranges["81-100"] += 1
@@ -1099,7 +1135,7 @@ def quiz_analytics(request, quiz_id):
     time_data = {}
     for attempt in attempts:
         if attempt.end_time:
-            month_year = attempt.end_time.strftime("%b %Y")
+            month_year = attempt.end_time.strftime("%d %b %Y")
             if month_year in time_data:
                 time_data[month_year] += 1
             else:
@@ -1107,7 +1143,7 @@ def quiz_analytics(request, quiz_id):
 
     # If no data, provide at least one month
     if not time_data:
-        current_month = timezone.now().strftime("%b %Y")
+        current_month = timezone.now().strftime("%d %b %Y")
         time_data[current_month] = 0
 
     time_chart = {"labels": list(time_data.keys()), "data": list(time_data.values())}

@@ -95,10 +95,12 @@
                 </button>
               </form>
             {% endif %}
-            <a href="{% url 'take_quiz' quiz.id %}"
-               class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
-              <i class="fas fa-play mr-2"></i> Take Quiz
-            </a>
+            {% if can_take_quiz %}
+              <a href="{% url 'take_quiz' quiz.id %}"
+              class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
+                <i class="fas fa-play mr-2"></i> Take Quiz
+              </a>
+            {% endif %}
           </div>
         </div>
         <!-- Quiz description -->
