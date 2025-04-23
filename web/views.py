@@ -7622,8 +7622,7 @@ def video_request_list(request):
 
     # Get category counts for sidebar
     category_counts = {
-        category.slug: VideoRequest.objects.filter(category=category).count()
-        for category in Subject.objects.all()
+        category.slug: VideoRequest.objects.filter(category=category).count() for category in Subject.objects.all()
     }
 
     # Context

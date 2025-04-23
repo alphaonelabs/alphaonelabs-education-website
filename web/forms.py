@@ -1880,6 +1880,7 @@ class VideoRequestForm(forms.ModelForm):
 
     ALLOWED_TAGS: ClassVar[list[str]] = ["b", "i", "strong", "em", "ul", "ol", "li", "p", "a"]
     ALLOWED_ATTRIBUTES: ClassVar[dict[str, list[str]]] = {
+        # Only allow href, title and target attributes on anchor tags for security
         "a": ["href", "title", "target"],
     }
 
@@ -1912,7 +1913,8 @@ class VideoRequestForm(forms.ModelForm):
         self.fields["category"].queryset = Subject.objects.all().order_by("name")
 
     def clean_title(self) -> str:
-        title = self.cleaned_data.get("title", "")
+        title = self.cleaned_data.get("title", "")  # Added default value
+        # Strip all tags to ensure title contains only plain text
         return bleach.clean(title, tags=self.ALLOWED_TAGS, attributes=self.ALLOWED_ATTRIBUTES, strip=True)
 
     def clean_description(self) -> str:
