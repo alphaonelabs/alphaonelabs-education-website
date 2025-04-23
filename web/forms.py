@@ -1,5 +1,5 @@
 import re
-from typing import ClassVar, Dict, List
+from typing import ClassVar
 from urllib.parse import parse_qs, urlparse
 
 import bleach
@@ -1878,8 +1878,8 @@ class StudyGroupForm(forms.ModelForm):
 class VideoRequestForm(forms.ModelForm):
     """Form for users to request educational videos on specific topics, with XSS protection."""
 
-    ALLOWED_TAGS: ClassVar[List[str]] = ["b", "i", "strong", "em", "ul", "ol", "li", "p", "a"]
-    ALLOWED_ATTRIBUTES: ClassVar[Dict[str, List[str]]] = {
+    ALLOWED_TAGS: ClassVar[list[str]] = ["b", "i", "strong", "em", "ul", "ol", "li", "p", "a"]
+    ALLOWED_ATTRIBUTES: ClassVar[dict[str, list[str]]] = {
         "a": ["href", "title", "target"],
     }
 
@@ -1907,7 +1907,7 @@ class VideoRequestForm(forms.ModelForm):
             ),
         }
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: object, **kwargs: object) -> None:
         super().__init__(*args, **kwargs)
         self.fields["category"].queryset = Subject.objects.all().order_by("name")
 
