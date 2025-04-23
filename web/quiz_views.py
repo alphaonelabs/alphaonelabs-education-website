@@ -71,6 +71,7 @@ def create_course_exam(
             "passing_score": 60,
             "description": f"Quiz for {session.title}" if session else f"Final comprehensive exam for {course.title}",
             "status": "published",
+            "show_correct_answers": False,
         }
         form = QuizForm(initial=initial_data)
 
@@ -287,7 +288,9 @@ def quiz_detail(request, quiz_id):
     # For quiz owners, get overall stats
     if is_owner:
         total_attempts = UserQuiz.objects.filter(quiz=quiz).count()
-        average_score = UserQuiz.objects.filter(quiz=quiz).exclude(score=None).values_list("score", flat=True)
+        attempts = UserQuiz.objects.filter(quiz=quiz)
+        all_attempts = list(attempts)
+        average_score = [attempt.calculate_score() for attempt in all_attempts if attempt.calculate_score() is not None]
 
         if average_score:
             average_score = sum(average_score) / len(average_score)
@@ -606,7 +609,28 @@ def take_quiz(request, quiz_id):
 
     return _process_quiz_taking(request, quiz)
 
+@login_required
+def mark_quiz_attempt(request, user_quiz_id):
+    """Mark a quiz attempt as completed when user leaves the page"""
+    if request.method == 'POST':
+        print("REQUEST DONE &&&&&&&&&", user_quiz_id)
+        user_quiz = get_object_or_404(UserQuiz, id=user_quiz_id)
+        
+        # Only allow the user who started the quiz to mark it
+        if user_quiz.user != request.user:
+            return HttpResponseForbidden("You don't have permission to modify this quiz attempt.")
+        
+        print("REQUEST DONE &&&&&&&&&")
+        # Mark as completed with current time if not already completed
+        if not user_quiz.completed:
+            user_quiz.completed = True
+            user_quiz.end_time = timezone.now()
+            user_quiz.save()
+            
+        return HttpResponse(status=200)
+    return HttpResponse(status=405)  # Method not allowed
 
+@login_required
 def _process_quiz_taking(request, quiz):
     """Helper function to process quiz taking for both routes."""
     from .services.AI.ai_model import ai_quiz_corrector
@@ -635,6 +659,10 @@ def _process_quiz_taking(request, quiz):
                 request, f"You have reached the maximum number of attempts ({quiz.max_attempts}) for this quiz."
             )
             return redirect("quiz_results", user_quiz_id=user_quiz.id)
+        
+    # Create new attempt
+    user_quiz = UserQuiz(quiz=quiz, user=user)
+    user_quiz.save()
 
     # Prepare questions and options for display
     prepared_questions = []
@@ -672,8 +700,6 @@ def _process_quiz_taking(request, quiz):
             quiz_id = quiz.id
             AI_auto_correction = quiz.AI_auto_correction
             answers = {}
-            score = 0
-            total_points = 0
             correction_status = "not_needed" # Available states: not_needed - pending - in_progress - completed
             ai_correction_results = None
 
@@ -681,7 +707,6 @@ def _process_quiz_taking(request, quiz):
             for question in prepared_questions:
                 q_id = str(question["id"])
                 question_obj = QuizQuestion.objects.get(id=question["id"])
-                total_points += question_obj.points
 
                 user_answer = form.cleaned_data.get(f"question_{q_id}", None)
                 User_answer_true_or_false = "Correction needed"
@@ -715,6 +740,15 @@ def _process_quiz_taking(request, quiz):
                     wrong_points = (question_obj.points/in_correct_options) * student_wrong_answers
                     student_score = correct_points - wrong_points
 
+                    if student_score < 0:
+                        student_score = 0
+                    elif student_score >= question_obj.points:
+                        student_score = question_obj.points
+
+                    res = isinstance(student_score, float)  
+                    if res == True:
+                        student_score = round(student_score, 1)
+
                     User_answer_true_or_false = True if student_score >= (question_obj.points / 2) else False
 
                     answers[q_id] = {
@@ -724,9 +758,6 @@ def _process_quiz_taking(request, quiz):
                         "points_awarded": student_score if student_score >= 0 else 0,
                         "is_graded": True,
                     }
-
-                    if student_score >= 0:
-                        score += student_score
 
                 elif question_obj.question_type == "true_false":
                     correct_answer = question_obj.options.filter(is_correct=True).first()
@@ -746,9 +777,6 @@ def _process_quiz_taking(request, quiz):
                         "is_graded": True,
                     }
 
-                    if answers[q_id]["is_correct"]:
-                        score += question_obj.points
-
                 else:
                     correction_status = "in_progress"
 
@@ -756,7 +784,6 @@ def _process_quiz_taking(request, quiz):
                         "user_answer": user_answer,
                         "is_graded": False,  # need manual grading
                     }
-                    # correction_status = 'in_progress'
 
                 if str(AI_auto_correction) == "True":
                     AI_data[q_id] = {
@@ -786,7 +813,6 @@ def _process_quiz_taking(request, quiz):
                     answers_question = answers[question_id]
 
                     if not question_type == "multiple" and not question_type == "true_false":
-                        score += ai_question_data["degree"]
                         answers_question["points_awarded"] = ai_question_data["degree"]
                         answers_question["is_graded"] = True
                         answers_question["is_correct"] = True if ai_question_data["degree"] >= question['points'] else False
@@ -797,8 +823,6 @@ def _process_quiz_taking(request, quiz):
             # Update the UserQuiz record
             user_quiz.answers = json.dumps(answers)
             user_quiz.correction_status = correction_status
-            user_quiz.score = score
-            user_quiz.max_score = total_points
             user_quiz.end_time = timezone.now()
             user_quiz.completed = True
             user_quiz.save()
@@ -838,7 +862,7 @@ def quiz_results(request, user_quiz_id):
             return redirect("take_quiz", quiz_id=quiz.id)
 
     # Parse the answers JSON
-    answers = json.loads(user_quiz.answers) if user_quiz.answers else {}
+    answers = user_quiz.answers if isinstance(user_quiz.answers, dict) else json.loads(user_quiz.answers) if user_quiz.answers else {}
 
     # Only count questions that have actual answers (not empty or None)
     questions_attempted = 0
@@ -920,69 +944,6 @@ def quiz_results(request, user_quiz_id):
 
 
 @login_required
-def grade_short_answer(request, user_quiz_id, question_id):
-    """Allow quiz creator to grade short answer questions."""
-    user_quiz = get_object_or_404(UserQuiz, id=user_quiz_id)
-    question = get_object_or_404(QuizQuestion, id=question_id)
-
-    # Check permissions
-    if question.quiz.creator != request.user:
-        return HttpResponseForbidden("You don't have permission to grade this answer.")
-
-    if request.method == "POST":
-        # Get the points awarded
-        points_awarded = float(request.POST.get("points_awarded", 0))
-        if points_awarded < 0:
-            points_awarded = 0
-        if points_awarded > question.points:
-            points_awarded = question.points
-
-        # Update the answers JSON
-        answers = json.loads(user_quiz.answers) if user_quiz.answers else {}
-        q_id = str(question.id)
-
-        if q_id in answers:
-            answers[q_id]["is_graded"] = True
-            answers[q_id]["points_awarded"] = points_awarded
-            answers[q_id]["is_correct"] = points_awarded == question.points
-
-            # Calculate new total score
-            total_points = sum(q.points for q in user_quiz.quiz.questions.all())
-            current_score = sum(
-                (
-                    answers.get(str(q.id), {}).get("points_awarded", 0)
-                    if answers.get(str(q.id), {}).get("is_graded", False)
-                    else (question.points if answers.get(str(q.id), {}).get("is_correct", False) else 0)
-                )
-                for q in user_quiz.quiz.questions.all()
-            )
-
-            # Update the UserQuiz record
-            user_quiz.answers = json.dumps(answers)
-            user_quiz.score = (current_score / total_points * 100) if total_points > 0 else 0
-            user_quiz.save()
-
-            messages.success(
-                request, f"Answer graded successfully. Awarded {points_awarded} out of {question.points} points."
-            )
-
-        return redirect("quiz_results", user_quiz_id=user_quiz.id)
-
-    # Get the current answer
-    answers = json.loads(user_quiz.answers) if user_quiz.answers else {}
-    q_id = str(question.id)
-    answer = answers.get(q_id, {}).get("user_answer", "")
-
-    context = {
-        "user_quiz": user_quiz,
-        "question": question,
-        "answer": answer,
-    }
-
-    return render(request, "web/quiz/grade_short_answer.html", context)
-
-
-@login_required
 def quiz_analytics(request, quiz_id):
     """Show detailed analytics for a quiz creator."""
     quiz = get_object_or_404(Quiz, id=quiz_id)
@@ -996,7 +957,8 @@ def quiz_analytics(request, quiz_id):
 
     # Calculate overall statistics
     total_attempts = attempts.count()
-    average_score = [attempt.calculate_score() for attempt in attempts.exclude(score=None)]
+    all_attempts = list(attempts)
+    average_score = [attempt.calculate_score() for attempt in all_attempts if attempt.calculate_score() is not None]
     if average_score:
         average_score = sum(average_score) / len(average_score)
     else:
@@ -1054,7 +1016,7 @@ def quiz_analytics(request, quiz_id):
         if not attempt.answers:
             continue
 
-        answers = json.loads(attempt.answers)
+        answers = attempt.answers if isinstance(attempt.answers, dict) else json.loads(attempt.answers) if attempt.answers else {}
         for q_id, answer_data in answers.items():
             q_id = int(q_id)
             if q_id in question_stats:
@@ -1210,7 +1172,7 @@ def student_exam_correction(
         return quiz_analytics(request, course_id=course.id)
 
     # Parse answers JSON
-    answers = json.loads(user_quiz.answers) if user_quiz.answers else {}
+    answers = user_quiz.answers if isinstance(user_quiz.answers, dict) else json.loads(user_quiz.answers) if user_quiz.answers else {}
 
     # If user is submitting a grade
     if request.method == "POST":
@@ -1234,17 +1196,6 @@ def student_exam_correction(
                 answers[question_id]["points_awarded"] = points_awarded
                 answers[question_id]["is_correct"] = True if points_awarded >= (question.points / 2) else False
 
-                current_score = 0
-
-                for q in quiz.questions.all():
-                    q_id = str(q.id)
-                    if q_id in answers:
-                        current_score += answers[q_id].get("points_awarded", 0)
-
-                # Update user quiz
-                user_quiz.answers = json.dumps(answers)
-                user_quiz.score = current_score if current_score > 0 else 0
-
                 # Check if all questions are graded
                 all_graded = True
                 for q in quiz.questions.all():
@@ -1261,6 +1212,8 @@ def student_exam_correction(
                     user_quiz.correction_status = "completed"
                 else:
                     user_quiz.correction_status = "in_progress"
+
+                user_quiz.answers = answers
 
                 user_quiz.save()
 

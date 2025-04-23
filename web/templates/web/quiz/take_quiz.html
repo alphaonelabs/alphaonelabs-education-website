@@ -6,6 +6,7 @@
   Taking: {{ quiz.title }}
 {% endblock title %}
 {% block extra_head %}
+  {{ block.super }}
   <script>
       // Define user_quiz_id for use in JavaScript
       const user_quiz_id = "{{ user_quiz_id }}";
@@ -70,42 +71,68 @@
           }
       });
 
-      // Function to confirm quiz submission
-      // function confirmSubmit() {
-      //     // Check if there are any unanswered questions
-      //     const totalQuestions = {
-      //         {
-      //             questions | length
-      //         }
-      //     };
-      //     const answeredQuestions = document.querySelectorAll('input[type="radio"]:checked, input[type="checkbox"]:checked, textarea:not(:placeholder-shown)').length;
+      function makeExamSecure() {
+          // Define user_quiz_id for use in JavaScript
+        const user_quiz_id = "{{ user_quiz_id }}";
+        let quizSubmitted = false;
 
-      //     if (answeredQuestions < totalQuestions) {
-      //         return confirm("You have unanswered questions. Are you sure you want to submit?");
-      //     }
-
-      //     return true;
-      // }
-
-
-      document.addEventListener("DOMContentLoaded", function (e) {
-        const form = document.getElementById('quiz-form');
-
-        form.addEventListener('submit', function (event) {
-          // event.preventDefault(); // Prevent actual submission (for debugging)
-
-          const formData = new FormData(form);
-
-          for (const [name, value] of formData.entries()) {
-            console.log(`${name}: ${value}`);
-          }
+        // Mark quiz as completed when leaving page
+        window.addEventListener('beforeunload', function(e) {
+            if (!quizSubmitted) {
+                // Show warning dialog
+                e.preventDefault();
+                // didn`t work
+                e.returnValue = 'You are about to leave the quiz. This will count as an attempt. Are you sure?';
+                console.log("####################")
+                
+                // Mark the attempt as completed via AJAX
+                navigator.sendBeacon(
+                    "{% url 'mark_quiz_attempt' user_quiz_id %}",
+                    new FormData()
+                );
+            }
         });
-      })
-
+        
+        // Prevent page refresh with F5 or Ctrl+R
+        document.addEventListener('keydown', function(e) {
+            if ((e.key === 'F5') || 
+                (e.key === 'r' && (e.ctrlKey || e.metaKey))) {
+                e.preventDefault();
+                alert('Refreshing the page is not allowed during a quiz.');
+                return false;
+            }
+        });
+      }
+      makeExamSecure()
   </script>
+  <style>
+    /* Disable right-click menu */
+    body {
+      -webkit-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
+    
+    /* Warn users when they first enter */
+    .quiz-warning {
+      background-color: #fed7d7;
+      color: #822727;
+      padding: 1rem;
+      margin-bottom: 1rem;
+      border-radius: 0.375rem;
+      border-left: 4px solid #e53e3e;
+    }
+  </style>
 {% endblock extra_head %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
+      <!-- Warning message -->
+    <div class="quiz-warning mb-6">
+      <h3 class="font-bold text-lg mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>Important Notice</h3>
+      {{ user_quiz.id }}
+      <p>Once you start this quiz, you must complete it in a single session. If you navigate away from this page or close your browser, your attempt will be automatically submitted and counted.</p>
+    </div>
     <!-- Breadcrumbs -->
     <nav class="text-sm mb-6">
       <a href="{% url 'index' %}" class="text-blue-600 hover:text-blue-800">Home</a>
@@ -186,7 +213,6 @@
                                  class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
                           <label for="question_{{ question.id }}_option_{{ option.id }}"
                                  class="ml-3 block text-gray-700 dark:text-gray-300">{{ option.text }}</label>
-                                 <h1> ## {{ option.id }} ## </h1>
                         </div>
                       {% endfor %}
                     </div>

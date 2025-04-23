@@ -8,34 +8,32 @@ window.appearInputField = function(event, question_id) {
     event.preventDefault(); // Prevent default form/button behavior
     
     const button = event.target;
-    const wrapper = button.closest(".flex");
+    const wrapper = button.parentElement.parentElement;
     const changeGradeDiv = wrapper ? wrapper.querySelector("#change_grade") : null;
 
     if (changeGradeDiv) {
-        if (changeGradeDiv.classList.contains("hidden")) {
-            // It's currently hidden
-            changeGradeDiv.classList.remove("hidden");
-            console.log("Input field is now visible");
-
-        } else {
-            console.log("Input field was already visible");
-
+      if (changeGradeDiv.classList.contains("hidden")) {
+        changeGradeDiv.classList.remove("hidden");
+        console.log("Input field is now visible");
+      } else {
             const max_question_points = "{{ user_quiz.max_score }}"
             const gradeInput = changeGradeDiv.querySelector("input[type='number']");
             if (gradeInput && gradeInput.value <= max_question_points) {
                 // Simulate HTMX request if valid input exists
-                window.confirm("Are you sure you want to save this grade?")
-                htmx.ajax('POST', button.getAttribute('hx-post'), {
-                    target: button.getAttribute('hx-target'),
-                    swap: button.getAttribute('hx-swap'),
-                    headers: {
-                        "X-CSRFToken": "{{ csrf_token }}",
-                    },
-                    values: {
-                        points_awarded: gradeInput.value,
-                        question_id: question_id,
-                    }
-                });
+                const confirmed = window.confirm("Are you sure you want to save this grade?");
+                if (confirmed) {
+                  htmx.ajax('POST', button.getAttribute('hx-post'), {
+                      target: button.getAttribute('hx-target'),
+                      swap: "innerHTML",
+                      headers: {
+                          "X-CSRFToken": "{{ csrf_token }}",
+                      },
+                      values: {
+                          points_awarded: gradeInput.value,
+                          question_id: question_id,
+                      }
+                  });
+                }
             } else {
                 // Optional: give user feedback or skip HTMX
                 console.log("Input value not valid or grade field empty");
@@ -45,14 +43,23 @@ window.appearInputField = function(event, question_id) {
 }
 
 document.body.addEventListener('htmx:afterSwap', function(event) {
-      // onclick="appearInputField(event, '{{ question.id }}' )" 
-    nweButton = event.target.querySelector("button")
-    question_id = nweButton.getAttribute("data-question_id")
-    console.log("#####", nweButton)
-    nweButton.addEventListener('click', (event) => appearInputField(event, question_id));
-    console.log("#####", nweButton)
+  // Find the Change Grade button more specifically
+  const newButton = event.target.querySelector("button[data-question_id]");
+  const freshButton = null
+  if (newButton) {
+    const question_id = newButton.getAttribute("data-question_id");
+    
+    // Clear any existing event listeners (to avoid duplicates)
+    newButton.replaceWith(newButton.cloneNode(true));
+    freshButton = event.target.querySelector("button[data-question_id]");
+    // Add the event listener and required HTMX attributes
+    freshButton.addEventListener('click', function(e) {
+      appearInputField(e, question_id);
+    });
+  }
+
+  // change question correction status
     parent = event.target.parentElement
-    // change question correction status
     question_correction_status = parent.querySelector("#question_correction_status")
     question_correction_status_value = question_correction_status.value
     page_question_correction_status = parent.parentElement.querySelector("#question_correction_div")
@@ -69,12 +76,14 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
         </span>
       `;
     }
+
     // change current score
     newStudentScore = parent.querySelector("#user_score")
     pageScore = document.querySelector("#pageScore")
     max_question_points = pageScore.innerHTML.split("/")[1]
     newPageScore = `${newStudentScore.value}/${max_question_points}`
     pageScore.innerHTML = newPageScore
+
     // change quiz correction status
     correctionStatus = parent.querySelector("#correction_status_div")
     correctionStatusDiv = parent.parentElement.parentElement.parentElement.querySelector("#correction_status_div")
@@ -256,7 +265,7 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
                   {% csrf_token %}
                   <input type="hidden" name="question_id" value="{{ question.id }}" />
                   <div class="flex flex-col md:flex-row items-center gap-4">
-                    <div class="w-full md:w-1/3">
+                    <div id="change_grade" class="w-full md:w-1/3">
                       <label for="points_awarded"
                              class="block text-sm text-gray-700 dark:text-gray-300 mb-1">
                         Points (max: {{ question.points }})
@@ -272,9 +281,9 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
                       <input type="hidden" name="question_id" id="question_{{ question.id  }}" value="{{ question.id }}">
                     </div>
                     <div class="w-full md:w-2/3 flex items-end">
-                      <button onclick="appearInputField(event, '{{ question.id }}' )" 
-                              hx-include="#grade-input-{{ question.id }}, #question_{{ question.id  }}"
-                              class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"> Save Grade
+                      <button onclick="appearInputField(event, '{{ question.id }}' )"
+                          hx-target="#question-item-{{ question.id }}"
+                          class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"> Save Grade
                       </button>
                     </div>
                   </div>
@@ -302,7 +311,7 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
                     <button onclick="appearInputField(event, '{{ question.id }}' )" 
                       hx-target="#question-item-{{ question.id }}"
                       class="text-sm bg-blue-600 hover:bg-blue-700 text-white py-2 px-2 rounded"> Change Grade
-                  </button>
+                    </button>
                   <h3 class="text-sm font-semibold text-green-800 dark:text-green-300">Grading Result:</h3>
                   </div>
                   <div class="text-green-800 dark:text-green-300 font-bold">

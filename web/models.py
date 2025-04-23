@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from io import BytesIO
 from typing import ClassVar
 import json
+from django.db.models import Sum
 
 from allauth.account.signals import user_signed_up
 from django.conf import settings
@@ -2181,8 +2182,6 @@ class UserQuiz(models.Model):
     anonymous_id = models.CharField(
         max_length=36, blank=True, default="", help_text="Identifier for non-logged-in users"
     )
-    score = models.FloatField(default=0.0)
-    max_score = models.FloatField(default=0.0)
     completed = models.BooleanField(default=False)
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
@@ -2204,6 +2203,7 @@ class UserQuiz(models.Model):
         user_str = self.user.username if self.user else f"Anonymous ({self.anonymous_id})"
         return f"{user_str} - {self.quiz.title}"
 
+    # return percentage from 0% to 100%
     def calculate_score(self):
         """Calculate the score based on answers."""
         score = 0
@@ -2213,11 +2213,9 @@ class UserQuiz(models.Model):
         for q_id, answer_data in answers.items():
             question = QuizQuestion.objects.get(id=q_id)
             max_score += question.points
-
             score += answer_data.get("points_awarded", 0)
 
         quiz_Percentage = round((score / max_score) * 100, 1)
-
         return quiz_Percentage
 
     def complete_quiz(self):
@@ -2229,6 +2227,36 @@ class UserQuiz(models.Model):
         self.calculate_score()
         self.save()
 
+    @property
+    def max_score(self):
+        """Calculate max_score dynamically from the answered questions."""
+        answers = json.loads(self.answers) if isinstance(self.answers, str) else self.answers
+        max_score = 0
+
+        for q_id, answer_data in answers.items():
+            question = QuizQuestion.objects.get(id=q_id)
+            max_score += question.points
+
+        return max_score
+    
+    @property
+    def score(self):
+        """Calculate max_score dynamically from the answered questions."""
+        answers = json.loads(self.answers) if isinstance(self.answers, str) else self.answers
+        score = 0
+        for q_id, answer_data in answers.items():
+            question = QuizQuestion.objects.get(id=q_id)
+            points_awarded = answer_data.get("points_awarded", 0)
+
+            if points_awarded < 0:
+                score += 0
+            elif points_awarded > question.points:
+                score += question.points
+            else:
+                score += points_awarded
+
+        return score
+    
     @property
     def duration(self):
         """Return the duration of the quiz attempt as a formatted string."""

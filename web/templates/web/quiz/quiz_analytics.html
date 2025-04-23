@@ -22,9 +22,6 @@
     const questionAnalysisData = JSON.parse(document.getElementById('question-analysis-data').textContent || '[]')
     const scoreDistributionData = JSON.parse(document.getElementById('score-distribution-data').textContent || '[]');
     const attemptsTimeData = JSON.parse(document.getElementById('attempts-time-data').textContent || '[]');
-    // console.log(questionAnalysisData)
-    console.log(scoreDistributionData)
-    // console.log(attemptsTimeData)
 
     // Score Distribution Chart
     const scoreCtx = document.getElementById('scoreDistributionChart').getContext('2d');
@@ -93,6 +90,11 @@
             indexAxis: 'y',
             responsive: true,
             maintainAspectRatio: false,
+                    layout: {
+            padding: {
+                left: 0, 
+            }
+        },
             scales: {
                 x: {
                     min: 0,
@@ -105,6 +107,11 @@
                 },
                 tooltip: {
                     callbacks: {
+                        title: function(context) {
+                            // Show full question text in tooltip
+                            const dataIndex = context[0].dataIndex;
+                            return questionAnalysisData[dataIndex].text || `Question ${dataIndex + 1}`;
+                        },
                         label: function(context) {
                             return context.raw + '% correct';
                         }

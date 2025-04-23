@@ -373,11 +373,7 @@ urlpatterns += i18n_patterns(
         quiz_views.student_exam_correction,
         name="student_exam_correction",
     ),
-    path(
-        "quizzes/results/<int:user_quiz_id>/grade/<int:question_id>/",
-        quiz_views.grade_short_answer,
-        name="grade_short_answer",
-    ),
+    path('quiz/mark-attempt/<int:user_quiz_id>/', quiz_views.mark_quiz_attempt, name='mark_quiz_attempt'),
     # Grade-a-Link URLs
     path("grade-links/", GradeableLinkListView.as_view(), name="gradeable_link_list"),
     path("grade-links/submit/", GradeableLinkCreateView.as_view(), name="gradeable_link_create"),

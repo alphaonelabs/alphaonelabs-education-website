@@ -677,8 +677,6 @@ class Command(BaseCommand):
                 UserQuiz.objects.create(
                     quiz=course_exam,
                     user=student,
-                    score=random.randint(50, 100),
-                    max_score=100,
                     completed=True,
                     start_time=timezone.now() - timedelta(days=random.randint(1, 5)),
                     end_time=timezone.now() - timedelta(days=random.randint(0, 4)),
@@ -718,7 +716,7 @@ class Command(BaseCommand):
 
                 question = QuizQuestion.objects.create(
                     quiz=session_exam,
-                    text=f"Question {i + 1}: {question_text} - {question_type}",
+                    text=f"Question {i + 1}: {question_text}",
                     question_type=question_type,
                     explanation=f"Explanation for question {i + 1}",
                     points=1,
@@ -739,8 +737,6 @@ class Command(BaseCommand):
                     UserQuiz.objects.create(
                         quiz=session_exam,
                         user=student,
-                        score=random.randint(60, 100),
-                        max_score=100,
                         completed=True,
                         start_time=session.start_time + timedelta(days=1),
                         end_time=session.start_time + timedelta(days=1, hours=1),
