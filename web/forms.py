@@ -1915,8 +1915,7 @@ class VideoRequestForm(forms.ModelForm):
         title = self.cleaned_data.get("title", "")  # Added default value
 
     def clean_description(self) -> str:
-        description = self.cleaned_data.get("description", "")
-        return bleach.clean(
+        description = self.cleaned_data.get("description", "")  # Added default value
             description,
             tags=self.ALLOWED_TAGS,
             attributes=self.ALLOWED_ATTRIBUTES,
