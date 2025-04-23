@@ -7603,6 +7603,7 @@ def contributors_list_view(request):
         return render(request, "web/contributors_list.html", {"contributors": []})
 
 
+@login_required
 def video_request_list(request):
     """View for listing video requests with optional category filtering."""
     # Get category filter from query params

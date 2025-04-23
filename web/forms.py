@@ -1,6 +1,7 @@
 import re
 from urllib.parse import parse_qs, urlparse
 
+import bleach
 from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
 from cryptography.fernet import Fernet
@@ -1873,8 +1874,14 @@ class StudyGroupForm(forms.ModelForm):
         fields = ["name", "description", "course", "max_members", "is_private"]
 
 
+ALLOWED_TAGS = ["b", "i", "strong", "em", "ul", "ol", "li", "p", "a"]
+ALLOWED_ATTRIBUTES = {
+    "a": ["href", "title", "target"],
+}
+
+
 class VideoRequestForm(forms.ModelForm):
-    """Form for users to request educational videos on specific topics."""
+    """Form for users to request educational videos on specific topics, with XSS protection."""
 
     class Meta:
         model = VideoRequest
@@ -1904,3 +1911,19 @@ class VideoRequestForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Order subjects by name
         self.fields["category"].queryset = Subject.objects.all().order_by("name")
+
+    def clean_title(self):
+        title = self.cleaned_data.get("title", "")
+        # strip any tags entirely (just keep plain text)
+        return bleach.clean(title, tags=[], attributes={}, strip=True)
+
+    def clean_description(self):
+        description = self.cleaned_data.get("description", "")
+        # allow a small safe subset of tags
+        cleaned = bleach.clean(
+            description,
+            tags=ALLOWED_TAGS,
+            attributes=ALLOWED_ATTRIBUTES,
+            strip=True,
+        )
+        return cleaned
