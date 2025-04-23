@@ -2923,3 +2923,34 @@ class Discount(models.Model):
 
     def __str__(self):
         return f"{self.code} for {self.user.username} on {self.course.title}"
+
+
+class VideoRequest(models.Model):
+    """Model for users to request educational videos on specific topics."""
+
+    title = models.CharField(max_length=200, help_text="Short title describing the requested video")
+    description = models.TextField(help_text="Detailed description of what you'd like to learn from this video")
+    category = models.ForeignKey(Subject, on_delete=models.PROTECT, related_name="video_requests")
+    requester = models.ForeignKey(User, on_delete=models.CASCADE, related_name="video_requests")
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("pending", "Pending"),
+            ("approved", "Approved"),
+            ("fulfilled", "Fulfilled"),
+            ("rejected", "Rejected"),
+        ],
+        default="pending",
+    )
+    fulfilled_by = models.ForeignKey(
+        EducationalVideo, on_delete=models.SET_NULL, related_name="fulfilling_requests", null=True, blank=True
+    )
+
+    class Meta:
+        verbose_name = "Video Request"
+        verbose_name_plural = "Video Requests"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.title

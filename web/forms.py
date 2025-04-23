@@ -49,6 +49,7 @@ from .models import (
     TeamGoal,
     TeamGoalMember,
     TeamInvite,
+    VideoRequest,
     WaitingRoom,
 )
 from .referrals import handle_referral
@@ -85,6 +86,7 @@ __all__ = [
     "ForumTopicForm",
     "BlogPostForm",
     "MessageTeacherForm",
+    "VideoRequestForm",
     "FeedbackForm",
     "GoodsForm",
     "StorefrontForm",
@@ -1869,3 +1871,36 @@ class StudyGroupForm(forms.ModelForm):
     class Meta:
         model = StudyGroup
         fields = ["name", "description", "course", "max_members", "is_private"]
+
+
+class VideoRequestForm(forms.ModelForm):
+    """Form for users to request educational videos on specific topics."""
+
+    class Meta:
+        model = VideoRequest
+        fields = ["title", "description", "category"]
+        widgets = {
+            "title": TailwindInput(attrs={"placeholder": "Title of the video you're requesting"}),
+            "description": TailwindTextarea(
+                attrs={
+                    "rows": 4,
+                    "placeholder": (
+                        "Describe what you'd like to learn from this video "
+                        "(e.g., 'I'd like a video on calculus basics')"
+                    ),
+                }
+            ),
+            "category": TailwindSelect(
+                attrs={
+                    "class": (
+                        "w-full px-4 py-2 border border-gray-300 dark:border-gray-600"
+                        " rounded-lg focus:ring-2 focus:ring-blue-500"
+                    )
+                }
+            ),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Order subjects by name
+        self.fields["category"].queryset = Subject.objects.all().order_by("name")
