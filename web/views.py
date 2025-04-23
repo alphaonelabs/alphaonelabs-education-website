@@ -7621,11 +7621,10 @@ def video_request_list(request):
         selected_category_display = None
 
     # Get category counts for sidebar
-    category_counts = dict(
-        VideoRequest.objects.values("category__name", "category__slug")
-        .annotate(count=Count("id"))
-        .values_list("category__slug", "count")
-    )
+    category_counts = {
+        category.slug: VideoRequest.objects.filter(category=category).count()
+        for category in Subject.objects.all()
+    }
 
     # Context
     context = {

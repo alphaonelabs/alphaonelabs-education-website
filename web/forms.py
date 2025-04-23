@@ -1912,7 +1912,7 @@ class VideoRequestForm(forms.ModelForm):
         self.fields["category"].queryset = Subject.objects.all().order_by("name")
 
     def clean_title(self) -> str:
-        title = self.cleaned_data.get("title", "")
+        title = self.cleaned_data.get("title", "")  # Added default value
         return bleach.clean(title, tags=self.ALLOWED_TAGS, attributes=self.ALLOWED_ATTRIBUTES, strip=True)
 
     def clean_description(self) -> str:
