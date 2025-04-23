@@ -1,4 +1,5 @@
 import re
+from typing import ClassVar, Dict, List
 from urllib.parse import parse_qs, urlparse
 
 import bleach
@@ -1874,14 +1875,13 @@ class StudyGroupForm(forms.ModelForm):
         fields = ["name", "description", "course", "max_members", "is_private"]
 
 
-ALLOWED_TAGS = ["b", "i", "strong", "em", "ul", "ol", "li", "p", "a"]
-ALLOWED_ATTRIBUTES = {
-    "a": ["href", "title", "target"],
-}
-
-
 class VideoRequestForm(forms.ModelForm):
     """Form for users to request educational videos on specific topics, with XSS protection."""
+
+    ALLOWED_TAGS: ClassVar[List[str]] = ["b", "i", "strong", "em", "ul", "ol", "li", "p", "a"]
+    ALLOWED_ATTRIBUTES: ClassVar[Dict[str, List[str]]] = {
+        "a": ["href", "title", "target"],
+    }
 
     class Meta:
         model = VideoRequest
@@ -1893,7 +1893,7 @@ class VideoRequestForm(forms.ModelForm):
                     "rows": 4,
                     "placeholder": (
                         "Describe what you'd like to learn from this video "
-                        "(e.g., 'I'd like a video on calculus basics')"
+                        "(e.g., 'I'd like a video on calculus basics')",
                     ),
                 }
             ),
@@ -1901,29 +1901,25 @@ class VideoRequestForm(forms.ModelForm):
                 attrs={
                     "class": (
                         "w-full px-4 py-2 border border-gray-300 dark:border-gray-600"
-                        " rounded-lg focus:ring-2 focus:ring-blue-500"
+                        " rounded-lg focus:ring-2 focus:ring-blue-500",
                     )
                 }
             ),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        # Order subjects by name
         self.fields["category"].queryset = Subject.objects.all().order_by("name")
 
-    def clean_title(self):
+    def clean_title(self) -> str:
         title = self.cleaned_data.get("title", "")
-        # strip any tags entirely (just keep plain text)
         return bleach.clean(title, tags=[], attributes={}, strip=True)
 
-    def clean_description(self):
+    def clean_description(self) -> str:
         description = self.cleaned_data.get("description", "")
-        # allow a small safe subset of tags
-        cleaned = bleach.clean(
+        return bleach.clean(
             description,
-            tags=ALLOWED_TAGS,
-            attributes=ALLOWED_ATTRIBUTES,
+            tags=self.ALLOWED_TAGS,
+            attributes=self.ALLOWED_ATTRIBUTES,
             strip=True,
         )
-        return cleaned
