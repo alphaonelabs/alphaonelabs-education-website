@@ -613,21 +613,29 @@ def take_quiz(request, quiz_id):
 def mark_quiz_attempt(request, user_quiz_id):
     """Mark a quiz attempt as completed when user leaves the page"""
     if request.method == 'POST':
-        print("REQUEST DONE &&&&&&&&&", user_quiz_id)
-        user_quiz = get_object_or_404(UserQuiz, id=user_quiz_id)
-        
-        # Only allow the user who started the quiz to mark it
-        if user_quiz.user != request.user:
-            return HttpResponseForbidden("You don't have permission to modify this quiz attempt.")
-        
-        print("REQUEST DONE &&&&&&&&&")
-        # Mark as completed with current time if not already completed
-        if not user_quiz.completed:
-            user_quiz.completed = True
-            user_quiz.end_time = timezone.now()
-            user_quiz.save()
+        try:
+            user_quiz = get_object_or_404(UserQuiz, id=user_quiz_id)
             
-        return HttpResponse(status=200)
+            # Only allow the user who started the quiz to mark it
+            if user_quiz.user != request.user:
+                return HttpResponseForbidden("You don't have permission to modify this quiz attempt.")
+            
+            print("########### DONE FROM mark_quiz_attempt ##########")
+            # # Mark as completed with current time if not already completed
+            if not user_quiz.completed:
+                user_quiz.completed = True
+                user_quiz.end_time = timezone.now()
+                user_quiz.save()
+
+            print("########", user_quiz.quiz.id, user_quiz.quiz)
+            quiz = get_object_or_404(Quiz, id=user_quiz.quiz.id)
+            return _process_quiz_taking(request, quiz)
+            # return HttpResponse(status=200)
+
+        except Exception as e:
+            # Log error but don't break the user experience
+            print(f"Error marking quiz attempt: {str(e)}")
+            return HttpResponse(status=500)
     return HttpResponse(status=405)  # Method not allowed
 
 @login_required
@@ -647,22 +655,38 @@ def _process_quiz_taking(request, quiz):
     # Get the questions in the correct order
     questions = list(quiz.questions.order_by("order"))
 
-    # Shuffle questions if quiz settings require it
-    if quiz.randomize_questions:
-        random.shuffle(questions)
-
-    # Check if user has already reached max attempts
-    if user and quiz.max_attempts > 0:
-        attempt_count = UserQuiz.objects.filter(quiz=quiz, user=user).count()
-        if attempt_count >= quiz.max_attempts:
-            messages.error(
-                request, f"You have reached the maximum number of attempts ({quiz.max_attempts}) for this quiz."
+    # Check for existing incomplete attempts first
+    if user:
+        incomplete_attempt = UserQuiz.objects.filter(quiz=quiz, user=user, completed=False).first()
+        if incomplete_attempt:
+            messages.warning(
+                request, 
+                "You previously left this quiz without completing it. This counts as an attempt."
             )
-            return redirect("quiz_results", user_quiz_id=user_quiz.id)
+            # Mark it as completed
+            incomplete_attempt.completed = True
+            incomplete_attempt.end_time = timezone.now()
+            incomplete_attempt.save()
+            return redirect("quiz_results", user_quiz_id=incomplete_attempt.id)
         
+        # Check if user has already reached max attempts
+        if quiz.max_attempts > 0:
+            attempt_count = UserQuiz.objects.filter(quiz=quiz, user=user).count()
+            if attempt_count >= quiz.max_attempts:
+                messages.error(
+                    request, f"You have reached the maximum number of attempts ({quiz.max_attempts}) for this quiz."
+                )
+                # Find the latest attempt to show results
+                latest_attempt = UserQuiz.objects.filter(quiz=quiz, user=user).order_by('-start_time').first()
+                return redirect("quiz_results", user_quiz_id=latest_attempt.id)
+
     # Create new attempt
     user_quiz = UserQuiz(quiz=quiz, user=user)
     user_quiz.save()
+
+    # Shuffle questions if quiz settings require it
+    if quiz.randomize_questions:
+        random.shuffle(questions)
 
     # Prepare questions and options for display
     prepared_questions = []
@@ -692,6 +716,7 @@ def _process_quiz_taking(request, quiz):
         q_dict["options"] = clean_options
         prepared_questions.append(q_dict)
 
+    print("$$$$$$$$$", request.method)
     if request.method == "POST":
         form = TakeQuizForm(request.POST, quiz=quiz)
 
@@ -921,7 +946,9 @@ def quiz_results(request, user_quiz_id):
         total_questions += 1
         id = str(question.id)
         options = question.options.all()
-
+        
+        print("#######", answers)
+        print("#######", answers[id])
         answers[id]["question_title"] = question.text
         answers[id]["type_display"] =  question.get_question_type_display()
         answers[id]["question_type"] = question.question_type

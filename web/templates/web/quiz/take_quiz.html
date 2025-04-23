@@ -71,37 +71,86 @@
           }
       });
 
-      function makeExamSecure() {
-          // Define user_quiz_id for use in JavaScript
-        const user_quiz_id = "{{ user_quiz_id }}";
-        let quizSubmitted = false;
+  function makeExamSecure() {
+            // Define user_quiz_id for use in JavaScript
+    const user_quiz_id = "{{ user_quiz.id }}";
+    
+    // Store in localStorage to persist across page refreshes
+    if (user_quiz_id) {
+        localStorage.setItem('current_quiz_attempt', user_quiz_id);
+    }
+    
+    let quizSubmitted = false;
+    let isRefreshing = false;
 
-        // Mark quiz as completed when leaving page
-        window.addEventListener('beforeunload', function(e) {
-            if (!quizSubmitted) {
-                // Show warning dialog
-                e.preventDefault();
-                // didn`t work
-                e.returnValue = 'You are about to leave the quiz. This will count as an attempt. Are you sure?';
-                console.log("####################")
-                
-                // Mark the attempt as completed via AJAX
+    // Handle page unload
+    window.addEventListener('beforeunload', function(e) {
+        if (!quizSubmitted && !isRefreshing) {
+            // Show warning dialog
+            e.preventDefault();
+            e.returnValue = 'You are about to leave the quiz. This will count as an attempt. Are you sure?';
+            
+            // Get the user_quiz_id from variable or localStorage
+            const quizId = user_quiz_id || localStorage.getItem('current_quiz_attempt');
+            
+            // Mark the attempt as completed via sendBeacon
+            if (quizId) {
+                const formData = new FormData();
+                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
                 navigator.sendBeacon(
-                    "{% url 'mark_quiz_attempt' user_quiz_id %}",
-                    new FormData()
+                    "{% url 'mark_quiz_attempt' 0 %}".replace('0', quizId),
+                    formData
                 );
             }
-        });
-        
-        // Prevent page refresh with F5 or Ctrl+R
-        document.addEventListener('keydown', function(e) {
-            if ((e.key === 'F5') || 
-                (e.key === 'r' && (e.ctrlKey || e.metaKey))) {
-                e.preventDefault();
-                alert('Refreshing the page is not allowed during a quiz.');
-                return false;
+        }
+    });
+    
+    // Handle refresh key combinations
+    document.addEventListener('keydown', function(e) {
+        if ((e.key === 'F5') || 
+            (e.key === 'r' && (e.ctrlKey || e.metaKey))) {
+            e.preventDefault();
+            
+            // Mark that we're intentionally refreshing
+            isRefreshing = true;
+            
+            // Mark the attempt as completed before refresh
+            const quizId = user_quiz_id || localStorage.getItem('current_quiz_attempt');
+            if (quizId) {
+                // Use fetch with keepalive for better browser support
+                fetch("{% url 'mark_quiz_attempt' 0 %}".replace('0', quizId), {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}',
+                    },
+                    keepalive: true
+                }).then(() => {
+                    alert('Refreshing will count as completing your current attempt.');
+                    window.location.reload();
+                }).catch(() => {
+                    alert('Failed to mark your attempt as completed. Please continue your quiz.');
+                });
+            } else {
+                alert('Refreshing is not allowed during a quiz.');
             }
-        });
+            return false;
+        }
+    });
+
+    // Add event listener to the form submission
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('quiz-form');
+        if (form) {
+            form.addEventListener('submit', function() {
+                // Mark as submitted so we don't trigger the beforeunload warning
+                quizSubmitted = true;
+                
+                // Clear stored data
+                localStorage.removeItem('current_quiz_attempt');
+                localStorage.removeItem('quiz_' + user_quiz_id + '_remaining_time');
+            });
+        }
+    });
       }
       makeExamSecure()
   </script>
