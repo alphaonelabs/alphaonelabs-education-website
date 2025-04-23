@@ -1913,7 +1913,7 @@ class VideoRequestForm(forms.ModelForm):
 
     def clean_title(self) -> str:
         title = self.cleaned_data.get("title", "")
-        return bleach.clean(title, tags=[], attributes={}, strip=True)
+        return bleach.clean(title, tags=self.ALLOWED_TAGS, attributes=self.ALLOWED_ATTRIBUTES, strip=True)
 
     def clean_description(self) -> str:
         description = self.cleaned_data.get("description", "")
