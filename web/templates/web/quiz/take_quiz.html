@@ -8,21 +8,23 @@
 {% block extra_head %}
   {{ block.super }}
   <script>
-      // Define user_quiz_id for use in JavaScript
-      const user_quiz_id = "{{ user_quiz_id }}";
-
+    // Define user_quiz_id for use in JavaScript
+    let user_quiz_id = "{{ user_quiz_id }}";
+    
     // Timer functionality
     document.addEventListener('DOMContentLoaded', function() {
-        // Check if we have a time limit
+
+      header = document.querySelector("header")
+      header.classList.add("hidden")
+
+      footer = document.querySelector("footer")
+      footer.classList.add("hidden")
+
+      // Check if we have a time limit
         const timeLimit = parseInt("{{ quiz.time_limit|default:0 }}");
         if (timeLimit > 0) {
-            let remainingTime = timeLimit * 60; // convert to seconds
-
-            // Check if we have a stored time for this quiz attempt
-            const storedTime = localStorage.getItem('quiz_' + user_quiz_id + '_remaining_time');
-            if (storedTime) {
-                remainingTime = parseInt(storedTime);
-            }
+            let remainingTime =  parseFloat("{{ remaining_time|default:0 }}");
+            localStorage.getItem('quiz_' + user_quiz_id + '_remaining_time', remainingTime);
 
             const timerElement = document.getElementById('timer');
             if (!timerElement) return; // Exit if timer element doesn't exist
@@ -56,6 +58,7 @@
                 if (remainingTime <= 0) {
                     clearInterval(timerInterval);
                     localStorage.removeItem('quiz_' + user_quiz_id + '_remaining_time');
+                    console.log("## remainingTime ##", remainingTime)
                     document.getElementById('quiz-form').submit();
                 }
             }, 1000);
@@ -70,87 +73,161 @@
             });
         }
 
-      const form = document.getElementById('quiz-form');
-      if (form) {
-          form.addEventListener('submit', function() {
-              // Mark as submitted so we don't trigger the beforeunload warning
-              quizSubmitted = true;
-              
-              // Clear stored data
-              localStorage.removeItem('current_quiz_attempt');
-              localStorage.removeItem('quiz_' + user_quiz_id + '_remaining_time');
-          });
-      }
-    });
-
-
-    // Store in localStorage to persist across page refreshes
-    if (user_quiz_id) {
-        localStorage.setItem('current_quiz_attempt', user_quiz_id);
-    }
-    
-    let quizSubmitted = false;
-    let isRefreshing = false;
-
-    // Handle page unload
-    window.addEventListener('beforeunload', function(e) {
-        if (!quizSubmitted && !isRefreshing) {
-            // Show warning dialog
-            e.preventDefault();
-            e.returnValue = '';
-            // let confirmed = confirm('You are about to leave the quiz. This will count as an attempt. Are you sure?') 
-            // console.log("####################################")
-            // if (confirmed) {
-              console.log("##########", confirmed)
-              // Get the user_quiz_id from variable or localStorage
-              const quizId = user_quiz_id || localStorage.getItem('current_quiz_attempt');
-              console.log("##### local #####", quizId)
-              
-              // Mark the attempt as completed via sendBeacon
-              if (quizId) {
-                  console.log("##### Done #####", quizId)
-                  const formData = new FormData();
-                  formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-                  navigator.sendBeacon(
-                      "{% url 'mark_quiz_attempt' 0 %}".replace('0', quizId),
-                      formData
-                  );
+         // Save all form inputs to localStorage for refresh persistence
+      function saveFormState() {
+        const form = document.getElementById('quiz-form');
+        if (!form) return;
+        
+        // Collect all form inputs
+        const formData = {};
+        const inputs = form.querySelectorAll('input, textarea, select');
+        
+        inputs.forEach(input => {
+          if (input.name) {
+            if (input.type === 'checkbox' || input.type === 'radio') {
+              if (input.checked) {
+                formData[input.name] = input.value;
               }
-            // }
-        }
-    });
-    
-    // Handle refresh key combinations
-    document.addEventListener('keydown', function(e) {
-        if ((e.key === 'F5') || 
-            (e.key === 'r' && (e.ctrlKey || e.metaKey))) {
-            e.preventDefault();
-            
-            // Mark that we're intentionally refreshing
-            isRefreshing = true;
-            
-            // Mark the attempt as completed before refresh
-            const quizId = user_quiz_id || localStorage.getItem('current_quiz_attempt');
-            if (quizId) {
-                // Use fetch with keepalive for better browser support
-                fetch("{% url 'mark_quiz_attempt' 0 %}".replace('0', quizId), {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}',
-                    },
-                    keepalive: true
-                }).then(() => {
-                    console.log(alert('Refreshing will count as completing your current attempt.');) 
-                    // window.location.reload();
-                }).catch(() => {
-                    alert('Failed to mark your attempt as completed. Please continue your quiz.');
-                });
             } else {
-                alert('Refreshing is not allowed during a quiz.');
+              formData[input.name] = input.value;
             }
-            return false;
+          }
+        });
+        
+        // Save to localStorage
+        localStorage.setItem(`quiz_${user_quiz_id}_formState`, JSON.stringify(formData));
+      }
+
+      // Load form state from localStorage after refresh
+      function loadFormState() {
+        const savedState = localStorage.getItem(`quiz_${user_quiz_id}_formState`);
+        if (!savedState) return;
+        
+        try {
+          const formData = JSON.parse(savedState);
+          const form = document.getElementById('quiz-form');
+          
+          for (const [name, value] of Object.entries(formData)) {
+            const input = form.querySelector(`[name="${name}"]`);
+            if (input) {
+              if (input.type === 'checkbox' || input.type === 'radio') {
+                input.checked = input.value === value;
+              } else {
+                input.value = value;
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Error loading saved form state:', e);
         }
+      }
+      
+      // Attempt to load saved form state on page load
+      loadFormState();
+      
+      // Save form state periodically (every 3 seconds)
+      setInterval(saveFormState, 3000);
+      
+      // Save form state on any input change
+      document.getElementById('quiz-form').addEventListener('input', saveFormState);
+      
+      // Track form submission to avoid warnings
+      document.getElementById('quiz-form').addEventListener('submit', function() {
+        quizSubmitted = true;
+        localStorage.removeItem(`quiz_${user_quiz_id}_formState`);
+      });
+      
+      // === PREVENTING BACK/FORWARD NAVIGATION ===
+      
+      // 1. Use History API to trap the user on the current page
+      history.pushState(null, document.title, location.href);
+      
+      // 2. When user tries to navigate back, push another state to keep them on page
+      window.addEventListener('popstate', function(event) {
+        history.pushState(null, document.title, location.href);
+        alert('Navigation back or forward is not allowed during a quiz.');
+      });
+      
+      // 3. Handle refresh specifically (allow it)
+      function handleRefresh(event) {
+        // This is a refresh, not navigation
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', csrfToken);
+        formData.append('is_refresh', 'true');
+        
+        // Use fetch with keepalive to ensure request completes
+        fetch("{% url 'mark_quiz_attempt' 0 %}".replace('0', user_quiz_id), {
+          method: 'POST',
+          body: formData,
+          keepalive: true
+        });
+        
+        // Allow the refresh to continue
+        return true;
+      }
+      
+      // 4. Handle key-based refresh (F5, Ctrl+R)
+      document.addEventListener('keydown', function(e) {
+        if ((e.key === 'F5') || (e.key === 'r' && (e.ctrlKey || e.metaKey))) {
+          // Let refresh happen naturally
+          handleRefresh(e);
+          // Don't prevent default - allow refresh
+          return true;
+        }
+      });
+      
+      // 5. Handle browser reload button
+      window.addEventListener('beforeunload', function(e) {
+        // If it's a form submission, don't show warning
+        if (quizSubmitted) return;
+        
+        // Check if ctrl+r or F5 was recently pressed (refresh)
+        if (e.currentTarget.performance.navigation.type === 1) {
+          handleRefresh(e);
+          return;
+        }
+        
+        // For any other navigation away, show warning and mark attempt
+        e.preventDefault();
+        e.returnValue = 'Leaving this page will end your quiz attempt. Are you sure?';
+        
+        // Mark as completed when actually navigating away
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', csrfToken);
+        formData.append('is_refresh', 'false');
+        
+        navigator.sendBeacon("{% url 'mark_quiz_attempt' 0 %}".replace('0', user_quiz_id), formData);
+
+        // 1️⃣ Build FormData
+        const data = new FormData(form);
+
+        // 2️⃣ Iterate & log each name/value pair
+        console.group('Form will submit these fields:');
+        for (const [name, value] of data.entries()) {
+          console.log(name, ':', value);
+        }
+        console.groupEnd();
+      });
+
+      const form = document.getElementById('quiz-form');
+
+        // 1️⃣ Build FormData
+        const data = new FormData(form);
+
+        // 2️⃣ Iterate & log each name/value pair
+        console.group('Form will submit these fields:');
+        for (const [name, value] of data.entries()) {
+          console.log(name, ':', value);
+        }
+        console.groupEnd();
+
     });
+
+      function closeWarningMessage() {
+        messageButton = document.querySelector("#hideWarningButton")
+        messageDiv = messageButton.parentElement.parentElement
+        messageDiv.remove()
+      }
 
   </script>
   <style>
@@ -176,20 +253,13 @@
 {% block content %}
   <div class="container mx-auto px-4 py-8">
       <!-- Warning message -->
-    <div class="quiz-warning mb-6">
+    <div class="quiz-warning mb-6 relative">
       <h3 class="font-bold text-lg mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>Important Notice</h3>
-      {{ user_quiz.id }}
       <p>Once you start this quiz, you must complete it in a single session. If you navigate away from this page or close your browser, your attempt will be automatically submitted and counted.</p>
+      <button onclick="closeWarningMessage()">
+        <i id="hideWarningButton" class="fas fa-x text-blue-600 dark:text-blue-400 mr-2 absolute top-[5px] right-[5px] p-[6px] cursor-pointer"></i>
+      </button>
     </div>
-    <!-- Breadcrumbs -->
-    <nav class="text-sm mb-6">
-      <a href="{% url 'index' %}" class="text-blue-600 hover:text-blue-800">Home</a>
-      <span class="mx-2">/</span>
-      <a href="{% url 'quiz_list' %}"
-         class="text-blue-600 hover:text-blue-800">Quizzes</a>
-      <span class="mx-2">/</span>
-      <span class="text-gray-600">Taking: {{ quiz.title }}</span>
-    </nav>
     <!-- Quiz Header -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-6">
       <div class="p-6">

@@ -614,28 +614,30 @@ def mark_quiz_attempt(request, user_quiz_id):
     """Mark a quiz attempt as completed when user leaves the page"""
     if request.method == 'POST':
         try:
+            print("### is_refresh ###", is_refresh)
+            # Check if this is a refresh or navigation
+            is_refresh = request.POST.get('is_refresh') == 'true'
             user_quiz = get_object_or_404(UserQuiz, id=user_quiz_id)
             
-            # Only allow the user who started the quiz to mark it
+            # Only allow the user who started the quiz to interact with it
             if user_quiz.user != request.user:
                 return HttpResponseForbidden("You don't have permission to modify this quiz attempt.")
             
-            print("########### DONE FROM mark_quiz_attempt ##########")
-            # # Mark as completed with current time if not already completed
-            if not user_quiz.completed:
-                user_quiz.answers = None
+            # For refreshes, just return success without completing
+            if is_refresh:
+                return HttpResponse(status=200)
+                
+            # For navigation away (not refresh), mark as completed
+            if not user_quiz.completed and not is_refresh:
+                user_quiz.answers = None  # Clear answers if incomplete navigation
                 user_quiz.correction_status = "not_needed"
                 user_quiz.complete_quiz()
                 user_quiz.save()
-
-            print("########", user_quiz.quiz.id, user_quiz.quiz)
-            quiz = get_object_or_404(Quiz, id=user_quiz.quiz.id)
-            return _process_quiz_taking(request, quiz)
-            # return HttpResponse(status=200)
-
+                
+            return HttpResponse(status=200)
+            
         except Exception as e:
-            # Log error but don't break the user experience
-            print(f"Error marking quiz attempt: {str(e)}")
+            print(f"Error in mark_quiz_attempt: {str(e)}")
             return HttpResponse(status=500)
     return HttpResponse(status=405)  # Method not allowed
 
@@ -646,7 +648,6 @@ def _process_quiz_taking(request, quiz):
 
     # Create a new UserQuiz attempt record
     user = request.user if request.user.is_authenticated else None
-    user_quiz = UserQuiz(quiz=quiz, user=user)
 
     # Check if the quiz has questions
     if not quiz.questions.exists():
@@ -656,32 +657,45 @@ def _process_quiz_taking(request, quiz):
     # Get the questions in the correct order
     questions = list(quiz.questions.order_by("order"))
 
+    # Check if user has already reached max attempts
+    if quiz.max_attempts > 0:
+        attempt_count = UserQuiz.objects.filter(quiz=quiz, user=user, completed=True).count()
+        if attempt_count >= quiz.max_attempts:
+            messages.error(
+                request, f"You have reached the maximum number of attempts ({quiz.max_attempts}) for this quiz."
+            )
+            # Find the latest attempt to show results
+            latest_attempt = UserQuiz.objects.filter(quiz=quiz, user=user).order_by('-start_time').first()
+            return redirect("quiz_results", user_quiz_id=latest_attempt.id)
+
+    user_quiz = None
+    remaining_time = 0
     # Check for existing incomplete attempts first
     if user:
+        # calculate remaining time
+        def calculate_remaining_time():
+            delta = timezone.now() - user_quiz.start_time
+            total_secs_remaining = max(0, quiz.time_limit * 60 - delta.total_seconds())
+            print("## total_secs_remaining ##", total_secs_remaining)
+            return int(total_secs_remaining)
+
         incomplete_attempt = UserQuiz.objects.filter(quiz=quiz, user=user, completed=False).first()
-        if incomplete_attempt:
-            messages.warning(
-                request, 
-                "You previously left this quiz without completing it. This counts as an attempt."
-            )
-            # Mark it as completed
-            incomplete_attempt.complete_quiz()
-            return redirect("quiz_results", user_quiz_id=incomplete_attempt.id)
-        
-        # Check if user has already reached max attempts
-        if quiz.max_attempts > 0:
-            attempt_count = UserQuiz.objects.filter(quiz=quiz, user=user).count()
-            if attempt_count >= quiz.max_attempts:
-                messages.error(
-                    request, f"You have reached the maximum number of attempts ({quiz.max_attempts}) for this quiz."
-                )
+        if not incomplete_attempt:
+            user_quiz = UserQuiz(quiz=quiz, user=user)
+            user_quiz.save()
+            remaining_time = calculate_remaining_time()
+        else:
+            user_quiz = incomplete_attempt
+            remaining_time = calculate_remaining_time()
+            print("## remaining_time <= 0 ##", remaining_time <= 0)
+            if remaining_time <= 0 :
+                user_quiz.complete_quiz()
+                user_quiz.correction_status = "not_needed"
+                user_quiz.save()
+                messages.error(request, f"You have reached the time limit")
                 # Find the latest attempt to show results
                 latest_attempt = UserQuiz.objects.filter(quiz=quiz, user=user).order_by('-start_time').first()
                 return redirect("quiz_results", user_quiz_id=latest_attempt.id)
-
-    # Create new attempt
-    user_quiz = UserQuiz(quiz=quiz, user=user)
-    user_quiz.save()
 
     # Shuffle questions if quiz settings require it
     if quiz.randomize_questions:
@@ -862,6 +876,7 @@ def _process_quiz_taking(request, quiz):
         "quiz_id": quiz.id,
         "user_quiz": user_quiz,
         "time_limit": quiz.time_limit,
+        "remaining_time": remaining_time,
     }
 
     return render(request, "web/quiz/take_quiz.html", context)
