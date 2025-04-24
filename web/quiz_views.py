@@ -623,8 +623,9 @@ def mark_quiz_attempt(request, user_quiz_id):
             print("########### DONE FROM mark_quiz_attempt ##########")
             # # Mark as completed with current time if not already completed
             if not user_quiz.completed:
-                user_quiz.completed = True
-                user_quiz.end_time = timezone.now()
+                user_quiz.answers = None
+                user_quiz.correction_status = "not_needed"
+                user_quiz.complete_quiz()
                 user_quiz.save()
 
             print("########", user_quiz.quiz.id, user_quiz.quiz)
@@ -664,9 +665,7 @@ def _process_quiz_taking(request, quiz):
                 "You previously left this quiz without completing it. This counts as an attempt."
             )
             # Mark it as completed
-            incomplete_attempt.completed = True
-            incomplete_attempt.end_time = timezone.now()
-            incomplete_attempt.save()
+            incomplete_attempt.complete_quiz()
             return redirect("quiz_results", user_quiz_id=incomplete_attempt.id)
         
         # Check if user has already reached max attempts
@@ -716,7 +715,6 @@ def _process_quiz_taking(request, quiz):
         q_dict["options"] = clean_options
         prepared_questions.append(q_dict)
 
-    print("$$$$$$$$$", request.method)
     if request.method == "POST":
         form = TakeQuizForm(request.POST, quiz=quiz)
 
@@ -848,8 +846,7 @@ def _process_quiz_taking(request, quiz):
             # Update the UserQuiz record
             user_quiz.answers = json.dumps(answers)
             user_quiz.correction_status = correction_status
-            user_quiz.end_time = timezone.now()
-            user_quiz.completed = True
+            user_quiz.complete_quiz()
             user_quiz.save()
 
             # Redirect to results page
@@ -947,13 +944,12 @@ def quiz_results(request, user_quiz_id):
         id = str(question.id)
         options = question.options.all()
         
-        print("#######", answers)
-        print("#######", answers[id])
-        answers[id]["question_title"] = question.text
-        answers[id]["type_display"] =  question.get_question_type_display()
-        answers[id]["question_type"] = question.question_type
-        answers[id]["options"] = options
-        answers[id]["original_points"] = question.points
+        if answers:
+            answers[id]["question_title"] = question.text
+            answers[id]["type_display"] =  question.get_question_type_display()
+            answers[id]["question_type"] = question.question_type
+            answers[id]["options"] = options
+            answers[id]["original_points"] = question.points
 
     context = {
         "user_quiz": user_quiz,

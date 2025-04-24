@@ -2206,6 +2206,7 @@ class UserQuiz(models.Model):
     # return percentage from 0% to 100%
     def calculate_score(self):
         """Calculate the score based on answers."""
+        quiz_Percentage = 0
         score = 0
         max_score = 0
         answers = json.loads(self.answers) if isinstance(self.answers, str) else self.answers
@@ -2214,8 +2215,8 @@ class UserQuiz(models.Model):
             question = QuizQuestion.objects.get(id=q_id)
             max_score += question.points
             score += answer_data.get("points_awarded", 0)
-
-        quiz_Percentage = round((score / max_score) * 100, 1)
+        if score > 0:
+            quiz_Percentage = round((score / max_score) * 100, 1)
         return quiz_Percentage
 
     def complete_quiz(self):
@@ -2224,7 +2225,6 @@ class UserQuiz(models.Model):
 
         self.completed = True
         self.end_time = timezone.now()
-        self.calculate_score()
         self.save()
 
     @property

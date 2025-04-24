@@ -40,7 +40,7 @@
                 {{ user_quiz.calculate_score }}%
               </div>
               <div class="text-gray-600 dark:text-gray-300">
-                {{ correct_count }} of {{ all_question_count }} answered questions correct
+                {{ correct_count }} of {{ total_questions }} answered questions correct
               </div>
               <div class="mt-4">
                 {% if user_quiz.status == 'passed' %}
@@ -216,16 +216,7 @@
               </div>
             {% else %}
               <div class="text-center py-12 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                <div class="text-gray-400 dark:text-gray-500 mb-4">
-                  <i class="fas fa-question-circle text-5xl"></i>
-                </div>
-                <p class="text-gray-600 dark:text-gray-400 mb-4">No questions have been added to this quiz yet</p>
-                {% if is_owner %}
-                  <a href="{% url 'add_question' user_quiz.quiz.id %}"
-                    class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
-                    <i class="fas fa-plus mr-2"></i> Add First Question
-                  </a>
-                {% endif %}
+                <p class="text-gray-600 dark:text-gray-400 mb-4">No questions have been added to this quiz</p>
               </div>
             {% endif %}
           </div>

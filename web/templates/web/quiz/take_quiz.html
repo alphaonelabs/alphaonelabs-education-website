@@ -11,70 +11,79 @@
       // Define user_quiz_id for use in JavaScript
       const user_quiz_id = "{{ user_quiz_id }}";
 
-      // Timer functionality
-      document.addEventListener('DOMContentLoaded', function() {
-          // Check if we have a time limit
-          const timeLimit = parseInt("{{ quiz.time_limit|default:0 }}");
-          if (timeLimit > 0) {
-              let remainingTime = timeLimit * 60; // convert to seconds
+    // Timer functionality
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check if we have a time limit
+        const timeLimit = parseInt("{{ quiz.time_limit|default:0 }}");
+        if (timeLimit > 0) {
+            let remainingTime = timeLimit * 60; // convert to seconds
 
-              // Check if we have a stored time for this quiz attempt
-              const storedTime = localStorage.getItem('quiz_' + user_quiz_id + '_remaining_time');
-              if (storedTime) {
-                  remainingTime = parseInt(storedTime);
-              }
+            // Check if we have a stored time for this quiz attempt
+            const storedTime = localStorage.getItem('quiz_' + user_quiz_id + '_remaining_time');
+            if (storedTime) {
+                remainingTime = parseInt(storedTime);
+            }
 
-              const timerElement = document.getElementById('timer');
-              if (!timerElement) return; // Exit if timer element doesn't exist
+            const timerElement = document.getElementById('timer');
+            if (!timerElement) return; // Exit if timer element doesn't exist
 
-              // Format and display initial time
-              const initialMinutes = Math.floor(remainingTime / 60);
-              const initialSeconds = remainingTime % 60;
-              timerElement.innerText = `${initialMinutes.toString().padStart(2, '0')}:${initialSeconds.toString().padStart(2, '0')}`;
+            // Format and display initial time
+            const initialMinutes = Math.floor(remainingTime / 60);
+            const initialSeconds = remainingTime % 60;
+            timerElement.innerText = `${initialMinutes.toString().padStart(2, '0')}:${initialSeconds.toString().padStart(2, '0')}`;
 
-              // Update the timer every second
-              const timerInterval = setInterval(function() {
-                  remainingTime--;
+            // Update the timer every second
+            const timerInterval = setInterval(function() {
+                remainingTime--;
 
-                  // Store the remaining time in localStorage
-                  localStorage.setItem('quiz_' + user_quiz_id + '_remaining_time', remainingTime.toString());
+                // Store the remaining time in localStorage
+                localStorage.setItem('quiz_' + user_quiz_id + '_remaining_time', remainingTime.toString());
 
-                  // Format the time as MM:SS
-                  const minutes = Math.floor(remainingTime / 60);
-                  const seconds = remainingTime % 60;
-                  timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                // Format the time as MM:SS
+                const minutes = Math.floor(remainingTime / 60);
+                const seconds = remainingTime % 60;
+                timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-                  // Visual cues when time is running low
-                  if (remainingTime <= 60) { // last minute
-                      timerElement.classList.add('text-red-600', 'dark:text-red-400');
-                      if (remainingTime <= 10) { // last 10 seconds
-                          timerElement.classList.add('animate-pulse');
-                      }
-                  }
+                // Visual cues when time is running low
+                if (remainingTime <= 60) { // last minute
+                    timerElement.classList.add('text-red-600', 'dark:text-red-400');
+                    if (remainingTime <= 10) { // last 10 seconds
+                        timerElement.classList.add('animate-pulse');
+                    }
+                }
 
-                  // Auto-submit when time is up
-                  if (remainingTime <= 0) {
-                      clearInterval(timerInterval);
-                      localStorage.removeItem('quiz_' + user_quiz_id + '_remaining_time');
-                      document.getElementById('quiz-form').submit();
-                  }
-              }, 1000);
+                // Auto-submit when time is up
+                if (remainingTime <= 0) {
+                    clearInterval(timerInterval);
+                    localStorage.removeItem('quiz_' + user_quiz_id + '_remaining_time');
+                    document.getElementById('quiz-form').submit();
+                }
+            }, 1000);
 
-              // Add event listener to the form submission to clear the timer
-              document.getElementById('quiz-form').addEventListener('submit', function() {
-                  clearInterval(timerInterval);
-                  localStorage.removeItem('quiz_' + user_quiz_id + '_remaining_time');
+            // Add event listener to the form submission to clear the timer
+            document.getElementById('quiz-form').addEventListener('submit', function() {
+                clearInterval(timerInterval);
+                localStorage.removeItem('quiz_' + user_quiz_id + '_remaining_time');
 
-                  // Save the remaining time in the hidden field for server-side processing
-                  document.getElementById('quiz_timer_value').value = remainingTime;
-              });
-          }
-      });
+                // Save the remaining time in the hidden field for server-side processing
+                document.getElementById('quiz_timer_value').value = remainingTime;
+            });
+        }
 
-  function makeExamSecure() {
-            // Define user_quiz_id for use in JavaScript
-    const user_quiz_id = "{{ user_quiz.id }}";
-    
+      const form = document.getElementById('quiz-form');
+      if (form) {
+          form.addEventListener('submit', function() {
+              // Mark as submitted so we don't trigger the beforeunload warning
+              quizSubmitted = true;
+              
+              // Clear stored data
+              localStorage.removeItem('current_quiz_attempt');
+              localStorage.removeItem('quiz_' + user_quiz_id + '_remaining_time');
+          });
+      }
+    });
+
+
     // Store in localStorage to persist across page refreshes
     if (user_quiz_id) {
         localStorage.setItem('current_quiz_attempt', user_quiz_id);
@@ -88,20 +97,26 @@
         if (!quizSubmitted && !isRefreshing) {
             // Show warning dialog
             e.preventDefault();
-            e.returnValue = 'You are about to leave the quiz. This will count as an attempt. Are you sure?';
-            
-            // Get the user_quiz_id from variable or localStorage
-            const quizId = user_quiz_id || localStorage.getItem('current_quiz_attempt');
-            
-            // Mark the attempt as completed via sendBeacon
-            if (quizId) {
-                const formData = new FormData();
-                formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
-                navigator.sendBeacon(
-                    "{% url 'mark_quiz_attempt' 0 %}".replace('0', quizId),
-                    formData
-                );
-            }
+            e.returnValue = '';
+            // let confirmed = confirm('You are about to leave the quiz. This will count as an attempt. Are you sure?') 
+            // console.log("####################################")
+            // if (confirmed) {
+              console.log("##########", confirmed)
+              // Get the user_quiz_id from variable or localStorage
+              const quizId = user_quiz_id || localStorage.getItem('current_quiz_attempt');
+              console.log("##### local #####", quizId)
+              
+              // Mark the attempt as completed via sendBeacon
+              if (quizId) {
+                  console.log("##### Done #####", quizId)
+                  const formData = new FormData();
+                  formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+                  navigator.sendBeacon(
+                      "{% url 'mark_quiz_attempt' 0 %}".replace('0', quizId),
+                      formData
+                  );
+              }
+            // }
         }
     });
     
@@ -125,8 +140,8 @@
                     },
                     keepalive: true
                 }).then(() => {
-                    alert('Refreshing will count as completing your current attempt.');
-                    window.location.reload();
+                    console.log(alert('Refreshing will count as completing your current attempt.');) 
+                    // window.location.reload();
                 }).catch(() => {
                     alert('Failed to mark your attempt as completed. Please continue your quiz.');
                 });
@@ -137,22 +152,6 @@
         }
     });
 
-    // Add event listener to the form submission
-    document.addEventListener('DOMContentLoaded', function() {
-        const form = document.getElementById('quiz-form');
-        if (form) {
-            form.addEventListener('submit', function() {
-                // Mark as submitted so we don't trigger the beforeunload warning
-                quizSubmitted = true;
-                
-                // Clear stored data
-                localStorage.removeItem('current_quiz_attempt');
-                localStorage.removeItem('quiz_' + user_quiz_id + '_remaining_time');
-            });
-        }
-    });
-      }
-      makeExamSecure()
   </script>
   <style>
     /* Disable right-click menu */
