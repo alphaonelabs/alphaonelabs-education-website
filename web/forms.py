@@ -46,6 +46,7 @@ from .models import (
     StudyGroup,
     Subject,
     SuccessStory,
+    Survey,
     TeamGoal,
     TeamGoalMember,
     TeamInvite,
@@ -102,6 +103,7 @@ __all__ = [
     "GradeableLinkForm",
     "LinkGradeForm",
     "AwardAchievementForm",
+    "SurveyForm",
 ]
 
 fernet = Fernet(settings.SECURE_MESSAGE_KEY)
@@ -1869,3 +1871,21 @@ class StudyGroupForm(forms.ModelForm):
     class Meta:
         model = StudyGroup
         fields = ["name", "description", "course", "max_members", "is_private"]
+
+
+class SurveyForm(forms.ModelForm):
+    title = forms.CharField(
+        max_length=200,
+        widget=TailwindInput(attrs={"placeholder": "Enter survey title"}),
+        help_text="Give your survey a clear and descriptive title",
+    )
+
+    class Meta:
+        model = Survey
+        fields = ["title"]
+
+    def clean_title(self) -> str:
+        title = self.cleaned_data.get("title")
+        if len(title) < 5:
+            raise forms.ValidationError(_("Title too short"), code="invalid_length", params={"min_length": 5})
+        return title
