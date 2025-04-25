@@ -93,12 +93,6 @@ urlpatterns += i18n_patterns(
     path("dashboard/teacher/", views.teacher_dashboard, name="teacher_dashboard"),
     path("dashboard/content/", views.content_dashboard, name="content_dashboard"),
     # SURVEY URLs
-    path("surveys/", SurveyListView.as_view(), name="surveys"),
-    path("surveys/create/", SurveyCreateView.as_view(), name="survey-create"),
-    path("surveys/<int:pk>/", SurveyDetailView.as_view(), name="survey-detail"),
-    path("surveys/<int:pk>/delete/", SurveyDeleteView.as_view(), name="survey-delete"),
-    path("surveys/<int:pk>/submit/", submit_survey, name="submit-survey"),
-    path("surveys/<int:pk>/results/", SurveyResultsView.as_view(), name="survey-results"),
     # Course Management
     path("courses/create/", views.create_course, name="create_course"),
     path("courses/search/", views.course_search, name="course_search"),
