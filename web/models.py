@@ -321,7 +321,7 @@ class Course(models.Model):
         return self.max_students - self.enrollments.count()
 
     @property
-    def average_rating(self):
+    def average_rating(self) -> float:
         avg = float(self.reviews.aggregate(avg=Avg("rating"))["avg"] or 0)
         return round(avg, 2)
 
