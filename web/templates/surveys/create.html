@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% load static i18n %}
+
+{% block title %}
+  Create Survey
+{% endblock title %}
+{% block content %}
+  <main class="flex-1 w-full max-w-[90rem] mx-auto mt-6 px-4 md:px-6">
+    <h1 class="text-2xl font-bold mb-6 flex items-center">
+      <i class="fa-solid fa-clipboard-list text-teal-600 dark:text-teal-400 mr-2"
+         aria-hidden="true"></i>
+      {% trans "Create Survey" %}
+    </h1>
+    <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6">
+      <form method="post" class="space-y-6">
+        {% csrf_token %}
+        <div class="space-y-4">
+          {% for field in form %}
+            <div class="form-group">
+              <label for="{{ field.id_for_label }}"
+                     class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{{ field.label }}</label>
+              {{ field.errors }}
+              {{ field }}
+            </div>
+          {% endfor %}
+        </div>
+        <div class="mt-8">
+          <h2 class="text-lg font-semibold mb-4 flex items-center">
+            <i class="fa-solid fa-question-circle text-teal-600 dark:text-teal-400 mr-2"></i>
+            {% trans "Survey Questions" %}
+          </h2>
+          <div id="questions" class="space-y-4">
+            <div class="question bg-gray-50 dark:bg-gray-700/50 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
+              <div class="flex justify-between items-center mb-3">
+                <label for="question-type-{{ forloop.counter }}">{% trans "Type" %}</label>
+                <select id="question-type-{{ forloop.counter }}"
+                        name="question_type[]"
+                        class="question-type-selector p-2 border rounded-md bg-white dark:bg-gray-800"
+                        required>
+                  <option value="mcq">Multiple Choice</option>
+                  <option value="checkbox">Checkbox</option>
+                  <option value="text">Text</option>
+                  <option value="true_false">True/False</option>
+                  <option value="scale">Scale</option>
+                </select>
+                <button type="button" class="remove-question text-red-500 hover:text-red-700">×</button>
+              </div>
+              <input type="text"
+                     name="question_text[]"
+                     placeholder="Question text"
+                     required
+                     class="w-full p-2 mb-3 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800" />
+              <div class="choices-section">
+                <textarea name="question_choices[]"
+                          placeholder="Enter choices (one per line)"
+                          class="choices-input w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800"
+                          rows="4"></textarea>
+                <div class="scale-fields hidden mt-2">
+                  <input type="number"
+                         name="scale_min[]"
+                         placeholder="Min"
+                         min="1"
+                         max="99"
+                         oninput="validateScaleValues(this)"
+                         class="w-1/2 p-2 mr-2 border rounded-md" />
+                  <input type="number"
+                         name="scale_max[]"
+                         placeholder="Max"
+                         min="2"
+                         max="100"
+                         oninput="validateScaleValues(this)"
+                         class="w-1/2 p-2 ml-2 border rounded-md" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="flex space-x-4 mt-4">
+            <button type="button"
+                    id="add-question"
+                    class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded-lg flex items-center">
+              <i class="fa-solid fa-plus mr-2"></i>
+              {% trans "Add Question" %}
+            </button>
+            <button type="submit"
+                    class="bg-teal-600 hover:bg-teal-700 text-white font-semibold px-4 py-2 rounded-lg flex items-center">
+              <i class="fa-solid fa-save mr-2"></i>
+              {% trans "Create Survey" %}
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </main>
+  <script src="{% static 'js/surveys.js' %}"></script>
+{% endblock content %}
