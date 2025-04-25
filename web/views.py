@@ -94,6 +94,7 @@ from .forms import (
     StudentEnrollmentForm,
     StudyGroupForm,
     SuccessStoryForm,
+    SurveyForm,
     TeacherSignupForm,
     TeachForm,
     TeamGoalCompletionForm,
@@ -116,6 +117,7 @@ from .models import (
     Certificate,
     Challenge,
     ChallengeSubmission,
+    Choice,
     Course,
     CourseMaterial,
     CourseProgress,
@@ -147,6 +149,8 @@ from .models import (
     ProductImage,
     Profile,
     ProgressTracker,
+    Question,
+    Response,
     Review,
     ScheduledPost,
     SearchLog,
@@ -158,6 +162,7 @@ from .models import (
     StudyGroupInvite,
     Subject,
     SuccessStory,
+    Survey,
     TeamGoal,
     TeamGoalMember,
     TeamInvite,
@@ -204,31 +209,89 @@ def sitemap(request):
     return render(request, "sitemap.html")
 
 
+def handle_referral(request, code):
+    """Handle referral link with the format /en/ref/CODE/ and redirect to homepage."""
+    # Store referral code in session
+    request.session["referral_code"] = code
+
+    # The WebRequestMiddleware will automatically log this request with the correct path
+    # containing the referral code, so we don't need to create a WebRequest manually
+
+    # Redirect to homepage
+    return redirect("index")
+
+
 def index(request):
     """Homepage view."""
     from django.conf import settings
 
-    # Store referral code in session if present in URL
+    # Store referral code in session if present in URL (for backward compatibility)
     ref_code = request.GET.get("ref")
 
     if ref_code:
         request.session["referral_code"] = ref_code
+        # The WebRequestMiddleware will track this request automatically
+        # with the query parameter in the path
 
-    # Get top referrers
-    top_referrers = Profile.objects.annotate(
-        total_signups=models.Count("referrals"),
+    # Get top referrers - including both those with referrals and those with clicks
+    # First, find all referral codes that have clicks in WebRequest
+    referral_codes_with_clicks = (
+        WebRequest.objects.filter(models.Q(path__contains="/ref/") | models.Q(path__contains="?ref="))
+        .values_list("path", flat=True)
+        .distinct()
+    )
+
+    # Extract referral codes from the paths
+    active_referral_codes = set()
+    for path in referral_codes_with_clicks:
+        if "/ref/" in path:
+            # Format: /en/ref/CODE/
+            parts = path.split("/ref/")
+            if len(parts) > 1:
+                code = parts[1].strip("/")
+                if code:
+                    active_referral_codes.add(code)
+        elif "?ref=" in path:
+            # Format: /?ref=CODE or ?ref=CODE&other=params
+            parts = path.split("?ref=")
+            if len(parts) > 1:
+                code = parts[1].split("&")[0]  # Handle additional parameters
+                if code:
+                    active_referral_codes.add(code)
+
+    # Get profiles with referrals and/or clicks
+    profiles_with_activity = Profile.objects.filter(
+        models.Q(referrals__isnull=False)  # Has referrals
+        | models.Q(referral_code__in=active_referral_codes)  # Has clicks
+    ).distinct()
+
+    # Annotate with signups and enrollments
+    top_referrers = profiles_with_activity.annotate(
+        total_signups=models.Count("referrals", distinct=True),
         total_enrollments=models.Count(
-            "referrals__user__enrollments", filter=models.Q(referrals__user__enrollments__status="approved")
+            "referrals__user__enrollments",
+            filter=models.Q(referrals__user__enrollments__status="approved"),
+            distinct=True,
         ),
-        total_clicks=models.Count(
-            "referrals__user",
-            filter=models.Q(
-                referrals__user__username__in=WebRequest.objects.filter(path__contains="ref=").values_list(
-                    "user", flat=True
-                )
-            ),
-        ),
-    ).order_by("-total_signups", "-total_enrollments")[:3]
+    ).order_by("-total_signups", "-total_enrollments")[
+        :10
+    ]  # Get more and then sort by clicks
+
+    # Add click counts manually since WebRequest.user is a CharField, not a ForeignKey
+    for referrer in top_referrers:
+        # Look for both new format /ref/CODE/ and old format ?ref=CODE
+        ref_code = referrer.referral_code
+        clicks = WebRequest.objects.filter(
+            models.Q(path__contains=f"/ref/{ref_code}/") | models.Q(path__contains=f"?ref={ref_code}")
+        ).count()
+        referrer.total_clicks = clicks
+
+    # Re-sort to include click count in ranking
+    top_referrers = sorted(
+        top_referrers, key=lambda x: (x.total_signups, x.total_enrollments, x.total_clicks), reverse=True
+    )[
+        :3
+    ]  # Take top 3 after sorting
 
     # Get current user's profile if authenticated
     profile = request.user.profile if request.user.is_authenticated else None
@@ -501,6 +564,7 @@ def profile(request):
                 "avg_rating": avg_rating,
             }
         )
+    # Student-specific stats
     else:
         enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
         completed_courses = enrollments.filter(status="completed").count()
@@ -975,15 +1039,20 @@ def add_review(request, slug):
 
 @login_required
 def delete_course(request, slug):
+    """Handle course deletion, including image deletion."""
     course = get_object_or_404(Course, slug=slug)
+
+    # Ensure only the course teacher can delete the course
     if request.user != course.teacher:
-        messages.error(request, "Only the course teacher can delete the course!")
+        messages.error(request, "You are not authorized to delete this course.")
         return redirect("course_detail", slug=slug)
 
     if request.method == "POST":
+
+        # Delete the course --> this automatically deletes the image too
         course.delete()
         messages.success(request, "Course deleted successfully!")
-        return redirect("profile")
+        return redirect("profile")  # Redirect to the profile page or another success page
 
     return render(request, "courses/delete_confirm.html", {"course": course})
 
@@ -1176,10 +1245,12 @@ def learn(request):
 def teach(request):
     """Handles the course creation process for both authenticated and unauthenticated users."""
     if request.method == "POST":
-        form = TeachForm(request.POST, request.FILES)
+        form = TeachForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             # Extract cleaned data
-            email = form.cleaned_data["email"]
+            email = form.cleaned_data.get("email", None)
+            if email is None and request.user.is_authenticated:
+                email = request.user.email
             course_title = form.cleaned_data["course_title"]
             course_description = form.cleaned_data["course_description"]
             course_image = form.cleaned_data.get("course_image")
@@ -1193,14 +1264,6 @@ def teach(request):
             if request.user.is_authenticated:
                 # For authenticated users, always use the logged-in user
                 user = request.user
-
-                # Validate that the provided email matches the logged-in user's email
-                if email != user.email:
-                    form.add_error(
-                        "email",
-                        "The provided email does not match your account email. Please use your account email.",
-                    )
-                    return render(request, "teach.html", {"form": form})
 
                 # Backend validation: Check for duplicate course titles for the logged-in user
                 if Course.objects.filter(title__iexact=course_title, teacher=user).exists():
@@ -1324,7 +1387,7 @@ def teach(request):
         initial_data = {}
         if request.GET.get("subject"):
             initial_data["course_title"] = request.GET.get("subject")
-        form = TeachForm(initial=initial_data)
+        form = TeachForm(initial=initial_data, user=request.user)
 
     return render(request, "teach.html", {"form": form})
 
@@ -1990,6 +2053,8 @@ def create_topic(request, category_slug):
                 author=request.user,
                 title=form.cleaned_data["title"],
                 content=form.cleaned_data["content"],
+                github_issue_url=form.cleaned_data.get("github_issue_url", ""),
+                github_milestone_url=form.cleaned_data.get("github_milestone_url", ""),
             )
             messages.success(request, "Topic created successfully!")
             return redirect("forum_topic", category_slug=category_slug, topic_id=topic.id)
@@ -3019,18 +3084,29 @@ def create_forum_category(request):
 
 @login_required
 def edit_topic(request, topic_id):
-    """Edit an existing forum topic."""
     topic = get_object_or_404(ForumTopic, id=topic_id, author=request.user)
     categories = ForumCategory.objects.all()
 
     if request.method == "POST":
-        form = ForumTopicForm(request.POST, instance=topic)
+        form = ForumTopicForm(request.POST)
         if form.is_valid():
-            form.save()
+            # Manually update the topic instance with form data.
+            topic.title = form.cleaned_data["title"]
+            topic.content = form.cleaned_data["content"]
+            topic.github_issue_url = form.cleaned_data.get("github_issue_url", "")
+            topic.github_milestone_url = form.cleaned_data.get("github_milestone_url", "")
+            topic.save()
             messages.success(request, "Topic updated successfully!")
             return redirect("forum_topic", category_slug=topic.category.slug, topic_id=topic.id)
     else:
-        form = ForumTopicForm(instance=topic)
+        # Prepopulate the form with the topic's current data.
+        initial_data = {
+            "title": topic.title,
+            "content": topic.content,
+            "github_issue_url": topic.github_issue_url,
+            "github_milestone_url": topic.github_milestone_url,
+        }
+        form = ForumTopicForm(initial=initial_data)
 
     return render(request, "web/forum/edit_topic.html", {"topic": topic, "form": form, "categories": categories})
 
@@ -3287,11 +3363,7 @@ def message_enrolled_students(request, slug):
         message = request.POST.get("message")
 
         if title and message:
-            # Import the encryption function from our secure messaging module
-            from web.secure_messaging import encrypt_message
-
-            # Encrypt the message using Fernet and decode to string for email content
-            encrypted_message = encrypt_message(message).decode("utf-8")
+            original_message = message
 
             # Get all enrolled students
             enrolled_students = User.objects.filter(
@@ -3302,7 +3374,7 @@ def message_enrolled_students(request, slug):
             for student in enrolled_students:
                 send_mail(
                     subject=f"[{course.title}] {title}",
-                    message=encrypted_message,
+                    message=original_message,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[student.email],
                     fail_silently=True,
@@ -3326,9 +3398,7 @@ def message_teacher(request, teacher_id):
     if request.method == "POST":
         form = MessageTeacherForm(request.POST, user=request.user)
         if form.is_valid():
-            # The MessageTeacherForm's clean_message method encrypts the message,
-            # so form.cleaned_data["message"] already contains the encrypted text.
-            encrypted_message = form.cleaned_data["message"]
+            original_message = request.POST.get("message")
 
             # Prepare email content
             if request.user.is_authenticated:
@@ -3342,14 +3412,14 @@ def message_teacher(request, teacher_id):
             context = {
                 "sender_name": sender_name,
                 "sender_email": sender_email,
-                "message": encrypted_message,
+                "message": original_message,
             }
             html_message = render_to_string("web/emails/teacher_message.html", context)
 
             try:
                 send_mail(
                     subject=f"New message from {sender_name}",
-                    message=encrypted_message,
+                    message=original_message,
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[teacher.email],
                     html_message=html_message,
@@ -4738,7 +4808,7 @@ def donate(request):
     # Calculate total donations
     total_donations = Donation.objects.filter(status="completed").aggregate(total=Sum("amount"))["total"] or 0
 
-    # Get donation amounts for the preset buttons
+    # Preset donation amounts for buttons
     donation_amounts = [5, 10, 25, 50, 100]
 
     context = {
@@ -4751,9 +4821,9 @@ def donate(request):
     return render(request, "donate.html", context)
 
 
-@login_required
-def create_donation_payment_intent(request):
-    """Create a payment intent for a one-time donation."""
+@csrf_exempt  # Add CSRF exemption for Stripe
+def create_donation_payment_intent(request: HttpRequest) -> JsonResponse:
+    """Create a payment intent for a one-time donation with multiple payment methods."""
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
@@ -4762,29 +4832,36 @@ def create_donation_payment_intent(request):
         amount = data.get("amount")
         message = data.get("message", "")
         anonymous = data.get("anonymous", False)
+        email = data.get("email", "")
 
         if not amount or float(amount) <= 0:
             return JsonResponse({"error": "Invalid donation amount"}, status=400)
 
+        if not email:
+            return JsonResponse({"error": "Email is required"}, status=400)
+
         # Convert amount to cents for Stripe
         amount_cents = int(float(amount) * 100)
 
-        # Create a payment intent
+        # Create a payment intent with multiple payment method types
         intent = stripe.PaymentIntent.create(
             amount=amount_cents,
             currency="usd",
+            automatic_payment_methods={"enabled": True, "allow_redirects": "always"},
+            receipt_email=email,
             metadata={
                 "donation_type": "one_time",
-                "user_id": request.user.id,
-                "message": message[:100] if message else "",  # Limit message length
+                "user_id": str(request.user.id) if request.user.is_authenticated else None,
+                "message": message[:100] if message else "",
                 "anonymous": "true" if anonymous else "false",
+                "email": email,
             },
         )
 
         # Create a donation record
         donation = Donation.objects.create(
-            user=request.user,
-            email=request.user.email,
+            user=request.user if request.user.is_authenticated else None,
+            email=email,
             amount=amount,
             donation_type="one_time",
             status="pending",
@@ -4793,20 +4870,15 @@ def create_donation_payment_intent(request):
             anonymous=anonymous,
         )
 
-        return JsonResponse(
-            {
-                "clientSecret": intent.client_secret,
-                "donation_id": donation.id,
-            }
-        )
+        return JsonResponse({"clientSecret": intent.client_secret, "donation_id": donation.id})
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
 
 
-@login_required
-def create_donation_subscription(request):
-    """Create a subscription for recurring donations."""
+@csrf_exempt
+def create_donation_subscription(request: HttpRequest) -> JsonResponse:
+    """Create a subscription for recurring donations with multiple payment methods."""
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
@@ -4815,88 +4887,67 @@ def create_donation_subscription(request):
         amount = data.get("amount")
         message = data.get("message", "")
         anonymous = data.get("anonymous", False)
-        payment_method_id = data.get("payment_method_id")
+        email = data.get("email", "")
 
         if not amount or float(amount) <= 0:
             return JsonResponse({"error": "Invalid donation amount"}, status=400)
 
-        if not payment_method_id:
-            return JsonResponse({"error": "Payment method is required"}, status=400)
+        if not email:
+            return JsonResponse({"error": "Email is required"}, status=400)
 
         # Convert amount to cents for Stripe
         amount_cents = int(float(amount) * 100)
 
-        # Check if user already has a Stripe customer ID
-        customer_id = None
-        if hasattr(request.user, "profile") and request.user.profile.stripe_customer_id:
-            customer_id = request.user.profile.stripe_customer_id
-
         # Create or get customer
-        if customer_id:
-            customer = stripe.Customer.retrieve(customer_id)
-        else:
+        customer = None
+        # Try to retrieve existing customer for authenticated users
+        if request.user.is_authenticated and hasattr(request.user, "stripe_customer_id"):
+            from contextlib import suppress
+
+            with suppress(stripe.error.InvalidRequestError):
+                customer = stripe.Customer.retrieve(request.user.stripe_customer_id)
+        # Create new customer if needed
+        if not customer:
             customer = stripe.Customer.create(
-                email=request.user.email,
-                name=request.user.get_full_name() or request.user.username,
-                payment_method=payment_method_id,
-                invoice_settings={"default_payment_method": payment_method_id},
+                email=email,
+                metadata={
+                    "user_id": str(request.user.id) if request.user.is_authenticated else None,
+                },
             )
+            if request.user.is_authenticated:
+                request.user.stripe_customer_id = customer.id
+                request.user.save()
 
-            # Save customer ID to user profile
-            if hasattr(request.user, "profile"):
-                request.user.profile.stripe_customer_id = customer.id
-                request.user.profile.save()
-
-        # Create a subscription product and price if they don't exist
-        # Note: In a production environment, you might want to create these
-        # products and prices in the Stripe dashboard and reference them here
-        product = stripe.Product.create(
-            name=f"Monthly Donation - ${amount}",
-            type="service",
-        )
-
-        price = stripe.Price.create(
-            product=product.id,
-            unit_amount=amount_cents,
+        # Create a PaymentIntent for the first payment with setup_future_usage
+        payment_intent = stripe.PaymentIntent.create(
+            amount=amount_cents,
             currency="usd",
-            recurring={"interval": "month"},
-        )
-
-        # Create the subscription
-        subscription = stripe.Subscription.create(
             customer=customer.id,
-            items=[{"price": price.id}],
-            payment_behavior="default_incomplete",
-            expand=["latest_invoice.payment_intent"],
+            setup_future_usage="off_session",
+            automatic_payment_methods={"enabled": True, "allow_redirects": "always"},
             metadata={
                 "donation_type": "subscription",
-                "user_id": request.user.id,
+                "user_id": str(request.user.id) if request.user.is_authenticated else None,
                 "message": message[:100] if message else "",
                 "anonymous": "true" if anonymous else "false",
-                "amount": amount,
+                "email": email,
             },
         )
 
-        # Create a donation record
+        # Create donation record
         donation = Donation.objects.create(
-            user=request.user,
-            email=request.user.email,
+            user=request.user if request.user.is_authenticated else None,
+            email=email,
             amount=amount,
             donation_type="subscription",
             status="pending",
-            stripe_subscription_id=subscription.id,
+            stripe_payment_intent_id=payment_intent.id,
             stripe_customer_id=customer.id,
             message=message,
             anonymous=anonymous,
         )
 
-        return JsonResponse(
-            {
-                "subscription_id": subscription.id,
-                "client_secret": subscription.latest_invoice.payment_intent.client_secret,
-                "donation_id": donation.id,
-            }
-        )
+        return JsonResponse({"clientSecret": payment_intent.client_secret, "donation_id": donation.id})
 
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=400)
@@ -4907,58 +4958,86 @@ def donation_webhook(request):
     """Handle Stripe webhooks for donations."""
     payload = request.body
     sig_header = request.META.get("HTTP_STRIPE_SIGNATURE")
+    webhook_secret = settings.STRIPE_WEBHOOK_SECRET
 
     try:
-        event = stripe.Webhook.construct_event(payload, sig_header, settings.STRIPE_WEBHOOK_SECRET)
-    except ValueError:
-        # Invalid payload
+        event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+        logger.info("Received Stripe webhook: %s", event.type)
+    except ValueError as e:
+        logger.exception("Invalid payload: %s", str(e))
         return HttpResponse(status=400)
-    except stripe.error.SignatureVerificationError:
-        # Invalid signature
+    except stripe.error.SignatureVerificationError as e:
+        logger.exception("Invalid signature: %s", str(e))
         return HttpResponse(status=400)
 
-    # Handle payment intent events
-    if event.type == "payment_intent.succeeded":
-        payment_intent = event.data.object
-        handle_successful_donation_payment(payment_intent)
-    elif event.type == "payment_intent.payment_failed":
-        payment_intent = event.data.object
-        handle_failed_donation_payment(payment_intent)
+    try:
+        # Handle payment intent events
+        if event.type == "payment_intent.succeeded":
+            payment_intent = event.data.object
+            logger.info("Processing successful payment: %s", payment_intent.id)
+            handle_successful_donation_payment(payment_intent)
+        elif event.type == "payment_intent.payment_failed":
+            payment_intent = event.data.object
+            logger.info("Processing failed payment: %s", payment_intent.id)
+            handle_failed_donation_payment(payment_intent)
 
-    # Handle subscription events
-    elif event.type == "customer.subscription.created":
-        subscription = event.data.object
-        handle_subscription_created(subscription)
-    elif event.type == "customer.subscription.updated":
-        subscription = event.data.object
-        handle_subscription_updated(subscription)
-    elif event.type == "customer.subscription.deleted":
-        subscription = event.data.object
-        handle_subscription_cancelled(subscription)
-    elif event.type == "invoice.payment_succeeded":
-        invoice = event.data.object
-        handle_invoice_paid(invoice)
-    elif event.type == "invoice.payment_failed":
-        invoice = event.data.object
-        handle_invoice_failed(invoice)
+        # Handle subscription events
+        elif event.type == "customer.subscription.created":
+            subscription = event.data.object
+            logger.info("Processing new subscription: %s", subscription.id)
+            handle_subscription_created(subscription)
+        elif event.type == "customer.subscription.updated":
+            subscription = event.data.object
+            logger.info("Processing subscription update: %s", subscription.id)
+            handle_subscription_updated(subscription)
+        elif event.type == "customer.subscription.deleted":
+            subscription = event.data.object
+            logger.info("Processing subscription cancellation: %s", subscription.id)
+            handle_subscription_cancelled(subscription)
+        elif event.type == "invoice.payment_succeeded":
+            invoice = event.data.object
+            logger.info("Processing successful invoice payment: %s", invoice.id)
+            handle_invoice_paid(invoice)
+        elif event.type == "invoice.payment_failed":
+            invoice = event.data.object
+            logger.info("Processing failed invoice payment: %s", invoice.id)
+            handle_invoice_failed(invoice)
 
-    return HttpResponse(status=200)
+        return HttpResponse(status=200)
+    except Exception:
+        logger.exception("Error processing webhook %s", event.type)
+        return HttpResponse(status=500)
 
 
-def handle_successful_donation_payment(payment_intent):
+def handle_successful_donation_payment(payment_intent: stripe.PaymentIntent) -> None:
     """Handle successful one-time donation payments."""
     try:
+        logger.info("Finding donation for payment intent: %s", payment_intent.id)
         # Find the donation by payment intent ID
         donation = Donation.objects.get(stripe_payment_intent_id=payment_intent.id)
-        donation.status = "completed"
-        donation.save()
 
-        # Send thank you email
-        send_donation_thank_you_email(donation)
+        # Only update if not already completed
+        if donation.status != "completed":
+            logger.info("Marking donation %s as completed", donation.id)
+            donation.status = "completed"
+            donation.save()
+
+            # Send thank you email
+            send_donation_thank_you_email(donation)
+        else:
+            logger.info("Donation %s already completed", donation.id)
 
     except Donation.DoesNotExist:
-        # This might be a payment for something else
-        pass
+        logger.warning(
+            (
+                "No donation found for payment intent: %s. This may indicate a payment intended for another system "
+                "or a database inconsistency."
+            ),
+            payment_intent.id,
+        )
+    except Exception:
+        logger.exception("Error handling successful payment %s", payment_intent.id)
+        raise  # Re-raise to allow webhook to handle the error
 
 
 def handle_failed_donation_payment(payment_intent):
@@ -4979,15 +5058,7 @@ def handle_subscription_created(subscription):
     try:
         # Find the donation by subscription ID
         donation = Donation.objects.get(stripe_subscription_id=subscription.id)
-
-        # Update status based on subscription status
-        if subscription.status == "active":
-            donation.status = "completed"
-        elif subscription.status == "incomplete":
-            donation.status = "pending"
-        elif subscription.status == "canceled":
-            donation.status = "cancelled"
-
+        donation.status = "completed" if subscription.status == "active" else "pending"
         donation.save()
 
     except Donation.DoesNotExist:
@@ -5105,19 +5176,70 @@ def send_donation_thank_you_email(donation):
 def donation_success(request):
     """Display a success page after a successful donation."""
     donation_id = request.GET.get("donation_id")
+    payment_intent = request.GET.get("payment_intent")
+    redirect_status = request.GET.get("redirect_status")
 
-    if donation_id:
-        try:
-            donation = Donation.objects.get(id=donation_id)
+    # Ensure we have the required donation_id
+    if not donation_id:
+        messages.error(request, "No donation information found.")
+        return redirect("donate")
+
+    try:
+        donation = Donation.objects.get(id=donation_id)
+
+        # If the redirect indicates success and a payment intent exists, verify with Stripe.
+        if redirect_status == "succeeded" and payment_intent:
+            # Double check with Stripe that the payment was successful
+            try:
+                # Retrieve PaymentIntent from Stripe to confirm payment status.
+                stripe_payment = stripe.PaymentIntent.retrieve(payment_intent)
+                if stripe_payment.status == "succeeded":
+                    donation.status = "completed"
+                    donation.save()
+                    # Send thank you email if not already sent
+                    send_donation_thank_you_email(donation)
+            except stripe.error.StripeError:
+                logger.exception("Error verifying payment intent")
+
+                # Retry logic for temporary Stripe failures using Django's cache.
+                cache_key = f"retry_verify_payment_{payment_intent}"
+                retry_count = cache.get(cache_key, 0)
+
+                if retry_count < 3:
+                    cache.set(cache_key, retry_count + 1, 3600)  # Retry after 1 hour
+                    # You could enqueue a Celery task or use another background task system
+                    # to retry the verification process
+                    logger.warning("Retry %d/3 scheduled for payment verification: %s", retry_count + 1, payment_intent)
+                else:
+                    logger.error("Max retries reached for payment verification: %s", payment_intent)
+
+                # Continue to show the success page even if verification fails;
+                # the webhook will eventually update the status
+
+        # If the donation status is now completed, show the success page.
+        if donation.status == "completed":
             context = {
                 "donation": donation,
             }
             return render(request, "donation_success.html", context)
-        except Donation.DoesNotExist:
-            pass
 
-    # If no valid donation ID, redirect to the donate page
-    return redirect("donate")
+        # If donation status is not completed, alert the user and redirect.
+        messages.error(request, "Donation has not been successfully processed.")
+        return redirect("donate")
+
+    except Donation.DoesNotExist:
+        messages.error(request, "Invalid donation ID.")
+        return redirect("donate")
+
+    except stripe.error.StripeError:
+        logger.exception("Stripe error in donation_success view")
+        messages.error(request, "A payment processing error occurred. Please check your payment details.")
+        return redirect("donate")
+
+    except Exception:
+        logger.exception("Unexpected error in donation_success view")
+        messages.error(request, "An unexpected error occurred while processing your donation.")
+        return redirect("donate")
 
 
 def donation_cancel(request):
@@ -5169,50 +5291,70 @@ def educational_videos_list(request):
     return render(request, "videos/list.html", context)
 
 
-@login_required
+def fetch_video_oembed(video_url):
+    """
+    Hits YouTube or Vimeo’s oEmbed endpoint and returns a dict
+    containing 'title' and 'description' (if available).
+    """
+    # YouTube IDs are always 11 chars
+    yt_match = re.search(r"(?:v=|youtu\.be/|embed/|shorts/)([\w-]{11})", video_url)
+    if yt_match:
+        video_id = yt_match.group(1)
+        endpoint = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
+    else:
+        # Vimeo URLs look like vimeo.com/12345678…
+        vm_match = re.search(r"vimeo\.com/(?:video/)?(\d+)", video_url)
+        if vm_match:
+            endpoint = f"https://vimeo.com/api/oembed.json?url={video_url}"
+        else:
+            return {}
+
+    try:
+        resp = requests.get(endpoint, timeout=3)
+        if resp.ok:
+            data = resp.json()
+            return {
+                "title": data.get("title", "").strip(),
+                "description": data.get("description", "").strip(),
+            }
+    except requests.RequestException:
+        pass
+
+    return {}
+
+
 def upload_educational_video(request):
-    """View for uploading a new educational video."""
+    """
+    Handles GET → render form, POST → save video.
+    If user leaves title/description blank, we back‑fill from YouTube/Vimeo.
+    """
     if request.method == "POST":
         form = EducationalVideoForm(request.POST)
         if form.is_valid():
             video = form.save(commit=False)
-
-            # Handle anonymous submissions
             if request.user.is_authenticated:
                 video.uploader = request.user
-            else:
-                # For anonymous submissions, store optional submitter name
-                submitter_name = request.POST.get("submitter_name", "")
-                if submitter_name:
-                    video.submitter_name = submitter_name
+
+            # auto‑fetch metadata if missing
+            if not video.title.strip() or not video.description.strip():
+                info = fetch_video_oembed(video.video_url)
+                if not video.title.strip() and info.get("title"):
+                    video.title = info["title"]
+                if not video.description.strip() and info.get("description"):
+                    video.description = info["description"]
 
             video.save()
 
-            # Check if this is an AJAX request (from quick add form)
             if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return JsonResponse({"success": True, "message": "Video added successfully!"})
-
             return redirect("educational_videos_list")
-        elif request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            # Return form errors for AJAX requests
-            error_dict = {}
-            for field, errors in form.errors.items():
-                error_dict[field] = [str(error) for error in errors]
 
-            # Better error formatting for display
-            error_text = ""
-            for field, field_errors in error_dict.items():
-                field_name = field.replace("_", " ").title() if field != "__all__" else "Error"
-                error_text += f"{field_name}: {', '.join(field_errors)}. "
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            error_text = " ".join(f"{fld}: {', '.join(errs)}." for fld, errs in form.errors.items())
+            return JsonResponse({"success": False, "error": error_text}, status=400)
 
-            return JsonResponse({"success": False, "error": error_text, "detailed_errors": error_dict}, status=400)
     else:
         form = EducationalVideoForm()
-
-    # For regular GET requests
-    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        # AJAX GET request should get a JSON response
-        return JsonResponse({"success": False, "error": "Please submit the form with POST"}, status=400)
 
     return render(request, "videos/upload.html", {"form": form})
 
@@ -7567,3 +7709,242 @@ def contributors_list_view(request):
         print(f"Error fetching contributors: {e}")
         # Return an empty list in case of error
         return render(request, "web/contributors_list.html", {"contributors": []})
+
+
+class SurveyListView(LoginRequiredMixin, ListView):
+    model = Survey
+    template_name = "surveys/list.html"
+    login_url = "/accounts/login/"
+
+
+class SurveyCreateView(LoginRequiredMixin, CreateView):
+    model = Survey
+    form_class = SurveyForm
+    template_name = "surveys/create.html"
+    login_url = "/accounts/login/"
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        survey = form.save()
+
+        # Process questions
+        question_texts = self.request.POST.getlist("question_text[]")
+        question_types = self.request.POST.getlist("question_type[]")
+        question_choices = self.request.POST.getlist("question_choices[]")
+        scale_mins = self.request.POST.getlist("scale_min[]")
+        scale_maxs = self.request.POST.getlist("scale_max[]")
+
+        for i, (q_text, q_type) in enumerate(zip(question_texts, question_types)):
+            if q_text.strip():
+                # Convert scale values to integers with proper error handling
+                scale_min = 1
+                scale_max = 5
+
+                try:
+                    if q_type == "scale" and i < len(scale_mins) and scale_mins[i]:
+                        scale_min = int(scale_mins[i])
+                    if q_type == "scale" and i < len(scale_maxs) and scale_maxs[i]:
+                        scale_max = int(scale_maxs[i])
+                except (ValueError, IndexError):
+                    # Use defaults if there's an error
+                    scale_min = 1
+                    scale_max = 5
+
+                question = Question.objects.create(
+                    survey=survey,
+                    text=q_text.strip(),
+                    type=q_type,  # This should match your model field name
+                    scale_min=scale_min,
+                    scale_max=scale_max,
+                )
+
+                # Handle choices based on question type
+                if q_type == "true_false":
+                    Choice.objects.create(question=question, text="True")
+                    Choice.objects.create(question=question, text="False")
+                elif q_type == "scale":
+                    for num in range(question.scale_min, question.scale_max + 1):
+                        Choice.objects.create(question=question, text=str(num))
+                elif q_type in ["mcq", "checkbox"]:
+                    # Make sure we have choices for this question
+                    if i < len(question_choices):
+                        for choice_text in question_choices[i].split("\n"):
+                            if choice_text.strip():
+                                Choice.objects.create(question=question, text=choice_text.strip())
+
+        return redirect("surveys")
+
+
+class SurveyDetailView(LoginRequiredMixin, DetailView):
+    model = Survey
+    template_name = "surveys/detail.html"
+    login_url = "/accounts/login/"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Check if user has already submitted this survey
+        context["already_submitted"] = Response.objects.filter(
+            user=self.request.user, question__survey=self.object
+        ).exists()
+        # Check if user is the creator of this survey
+        context["is_creator"] = self.object.author == self.request.user
+        return context
+
+
+@login_required
+def submit_survey(request, pk):
+    survey = get_object_or_404(Survey, pk=pk)
+
+    # Check if user already submitted
+    if Response.objects.filter(user=request.user, question__survey=survey).exists():
+        messages.error(request, "You've already submitted this survey!")
+        return redirect("survey-detail", pk=survey.id)
+
+    if request.method == "POST":
+        for question in survey.question_set.all():
+            if question.required and not request.POST.get(f"question_{question.id}"):
+                messages.error(request, f"Please answer required question: {question.text}")
+                return redirect("survey-detail", pk=survey.id)
+
+            if question.type == "checkbox":
+                choices = request.POST.getlist(f"question_{question.id}")
+                for choice_id in choices:
+                    try:
+                        choice = Choice.objects.get(id=choice_id)
+                        if choice.question_id == question.id:
+                            Response.objects.create(user=request.user, question=question, choice=choice)
+                        else:
+                            messages.error(request, "Invalid choice selected")
+                            return redirect("survey-detail", pk=survey.id)
+                    except Choice.DoesNotExist:
+                        messages.error(request, "Invalid choice selected")
+                        return redirect("survey-detail", pk=survey.id)
+            elif question.type == "text":
+                Response.objects.create(
+                    user=request.user, question=question, text_answer=request.POST.get(f"question_{question.id}")
+                )
+            else:
+                choice_id = request.POST.get(f"question_{question.id}")
+                if choice_id:
+                    try:
+                        choice = Choice.objects.get(id=choice_id)
+                        if choice.question_id == question.id:
+                            Response.objects.create(user=request.user, question=question, choice=choice)
+                        else:
+                            messages.error(request, "Invalid choice selected")
+                            return redirect("survey-detail", pk=survey.id)
+                    except Choice.DoesNotExist:
+                        messages.error(request, "Invalid choice selected")
+                        return redirect("survey-detail", pk=survey.id)
+
+        messages.success(request, "Survey submitted successfully!")
+        return redirect("survey-results", pk=survey.id)
+
+    return redirect("survey-detail", pk=survey.id)
+
+
+class SurveyResultsView(LoginRequiredMixin, DetailView):
+    model = Survey
+    template_name = "surveys/results.html"
+    login_url = "/accounts/login/"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Process survey results
+        results = []
+        total_participants = 0
+        most_answered_question = None
+        max_responses = 0
+        top_choice = None
+        bottom_choice = None
+        overall_top_choice_count = 0
+        overall_bottom_choice_count = float("inf")
+        total_possible_responses = 0
+        total_actual_responses = 0
+        avg_completion_time = None
+        context["avg_completion_time"] = avg_completion_time
+
+        for question in self.object.question_set.all():
+            choices_data = []
+            question_total = 0
+
+            # Process each choice for this question
+            for choice in question.choice_set.all():
+                count = choice.response_set.count() if hasattr(choice, "response_set") else 0
+
+                question_total += count
+                choices_data.append({"text": choice.text, "count": count})
+
+            if question_total == 0:
+                continue
+            if question_total > 0:
+                total_possible_responses += total_participants * 1  # Each participant could answer this question
+                total_actual_responses += question_total
+
+            if question_total > max_responses:
+                max_responses = question_total
+                most_answered_question = question
+
+            for choice in choices_data:
+                choice["percentage"] = round((choice["count"] / question_total * 100), 1) if question_total > 0 else 0
+
+                if choice["count"] > overall_top_choice_count:
+                    overall_top_choice_count = choice["count"]
+                    top_choice = choice
+
+                if choice["count"] > 0 and choice["count"] < overall_bottom_choice_count:
+                    overall_bottom_choice_count = choice["count"]
+                    bottom_choice = choice
+
+            results.append({"question": question, "choices": choices_data, "total": question_total})
+
+            total_participants = max(total_participants, question_total)
+        engagement_score = 0
+        if total_possible_responses > 0:
+            engagement_score = (total_actual_responses / total_possible_responses) * 100
+
+        context["engagement_score"] = round(engagement_score, 1)
+        target_participants = getattr(self.object, "target_participants", 100)  # default to 100 if not set
+        response_rate = (total_participants / target_participants * 100) if target_participants > 0 else 0
+
+        context.update(
+            {
+                "results": results,
+                "total_participants": total_participants,
+                "response_rate": min(response_rate, 100),  # Cap at 100%
+                "most_answered_question": most_answered_question,
+                "top_choice": top_choice,
+                "bottom_choice": bottom_choice,
+                "is_creator": self.object.author == self.request.user if hasattr(self.object, "author") else False,
+            }
+        )
+
+        chart_data = []
+        for result in results:
+            chart_data.append(
+                {
+                    "question_id": result["question"].id,
+                    "labels": [choice["text"] for choice in result["choices"]],
+                    "data": [choice["count"] for choice in result["choices"]],
+                }
+            )
+        context["chart_data_json"] = json.dumps(chart_data)
+
+        return context
+
+
+class SurveyDeleteView(LoginRequiredMixin, DeleteView):
+    model = Survey
+    success_url = reverse_lazy("surveys")  # Use reverse_lazy
+    template_name = "surveys/delete.html"
+    login_url = "/accounts/login/"
+
+    def get_queryset(self):
+        # Override queryset to only allow creator to access the survey for deletion
+        base_qs = super().get_queryset()
+        return base_qs.filter(author=self.request.user)
+
+    def handle_no_permission(self):
+        messages.error(self.request, "You can only delete surveys that you created.")
+        return redirect("surveys")

@@ -13,14 +13,24 @@ from .views import send_slack_message
 
 logger = logging.getLogger(__name__)
 
+class HostnameRewriteMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # Rewrite the hostname only if it contains alphaonelabs99282llkb
+        if "alphaonelabs99282llkb" in request.META.get("HTTP_HOST", ""):
+            request.META["HTTP_HOST"] = "alphaonelabs.com"
+
+        # Proceed with the request
+        response = self.get_response(request)
+        return response
+
 class GlobalExceptionMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # Rewrite the hostname
-        request.META["HTTP_HOST"] = "alphaonelabs.com"
-
         # Proceed with the request
         response = self.get_response(request)
         return response
@@ -130,7 +140,6 @@ class WebRequestMiddleware:
             # Report to Sentry
             sentry_sdk.capture_exception(e)
             return self.get_response(request)
-
 
 class QuizSecurityMiddleware:
     def __init__(self, get_response):

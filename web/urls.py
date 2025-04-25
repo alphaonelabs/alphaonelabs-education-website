@@ -19,6 +19,11 @@ from .views import (
     GradeableLinkCreateView,
     GradeableLinkDetailView,
     GradeableLinkListView,
+    SurveyCreateView,
+    SurveyDeleteView,
+    SurveyDetailView,
+    SurveyListView,
+    SurveyResultsView,
     add_goods_to_cart,
     apply_discount_via_referrer,
     feature_vote,
@@ -29,6 +34,7 @@ from .views import (
     sales_analytics,
     sales_data,
     streak_detail,
+    submit_survey,
 )
 
 # Non-prefixed URLs
@@ -46,6 +52,7 @@ if settings.DEBUG:
 # Language-prefixed URLs
 urlpatterns += i18n_patterns(
     path("", views.index, name="index"),
+    path("ref/<str:code>/", views.handle_referral, name="handle_referral"),  # New referral URL format
     path("create-test-data/", views.run_create_test_data, name="create_test_data"),
     path("learn/", views.learn, name="learn"),
     path("waiting-rooms/", views.waiting_rooms, name="waiting_rooms"),
@@ -85,6 +92,7 @@ urlpatterns += i18n_patterns(
     path("dashboard/student/", views.student_dashboard, name="student_dashboard"),
     path("dashboard/teacher/", views.teacher_dashboard, name="teacher_dashboard"),
     path("dashboard/content/", views.content_dashboard, name="content_dashboard"),
+    # SURVEY URLs
     # Quizzes URLs
     path("quizzes/course/<int:course_id>/create/", quiz_views.create_course_exam, name="create_course_exam"),
     path(
@@ -129,6 +137,13 @@ urlpatterns += i18n_patterns(
     path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
     path("social-media/create/", views.create_scheduled_post, name="create_scheduled_post"),
     path("social-media/delete/<int:post_id>/", views.delete_post, name="delete_post"),
+    # SURVEY URLs
+    path("surveys/", SurveyListView.as_view(), name="surveys"),
+    path("surveys/create/", SurveyCreateView.as_view(), name="survey-create"),
+    path("surveys/<int:pk>/", SurveyDetailView.as_view(), name="survey-detail"),
+    path("surveys/<int:pk>/delete/", SurveyDeleteView.as_view(), name="survey-delete"),
+    path("surveys/<int:pk>/submit/", submit_survey, name="submit-survey"),
+    path("surveys/<int:pk>/results/", SurveyResultsView.as_view(), name="survey-results"),
     # Payment URLs
     path(
         "courses/<slug:slug>/create-payment-intent/",
@@ -293,7 +308,7 @@ urlpatterns += i18n_patterns(
     path("current-weekly-challenge/", views.current_weekly_challenge, name="current_weekly_challenge"),
     # Educational Videos URLs
     path("videos/", views.educational_videos_list, name="educational_videos_list"),
-    path("videos/upload/", login_required(views.upload_educational_video), name="upload_educational_video"),
+    path("videos/upload/", views.upload_educational_video, name="upload_educational_video"),
     path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),
     # Storefront Management
     path("store/create/", login_required(views.StorefrontCreateView.as_view()), name="storefront_create"),
