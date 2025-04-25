@@ -22,11 +22,6 @@
                 <a href="{% url 'video_request_list' %}?category={{ category.slug }}"
                    class="block py-2 px-3 rounded flex justify-between items-center {% if selected_category == category.slug %}bg-blue-100 dark:bg-blue-900{% else %}hover:bg-gray-100 dark:hover:bg-gray-700{% endif %}">
                   <span>{{ category.name }}</span>
-                  {% if category.slug in category_counts %}
-                    <span class="bg-gray-200 dark:bg-gray-600 rounded-full px-2 py-1 text-xs">
-                      {{ category_counts.category_counts.category.slug }}
-                    </span>
-                  {% endif %}
                 </a>
               </li>
             {% endfor %}

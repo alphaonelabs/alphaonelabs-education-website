@@ -5149,45 +5149,54 @@ def donation_cancel(request):
     return redirect("donate")
 
 
+@login_required
 def educational_videos_list(request):
-    """View for listing educational videos with optional category filtering."""
+    """View for listing educational videos with requests included at the bottom."""
     # Get category filter from query params
     selected_category = request.GET.get("category")
 
-    # Base queryset
+    # Base querysets
     videos = EducationalVideo.objects.select_related("uploader", "category").order_by("-uploaded_at")
+    video_requests = VideoRequest.objects.select_related("requester", "category", "fulfilled_by").order_by(
+        "-created_at"
+    )
 
     # Apply category filter if provided
     if selected_category:
         videos = videos.filter(category__slug=selected_category)
+        video_requests = video_requests.filter(category__slug=selected_category)
         selected_category_obj = get_object_or_404(Subject, slug=selected_category)
         selected_category_display = selected_category_obj.name
     else:
         selected_category_display = None
 
-    # Get category counts for sidebar
-    category_counts = dict(
-        EducationalVideo.objects.values("category__name", "category__slug")
-        .annotate(count=Count("id"))
-        .values_list("category__slug", "count")
-    )
-
-    # Get all subjects for the dropdown
-    subjects = Subject.objects.all().order_by("order", "name")
-
-    # Paginate results
-    paginator = Paginator(videos, 12)  # 12 videos per page
-    page_number = request.GET.get("page", 1)
+    # Paginate videos (9 per page)
+    paginator = Paginator(videos, 9)
+    page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
+
+    # Limit video requests to 5
+    video_requests = video_requests[:5]
+    video_requests_paginated = VideoRequest.objects.count() > 5
+
+    # Category counts for sidebar
+    category_counts = {
+        subject.slug: EducationalVideo.objects.filter(category=subject).count() for subject in Subject.objects.all()
+    }
+
+    # Get all subjects
+    subjects = Subject.objects.all().order_by("order", "name")
 
     context = {
         "videos": page_obj,
-        "is_paginated": paginator.num_pages > 1,
+        "is_paginated": page_obj.has_other_pages(),
         "page_obj": page_obj,
         "subjects": subjects,
         "selected_category": selected_category,
         "selected_category_display": selected_category_display,
         "category_counts": category_counts,
+        "video_requests": video_requests,
+        "video_requests_paginated": video_requests_paginated,
     }
 
     return render(request, "videos/list.html", context)
