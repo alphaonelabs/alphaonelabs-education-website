@@ -2949,7 +2949,12 @@ class VideoRequest(models.Model):
         default="pending",
     )
     fulfilled_by = models.ForeignKey(
-        EducationalVideo, on_delete=models.SET_NULL, related_name="fulfilling_requests", null=True, blank=True
+        EducationalVideo,
+        on_delete=models.SET_NULL,
+        related_name="fulfilling_requests",
+        null=True,
+        blank=True,
+        help_text="Educational video that fulfills this request",
     )
 
     class Meta:
@@ -2957,7 +2962,7 @@ class VideoRequest(models.Model):
         verbose_name_plural = "Video Requests"
         ordering = ["-created_at"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title
 
 
