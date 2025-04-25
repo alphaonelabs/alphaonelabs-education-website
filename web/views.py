@@ -794,6 +794,8 @@ def course_detail(request, slug):
         user_attempt = None
         if request.user.is_authenticated:
             user_attempt = next((q for q in exam.user_quizzes.all() if q.user == request.user), None)
+            # print("%%%", (q for q in exam.user_quizzes.all() if q.user == request.user))
+            # Todo: get all student exam attempts
 
         # Get submission count for teachers
         submission_count = 0
@@ -804,6 +806,7 @@ def course_detail(request, slug):
             {
                 "exam": exam,
                 "user_attempt": user_attempt,
+                # "remaining_attempts": ,
                 "submission_count": submission_count,
             }
         )

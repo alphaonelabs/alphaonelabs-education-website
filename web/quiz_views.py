@@ -606,6 +606,13 @@ def take_quiz(request, quiz_id):
     if quiz.status != "published":
         messages.error(request, "This quiz is not currently available.")
         return redirect("quiz_list")
+    
+    response = _process_quiz_taking(request, quiz)
+    
+    # Add no-cache headers to prevent back button issues
+    response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
 
     return _process_quiz_taking(request, quiz)
 
@@ -676,26 +683,28 @@ def _process_quiz_taking(request, quiz):
         def calculate_remaining_time():
             delta = timezone.now() - user_quiz.start_time
             total_secs_remaining = max(0, quiz.time_limit * 60 - delta.total_seconds())
-            print("## total_secs_remaining ##", total_secs_remaining)
             return int(total_secs_remaining)
 
         incomplete_attempt = UserQuiz.objects.filter(quiz=quiz, user=user, completed=False).first()
+        print("## incomplete_attempt ##", incomplete_attempt)
         if not incomplete_attempt:
             user_quiz = UserQuiz(quiz=quiz, user=user)
             user_quiz.save()
+            # Store active quiz in session
+            request.session['active_quiz_id'] = user_quiz.id
+            request.session.save()
             remaining_time = calculate_remaining_time()
         else:
             user_quiz = incomplete_attempt
             remaining_time = calculate_remaining_time()
-            print("## remaining_time <= 0 ##", remaining_time <= 0)
             if remaining_time <= 0 :
                 user_quiz.complete_quiz()
-                user_quiz.correction_status = "not_needed"
                 user_quiz.save()
+                # Store active quiz in session
+                request.session['active_quiz_id'] = user_quiz.id
+                request.session.save()
                 messages.error(request, f"You have reached the time limit")
-                # Find the latest attempt to show results
-                latest_attempt = UserQuiz.objects.filter(quiz=quiz, user=user).order_by('-start_time').first()
-                return redirect("quiz_results", user_quiz_id=latest_attempt.id)
+        print("## request.session ##", request.session.get('active_quiz_id'))
 
     # Shuffle questions if quiz settings require it
     if quiz.randomize_questions:

@@ -10,6 +10,12 @@
   <script>
     // Define user_quiz_id for use in JavaScript
     let user_quiz_id = "{{ user_quiz_id }}";
+
+        // Force reload cached pages by adding unique timestamp
+    if (performance.navigation.type === 2) {
+      // This is a back-forward navigation, force reload
+      window.location.reload(true);
+    }
     
     // Timer functionality
     document.addEventListener('DOMContentLoaded', function() {
@@ -58,7 +64,6 @@
                 if (remainingTime <= 0) {
                     clearInterval(timerInterval);
                     localStorage.removeItem('quiz_' + user_quiz_id + '_remaining_time');
-                    console.log("## remainingTime ##", remainingTime)
                     document.getElementById('quiz-form').submit();
                 }
             }, 1000);
@@ -73,7 +78,7 @@
             });
         }
 
-         // Save all form inputs to localStorage for refresh persistence
+      // Save all form inputs to localStorage for refresh persistence
       function saveFormState() {
         const form = document.getElementById('quiz-form');
         if (!form) return;
@@ -102,7 +107,6 @@
       function loadFormState() {
         const savedState = localStorage.getItem(`quiz_${user_quiz_id}_formState`);
         if (!savedState) return;
-        
         try {
           const formData = JSON.parse(savedState);
           const form = document.getElementById('quiz-form');
@@ -137,17 +141,7 @@
         localStorage.removeItem(`quiz_${user_quiz_id}_formState`);
       });
       
-      // === PREVENTING BACK/FORWARD NAVIGATION ===
-      
-      // 1. Use History API to trap the user on the current page
-      history.pushState(null, document.title, location.href);
-      
-      // 2. When user tries to navigate back, push another state to keep them on page
-      window.addEventListener('popstate', function(event) {
-        history.pushState(null, document.title, location.href);
-        alert('Navigation back or forward is not allowed during a quiz.');
-      });
-      
+
       // 3. Handle refresh specifically (allow it)
       function handleRefresh(event) {
         // This is a refresh, not navigation
@@ -175,39 +169,6 @@
           return true;
         }
       });
-      
-      // 5. Handle browser reload button
-      window.addEventListener('beforeunload', function(e) {
-        // If it's a form submission, don't show warning
-        if (quizSubmitted) return;
-        
-        // Check if ctrl+r or F5 was recently pressed (refresh)
-        if (e.currentTarget.performance.navigation.type === 1) {
-          handleRefresh(e);
-          return;
-        }
-        
-        // For any other navigation away, show warning and mark attempt
-        e.preventDefault();
-        e.returnValue = 'Leaving this page will end your quiz attempt. Are you sure?';
-        
-        // Mark as completed when actually navigating away
-        const formData = new FormData();
-        formData.append('csrfmiddlewaretoken', csrfToken);
-        formData.append('is_refresh', 'false');
-        
-        navigator.sendBeacon("{% url 'mark_quiz_attempt' 0 %}".replace('0', user_quiz_id), formData);
-
-        // 1️⃣ Build FormData
-        const data = new FormData(form);
-
-        // 2️⃣ Iterate & log each name/value pair
-        console.group('Form will submit these fields:');
-        for (const [name, value] of data.entries()) {
-          console.log(name, ':', value);
-        }
-        console.groupEnd();
-      });
 
       const form = document.getElementById('quiz-form');
 
@@ -223,12 +184,39 @@
 
     });
 
+          // 3. Track page visibility changes
+      document.addEventListener('visibilitychange', function() {
+        e.preventDefault();
+        e.returnValue = "Leaving will submit your quiz and end your attempt. Are you sure?";
+        if (document.visibilityState === 'hidden' && !quizSubmitted) {
+          // User switched tabs or minimized window
+          submitQuiz("You've navigated away from the quiz");
+        }
+      });
+      
+      // 4. Detect navigation attempts
+      window.addEventListener('beforeunload', function(e) {
+        e.preventDefault();
+        e.returnValue = "Leaving will submit your quiz and end your attempt. Are you sure?";
+        if (!quizSubmitted) {
+          // Standard browser warning
+          
+          // Mark attempt as completed
+          const formData = new FormData();
+          formData.append('csrfmiddlewaretoken', csrfToken);
+          navigator.sendBeacon("{% url 'mark_quiz_attempt' 0 %}".replace('0', userQuizId), formData);
+        }
+      });
+
       function closeWarningMessage() {
         messageButton = document.querySelector("#hideWarningButton")
         messageDiv = messageButton.parentElement.parentElement
         messageDiv.remove()
       }
 
+      document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+      });
   </script>
   <style>
     /* Disable right-click menu */
@@ -321,7 +309,6 @@
                 <div class="ml-4">
                   {% if question.question_type == 'multiple' %}
                     <div class="space-y-2">
-
                       {% for option in question.options %}
                         <div class="flex items-center">
                           <input type="checkbox"
@@ -348,7 +335,6 @@
                         </div>
                       {% endfor %}
                     </div>
-
                   {% else %}
                     <div>
                       <textarea name="question_{{ question.id }}"
