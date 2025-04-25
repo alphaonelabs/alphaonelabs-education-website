@@ -5149,8 +5149,7 @@ def donation_cancel(request):
     return redirect("donate")
 
 
-@login_required
-def educational_videos_list(request):
+def educational_videos_list(request: HttpRequest) -> HttpResponse:
     """View for listing educational videos with requests included at the bottom."""
     # Get category filter from query params
     selected_category = request.GET.get("category")
@@ -5180,9 +5179,11 @@ def educational_videos_list(request):
     video_requests_paginated = VideoRequest.objects.count() > 5
 
     # Category counts for sidebar
-    category_counts = {
-        subject.slug: EducationalVideo.objects.filter(category=subject).count() for subject in Subject.objects.all()
-    }
+    category_counts = dict(
+        EducationalVideo.objects.values("category__slug")
+        .annotate(count=Count("id"))
+        .values_list("category__slug", "count"),
+    )
 
     # Get all subjects
     subjects = Subject.objects.all().order_by("order", "name")
