@@ -794,8 +794,7 @@ def course_detail(request, slug):
         user_attempt = None
         if request.user.is_authenticated:
             user_attempt = next((q for q in exam.user_quizzes.all() if q.user == request.user), None)
-            # print("%%%", (q for q in exam.user_quizzes.all() if q.user == request.user))
-            # Todo: get all student exam attempts
+            user_attempts_count = exam.user_quizzes.filter(user=request.user).count()
 
         # Get submission count for teachers
         submission_count = 0
@@ -806,8 +805,9 @@ def course_detail(request, slug):
             {
                 "exam": exam,
                 "user_attempt": user_attempt,
-                # "remaining_attempts": ,
                 "submission_count": submission_count,
+                "user_attempts_count": user_attempts_count,
+                "user_remaining_attempts": exam.max_attempts - user_attempts_count,
             }
         )
 
@@ -820,15 +820,24 @@ def course_detail(request, slug):
 
         # Process each exam in this session
         for exam in session_exams:
-
             user_attempt = None
+            user_attempts_count = 0
             if request.user.is_authenticated:
                 user_attempt = next((q for q in exam.user_quizzes.all() if q.user == request.user), None)
+                user_attempts_count = exam.user_quizzes.filter(user=request.user).count()
+
+            # Get submission count for teachers
+            submission_count = 0
+            if is_teacher:
+                submission_count = sum(1 for q in exam.user_quizzes.all() if q.completed)
 
             session_exam_data.append(
                 {
                     "exam": exam,
                     "user_attempt": user_attempt,
+                    "submission_count": submission_count,
+                    "user_attempts_count": user_attempts_count,
+                    "user_remaining_attempts": exam.max_attempts - user_attempts_count,
                 }
             )
 

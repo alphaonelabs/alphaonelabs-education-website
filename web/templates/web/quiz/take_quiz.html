@@ -8,29 +8,122 @@
 {% block extra_head %}
   {{ block.super }}
   <script>
-    // Define user_quiz_id for use in JavaScript
-    let user_quiz_id = "{{ user_quiz_id }}";
 
-        // Force reload cached pages by adding unique timestamp
-    if (performance.navigation.type === 2) {
-      // This is a back-forward navigation, force reload
-      window.location.reload(true);
-    }
+function setupQuizStatePersistence() {
+  const quizForm = document.getElementById('quiz-form');
+  const userQuizId = "{{ user_quiz.id }}";
+  const storageKey = `quiz_${userQuizId}_answers`;
+  let autoSaveTimer = null;
+  
+  // Initialize state persistence
+  function init() {
+    if (!quizForm) return;
     
-    // Timer functionality
-    document.addEventListener('DOMContentLoaded', function() {
+    // Restore saved answers when page loads
+    restoreFormState();
+    
+    // Save answers when they change
+    quizForm.addEventListener('input', saveFormState);
+    
+    // Setup auto-save every 3 seconds
+    autoSaveTimer = setInterval(saveFormState, 3000);
+    
+    // Clear timer and storage when form is submitted normally
+    quizForm.addEventListener('submit', function() {
+      clearInterval(autoSaveTimer);
+      sessionStorage.removeItem(storageKey);
+    });
+    
+    console.log("Quiz state persistence initialized with sessionStorage");
+  }
+  
+  // Save all form answers to sessionStorage
+  function saveFormState() {
+    if (!quizForm) return;
+    
+    const formData = {};
+    const inputs = quizForm.querySelectorAll('input, textarea, select');
+    
+    // Process each form element
+    inputs.forEach(input => {
+      if (!input.name) return;
+      
+      // Handle different input types
+      if (input.type === 'checkbox' || input.type === 'radio') {
+        if (input.checked) {
+          formData[input.name] = input.value;
+        }
+      } else if (input.type === 'select-multiple') {
+        const selectedOptions = Array.from(input.selectedOptions).map(opt => opt.value);
+        formData[input.name] = selectedOptions;
+      } else {
+        formData[input.name] = input.value;
+      }
+    });
+    
+    // Save to sessionStorage
+    try {
+      sessionStorage.setItem(storageKey, JSON.stringify(formData));
+      console.log("Quiz state saved to sessionStorage");
+    } catch (error) {
+      console.error("Failed to save quiz state:", error);
+    }
+  }
+  
+  // Restore form state from sessionStorage
+  function restoreFormState() {
+    try {
+      const saved = sessionStorage.getItem(storageKey);
+      if (!saved) return;
+      
+      const formData = JSON.parse(saved);
+      
+      // Restore each form element
+      Object.entries(formData).forEach(([name, value]) => {
+        const elements = quizForm.querySelectorAll(`[name="${name}"]`);
+        
+        elements.forEach(element => {
+          if (element.type === 'checkbox' || element.type === 'radio') {
+            element.checked = (element.value === value);
+          } else if (element.type === 'select-multiple' && Array.isArray(value)) {
+            Array.from(element.options).forEach(option => {
+              option.selected = value.includes(option.value);
+            });
+          } else {
+            element.value = value;
+          }
+        });
+      });
+      
+      console.log("Quiz state restored from sessionStorage");
+    } catch (error) {
+      console.error("Failed to restore quiz state:", error);
+    }
+  }
+  
+  // Start the module
+  init();
+}
 
-      header = document.querySelector("header")
-      header.classList.add("hidden")
+  // QUIZ SECURITY CONFIGURATION
+  const quizData = {
+    userQuizId: "{{ user_quiz.id }}",
+    csrfToken: "{{ csrf_token }}"
+  };
+  
+  // STATE VARIABLES
+  let isQuizSubmitted = false;
+  
+  // Initialize everything when document is ready
+  document.addEventListener('DOMContentLoaded', function() {
+      setupQuizStatePersistence();
+      hideFooterAndHeader()
 
-      footer = document.querySelector("footer")
-      footer.classList.add("hidden")
-
-      // Check if we have a time limit
+          // Check if we have a time limit
         const timeLimit = parseInt("{{ quiz.time_limit|default:0 }}");
         if (timeLimit > 0) {
             let remainingTime =  parseFloat("{{ remaining_time|default:0 }}");
-            localStorage.getItem('quiz_' + user_quiz_id + '_remaining_time', remainingTime);
+            localStorage.getItem('quiz_' + quizData.userQuizId + '_remaining_time', remainingTime);
 
             const timerElement = document.getElementById('timer');
             if (!timerElement) return; // Exit if timer element doesn't exist
@@ -45,7 +138,7 @@
                 remainingTime--;
 
                 // Store the remaining time in localStorage
-                localStorage.setItem('quiz_' + user_quiz_id + '_remaining_time', remainingTime.toString());
+                localStorage.setItem('quiz_' + quizData.userQuizId + '_remaining_time', remainingTime.toString());
 
                 // Format the time as MM:SS
                 const minutes = Math.floor(remainingTime / 60);
@@ -63,7 +156,7 @@
                 // Auto-submit when time is up
                 if (remainingTime <= 0) {
                     clearInterval(timerInterval);
-                    localStorage.removeItem('quiz_' + user_quiz_id + '_remaining_time');
+                    localStorage.removeItem('quiz_' + quizData.userQuizId + '_remaining_time');
                     document.getElementById('quiz-form').submit();
                 }
             }, 1000);
@@ -71,147 +164,27 @@
             // Add event listener to the form submission to clear the timer
             document.getElementById('quiz-form').addEventListener('submit', function() {
                 clearInterval(timerInterval);
-                localStorage.removeItem('quiz_' + user_quiz_id + '_remaining_time');
+                localStorage.removeItem('quiz_' + quizData.userQuizId + '_remaining_time');
 
                 // Save the remaining time in the hidden field for server-side processing
                 document.getElementById('quiz_timer_value').value = remainingTime;
             });
         }
 
-      // Save all form inputs to localStorage for refresh persistence
-      function saveFormState() {
-        const form = document.getElementById('quiz-form');
-        if (!form) return;
-        
-        // Collect all form inputs
-        const formData = {};
-        const inputs = form.querySelectorAll('input, textarea, select');
-        
-        inputs.forEach(input => {
-          if (input.name) {
-            if (input.type === 'checkbox' || input.type === 'radio') {
-              if (input.checked) {
-                formData[input.name] = input.value;
-              }
-            } else {
-              formData[input.name] = input.value;
-            }
-          }
-        });
-        
-        // Save to localStorage
-        localStorage.setItem(`quiz_${user_quiz_id}_formState`, JSON.stringify(formData));
-      }
-
-      // Load form state from localStorage after refresh
-      function loadFormState() {
-        const savedState = localStorage.getItem(`quiz_${user_quiz_id}_formState`);
-        if (!savedState) return;
-        try {
-          const formData = JSON.parse(savedState);
-          const form = document.getElementById('quiz-form');
-          
-          for (const [name, value] of Object.entries(formData)) {
-            const input = form.querySelector(`[name="${name}"]`);
-            if (input) {
-              if (input.type === 'checkbox' || input.type === 'radio') {
-                input.checked = input.value === value;
-              } else {
-                input.value = value;
-              }
-            }
-          }
-        } catch (e) {
-          console.error('Error loading saved form state:', e);
-        }
-      }
-      
-      // Attempt to load saved form state on page load
-      loadFormState();
-      
-      // Save form state periodically (every 3 seconds)
-      setInterval(saveFormState, 3000);
-      
-      // Save form state on any input change
-      document.getElementById('quiz-form').addEventListener('input', saveFormState);
-      
-      // Track form submission to avoid warnings
-      document.getElementById('quiz-form').addEventListener('submit', function() {
-        quizSubmitted = true;
-        localStorage.removeItem(`quiz_${user_quiz_id}_formState`);
-      });
-      
-
-      // 3. Handle refresh specifically (allow it)
-      function handleRefresh(event) {
-        // This is a refresh, not navigation
-        const formData = new FormData();
-        formData.append('csrfmiddlewaretoken', csrfToken);
-        formData.append('is_refresh', 'true');
-        
-        // Use fetch with keepalive to ensure request completes
-        fetch("{% url 'mark_quiz_attempt' 0 %}".replace('0', user_quiz_id), {
-          method: 'POST',
-          body: formData,
-          keepalive: true
-        });
-        
-        // Allow the refresh to continue
-        return true;
-      }
-      
-      // 4. Handle key-based refresh (F5, Ctrl+R)
-      document.addEventListener('keydown', function(e) {
-        if ((e.key === 'F5') || (e.key === 'r' && (e.ctrlKey || e.metaKey))) {
-          // Let refresh happen naturally
-          handleRefresh(e);
-          // Don't prevent default - allow refresh
-          return true;
-        }
-      });
-
-      const form = document.getElementById('quiz-form');
-
-        // 1️⃣ Build FormData
-        const data = new FormData(form);
-
-        // 2️⃣ Iterate & log each name/value pair
-        console.group('Form will submit these fields:');
-        for (const [name, value] of data.entries()) {
-          console.log(name, ':', value);
-        }
-        console.groupEnd();
-
     });
 
-          // 3. Track page visibility changes
-      document.addEventListener('visibilitychange', function() {
-        e.preventDefault();
-        e.returnValue = "Leaving will submit your quiz and end your attempt. Are you sure?";
-        if (document.visibilityState === 'hidden' && !quizSubmitted) {
-          // User switched tabs or minimized window
-          submitQuiz("You've navigated away from the quiz");
-        }
-      });
-      
-      // 4. Detect navigation attempts
-      window.addEventListener('beforeunload', function(e) {
-        e.preventDefault();
-        e.returnValue = "Leaving will submit your quiz and end your attempt. Are you sure?";
-        if (!quizSubmitted) {
-          // Standard browser warning
-          
-          // Mark attempt as completed
-          const formData = new FormData();
-          formData.append('csrfmiddlewaretoken', csrfToken);
-          navigator.sendBeacon("{% url 'mark_quiz_attempt' 0 %}".replace('0', userQuizId), formData);
-        }
-      });
 
       function closeWarningMessage() {
         messageButton = document.querySelector("#hideWarningButton")
         messageDiv = messageButton.parentElement.parentElement
         messageDiv.remove()
+      }
+
+      function hideFooterAndHeader() {
+        let header = document.querySelector("header") 
+        let footer = document.querySelector("footer") 
+        header.innerHTML = ""
+        footer.remove()
       }
 
       document.addEventListener('contextmenu', function(e) {
@@ -243,7 +216,7 @@
       <!-- Warning message -->
     <div class="quiz-warning mb-6 relative">
       <h3 class="font-bold text-lg mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>Important Notice</h3>
-      <p>Once you start this quiz, you must complete it in a single session. If you navigate away from this page or close your browser, your attempt will be automatically submitted and counted.</p>
+      <p>Once you start this quiz, you must complete it in a single session. If you navigate away from this page or close your browser, your attempt will be automatically submitted and counted without any answers and you will take Zero.</p>
       <button onclick="closeWarningMessage()">
         <i id="hideWarningButton" class="fas fa-x text-blue-600 dark:text-blue-400 mr-2 absolute top-[5px] right-[5px] p-[6px] cursor-pointer"></i>
       </button>
@@ -283,7 +256,7 @@
           >
       {% csrf_token %}
       <input type="hidden" name="quiz_id" value="{{ quiz_id }}" />
-      <input type="hidden" name="user_quiz_id" value="{{ user_quiz_id }}" />
+      <input type="hidden" name="quizData.userQuizId" value="{{ quizData.userQuizId }}" />
       <input type="hidden" id="quiz_timer_value" name="quiz_timer_value" value="" />
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
         <div class="p-6">
@@ -297,7 +270,7 @@
                     {{ forloop.counter }}
                   </span>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium  bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 ">
-                    {{ question.question_type }}
+                    {{ question.question_type_display }}
                   </span>
                   {% if question.points %}
                     <span class="ml-2 items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-purple-900 dark:text-purple-300 ">

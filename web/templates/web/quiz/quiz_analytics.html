@@ -113,7 +113,7 @@
                             return questionAnalysisData[dataIndex].text || `Question ${dataIndex + 1}`;
                         },
                         label: function(context) {
-                            return context.raw + '% correct';
+                            return (context.raw).toFixed(1) + '% correct';
                         }
                     }
                 }

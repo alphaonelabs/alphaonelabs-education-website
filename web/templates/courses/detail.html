@@ -1150,20 +1150,28 @@
                           {% for item in course_exam_data %}
                             <div class="bg-white dark:bg-gray-800 rounded-lg border-2 border-teal-200 dark:border-teal-800 p-4">
                               <div class="flex justify-between items-center">
-                                <div>
+                                <div >
                                   <h4 class="font-semibold text-lg">{{ item.exam.title }}</h4>
                                   <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">{{ item.exam.description|truncatechars:100 }}</p>
-                                  <div class="flex items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
+                                  <div class="flex items-center mt-2 text-xs text-gray-500 dark:text-gray-400 mb-4">
                                     <span class="inline-flex items-center mr-3">
                                       <i class="far fa-clock mr-1"></i>{{ item.exam.time_limit }} minutes
                                     </span>
                                     <span class="inline-flex items-center mr-3">
                                       <i class="far fa-question-circle mr-1"></i>{{ item.exam.questions.count }} questions
                                     </span>
-                                    <span class="inline-flex items-center">
+                                    <span class="inline-flex items-center mr-3">
                                       <i class="fas fa-trophy mr-1"></i>Pass: {{ item.exam.passing_score }}%
                                     </span>
+                                    {% if is_enrolled %}
+                                      <span class="inline-flex items-center">
+                                        <i class="fas fa-clipboard-list mr-1"></i>Attempts: {{ item.user_attempts_count|default:0 }}/{{ item.exam.max_attempts }}
+                                      </span>
+                                    {% endif %}
                                   </div>
+                                  {% if exam_item.exam.AI_auto_correction == True %}
+                                    <span class="font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-full text-sm">AI-Auto Correction</span>
+                                  {% endif %}
                                 </div>
                                 <div>
                                   {% if is_teacher %}
@@ -1177,7 +1185,8 @@
                                          class="inline-flex items-center px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm">
                                         <i class="fas fa-check-circle mr-1"></i>View Results
                                       </a>
-                                    {% else %}
+                                    {% endif %}
+                                    {% if item.user_remaining_attempts > 0 %}
                                       <a href="{% url 'take_quiz' item.exam.id %}"
                                          class="inline-flex items-center px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm">
                                         <i class="fas fa-pencil-alt mr-1"></i>Take Exam
@@ -1224,32 +1233,37 @@
                                   {% for exam_item in item.exams %}
                                     <div class="bg-white dark:bg-gray-800 rounded border border-gray-200 dark:border-gray-700 p-3">
                                       <div class="flex justify-between items-start">
-                                        <div>
+                                        <div class="flex flex-wrap gap-[10px]">
                                           <span class="font-medium">{{ exam_item.exam.title }}</span>
+                                          {% if is_enrolled %}
+                                            <span class="font-medium bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-full text-sm">Attempts: {{ exam_item.user_attempts_count|default:0 }}/{{ exam_item.exam.max_attempts }}</span>
+                                            {% endif %}
+                                            <span class="font-medium bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-full text-sm">Submission: {{ exam_item.submission_count |default:0 }}</span>
+                                          <span class="font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full text-sm">Duration: {{ exam_item.exam.time_limit }}min</span>
                                           {% if exam_item.exam.AI_auto_correction == True %}
-                                            <span class="ml-2 font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-full text-sm">AI-Auto Correction</span>
+                                            <span class="font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-full text-sm">AI-Auto Correction</span>
                                           {% endif %}
-                                          <span class="ml-2 font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full text-sm">Duration: {{ exam_item.exam.time_limit }}min</span>
                                         </div>
                                         <div class="flex gap-2 items-center">
                                           {% if is_teacher %}
                                             <a href="{% url 'quiz_analytics' exam_item.exam.id %}"
-                                               class="text-sm mr-4 text-green-600 hover:text-blue-800 dark:text-blue-400">
+                                               class="text-nowrap text-sm mr-4 text-green-600 hover:text-blue-800 dark:text-blue-400">
                                               View Analytics
                                             </a>
                                             <a href="{% url 'quiz_detail' exam_item.exam.id %}"
-                                               class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                                               class="text-nowrap text-blue-600 hover:text-blue-800 dark:text-blue-400">
                                               <i class="fas fa-edit"></i>
                                             </a>
                                           {% elif is_enrolled %}
                                             {% if exam_item.user_attempt %}
                                               <a href="{% url 'quiz_results' exam_item.user_attempt.id %}"
-                                                 class="text-green-600 hover:text-green-800 dark:text-green-400">
+                                                 class="text-nowrap text-green-600 hover:text-green-800 dark:text-green-400">
                                                 <i class="fas fa-check-circle"></i> View Results
                                               </a>
-                                            {% else %}
+                                            {% endif %}
+                                            {% if exam_item.user_remaining_attempts > 0 %}
                                               <a href="{% url 'take_quiz' exam_item.exam.id %}"
-                                                 class="text-orange-600 hover:text-orange-800 dark:text-orange-400">
+                                                 class="text-nowrap text-orange-600 hover:text-orange-800 dark:text-orange-400">
                                                 <i class="fas fa-pencil-alt"></i> Take Quiz
                                               </a>
                                             {% endif %}

@@ -212,9 +212,11 @@
                           <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 mr-2">
                             {{ question.get_question_type_display }}
                           </span>
-                          <span>{{ question.option_count }} options</span>
-                          <span class="mx-2">•</span>
                           <span>{{ question.points }} point{{ question.points|pluralize }}
+                          {% if question.question_type == "multiple" %}
+                            <span class="mx-2">•</span>
+                            <span>{{ question.option_count }} options</span>
+                          {% endif %}
                           </span>
                         </div>
                       </div>

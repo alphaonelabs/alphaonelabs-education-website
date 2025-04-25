@@ -146,17 +146,14 @@ class QuizSecurityMiddleware:
         # Check if user has an active quiz in session
         active_quiz_id = request.session.get('active_quiz_id')
 
-        print("## active_quiz_id ##", request.session.get('active_quiz_id'))       
         if active_quiz_id:
             # Get current URL details
             resolver_match = resolve(request.path_info)
             current_url_name = resolver_match.url_name
-            print("## current_url_name ##", current_url_name)
             
             # Only allowed urls during an active quiz
-            allowed_urls = ['take_quiz', 'submit_quiz', 'mark_quiz_attempt']
-            
-            print("## middleware Cond ##", current_url_name not in allowed_urls)
+            allowed_urls = ['take_quiz']
+
             # If navigating to a non-allowed URL while quiz is active
             if current_url_name not in allowed_urls:
                 # Get the active quiz
@@ -165,13 +162,10 @@ class QuizSecurityMiddleware:
                     # Mark quiz as completed
                     user_quiz.complete_quiz()
                     user_quiz.save()
-                    print("## middleware user_quiz ##", user_quiz)
                     
                     # Clear active quiz from session
-                    print("## middleware session ##", request.session.get('active_quiz_id'))
                     del request.session['active_quiz_id']
                     request.session.save()
-                    print("## middleware session ##", request.session.get('active_quiz_id'))
                     
                     # Notify user
                     messages.warning(request, "Your quiz has been automatically submitted because you navigated away.")

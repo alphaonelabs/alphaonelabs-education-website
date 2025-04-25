@@ -606,7 +606,7 @@ def take_quiz(request, quiz_id):
     if quiz.status != "published":
         messages.error(request, "This quiz is not currently available.")
         return redirect("quiz_list")
-    
+
     response = _process_quiz_taking(request, quiz)
     
     # Add no-cache headers to prevent back button issues
@@ -614,39 +614,8 @@ def take_quiz(request, quiz_id):
     response['Pragma'] = 'no-cache'
     response['Expires'] = '0'
 
-    return _process_quiz_taking(request, quiz)
+    return response
 
-@login_required
-def mark_quiz_attempt(request, user_quiz_id):
-    """Mark a quiz attempt as completed when user leaves the page"""
-    if request.method == 'POST':
-        try:
-            print("### is_refresh ###", is_refresh)
-            # Check if this is a refresh or navigation
-            is_refresh = request.POST.get('is_refresh') == 'true'
-            user_quiz = get_object_or_404(UserQuiz, id=user_quiz_id)
-            
-            # Only allow the user who started the quiz to interact with it
-            if user_quiz.user != request.user:
-                return HttpResponseForbidden("You don't have permission to modify this quiz attempt.")
-            
-            # For refreshes, just return success without completing
-            if is_refresh:
-                return HttpResponse(status=200)
-                
-            # For navigation away (not refresh), mark as completed
-            if not user_quiz.completed and not is_refresh:
-                user_quiz.answers = None  # Clear answers if incomplete navigation
-                user_quiz.correction_status = "not_needed"
-                user_quiz.complete_quiz()
-                user_quiz.save()
-                
-            return HttpResponse(status=200)
-            
-        except Exception as e:
-            print(f"Error in mark_quiz_attempt: {str(e)}")
-            return HttpResponse(status=500)
-    return HttpResponse(status=405)  # Method not allowed
 
 @login_required
 def _process_quiz_taking(request, quiz):
@@ -666,6 +635,7 @@ def _process_quiz_taking(request, quiz):
 
     # Check if user has already reached max attempts
     if quiz.max_attempts > 0:
+        quiz_id = request.session.get('active_quiz_id')
         attempt_count = UserQuiz.objects.filter(quiz=quiz, user=user, completed=True).count()
         if attempt_count >= quiz.max_attempts:
             messages.error(
@@ -704,7 +674,6 @@ def _process_quiz_taking(request, quiz):
                 request.session['active_quiz_id'] = user_quiz.id
                 request.session.save()
                 messages.error(request, f"You have reached the time limit")
-        print("## request.session ##", request.session.get('active_quiz_id'))
 
     # Shuffle questions if quiz settings require it
     if quiz.randomize_questions:
@@ -717,6 +686,7 @@ def _process_quiz_taking(request, quiz):
             "id": question.id,
             "text": question.text,
             "question_type": question.question_type,
+            "question_type_display": question.get_question_type_display,
             "explanation": question.explanation,
             "points": question.points,
         }
@@ -871,6 +841,9 @@ def _process_quiz_taking(request, quiz):
             user_quiz.correction_status = correction_status
             user_quiz.complete_quiz()
             user_quiz.save()
+
+            del request.session['active_quiz_id']
+            request.session.save()
 
             # Redirect to results page
             return redirect("quiz_results", user_quiz_id=user_quiz.id)
