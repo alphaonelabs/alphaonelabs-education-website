@@ -1,3 +1,4 @@
+import json
 import os
 import random
 import string
@@ -6,8 +7,6 @@ import uuid
 from datetime import datetime, timedelta
 from io import BytesIO
 from typing import ClassVar
-import json
-from django.db.models import Sum
 
 from allauth.account.signals import user_signed_up
 from django.conf import settings
@@ -2109,8 +2108,7 @@ class Quiz(models.Model):
     randomize_questions = models.BooleanField(default=False, help_text="Randomize the order of questions")
     time_limit = models.PositiveIntegerField(null=True, blank=True, help_text="Time limit in minutes (optional)")
     AI_auto_correction = models.BooleanField(
-        default=False, 
-        help_text="If enabled, AI will automatically attempt to correct open-ended questions"
+        default=False, help_text="If enabled, AI will automatically attempt to correct open-ended questions"
     )
 
     # New fields for exam functionality
@@ -2122,9 +2120,9 @@ class Quiz(models.Model):
 
     def __str__(self):
         return self.title
-    
+
     class Meta:
-        ordering = ['created_at']  
+        ordering = ["created_at"]
 
 
 class QuizQuestion(models.Model):
@@ -2150,7 +2148,9 @@ class QuizQuestion(models.Model):
     points = models.PositiveIntegerField(default=1)
     order = models.PositiveIntegerField(default=0)
     image = models.ImageField(upload_to="quiz_questions/", blank=True, default="")
-    reference_answer = models.TextField(null=True, blank=True, help_text="Reference answer for the questions, important when AI-auto correction")
+    reference_answer = models.TextField(
+        blank=True, help_text="Reference answer for the questions, important when AI-auto correction"
+    )
 
     class Meta:
         ordering = ["order"]
@@ -2245,7 +2245,7 @@ class UserQuiz(models.Model):
             max_score += question.points
 
         return max_score
-    
+
     @property
     def score(self):
         """Calculate max_score dynamically from the answered questions."""
@@ -2263,7 +2263,7 @@ class UserQuiz(models.Model):
                 score += points_awarded
 
         return score
-    
+
     @property
     def duration(self):
         """Return the duration of the quiz attempt as a formatted string."""

@@ -2,99 +2,98 @@
 
 {% block title %}Grade Exam - {{ student.username }}{% endblock %}
 {% block content %}
-<script src="https://unpkg.com/htmx.org@1.9.2"></script>
-<script>
-window.appearInputField = function(event, question_id) {
-    event.preventDefault(); // Prevent default form/button behavior
-    
-    const button = event.target;
-    const wrapper = button.parentElement.parentElement;
-    const changeGradeDiv = wrapper ? wrapper.querySelector("#change_grade") : null;
+  <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+  <script>
+      window.appearInputField = function(event, question_id) {
+          event.preventDefault(); // Prevent default form/button behavior
 
-    if (changeGradeDiv) {
-      if (changeGradeDiv.classList.contains("hidden")) {
-        changeGradeDiv.classList.remove("hidden");
-        console.log("Input field is now visible");
-      } else {
-            const max_question_points = "{{ user_quiz.max_score }}"
-            const gradeInput = changeGradeDiv.querySelector("input[type='number']");
-            if (gradeInput && gradeInput.value <= max_question_points) {
-                // Simulate HTMX request if valid input exists
-                const confirmed = window.confirm("Are you sure you want to save this grade?");
-                if (confirmed) {
-                  htmx.ajax('POST', button.getAttribute('hx-post'), {
-                      target: button.getAttribute('hx-target'),
-                      swap: "innerHTML",
-                      headers: {
-                          "X-CSRFToken": "{{ csrf_token }}",
-                      },
-                      values: {
-                          points_awarded: gradeInput.value,
-                          question_id: question_id,
+          const button = event.target;
+          const wrapper = button.parentElement.parentElement;
+          const changeGradeDiv = wrapper ? wrapper.querySelector("#change_grade") : null;
+
+          if (changeGradeDiv) {
+              if (changeGradeDiv.classList.contains("hidden")) {
+                  changeGradeDiv.classList.remove("hidden");
+                  console.log("Input field is now visible");
+              } else {
+                  const max_question_points = "{{ user_quiz.max_score }}"
+                  const gradeInput = changeGradeDiv.querySelector("input[type='number']");
+                  if (gradeInput && gradeInput.value <= max_question_points) {
+                      // Simulate HTMX request if valid input exists
+                      const confirmed = window.confirm("Are you sure you want to save this grade?");
+                      if (confirmed) {
+                          htmx.ajax('POST', button.getAttribute('hx-post'), {
+                              target: button.getAttribute('hx-target'),
+                              swap: "innerHTML",
+                              headers: {
+                                  "X-CSRFToken": "{{ csrf_token }}",
+                              },
+                              values: {
+                                  points_awarded: gradeInput.value,
+                                  question_id: question_id,
+                              }
+                          });
                       }
-                  });
-                }
-            } else {
-                // Optional: give user feedback or skip HTMX
-                console.log("Input value not valid or grade field empty");
-            }
-        }
-    }
-}
+                  } else {
+                      // Optional: give user feedback or skip HTMX
+                      console.log("Input value not valid or grade field empty");
+                  }
+              }
+          }
+      }
 
-document.body.addEventListener('htmx:afterSwap', function(event) {
-  // Find the Change Grade button more specifically
-  const newButton = event.target.querySelector("button[data-question_id]");
-  const freshButton = null
-  if (newButton) {
-    const question_id = newButton.getAttribute("data-question_id");
-    
-    // Clear any existing event listeners (to avoid duplicates)
-    newButton.replaceWith(newButton.cloneNode(true));
-    freshButton = event.target.querySelector("button[data-question_id]");
-    // Add the event listener and required HTMX attributes
-    freshButton.addEventListener('click', function(e) {
-      appearInputField(e, question_id);
-    });
-  }
+      document.body.addEventListener('htmx:afterSwap', function(event) {
+          // Find the Change Grade button more specifically
+          const newButton = event.target.querySelector("button[data-question_id]");
+          const freshButton = null
+          if (newButton) {
+              const question_id = newButton.getAttribute("data-question_id");
 
-  // change question correction status
-    parent = event.target.parentElement
-    question_correction_status = parent.querySelector("#question_correction_status")
-    question_correction_status_value = question_correction_status.value
-    page_question_correction_status = parent.parentElement.querySelector("#question_correction_div")
-    if (question_correction_status_value.trim() == "Correct"){
-      page_question_correction_status.innerHTML = `
+              // Clear any existing event listeners (to avoid duplicates)
+              newButton.replaceWith(newButton.cloneNode(true));
+              freshButton = event.target.querySelector("button[data-question_id]");
+              // Add the event listener and required HTMX attributes
+              freshButton.addEventListener('click', function(e) {
+                  appearInputField(e, question_id);
+              });
+          }
+
+          // change question correction status
+          parent = event.target.parentElement
+          question_correction_status = parent.querySelector("#question_correction_status")
+          question_correction_status_value = question_correction_status.value
+          page_question_correction_status = parent.parentElement.querySelector("#question_correction_div")
+          if (question_correction_status_value.trim() == "Correct") {
+              page_question_correction_status.innerHTML = `
         <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-sm">
           ${question_correction_status_value}
         </span>
       `;
-    } else if (question_correction_status_value.trim() == "Incorrect") {
-      page_question_correction_status.innerHTML = `
+          } else if (question_correction_status_value.trim() == "Incorrect") {
+              page_question_correction_status.innerHTML = `
         <span class="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full text-sm">
           ${question_correction_status_value}
         </span>
       `;
-    }
+          }
 
-    // change current score
-    newStudentScore = parent.querySelector("#user_score")
-    pageScore = document.querySelector("#pageScore")
-    max_question_points = pageScore.innerHTML.split("/")[1]
-    newPageScore = `${newStudentScore.value}/${max_question_points}`
-    pageScore.innerHTML = newPageScore
+          // change current score
+          newStudentScore = parent.querySelector("#user_score")
+          pageScore = document.querySelector("#pageScore")
+          max_question_points = pageScore.innerHTML.split("/")[1]
+          newPageScore = `${newStudentScore.value}/${max_question_points}`
+          pageScore.innerHTML = newPageScore
 
-    // change quiz correction status
-    correctionStatus = parent.querySelector("#correction_status_div")
-    correctionStatusDiv = parent.parentElement.parentElement.parentElement.querySelector("#correction_status_div")
-    correctionStatus.classList.remove("hidden")
-    if (correctionStatusDiv && correctionStatus) {
-      correctionStatusDiv.replaceWith(correctionStatus.cloneNode(true));
-    }
-    correctionStatus.remove()
-});
-
-</script>
+          // change quiz correction status
+          correctionStatus = parent.querySelector("#correction_status_div")
+          correctionStatusDiv = parent.parentElement.parentElement.parentElement.querySelector("#correction_status_div")
+          correctionStatus.classList.remove("hidden")
+          if (correctionStatusDiv && correctionStatus) {
+              correctionStatusDiv.replaceWith(correctionStatus.cloneNode(true));
+          }
+          correctionStatus.remove()
+      });
+  </script>
   <div class="container mx-auto px-4 py-8">
     <!-- Breadcrumbs -->
     <nav class="text-sm mb-6">
@@ -130,7 +129,8 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
           </div>
         </div>
         <!-- Grading Status -->
-        <div id="correction_status_div" class="mt-4 p-3 rounded-md {% if user_quiz.correction_status == 'completed' or user_quiz.correction_status == 'not_needed' %}bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200{% elif user_quiz.correction_status == 'pending' %}bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200{% else %}bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200{% endif %}">
+        <div id="correction_status_div"
+             class="mt-4 p-3 rounded-md {% if user_quiz.correction_status == 'completed' or user_quiz.correction_status == 'not_needed' %}bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200{% elif user_quiz.correction_status == 'pending' %}bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200{% else %}bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200{% endif %}">
           <div class="font-medium">
             <i class="fas {% if user_quiz.correction_status == 'completed' %}fa-check-circle{% elif user_quiz.correction_status == 'pending' %}fa-exclamation-circle{% else %}fa-spinner{% endif %} mr-2"></i>
             Grading Status: {{ user_quiz.get_correction_status_display }}
@@ -200,11 +200,14 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
               {% if question.question_type == 'multiple' %}
                 {% if question.options %}
                   <div class="space-y-2">
-                  {% for option in question.options %}
-                    <div class="flex items-center">
-                      <input type="radio" class="w-5 mr-2 opacity-[0.7]" {% if option.is_correct %} checked {% endif %} onclick="return false;">
-                      </input>
-                      <h4> {{ option.text }} </h4>
+                    {% for option in question.options %}
+                      <div class="flex items-center">
+                        <input type="radio"
+                               class="w-5 mr-2 opacity-[0.7]"
+                               {% if option.is_correct %}checked{% endif %}
+                               onclick="return false;" />
+                      </input />
+                      <h4>{{ option.text }}</h4>
                       <span class="text-gray-700 dark:text-gray-300 ml-2 {% if option.is_correct %}font-medium {% if option.is_correct %}text-green-700 dark:text-green-400 {% else %}text-red-700 dark:text-red-400{% endif %} {% elif option.is_correct %}font-medium text-green-700 dark:text-green-400{% endif %}">
                         {% if option.is_correct %}
                           <i class="fas fa-check-circle text-green-500"></i>
@@ -214,122 +217,133 @@ document.body.addEventListener('htmx:afterSwap', function(event) {
                       </span>
                     </div>
                   {% endfor %}
-                  </div>
-                {% else %}
-                  <div class="text-gray-500 dark:text-gray-400">No answer provided</div>
-                {% endif %}
-              {% elif question.question_type == 'true_false' %}
-                <div class="space-y-2 mt-2">
-                  {% for option in question.options %}
-                    <div class="flex items-center">
-                      <input type="radio" class="w-5 mr-2 opacity-[0.7]" {% if option.id|stringformat:"i" in question.user_answer %} checked {% endif %} onclick="return false;">
-                      </input>
-                      <h4> {{ option.text }} </h4>
-                      <span class="text-gray-700 dark:text-gray-300 ml-2 {% if option.id|stringformat:"i" == answer.user_answer %}font-medium {% if option.is_correct %}text-green-700 dark:text-green-400 {% else %}text-red-700 dark:text-red-400{% endif %} {% elif option.is_correct %}font-medium text-green-700 dark:text-green-400{% endif %}">
-                        {% if option.id|stringformat:"i" in question.user_answer %}
-                          {% if option.id|stringformat:"i" in question.user_answer %}
-                            {% if option.is_correct %}
-                              <i class="fas fa-check-circle text-green-500"></i>
-                            {% else %}
-                              <i class="fas fa-times-circle text-red-500"></i>
-                            {% endif %}
-                          {% elif option.is_correct %}
-                            <i class="fas fa-check-circle text-green-500"></i>
-                          {% endif %}
-                        {% endif %}
-                      </span>
-                    </div>
-                  {% endfor %}
                 </div>
               {% else %}
-                {% if question.user_answer %}
-                  <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md text-gray-800 dark:text-gray-200">
-                    {{ question.user_answer }}
-                  </div>
-                {% else %}
-                  <div class="text-gray-500 dark:text-gray-400">No answer provided</div>
-                {% endif %}
+                <div class="text-gray-500 dark:text-gray-400">No answer provided</div>
               {% endif %}
+            {% elif question.question_type == 'true_false' %}
+              <div class="space-y-2 mt-2">
+                {% for option in question.options %}
+                  <div class="flex items-center">
+                    <input type="radio"
+                           class="w-5 mr-2 opacity-[0.7]"
+                           {% if option.id|stringformat:"i" in question.user_answer %}checked{% endif %}
+                           onclick="return false;" />
+                  </input />
+                  <h4>{{ option.text }}</h4>
+                  <span class="text-gray-700 dark:text-gray-300 ml-2 {% if option.id|stringformat:"i" == answer.user_answer %}font-medium {% if option.is_correct %}text-green-700 dark:text-green-400 {% else %}text-red-700 dark:text-red-400{% endif %} {% elif option.is_correct %}font-medium text-green-700 dark:text-green-400{% endif %}">
+                    {% if option.id|stringformat:"i" in question.user_answer %}
+                      {% if option.id|stringformat:"i" in question.user_answer %}
+                        {% if option.is_correct %}
+                          <i class="fas fa-check-circle text-green-500"></i>
+                        {% else %}
+                          <i class="fas fa-times-circle text-red-500"></i>
+                        {% endif %}
+                      {% elif option.is_correct %}
+                        <i class="fas fa-check-circle text-green-500"></i>
+                      {% endif %}
+                    {% endif %}
+                  </span>
+                </div>
+              {% endfor %}
             </div>
-            <!-- Explanation if provided -->
-            {% if question.explanation %}
-              <div class="mt-4 bg-blue-50 dark:bg-blue-900/30 p-3 rounded-md">
-                <h3 class="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-1">Answer Explanation:</h3>
-                <div class="text-sm text-blue-700 dark:text-blue-300">{{ question.explanation }}</div>
-              </div>
-            {% endif %}
-            <!-- Grading Section (for questions that need manual grading) -->
-            {% if  not question.is_graded %}
-              <div id="question-item-{{ question.id }}" class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Grade this answer:</h3>
-                  {% csrf_token %}
-                  <input type="hidden" name="question_id" value="{{ question.id }}" />
-                  <div class="flex flex-col md:flex-row items-center gap-4">
-                    <div id="change_grade" class="w-full md:w-1/3">
-                      <label for="points_awarded"
-                             class="block text-sm text-gray-700 dark:text-gray-300 mb-1">
-                        Points (max: {{ question.points }})
-                      </label>
-                      <input type="number"
-                             name="points_awarded"
-                             id="grade-input-{{ question.id }}"
-                             min="0"
-                             max="{{ question.points }}"
-                             step="0.5"
-                             value="{{ question.points_awarded }}"
-                             class="w-full border border-gray-300 dark:border-gray-600 rounded-md p-2" />
-                      <input type="hidden" name="question_id" id="question_{{ question.id  }}" value="{{ question.id }}">
-                    </div>
-                    <div class="w-full md:w-2/3 flex items-end">
-                      <button onclick="appearInputField(event, '{{ question.id }}' )"
-                          hx-target="#question-item-{{ question.id }}"
-                          class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded"> Save Grade
-                      </button>
-                    </div>
-                  </div>
+          {% else %}
+            {% if question.user_answer %}
+              <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-md text-gray-800 dark:text-gray-200">
+                {{ question.user_answer }}
               </div>
             {% else %}
-            <!-- Already Graded Info -->
-              <div id="question-item-{{ question.id }}" class="mt-4 bg-green-50 dark:bg-green-900/30 p-3 rounded-md">
-                <div class="flex justify-between items-center">
-                  <div class="flex items-center gap-[15px]">
-                    <div id="change_grade" class="hidden w-full md:w-1/3">
-                      <label for="points_awarded"
-                             class="block text-sm text-gray-700 dark:text-gray-300 mb-1">
-                        Points (max: {{ question.points }})
-                      </label>
-                      <input type="number"
-                             name="points_awarded"
-                             id="grade-input-{{ question.id }}"
-                             min="0"
-                             max="{{ question.points }}"
-                             step="0.5"
-                             value="{{ question.points_awarded }}"
-                             class="w-full border border-gray-300 dark:border-gray-600 rounded-md p-2" />
-                      <input type="hidden" name="question_id" id="question_{{ question.id  }}" value="{{ question.id }}">
-                    </div>
-                    <button onclick="appearInputField(event, '{{ question.id }}' )" 
-                      hx-target="#question-item-{{ question.id }}"
-                      class="text-sm bg-blue-600 hover:bg-blue-700 text-white py-2 px-2 rounded"> Change Grade
-                    </button>
-                  <h3 class="text-sm font-semibold text-green-800 dark:text-green-300">Grading Result:</h3>
-                  </div>
-                  <div class="text-green-800 dark:text-green-300 font-bold">
-                    {{ question.points_awarded }} / {{ question.points }} points
-                  </div>
-                </div>
-              </div>
+              <div class="text-gray-500 dark:text-gray-400">No answer provided</div>
             {% endif %}
-          </div>
+          {% endif %}
         </div>
-      {% endfor %}
+        <!-- Explanation if provided -->
+        {% if question.explanation %}
+          <div class="mt-4 bg-blue-50 dark:bg-blue-900/30 p-3 rounded-md">
+            <h3 class="text-sm font-semibold text-blue-800 dark:text-blue-300 mb-1">Answer Explanation:</h3>
+            <div class="text-sm text-blue-700 dark:text-blue-300">{{ question.explanation }}</div>
+          </div>
+        {% endif %}
+        <!-- Grading Section (for questions that need manual grading) -->
+        {% if  not question.is_graded %}
+          <div id="question-item-{{ question.id }}"
+               class="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">Grade this answer:</h3>
+            {% csrf_token %}
+            <input type="hidden" name="question_id" value="{{ question.id }}" />
+            <div class="flex flex-col md:flex-row items-center gap-4">
+              <div id="change_grade" class="w-full md:w-1/3">
+                <label for="points_awarded"
+                       class="block text-sm text-gray-700 dark:text-gray-300 mb-1">
+                  Points (max: {{ question.points }})
+                </label>
+                <input type="number"
+                       name="points_awarded"
+                       id="grade-input-{{ question.id }}"
+                       min="0"
+                       max="{{ question.points }}"
+                       step="0.5"
+                       value="{{ question.points_awarded }}"
+                       class="w-full border border-gray-300 dark:border-gray-600 rounded-md p-2" />
+                <input type="hidden"
+                       name="question_id"
+                       id="question_{{ question.id }}"
+                       value="{{ question.id }}" />
+              </div>
+              <div class="w-full md:w-2/3 flex items-end">
+                <button onclick="appearInputField(event, '{{ question.id }}' )"
+                        hx-target="#question-item-{{ question.id }}"
+                        class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded">Save Grade</button>
+              </div>
+            </div>
+          </div>
+        {% else %}
+          <!-- Already Graded Info -->
+          <div id="question-item-{{ question.id }}"
+               class="mt-4 bg-green-50 dark:bg-green-900/30 p-3 rounded-md">
+            <div class="flex justify-between items-center">
+              <div class="flex items-center gap-[15px]">
+                <div id="change_grade" class="hidden w-full md:w-1/3">
+                  <label for="points_awarded"
+                         class="block text-sm text-gray-700 dark:text-gray-300 mb-1">
+                    Points (max: {{ question.points }})
+                  </label>
+                  <input type="number"
+                         name="points_awarded"
+                         id="grade-input-{{ question.id }}"
+                         min="0"
+                         max="{{ question.points }}"
+                         step="0.5"
+                         value="{{ question.points_awarded }}"
+                         class="w-full border border-gray-300 dark:border-gray-600 rounded-md p-2" />
+                  <input type="hidden"
+                         name="question_id"
+                         id="question_{{ question.id }}"
+                         value="{{ question.id }}" />
+                </div>
+                <button onclick="appearInputField(event, '{{ question.id }}' )"
+                        hx-target="#question-item-{{ question.id }}"
+                        class="text-sm bg-blue-600 hover:bg-blue-700 text-white py-2 px-2 rounded">
+                  Change Grade
+                </button>
+                <h3 class="text-sm font-semibold text-green-800 dark:text-green-300">Grading Result:</h3>
+              </div>
+              <div class="text-green-800 dark:text-green-300 font-bold">
+                {{ question.points_awarded }} / {{ question.points }} points
+              </div>
+            </div>
+          </div>
+        {% endif %}
+      </div>
     </div>
-    <!-- Completion Button -->
-    <div class="mt-8 text-center">
-      <a href="{% url 'quiz_analytics' quiz.id %}"
-         class="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded-lg shadow-md inline-flex items-center">
-        <i class="fas fa-check-circle mr-2"></i> Return to All Students
-      </a>
-    </div>
-  </div>
+  {% endfor %}
+</div>
+<!-- Completion Button -->
+<div class="mt-8 text-center">
+  <a href="{% url 'quiz_analytics' quiz.id %}"
+     class="bg-green-600 hover:bg-green-700 text-white py-2 px-6 rounded-lg shadow-md inline-flex items-center">
+    <i class="fas fa-check-circle mr-2"></i> Return to All Students
+  </a>
+</div>
+</div>
 {% endblock %}

@@ -1,13 +1,19 @@
-
-<div
-  id="question-item-{{ question.id }}"
-  class="mt-4 bg-green-50 dark:bg-green-900/30 p-3 rounded-md"
->
+<div id="question-item-{{ question.id }}"
+     class="mt-4 bg-green-50 dark:bg-green-900/30 p-3 rounded-md">
   <div class="flex justify-between items-center">
     <div class="flex items-center gap-[15px]">
-      <input type="hidden" class="hidden" id="user_score" value="{{ user_quiz.score }}" disabled>
-      <input type="hidden" class="hidden" id="correction_status" value="{{ user_quiz.correction_status }}" disabled>
-      <div id="correction_status_div" class="hidden mt-4 p-3 rounded-md {% if user_quiz.correction_status == 'completed' or user_quiz.correction_status == 'not_needed' %}bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200{% elif user_quiz.correction_status == 'pending' %}bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200{% else %}bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200{% endif %}">
+      <input type="hidden"
+             class="hidden"
+             id="user_score"
+             value="{{ user_quiz.score }}"
+             disabled />
+      <input type="hidden"
+             class="hidden"
+             id="correction_status"
+             value="{{ user_quiz.correction_status }}"
+             disabled />
+      <div id="correction_status_div"
+           class="hidden mt-4 p-3 rounded-md {% if user_quiz.correction_status == 'completed' or user_quiz.correction_status == 'not_needed' %}bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200{% elif user_quiz.correction_status == 'pending' %}bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200{% else %}bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200{% endif %}">
         <div class="font-medium">
           <i class="fas {% if user_quiz.correction_status == 'completed' %}fa-check-circle{% elif user_quiz.correction_status == 'pending' %}fa-exclamation-circle{% else %}fa-spinner{% endif %} mr-2"></i>
           Grading Status: {{ user_quiz.get_correction_status_display }}
@@ -23,36 +29,32 @@
           {% endif %}
         </div>
       </div>
-      <input type="hidden" class="hidden" id="question_correction_status" value="
-      {% if points_awarded >= half_question_points %} Correct {% else %} Incorrect {% endif %}" disabled>
+      <input type="hidden"
+             class="hidden"
+             id="question_correction_status"
+             value=" {% if points_awarded >= half_question_points %} Correct {% else %} Incorrect {% endif %}"
+             disabled />
       <div id="change_grade" class="hidden w-full md:w-1/3">
         <label for="points_awarded"
-                class="block text-sm text-gray-700 dark:text-gray-300 mb-1">
-          Points (max: {{ question.points }})
-        </label>
+               class="block text-sm text-gray-700 dark:text-gray-300 mb-1">Points (max: {{ question.points }})</label>
         <input type="number"
-          name="points_awarded"
-          id="grade-input-{{ question.id }}"
-          min="0"
-          max="{{ question.points }}"
-          step="0.5"
-          value="{{ question.points_awarded }}"
-          class="w-full border border-gray-300 dark:border-gray-600 rounded-md p-2" />
-        <input type="hidden" name="question_id" id="question_{{ question.id  }}" value="{{ question.id }}">
+               name="points_awarded"
+               id="grade-input-{{ question.id }}"
+               min="0"
+               max="{{ question.points }}"
+               step="0.5"
+               value="{{ question.points_awarded }}"
+               class="w-full border border-gray-300 dark:border-gray-600 rounded-md p-2" />
+        <input type="hidden"
+               name="question_id"
+               id="question_{{ question.id }}"
+               value="{{ question.id }}" />
       </div>
-      <button 
-        onclick="appearInputField(event, '{{ question.id }}' )" 
-        hx-target="#question-item-{{ question.id }}"
-        class="text-sm bg-blue-600 hover:bg-blue-700 text-white py-2 px-2 rounded"
-      >
-        Change Grade
-      </button>
-      <h3 class="text-sm font-semibold text-green-800 dark:text-green-300">
-        Grading Result:
-      </h3>
+      <button onclick="appearInputField(event, '{{ question.id }}' )"
+              hx-target="#question-item-{{ question.id }}"
+              class="text-sm bg-blue-600 hover:bg-blue-700 text-white py-2 px-2 rounded">Change Grade</button>
+      <h3 class="text-sm font-semibold text-green-800 dark:text-green-300">Grading Result:</h3>
     </div>
-    <div class="text-green-800 dark:text-green-300 font-bold">
-      {{ points_awarded }} / {{ question.points }} points
-    </div>
+    <div class="text-green-800 dark:text-green-300 font-bold">{{ points_awarded }} / {{ question.points }} points</div>
   </div>
 </div>

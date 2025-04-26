@@ -7,10 +7,11 @@
 {% endblock title %}
 {% block extra_head %}
   <!-- For clipboard copy functionality -->
-   <script src="https://unpkg.com/htmx.org@1.9.6"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.6"></script>
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
   <script>
       function copyToClipboard(text) {
           navigator.clipboard.writeText(text).then(() => {
@@ -21,27 +22,26 @@
           });
       }
 
-      document.addEventListener('DOMContentLoaded', function () {
-        document.body.addEventListener('htmx:afterOnLoad', function(evt) {
-            const triggerHeader = evt.detail.xhr.getResponseHeader('HX-Trigger');
-            if (triggerHeader) {
-                try {
-                    const triggerData = JSON.parse(triggerHeader);
-                    if (triggerData['show-toast']) {
-                        const toast = triggerData['show-toast'];
-                        toastr.options = {
-                            "positionClass": "toast-top-right",
-                            "timeOut": "3000"
-                        };
-                        toastr[toast.level](toast.message);
-                    }
-                } catch (e) {
-                    console.error('Failed to parse HX-Trigger header:', e);
-                }
-            }
-        });
+      document.addEventListener('DOMContentLoaded', function() {
+          document.body.addEventListener('htmx:afterOnLoad', function(evt) {
+              const triggerHeader = evt.detail.xhr.getResponseHeader('HX-Trigger');
+              if (triggerHeader) {
+                  try {
+                      const triggerData = JSON.parse(triggerHeader);
+                      if (triggerData['show-toast']) {
+                          const toast = triggerData['show-toast'];
+                          toastr.options = {
+                              "positionClass": "toast-top-right",
+                              "timeOut": "3000"
+                          };
+                          toastr[toast.level](toast.message);
+                      }
+                  } catch (e) {
+                      console.error('Failed to parse HX-Trigger header:', e);
+                  }
+              }
+          });
       });
-
   </script>
 {% endblock extra_head %}
 {% block content %}
@@ -97,7 +97,7 @@
             {% endif %}
             {% if can_take_quiz %}
               <a href="{% url 'take_quiz' quiz.id %}"
-              class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
+                 class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
                 <i class="fas fa-play mr-2"></i> Take Quiz
               </a>
             {% endif %}
@@ -203,40 +203,41 @@
             {% if questions %}
               <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
                 <ul class="divide-y divide-gray-200 dark:divide-gray-700">
-                {% for question in questions %}
-                  <li id="question-item-{{ question.id }}" class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <div class="flex justify-between items-start">
-                      <div class="flex-1">
-                        <p class="text-sm font-medium text-gray-900 dark:text-white mb-1">{{ question.text }}</p>
-                        <div class="text-xs text-gray-500 dark:text-gray-400">
-                          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 mr-2">
-                            {{ question.get_question_type_display }}
-                          </span>
-                          <span>{{ question.points }} point{{ question.points|pluralize }}
-                          {% if question.question_type == "multiple" %}
-                            <span class="mx-2">•</span>
-                            <span>{{ question.option_count }} options</span>
-                          {% endif %}
-                          </span>
+                  {% for question in questions %}
+                    <li id="question-item-{{ question.id }}"
+                        class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
+                      <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                          <p class="text-sm font-medium text-gray-900 dark:text-white mb-1">{{ question.text }}</p>
+                          <div class="text-xs text-gray-500 dark:text-gray-400">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 mr-2">
+                              {{ question.get_question_type_display }}
+                            </span>
+                            <span>{{ question.points }} point{{ question.points|pluralize }}
+                              {% if question.question_type == "multiple" %}
+                                <span class="mx-2">•</span>
+                                <span>{{ question.option_count }} options</span>
+                              {% endif %}
+                            </span>
+                          </div>
+                        </div>
+                        <div class="flex space-x-2 ml-4">
+                          <a href="{% url 'edit_question' question.id %}"
+                             class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded inline-flex items-center text-sm">
+                            <i class="fas fa-edit mr-1"></i> Edit
+                          </a>
+                          <button hx-post="{% url 'delete_question' question.id %}"
+                                  hx-confirm="Are you sure you want to delete this question?"
+                                  hx-target="#question-item-{{ question.id }}"
+                                  hx-swap="outerHTML"
+                                  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                                  class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded inline-flex items-center text-sm">
+                            <i class="fas fa-trash-alt mr-1"></i> Delete
+                          </button>
                         </div>
                       </div>
-                      <div class="flex space-x-2 ml-4">
-                        <a href="{% url 'edit_question' question.id %}"
-                          class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded inline-flex items-center text-sm">
-                          <i class="fas fa-edit mr-1"></i> Edit
-                        </a>
-                        <button hx-post="{% url 'delete_question' question.id %}"
-                                hx-confirm="Are you sure you want to delete this question?"
-                                hx-target="#question-item-{{ question.id }}"
-                                hx-swap="outerHTML"
-                                hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
-                                class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded inline-flex items-center text-sm">
-                          <i class="fas fa-trash-alt mr-1"></i> Delete
-                        </button>
-                      </div>
-                    </div>
-                  </li>
-                {% endfor %}
+                    </li>
+                  {% endfor %}
                 </ul>
               </div>
             {% else %}

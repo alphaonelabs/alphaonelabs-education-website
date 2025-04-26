@@ -8,217 +8,221 @@
 {% block extra_head %}
   {{ block.super }}
   <script>
+      function setupQuizStatePersistence() {
+          const quizForm = document.getElementById('quiz-form');
+          const userQuizId = "{{ user_quiz.id }}";
+          const storageKey = `quiz_${userQuizId}_answers`;
+          let autoSaveTimer = null;
 
-function setupQuizStatePersistence() {
-  const quizForm = document.getElementById('quiz-form');
-  const userQuizId = "{{ user_quiz.id }}";
-  const storageKey = `quiz_${userQuizId}_answers`;
-  let autoSaveTimer = null;
-  
-  // Initialize state persistence
-  function init() {
-    if (!quizForm) return;
-    
-    // Restore saved answers when page loads
-    restoreFormState();
-    
-    // Save answers when they change
-    quizForm.addEventListener('input', saveFormState);
-    
-    // Setup auto-save every 3 seconds
-    autoSaveTimer = setInterval(saveFormState, 3000);
-    
-    // Clear timer and storage when form is submitted normally
-    quizForm.addEventListener('submit', function() {
-      clearInterval(autoSaveTimer);
-      sessionStorage.removeItem(storageKey);
-    });
-    
-    console.log("Quiz state persistence initialized with sessionStorage");
-  }
-  
-  // Save all form answers to sessionStorage
-  function saveFormState() {
-    if (!quizForm) return;
-    
-    const formData = {};
-    const inputs = quizForm.querySelectorAll('input, textarea, select');
-    
-    // Process each form element
-    inputs.forEach(input => {
-      if (!input.name) return;
-      
-      // Handle different input types
-      if (input.type === 'checkbox' || input.type === 'radio') {
-        if (input.checked) {
-          formData[input.name] = input.value;
-        }
-      } else if (input.type === 'select-multiple') {
-        const selectedOptions = Array.from(input.selectedOptions).map(opt => opt.value);
-        formData[input.name] = selectedOptions;
-      } else {
-        formData[input.name] = input.value;
-      }
-    });
-    
-    // Save to sessionStorage
-    try {
-      sessionStorage.setItem(storageKey, JSON.stringify(formData));
-      console.log("Quiz state saved to sessionStorage");
-    } catch (error) {
-      console.error("Failed to save quiz state:", error);
-    }
-  }
-  
-  // Restore form state from sessionStorage
-  function restoreFormState() {
-    try {
-      const saved = sessionStorage.getItem(storageKey);
-      if (!saved) return;
-      
-      const formData = JSON.parse(saved);
-      
-      // Restore each form element
-      Object.entries(formData).forEach(([name, value]) => {
-        const elements = quizForm.querySelectorAll(`[name="${name}"]`);
-        
-        elements.forEach(element => {
-          if (element.type === 'checkbox' || element.type === 'radio') {
-            element.checked = (element.value === value);
-          } else if (element.type === 'select-multiple' && Array.isArray(value)) {
-            Array.from(element.options).forEach(option => {
-              option.selected = value.includes(option.value);
-            });
-          } else {
-            element.value = value;
+          // Initialize state persistence
+          function init() {
+              if (!quizForm) return;
+
+              // Restore saved answers when page loads
+              restoreFormState();
+
+              // Save answers when they change
+              quizForm.addEventListener('input', saveFormState);
+
+              // Setup auto-save every 3 seconds
+              autoSaveTimer = setInterval(saveFormState, 3000);
+
+              // Clear timer and storage when form is submitted normally
+              quizForm.addEventListener('submit', function() {
+                  clearInterval(autoSaveTimer);
+                  sessionStorage.removeItem(storageKey);
+              });
+
+              console.log("Quiz state persistence initialized with sessionStorage");
           }
-        });
-      });
-      
-      console.log("Quiz state restored from sessionStorage");
-    } catch (error) {
-      console.error("Failed to restore quiz state:", error);
-    }
-  }
-  
-  // Start the module
-  init();
-}
 
-  // QUIZ SECURITY CONFIGURATION
-  const quizData = {
-    userQuizId: "{{ user_quiz.id }}",
-    csrfToken: "{{ csrf_token }}"
-  };
-  
-  // STATE VARIABLES
-  let isQuizSubmitted = false;
-  
-  // Initialize everything when document is ready
-  document.addEventListener('DOMContentLoaded', function() {
-      setupQuizStatePersistence();
-      hideFooterAndHeader()
+          // Save all form answers to sessionStorage
+          function saveFormState() {
+              if (!quizForm) return;
+
+              const formData = {};
+              const inputs = quizForm.querySelectorAll('input, textarea, select');
+
+              // Process each form element
+              inputs.forEach(input => {
+                  if (!input.name) return;
+
+                  // Handle different input types
+                  if (input.type === 'checkbox' || input.type === 'radio') {
+                      if (input.checked) {
+                          formData[input.name] = input.value;
+                      }
+                  } else if (input.type === 'select-multiple') {
+                      const selectedOptions = Array.from(input.selectedOptions).map(opt => opt.value);
+                      formData[input.name] = selectedOptions;
+                  } else {
+                      formData[input.name] = input.value;
+                  }
+              });
+
+              // Save to sessionStorage
+              try {
+                  sessionStorage.setItem(storageKey, JSON.stringify(formData));
+                  console.log("Quiz state saved to sessionStorage");
+              } catch (error) {
+                  console.error("Failed to save quiz state:", error);
+              }
+          }
+
+          // Restore form state from sessionStorage
+          function restoreFormState() {
+              try {
+                  const saved = sessionStorage.getItem(storageKey);
+                  if (!saved) return;
+
+                  const formData = JSON.parse(saved);
+
+                  // Restore each form element
+                  Object.entries(formData).forEach(([name, value]) => {
+                      const elements = quizForm.querySelectorAll(`[name="${name}"]`);
+
+                      elements.forEach(element => {
+                          if (element.type === 'checkbox' || element.type === 'radio') {
+                              element.checked = (element.value === value);
+                          } else if (element.type === 'select-multiple' && Array.isArray(value)) {
+                              Array.from(element.options).forEach(option => {
+                                  option.selected = value.includes(option.value);
+                              });
+                          } else {
+                              element.value = value;
+                          }
+                      });
+                  });
+
+                  console.log("Quiz state restored from sessionStorage");
+              } catch (error) {
+                  console.error("Failed to restore quiz state:", error);
+              }
+          }
+
+          // Start the module
+          init();
+      }
+
+      // QUIZ SECURITY CONFIGURATION
+      const quizData = {
+          userQuizId: "{{ user_quiz.id }}",
+          csrfToken: "{{ csrf_token }}"
+      };
+
+      // STATE VARIABLES
+      let isQuizSubmitted = false;
+
+      // Initialize everything when document is ready
+      document.addEventListener('DOMContentLoaded', function() {
+          setupQuizStatePersistence();
+          hideFooterAndHeader()
 
           // Check if we have a time limit
-        const timeLimit = parseInt("{{ quiz.time_limit|default:0 }}");
-        if (timeLimit > 0) {
-            let remainingTime =  parseFloat("{{ remaining_time|default:0 }}");
-            localStorage.getItem('quiz_' + quizData.userQuizId + '_remaining_time', remainingTime);
+          const timeLimit = parseInt("{{ quiz.time_limit|default:0 }}");
+          if (timeLimit > 0) {
+              let remainingTime = parseFloat("{{ remaining_time|default:0 }}");
+              localStorage.getItem('quiz_' + quizData.userQuizId + '_remaining_time', remainingTime);
 
-            const timerElement = document.getElementById('timer');
-            if (!timerElement) return; // Exit if timer element doesn't exist
+              const timerElement = document.getElementById('timer');
+              if (!timerElement) return; // Exit if timer element doesn't exist
 
-            // Format and display initial time
-            const initialMinutes = Math.floor(remainingTime / 60);
-            const initialSeconds = remainingTime % 60;
-            timerElement.innerText = `${initialMinutes.toString().padStart(2, '0')}:${initialSeconds.toString().padStart(2, '0')}`;
+              // Format and display initial time
+              const initialMinutes = Math.floor(remainingTime / 60);
+              const initialSeconds = remainingTime % 60;
+              timerElement.innerText = `${initialMinutes.toString().padStart(2, '0')}:${initialSeconds.toString().padStart(2, '0')}`;
 
-            // Update the timer every second
-            const timerInterval = setInterval(function() {
-                remainingTime--;
+              // Update the timer every second
+              const timerInterval = setInterval(function() {
+                  remainingTime--;
 
-                // Store the remaining time in localStorage
-                localStorage.setItem('quiz_' + quizData.userQuizId + '_remaining_time', remainingTime.toString());
+                  // Store the remaining time in localStorage
+                  localStorage.setItem('quiz_' + quizData.userQuizId + '_remaining_time', remainingTime.toString());
 
-                // Format the time as MM:SS
-                const minutes = Math.floor(remainingTime / 60);
-                const seconds = remainingTime % 60;
-                timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                  // Format the time as MM:SS
+                  const minutes = Math.floor(remainingTime / 60);
+                  const seconds = remainingTime % 60;
+                  timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-                // Visual cues when time is running low
-                if (remainingTime <= 60) { // last minute
-                    timerElement.classList.add('text-red-600', 'dark:text-red-400');
-                    if (remainingTime <= 10) { // last 10 seconds
-                        timerElement.classList.add('animate-pulse');
-                    }
-                }
+                  // Visual cues when time is running low
+                  if (remainingTime <= 60) { // last minute
+                      timerElement.classList.add('text-red-600', 'dark:text-red-400');
+                      if (remainingTime <= 10) { // last 10 seconds
+                          timerElement.classList.add('animate-pulse');
+                      }
+                  }
 
-                // Auto-submit when time is up
-                if (remainingTime <= 0) {
-                    clearInterval(timerInterval);
-                    localStorage.removeItem('quiz_' + quizData.userQuizId + '_remaining_time');
-                    document.getElementById('quiz-form').submit();
-                }
-            }, 1000);
+                  // Auto-submit when time is up
+                  if (remainingTime <= 0) {
+                      clearInterval(timerInterval);
+                      localStorage.removeItem('quiz_' + quizData.userQuizId + '_remaining_time');
+                      document.getElementById('quiz-form').submit();
+                  }
+              }, 1000);
 
-            // Add event listener to the form submission to clear the timer
-            document.getElementById('quiz-form').addEventListener('submit', function() {
-                clearInterval(timerInterval);
-                localStorage.removeItem('quiz_' + quizData.userQuizId + '_remaining_time');
+              // Add event listener to the form submission to clear the timer
+              document.getElementById('quiz-form').addEventListener('submit', function() {
+                  clearInterval(timerInterval);
+                  localStorage.removeItem('quiz_' + quizData.userQuizId + '_remaining_time');
 
-                // Save the remaining time in the hidden field for server-side processing
-                document.getElementById('quiz_timer_value').value = remainingTime;
-            });
-        }
+                  // Save the remaining time in the hidden field for server-side processing
+                  document.getElementById('quiz_timer_value').value = remainingTime;
+              });
+          }
 
-    });
+      });
 
 
       function closeWarningMessage() {
-        messageButton = document.querySelector("#hideWarningButton")
-        messageDiv = messageButton.parentElement.parentElement
-        messageDiv.remove()
+          messageButton = document.querySelector("#hideWarningButton")
+          messageDiv = messageButton.parentElement.parentElement
+          messageDiv.remove()
       }
 
       function hideFooterAndHeader() {
-        let header = document.querySelector("header") 
-        let footer = document.querySelector("footer") 
-        header.innerHTML = ""
-        footer.remove()
+          let header = document.querySelector("header")
+          let footer = document.querySelector("footer")
+          header.innerHTML = ""
+          footer.remove()
       }
 
       document.addEventListener('contextmenu', function(e) {
-        e.preventDefault();
+          e.preventDefault();
       });
   </script>
   <style>
-    /* Disable right-click menu */
-    body {
-      -webkit-user-select: none;
-      -moz-user-select: none;
-      -ms-user-select: none;
-      user-select: none;
-    }
-    
-    /* Warn users when they first enter */
-    .quiz-warning {
-      background-color: #fed7d7;
-      color: #822727;
-      padding: 1rem;
-      margin-bottom: 1rem;
-      border-radius: 0.375rem;
-      border-left: 4px solid #e53e3e;
-    }
+      /* Disable right-click menu */
+      body {
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+      }
+
+      /* Warn users when they first enter */
+      .quiz-warning {
+          background-color: #fed7d7;
+          color: #822727;
+          padding: 1rem;
+          margin-bottom: 1rem;
+          border-radius: 0.375rem;
+          border-left: 4px solid #e53e3e;
+      }
   </style>
 {% endblock extra_head %}
 {% block content %}
   <div class="container mx-auto px-4 py-8">
-      <!-- Warning message -->
+    <!-- Warning message -->
     <div class="quiz-warning mb-6 relative">
-      <h3 class="font-bold text-lg mb-2"><i class="fas fa-exclamation-triangle mr-2"></i>Important Notice</h3>
-      <p>Once you start this quiz, you must complete it in a single session. If you navigate away from this page or close your browser, your attempt will be automatically submitted and counted without any answers and you will take Zero.</p>
+      <h3 class="font-bold text-lg mb-2">
+        <i class="fas fa-exclamation-triangle mr-2"></i>Important Notice
+      </h3>
+      <p>
+        Once you start this quiz, you must complete it in a single session. If you navigate away from this page or close your browser, your attempt will be automatically submitted and counted without any answers and you will take Zero.
+      </p>
       <button onclick="closeWarningMessage()">
-        <i id="hideWarningButton" class="fas fa-x text-blue-600 dark:text-blue-400 mr-2 absolute top-[5px] right-[5px] p-[6px] cursor-pointer"></i>
+        <i id="hideWarningButton"
+           class="fas fa-x text-blue-600 dark:text-blue-400 mr-2 absolute top-[5px] right-[5px] p-[6px] cursor-pointer"></i>
       </button>
     </div>
     <!-- Quiz Header -->
@@ -250,13 +254,12 @@ function setupQuizStatePersistence() {
       </div>
     </div>
     <!-- Quiz Form -->
-    <form id="quiz-form"
-          method="post"
-          action="{% url 'take_quiz' quiz.id %}"
-          >
+    <form id="quiz-form" method="post" action="{% url 'take_quiz' quiz.id %}">
       {% csrf_token %}
       <input type="hidden" name="quiz_id" value="{{ quiz_id }}" />
-      <input type="hidden" name="quizData.userQuizId" value="{{ quizData.userQuizId }}" />
+      <input type="hidden"
+             name="quizData.userQuizId"
+             value="{{ quizData.userQuizId }}" />
       <input type="hidden" id="quiz_timer_value" name="quiz_timer_value" value="" />
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
         <div class="p-6">

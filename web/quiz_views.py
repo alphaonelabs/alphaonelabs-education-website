@@ -7,10 +7,10 @@ from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.loader import render_to_string
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.crypto import get_random_string
-from django.template.loader import render_to_string
 
 from .forms import (
     QuizForm,
@@ -19,9 +19,9 @@ from .forms import (
     QuizQuestionSpecializedForm,
     TakeQuizForm,
 )
-from .models import Course, Quiz, QuizQuestion, Session, UserQuiz, QuizOption, Enrollment
+from .models import Course, Enrollment, Quiz, QuizOption, QuizQuestion, Session, UserQuiz
 from .views import course_detail
-from .services.AI.ai_model import ai_quiz_corrector
+
 
 @login_required
 def create_course_exam(
@@ -247,35 +247,28 @@ def quiz_detail(request, quiz_id):
 
     if not can_view:
         return HttpResponseForbidden("You don't have permission to view this quiz.")
-    
+
     # Check if user can take the quiz (is a student)
     can_take_quiz = False
     if request.user.is_authenticated and not is_owner:
         # User is logged in and not the creator (teacher)
         can_take_quiz = True
-        
+
         # Check if quiz is published
         if quiz.status != "published":
             can_take_quiz = False
-            
+
         # Check if user already attempted this quiz (if retakes not allowed)
         # Assuming you have a field for allowing retakes on Quiz model
-        has_attempted = UserQuiz.objects.filter(
-            quiz=quiz, 
-            user=request.user
-        ).exists()
-        
-        if has_attempted and getattr(quiz, 'allow_retakes', False) == False:
+        has_attempted = UserQuiz.objects.filter(quiz=quiz, user=request.user).exists()
+
+        if has_attempted and not getattr(quiz, "allow_retakes", False):
             can_take_quiz = False
-            
+
         # If quiz is associated with a course, check enrollment
-        if hasattr(quiz, 'course') and quiz.course:
-            is_enrolled = Enrollment.objects.filter(
-                student=request.user,
-                course=quiz.course,
-                status='active'
-            ).exists()
-            
+        if hasattr(quiz, "course") and quiz.course:
+            is_enrolled = Enrollment.objects.filter(student=request.user, course=quiz.course, status="active").exists()
+
             if not is_enrolled:
                 can_take_quiz = False
 
@@ -332,41 +325,31 @@ def add_question(request, quiz_id):
         form = QuizQuestionForm(request.POST, request.FILES)
         # Set the quiz ID explicitly in the form data
         form.instance.quiz_id = quiz.id
-        
-        # Handle true/false questions differently
-        question_type = request.POST.get('question_type')
 
         # Handle true/false questions differently
-        if form.is_valid() and question_type == 'true_false':
+        question_type = request.POST.get("question_type")
+
+        # Handle true/false questions differently
+        if form.is_valid() and question_type == "true_false":
             with transaction.atomic():
                 question = form.save(commit=True)
                 question.order = next_order
                 question.save()
-                
+
                 # Create "True" and "False" options
-                true_correct = request.POST.get('true_false_answer') == 'true'
-                
+                true_correct = request.POST.get("true_false_answer") == "true"
+
                 # Create or update the "True" option
-                true_option = QuizOption(
-                    question=question,
-                    text="True",
-                    is_correct=true_correct,
-                    order=0
-                )
+                true_option = QuizOption(question=question, text="True", is_correct=true_correct, order=0)
                 true_option.save()
-                
+
                 # Create or update the "False" option
-                false_option = QuizOption(
-                    question=question,
-                    text="False",
-                    is_correct=not true_correct,
-                    order=1
-                )
+                false_option = QuizOption(question=question, text="False", is_correct=not true_correct, order=1)
                 false_option.save()
-                
+
             messages.success(request, "Question added successfully.")
-            return redirect('quiz_detail', quiz_id=quiz.id)
-        elif question_type == 'multiple':
+            return redirect("quiz_detail", quiz_id=quiz.id)
+        elif question_type == "multiple":
             # For other question types, use the formset as before
             formset = QuizOptionFormSet(request.POST, request.FILES, prefix="options")
 
@@ -375,17 +358,17 @@ def add_question(request, quiz_id):
                     question = form.save(commit=True)
                     question.order = next_order
                     question.save()
-                    
+
                     # Save formset with the question as the instance
                     formset.instance = question
                     formset.save()
-                
+
                 # Check if we should redirect to add another question
-                if 'save_and_add' in request.POST:
-                    return redirect('question_form', quiz_id=quiz.id)
+                if "save_and_add" in request.POST:
+                    return redirect("question_form", quiz_id=quiz.id)
 
                 messages.success(request, "Question added successfully.")
-                return redirect('quiz_detail', quiz_id=quiz.id)
+                return redirect("quiz_detail", quiz_id=quiz.id)
         else:
             # Handle short answer questions
             with transaction.atomic():
@@ -393,26 +376,26 @@ def add_question(request, quiz_id):
                 question.order = next_order
                 question.save()
                 # Get the reference answer
-            
+
             messages.success(request, "Question added successfully.")
-            
-            if 'save_and_add' in request.POST:
-                return redirect('question_form', quiz_id=quiz.id)
-            return redirect('quiz_detail', quiz_id=quiz.id)
+
+            if "save_and_add" in request.POST:
+                return redirect("question_form", quiz_id=quiz.id)
+            return redirect("quiz_detail", quiz_id=quiz.id)
 
     else:
-        form = QuizQuestionForm(initial={'order': next_order})
+        form = QuizQuestionForm(initial={"order": next_order})
         formset = QuizOptionFormSet(prefix="options")
 
     return render(
         request,
         "web/quiz/question_form.html",
         {
-            'form': form,
-            'formset': formset,
-            'quiz': quiz,
-            'question': None,
-        }
+            "form": form,
+            "formset": formset,
+            "quiz": quiz,
+            "question": None,
+        },
     )
 
 
@@ -428,31 +411,25 @@ def edit_question(request, question_id):
 
     if request.method == "POST":
         form = QuizQuestionForm(request.POST, request.FILES, instance=question)
-        
-        question_type = request.POST.get('question_type')
-        
+
+        question_type = request.POST.get("question_type")
+
         # Handle true/false questions differently
-        if question_type == 'true_false':
+        if question_type == "true_false":
             if form.is_valid():
                 with transaction.atomic():
                     question = form.save(commit=True)
-                    
-                    true_correct = request.POST.get('true_false_answer') == 'true'
+
+                    true_correct = request.POST.get("true_false_answer") == "true"
 
                     # Get or create true/false options
                     true_option, created_true = QuizOption.objects.get_or_create(
-                        question=question,
-                        text="True",
-                        is_correct=true_correct,
-                        order=0
+                        question=question, text="True", is_correct=true_correct, order=0
                     )
                     true_option.save()
 
                     false_option, created_false = QuizOption.objects.get_or_create(
-                        question=question,
-                        text="False",
-                        is_correct=not true_correct,
-                        order=1
+                        question=question, text="False", is_correct=not true_correct, order=1
                     )
                     false_option.save()
 
@@ -460,10 +437,10 @@ def edit_question(request, question_id):
                     QuizOption.objects.filter(question=question).exclude(
                         id__in=[true_option.id, false_option.id]
                     ).delete()
-                
+
                 messages.success(request, "Question updated successfully.")
                 return redirect("quiz_detail", quiz_id=quiz.id)
-        elif question_type == 'multiple':
+        elif question_type == "multiple":
             # Handle multiple choice questions with formset
             question = form.save(commit=True)
 
@@ -478,19 +455,14 @@ def edit_question(request, question_id):
             # Handle short answer questions
             question = form.save(commit=True)
 
-            reference_answer = request.POST.get('short_answer_reference', '')
-            
+            reference_answer = request.POST.get("short_answer_reference", "")
+
             # First delete existing options
             QuizOption.objects.filter(question=question).delete()
-            
+
             # Create new reference option
             if reference_answer:
-                option = QuizOption(
-                    question=question,
-                    text=reference_answer,
-                    is_correct=True,
-                    order=0
-                )
+                option = QuizOption(question=question, text=reference_answer, is_correct=True, order=0)
                 option.save()
 
             messages.success(request, "Question updated successfully.")
@@ -502,22 +474,22 @@ def edit_question(request, question_id):
 
     # Determine which option is correct for true/false questions
     true_is_correct = False
-    if question.question_type == 'true_false':
+    if question.question_type == "true_false":
         true_option = question.options.filter(text="True").first()
         if true_option:
             true_is_correct = true_option.is_correct
 
     return render(
         request,
-        'web/quiz/question_form.html',
+        "web/quiz/question_form.html",
         {
-            'form': form,
-            'formset': formset,
-            'quiz': quiz,
-            'question': question,
-            'true_is_correct': true_is_correct,
-            "reference_answer": request.POST.get('short_answer_reference', '')
-        }
+            "form": form,
+            "formset": formset,
+            "quiz": quiz,
+            "question": question,
+            "true_is_correct": true_is_correct,
+            "reference_answer": request.POST.get("short_answer_reference", ""),
+        },
     )
 
 
@@ -541,19 +513,15 @@ def delete_question(request, question_id):
 
         # this message appears after page refresh
         # messages.success(request, "Question deleted successfully.")
-        
+
         # For HTMX requests, return an empty response (removes the element)
-        if request.headers.get('HX-Request') == 'true':
-            response = HttpResponse('')
-            response['HX-Trigger'] = json.dumps({
-                "show-toast": {
-                    "level": "success",
-                    "message": "Question deleted successfully."
-                }
-            })
+        if request.headers.get("HX-Request") == "true":
+            response = HttpResponse("")
+            response["HX-Trigger"] = json.dumps(
+                {"show-toast": {"level": "success", "message": "Question deleted successfully."}}
+            )
             return response
 
-        
         # For regular requests, redirect to the quiz detail page
         return redirect("quiz_detail", quiz_id=quiz_id)
 
@@ -567,7 +535,7 @@ def delete_quiz(request, quiz_id):
 
     if not quiz:
         return HttpResponseForbidden("There is no exam with this id.")
-    
+
     # Check if user can delete this quiz
     if quiz.creator != request.user:
         return HttpResponseForbidden("You don't have permission to delete this quiz.")
@@ -608,11 +576,11 @@ def take_quiz(request, quiz_id):
         return redirect("quiz_list")
 
     response = _process_quiz_taking(request, quiz)
-    
+
     # Add no-cache headers to prevent back button issues
-    response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    response['Pragma'] = 'no-cache'
-    response['Expires'] = '0'
+    response["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+    response["Pragma"] = "no-cache"
+    response["Expires"] = "0"
 
     return response
 
@@ -635,14 +603,13 @@ def _process_quiz_taking(request, quiz):
 
     # Check if user has already reached max attempts
     if quiz.max_attempts > 0:
-        quiz_id = request.session.get('active_quiz_id')
         attempt_count = UserQuiz.objects.filter(quiz=quiz, user=user, completed=True).count()
         if attempt_count >= quiz.max_attempts:
             messages.error(
                 request, f"You have reached the maximum number of attempts ({quiz.max_attempts}) for this quiz."
             )
             # Find the latest attempt to show results
-            latest_attempt = UserQuiz.objects.filter(quiz=quiz, user=user).order_by('-start_time').first()
+            latest_attempt = UserQuiz.objects.filter(quiz=quiz, user=user).order_by("-start_time").first()
             return redirect("quiz_results", user_quiz_id=latest_attempt.id)
 
     user_quiz = None
@@ -661,19 +628,19 @@ def _process_quiz_taking(request, quiz):
             user_quiz = UserQuiz(quiz=quiz, user=user)
             user_quiz.save()
             # Store active quiz in session
-            request.session['active_quiz_id'] = user_quiz.id
+            request.session["active_quiz_id"] = user_quiz.id
             request.session.save()
             remaining_time = calculate_remaining_time()
         else:
             user_quiz = incomplete_attempt
             remaining_time = calculate_remaining_time()
-            if remaining_time <= 0 :
+            if remaining_time <= 0:
                 user_quiz.complete_quiz()
                 user_quiz.save()
                 # Store active quiz in session
-                request.session['active_quiz_id'] = user_quiz.id
+                request.session["active_quiz_id"] = user_quiz.id
                 request.session.save()
-                messages.error(request, f"You have reached the time limit")
+                messages.error(request, "You have reached the time limit")
 
     # Shuffle questions if quiz settings require it
     if quiz.randomize_questions:
@@ -713,10 +680,9 @@ def _process_quiz_taking(request, quiz):
 
         if form.is_valid():
             # Process answers
-            quiz_id = quiz.id
             AI_auto_correction = quiz.AI_auto_correction
             answers = {}
-            correction_status = "not_needed" # Available states: not_needed - pending - in_progress - completed
+            correction_status = "not_needed"  # Available states: not_needed - pending - in_progress - completed
             ai_correction_results = None
 
             AI_data = {}
@@ -729,31 +695,29 @@ def _process_quiz_taking(request, quiz):
                 user_answer_value = None
 
                 if question_obj.question_type == "multiple":
-                    '''
+                    """
                     multiple choice question correction logic:
                     (points/int(corr_ans)) * int(stu_corr_ans) - (points/total_options) * int(Stu_incorr_ans)
-                    ''' 
+                    """
 
                     user_answers = []
                     for key in request.POST:
                         if key.startswith(f"question_{q_id}_option_"):
-                            user_answers.append(key[len(f"question_{q_id}_option_"):] )
+                            user_answers.append(key[len(f"question_{q_id}_option_") :])
 
-                    correct_options = list(
-                        question_obj.options.filter(is_correct=True).values_list("id", flat=True)
-                    )
+                    correct_options = list(question_obj.options.filter(is_correct=True).values_list("id", flat=True))
                     all_options = question_obj.options.all().values_list("id", flat=True)
                     in_correct_options = len(all_options) - len(correct_options)
                     student_correct_answers = 0
                     student_wrong_answers = 0
-                    
+
                     for option in user_answers:
                         if int(option) in correct_options:
                             student_correct_answers += 1
                         else:
                             student_wrong_answers += 1
                     correct_points = (question_obj.points / len(correct_options)) * student_correct_answers
-                    wrong_points = (question_obj.points/in_correct_options) * student_wrong_answers
+                    wrong_points = (question_obj.points / in_correct_options) * student_wrong_answers
                     student_score = correct_points - wrong_points
 
                     if student_score < 0:
@@ -761,8 +725,8 @@ def _process_quiz_taking(request, quiz):
                     elif student_score >= question_obj.points:
                         student_score = question_obj.points
 
-                    res = isinstance(student_score, float)  
-                    if res == True:
+                    res = isinstance(student_score, float)
+                    if res:
                         student_score = round(student_score, 1)
 
                     User_answer_true_or_false = True if student_score >= (question_obj.points / 2) else False
@@ -808,7 +772,7 @@ def _process_quiz_taking(request, quiz):
                         "question_max_point": question_obj.points,
                         "question_type": question_obj.question_type,
                         "reference_answer": question_obj.reference_answer,
-                        "Student_answer": user_answer_value if user_answer_value is not None else user_answer ,
+                        "Student_answer": user_answer_value if user_answer_value is not None else user_answer,
                         "User_answer_true_or_false": User_answer_true_or_false,
                         "Subject": quiz.subject.name,
                     }
@@ -823,15 +787,17 @@ def _process_quiz_taking(request, quiz):
                     question_id = str(question.get("id"))
 
                     # Retrieve corresponding AI data
-                    ai_question_data = ai_correction_results.get('correction', {}).get(question_id, '')
+                    ai_question_data = ai_correction_results.get("correction", {}).get(question_id, "")
 
-                    question_type = AI_data.get(question_id, '').get("question_type", '')
+                    question_type = AI_data.get(question_id, "").get("question_type", "")
                     answers_question = answers[question_id]
 
                     if not question_type == "multiple" and not question_type == "true_false":
                         answers_question["points_awarded"] = ai_question_data["degree"]
                         answers_question["is_graded"] = True
-                        answers_question["is_correct"] = True if ai_question_data["degree"] >= question['points'] else False
+                        answers_question["is_correct"] = (
+                            True if ai_question_data["degree"] >= question["points"] else False
+                        )
 
                     answers_question["student_feedback"] = ai_question_data["student_feedback"]
                     answers_question["teacher_feedback"] = ai_question_data["teacher_feedback"]
@@ -842,7 +808,7 @@ def _process_quiz_taking(request, quiz):
             user_quiz.complete_quiz()
             user_quiz.save()
 
-            del request.session['active_quiz_id']
+            del request.session["active_quiz_id"]
             request.session.save()
 
             # Redirect to results page
@@ -881,7 +847,11 @@ def quiz_results(request, user_quiz_id):
             return redirect("take_quiz", quiz_id=quiz.id)
 
     # Parse the answers JSON
-    answers = user_quiz.answers if isinstance(user_quiz.answers, dict) else json.loads(user_quiz.answers) if user_quiz.answers else {}
+    answers = (
+        user_quiz.answers
+        if isinstance(user_quiz.answers, dict)
+        else json.loads(user_quiz.answers) if user_quiz.answers else {}
+    )
 
     # Only count questions that have actual answers (not empty or None)
     questions_attempted = 0
@@ -940,10 +910,10 @@ def quiz_results(request, user_quiz_id):
         total_questions += 1
         id = str(question.id)
         options = question.options.all()
-        
+
         if answers:
             answers[id]["question_title"] = question.text
-            answers[id]["type_display"] =  question.get_question_type_display()
+            answers[id]["type_display"] = question.get_question_type_display()
             answers[id]["question_type"] = question.question_type
             answers[id]["options"] = options
             answers[id]["original_points"] = question.points
@@ -985,10 +955,7 @@ def quiz_analytics(request, quiz_id):
         average_score = 0
 
     # Calculate pass rate
-    pass_count = sum(
-        1 for attempt in attempts
-        if attempt.calculate_score() > quiz.passing_score
-    )
+    pass_count = sum(1 for attempt in attempts if attempt.calculate_score() > quiz.passing_score)
     pass_rate = (pass_count / total_attempts * 100) if total_attempts > 0 else 0
     # We're not using JavaScript calculation anymore, so we don't need to prepare timing data
 
@@ -1036,7 +1003,11 @@ def quiz_analytics(request, quiz_id):
         if not attempt.answers:
             continue
 
-        answers = attempt.answers if isinstance(attempt.answers, dict) else json.loads(attempt.answers) if attempt.answers else {}
+        answers = (
+            attempt.answers
+            if isinstance(attempt.answers, dict)
+            else json.loads(attempt.answers) if attempt.answers else {}
+        )
         for q_id, answer_data in answers.items():
             q_id = int(q_id)
             if q_id in question_stats:
@@ -1192,7 +1163,11 @@ def student_exam_correction(
         return quiz_analytics(request, course_id=course.id)
 
     # Parse answers JSON
-    answers = user_quiz.answers if isinstance(user_quiz.answers, dict) else json.loads(user_quiz.answers) if user_quiz.answers else {}
+    answers = (
+        user_quiz.answers
+        if isinstance(user_quiz.answers, dict)
+        else json.loads(user_quiz.answers) if user_quiz.answers else {}
+    )
 
     # If user is submitting a grade
     if request.method == "POST":
@@ -1238,22 +1213,23 @@ def student_exam_correction(
                 user_quiz.save()
 
                 # Check if this is an HTMX request
-                if request.headers.get('HX-Request') == 'true':
-                    html = render_to_string("web/quiz/partials/graded_info.html", {
-                        "question": question,
-                        "quiz": quiz,
-                        "user_quiz": user_quiz,
-                        "points_awarded": points_awarded,
-                        "half_question_points": (question.points / 2),
-                    }, request=request)
+                if request.headers.get("HX-Request") == "true":
+                    html = render_to_string(
+                        "web/quiz/partials/graded_info.html",
+                        {
+                            "question": question,
+                            "quiz": quiz,
+                            "user_quiz": user_quiz,
+                            "points_awarded": points_awarded,
+                            "half_question_points": (question.points / 2),
+                        },
+                        request=request,
+                    )
 
                     response = HttpResponse(html)
-                    response["HX-Trigger"] = json.dumps({
-                        "show-toast": {
-                            "level": "success",
-                            "message": "Grade saved successfully."
-                        }
-                    })
+                    response["HX-Trigger"] = json.dumps(
+                        {"show-toast": {"level": "success", "message": "Grade saved successfully."}}
+                    )
                     return response
 
     # Prepare questions and answers for display

@@ -134,7 +134,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "web.middleware.WebRequestMiddleware",
-    'web.middleware.QuizSecurityMiddleware',
+    "web.middleware.QuizSecurityMiddleware",
     # "web.middleware.GlobalExceptionMiddleware",
 ]
 

@@ -849,7 +849,7 @@ def course_detail(request, slug):
 
     # NEW CODE: Prepare exam data in the view
     # 1. Get course-level exams (not associated with specific sessions)
-    course_exams = course.exams.filter(exam_type="course", session__isnull=True).prefetch_related('user_quizzes')
+    course_exams = course.exams.filter(exam_type="course", session__isnull=True).prefetch_related("user_quizzes")
 
     # 2. Process each course exam (with user attempts and submission counts)
     course_exam_data = []
@@ -879,7 +879,7 @@ def course_detail(request, slug):
     session_data = []
     for session in sessions:
         # Get all exams for this session
-        session_exams = session.exams.all().prefetch_related('user_quizzes')
+        session_exams = session.exams.all().prefetch_related("user_quizzes")
         session_exam_data = []
 
         # Process each exam in this session
