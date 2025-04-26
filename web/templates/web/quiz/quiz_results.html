@@ -27,7 +27,13 @@
     <!-- Results Header -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden mb-6">
       <div class="p-6">
-        <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-4">Quiz Results</h1>
+        <div class="flex align-center gap-[15px] mb-4">
+          <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Quiz Results</h1>
+          {% if user_quiz.quiz.AI_auto_correction %}
+            <span class="content-center">-</span>
+            <span class="font-medium content-center bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-full text-sm">AI-Auto Corrected</span>
+          {% endif %}
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
           <!-- Score Card -->
           <div class="{% if user_quiz.correction_status == 'in_progress' %} flex justify-center items-center {% else %}bg-gray-50 dark:bg-gray-700 rounded-lg p-6 text-center {% endif %}">
@@ -199,18 +205,21 @@
                     </div>
                   {% endif %}
                   {% if question.is_graded %}
-                    <div class="mt-4">
-                      <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Student Feedback:</h3>
-                      <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-gray-800 dark:text-white">
-                        {{ question.student_feedback|default:"No feedback provided"|escape }}
+                    {% if is_owner %}
+                      <div class="mt-4">
+                        <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">AI Feedback:</h3>
+                        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-gray-800 dark:text-white">
+                          {{ question.student_feedback|default:"No feedback provided"|escape }}
+                        </div>
                       </div>
-                    </div>
-                    <div class="mt-4">
-                      <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Teacher Feedback:</h3>
-                      <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-gray-800 dark:text-white">
-                        {{ question.teacher_feedback|default:"No feedback provided"|escape }}
+                    {% elif is_creator %}
+                      <div class="mt-4">
+                        <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Teacher Feedback:</h3>
+                        <div class="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg text-gray-800 dark:text-white">
+                          {{ question.teacher_feedback|default:"No feedback provided"|escape }}
+                        </div>
                       </div>
-                    </div>
+                    {% endif %}
                   {% endif %}
                 </div>
               </div>
