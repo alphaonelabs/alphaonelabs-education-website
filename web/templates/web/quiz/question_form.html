@@ -26,22 +26,22 @@
               switch (questionTypeField.value) {
                   case 'multiple':
                       multipleChoiceOptions.classList.remove('hidden');
-                      HandleInputsWithQuestionType(questionTypeField.value)
+                      handleInputsWithQuestionType(questionTypeField.value)
                       break;
                   case 'true_false':
                       trueFalseOptions.classList.remove('hidden');
                       setupTrueFalseOptions();
-                      HandleInputsWithQuestionType(questionTypeField.value)
+                      handleInputsWithQuestionType(questionTypeField.value)
                       break;
                   default:
                       shortAnswerOptions.classList.remove('hidden');
-                      HandleInputsWithQuestionType(questionTypeField.value)
+                      handleInputsWithQuestionType(questionTypeField.value)
                       document.getElementById('id_options-TOTAL_FORMS').value = '2';
                       break;
               }
           }
 
-          function HandleInputsWithQuestionType(question_type) {
+          function handleInputsWithQuestionType(question_type) {
               trueFalseOptions.querySelectorAll("input").forEach(element => {
                   element.disabled = true
               });
@@ -490,7 +490,7 @@
                 <input type="hidden" name="options-0-text" value="True" />
                 <input type="hidden" name="options-0-is_correct" id="true_is_correct" />
                 <input type="hidden" name="options-1-text" value="False" />
-                <input type="hidden" name="options-1-is_correct" id="false_is_correct"" />
+                <input type="hidden" name="options-1-is_correct" id="false_is_correct" />
               </div>
             </div>
           </div>

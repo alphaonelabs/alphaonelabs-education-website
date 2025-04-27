@@ -100,11 +100,6 @@ urlpatterns += i18n_patterns(
         quiz_views.create_course_exam,
         name="create_session_exam",
     ),
-    path(
-        "quizzes/<int:quiz_id>/add-specialized-question/",
-        quiz_views.add_question_specialized,
-        name="add_question_specialized",
-    ),
     # Course Management
     path("courses/create/", views.create_course, name="create_course"),
     path("courses/search/", views.course_search, name="course_search"),
@@ -384,7 +379,7 @@ urlpatterns += i18n_patterns(
     path("quizzes/results/<int:user_quiz_id>/", quiz_views.quiz_results, name="quiz_results"),
     path("quizzes/<int:quiz_id>/analytics/", quiz_views.quiz_analytics, name="quiz_analytics"),
     path(
-        "courses/<int:course_id>/exams/<int:quiz_id>/student/<int:user_quiz_id>/",
+        "courses/<int:course_id>/exams/<int:quiz_id>/attempts/<int:user_quiz_id>/correction/",
         quiz_views.student_exam_correction,
         name="student_exam_correction",
     ),

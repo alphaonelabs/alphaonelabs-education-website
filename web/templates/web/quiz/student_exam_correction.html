@@ -2,7 +2,9 @@
 
 {% block title %}Grade Exam - {{ student.username }}{% endblock %}
 {% block content %}
-  <script src="https://unpkg.com/htmx.org@1.9.2"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.2"
+          integrity="sha384-L6OqL9pRWyyFU3+/bjdSri+iIphTN/bvYyM37tICVyOJkWZLpP2vGn6VUEXgzg6h"
+          crossorigin="anonymous"></script>
   <script>
       window.appearInputField = function(event, question_id) {
           event.preventDefault(); // Prevent default form/button behavior
@@ -16,9 +18,15 @@
                   changeGradeDiv.classList.remove("hidden");
                   console.log("Input field is now visible");
               } else {
-                  const max_question_points = "{{ user_quiz.max_score }}"
                   const gradeInput = changeGradeDiv.querySelector("input[type='number']");
-                  if (gradeInput && gradeInput.value <= max_question_points) {
+                  if (gradeInput && gradeInput.value.trim() !== '') {
+                      const value = parseFloat(gradeInput.value);
+                      const maxPoints = parseFloat(gradeInput.getAttribute('max'));
+
+                      if (isNaN(value) || value < 0 || value > maxPoints) {
+                          alert(`Please enter a valid grade between 0 and ${maxPoints}`);
+                          return;
+                      }
                       // Simulate HTMX request if valid input exists
                       const confirmed = window.confirm("Are you sure you want to save this grade?");
                       if (confirmed) {
@@ -45,13 +53,12 @@
       document.body.addEventListener('htmx:afterSwap', function(event) {
           // Find the Change Grade button more specifically
           const newButton = event.target.querySelector("button[data-question_id]");
-          const freshButton = null
           if (newButton) {
               const question_id = newButton.getAttribute("data-question_id");
 
               // Clear any existing event listeners (to avoid duplicates)
               newButton.replaceWith(newButton.cloneNode(true));
-              freshButton = event.target.querySelector("button[data-question_id]");
+              const freshButton = event.target.querySelector("button[data-question_id]");
               // Add the event listener and required HTMX attributes
               freshButton.addEventListener('click', function(e) {
                   appearInputField(e, question_id);
@@ -63,35 +70,46 @@
           question_correction_status = parent.querySelector("#question_correction_status")
           question_correction_status_value = question_correction_status.value
           page_question_correction_status = parent.parentElement.querySelector("#question_correction_div")
+          const span = document.createElement('span');
+          span.textContent = question_correction_status_value.trim();
+          page_question_correction_status.innerHTML = '';
           if (question_correction_status_value.trim() == "Correct") {
-              page_question_correction_status.innerHTML = `
-        <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-sm">
-          ${question_correction_status_value}
-        </span>
-      `;
+              span.className = 'px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-sm';
           } else if (question_correction_status_value.trim() == "Incorrect") {
-              page_question_correction_status.innerHTML = `
-        <span class="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full text-sm">
-          ${question_correction_status_value}
-        </span>
-      `;
+              span.className = 'px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full text-sm';
           }
+          page_question_correction_status.appendChild(span);
 
           // change current score
-          newStudentScore = parent.querySelector("#user_score")
-          pageScore = document.querySelector("#pageScore")
-          max_question_points = pageScore.innerHTML.split("/")[1]
-          newPageScore = `${newStudentScore.value}/${max_question_points}`
-          pageScore.innerHTML = newPageScore
+          const newStudentScore = parent.querySelector("#user_score")
+          const pageScore = document.querySelector("#pageScore")
+          const currentContent = pageScore.textContent || pageScore.innerText
+          const max_question_points = currentContent.split("/")[1]
+
+          // Create text nodes to avoid XSS
+          const scoreText = document.createTextNode(`${newStudentScore.value}/${max_question_points}`)
+
+          // Clear and append
+          pageScore.innerHTML = ''
+          pageScore.appendChild(scoreText)
 
           // change quiz correction status
-          correctionStatus = parent.querySelector("#correction_status_div")
-          correctionStatusDiv = parent.parentElement.parentElement.parentElement.querySelector("#correction_status_div")
-          correctionStatus.classList.remove("hidden")
-          if (correctionStatusDiv && correctionStatus) {
-              correctionStatusDiv.replaceWith(correctionStatus.cloneNode(true));
+          const correctionStatus = parent.querySelector("#correction_status_div");
+          const correctionStatusDiv = parent.parentElement.parentElement.parentElement.querySelector("#correction_status_div");
+
+          if (correctionStatus && correctionStatusDiv) {
+              // Create a new div element
+              const newDiv = document.createElement('div');
+              newDiv.id = 'correction_status_div';
+              newDiv.classList.add('your-class-name'); // Add necessary classes
+
+              // Set the text content safely
+              newDiv.textContent = correctionStatus.textContent;
+
+              correctionStatusDiv.replaceWith(newDiv);
+
+              correctionStatus.remove();
           }
-          correctionStatus.remove()
       });
   </script>
   <div class="container mx-auto px-4 py-8">
@@ -233,15 +251,13 @@
                   <h4>{{ option.text }}</h4>
                   <span class="text-gray-700 dark:text-gray-300 ml-2 {% if option.id|stringformat:"i" == answer.user_answer %}font-medium {% if option.is_correct %}text-green-700 dark:text-green-400 {% else %}text-red-700 dark:text-red-400{% endif %} {% elif option.is_correct %}font-medium text-green-700 dark:text-green-400{% endif %}">
                     {% if option.id|stringformat:"i" in question.user_answer %}
-                      {% if option.id|stringformat:"i" in question.user_answer %}
-                        {% if option.is_correct %}
-                          <i class="fas fa-check-circle text-green-500"></i>
-                        {% else %}
-                          <i class="fas fa-times-circle text-red-500"></i>
-                        {% endif %}
-                      {% elif option.is_correct %}
+                      {% if option.is_correct %}
                         <i class="fas fa-check-circle text-green-500"></i>
+                      {% else %}
+                        <i class="fas fa-times-circle text-red-500"></i>
                       {% endif %}
+                    {% elif option.is_correct %}
+                      <i class="fas fa-check-circle text-green-500"></i>
                     {% endif %}
                   </span>
                 </div>

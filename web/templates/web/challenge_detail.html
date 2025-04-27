@@ -61,7 +61,7 @@
               </div>
               <div class="flex items-center justify-between mt-4">
                 <p class="mt-2 text-gray-700 dark:text-gray-300">{{ sub.submission_text }}</p>
-                <div class="{% if sub.points_awarded < 5 %} bg-red-200 text-red-800 {% else %} bg-green-200 text-green-800 {% endif %} p-2 rounded-md text-center">
+                <div class="{% if sub.points_awarded < sub.challenge.max_points|default:10 * 0.5 %} bg-red-200 text-red-800 {% else %} bg-green-200 text-green-800 {% endif %} p-2 rounded-md text-center">
                   <h2 class="text-md font-bold whitespace-nowrap">
                     {% if request.user.id == sub.user.id %}Your{% endif %}
                     Score: {{ sub.points_awarded }}/10

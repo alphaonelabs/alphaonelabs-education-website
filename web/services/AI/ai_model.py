@@ -1,14 +1,18 @@
 import json
+import logging
 import os
 import re
 from typing import Union
 
 import google.generativeai as genai
 
+logger = logging.getLogger(__name__)
+
 api_key = os.getenv("GOOGLE_API_KEY")
 
 if not api_key:
-    raise ValueError("GOOGLE_API_KEY not found in environment variables")
+    # Defer hard failure; functions will return structured error objects instead.
+    print("⚠️  GOOGLE_API_KEY not found – AI correction disabled")
 
 
 genai.configure(api_key=api_key)
@@ -76,7 +80,7 @@ def ai_assignment_corrector(challenge_form: dict) -> dict:
         response = model.generate_content(user_input)
 
         # Try to extract JSON from the response
-        json_match = re.search(r"\{.*\}", response.text, re.DOTALL)
+        json_match = re.search(r"\{.*?\}", response.text, re.DOTALL)  # non-greedy
         if json_match:
             json_str = json_match.group(0)
             response_object = json.loads(json_str)
@@ -86,7 +90,7 @@ def ai_assignment_corrector(challenge_form: dict) -> dict:
         return response_object
 
     except Exception as e:
-        print(f"Error in AI processing: {e}")
+        logger.error(f"Error in AI processing: {e}")
         return {
             "degree": 0,
             "student_feedback": "Error: Could not evaluate the answer.",
@@ -162,10 +166,11 @@ def ai_quiz_corrector(quiz_data: dict) -> Union[str, dict]:
     # Generate response
     try:
         response = model.generate_content(user_input)
-        return response.text[7:-4]
+        match = re.search(r"\{.*?\}", response.text, re.DOTALL)
+        return json.loads(match.group(0)) if match else {"error": "invalid AI output"}
 
     except Exception as e:
-        print(f"Error in AI processing: {e}")
+        logger.error(f"Error in AI processing: {e}")
         return {
             "degree": 0,
             "student_feedback": "Error: Could not evaluate the answer.",

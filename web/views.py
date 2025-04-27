@@ -746,7 +746,6 @@ def delete_review(request, slug, review_id):
 
 
 def course_detail(request, slug):
-    print("slug", slug)
     course = get_object_or_404(Course, slug=slug)
     sessions = course.sessions.all().order_by("start_time")
     now = timezone.now()
@@ -3727,7 +3726,7 @@ def challenge_submit(request, challenge_id):
                 ai_response = ai_assignment_corrector(challenge_detail)
             except (ValueError, AttributeError) as e:
                 # Log the error but continue with default values
-                logger.exception("AI correction failed: %s", str(e))
+                logger.exception("AI correction failed")
                 ai_response = {
                     "student_feedback": "Automatic feedback unavailable at this time.",
                     "teacher_feedback": "AI evaluation service encountered an error.",
@@ -3735,7 +3734,7 @@ def challenge_submit(request, challenge_id):
                 }
             except Exception as e:
                 # Handle unexpected errors
-                logger.exception("Unexpected error in AI correction: %s", str(e))
+                logger.exception("Unexpected error in AI correction")
                 ai_response = {
                     "student_feedback": "System error occurred during evaluation.",
                     "teacher_feedback": "Unexpected error in AI evaluation service.",
@@ -3750,7 +3749,6 @@ def challenge_submit(request, challenge_id):
             submission.points_awarded = ai_response["degree"]
             submission.save()
             messages.success(request, "Your submission has been recorded!")
-            # return redirect("challenge_detail", challenge_id=challenge_id)
             base_url = reverse("challenge_detail", kwargs={"challenge_id": challenge_id})
             return redirect(f"{base_url}#{request.user.username}")
     else:

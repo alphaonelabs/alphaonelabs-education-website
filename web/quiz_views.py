@@ -16,7 +16,6 @@ from .forms import (
     QuizForm,
     QuizOptionFormSet,
     QuizQuestionForm,
-    QuizQuestionSpecializedForm,
     TakeQuizForm,
 )
 from .models import Course, Enrollment, Quiz, QuizOption, QuizQuestion, Session, UserQuiz
@@ -84,104 +83,6 @@ def create_course_exam(
             "course": course,
             "session": session,
             "exam_type": exam_type,
-        },
-    )
-
-
-@login_required
-def add_question_specialized(request: HttpRequest, quiz_id: int) -> HttpResponse:
-    """Add a specialized question to a quiz based on question type."""
-    quiz = get_object_or_404(Quiz, id=quiz_id)
-
-    # Check if user can edit this quiz
-    if quiz.creator != request.user:
-        return HttpResponseForbidden("You don't have permission to edit this quiz.")
-
-    # Calculate the next order value
-    next_order = 1
-    if quiz.questions.exists():
-        next_order = quiz.questions.order_by("-order").first().order + 1
-
-    if request.method == "POST":
-        form = QuizQuestionSpecializedForm(request.POST, request.FILES)
-        # Set the quiz ID explicitly in the form data
-        form.instance.quiz_id = quiz.id
-
-        question_type = request.POST.get("question_type")
-
-        # Different handling based on question type
-        if question_type in ["multiple", "true_false"]:
-            # Use the standard option formset
-            formset = QuizOptionFormSet(request.POST, request.FILES, prefix="options")
-            formset_valid = formset.is_valid()
-        else:
-            # No options needed for other question types
-            formset = None
-            formset_valid = True
-
-        # Validate the form
-        form_valid = form.is_valid()
-
-        if form_valid and formset_valid:
-            try:
-                with transaction.atomic():
-                    # Save the question
-                    question = form.save(commit=False)
-                    question.quiz = quiz
-                    question.order = next_order
-
-                    # Handle specialized fields based on question type
-                    if question_type == "fill_blank":
-                        # Extract the blank parts
-                        blank_text = form.cleaned_data.get("text", "")
-                        question.text = blank_text
-                    elif question_type == "matching":
-                        # Get matching items from form
-                        items = request.POST.getlist("matching_item[]")
-                        matches = request.POST.getlist("matching_match[]")
-                        question.matching_items = {
-                            "items": items,
-                            "matches": matches,
-                        }
-                    elif question_type == "coding":
-                        # Get code starter and expected output
-                        question.code_starter = form.cleaned_data.get("code_starter", "")
-                        question.expected_output = form.cleaned_data.get("expected_output", "")
-
-                    question.save()
-
-                    # Save options if applicable
-                    if formset:
-                        formset.instance = question
-                        for i, option_form in enumerate(formset):
-                            if option_form.cleaned_data and not option_form.cleaned_data.get("DELETE", False):
-                                option = option_form.save(commit=False)
-                                option.question = question
-                                option.order = i
-                                option.save()
-
-                messages.success(request, "Question added successfully.")
-
-                # Redirect based on the button clicked
-                if "save_and_add" in request.POST:
-                    return redirect("add_question_specialized", quiz_id=quiz.id)
-                return redirect("quiz_detail", quiz_id=quiz.id)
-            except Exception as e:
-                print(e)
-                # Re-raise the exception
-                raise
-    else:
-        form = QuizQuestionSpecializedForm()
-        formset = QuizOptionFormSet(prefix="options")
-
-    return render(
-        request,
-        "web/quiz/question_specialized_form.html",
-        {
-            "form": form,
-            "formset": formset,
-            "quiz": quiz,
-            "title": "Add Question",
         },
     )
 
@@ -282,13 +183,10 @@ def quiz_detail(request, quiz_id):
     if is_owner:
         total_attempts = UserQuiz.objects.filter(quiz=quiz).count()
         attempts = UserQuiz.objects.filter(quiz=quiz)
-        all_attempts = list(attempts)
-        average_score = [attempt.calculate_score() for attempt in all_attempts if attempt.calculate_score() is not None]
 
-        if average_score:
-            average_score = sum(average_score) / len(average_score)
-        else:
-            average_score = 0
+        scores = [a.calculate_score() for a in attempts if a.calculate_score() is not None]
+        average_score = sum(scores) / len(scores) if scores else 0
+        
     else:
         total_attempts = None
         average_score = None
@@ -616,35 +514,34 @@ def _process_quiz_taking(request, quiz):
     remaining_time = 0
     # Check for existing incomplete attempts first
     if user:
-        # calculate remaining time
+        incomplete_attempt = UserQuiz.objects.filter(quiz=quiz, user=user, completed=False).first()
+
+        if not incomplete_attempt:
+            user_quiz = UserQuiz(quiz=quiz, user=user)
+            user_quiz.save()
+            request.session["active_quiz_id"] = user_quiz.id
+            request.session.save()
+        else:
+            user_quiz = incomplete_attempt
+
+        # Now define the helper AFTER user_quiz exists
         def calculate_remaining_time():
             delta = timezone.now() - user_quiz.start_time
             total_secs_remaining = max(0, quiz.time_limit * 60 - delta.total_seconds())
             return int(total_secs_remaining)
 
-        incomplete_attempt = UserQuiz.objects.filter(quiz=quiz, user=user, completed=False).first()
-        print("## incomplete_attempt ##", incomplete_attempt)
-        if not incomplete_attempt:
-            user_quiz = UserQuiz(quiz=quiz, user=user)
+        remaining_time = calculate_remaining_time()
+
+        if not incomplete_attempt and remaining_time <= 0:
+            user_quiz.complete_quiz()
             user_quiz.save()
-            # Store active quiz in session
             request.session["active_quiz_id"] = user_quiz.id
             request.session.save()
-            remaining_time = calculate_remaining_time()
-        else:
-            user_quiz = incomplete_attempt
-            remaining_time = calculate_remaining_time()
-            if remaining_time <= 0:
-                user_quiz.complete_quiz()
-                user_quiz.save()
-                # Store active quiz in session
-                request.session["active_quiz_id"] = user_quiz.id
-                request.session.save()
-                messages.error(request, "You have reached the time limit")
+            messages.error(request, "You have reached the time limit")
 
-    # Shuffle questions if quiz settings require it
-    if quiz.randomize_questions:
-        random.shuffle(questions)
+        # Shuffle questions if quiz settings require it
+        if quiz.randomize_questions:
+            random.shuffle(questions)
 
     # Prepare questions and options for display
     prepared_questions = []
@@ -717,7 +614,9 @@ def _process_quiz_taking(request, quiz):
                         else:
                             student_wrong_answers += 1
                     correct_points = (question_obj.points / len(correct_options)) * student_correct_answers
-                    wrong_points = (question_obj.points / in_correct_options) * student_wrong_answers
+                    wrong_points = 0
+                    if in_correct_options:
+                        wrong_points = (question_obj.points / in_correct_options) * student_wrong_answers
                     student_score = correct_points - wrong_points
 
                     if student_score < 0:
@@ -765,7 +664,7 @@ def _process_quiz_taking(request, quiz):
                         "is_graded": False,  # need manual grading
                     }
 
-                if str(AI_auto_correction) == "True":
+                if str(AI_auto_correction):
                     AI_data[q_id] = {
                         "question_title": question_obj.text,
                         "question_explanation": question_obj.explanation,
@@ -808,7 +707,7 @@ def _process_quiz_taking(request, quiz):
             user_quiz.complete_quiz()
             user_quiz.save()
 
-            del request.session["active_quiz_id"]
+            request.session.pop("active_quiz_id", None)
             request.session.save()
 
             # Redirect to results page
@@ -1160,7 +1059,7 @@ def student_exam_correction(
     if not user_quiz.completed:
         messages.error(request, "This exam is not completed yet.")
         # return redirect('course_exam_analytics', course_id=course.id)
-        return quiz_analytics(request, course_id=course.id)
+        return quiz_analytics(request, quiz_id=quiz.id)
 
     # Parse answers JSON
     answers = (

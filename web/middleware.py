@@ -3,7 +3,7 @@ import traceback
 
 import sentry_sdk
 from django.contrib import messages
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import Resolver404, resolve
 
@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class HostnameRewriteMiddleware:
-    def __init__(self, get_response):
+    def __init__(self, get_response) -> None:
         self.get_response = get_response
 
     def __call__(self, request):
@@ -148,7 +148,7 @@ class QuizSecurityMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
-    def __call__(self, request):
+    def __call__(self, request) -> HttpResponse:
         # Skip for non-authenticated users, static files, or development tools
         if (
             not request.user.is_authenticated or "/static/" in request.path or "__reload__" in request.path
@@ -172,11 +172,15 @@ class QuizSecurityMiddleware:
                 try:
                     user_quiz = UserQuiz.objects.get(id=active_quiz_id, user=request.user, completed=False)
                     # Mark quiz as completed
-                    user_quiz.complete_quiz()
-                    user_quiz.save()
+                    try:
+                        user_quiz.complete_quiz()
+                        user_quiz.save()
+                    except Exception as e:
+                        logger.error(f"Error completing quiz {active_quiz_id}: {str(e)}")
+                        # Still clear the session to prevent getting stuck
 
                     # Clear active quiz from session
-                    del request.session["active_quiz_id"]
+                    request.session.pop("active_quiz_id", None)
                     request.session.save()
 
                     # Notify user
@@ -186,7 +190,7 @@ class QuizSecurityMiddleware:
                     return redirect("quiz_results", user_quiz_id=active_quiz_id)
                 except UserQuiz.DoesNotExist:
                     # If quiz doesn't exist, clear the session variable
-                    del request.session["active_quiz_id"]
+                    request.session.pop("active_quiz_id", None)
                     request.session.save()
 
         # Continue with regular request processing

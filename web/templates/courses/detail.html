@@ -136,7 +136,7 @@
                           <i class="far fa-star text-yellow-400 mr-0.5"></i>
                         {% endif %}
                       {% endfor %}
-                      <span class="ml-1 text-gray-700 dark:text-gray-300">{{ course.average_rating }}</span>
+                      <span class="ml-1 text-gray-700 dark:text-gray-300">{{ course.average_rating|floatformat:1 }}</span>
                     </span>
                   {% else %}
                     <span class="text-gray-500 dark:text-gray-400">No ratings yet</span>

@@ -619,6 +619,8 @@ class Command(BaseCommand):
             "problem_solving",
             "scenario",
             "coding",
+            "matching",
+            "diagram",
         ]
 
         # Create course exams (final exams)
@@ -781,7 +783,7 @@ class Command(BaseCommand):
             # Create true/false options
             # always the True choice will be true
             QuizOption.objects.create(question=question, text="True", is_correct=True, order=1)
-            QuizOption.objects.create(question=question, text="False", is_correct=not True, order=2)
+            QuizOption.objects.create(question=question, text="False", is_correct=False, order=2)
 
     def generate_mock_answers(self, quiz: Quiz) -> dict:
         """Generate mock answers for a quiz submission."""

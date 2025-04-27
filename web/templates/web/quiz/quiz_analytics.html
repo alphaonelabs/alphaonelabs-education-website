@@ -19,8 +19,16 @@
 
           // Get question_analysis data from Django template
           const questionAnalysisData = JSON.parse(document.getElementById('question-analysis-data').textContent || '[]')
-          const scoreDistributionData = JSON.parse(document.getElementById('score-distribution-data').textContent || '[]');
-          const attemptsTimeData = JSON.parse(document.getElementById('attempts-time-data').textContent || '[]');
+          const emptyChartObj = {
+              labels: [],
+              data: []
+          };
+          const scoreDistributionData = JSON.parse(
+              document.getElementById('score-distribution-data').textContent || 'null'
+          ) || emptyChartObj;
+          const attemptsTimeData = JSON.parse(
+              document.getElementById('attempts-time-data').textContent || 'null'
+          ) || emptyChartObj;
 
           // Score Distribution Chart
           const scoreCtx = document.getElementById('scoreDistributionChart').getContext('2d');
@@ -150,9 +158,9 @@
                   plugins: {
                       tooltip: {
                           callbacks: {
-                              label: function(context) {
-                                  return context.raw + ' attempt' + (context.raw !== 1 ? 's' : '');
-                              }
+                              label: ({
+                                  raw
+                              }) => `${raw ?? 0} attempt${raw === 1 ? '' : 's'}`
                           }
                       }
                   }

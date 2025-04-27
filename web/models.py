@@ -2218,11 +2218,13 @@ class UserQuiz(models.Model):
         max_score = 0
         answers = json.loads(self.answers) if isinstance(self.answers, str) else self.answers
 
+        q_ids = [int(q) for q in answers.keys()]
+        questions = {q.id: q.points for q in QuizQuestion.objects.filter(id__in=q_ids).only("id", "points")}
+
         for q_id, answer_data in answers.items():
-            question = QuizQuestion.objects.get(id=q_id)
-            max_score += question.points
+            max_score += questions.get(int(q_id), 0)
             score += answer_data.get("points_awarded", 0)
-        if score > 0:
+        if score > 0 and max_score > 0:
             quiz_Percentage = round((score / max_score) * 100, 1)
         return quiz_Percentage
 
@@ -2234,35 +2236,58 @@ class UserQuiz(models.Model):
         self.end_time = timezone.now()
         self.save()
 
+    def _get_answers_dict(self) -> dict:
+        """Return answers as a dict, deserializing if stored as a JSON string."""
+        if isinstance(self.answers, str):
+            try:
+                return json.loads(self.answers)
+            except json.JSONDecodeError:
+                return {}
+        return self.answers or {}
+
+    def _compute_points(self) -> tuple[int, int]:
+        """
+        Compute and cache (score, max_score) for this attempt.
+
+        - score: sum of awarded points clamped between 0 and question.points
+        - max_score: sum of question.points for all answered questions
+        """
+        # Return cached result if already computed in this request
+        if hasattr(self, "_points_cache"):
+            return self._points_cache
+
+        answers = self._get_answers_dict()
+        # Collect all question IDs in one query
+        q_ids = [int(q_id) for q_id in answers.keys()]
+        questions = QuizQuestion.objects.filter(id__in=q_ids).only("id", "points")
+        # Map id -> available points
+        points_map = {q.id: q.points for q in questions}
+
+        # Calculate actual score
+        score = 0
+        for q_id_str, answer_data in answers.items():
+            q_id = int(q_id_str)
+            awarded = answer_data.get("points_awarded", 0) or 0
+            # Clamp between 0 and the question's max points
+            max_pts = points_map.get(q_id, 0)
+            score += min(max(awarded, 0), max_pts)
+
+        # Calculate max possible score
+        max_score = sum(points_map.values())
+
+        # Cache on the instance
+        self._points_cache = (score, max_score)
+        return self._points_cache
+
     @property
     def max_score(self):
         """Calculate max_score dynamically from the answered questions."""
-        answers = json.loads(self.answers) if isinstance(self.answers, str) else self.answers
-        max_score = 0
-
-        for q_id, answer_data in answers.items():
-            question = QuizQuestion.objects.get(id=q_id)
-            max_score += question.points
-
-        return max_score
+        return self._compute_points()[1]
 
     @property
     def score(self):
         """Calculate max_score dynamically from the answered questions."""
-        answers = json.loads(self.answers) if isinstance(self.answers, str) else self.answers
-        score = 0
-        for q_id, answer_data in answers.items():
-            question = QuizQuestion.objects.get(id=q_id)
-            points_awarded = answer_data.get("points_awarded", 0)
-
-            if points_awarded < 0:
-                score += 0
-            elif points_awarded > question.points:
-                score += question.points
-            else:
-                score += points_awarded
-
-        return score
+        return self._compute_points()[0]
 
     @property
     def duration(self):

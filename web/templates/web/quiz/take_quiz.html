@@ -105,7 +105,7 @@
       }
 
       // QUIZ SECURITY CONFIGURATION
-      const quizData = {
+      const quizSecurityData = {
           userQuizId: "{{ user_quiz.id }}",
           csrfToken: "{{ csrf_token }}"
       };
@@ -121,8 +121,7 @@
           // Check if we have a time limit
           const timeLimit = parseInt("{{ quiz.time_limit|default:0 }}");
           if (timeLimit > 0) {
-              let remainingTime = parseFloat("{{ remaining_time|default:0 }}");
-              localStorage.getItem('quiz_' + quizData.userQuizId + '_remaining_time', remainingTime);
+              let remainingTime = parseFloat(localStorage.getItem('quiz_' + quizSecurityData.userQuizId + '_remaining_time') || "{{ remaining_time|default:0 }}");
 
               const timerElement = document.getElementById('timer');
               if (!timerElement) return; // Exit if timer element doesn't exist
@@ -137,7 +136,7 @@
                   remainingTime--;
 
                   // Store the remaining time in localStorage
-                  localStorage.setItem('quiz_' + quizData.userQuizId + '_remaining_time', remainingTime.toString());
+                  localStorage.setItem('quiz_' + quizSecurityData.userQuizId + '_remaining_time', remainingTime.toString());
 
                   // Format the time as MM:SS
                   const minutes = Math.floor(remainingTime / 60);
@@ -155,7 +154,7 @@
                   // Auto-submit when time is up
                   if (remainingTime <= 0) {
                       clearInterval(timerInterval);
-                      localStorage.removeItem('quiz_' + quizData.userQuizId + '_remaining_time');
+                      localStorage.removeItem('quiz_' + quizSecurityData.userQuizId + '_remaining_time');
                       document.getElementById('quiz-form').submit();
                   }
               }, 1000);
@@ -163,7 +162,7 @@
               // Add event listener to the form submission to clear the timer
               document.getElementById('quiz-form').addEventListener('submit', function() {
                   clearInterval(timerInterval);
-                  localStorage.removeItem('quiz_' + quizData.userQuizId + '_remaining_time');
+                  localStorage.removeItem('quiz_' + quizSecurityData.userQuizId + '_remaining_time');
 
                   // Save the remaining time in the hidden field for server-side processing
                   document.getElementById('quiz_timer_value').value = remainingTime;
@@ -257,9 +256,7 @@
     <form id="quiz-form" method="post" action="{% url 'take_quiz' quiz.id %}">
       {% csrf_token %}
       <input type="hidden" name="quiz_id" value="{{ quiz_id }}" />
-      <input type="hidden"
-             name="quizData.userQuizId"
-             value="{{ quizData.userQuizId }}" />
+      <input type="hidden" name="user_quiz_id" value="{{ user_quiz.id }}" />
       <input type="hidden" id="quiz_timer_value" name="quiz_timer_value" value="" />
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
         <div class="p-6">

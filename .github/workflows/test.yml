@@ -14,14 +14,13 @@ jobs:
     name: Linting
     runs-on: ubuntu-latest
     steps:
-
       - uses: actions/checkout@v3
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
-          cache: 'pip'
+          python-version: "3.10"
+          cache: "pip"
 
       - name: Run pre-commit hooks
         run: |
@@ -29,12 +28,15 @@ jobs:
           pre-commit install
           pre-commit run --all-files
 
-
   tests:
     name: Run Tests
     runs-on: ubuntu-latest
 
     services:
+      web:
+        # other configuration...
+        env_file:
+          - .env
       mysql:
         image: mysql:8.0
         env:
@@ -56,8 +58,8 @@ jobs:
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
-          cache: 'pip'
+          python-version: "3.10"
+          cache: "pip"
 
       - name: Configure MySQL and run tests
         env:
@@ -93,5 +95,5 @@ jobs:
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
-          cache: 'pip'
+          python-version: "3.10"
+          cache: "pip"

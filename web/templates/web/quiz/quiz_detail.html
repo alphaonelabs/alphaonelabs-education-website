@@ -7,11 +7,24 @@
 {% endblock title %}
 {% block extra_head %}
   <!-- For clipboard copy functionality -->
-  <script src="https://unpkg.com/htmx.org@1.9.6"></script>
-  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- htmx.org -->
+  <script src="https://unpkg.com/htmx.org@1.9.6"
+          integrity="sha384-FhXw7b6AlE/jyjlZH5iHa/tTe9EpJ1Y55RjcgPbjeWMskSxZt1v9qkxLJWNJaGni"
+          crossorigin="anonymous"></script>
+  <!-- Alpine.js -->
+  <script defer
+          src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"
+          integrity="sha384-4BjGZ341IRx+qqJkCpqkJPPB96AfCoKft0B5vs5sCVnJ+2jwHSmFadM5hSRE5Cjj"
+          crossorigin="anonymous"></script>
+  <!-- Toastr CSS -->
   <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+        href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css"
+        integrity="sha512-vKMx8UnXk60zUwyUnUPM3HbQo8QfmNx7+ltw8Pm5zLusl1XIfwcxo8DbWCqMGKaWeNxWA8yrx5v3SaVpMvR3CA=="
+        crossorigin="anonymous" />
+  <!-- Toastr JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"
+          integrity="sha512-VEd+nq25CkR676O+pLBnDW09R7VQX9Mdiij052gVCp5yVH3jGtH70Ho/UUv4mJDsEdTvqRCFZg0NKGiojGnUCw=="
+          crossorigin="anonymous"></script>
   <script>
       function copyToClipboard(text) {
           navigator.clipboard.writeText(text).then(() => {
@@ -25,21 +38,27 @@
       document.addEventListener('DOMContentLoaded', function() {
           document.body.addEventListener('htmx:afterOnLoad', function(evt) {
               const triggerHeader = evt.detail.xhr.getResponseHeader('HX-Trigger');
-              if (triggerHeader) {
-                  try {
-                      const triggerData = JSON.parse(triggerHeader);
-                      if (triggerData['show-toast']) {
-                          const toast = triggerData['show-toast'];
-                          toastr.options = {
-                              "positionClass": "toast-top-right",
-                              "timeOut": "3000"
-                          };
-                          toastr[toast.level](toast.message);
-                      }
-                  } catch (e) {
-                      console.error('Failed to parse HX-Trigger header:', e);
+
+              // Set default toastr options once
+              toastr.options = {
+                  "positionClass": "toast-top-right",
+                  "timeOut": "3000"
+              };
+
+              // Process trigger header if present
+              if (!triggerHeader) return;
+
+              try {
+                  const triggerData = JSON.parse(triggerHeader);
+                  if (triggerData['show-toast']) {
+                      const toast = triggerData['show-toast'];
+                      toastr[toast.level || 'info'](toast.message);
                   }
+              } catch (e) {
+                  toastr.error('Something went wrong while processing the response');
+                  console.error('Failed to parse HX-Trigger header:', e);
               }
+
           });
       });
   </script>
@@ -151,13 +170,7 @@
               <!-- AI auto correction -->
               <div>
                 <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">AI auto correction</h3>
-                <p class="text-gray-800 dark:text-white">
-                  {% if quiz.AI_auto_correction %}
-                    {{ quiz.AI_auto_correction }}
-                  {% else %}
-                    false
-                  {% endif %}
-                </p>
+                <p class="text-gray-800 dark:text-white">{{ quiz.AI_auto_correction|yesno:"Yes,No" }}</p>
               </div>
             </div>
           </div>

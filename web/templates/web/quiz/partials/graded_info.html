@@ -3,13 +3,11 @@
   <div class="flex justify-between items-center">
     <div class="flex items-center gap-[15px]">
       <input type="hidden"
-             class="hidden"
-             id="user_score"
+             id="user_score_{{ question.id }}"
              value="{{ user_quiz.score }}"
              disabled />
       <input type="hidden"
-             class="hidden"
-             id="correction_status"
+             id="correction_status_{{ question.id }}"
              value="{{ user_quiz.correction_status }}"
              disabled />
       <div id="correction_status_div"
@@ -32,7 +30,7 @@
       <input type="hidden"
              class="hidden"
              id="question_correction_status"
-             value=" {% if points_awarded >= half_question_points %} Correct {% else %} Incorrect {% endif %}"
+             value="{% if points_awarded >= half_question_points %}Correct{% else %}Incorrect{% endif %}"
              disabled />
       <div id="change_grade" class="hidden w-full md:w-1/3">
         <label for="points_awarded"
