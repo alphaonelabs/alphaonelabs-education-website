@@ -270,7 +270,7 @@
                     {{ forloop.counter }}
                   </span>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium  bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 ">
-                    {{ question.question_type_display }}
+                    {{ question.question_type_display }} - {{ question.id }}
                   </span>
                   {% if question.points %}
                     <span class="ml-2 items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-purple-900 dark:text-purple-300 ">

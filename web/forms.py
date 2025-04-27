@@ -1,5 +1,4 @@
 import re
-from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from allauth.account.forms import LoginForm, SignupForm
@@ -1808,7 +1807,7 @@ class TakeQuizForm(forms.Form):
                         label=question.text,
                         choices=choices,
                         widget=forms.RadioSelect,
-                        required=True,
+                        required=False,
                         error_messages={"required": "Please select an answer for this question"},
                     )
                 elif question.question_type == "true_false":
@@ -1819,7 +1818,7 @@ class TakeQuizForm(forms.Form):
                         label=question.text,
                         choices=choices,
                         widget=forms.RadioSelect,
-                        required=True,
+                        required=False,
                         error_messages={"required": "Please select an answer for this question"},
                     )
                 else:

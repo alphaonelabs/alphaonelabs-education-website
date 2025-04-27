@@ -166,8 +166,7 @@ def ai_quiz_corrector(quiz_data: dict) -> Union[str, dict]:
     # Generate response
     try:
         response = model.generate_content(user_input)
-        match = re.search(r"\{.*?\}", response.text, re.DOTALL)
-        return json.loads(match.group(0)) if match else {"error": "invalid AI output"}
+        return response.text[7:-4]
 
     except Exception as e:
         logger.error(f"Error in AI processing: {e}")

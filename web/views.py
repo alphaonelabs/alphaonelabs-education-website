@@ -3726,18 +3726,10 @@ def challenge_submit(request, challenge_id):
                 ai_response = ai_assignment_corrector(challenge_detail)
             except (ValueError, AttributeError) as e:
                 # Log the error but continue with default values
-                logger.exception("AI correction failed")
+                logger.exception("AI correction failed", e)
                 ai_response = {
                     "student_feedback": "Automatic feedback unavailable at this time.",
                     "teacher_feedback": "AI evaluation service encountered an error.",
-                    "degree": 0,
-                }
-            except Exception as e:
-                # Handle unexpected errors
-                logger.exception("Unexpected error in AI correction")
-                ai_response = {
-                    "student_feedback": "System error occurred during evaluation.",
-                    "teacher_feedback": "Unexpected error in AI evaluation service.",
                     "degree": 0,
                 }
 

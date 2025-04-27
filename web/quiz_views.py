@@ -186,7 +186,7 @@ def quiz_detail(request, quiz_id):
 
         scores = [a.calculate_score() for a in attempts if a.calculate_score() is not None]
         average_score = sum(scores) / len(scores) if scores else 0
-        
+
     else:
         total_attempts = None
         average_score = None
@@ -572,9 +572,12 @@ def _process_quiz_taking(request, quiz):
         q_dict["options"] = clean_options
         prepared_questions.append(q_dict)
 
+    print("request.method", request.method)
     if request.method == "POST":
         form = TakeQuizForm(request.POST, quiz=quiz)
 
+        print("form.is_valid()", form.is_valid())
+        print("form.is_valid()", form.errors)
         if form.is_valid():
             # Process answers
             AI_auto_correction = quiz.AI_auto_correction
@@ -678,7 +681,16 @@ def _process_quiz_taking(request, quiz):
 
             if str(AI_auto_correction) == "True" and correction_status == "in_progress":
                 correction_status = "completed"
-                ai_correction_results = json.loads(ai_quiz_corrector(AI_data))
+                raw = ai_quiz_corrector(AI_data)
+                ai_correction_results = {}
+
+                # if it comes back as text, parse it
+                if isinstance(raw, str):
+                    ai_correction_results = json.loads(raw)
+                else:
+                    ai_correction_results = raw
+
+                corrected_AI_answers = ai_correction_results.get("correction", {})
 
                 # Loop through each question in prepared_questions
                 for question in prepared_questions:
@@ -686,7 +698,7 @@ def _process_quiz_taking(request, quiz):
                     question_id = str(question.get("id"))
 
                     # Retrieve corresponding AI data
-                    ai_question_data = ai_correction_results.get("correction", {}).get(question_id, "")
+                    ai_question_data = corrected_AI_answers.get(question_id, "")
 
                     question_type = AI_data.get(question_id, "").get("question_type", "")
                     answers_question = answers[question_id]
@@ -698,8 +710,8 @@ def _process_quiz_taking(request, quiz):
                             True if ai_question_data["degree"] >= question["points"] else False
                         )
 
-                    answers_question["student_feedback"] = ai_question_data["student_feedback"]
-                    answers_question["teacher_feedback"] = ai_question_data["teacher_feedback"]
+                    answers_question["student_feedback"] = ai_question_data.get("student_feedback", "")
+                    answers_question["teacher_feedback"] = ai_question_data.get("teacher_feedback", "")
 
             # Update the UserQuiz record
             user_quiz.answers = json.dumps(answers)
