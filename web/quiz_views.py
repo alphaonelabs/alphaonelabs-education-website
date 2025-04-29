@@ -1,6 +1,6 @@
 import json
-import random
 import logging
+import random
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -13,8 +13,6 @@ from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 
-logger = logging.getLogger(__name__)
-
 from .forms import (
     QuizForm,
     QuizOptionFormSet,
@@ -22,6 +20,8 @@ from .forms import (
     TakeQuizForm,
 )
 from .models import Course, Enrollment, Quiz, QuizOption, QuizQuestion, Session, UserQuiz
+
+logger = logging.getLogger(__name__)
 
 
 @login_required

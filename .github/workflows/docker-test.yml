@@ -23,8 +23,8 @@ jobs:
 
     services:
       web:
-        env_file:
-          - .env
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
       mysql:
         image: mysql:8.0
         env:

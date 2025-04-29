@@ -91,7 +91,7 @@ def ai_assignment_corrector(challenge_form: dict) -> dict:
         return response_object
 
     except (json.JSONDecodeError, genai.types.GenerationError, ValueError) as e:
-        logger.exception("Error in AI processing")
+        logger.exception("Error in AI processing: ", e)
         return {
             "degree": 0,
             "student_feedback": "Error: Could not evaluate the answer.",
@@ -170,7 +170,7 @@ def ai_quiz_corrector(quiz_data: dict) -> Union[str, dict]:
         return response.text[7:-4]
 
     except (json.JSONDecodeError, genai.types.GenerationError, ValueError) as e:
-        logger.exception("Error in AI processing")
+        logger.exception("Error in AI processing: ", e)
         return {
             "degree": 0,
             "student_feedback": "Error: Could not evaluate the answer.",

@@ -1,10 +1,10 @@
 import logging
 import traceback
+from typing import Any, Callable
 
 import sentry_sdk
-from typing import Any, Callable
 from django.contrib import messages
-from django.http import Http404, HttpResponse, HttpRequest
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import redirect, render
 from django.urls import Resolver404, resolve
 
@@ -177,9 +177,9 @@ class QuizSecurityMiddleware:
                         user_quiz.complete_quiz()
                         user_quiz.save()
                     except Exception as e:
-                        logger.exception("Error completing quiz %s", active_quiz_id)
-                        # Still clear the session to prevent getting stuck
+                        logger.exception("Error completing quiz %s: %s", active_quiz_id, e)
 
+                    # Still clear the session to prevent getting stuck
                     # Clear active quiz from session
                     request.session.pop("active_quiz_id", None)
                     request.session.save()

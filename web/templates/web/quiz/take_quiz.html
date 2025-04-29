@@ -182,7 +182,7 @@
       function hideFooterAndHeader() {
           const header = document.querySelector("header");
           const footer = document.querySelector("footer");
-      
+
           if (header) header.innerHTML = "";
           if (footer && typeof footer.remove === "function") footer.remove();
       }
@@ -193,14 +193,20 @@
   </script>
   <style>
       /* Disable right-click menu */
-      {% if not quiz.enable_copy_past_and_text_selection %}
-        body {
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
-      {% endif %}
+          {
+          % if not quiz.enable_copy_past_and_text_selection %
+      }
+
+      body {
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+      }
+
+          {
+          % endif %
+      }
 
       /* Warn users when they first enter */
       .quiz-warning {
