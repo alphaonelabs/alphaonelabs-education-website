@@ -224,7 +224,6 @@
                                class="w-5 mr-2 opacity-[0.7]"
                                {% if option.is_correct %}checked{% endif %}
                                onclick="return false;" />
-                      </input />
                       <h4>{{ option.text }}</h4>
                       <span class="text-gray-700 dark:text-gray-300 ml-2 {% if option.is_correct %}font-medium {% if option.is_correct %}text-green-700 dark:text-green-400 {% else %}text-red-700 dark:text-red-400{% endif %} {% elif option.is_correct %}font-medium text-green-700 dark:text-green-400{% endif %}">
                         {% if option.is_correct %}
@@ -247,7 +246,6 @@
                            class="w-5 mr-2 opacity-[0.7]"
                            {% if option.id|stringformat:"i" in question.user_answer %}checked{% endif %}
                            onclick="return false;" />
-                  </input />
                   <h4>{{ option.text }}</h4>
                   <span class="text-gray-700 dark:text-gray-300 ml-2 {% if option.id|stringformat:"i" == answer.user_answer %}font-medium {% if option.is_correct %}text-green-700 dark:text-green-400 {% else %}text-red-700 dark:text-red-400{% endif %} {% elif option.is_correct %}font-medium text-green-700 dark:text-green-400{% endif %}">
                     {% if option.id|stringformat:"i" in question.user_answer %}

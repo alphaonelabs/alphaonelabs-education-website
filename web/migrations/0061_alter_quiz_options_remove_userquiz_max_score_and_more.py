@@ -35,7 +35,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name="quiz",
-            name="AI_auto_correction",
+            name="ai_auto_correction",
             field=models.BooleanField(
                 default=False, help_text="If enabled, AI will automatically attempt to correct open-ended questions"
             ),

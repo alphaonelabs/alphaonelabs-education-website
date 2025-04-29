@@ -41,7 +41,7 @@
               }
           }
 
-          function handleInputsWithQuestionType(question_type) {
+          function handleInputsWithQuestionType(questionType) {
               trueFalseOptions.querySelectorAll("input").forEach(element => {
                   element.disabled = true
               });
@@ -52,11 +52,11 @@
                   element.disabled = true
               });
 
-              if (question_type == "multiple") {
+              if (questionType == "multiple") {
                   multipleChoiceOptions.querySelectorAll("input").forEach(element => {
                       element.disabled = false
                   });
-              } else if (question_type == "true_false") {
+              } else if (questionType == "true_false") {
                   trueFalseOptions.querySelectorAll("input").forEach(element => {
                       element.disabled = false
                   });
@@ -250,7 +250,6 @@
                       e.preventDefault();
                       return;
                   }
-                  // todo after this error the form submitted direct
 
               } else if (questionType === 'true_false') {
                   // Ensure a radio button is selected for true/false
@@ -284,11 +283,6 @@
                   }
 
                   const formData = new FormData(form);
-
-                  for (const [name, value] of formData.entries()) {
-                      console.log(`${name} = ${value}`);
-                  }
-                  // e.preventDefault();
 
               }
           });

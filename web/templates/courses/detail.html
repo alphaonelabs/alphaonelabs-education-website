@@ -1178,7 +1178,7 @@
                                       </span>
                                     {% endif %}
                                   </div>
-                                  {% if exam_item.exam.AI_auto_correction == True %}
+                                  {% if exam_item.exam.ai_auto_correction == True %}
                                     <span class="font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-full text-sm">AI-Auto Correction</span>
                                   {% endif %}
                                 </div>
@@ -1251,7 +1251,7 @@
                                             <span class="font-medium bg-gray-100 dark:bg-gray-900/30 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-full text-sm">Submission: {{ exam_item.submission_count |default:0 }}</span>
                                           {% endif %}
                                           <span class="font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-3 py-1 rounded-full text-sm">Duration: {{ exam_item.exam.time_limit }}min</span>
-                                          {% if exam_item.exam.AI_auto_correction == True %}
+                                          {% if exam_item.exam.ai_auto_correction == True %}
                                             <span class="font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-full text-sm">AI-Auto Correction</span>
                                           {% endif %}
                                         </div>
@@ -1316,6 +1316,9 @@
                       <div class="flex justify-between items-center mb-4">
                         <h2 class="text-xl font-bold">Student Analytics</h2>
                       </div>
+                      <p class="text-gray-600 dark:text-gray-400 mb-4">
+                        This chart shows student performance metrics across attendance, exam scores, and overall course progress.
+                      </p>
                       <!-- Canvas element for the chart -->
                       <div class="w-full">
                         <canvas id="sectionChart" width="800" height="400"></canvas>
@@ -1336,7 +1339,8 @@
     <i class="fas fa-info-circle notification-icon mr-2"></i>
     <span class="notification-message">This is a notification</span>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.2.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.2.1"
+            crossorigin="anonymous"></script>
   <script>
       document.addEventListener('DOMContentLoaded', function() {
           // Generate labels for 10 students

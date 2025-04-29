@@ -1720,7 +1720,6 @@ class QuizForm(forms.ModelForm):
         fields = [
             "title",
             "description",
-            "subject",
             "status",
             "time_limit",
             "randomize_questions",
@@ -1728,12 +1727,12 @@ class QuizForm(forms.ModelForm):
             "allow_anonymous",
             "max_attempts",
             "passing_score",
-            "AI_auto_correction",
+            "ai_auto_correction",
+            "enable_copy_past_and_text_selection",
         ]
         widgets = {
             "title": TailwindInput(attrs={"placeholder": "Quiz Title"}),
             "description": TailwindTextarea(attrs={"rows": 3, "placeholder": "Quiz Description"}),
-            "subject": TailwindSelect(),
             "status": TailwindSelect(),
             "time_limit": TailwindNumberInput(
                 attrs={"min": "0", "placeholder": "Time limit in minutes (leave empty for no limit)"}
@@ -1742,10 +1741,10 @@ class QuizForm(forms.ModelForm):
             "randomize_questions": TailwindCheckboxInput(),
             "show_correct_answers": TailwindCheckboxInput(),
             "allow_anonymous": TailwindCheckboxInput(),
-            "AI_auto_correction": TailwindCheckboxInput(),
+            "ai_auto_correction": TailwindCheckboxInput(),
+            "enable_copy_past_and_text_selection": TailwindCheckboxInput(),
             "max_attempts": TailwindNumberInput(attrs={"min": "0", "placeholder": "0 for unlimited attempts"}),
         }
-        exclude = ["subject"]
 
     def __init__(self, *args, **kwargs):
         kwargs.pop("user", None)  # Use this if needed for filtering
@@ -1768,7 +1767,7 @@ class QuizQuestionForm(forms.ModelForm):
                 attrs={
                     "rows": 2,
                     "placeholder": "Reference answer for the questions, important when AI-auto correction",
-                }
+                },
             ),
             "points": TailwindNumberInput(attrs={"min": "1", "value": "1"}),
             "order": TailwindNumberInput(attrs={"min": "0", "value": "0"}),

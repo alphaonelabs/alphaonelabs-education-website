@@ -16,7 +16,7 @@
     <!-- Header with create button -->
     <div class="flex justify-between items-center mb-8">
       <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Quizzes</h1>
-      <a href="{% url 'create_quiz' %}"
+      <a href="{% url 'create_session_exam' course.id item.session.id  %}"
          class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg flex items-center">
         <i class="fas fa-plus mr-2"></i> Create Quiz
       </a>
@@ -61,8 +61,8 @@
                   <i class="fas fa-file-alt text-5xl"></i>
                 </div>
                 <p class="text-gray-600 dark:text-gray-400 mb-4">You haven't created any quizzes yet</p>
-                <a href="{% url 'create_quiz' %}"
-                   class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
+                <a href="{% url 'create_session_exam' course.id item.session.id %}"
+                  class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
                   <i class="fas fa-plus mr-2"></i> Create First Quiz
                 </a>
               </div>

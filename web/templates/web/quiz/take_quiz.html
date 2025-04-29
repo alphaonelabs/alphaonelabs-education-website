@@ -173,16 +173,18 @@
 
 
       function closeWarningMessage() {
-          messageButton = document.querySelector("#hideWarningButton")
-          messageDiv = messageButton.parentElement.parentElement
-          messageDiv.remove()
+          const messageButton = document.querySelector("#hideWarningButton");
+          if (!messageButton) return;
+          const messageDiv = messageButton.closest('.quiz-warning');
+          if (messageDiv) messageDiv.remove();
       }
 
       function hideFooterAndHeader() {
-          let header = document.querySelector("header")
-          let footer = document.querySelector("footer")
-          header.innerHTML = ""
-          footer.remove()
+          const header = document.querySelector("header");
+          const footer = document.querySelector("footer");
+      
+          if (header) header.innerHTML = "";
+          if (footer && typeof footer.remove === "function") footer.remove();
       }
 
       document.addEventListener('contextmenu', function(e) {
@@ -191,12 +193,14 @@
   </script>
   <style>
       /* Disable right-click menu */
-      body {
-          -webkit-user-select: none;
-          -moz-user-select: none;
-          -ms-user-select: none;
-          user-select: none;
-      }
+      {% if not quiz.enable_copy_past_and_text_selection %}
+        body {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+      {% endif %}
 
       /* Warn users when they first enter */
       .quiz-warning {
@@ -270,7 +274,7 @@
                     {{ forloop.counter }}
                   </span>
                   <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium  bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300 ">
-                    {{ question.question_type_display }} - {{ question.id }}
+                    {{ question.question_type_display }}
                   </span>
                   {% if question.points %}
                     <span class="ml-2 items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-purple-900 dark:text-purple-300 ">

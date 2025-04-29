@@ -2107,8 +2107,11 @@ class Quiz(models.Model):
     show_correct_answers = models.BooleanField(default=False, help_text="Show correct answers after quiz completion")
     randomize_questions = models.BooleanField(default=False, help_text="Randomize the order of questions")
     time_limit = models.PositiveIntegerField(null=True, blank=True, help_text="Time limit in minutes (optional)")
-    AI_auto_correction = models.BooleanField(
+    ai_auto_correction = models.BooleanField(
         default=False, help_text="If enabled, AI will automatically attempt to correct open-ended questions"
+    )
+    enable_copy_past_and_text_selection = models.BooleanField(
+        default=False, help_text="If enabled, the student will be able to copy/past and select text inside the exam."
     )
 
     # New fields for exam functionality
@@ -2211,22 +2214,10 @@ class UserQuiz(models.Model):
         return f"{user_str} - {self.quiz.title}"
 
     # return percentage from 0% to 100%
-    def calculate_score(self):
-        """Calculate the score based on answers."""
-        quiz_Percentage = 0
-        score = 0
-        max_score = 0
-        answers = json.loads(self.answers) if isinstance(self.answers, str) else self.answers
-
-        q_ids = [int(q) for q in answers.keys()]
-        questions = {q.id: q.points for q in QuizQuestion.objects.filter(id__in=q_ids).only("id", "points")}
-
-        for q_id, answer_data in answers.items():
-            max_score += questions.get(int(q_id), 0)
-            score += answer_data.get("points_awarded", 0)
-        if score > 0 and max_score > 0:
-            quiz_Percentage = round((score / max_score) * 100, 1)
-        return quiz_Percentage
+    def calculate_score(self) -> float:
+        """Return percentage score (0-100) using the cached point computation."""
+        score, max_score = self._compute_points()
+        return round((score / max_score) * 100, 1) if max_score else 0.0
 
     def complete_quiz(self):
         """Mark the quiz as completed and calculate final score."""
@@ -2338,7 +2329,7 @@ class UserQuiz(models.Model):
 
         # Check if there's a passing score defined on the quiz
         passing_score = getattr(self.quiz, "passing_score", 0)
-        if self.calculate_score() >= passing_score:
+        if self.score and (self.score / (self.max_score or 1)) * 100 >= passing_score:
             return "passed"
         else:
             return "failed"

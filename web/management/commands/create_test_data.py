@@ -605,7 +605,7 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("Successfully created test data"))
 
-    def create_exams_and_quizzes(self, courses: list, sessions: list, students: list, teachers: list) -> None:
+    def create_exams_and_quizzes(self, courses: list, sessions: list, students: list) -> None:
         """Create exams, quizzes, and student submissions for testing."""
         self.stdout.write("Creating exams and quizzes...")
 
@@ -707,7 +707,7 @@ class Command(BaseCommand):
                 passing_score=60,
                 randomize_questions=False,
                 show_correct_answers=True,
-                AI_auto_correction=True,
+                ai_auto_correction=True,
                 share_code=get_random_string(8),
             )
 

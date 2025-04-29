@@ -170,7 +170,12 @@
               <!-- AI auto correction -->
               <div>
                 <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">AI auto correction</h3>
-                <p class="text-gray-800 dark:text-white">{{ quiz.AI_auto_correction|yesno:"Yes,No" }}</p>
+                <p class="text-gray-800 dark:text-white">{{ quiz.ai_auto_correction|yesno:"Yes,No" }}</p>
+              </div>
+              <!-- Enable copy/past and text selection -->
+              <div>
+                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Enable copy/past & text selection</h3>
+                <p class="text-gray-800 dark:text-white">{{ quiz.enable_copy_past_and_text_selection|yesno:"Yes,No" }}</p>
               </div>
             </div>
           </div>

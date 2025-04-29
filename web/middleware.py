@@ -2,8 +2,9 @@ import logging
 import traceback
 
 import sentry_sdk
+from typing import Any, Callable
 from django.contrib import messages
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpRequest
 from django.shortcuts import redirect, render
 from django.urls import Resolver404, resolve
 
@@ -145,10 +146,10 @@ class WebRequestMiddleware:
 
 
 class QuizSecurityMiddleware:
-    def __init__(self, get_response):
+    def __init__(self, get_response: Callable[[Any], HttpResponse]) -> None:
         self.get_response = get_response
 
-    def __call__(self, request) -> HttpResponse:
+    def __call__(self, request: HttpRequest) -> HttpResponse:
         # Skip for non-authenticated users, static files, or development tools
         if (
             not request.user.is_authenticated or "/static/" in request.path or "__reload__" in request.path
@@ -176,7 +177,7 @@ class QuizSecurityMiddleware:
                         user_quiz.complete_quiz()
                         user_quiz.save()
                     except Exception as e:
-                        logger.error(f"Error completing quiz {active_quiz_id}: {str(e)}")
+                        logger.exception("Error completing quiz %s", active_quiz_id)
                         # Still clear the session to prevent getting stuck
 
                     # Clear active quiz from session

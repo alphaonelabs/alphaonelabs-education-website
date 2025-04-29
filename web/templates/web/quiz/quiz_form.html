@@ -183,15 +183,30 @@
               <div class="flex items-start">
                 <div class="flex items-center h-5">
                   <input type="checkbox"
-                         name="{{ form.AI_auto_correction.html_name }}"
-                         id="{{ form.AI_auto_correction.id_for_label }}"
-                         {% if form.AI_auto_correction.value %}checked{% endif %}
+                         name="{{ form.ai_auto_correction.html_name }}"
+                         id="{{ form.ai_auto_correction.id_for_label }}"
+                         {% if form.ai_auto_correction.value %}checked{% endif %}
                          class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
                 </div>
                 <div class="ml-3 text-sm">
-                  <label for="{{ form.AI_auto_correction.id_for_label }}"
-                         class="font-medium text-gray-700 dark:text-gray-300">Allow AI-Auto correction</label>
+                  <label for="{{ form.ai_auto_correction.id_for_label }}"
+                         class="font-medium text-gray-700 dark:text-gray-300">Allow AI auto-correction</label>
                   <p class="text-gray-500 dark:text-gray-400">Allow AI to auto-correct student exams</p>
+                </div>
+              </div>
+              <!-- Enable copy past and text selection -->
+              <div class="flex items-start">
+                <div class="flex items-center h-5">
+                  <input type="checkbox"
+                         name="{{ form.enable_copy_past_and_text_selection.html_name }}"
+                         id="{{ form.enable_copy_past_and_text_selection.id_for_label }}"
+                         {% if form.enable_copy_past_and_text_selection.value %}checked{% endif %}
+                         class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
+                </div>
+                <div class="ml-3 text-sm">
+                  <label for="{{ form.enable_copy_past_and_text_selection.id_for_label }}"
+                         class="font-medium text-gray-700 dark:text-gray-300">Allow copy/past and text selection</label>
+                  <p class="text-gray-500 dark:text-gray-400">Allow copy past and text selection inside exam</p>
                 </div>
               </div>
               <!-- Show Correct Answers -->

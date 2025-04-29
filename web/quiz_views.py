@@ -1,5 +1,6 @@
 import json
 import random
+import logging
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -8,9 +9,11 @@ from django.db.models import Count, Q
 from django.http import HttpRequest, HttpResponse, HttpResponseForbidden
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
-from django.urls import reverse
+from django.urls import reverse, reverse_lazy
 from django.utils import timezone
 from django.utils.crypto import get_random_string
+
+logger = logging.getLogger(__name__)
 
 from .forms import (
     QuizForm,
@@ -19,7 +22,6 @@ from .forms import (
     TakeQuizForm,
 )
 from .models import Course, Enrollment, Quiz, QuizOption, QuizQuestion, Session, UserQuiz
-from .views import course_detail
 
 
 @login_required
@@ -45,6 +47,9 @@ def create_course_exam(
 
     # Default exam type
     exam_type = "course" if not session else "session"
+
+    if course is None:
+        return HttpResponseForbidden("A course or session id is required to create an exam.")
 
     # Handle request
     if request.method == "POST":
@@ -245,8 +250,12 @@ def add_question(request, quiz_id):
                 false_option = QuizOption(question=question, text="False", is_correct=not true_correct, order=1)
                 false_option.save()
 
-            messages.success(request, "Question added successfully.")
-            return redirect("quiz_detail", quiz_id=quiz.id)
+                messages.success(request, "Question added successfully.")
+
+                # Check if we should redirect to add another question
+                if "save_and_add" in request.POST:
+                    return redirect("question_form", quiz_id=quiz.id)
+                return redirect("quiz_detail", quiz_id=quiz.id)
         elif question_type == "multiple":
             # For other question types, use the formset as before
             formset = QuizOptionFormSet(request.POST, request.FILES, prefix="options")
@@ -261,11 +270,11 @@ def add_question(request, quiz_id):
                     formset.instance = question
                     formset.save()
 
+                messages.success(request, "Question added successfully.")
+
                 # Check if we should redirect to add another question
                 if "save_and_add" in request.POST:
                     return redirect("question_form", quiz_id=quiz.id)
-
-                messages.success(request, "Question added successfully.")
                 return redirect("quiz_detail", quiz_id=quiz.id)
         else:
             # Handle short answer questions
@@ -441,7 +450,7 @@ def delete_quiz(request, quiz_id):
     if request.method == "POST":
         quiz.delete()
         messages.success(request, "Quiz deleted successfully.")
-        return redirect(course_detail, quiz.course.slug)
+        return redirect(reverse_lazy("course_detail", args=[quiz.course.slug]))
 
     return render(request, "web/quiz/delete_quiz.html", {"quiz": quiz})
 
@@ -494,7 +503,7 @@ def _process_quiz_taking(request, quiz):
     # Check if the quiz has questions
     if not quiz.questions.exists():
         messages.error(request, "This quiz does not have any questions yet.")
-        return redirect("quiz_list")
+        return redirect(reverse_lazy("course_detail", args=[quiz.course.slug]))
 
     # Get the questions in the correct order
     questions = list(quiz.questions.order_by("order"))
@@ -572,12 +581,10 @@ def _process_quiz_taking(request, quiz):
         q_dict["options"] = clean_options
         prepared_questions.append(q_dict)
 
-    print("request.method", request.method)
     if request.method == "POST":
         form = TakeQuizForm(request.POST, quiz=quiz)
 
-        print("form.is_valid()", form.is_valid())
-        print("form.is_valid()", form.errors)
+        logger.debug("TakeQuiz POST valid=%s errors=%s", form.is_valid(), form.errors)
         if form.is_valid():
             # Process answers
             AI_auto_correction = quiz.AI_auto_correction
@@ -667,7 +674,7 @@ def _process_quiz_taking(request, quiz):
                         "is_graded": False,  # need manual grading
                     }
 
-                if str(AI_auto_correction):
+                if AI_auto_correction:
                     AI_data[q_id] = {
                         "question_title": question_obj.text,
                         "question_explanation": question_obj.explanation,
@@ -679,7 +686,7 @@ def _process_quiz_taking(request, quiz):
                         "Subject": quiz.subject.name,
                     }
 
-            if str(AI_auto_correction) == "True" and correction_status == "in_progress":
+            if AI_auto_correction and correction_status == "in_progress":
                 correction_status = "completed"
                 raw = ai_quiz_corrector(AI_data)
                 ai_correction_results = {}
@@ -703,12 +710,10 @@ def _process_quiz_taking(request, quiz):
                     question_type = AI_data.get(question_id, "").get("question_type", "")
                     answers_question = answers[question_id]
 
-                    if not question_type == "multiple" and not question_type == "true_false":
+                    if question_type not in ("multiple", "true_false"):
                         answers_question["points_awarded"] = ai_question_data["degree"]
                         answers_question["is_graded"] = True
-                        answers_question["is_correct"] = (
-                            True if ai_question_data["degree"] >= question["points"] else False
-                        )
+                        answers_question["is_correct"] = ai_question_data["degree"] >= question["points"]
 
                     answers_question["student_feedback"] = ai_question_data.get("student_feedback", "")
                     answers_question["teacher_feedback"] = ai_question_data.get("teacher_feedback", "")
@@ -858,12 +863,9 @@ def quiz_analytics(request, quiz_id):
 
     # Calculate overall statistics
     total_attempts = attempts.count()
-    all_attempts = list(attempts)
-    average_score = [attempt.calculate_score() for attempt in all_attempts if attempt.calculate_score() is not None]
-    if average_score:
-        average_score = sum(average_score) / len(average_score)
-    else:
-        average_score = 0
+
+    scores = [a.calculate_score() for a in attempts if a.calculate_score() is not None]
+    average_score = sum(scores) / len(scores) if scores else 0
 
     # Calculate pass rate
     pass_count = sum(1 for attempt in attempts if attempt.calculate_score() > quiz.passing_score)

@@ -15,7 +15,8 @@ if not api_key:
     print("⚠️  GOOGLE_API_KEY not found – AI correction disabled")
 
 
-genai.configure(api_key=api_key)
+if api_key:
+    genai.configure(api_key=api_key)
 
 # Initialize the model with 'gemini-1.5-flash'
 model = genai.GenerativeModel("gemini-1.5-flash")
@@ -89,8 +90,8 @@ def ai_assignment_corrector(challenge_form: dict) -> dict:
 
         return response_object
 
-    except Exception as e:
-        logger.error(f"Error in AI processing: {e}")
+    except (json.JSONDecodeError, genai.types.GenerationError, ValueError) as e:
+        logger.exception("Error in AI processing")
         return {
             "degree": 0,
             "student_feedback": "Error: Could not evaluate the answer.",
@@ -168,8 +169,8 @@ def ai_quiz_corrector(quiz_data: dict) -> Union[str, dict]:
         response = model.generate_content(user_input)
         return response.text[7:-4]
 
-    except Exception as e:
-        logger.error(f"Error in AI processing: {e}")
+    except (json.JSONDecodeError, genai.types.GenerationError, ValueError) as e:
+        logger.exception("Error in AI processing")
         return {
             "degree": 0,
             "student_feedback": "Error: Could not evaluate the answer.",
