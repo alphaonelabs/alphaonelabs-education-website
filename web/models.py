@@ -713,7 +713,11 @@ class EducationalVideo(models.Model):
 
         # youtube.com/watch?v=<id>
         if "youtube.com" in host:
-            return parse_qs(parsed.query).get("v", [None])[0]
+        if "youtube.com" in host:
+            try:
+                return parse_qs(parsed.query).get("v", [None])[0]
+            except Exception:
+                return None
 
         return None
 
