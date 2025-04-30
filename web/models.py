@@ -688,6 +688,17 @@ class EducationalVideo(models.Model):
         return self.title
 
     @property
+    def thumbnail_url(self):
+        """
+        Build the URL for YouTube’s high-quality default thumbnail.
+        Returns None if this isn’t a YouTube video.
+        """
+        vid = self.youtube_id
+        if vid:
+            return f"https://img.youtube.com/vi/{vid}/hqdefault.jpg"
+        return None
+
+    @property
     def youtube_id(self):
         """
         Extract the YouTube video ID, whether it's a long or short URL.
@@ -704,17 +715,6 @@ class EducationalVideo(models.Model):
         if "youtube.com" in host:
             return parse_qs(parsed.query).get("v", [None])[0]
 
-        return None
-
-    @property
-    def thumbnail_url(self):
-        """
-        Build the URL for YouTube’s high-quality default thumbnail.
-        Returns None if this isn’t a YouTube video.
-        """
-        vid = self.youtube_id
-        if vid:
-            return f"https://img.youtube.com/vi/{vid}/hqdefault.jpg"
         return None
 
 
