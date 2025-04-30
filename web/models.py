@@ -712,8 +712,7 @@ class EducationalVideo(models.Model):
             return parsed.path.lstrip("/")
 
         # youtube.com/watch?v=<id>
-        if "youtube.com" in host:
-        if "youtube.com" in host:
+        if host in ("youtube.com", "www.youtube.com"):
             try:
                 return parse_qs(parsed.query).get("v", [None])[0]
             except Exception:
