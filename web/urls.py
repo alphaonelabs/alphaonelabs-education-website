@@ -19,6 +19,11 @@ from .views import (
     GradeableLinkCreateView,
     GradeableLinkDetailView,
     GradeableLinkListView,
+    SurveyCreateView,
+    SurveyDeleteView,
+    SurveyDetailView,
+    SurveyListView,
+    SurveyResultsView,
     add_goods_to_cart,
     apply_discount_via_referrer,
     feature_vote,
@@ -29,6 +34,7 @@ from .views import (
     sales_analytics,
     sales_data,
     streak_detail,
+    submit_survey,
 )
 
 # Non-prefixed URLs
@@ -86,6 +92,7 @@ urlpatterns += i18n_patterns(
     path("dashboard/student/", views.student_dashboard, name="student_dashboard"),
     path("dashboard/teacher/", views.teacher_dashboard, name="teacher_dashboard"),
     path("dashboard/content/", views.content_dashboard, name="content_dashboard"),
+    # SURVEY URLs
     # Course Management
     path("courses/create/", views.create_course, name="create_course"),
     path("courses/search/", views.course_search, name="course_search"),
@@ -118,6 +125,16 @@ urlpatterns += i18n_patterns(
     path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
     path("social-media/create/", views.create_scheduled_post, name="create_scheduled_post"),
     path("social-media/delete/<int:post_id>/", views.delete_post, name="delete_post"),
+    # Video URLs
+    path("videos/requests/", views.video_request_list, name="video_request_list"),
+    path("videos/requests/submit/", login_required(views.submit_video_request), name="submit_video_request"),
+    # SURVEY URLs
+    path("surveys/", SurveyListView.as_view(), name="surveys"),
+    path("surveys/create/", SurveyCreateView.as_view(), name="survey-create"),
+    path("surveys/<int:pk>/", SurveyDetailView.as_view(), name="survey-detail"),
+    path("surveys/<int:pk>/delete/", SurveyDeleteView.as_view(), name="survey-delete"),
+    path("surveys/<int:pk>/submit/", submit_survey, name="submit-survey"),
+    path("surveys/<int:pk>/results/", SurveyResultsView.as_view(), name="survey-results"),
     # Payment URLs
     path(
         "courses/<slug:slug>/create-payment-intent/",
@@ -282,7 +299,7 @@ urlpatterns += i18n_patterns(
     path("current-weekly-challenge/", views.current_weekly_challenge, name="current_weekly_challenge"),
     # Educational Videos URLs
     path("videos/", views.educational_videos_list, name="educational_videos_list"),
-    path("videos/upload/", login_required(views.upload_educational_video), name="upload_educational_video"),
+    path("videos/upload/", views.upload_educational_video, name="upload_educational_video"),
     path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),
     # Storefront Management
     path("store/create/", login_required(views.StorefrontCreateView.as_view()), name="storefront_create"),

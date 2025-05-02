@@ -94,12 +94,14 @@ from .forms import (
     StudentEnrollmentForm,
     StudyGroupForm,
     SuccessStoryForm,
+    SurveyForm,
     TeacherSignupForm,
     TeachForm,
     TeamGoalCompletionForm,
     TeamGoalForm,
     TeamInviteForm,
     UserRegistrationForm,
+    VideoRequestForm,
 )
 from .marketing import (
     generate_social_share_content,
@@ -116,6 +118,7 @@ from .models import (
     Certificate,
     Challenge,
     ChallengeSubmission,
+    Choice,
     Course,
     CourseMaterial,
     CourseProgress,
@@ -147,6 +150,8 @@ from .models import (
     ProductImage,
     Profile,
     ProgressTracker,
+    Question,
+    Response,
     Review,
     ScheduledPost,
     SearchLog,
@@ -158,11 +163,13 @@ from .models import (
     StudyGroupInvite,
     Subject,
     SuccessStory,
+    Survey,
     TeamGoal,
     TeamGoalMember,
     TeamInvite,
     TimeSlot,
     UserBadge,
+    VideoRequest,
     WaitingRoom,
     WebRequest,
     default_valid_until,
@@ -964,15 +971,20 @@ def add_review(request, slug):
 
 @login_required
 def delete_course(request, slug):
+    """Handle course deletion, including image deletion."""
     course = get_object_or_404(Course, slug=slug)
+
+    # Ensure only the course teacher can delete the course
     if request.user != course.teacher:
-        messages.error(request, "Only the course teacher can delete the course!")
+        messages.error(request, "You are not authorized to delete this course.")
         return redirect("course_detail", slug=slug)
 
     if request.method == "POST":
+
+        # Delete the course --> this automatically deletes the image too
         course.delete()
         messages.success(request, "Course deleted successfully!")
-        return redirect("profile")
+        return redirect("profile")  # Redirect to the profile page or another success page
 
     return render(request, "courses/delete_confirm.html", {"course": course})
 
@@ -5137,94 +5149,124 @@ def donation_cancel(request):
     return redirect("donate")
 
 
-def educational_videos_list(request):
-    """View for listing educational videos with optional category filtering."""
+def educational_videos_list(request: HttpRequest) -> HttpResponse:
+    """View for listing educational videos with requests included at the bottom."""
     # Get category filter from query params
     selected_category = request.GET.get("category")
 
-    # Base queryset
+    # Base querysets
     videos = EducationalVideo.objects.select_related("uploader", "category").order_by("-uploaded_at")
+    video_requests = VideoRequest.objects.select_related("requester", "category", "fulfilled_by").order_by(
+        "-created_at"
+    )
 
     # Apply category filter if provided
     if selected_category:
         videos = videos.filter(category__slug=selected_category)
+        video_requests = video_requests.filter(category__slug=selected_category)
         selected_category_obj = get_object_or_404(Subject, slug=selected_category)
         selected_category_display = selected_category_obj.name
     else:
         selected_category_display = None
 
-    # Get category counts for sidebar
+    # Paginate videos (9 per page)
+    paginator = Paginator(videos, 9)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    # Limit video requests to 5
+    video_requests = video_requests[:5]
+    video_requests_paginated = VideoRequest.objects.count() > 5
+
+    # Category counts for sidebar
     category_counts = dict(
-        EducationalVideo.objects.values("category__name", "category__slug")
+        EducationalVideo.objects.values("category__slug")
         .annotate(count=Count("id"))
-        .values_list("category__slug", "count")
+        .values_list("category__slug", "count"),
     )
 
-    # Get all subjects for the dropdown
+    # Get all subjects
     subjects = Subject.objects.all().order_by("order", "name")
-
-    # Paginate results
-    paginator = Paginator(videos, 12)  # 12 videos per page
-    page_number = request.GET.get("page", 1)
-    page_obj = paginator.get_page(page_number)
 
     context = {
         "videos": page_obj,
-        "is_paginated": paginator.num_pages > 1,
+        "is_paginated": page_obj.has_other_pages(),
         "page_obj": page_obj,
         "subjects": subjects,
         "selected_category": selected_category,
         "selected_category_display": selected_category_display,
         "category_counts": category_counts,
+        "video_requests": video_requests,
+        "video_requests_paginated": video_requests_paginated,
     }
 
     return render(request, "videos/list.html", context)
 
 
-@login_required
+def fetch_video_oembed(video_url):
+    """
+    Hits YouTube or Vimeo’s oEmbed endpoint and returns a dict
+    containing 'title' and 'description' (if available).
+    """
+    # YouTube IDs are always 11 chars
+    yt_match = re.search(r"(?:v=|youtu\.be/|embed/|shorts/)([\w-]{11})", video_url)
+    if yt_match:
+        video_id = yt_match.group(1)
+        endpoint = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
+    else:
+        # Vimeo URLs look like vimeo.com/12345678…
+        vm_match = re.search(r"vimeo\.com/(?:video/)?(\d+)", video_url)
+        if vm_match:
+            endpoint = f"https://vimeo.com/api/oembed.json?url={video_url}"
+        else:
+            return {}
+
+    try:
+        resp = requests.get(endpoint, timeout=3)
+        if resp.ok:
+            data = resp.json()
+            return {
+                "title": data.get("title", "").strip(),
+                "description": data.get("description", "").strip(),
+            }
+    except requests.RequestException:
+        pass
+
+    return {}
+
+
 def upload_educational_video(request):
-    """View for uploading a new educational video."""
+    """
+    Handles GET → render form, POST → save video.
+    If user leaves title/description blank, we back‑fill from YouTube/Vimeo.
+    """
     if request.method == "POST":
         form = EducationalVideoForm(request.POST)
         if form.is_valid():
             video = form.save(commit=False)
-
-            # Handle anonymous submissions
             if request.user.is_authenticated:
                 video.uploader = request.user
-            else:
-                # For anonymous submissions, store optional submitter name
-                submitter_name = request.POST.get("submitter_name", "")
-                if submitter_name:
-                    video.submitter_name = submitter_name
+
+            # auto‑fetch metadata if missing
+            if not video.title.strip() or not video.description.strip():
+                info = fetch_video_oembed(video.video_url)
+                if not video.title.strip() and info.get("title"):
+                    video.title = info["title"]
+                if not video.description.strip() and info.get("description"):
+                    video.description = info["description"]
 
             video.save()
 
-            # Check if this is an AJAX request (from quick add form)
             if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return JsonResponse({"success": True, "message": "Video added successfully!"})
-
             return redirect("educational_videos_list")
-        elif request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            # Return form errors for AJAX requests
-            error_dict = {}
-            for field, errors in form.errors.items():
-                error_dict[field] = [str(error) for error in errors]
 
-            # Better error formatting for display
-            error_text = ""
-            for field, field_errors in error_dict.items():
-                field_name = field.replace("_", " ").title() if field != "__all__" else "Error"
-                error_text += f"{field_name}: {', '.join(field_errors)}. "
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            error_text = " ".join(f"{fld}: {', '.join(errs)}." for fld, errs in form.errors.items())
+            return JsonResponse({"success": False, "error": error_text}, status=400)
 
-            return JsonResponse({"success": False, "error": error_text, "detailed_errors": error_dict}, status=400)
     else:
         form = EducationalVideoForm()
-
-    # For regular GET requests
-    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        # AJAX GET request should get a JSON response
-        return JsonResponse({"success": False, "error": "Please submit the form with POST"}, status=400)
 
     return render(request, "videos/upload.html", {"form": form})
 
@@ -7579,3 +7621,294 @@ def contributors_list_view(request):
         print(f"Error fetching contributors: {e}")
         # Return an empty list in case of error
         return render(request, "web/contributors_list.html", {"contributors": []})
+
+
+@login_required
+def video_request_list(request):
+    """View for listing video requests with optional category filtering."""
+    # Get category filter from query params
+    selected_category = request.GET.get("category")
+
+    # Base queryset
+    requests = VideoRequest.objects.select_related("requester", "category").order_by("-created_at")
+
+    # Apply category filter if provided
+    if selected_category:
+        requests = requests.filter(category__slug=selected_category)
+        selected_category_obj = get_object_or_404(Subject, slug=selected_category)
+        selected_category_display = selected_category_obj.name
+    else:
+        selected_category_display = None
+
+    # Get category counts for sidebar
+    category_counts = {
+        category.slug: VideoRequest.objects.filter(category=category).count() for category in Subject.objects.all()
+    }
+
+    # Context
+    context = {
+        "requests": requests,
+        "categories": Subject.objects.all(),
+        "category_counts": category_counts,
+        "selected_category": selected_category,
+        "selected_category_display": selected_category_display,
+    }
+
+    return render(request, "videos/request_list.html", context)
+
+
+@login_required
+def submit_video_request(request):
+    """View for submitting a new video request."""
+    if request.method == "POST":
+        form = VideoRequestForm(request.POST)
+        if form.is_valid():
+            video_request = form.save(commit=False)
+            video_request.requester = request.user
+            video_request.save()
+
+            messages.success(request, "Your video request has been submitted successfully!")
+            return redirect("video_request_list")
+    else:
+        form = VideoRequestForm()
+
+    return render(request, "videos/submit_request.html", {"form": form})
+
+
+class SurveyListView(LoginRequiredMixin, ListView):
+    model = Survey
+    template_name = "surveys/list.html"
+    login_url = "/accounts/login/"
+
+
+class SurveyCreateView(LoginRequiredMixin, CreateView):
+    model = Survey
+    form_class = SurveyForm
+    template_name = "surveys/create.html"
+    login_url = "/accounts/login/"
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        survey = form.save()
+
+        # Process questions
+        question_texts = self.request.POST.getlist("question_text[]")
+        question_types = self.request.POST.getlist("question_type[]")
+        question_choices = self.request.POST.getlist("question_choices[]")
+        scale_mins = self.request.POST.getlist("scale_min[]")
+        scale_maxs = self.request.POST.getlist("scale_max[]")
+
+        for i, (q_text, q_type) in enumerate(zip(question_texts, question_types)):
+            if q_text.strip():
+                # Convert scale values to integers with proper error handling
+                scale_min = 1
+                scale_max = 5
+
+                try:
+                    if q_type == "scale" and i < len(scale_mins) and scale_mins[i]:
+                        scale_min = int(scale_mins[i])
+                    if q_type == "scale" and i < len(scale_maxs) and scale_maxs[i]:
+                        scale_max = int(scale_maxs[i])
+                except (ValueError, IndexError):
+                    # Use defaults if there's an error
+                    scale_min = 1
+                    scale_max = 5
+
+                question = Question.objects.create(
+                    survey=survey,
+                    text=q_text.strip(),
+                    type=q_type,  # This should match your model field name
+                    scale_min=scale_min,
+                    scale_max=scale_max,
+                )
+
+                # Handle choices based on question type
+                if q_type == "true_false":
+                    Choice.objects.create(question=question, text="True")
+                    Choice.objects.create(question=question, text="False")
+                elif q_type == "scale":
+                    for num in range(question.scale_min, question.scale_max + 1):
+                        Choice.objects.create(question=question, text=str(num))
+                elif q_type in ["mcq", "checkbox"]:
+                    # Make sure we have choices for this question
+                    if i < len(question_choices):
+                        for choice_text in question_choices[i].split("\n"):
+                            if choice_text.strip():
+                                Choice.objects.create(question=question, text=choice_text.strip())
+
+        return redirect("surveys")
+
+
+class SurveyDetailView(LoginRequiredMixin, DetailView):
+    model = Survey
+    template_name = "surveys/detail.html"
+    login_url = "/accounts/login/"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Check if user has already submitted this survey
+        context["already_submitted"] = Response.objects.filter(
+            user=self.request.user, question__survey=self.object
+        ).exists()
+        # Check if user is the creator of this survey
+        context["is_creator"] = self.object.author == self.request.user
+        return context
+
+
+@login_required
+def submit_survey(request, pk):
+    survey = get_object_or_404(Survey, pk=pk)
+
+    # Check if user already submitted
+    if Response.objects.filter(user=request.user, question__survey=survey).exists():
+        messages.error(request, "You've already submitted this survey!")
+        return redirect("survey-detail", pk=survey.id)
+
+    if request.method == "POST":
+        for question in survey.question_set.all():
+            if question.required and not request.POST.get(f"question_{question.id}"):
+                messages.error(request, f"Please answer required question: {question.text}")
+                return redirect("survey-detail", pk=survey.id)
+
+            if question.type == "checkbox":
+                choices = request.POST.getlist(f"question_{question.id}")
+                for choice_id in choices:
+                    try:
+                        choice = Choice.objects.get(id=choice_id)
+                        if choice.question_id == question.id:
+                            Response.objects.create(user=request.user, question=question, choice=choice)
+                        else:
+                            messages.error(request, "Invalid choice selected")
+                            return redirect("survey-detail", pk=survey.id)
+                    except Choice.DoesNotExist:
+                        messages.error(request, "Invalid choice selected")
+                        return redirect("survey-detail", pk=survey.id)
+            elif question.type == "text":
+                Response.objects.create(
+                    user=request.user, question=question, text_answer=request.POST.get(f"question_{question.id}")
+                )
+            else:
+                choice_id = request.POST.get(f"question_{question.id}")
+                if choice_id:
+                    try:
+                        choice = Choice.objects.get(id=choice_id)
+                        if choice.question_id == question.id:
+                            Response.objects.create(user=request.user, question=question, choice=choice)
+                        else:
+                            messages.error(request, "Invalid choice selected")
+                            return redirect("survey-detail", pk=survey.id)
+                    except Choice.DoesNotExist:
+                        messages.error(request, "Invalid choice selected")
+                        return redirect("survey-detail", pk=survey.id)
+
+        messages.success(request, "Survey submitted successfully!")
+        return redirect("survey-results", pk=survey.id)
+
+    return redirect("survey-detail", pk=survey.id)
+
+
+class SurveyResultsView(LoginRequiredMixin, DetailView):
+    model = Survey
+    template_name = "surveys/results.html"
+    login_url = "/accounts/login/"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Process survey results
+        results = []
+        total_participants = 0
+        most_answered_question = None
+        max_responses = 0
+        top_choice = None
+        bottom_choice = None
+        overall_top_choice_count = 0
+        overall_bottom_choice_count = float("inf")
+        total_possible_responses = 0
+        total_actual_responses = 0
+        avg_completion_time = None
+        context["avg_completion_time"] = avg_completion_time
+
+        for question in self.object.question_set.all():
+            choices_data = []
+            question_total = 0
+
+            # Process each choice for this question
+            for choice in question.choice_set.all():
+                count = choice.response_set.count() if hasattr(choice, "response_set") else 0
+
+                question_total += count
+                choices_data.append({"text": choice.text, "count": count})
+
+            if question_total == 0:
+                continue
+            if question_total > 0:
+                total_possible_responses += total_participants * 1  # Each participant could answer this question
+                total_actual_responses += question_total
+
+            if question_total > max_responses:
+                max_responses = question_total
+                most_answered_question = question
+
+            for choice in choices_data:
+                choice["percentage"] = round((choice["count"] / question_total * 100), 1) if question_total > 0 else 0
+
+                if choice["count"] > overall_top_choice_count:
+                    overall_top_choice_count = choice["count"]
+                    top_choice = choice
+
+                if choice["count"] > 0 and choice["count"] < overall_bottom_choice_count:
+                    overall_bottom_choice_count = choice["count"]
+                    bottom_choice = choice
+
+            results.append({"question": question, "choices": choices_data, "total": question_total})
+
+            total_participants = max(total_participants, question_total)
+        engagement_score = 0
+        if total_possible_responses > 0:
+            engagement_score = (total_actual_responses / total_possible_responses) * 100
+
+        context["engagement_score"] = round(engagement_score, 1)
+        target_participants = getattr(self.object, "target_participants", 100)  # default to 100 if not set
+        response_rate = (total_participants / target_participants * 100) if target_participants > 0 else 0
+
+        context.update(
+            {
+                "results": results,
+                "total_participants": total_participants,
+                "response_rate": min(response_rate, 100),  # Cap at 100%
+                "most_answered_question": most_answered_question,
+                "top_choice": top_choice,
+                "bottom_choice": bottom_choice,
+                "is_creator": self.object.author == self.request.user if hasattr(self.object, "author") else False,
+            }
+        )
+
+        chart_data = []
+        for result in results:
+            chart_data.append(
+                {
+                    "question_id": result["question"].id,
+                    "labels": [choice["text"] for choice in result["choices"]],
+                    "data": [choice["count"] for choice in result["choices"]],
+                }
+            )
+        context["chart_data_json"] = json.dumps(chart_data)
+
+        return context
+
+
+class SurveyDeleteView(LoginRequiredMixin, DeleteView):
+    model = Survey
+    success_url = reverse_lazy("surveys")  # Use reverse_lazy
+    template_name = "surveys/delete.html"
+    login_url = "/accounts/login/"
+
+    def get_queryset(self):
+        # Override queryset to only allow creator to access the survey for deletion
+        base_qs = super().get_queryset()
+        return base_qs.filter(author=self.request.user)
+
+    def handle_no_permission(self):
+        messages.error(self.request, "You can only delete surveys that you created.")
+        return redirect("surveys")
