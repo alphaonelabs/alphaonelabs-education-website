@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-200 mb-6">Update Study Goal</h1>
+            
+            <form method="post" class="space-y-6">
+                {% csrf_token %}
+                
+                <!-- Title -->
+                <div>
+                    <label for="title" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Goal Title
+                    </label>
+                    <input type="text" name="title" id="title" value="{{ goal.title }}" required
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200">
+                </div>
+
+                <!-- Description -->
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Description (Optional)
+                    </label>
+                    <textarea name="description" id="description" rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200">{{ goal.description }}</textarea>
+                </div>
+
+                <!-- Target Date -->
+                <div>
+                    <label for="target_date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Target Date
+                    </label>
+                    <input type="date" name="target_date" id="target_date" value="{{ goal.target_date|date:'Y-m-d' }}" required
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200">
+                </div>
+
+                <!-- Priority -->
+                <div>
+                    <label for="priority" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Priority
+                    </label>
+                    <select name="priority" id="priority" required
+                        class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:bg-gray-700 dark:text-gray-200">
+                        <option value="1" {% if goal.priority == 1 %}selected{% endif %}>Low</option>
+                        <option value="2" {% if goal.priority == 2 %}selected{% endif %}>Medium</option>
+                        <option value="3" {% if goal.priority == 3 %}selected{% endif %}>High</option>
+                    </select>
+                </div>
+
+                <!-- Completion Status -->
+                <div class="flex items-center">
+                    <input type="checkbox" name="completed" id="completed" {% if goal.completed %}checked{% endif %}
+                        class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded">
+                    <label for="completed" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                        Mark as completed
+                    </label>
+                </div>
+
+                <!-- Buttons -->
+                <div class="flex justify-end space-x-4">
+                    <a href="{% url 'study_plan_detail' goal.study_plan.id %}"
+                        class="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200">
+                        Cancel
+                    </a>
+                    <button type="submit"
+                        class="px-6 py-2 bg-teal-300 hover:bg-teal-400 text-white rounded-lg transition duration-200">
+                        Update Goal
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 
