@@ -1728,7 +1728,7 @@ class QuizForm(forms.ModelForm):
             "max_attempts",
             "passing_score",
             "ai_auto_correction",
-            "enable_copy_past_and_text_selection",
+            "enable_copy_paste_and_text_selection",
         ]
         widgets = {
             "title": TailwindInput(attrs={"placeholder": "Quiz Title"}),
@@ -1742,7 +1742,7 @@ class QuizForm(forms.ModelForm):
             "show_correct_answers": TailwindCheckboxInput(),
             "allow_anonymous": TailwindCheckboxInput(),
             "ai_auto_correction": TailwindCheckboxInput(),
-            "enable_copy_past_and_text_selection": TailwindCheckboxInput(),
+            "enable_copy_paste_and_text_selection": TailwindCheckboxInput(),
             "max_attempts": TailwindNumberInput(attrs={"min": "0", "placeholder": "0 for unlimited attempts"}),
         }
 

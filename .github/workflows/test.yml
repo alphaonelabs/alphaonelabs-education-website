@@ -30,12 +30,10 @@ jobs:
 
   tests:
     name: Run Tests
+    env:
+      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
     runs-on: ubuntu-latest
-
     services:
-      web:
-        env:
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
       mysql:
         image: mysql:8.0
         env:

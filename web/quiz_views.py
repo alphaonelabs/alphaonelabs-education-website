@@ -559,7 +559,7 @@ def _process_quiz_taking(request, quiz):
             "id": question.id,
             "text": question.text,
             "question_type": question.question_type,
-            "question_type_display": question.get_question_type_display,
+            "question_type_display": question.get_question_type_display(),
             "explanation": question.explanation,
             "points": question.points,
         }
@@ -587,7 +587,8 @@ def _process_quiz_taking(request, quiz):
         logger.debug("TakeQuiz POST valid=%s errors=%s", form.is_valid(), form.errors)
         if form.is_valid():
             # Process answers
-            AI_auto_correction = quiz.AI_auto_correction
+            ai_auto_correction = quiz.ai_auto_correction
+
             answers = {}
             correction_status = "not_needed"  # Available states: not_needed - pending - in_progress - completed
             ai_correction_results = None
@@ -617,15 +618,18 @@ def _process_quiz_taking(request, quiz):
                     in_correct_options = len(all_options) - len(correct_options)
                     student_correct_answers = 0
                     student_wrong_answers = 0
+                    correct_points = 0
 
                     for option in user_answers:
                         if int(option) in correct_options:
                             student_correct_answers += 1
                         else:
                             student_wrong_answers += 1
-                    correct_points = (question_obj.points / len(correct_options)) * student_correct_answers
+                    if len(correct_options) != 0:
+                        correct_points = (question_obj.points / len(correct_options)) * student_correct_answers
+
                     wrong_points = 0
-                    if in_correct_options:
+                    if in_correct_options and in_correct_options != 0:
                         wrong_points = (question_obj.points / in_correct_options) * student_wrong_answers
                     student_score = correct_points - wrong_points
 
@@ -638,7 +642,7 @@ def _process_quiz_taking(request, quiz):
                     if res:
                         student_score = round(student_score, 1)
 
-                    User_answer_true_or_false = True if student_score >= (question_obj.points / 2) else False
+                    User_answer_true_or_false = student_score >= (question_obj.points / 2)
 
                     answers[q_id] = {
                         "user_answer": user_answers,
@@ -674,7 +678,7 @@ def _process_quiz_taking(request, quiz):
                         "is_graded": False,  # need manual grading
                     }
 
-                if AI_auto_correction:
+                if ai_auto_correction:
                     AI_data[q_id] = {
                         "question_title": question_obj.text,
                         "question_explanation": question_obj.explanation,
@@ -686,7 +690,7 @@ def _process_quiz_taking(request, quiz):
                         "Subject": quiz.subject.name,
                     }
 
-            if AI_auto_correction and correction_status == "in_progress":
+            if ai_auto_correction and correction_status == "in_progress":
                 correction_status = "completed"
                 raw = ai_quiz_corrector(AI_data)
                 ai_correction_results = {}

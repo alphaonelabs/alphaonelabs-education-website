@@ -591,10 +591,10 @@ class CourseMaterial(models.Model):
 
 class Enrollment(models.Model):
     STATUS_CHOICES = [
-        ("pending", "Pending"),
         ("approved", "Approved"),
-        ("rejected", "Rejected"),
         ("completed", "Completed"),
+        ("pending", "Pending"),
+        ("rejected", "Rejected"),
     ]
 
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="enrollments")
@@ -606,6 +606,7 @@ class Enrollment(models.Model):
 
     class Meta:
         unique_together = ["student", "course"]
+        ordering = ["status", "enrollment_date"]
 
     def __str__(self):
         return f"{self.student.username} - {self.course.title}"
@@ -641,11 +642,73 @@ class CourseProgress(models.Model):
 
     @property
     def completion_percentage(self):
-        total_sessions = self.enrollment.course.sessions.count()
-        if total_sessions == 0:
-            return 0
-        completed = self.completed_sessions.count()
-        return int((completed / total_sessions) * 100)
+        """
+        Calculate the completion percentage considering:
+        1. Completed sessions
+        2. Section exams (if found)
+        3. Final course exam (if found)
+        """
+        course = self.enrollment.course
+        student = self.enrollment.student
+        
+        # Get total sessions and completed sessions (original calculation)
+        total_sessions = course.sessions.count()
+        completed_sessions = SessionAttendance.objects.filter(student=student, session__course=course, status__in=["present", "late"]).count()
+        
+        # Initialize counters
+        total_items = total_sessions
+        completed_items = completed_sessions
+        
+        try:
+            # Look for section exams (exams with type "session")
+            section_exams = course.exams.filter(exam_type="session")
+            total_section_exams = section_exams.count()
+            total_items += total_section_exams
+            
+            # Count completed section exams
+            for exam in section_exams:
+                # Get all completed attempts for this exam by the student
+                completed_attempts = exam.user_quizzes.filter(
+                    user=student,
+                    completed=True
+                )
+                
+                # Check if any attempt has a passing status
+                for attempt in completed_attempts:
+                    score = attempt.calculate_score()
+                    if score >= exam.passing_score:
+                        completed_items += 1
+                        break  # Only count one passing attempt per exam
+            
+            # Check for final course exam
+            final_exam = course.exams.filter(exam_type="course").first()
+            if final_exam:
+                total_items += 1  # Count final exam in total
+                
+                # Check if student has passed the final exam
+                passed_final = False
+                final_attempts = final_exam.user_quizzes.filter(
+                    user=student,
+                    completed=True
+                )
+                
+                for attempt in final_attempts:
+                    score = attempt.calculate_score()
+                    if score >= final_exam.passing_score:
+                        passed_final = True
+                        break
+                
+                if passed_final:
+                    completed_items += 1
+        
+        except Exception:
+            # Fallback to just sessions if there's an error with exam calculations
+            pass
+        
+        # Calculate percentage
+        if total_items > 0:
+            return int((completed_items / total_items) * 100)
+        return 0
 
     @property
     def attendance_rate(self):
@@ -2108,24 +2171,24 @@ class Quiz(models.Model):
     randomize_questions = models.BooleanField(default=False, help_text="Randomize the order of questions")
     time_limit = models.PositiveIntegerField(null=True, blank=True, help_text="Time limit in minutes (optional)")
     ai_auto_correction = models.BooleanField(
-        default=False, help_text="If enabled, AI will automatically attempt to correct open-ended questions"
+        default=False, help_text="If enabled, AI will automatically attempt to correct text questions",
     )
-    enable_copy_past_and_text_selection = models.BooleanField(
-        default=False, help_text="If enabled, the student will be able to copy/past and select text inside the exam."
+    enable_copy_paste_and_text_selection = models.BooleanField(
+        default=False,  help_text="If enabled, the student will be able to copy/paste and select text inside the exam."
     )
 
     # New fields for exam functionality
-    exam_type = models.CharField(max_length=10, choices=EXAM_TYPES, default="quiz")
+    exam_type = models.CharField(max_length=10, choices=EXAM_TYPES, default="quiz", db_index=True)
     course = models.ForeignKey("Course", on_delete=models.CASCADE, related_name="exams", null=True, blank=True)
     session = models.ForeignKey("Session", on_delete=models.CASCADE, related_name="exams", null=True, blank=True)
     passing_score = models.PositiveIntegerField(default=60, help_text="Minimum score to pass the exam (percentage)")
     max_attempts = models.PositiveIntegerField(default=1, help_text="Maximum attempts allowed")
 
-    def __str__(self):
-        return self.title
-
     class Meta:
         ordering = ["created_at"]
+
+    def __str__(self) -> str:
+        return self.title
 
 
 class QuizQuestion(models.Model):
@@ -2152,7 +2215,7 @@ class QuizQuestion(models.Model):
     order = models.PositiveIntegerField(default=0)
     image = models.ImageField(upload_to="quiz_questions/", blank=True, default="")
     reference_answer = models.TextField(
-        blank=True, help_text="Reference answer for the questions, important when AI-auto correction"
+        blank=True, help_text="Reference answer for the questions, important for AI-auto correction",
     )
 
     class Meta:
@@ -2180,7 +2243,7 @@ class QuizOption(models.Model):
 class UserQuiz(models.Model):
     """Model for tracking user quiz attempts and responses"""
 
-    CORRECTION_STATUS = [
+    CORRECTION_STATUS: ClassVar[list[tuple[str, str]]] = [
         ("not_needed", "No Correction Needed"),
         ("pending", "Correction Pending"),
         ("in_progress", "Correction In Progress"),
@@ -2219,7 +2282,7 @@ class UserQuiz(models.Model):
         score, max_score = self._compute_points()
         return round((score / max_score) * 100, 1) if max_score else 0.0
 
-    def complete_quiz(self):
+    def complete_quiz(self) -> None:
         """Mark the quiz as completed and calculate final score."""
         from django.utils import timezone
 
@@ -2329,7 +2392,7 @@ class UserQuiz(models.Model):
 
         # Check if there's a passing score defined on the quiz
         passing_score = getattr(self.quiz, "passing_score", 0)
-        if self.score and (self.score / (self.max_score or 1)) * 100 >= passing_score:
+        if (self.score / (self.max_score or 1)) * 100 >= passing_score:
             return "passed"
         else:
             return "failed"

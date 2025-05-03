@@ -51,6 +51,9 @@
                   if (input.type === 'checkbox' || input.type === 'radio') {
                       if (input.checked) {
                           formData[input.name] = input.value;
+                      } else {
+                          // Explicitly clear previously-saved state
+                          formData[input.name] = null;
                       }
                   } else if (input.type === 'select-multiple') {
                       const selectedOptions = Array.from(input.selectedOptions).map(opt => opt.value);
@@ -187,14 +190,16 @@
           if (footer && typeof footer.remove === "function") footer.remove();
       }
 
-      document.addEventListener('contextmenu', function(e) {
-          e.preventDefault();
-      });
+      const quiz = document.getElementById('quiz-container');
+      if (quiz && featureFlags.disableCopy && !isAssistiveUser()) {
+        quiz.addEventListener('contextmenu', e => e.preventDefault());
+        quiz.addEventListener('selectstart', e => e.preventDefault());
+      }
   </script>
   <style>
       /* Disable right-click menu */
           {
-          % if not quiz.enable_copy_past_and_text_selection %
+          % if not quiz.enable_copy_paste_and_text_selection %
       }
 
       body {

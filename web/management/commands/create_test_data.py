@@ -605,7 +605,7 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("Successfully created test data"))
 
-    def create_exams_and_quizzes(self, courses: list, sessions: list, students: list) -> None:
+    def create_exams_and_quizzes(self, courses: list, sessions: list, students: list, teachers: list) -> None:
         """Create exams, quizzes, and student submissions for testing."""
         self.stdout.write("Creating exams and quizzes...")
 
@@ -676,17 +676,39 @@ class Command(BaseCommand):
 
             self.stdout.write(f"Created course exam for: {course.title}")
 
-            # Create student submissions for course exam
-            for student in random.sample(list(students), min(5, len(students))):
-                UserQuiz.objects.create(
-                    quiz=course_exam,
-                    user=student,
-                    completed=True,
-                    start_time=timezone.now() - timedelta(days=random.randint(1, 5)),
-                    end_time=timezone.now() - timedelta(days=random.randint(0, 4)),
-                    answers=json.dumps(self.generate_mock_answers(course_exam)),
+            # SOLUTION: Create enrollments and submissions together
+            # For each student, decide enrollment status first, then create submissions only for approved students
+            for student in random.sample(students, min(5, len(students))):
+                # Choose a status with weighted probabilities
+                status = random.choices(
+                    ["approved", "pending", "rejected", "completed"],
+                    weights=[0.6, 0.2, 0.1, 0.1]
+                )[0]
+                
+                # Create the enrollment
+                enrollment, created = Enrollment.objects.get_or_create(
+                    student=student,
+                    course=course,
+                    defaults={"status": status}
                 )
-                self.stdout.write(f"Created submission for {student.username} - {course_exam.title}")
+                
+                if not created:
+                    enrollment.status = status
+                    enrollment.save()
+                    
+                self.stdout.write(f"Created {status} enrollment for {student.username} in {course.title}")
+                
+                # Only create final exam submissions for approved/completed students
+                if status in ["approved", "completed"]:
+                    UserQuiz.objects.create(
+                        quiz=course_exam,
+                        user=student,
+                        completed=True,
+                        start_time=timezone.now() - timedelta(days=random.randint(1, 5)),
+                        end_time=timezone.now() - timedelta(days=random.randint(0, 4)),
+                        answers=json.dumps(self.generate_mock_answers(course_exam)),
+                    )
+                    self.stdout.write(f"Created submission for approved student {student.username} - {course_exam.title}")
 
         # Create session exams
         for session in sessions:
@@ -734,7 +756,7 @@ class Command(BaseCommand):
             self.stdout.write(f"Created session exam for: {session.title}")
 
             # Create student submissions for session exams
-            enrolled_students = Enrollment.objects.filter(course=session.course).values_list("student", flat=True)
+            enrolled_students = Enrollment.objects.filter(course=session.course, status__in=["approved", "completed"]).values_list("student", flat=True)
             for student_id in enrolled_students:
                 if random.random() < 0.7:  # 70% chance a student completes the quiz
                     student = User.objects.get(id=student_id)

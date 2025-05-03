@@ -178,7 +178,7 @@
                                      {% if option.id|stringformat:"i" in question.user_answer %}checked{% endif %}
                                      onclick="return false;" />
                               <span class="text-gray-700 dark:text-gray-300 {% if option.id|stringformat:"i" == question.user_answer %}font-medium {% if option.is_correct %}text-green-700 dark:text-green-400 {% else %}text-red-700 dark:text-red-400{% endif %} {% elif option.is_correct %}font-medium text-green-700 dark:text-green-400{% endif %}">
-                                <h4 class="contents mr-5">{{ option }}</h4>
+                                <span class="mr-5 font-medium">{{ option.text }}</span>
                                 {% if option.is_correct %}
                                   <i class="fas fa-check-circle text-green-500"></i>
                                 {% else %}

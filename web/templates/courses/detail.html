@@ -795,20 +795,24 @@
                                       {% endif %}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                      {% if student_attendance and student_attendance|get_item:enrollment.student.id %}
-                                        <div class="text-sm">
-                                          <span class="px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium">
-                                            <i class="fas fa-calendar-check text-blue-600 dark:text-blue-400 mr-1"></i>
-                                            {{ student_attendance|get_item:enrollment.student.id|get_item:'attended' }}/{{ student_attendance|get_item:enrollment.student.id|get_item:'total' }}
-                                          </span>
-                                        </div>
-                                        <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                                          {% with attendance_rate=student_attendance|get_item:enrollment.student.id|get_item:'attended'|floatformat:0 %}
-                                            {{ attendance_rate }}% attendance rate
-                                          {% endwith %}
-                                        </div>
+                                      {% if enrollment.status == 'approved' or enrollment.status == 'completed' %}
+                                          {% if student_attendance and student_attendance|get_item:enrollment.student.id %}
+                                            <div class="text-sm">
+                                              <span class="px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 text-xs font-medium">
+                                                <i class="fas fa-calendar-check text-blue-600 dark:text-blue-400 mr-1"></i>
+                                                {{ student_attendance|get_item:enrollment.student.id|get_item:'attended' }}/{{ student_attendance|get_item:enrollment.student.id|get_item:'total' }}
+                                              </span>
+                                            </div>
+                                            <div class="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                                              {% with attendance_rate=student_attendance|get_item:enrollment.student.id|get_item:'attended'|floatformat:0 %}
+                                                {{ attendance_rate }}% attendance rate
+                                              {% endwith %}
+                                            </div>
+                                          {% else %}
+                                            <span class="text-sm text-gray-500 dark:text-gray-400">No data</span>
+                                          {% endif %}
                                       {% else %}
-                                        <span class="text-sm text-gray-500 dark:text-gray-400">No data</span>
+                                        <span class="text-sm text-gray-500 dark:text-gray-400">-</span>
                                       {% endif %}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
@@ -816,9 +820,17 @@
                                         <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
                                           <i class="fas fa-check-circle mr-1"></i>Completed
                                         </span>
-                                      {% elif enrollment.status == 'in_progress' %}
-                                        <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                                          <i class="fas fa-spinner mr-1"></i>In Progress
+                                      {% elif enrollment.status == 'approved' %}
+                                        <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                                          Approved
+                                        </span>
+                                      {% elif enrollment.status == 'pending' %}
+                                        <span class="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+                                          <i class="fas fa-spinner mr-1"></i>pending
+                                        </span>
+                                      {% elif enrollment.status == 'rejected' %}
+                                        <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200">
+                                          <i class="fas fa-x mr-1"></i>rejected
                                         </span>
                                       {% else %}
                                         <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
@@ -1178,7 +1190,7 @@
                                       </span>
                                     {% endif %}
                                   </div>
-                                  {% if exam_item.exam.ai_auto_correction == True %}
+                                  {% if item.exam.ai_auto_correction == True %}
                                     <span class="font-medium bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-3 py-1 rounded-full text-sm">AI-Auto Correction</span>
                                   {% endif %}
                                 </div>
@@ -1307,21 +1319,91 @@
                   </div>
                 </div>
                 {% if is_teacher %}
-                  <!-- Chart -->
-                  <div id="content-analytics"
-                       class="tab-content hidden"
-                       role="tabpanel"
-                       aria-labelledby="tab-analytics">
-                    <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
-                      <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold">Student Analytics</h2>
+                  <!-- Student Analytics with Tabs -->
+                  <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
+                    <div class="flex justify-between items-center mb-4">
+                      <h2 class="text-xl font-bold">Student Analytics</h2>
+                    </div>
+                    <p class="text-gray-600 dark:text-gray-400 mb-4">
+                      These charts show detailed student performance metrics across multiple dimensions.
+                    </p>
+                    <!-- Analytics Tabs Navigation -->
+                    <div class="border-b border-gray-200 dark:border-gray-700 mb-4">
+                      <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" role="tablist">
+                        <li class="mr-2" role="presentation">
+                          <button class="inline-block p-4 border-b-2 border-teal-500 rounded-t-lg active text-teal-500" 
+                                  id="attendance-tab" 
+                                  data-tabs-target="#attendance-content" 
+                                  type="button" 
+                                  role="tab" 
+                                  aria-controls="attendance" 
+                                  aria-selected="true">
+                            <i class="fas fa-calendar-check mr-2"></i>Attendance
+                          </button>
+                        </li>
+                        <li class="mr-2" role="presentation">
+                          <button class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300" 
+                                  id="progress-tab" 
+                                  data-tabs-target="#progress-content" 
+                                  type="button" 
+                                  role="tab" 
+                                  aria-controls="progress" 
+                                  aria-selected="false">
+                            <i class="fas fa-tasks mr-2"></i>Course Progress
+                          </button>
+                        </li>
+                        <li class="mr-2" role="presentation">
+                          <button class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300" 
+                                  id="exam-tab" 
+                                  data-tabs-target="#exam-content" 
+                                  type="button" 
+                                  role="tab" 
+                                  aria-controls="exam" 
+                                  aria-selected="false">
+                            <i class="fas fa-file-alt mr-2"></i>Exam Scores
+                          </button>
+                        </li>
+                        <li role="presentation">
+                          <button class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300" 
+                                  id="combined-tab" 
+                                  data-tabs-target="#combined-content" 
+                                  type="button" 
+                                  role="tab" 
+                                  aria-controls="combined" 
+                                  aria-selected="false">
+                            <i class="fas fa-chart-line mr-2"></i>Combined View
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+                    <!-- Analytics Tabs Content -->
+                    <div class="tab-content-main">
+                      <!-- Attendance Tab Content -->
+                      <div class="block tab-pane tetts" id="attendance-content" role="tabpanel" aria-labelledby="attendance-tab">
+                        <div class="w-full">
+                          <canvas id="attendanceChart" width="800" height="400"></canvas>
+                        </div>
                       </div>
-                      <p class="text-gray-600 dark:text-gray-400 mb-4">
-                        This chart shows student performance metrics across attendance, exam scores, and overall course progress.
-                      </p>
-                      <!-- Canvas element for the chart -->
-                      <div class="w-full">
-                        <canvas id="sectionChart" width="800" height="400"></canvas>
+                      
+                      <!-- Progress Tab Content -->
+                      <div class="hidden tab-pane" id="progress-content" role="tabpanel" aria-labelledby="progress-tab">
+                        <div class="w-full">
+                          <canvas id="progressChart" width="800" height="400"></canvas>
+                        </div>
+                      </div>
+                      
+                      <!-- Exam Scores Tab Content -->
+                      <div class="hidden tab-pane" id="exam-content" role="tabpanel" aria-labelledby="exam-tab">
+                        <div class="w-full">
+                          <canvas id="examChart" width="800" height="400"></canvas>
+                        </div>
+                      </div>
+                      
+                      <!-- Combined View Tab Content -->
+                      <div class="hidden tab-pane" id="combined-content" role="tabpanel" aria-labelledby="combined-tab">
+                        <div class="w-full">
+                          <canvas id="sectionChart" width="800" height="400"></canvas>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1339,71 +1421,256 @@
     <i class="fas fa-info-circle notification-icon mr-2"></i>
     <span class="notification-message">This is a notification</span>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.2.1"
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"
           crossorigin="anonymous"></script>
-  <script>
-      document.addEventListener('DOMContentLoaded', function() {
-          // Generate labels for 10 students
-          const labels = Array.from({
-              length: 10
-          }, (_, i) => 'Student ' + (i + 1));
 
-          // Helper function to generate random data for a section (range 0-100)
-          const generateData = () => labels.map(() => Math.floor(Math.random() * 100));
-
-          // Data for each section degree
-          const attendanceData = generateData();
-          const examData = generateData();
-          const overallDegreeData = generateData();
-
-          // Initialize the chart
-          const ctx = document.getElementById('sectionChart').getContext('2d');
-          const sectionChart = new Chart(ctx, {
-              type: 'line',
-              data: {
-                  labels: labels,
-                  datasets: [{
-                      label: 'Attendance',
-                      data: attendanceData,
-                      borderColor: 'rgba(194, 39, 47, 1)',
-                      backgroundColor: 'rgba(194, 39, 47, 0.2)',
-                      fill: false,
-                      tension: 0.2
-                  }, {
-                      label: 'Exams',
-                      data: examData,
-                      borderColor: 'rgba(127, 255, 0, 1)',
-                      backgroundColor: 'rgba(127, 255, 0, 0.2)',
-                      fill: false,
-                      tension: 0.2
-                  }, {
-                      label: 'Overall Degree',
-                      data: overallDegreeData,
-                      borderColor: 'rgba(54, 162, 235, 1)',
-                      backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                      fill: false,
-                      tension: 0.2
-                  }]
-              },
-              options: {
-                  scales: {
-                      y: {
-                          beginAtZero: true,
-                          max: 100
-                      }
-                  },
-                  plugins: {
-                      title: {
-                          display: true,
-                          text: 'Student Progress Tracking: Section Degrees'
-                      }
-                  },
-                  responsive: true,
-                  maintainAspectRatio: true
-              }
-          });
+<!-- JavaScript for Student Analytics Charts -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Tab switching functionality
+    const tabButtons = document.querySelectorAll('[data-tabs-target]');
+    const tabContents = document.querySelectorAll('.tab-pane');
+    
+    tabButtons.forEach(button => {
+    // console.log("Test", button)
+      button.addEventListener('click', () => {
+        // Remove active state from all tabs
+        tabButtons.forEach(btn => {
+          btn.classList.remove('active', 'text-teal-500', 'border-teal-500');
+          btn.classList.add('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300');
+          btn.setAttribute('aria-selected', 'false');
+        });
+        
+        // Hide all tab contents
+        tabContents.forEach(content => {
+          console.log("Test", content)
+          content.classList.add('hidden');
+          content.classList.remove('block');
+        });
+        
+        // Set active state for clicked tab
+        button.classList.add('active', 'text-teal-500', 'border-teal-500');
+        button.classList.remove('border-transparent', 'hover:text-gray-600', 'hover:border-gray-300');
+        button.setAttribute('aria-selected', 'true');
+        
+        // Show target tab content
+        const target = document.querySelector(button.dataset.tabsTarget);
+        console.log(target)
+        if (target) {
+          target.classList.remove('hidden');
+          target.classList.add('block');
+        }
       });
+    });
+    
+    // Get data from backend or use placeholder data if not available
+    let labels = [];
+    let attendanceData = [];
+    let progressData = [];
+    let examData = [];
+    
+    // Try to get real data from backend (replace random data)
+    labels = JSON.parse('{{ Analytics.labels|escapejs }}');
+    attendanceData = JSON.parse('{{ Analytics.attendance_data }}');
+    // progressData = JSON.parse('{{ student_analytics_progress|escapejs }}');
+    // examData = JSON.parse('{{ student_analytics_exam_scores|escapejs }}');
 
+    console.log("attendanceData", attendanceData)
+    
+    // Create Attendance Chart
+    const attendanceChart = new Chart(
+      document.getElementById('attendanceChart').getContext('2d'),
+      {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Attendance Rate (%)',
+            data: attendanceData,
+            backgroundColor: 'rgba(194, 39, 47, 0.6)',
+            borderColor: 'rgba(194, 39, 47, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              title: {
+                display: true,
+                text: 'Attendance Rate (%)'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Students'
+              }
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: 'Student Attendance Rates'
+            }
+          },
+          responsive: true,
+          maintainAspectRatio: true
+        }
+      }
+    );
+    
+    // Create Progress Chart
+    const progressChart = new Chart(
+      document.getElementById('progressChart').getContext('2d'), 
+      {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Course Completion (%)',
+            data: progressData,
+            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              title: {
+                display: true,
+                text: 'Completion Percentage'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Students'
+              }
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: 'Student Course Progress'
+            }
+          },
+          responsive: true,
+          maintainAspectRatio: true
+        }
+      }
+    );
+    
+    // Create Exam Chart
+    const examChart = new Chart(
+      document.getElementById('examChart').getContext('2d'), 
+      {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Exam Scores',
+            data: examData,
+            backgroundColor: 'rgba(127, 255, 0, 0.6)',
+            borderColor: 'rgba(127, 255, 0, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              title: {
+                display: true,
+                text: 'Score'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Students'
+              }
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: 'Student Exam Performance'
+            }
+          },
+          responsive: true,
+          maintainAspectRatio: true
+        }
+      }
+    );
+    
+    // Create Combined Chart (maintain existing functionality)
+    const combinedChart = new Chart(
+      document.getElementById('sectionChart').getContext('2d'), 
+      {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Attendance',
+            data: attendanceData,
+            borderColor: 'rgba(194, 39, 47, 1)',
+            backgroundColor: 'rgba(194, 39, 47, 0.2)',
+            fill: false,
+            tension: 0.2
+          }, {
+            label: 'Exams',
+            data: examData,
+            borderColor: 'rgba(127, 255, 0, 1)',
+            backgroundColor: 'rgba(127, 255, 0, 0.2)',
+            fill: false,
+            tension: 0.2
+          }, {
+            label: 'Course Progress',
+            data: progressData,
+            borderColor: 'rgba(54, 162, 235, 1)',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            fill: false,
+            tension: 0.2
+          }]
+        },
+        options: {
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 100,
+              title: {
+                display: true,
+                text: 'Score/Percentage'
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Students'
+              }
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: 'Student Performance Overview'
+            }
+          },
+          responsive: true,
+          maintainAspectRatio: true
+        }
+      }
+    );
+  });
+</script>
+
+  <script>
 
       function loadCalendar(year, month) {
           fetch(`/courses/{{ course.slug }}/calendar/?year=${year}&month=${month}`)

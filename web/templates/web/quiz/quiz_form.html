@@ -198,13 +198,13 @@
               <div class="flex items-start">
                 <div class="flex items-center h-5">
                   <input type="checkbox"
-                         name="{{ form.enable_copy_past_and_text_selection.html_name }}"
-                         id="{{ form.enable_copy_past_and_text_selection.id_for_label }}"
-                         {% if form.enable_copy_past_and_text_selection.value %}checked{% endif %}
+                         name="{{ form.enable_copy_paste_and_text_selection.html_name }}"
+                         id="{{ form.enable_copy_paste_and_text_selection.id_for_label }}"
+                         {% if form.enable_copy_paste_and_text_selection.value %}checked{% endif %}
                          class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
                 </div>
                 <div class="ml-3 text-sm">
-                  <label for="{{ form.enable_copy_past_and_text_selection.id_for_label }}"
+                  <label for="{{ form.enable_copy_paste_and_text_selection.id_for_label }}"
                          class="font-medium text-gray-700 dark:text-gray-300">
                     Allow copy/past and text selection
                   </label>

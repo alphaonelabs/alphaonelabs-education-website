@@ -911,6 +911,52 @@ def course_detail(request, slug):
             }
         )
 
+    # Prepare student analytics data for the chart
+    student_analytics_data = []
+    labels = []
+    attendance_data = []
+    progress_data = []
+    exam_scores = []
+
+    if is_teacher and course.enrollments.exists():
+        # Get all approved enrollments for this course
+        course_enrollments = course.enrollments.filter(status__in=["approved", "completed"]).select_related('student')
+
+        for enrollment in course_enrollments:
+            student = enrollment.student
+            labels.append(student.username)
+            
+            # Get attendance percentage
+            attended_sessions = SessionAttendance.objects.filter(
+                student=student, 
+                session__course=course, 
+                status__in=["present", "late"]
+            ).count()
+            attendance_percentage = int((attended_sessions / total_sessions) * 100) if total_sessions > 0 else 0
+            attendance_data.append(attendance_percentage)
+            
+            # Get progress percentage
+            progress, created = CourseProgress.objects.get_or_create(enrollment=enrollment)
+            progress_data.append(progress.completion_percentage)
+            # print("### student.username ###", student.username)
+            # print("### attendance_rate ###", progress.attendance_rate)
+            # print("### completion_percentage ###", progress.completion_percentage)
+            # print("*" * 50)
+            
+            # # Get average exam score if available
+            # student_exams = ExamResult.objects.filter(
+            #     student=student, 
+            #     exam__course=course
+            # )
+            # avg_score = student_exams.aggregate(Avg('score'))['score__avg'] or 0
+            # exam_scores.append(round(avg_score, 1))
+    print("## progress_data ##", progress_data)
+    Analytics = {
+        "labels": json.dumps(labels),
+        "attendance_data": json.dumps(attendance_data),
+        "progress_data": json.dumps(progress_data),
+    }
+
     # Build the absolute discount URL using the discount view's URL name.
     from urllib.parse import urlencode
 
@@ -942,6 +988,7 @@ def course_detail(request, slug):
         "course_exam_data": course_exam_data,
         "session_data": session_data,
         "discount_url": discount_url,
+        "Analytics": Analytics,
     }
 
     return render(request, "courses/detail.html", context)

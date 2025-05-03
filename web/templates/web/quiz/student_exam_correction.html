@@ -66,10 +66,10 @@
           }
 
           // change question correction status
-          parent = event.target.parentElement
-          question_correction_status = parent.querySelector("#question_correction_status")
-          question_correction_status_value = question_correction_status.value
-          page_question_correction_status = parent.parentElement.querySelector("#question_correction_div")
+          const parent = event.target.parentElement
+          const question_correction_status = parent.querySelector("#question_correction_status")
+          const question_correction_status_value = question_correction_status.value
+          const page_question_correction_status = parent.parentElement.querySelector("#question_correction_div")
           const span = document.createElement('span');
           span.textContent = question_correction_status_value.trim();
           page_question_correction_status.innerHTML = '';
@@ -101,7 +101,7 @@
               // Create a new div element
               const newDiv = document.createElement('div');
               newDiv.id = 'correction_status_div';
-              newDiv.classList.add('your-class-name'); // Add necessary classes
+              newDiv.classList.add('correction-status'); // Add necessary classes
 
               // Set the text content safely
               newDiv.textContent = correctionStatus.textContent;

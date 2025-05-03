@@ -36,7 +36,8 @@
                   default:
                       shortAnswerOptions.classList.remove('hidden');
                       handleInputsWithQuestionType(questionTypeField.value)
-                      document.getElementById('id_options-TOTAL_FORMS').value = '2';
+                      // Short answer needs exactly one placeholder option
+                      document.getElementById('id_options-TOTAL_FORMS').value = '1';
                       break;
               }
           }
@@ -147,7 +148,6 @@
 
               // Update the total forms count
               totalFormsField.value = visibleOptions.length;
-              initialFormsField.value = visibleOptions.length;
           }
 
           let allDeleteOptionsButtons = document.querySelectorAll(".delete-option-btn")
@@ -409,7 +409,7 @@
             </div>
             <div id="options-container" class="space-y-4">
               {% for option_form in formset %}
-                <div class="reltive option-form bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <div class="relative option-form bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                   <div class="text-end">
                     <button type="button" class="delete-option-btn pl-[15px]">
                       <i class="fas fa-trash text-red-600"></i>

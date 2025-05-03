@@ -12,7 +12,7 @@ api_key = os.getenv("GOOGLE_API_KEY")
 
 if not api_key:
     # Defer hard failure; functions will return structured error objects instead.
-    print("⚠️  GOOGLE_API_KEY not found – AI correction disabled")
+    print("⚠️  GOOGLE_API_KEY not found - AI correction disabled")
 
 
 if api_key:

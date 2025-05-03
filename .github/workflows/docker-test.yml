@@ -20,11 +20,9 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
+    env:
+      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
     services:
-      web:
-        env:
-          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
       mysql:
         image: mysql:8.0
         env:
