@@ -1,12 +1,19 @@
 import re
+from typing import ClassVar
+from urllib.parse import parse_qs, urlparse
 
+import bleach
 from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
+from cryptography.fernet import Fernet
 from django import forms
+from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.db import IntegrityError
+from django.forms.widgets import URLInput
 from django.utils import timezone
 from django.utils.crypto import get_random_string
 from django.utils.text import slugify
@@ -41,8 +48,11 @@ from .models import (
     StudyGroup,
     Subject,
     SuccessStory,
+    Survey,
     TeamGoal,
+    TeamGoalMember,
     TeamInvite,
+    VideoRequest,
     WaitingRoom,
 )
 from .referrals import handle_referral
@@ -79,6 +89,7 @@ __all__ = [
     "ForumTopicForm",
     "BlogPostForm",
     "MessageTeacherForm",
+    "VideoRequestForm",
     "FeedbackForm",
     "GoodsForm",
     "StorefrontForm",
@@ -96,7 +107,10 @@ __all__ = [
     "GradeableLinkForm",
     "LinkGradeForm",
     "AwardAchievementForm",
+    "SurveyForm",
 ]
+
+fernet = Fernet(settings.SECURE_MESSAGE_KEY)
 
 
 class AccountDeleteForm(forms.Form):
@@ -275,6 +289,23 @@ class UserRegistrationForm(SignupForm):
             email_address.send_confirmation(request)
 
         return user
+
+
+class TailwindInput(forms.widgets.Input):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("attrs", {}).update(
+            {"class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"}
+        )
+        super().__init__(*args, **kwargs)
+
+
+class TailwindURLInput(URLInput):
+    # This widget, subclassing URLInput, ensures input type="url"
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("attrs", {}).update(
+            {"class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"}
+        )
+        super().__init__(*args, **kwargs)
 
 
 class AwardAchievementForm(forms.Form):
@@ -778,20 +809,26 @@ class CustomLoginForm(LoginForm):
 class EducationalVideoForm(forms.ModelForm):
     """
     Form for creating and editing educational videos.
-    Validates that video URLs are from YouTube or Vimeo with proper video ID formats.
+    Validates that video URLs are from YouTube or Vimeo.
     """
+
+    # Make description optional in the form
+    description = forms.CharField(
+        required=False,
+        widget=TailwindTextarea(
+            attrs={
+                "rows": 4,
+                "placeholder": "Describe what viewers will learn from this video (optional)",
+            }
+        ),
+        help_text="Optional – what this video is about",
+    )
 
     class Meta:
         model = EducationalVideo
         fields = ["title", "description", "video_url", "category"]
         widgets = {
             "title": TailwindInput(attrs={"placeholder": "Video title"}),
-            "description": TailwindTextarea(
-                attrs={
-                    "rows": 4,
-                    "placeholder": "Describe what viewers will learn from this video",
-                }
-            ),
             "video_url": TailwindInput(attrs={"placeholder": "YouTube or Vimeo URL", "type": "url"}),
             "category": TailwindSelect(
                 attrs={
@@ -805,18 +842,38 @@ class EducationalVideoForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Order subjects by name
+
+        # Order subjects by 'order' first, then alphabetically by 'name'
         self.fields["category"].queryset = Subject.objects.all().order_by("order", "name")
 
     def clean_video_url(self):
-        url = self.cleaned_data.get("video_url")
-        if url:
-            # More robust validation with regex
-            youtube_pattern = r"^(https?://)?(www\.)?(youtube\.com/watch\?v=|youtu\.be/)[a-zA-Z0-9_-]{11}.*$"
-            vimeo_pattern = r"^(https?://)?(www\.)?vimeo\.com/[0-9]{8,}.*$"
-            if not (re.match(youtube_pattern, url) or re.match(vimeo_pattern, url)):
-                raise forms.ValidationError("Please enter a valid YouTube or Vimeo URL")
-        return url
+        url = self.cleaned_data.get("video_url", "").strip()
+        if not url:
+            return url  # let required validation handle empties
+
+        parsed = urlparse(url)
+        host = parsed.netloc.lower()
+
+        # YouTube validation
+        if host == "youtube.com" or host == "www.youtube.com":
+            qs = parse_qs(parsed.query)
+            vid = qs.get("v", [""])[0]
+            if len(vid) == 11 and re.match(r"^[A-Za-z0-9_-]{11}$", vid):
+                return url
+
+        # YouTube short URL validation
+        if host == "youtu.be":
+            vid = parsed.path.lstrip("/")
+            if len(vid) == 11 and re.match(r"^[A-Za-z0-9_-]{11}$", vid):
+                return url
+
+        # Vimeo validation
+        if host == "vimeo.com" or host == "www.vimeo.com":
+            vid = parsed.path.lstrip("/").split("/")[0]
+            if vid.isdigit() and len(vid) >= 8:
+                return url
+
+        raise forms.ValidationError("Please enter a valid YouTube or Vimeo URL")
 
 
 class SuccessStoryForm(forms.ModelForm):
@@ -939,6 +996,14 @@ class TeachForm(forms.Form):
             attrs={"class": "block w-full border rounded p-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"}
         )
     )
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+        # If the user is authenticated, remove email and captcha fields
+        if user and user.is_authenticated:
+            del self.fields["email"]
+            del self.fields["captcha"]
 
     def clean_course_title(self):
         """Validate and clean the course_title field."""
@@ -1149,6 +1214,28 @@ class ForumTopicForm(forms.Form):
             }
         ),
     )
+    github_issue_url = forms.URLField(
+        required=False,
+        widget=TailwindURLInput(attrs={"placeholder": "https://github.com/your-org/your-repo/issues/123"}),
+        help_text="Link to a related GitHub issue (optional)",
+    )
+    github_milestone_url = forms.URLField(
+        required=False,
+        widget=TailwindURLInput(attrs={"placeholder": "https://github.com/your-org/your-repo/milestone/1"}),
+        help_text="Link to a related GitHub milestone (optional)",
+    )
+
+    def clean_github_issue_url(self):
+        url = self.cleaned_data.get("github_issue_url")
+        if url and (not url.startswith("https://github.com/") or "/issues/" not in url):
+            raise forms.ValidationError("Please enter a valid GitHub issue URL")
+        return url
+
+    def clean_github_milestone_url(self):
+        url = self.cleaned_data.get("github_milestone_url")
+        if url and (not url.startswith("https://github.com/") or "milestone" not in url):
+            raise forms.ValidationError("Please enter a valid GitHub milestone URL")
+        return url
 
 
 class AvatarForm(forms.ModelForm):
@@ -1217,8 +1304,6 @@ class BlogPostForm(forms.ModelForm):
 
 class MessageTeacherForm(forms.Form):
     name = forms.CharField(
-        max_length=100,
-        required=True,
         widget=TailwindInput(
             attrs={
                 "class": (
@@ -1229,7 +1314,6 @@ class MessageTeacherForm(forms.Form):
         ),
     )
     email = forms.EmailField(
-        required=True,
         widget=TailwindEmailInput(
             attrs={
                 "class": (
@@ -1266,12 +1350,25 @@ class MessageTeacherForm(forms.Form):
     def __init__(self, *args, **kwargs):
         user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
-
-        # If user is authenticated, remove name, email and captcha fields
+        # If the user is authenticated, remove name, email, and captcha fields.
         if user and user.is_authenticated:
             del self.fields["name"]
             del self.fields["email"]
             del self.fields["captcha"]
+
+    def clean_message(self):
+        """
+        Encrypts the message field using Fernet before processing.
+        Returns the encrypted message as a decoded string.
+        """
+        message = self.cleaned_data.get("message")
+        if not message:
+            raise ValidationError("Message cannot be empty.")
+        try:
+            encrypted_message = fernet.encrypt(message.encode("utf-8"))
+            return encrypted_message.decode("utf-8")
+        except Exception as e:
+            raise ValidationError("Encryption failed: " + str(e))
 
 
 class FeedbackForm(forms.Form):
@@ -1325,14 +1422,6 @@ class ChallengeSubmissionForm(forms.ModelForm):
                 attrs={"rows": 5, "placeholder": "Describe your results or reflections..."}
             ),
         }
-
-
-class TailwindInput(forms.widgets.Input):
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("attrs", {}).update(
-            {"class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"}
-        )
-        super().__init__(*args, **kwargs)
 
 
 class TailwindTextarea(forms.widgets.Textarea):
@@ -1440,6 +1529,24 @@ class StorefrontForm(forms.ModelForm):
             "logo",
             "is_active",
         ]
+
+
+class TeamGoalCompletionForm(forms.ModelForm):
+    class Meta:
+        model = TeamGoalMember
+        fields = ["completion_image", "completion_link", "completion_notes"]
+        widgets = {
+            "completion_notes": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        image = cleaned_data.get("completion_image")
+        link = cleaned_data.get("completion_link")
+        notes = cleaned_data.get("completion_notes")
+        if not image and not link and not notes:
+            raise forms.ValidationError("Please provide at least one form of proof (image, link, or notes).")
+        return cleaned_data
 
 
 class TeamGoalForm(forms.ModelForm):
@@ -1768,3 +1875,73 @@ class StudyGroupForm(forms.ModelForm):
     class Meta:
         model = StudyGroup
         fields = ["name", "description", "course", "max_members", "is_private"]
+
+
+class VideoRequestForm(forms.ModelForm):
+    """Form for users to request educational videos on specific topics, with XSS protection."""
+
+    ALLOWED_TAGS: ClassVar[list[str]] = ["b", "i", "strong", "em", "ul", "ol", "li", "p", "a"]
+    ALLOWED_ATTRIBUTES: ClassVar[dict[str, list[str]]] = {
+        # Only allow href, title and target attributes on anchor tags for security
+        "a": ["href", "title", "target"],
+    }
+
+    class Meta:
+        model = VideoRequest
+        fields = ["title", "description", "category"]
+        widgets = {
+            "title": TailwindInput(attrs={"placeholder": "Title of the video you're requesting"}),
+            "description": TailwindTextarea(
+                attrs={
+                    "rows": 4,
+                    "placeholder": (
+                        "Describe what you'd like to learn from this video "
+                        "(e.g., 'I'd like a video on calculus basics')",
+                    ),
+                }
+            ),
+            "category": TailwindSelect(
+                attrs={
+                    "class": (
+                        "w-full px-4 py-2 border border-gray-300 dark:border-gray-600"
+                        " rounded-lg focus:ring-2 focus:ring-blue-500",
+                    )
+                }
+            ),
+        }
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields["category"].queryset = Subject.objects.all().order_by("name")
+
+    def clean_title(self) -> str:
+        title = self.cleaned_data.get("title", "")  # Added default value
+        # Strip all tags to ensure title contains only plain text
+        return bleach.clean(title, tags=self.ALLOWED_TAGS, attributes=self.ALLOWED_ATTRIBUTES, strip=True)
+
+    def clean_description(self) -> str:
+        description = self.cleaned_data.get("description", "")
+        return bleach.clean(
+            description,
+            tags=self.ALLOWED_TAGS,
+            attributes=self.ALLOWED_ATTRIBUTES,
+            strip=True,
+        )
+
+
+class SurveyForm(forms.ModelForm):
+    title = forms.CharField(
+        max_length=200,
+        widget=TailwindInput(attrs={"placeholder": "Enter survey title"}),
+        help_text="Give your survey a clear and descriptive title",
+    )
+
+    class Meta:
+        model = Survey
+        fields = ["title"]
+
+    def clean_title(self) -> str:
+        title = self.cleaned_data.get("title")
+        if len(title) < 5:
+            raise forms.ValidationError(_("Title too short"), code="invalid_length", params={"min_length": 5})
+        return title
