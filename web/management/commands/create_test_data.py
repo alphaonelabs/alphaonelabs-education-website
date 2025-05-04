@@ -370,7 +370,16 @@ class Command(BaseCommand):
         now = timezone.now()
         for course in courses:
             for i in range(5):
-                start_time = now + timedelta(days=i * 7)
+                # Randomly decide if the session should be in the past or future
+                in_future = random.choice([True, False])
+                
+                # Set the session time accordingly
+                if in_future:
+                    # Between now and the next 5 weeks
+                    start_time = now + timedelta(days=random.randint(1, 35))
+                else:
+                    # Between 1 and 21 days ago
+                    start_time = now - timedelta(days=random.randint(1, 21))
                 is_virtual = random.choice([True, False])
                 session = Session.objects.create(
                     course=course,
@@ -408,9 +417,33 @@ class Command(BaseCommand):
                 completed_sessions = random.sample(list(course_sessions), random.randint(0, course_sessions.count()))
                 progress.completed_sessions.add(*completed_sessions)
 
-                # Create session attendance
-                for session in completed_sessions:
-                    SessionAttendance.objects.create(student=student, session=session, status="completed")
+                # Get all sessions for this course
+                course_sessions = Session.objects.filter(course=course)
+                print("############", course_sessions)
+                
+                # For each session, randomly determine attendance status
+                for session in course_sessions:
+                    # 70% chance of attending if the session is in the past
+
+                    print("@@@@@@@@@@@", session.end_time < timezone.now() and random.random() < 0.7)
+                    if session.end_time < timezone.now() and random.random() < 0.7:
+                        # Randomly select attendance status with weighted probabilities
+                        status_options = ["present", "late", "excused", "absent"]
+                        status_weights = [0.7, 0.1, 0.1, 0.1]  # 70% present, 10% each for other statuses
+                        status = random.choices(status_options, weights=status_weights)[0]
+                        
+                        # Create attendance record
+                        attendance = SessionAttendance.objects.create(
+                            student=student,
+                            session=session,
+                            status=status,
+                        )
+                        
+                        # If the status is present or late, mark it as completed in progress
+                        if status in ["present", "late"]:
+                            progress.completed_sessions.add(session)
+                        
+                        self.stdout.write(f"Created {status} attendance for {student.username} in session: {session.title}")
 
                 self.stdout.write(f"Created enrollment for {student.username} in {course.title}")
 

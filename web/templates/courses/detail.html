@@ -1476,6 +1476,13 @@
     // examData = JSON.parse('{{ student_analytics_exam_scores|escapejs }}');
 
     console.log("attendanceData", attendanceData)
+      // Get course sessions data
+    const sessionLabels = [{% for session in past_sessions %}"{{ session.title }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+    // const sessionDates = [{% for session in sessions %}"{{ session.start_time|date:'M d, Y' }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+    const totalSessions = {{ sessions|length }};
+    console.log("sessionLabels", sessionLabels)
+    // console.log("sessionDates", sessionDates)
+    console.log("totalSessions", totalSessions)
     
     // Create Attendance Chart
     const attendanceChart = new Chart(
@@ -1483,9 +1490,9 @@
       {
         type: 'bar',
         data: {
-          labels: labels,
+          labels: sessionLabels,
           datasets: [{
-            label: 'Attendance Rate (%)',
+            label: 'Present',
             data: attendanceData,
             backgroundColor: 'rgba(194, 39, 47, 0.6)',
             borderColor: 'rgba(194, 39, 47, 1)',
@@ -1494,25 +1501,33 @@
         },
         options: {
           scales: {
-            y: {
-              beginAtZero: true,
-              max: 100,
-              title: {
-                display: true,
-                text: 'Attendance Rate (%)'
+              y: {
+                ticks: {
+                  callback: function(value) {
+                    if (Number.isInteger(value)) {
+                      return value;
+                    }
+                  }
+                },
+                beginAtZero: true,
+                max: totalSessions, // Set max to total sessions count
+                title: {
+                  display: true,
+                  text: 'Number of Students'
+                }
+                
+              },
+              x: {
+                title: {
+                  display: true,
+                  text: 'Sessions'
+                }
               }
-            },
-            x: {
-              title: {
-                display: true,
-                text: 'Students'
-              }
-            }
           },
           plugins: {
             title: {
               display: true,
-              text: 'Student Attendance Rates'
+              text: 'Student Attendance count'
             }
           },
           responsive: true,

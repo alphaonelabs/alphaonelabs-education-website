@@ -921,7 +921,6 @@ def course_detail(request, slug):
     if is_teacher and course.enrollments.exists():
         # Get all approved enrollments for this course
         course_enrollments = course.enrollments.filter(status__in=["approved", "completed"]).select_related('student')
-
         for enrollment in course_enrollments:
             student = enrollment.student
             labels.append(student.username)
@@ -932,8 +931,8 @@ def course_detail(request, slug):
                 session__course=course, 
                 status__in=["present", "late"]
             ).count()
-            attendance_percentage = int((attended_sessions / total_sessions) * 100) if total_sessions > 0 else 0
-            attendance_data.append(attendance_percentage)
+            print("EEEEEEEEEE", attended_sessions)
+            attendance_data.append(attended_sessions)
             
             # Get progress percentage
             progress, created = CourseProgress.objects.get_or_create(enrollment=enrollment)
@@ -950,7 +949,7 @@ def course_detail(request, slug):
             # )
             # avg_score = student_exams.aggregate(Avg('score'))['score__avg'] or 0
             # exam_scores.append(round(avg_score, 1))
-    print("## progress_data ##", progress_data)
+    # print("## progress_data ##", progress_data)
     Analytics = {
         "labels": json.dumps(labels),
         "attendance_data": json.dumps(attendance_data),
@@ -966,6 +965,7 @@ def course_detail(request, slug):
     context = {
         "course": course,
         "sessions": sessions,
+        "past_sessions": past_sessions,
         "now": now,
         "today": today,
         "is_teacher": is_teacher,
