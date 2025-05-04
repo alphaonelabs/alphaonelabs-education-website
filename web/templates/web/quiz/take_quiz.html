@@ -19,21 +19,29 @@
               if (!quizForm) return;
 
               // Restore saved answers when page loads
-              restoreFormState();
+              if (storageAvailable) {
+                  restoreFormState();
+              }
 
               // Save answers when they change
-              quizForm.addEventListener('input', saveFormState);
+              if (storageAvailable) {
+                  quizForm.addEventListener('input', saveFormState);
+              }
 
               // Setup auto-save every 3 seconds
-              autoSaveTimer = setInterval(saveFormState, 3000);
+              if (storageAvailable) {
+                  autoSaveTimer = setInterval(saveFormState, 3000);
+              }
 
               // Clear timer and storage when form is submitted normally
               quizForm.addEventListener('submit', function() {
-                  clearInterval(autoSaveTimer);
-                  sessionStorage.removeItem(storageKey);
+                  if (storageAvailable) {
+                      clearInterval(autoSaveTimer);
+                      sessionStorage.removeItem(storageKey);
+                  }
               });
 
-              console.log("Quiz state persistence initialized with sessionStorage");
+              console.log(`Quiz state persistence initialized ${storageAvailable ? 'with' : 'without'} sessionStorage`);
           }
 
           // Save all form answers to sessionStorage

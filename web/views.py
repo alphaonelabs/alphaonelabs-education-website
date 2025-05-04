@@ -912,49 +912,51 @@ def course_detail(request, slug):
         )
 
     # Prepare student analytics data for the chart
-    student_analytics_data = []
     labels = []
-    attendance_data = []
     progress_data = []
-    exam_scores = []
 
+    # Prepare all chart data in the views.py file - no more template JS loops
     if is_teacher and course.enrollments.exists():
         # Get all approved enrollments for this course
         course_enrollments = course.enrollments.filter(status__in=["approved", "completed"]).select_related('student')
+        
+        # Prepare student data
         for enrollment in course_enrollments:
             student = enrollment.student
             labels.append(student.username)
             
-            # Get attendance percentage
-            attended_sessions = SessionAttendance.objects.filter(
-                student=student, 
-                session__course=course, 
-                status__in=["present", "late"]
-            ).count()
-            print("EEEEEEEEEE", attended_sessions)
-            attendance_data.append(attended_sessions)
-            
             # Get progress percentage
             progress, created = CourseProgress.objects.get_or_create(enrollment=enrollment)
             progress_data.append(progress.completion_percentage)
-            # print("### student.username ###", student.username)
-            # print("### attendance_rate ###", progress.attendance_rate)
-            # print("### completion_percentage ###", progress.completion_percentage)
-            # print("*" * 50)
-            
-            # # Get average exam score if available
-            # student_exams = ExamResult.objects.filter(
-            #     student=student, 
-            #     exam__course=course
-            # )
-            # avg_score = student_exams.aggregate(Avg('score'))['score__avg'] or 0
-            # exam_scores.append(round(avg_score, 1))
-    # print("## progress_data ##", progress_data)
-    Analytics = {
-        "labels": json.dumps(labels),
-        "attendance_data": json.dumps(attendance_data),
-        "progress_data": json.dumps(progress_data),
-    }
+        
+        # Prepare past sessions data for attendance chart
+        session_labels = []
+        session_attendance_data = []
+        
+        # Only include past and current sessions
+        for session in past_sessions:
+            session_labels.append(session.title)
+            # For teachers, show how many students attended
+            attendance_count = session.attendances.filter(
+                status__in=["present", "late"]
+            ).count()
+            session_attendance_data.append(attendance_count)
+        
+        # Create combined Analytics object with all data
+        Analytics = {
+            "labels": json.dumps(labels),
+            "progress_data": json.dumps(progress_data),
+            "session_labels": json.dumps(session_labels),
+            "session_attendance_data": json.dumps(session_attendance_data),
+        }
+    else:
+        # Empty data if not teacher or no enrollments
+        Analytics = {
+            "labels": "[]",
+            "progress_data": "[]",
+            "session_labels": "[]",
+            "session_attendance_data": "[]",
+        }
 
     # Build the absolute discount URL using the discount view's URL name.
     from urllib.parse import urlencode

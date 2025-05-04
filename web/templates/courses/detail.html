@@ -1064,7 +1064,7 @@
                     {% endif %}
                   </div>
                 </div>
-                <!-- Progress Tab -->
+                <!-- Progress Tab -->content-analytics
                 {% if is_enrolled and enrollment %}
                   <div id="content-progress"
                        class="tab-content hidden"
@@ -1320,7 +1320,7 @@
                 </div>
                 {% if is_teacher %}
                   <!-- Student Analytics with Tabs -->
-                  <div class="bg-white dark:bg-gray-800 rounded-lg p-4">
+                  <div id="content-analytics" class="tab-content hidden bg-white dark:bg-gray-800 rounded-lg p-4">
                     <div class="flex justify-between items-center mb-4">
                       <h2 class="text-xl font-bold">Student Analytics</h2>
                     </div>
@@ -1351,29 +1351,7 @@
                                   aria-selected="false">
                             <i class="fas fa-tasks mr-2"></i>Course Progress
                           </button>
-                        </li>
-                        <li class="mr-2" role="presentation">
-                          <button class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300" 
-                                  id="exam-tab" 
-                                  data-tabs-target="#exam-content" 
-                                  type="button" 
-                                  role="tab" 
-                                  aria-controls="exam" 
-                                  aria-selected="false">
-                            <i class="fas fa-file-alt mr-2"></i>Exam Scores
-                          </button>
-                        </li>
-                        <li role="presentation">
-                          <button class="inline-block p-4 border-b-2 border-transparent rounded-t-lg hover:text-gray-600 hover:border-gray-300 dark:hover:text-gray-300" 
-                                  id="combined-tab" 
-                                  data-tabs-target="#combined-content" 
-                                  type="button" 
-                                  role="tab" 
-                                  aria-controls="combined" 
-                                  aria-selected="false">
-                            <i class="fas fa-chart-line mr-2"></i>Combined View
-                          </button>
-                        </li>
+                        </li> 
                       </ul>
                     </div>
                     <!-- Analytics Tabs Content -->
@@ -1408,6 +1386,7 @@
                     </div>
                   </div>
                 {% endif %}
+                
               </div>
             </div>
           </div>
@@ -1432,7 +1411,6 @@
     const tabContents = document.querySelectorAll('.tab-pane');
     
     tabButtons.forEach(button => {
-    // console.log("Test", button)
       button.addEventListener('click', () => {
         // Remove active state from all tabs
         tabButtons.forEach(btn => {
@@ -1443,7 +1421,6 @@
         
         // Hide all tab contents
         tabContents.forEach(content => {
-          console.log("Test", content)
           content.classList.add('hidden');
           content.classList.remove('block');
         });
@@ -1462,27 +1439,11 @@
         }
       });
     });
-    
-    // Get data from backend or use placeholder data if not available
-    let labels = [];
-    let attendanceData = [];
-    let progressData = [];
-    let examData = [];
-    
-    // Try to get real data from backend (replace random data)
-    labels = JSON.parse('{{ Analytics.labels|escapejs }}');
-    attendanceData = JSON.parse('{{ Analytics.attendance_data }}');
-    // progressData = JSON.parse('{{ student_analytics_progress|escapejs }}');
-    // examData = JSON.parse('{{ student_analytics_exam_scores|escapejs }}');
 
-    console.log("attendanceData", attendanceData)
-      // Get course sessions data
-    const sessionLabels = [{% for session in past_sessions %}"{{ session.title }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
-    // const sessionDates = [{% for session in sessions %}"{{ session.start_time|date:'M d, Y' }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
-    const totalSessions = {{ sessions|length }};
-    console.log("sessionLabels", sessionLabels)
-    // console.log("sessionDates", sessionDates)
-    console.log("totalSessions", totalSessions)
+    labels = JSON.parse('{{ Analytics.labels|safe }}');
+    attendanceLabels = JSON.parse('{{ Analytics.session_labels|safe }}');
+    session_attendance_data = JSON.parse('{{ Analytics.session_attendance_data|safe }}');
+    progress_data = JSON.parse('{{ Analytics.progress_data|safe }}');
     
     // Create Attendance Chart
     const attendanceChart = new Chart(
@@ -1490,10 +1451,10 @@
       {
         type: 'bar',
         data: {
-          labels: sessionLabels,
+          labels: attendanceLabels,
           datasets: [{
             label: 'Present',
-            data: attendanceData,
+            data: session_attendance_data,
             backgroundColor: 'rgba(194, 39, 47, 0.6)',
             borderColor: 'rgba(194, 39, 47, 1)',
             borderWidth: 1
@@ -1510,7 +1471,7 @@
                   }
                 },
                 beginAtZero: true,
-                max: totalSessions, // Set max to total sessions count
+                max: labels.length, // Set max to total sessions count
                 title: {
                   display: true,
                   text: 'Number of Students'
@@ -1545,7 +1506,7 @@
           labels: labels,
           datasets: [{
             label: 'Course Completion (%)',
-            data: progressData,
+            data: progress_data,
             backgroundColor: 'rgba(54, 162, 235, 0.6)',
             borderColor: 'rgba(54, 162, 235, 1)',
             borderWidth: 1
@@ -1580,108 +1541,6 @@
       }
     );
     
-    // Create Exam Chart
-    const examChart = new Chart(
-      document.getElementById('examChart').getContext('2d'), 
-      {
-        type: 'bar',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Exam Scores',
-            data: examData,
-            backgroundColor: 'rgba(127, 255, 0, 0.6)',
-            borderColor: 'rgba(127, 255, 0, 1)',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 100,
-              title: {
-                display: true,
-                text: 'Score'
-              }
-            },
-            x: {
-              title: {
-                display: true,
-                text: 'Students'
-              }
-            }
-          },
-          plugins: {
-            title: {
-              display: true,
-              text: 'Student Exam Performance'
-            }
-          },
-          responsive: true,
-          maintainAspectRatio: true
-        }
-      }
-    );
-    
-    // Create Combined Chart (maintain existing functionality)
-    const combinedChart = new Chart(
-      document.getElementById('sectionChart').getContext('2d'), 
-      {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Attendance',
-            data: attendanceData,
-            borderColor: 'rgba(194, 39, 47, 1)',
-            backgroundColor: 'rgba(194, 39, 47, 0.2)',
-            fill: false,
-            tension: 0.2
-          }, {
-            label: 'Exams',
-            data: examData,
-            borderColor: 'rgba(127, 255, 0, 1)',
-            backgroundColor: 'rgba(127, 255, 0, 0.2)',
-            fill: false,
-            tension: 0.2
-          }, {
-            label: 'Course Progress',
-            data: progressData,
-            borderColor: 'rgba(54, 162, 235, 1)',
-            backgroundColor: 'rgba(54, 162, 235, 0.2)',
-            fill: false,
-            tension: 0.2
-          }]
-        },
-        options: {
-          scales: {
-            y: {
-              beginAtZero: true,
-              max: 100,
-              title: {
-                display: true,
-                text: 'Score/Percentage'
-              }
-            },
-            x: {
-              title: {
-                display: true,
-                text: 'Students'
-              }
-            }
-          },
-          plugins: {
-            title: {
-              display: true,
-              text: 'Student Performance Overview'
-            }
-          },
-          responsive: true,
-          maintainAspectRatio: true
-        }
-      }
-    );
   });
 </script>
 

@@ -276,8 +276,14 @@ def add_question(request, quiz_id):
                 if "save_and_add" in request.POST:
                     return redirect("question_form", quiz_id=quiz.id)
                 return redirect("quiz_detail", quiz_id=quiz.id)
-        else:
-            # Handle short answer questions
+        else:  # short-answer and other custom types
+            if not form.is_valid():
+                formset = QuizOptionFormSet(prefix="options")  # keep page functional on error
+                return render(
+                    request,
+                    "web/quiz/question_form.html",
+                    {"form": form, "formset": formset, "quiz": quiz, "question": None},
+                )
             with transaction.atomic():
                 question = form.save(commit=True)
                 question.order = next_order
