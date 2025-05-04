@@ -6,8 +6,8 @@ import time
 import uuid
 from datetime import datetime, timedelta
 from io import BytesIO
-from urllib.parse import parse_qs, urlparse
 from typing import ClassVar
+from urllib.parse import parse_qs, urlparse
 
 from allauth.account.signals import user_signed_up
 from django.conf import settings
@@ -651,61 +651,57 @@ class CourseProgress(models.Model):
         """
         course = self.enrollment.course
         student = self.enrollment.student
-        
+
         # Get total sessions and completed sessions (original calculation)
         total_sessions = course.sessions.count()
-        completed_sessions = SessionAttendance.objects.filter(student=student, session__course=course, status__in=["present", "late"]).count()
-        
+        completed_sessions = SessionAttendance.objects.filter(
+            student=student, session__course=course, status__in=["present", "late"]
+        ).count()
+
         # Initialize counters
         total_items = total_sessions
         completed_items = completed_sessions
-        
+
         try:
             # Look for section exams (exams with type "session")
             section_exams = course.exams.filter(exam_type="session")
             total_section_exams = section_exams.count()
             total_items += total_section_exams
-            
+
             # Count completed section exams
             for exam in section_exams:
                 # Get all completed attempts for this exam by the student
-                completed_attempts = exam.user_quizzes.filter(
-                    user=student,
-                    completed=True
-                )
-                
+                completed_attempts = exam.user_quizzes.filter(user=student, completed=True)
+
                 # Check if any attempt has a passing status
                 for attempt in completed_attempts:
                     score = attempt.calculate_score()
                     if score >= exam.passing_score:
                         completed_items += 1
                         break  # Only count one passing attempt per exam
-            
+
             # Check for final course exam
             final_exam = course.exams.filter(exam_type="course").first()
             if final_exam:
                 total_items += 1  # Count final exam in total
-                
+
                 # Check if student has passed the final exam
                 passed_final = False
-                final_attempts = final_exam.user_quizzes.filter(
-                    user=student,
-                    completed=True
-                )
-                
+                final_attempts = final_exam.user_quizzes.filter(user=student, completed=True)
+
                 for attempt in final_attempts:
                     score = attempt.calculate_score()
                     if score >= final_exam.passing_score:
                         passed_final = True
                         break
-                
+
                 if passed_final:
                     completed_items += 1
-        
+
         except Exception:
             # Fallback to just sessions if there's an error with exam calculations
             pass
-        
+
         # Calculate percentage
         if total_items > 0:
             return int((completed_items / total_items) * 100)
@@ -2205,10 +2201,11 @@ class Quiz(models.Model):
     randomize_questions = models.BooleanField(default=False, help_text="Randomize the order of questions")
     time_limit = models.PositiveIntegerField(null=True, blank=True, help_text="Time limit in minutes (optional)")
     ai_auto_correction = models.BooleanField(
-        default=False, help_text="If enabled, AI will automatically attempt to correct text questions",
+        default=False,
+        help_text="If enabled, AI will automatically attempt to correct text questions",
     )
     enable_copy_paste_and_text_selection = models.BooleanField(
-        default=False,  help_text="If enabled, the student will be able to copy/paste and select text inside the exam."
+        default=False, help_text="If enabled, the student will be able to copy/paste and select text inside the exam."
     )
 
     # New fields for exam functionality
@@ -2249,7 +2246,8 @@ class QuizQuestion(models.Model):
     order = models.PositiveIntegerField(default=0)
     image = models.ImageField(upload_to="quiz_questions/", blank=True, default="")
     reference_answer = models.TextField(
-        blank=True, help_text="Reference answer for the questions, important for AI-auto correction",
+        blank=True,
+        help_text="Reference answer for the questions, important for AI-auto correction",
     )
 
     class Meta:

@@ -920,30 +920,28 @@ def course_detail(request, slug):
     # Prepare all chart data in the views.py file - no more template JS loops
     if is_teacher and course.enrollments.exists():
         # Get all approved enrollments for this course
-        course_enrollments = course.enrollments.filter(status__in=["approved", "completed"]).select_related('student')
-        
+        course_enrollments = course.enrollments.filter(status__in=["approved", "completed"]).select_related("student")
+
         # Prepare student data
         for enrollment in course_enrollments:
             student = enrollment.student
             labels.append(student.username)
-            
+
             # Get progress percentage
             progress, created = CourseProgress.objects.get_or_create(enrollment=enrollment)
             progress_data.append(progress.completion_percentage)
-        
+
         # Prepare past sessions data for attendance chart
         session_labels = []
         session_attendance_data = []
-        
+
         # Only include past and current sessions
         for session in past_sessions:
             session_labels.append(session.title)
             # For teachers, show how many students attended
-            attendance_count = session.attendances.filter(
-                status__in=["present", "late"]
-            ).count()
+            attendance_count = session.attendances.filter(status__in=["present", "late"]).count()
             session_attendance_data.append(attendance_count)
-        
+
         # Create combined Analytics object with all data
         Analytics = {
             "labels": json.dumps(labels),

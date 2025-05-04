@@ -372,7 +372,7 @@ class Command(BaseCommand):
             for i in range(5):
                 # Randomly decide if the session should be in the past or future
                 in_future = random.choice([True, False])
-                
+
                 # Set the session time accordingly
                 if in_future:
                     # Between now and the next 5 weeks
@@ -419,31 +419,31 @@ class Command(BaseCommand):
 
                 # Get all sessions for this course
                 course_sessions = Session.objects.filter(course=course)
-                print("############", course_sessions)
-                
+
                 # For each session, randomly determine attendance status
                 for session in course_sessions:
                     # 70% chance of attending if the session is in the past
 
-                    print("@@@@@@@@@@@", session.end_time < timezone.now() and random.random() < 0.7)
                     if session.end_time < timezone.now() and random.random() < 0.7:
                         # Randomly select attendance status with weighted probabilities
                         status_options = ["present", "late", "excused", "absent"]
                         status_weights = [0.7, 0.1, 0.1, 0.1]  # 70% present, 10% each for other statuses
                         status = random.choices(status_options, weights=status_weights)[0]
-                        
+
                         # Create attendance record
-                        attendance = SessionAttendance.objects.create(
+                        SessionAttendance.objects.create(
                             student=student,
                             session=session,
                             status=status,
                         )
-                        
+
                         # If the status is present or late, mark it as completed in progress
                         if status in ["present", "late"]:
                             progress.completed_sessions.add(session)
-                        
-                        self.stdout.write(f"Created {status} attendance for {student.username} in session: {session.title}")
+
+                        self.stdout.write(
+                            f"Created {status} attendance for {student.username} in session: {session.title}"
+                        )
 
                 self.stdout.write(f"Created enrollment for {student.username} in {course.title}")
 
@@ -713,24 +713,21 @@ class Command(BaseCommand):
             # For each student, decide enrollment status first, then create submissions only for approved students
             for student in random.sample(students, min(5, len(students))):
                 # Choose a status with weighted probabilities
-                status = random.choices(
-                    ["approved", "pending", "rejected", "completed"],
-                    weights=[0.6, 0.2, 0.1, 0.1]
-                )[0]
-                
+                status = random.choices(["approved", "pending", "rejected", "completed"], weights=[0.6, 0.2, 0.1, 0.1])[
+                    0
+                ]
+
                 # Create the enrollment
                 enrollment, created = Enrollment.objects.get_or_create(
-                    student=student,
-                    course=course,
-                    defaults={"status": status}
+                    student=student, course=course, defaults={"status": status}
                 )
-                
+
                 if not created:
                     enrollment.status = status
                     enrollment.save()
-                    
+
                 self.stdout.write(f"Created {status} enrollment for {student.username} in {course.title}")
-                
+
                 # Only create final exam submissions for approved/completed students
                 if status in ["approved", "completed"]:
                     UserQuiz.objects.create(
@@ -741,7 +738,9 @@ class Command(BaseCommand):
                         end_time=timezone.now() - timedelta(days=random.randint(0, 4)),
                         answers=json.dumps(self.generate_mock_answers(course_exam)),
                     )
-                    self.stdout.write(f"Created submission for approved student {student.username} - {course_exam.title}")
+                    self.stdout.write(
+                        f"Created submission for approved student {student.username} - {course_exam.title}"
+                    )
 
         # Create session exams
         for session in sessions:
@@ -789,7 +788,9 @@ class Command(BaseCommand):
             self.stdout.write(f"Created session exam for: {session.title}")
 
             # Create student submissions for session exams
-            enrolled_students = Enrollment.objects.filter(course=session.course, status__in=["approved", "completed"]).values_list("student", flat=True)
+            enrolled_students = Enrollment.objects.filter(
+                course=session.course, status__in=["approved", "completed"]
+            ).values_list("student", flat=True)
             for student_id in enrolled_students:
                 if random.random() < 0.7:  # 70% chance a student completes the quiz
                     student = User.objects.get(id=student_id)

@@ -33,6 +33,10 @@ class AchievementTests(TestCase):
         )
         self.progress.completed_sessions.add(self.session)
 
+        from web.models import SessionAttendance
+
+        SessionAttendance.objects.create(student=self.user, session=self.session, status="present")
+
     def test_award_completion_badge(self):
         self.assertFalse(
             Achievement.objects.filter(student=self.user, course=self.course, achievement_type="completion").exists()

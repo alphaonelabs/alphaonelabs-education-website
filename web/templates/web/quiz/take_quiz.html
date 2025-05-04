@@ -200,8 +200,8 @@
 
       const quiz = document.getElementById('quiz-container');
       if (quiz && featureFlags.disableCopy && !isAssistiveUser()) {
-        quiz.addEventListener('contextmenu', e => e.preventDefault());
-        quiz.addEventListener('selectstart', e => e.preventDefault());
+          quiz.addEventListener('contextmenu', e => e.preventDefault());
+          quiz.addEventListener('selectstart', e => e.preventDefault());
       }
   </script>
   <style>
