@@ -396,7 +396,7 @@ class Command(BaseCommand):
             self.stdout.write(f"Created sessions for course: {course.title}")
 
         # # In the handle method, add this line after creating sessions
-        self.create_exams_and_quizzes(courses, sessions, students, teachers)
+        self.create_exams_and_quizzes(courses, sessions, students)
 
         # Create enrollments and progress
         for student in students:
@@ -638,7 +638,7 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("Successfully created test data"))
 
-    def create_exams_and_quizzes(self, courses: list, sessions: list, students: list, teachers: list) -> None:
+    def create_exams_and_quizzes(self, courses: list, sessions: list, students: list) -> None:
         """Create exams, quizzes, and student submissions for testing."""
         self.stdout.write("Creating exams and quizzes...")
 
@@ -676,7 +676,27 @@ class Command(BaseCommand):
             )
 
             # Create questions for course exam
-            for i in range(10):
+            # Ensure at least one multiple choice and one true/false question
+            required_types = ["multiple", "true_false"]
+            
+            # Create the required questions first
+            for i, q_type in enumerate(required_types):
+                question_text = self.get_question_text(q_type)
+
+                question = QuizQuestion.objects.create(
+                    quiz=course_exam,
+                    text=f"Question {i + 1}: {question_text}",
+                    question_type=q_type,
+                    explanation=f"Explanation for question {i + 1}",
+                    points=random.randint(1, 5),
+                    order=i + 1,
+                )
+
+                # Add options for multiple choice and true/false questions
+                self.create_question_options(question)
+                
+            # Create the remaining questions (randomly)
+            for i in range(len(required_types), 10):
                 question_type = random.choice(question_types)
 
                 # Generate appropriate question text
@@ -713,21 +733,24 @@ class Command(BaseCommand):
             # For each student, decide enrollment status first, then create submissions only for approved students
             for student in random.sample(students, min(5, len(students))):
                 # Choose a status with weighted probabilities
-                status = random.choices(["approved", "pending", "rejected", "completed"], weights=[0.6, 0.2, 0.1, 0.1])[
-                    0
-                ]
-
+                status = random.choices(
+                    ["approved", "pending", "rejected", "completed"],
+                    weights=[0.6, 0.2, 0.1, 0.1]
+                )[0]
+                
                 # Create the enrollment
                 enrollment, created = Enrollment.objects.get_or_create(
-                    student=student, course=course, defaults={"status": status}
+                    student=student,
+                    course=course,
+                    defaults={"status": status}
                 )
-
+                
                 if not created:
                     enrollment.status = status
                     enrollment.save()
-
+                    
                 self.stdout.write(f"Created {status} enrollment for {student.username} in {course.title}")
-
+                
                 # Only create final exam submissions for approved/completed students
                 if status in ["approved", "completed"]:
                     UserQuiz.objects.create(
@@ -738,9 +761,7 @@ class Command(BaseCommand):
                         end_time=timezone.now() - timedelta(days=random.randint(0, 4)),
                         answers=json.dumps(self.generate_mock_answers(course_exam)),
                     )
-                    self.stdout.write(
-                        f"Created submission for approved student {student.username} - {course_exam.title}"
-                    )
+                    self.stdout.write(f"Created submission for approved student {student.username} - {course_exam.title}")
 
         # Create session exams
         for session in sessions:
@@ -766,7 +787,27 @@ class Command(BaseCommand):
             )
 
             # Create questions for session exam (fewer than course exam)
-            for i in range(5):
+            # Ensure at least one multiple choice and one true/false question
+            required_types = ["multiple", "true_false"]
+            
+            # Create the required questions first
+            for i, q_type in enumerate(required_types):
+                question_text = self.get_question_text(q_type)
+
+                question = QuizQuestion.objects.create(
+                    quiz=session_exam,
+                    text=f"Question {i + 1}: {question_text}",
+                    question_type=q_type,
+                    explanation=f"Explanation for question {i + 1}",
+                    points=1,
+                    order=i + 1,
+                )
+
+                # Add options for multiple choice and true/false questions
+                self.create_question_options(question)
+                
+            # Create the remaining questions (randomly)
+            for i in range(len(required_types), 5):
                 question_type = random.choice(question_types)
 
                 # Generate appropriate question text
@@ -786,23 +827,6 @@ class Command(BaseCommand):
                     self.create_question_options(question)
 
             self.stdout.write(f"Created session exam for: {session.title}")
-
-            # Create student submissions for session exams
-            enrolled_students = Enrollment.objects.filter(
-                course=session.course, status__in=["approved", "completed"]
-            ).values_list("student", flat=True)
-            for student_id in enrolled_students:
-                if random.random() < 0.7:  # 70% chance a student completes the quiz
-                    student = User.objects.get(id=student_id)
-                    UserQuiz.objects.create(
-                        quiz=session_exam,
-                        user=student,
-                        completed=True,
-                        start_time=session.start_time + timedelta(days=1),
-                        end_time=session.start_time + timedelta(days=1, hours=1),
-                        answers=json.dumps(self.generate_mock_answers(session_exam)),
-                    )
-                    self.stdout.write(f"Created submission for {student.username} - {session_exam.title}")
 
     def get_question_text(self, question_type: str) -> str:
         """Generate appropriate question text based on question type."""
@@ -856,12 +880,14 @@ class Command(BaseCommand):
                     answers[q_id] = {
                         "user_answer": str(correct_option.id) if correct_option else "",
                         "is_correct": True,
+                        "points_awarded": question.points,
                     }
                 else:
                     incorrect_option = question.options.filter(is_correct=False).first()
                     answers[q_id] = {
                         "user_answer": str(incorrect_option.id) if incorrect_option else "",
                         "is_correct": False,
+                        "points_awarded": 0,
                     }
 
             elif question.question_type == "true_false":
@@ -871,12 +897,14 @@ class Command(BaseCommand):
                     answers[q_id] = {
                         "user_answer": str(correct_option.id) if correct_option else "",
                         "is_correct": True,
+                        "points_awarded": question.points,
                     }
                 else:
                     incorrect_option = question.options.filter(is_correct=False).first()
                     answers[q_id] = {
                         "user_answer": str(incorrect_option.id) if incorrect_option else "",
                         "is_correct": False,
+                        "points_awarded": 0,
                     }
 
             elif question.question_type == "short":
@@ -885,6 +913,7 @@ class Command(BaseCommand):
                     "is_graded": True,
                     "points_awarded": question.points if random.random() < 0.8 else round(question.points * 0.5),
                     "is_correct": random.random() < 0.8,
+                    "points_awarded": question.points,
                 }
 
             elif question.question_type == "fill_blank":

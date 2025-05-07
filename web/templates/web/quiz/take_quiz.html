@@ -18,19 +18,26 @@
           function init() {
               if (!quizForm) return;
 
-              // Restore saved answers when page loads
-              if (storageAvailable) {
-                  restoreFormState();
-              }
+              // Check if sessionStorage is available
+              const storageAvailable = (function() {
+                  try {
+                      const test = '__storage_test__';
+                      sessionStorage.setItem(test, test);
+                      sessionStorage.removeItem(test);
+                      return true;
+                  } catch(e) {
+                      console.warn('sessionStorage is not available. Quiz state will not be saved.');
+                      return false;
+                  }
+              })();
 
-              // Save answers when they change
               if (storageAvailable) {
-                  quizForm.addEventListener('input', saveFormState);
-              }
-
-              // Setup auto-save every 3 seconds
-              if (storageAvailable) {
-                  autoSaveTimer = setInterval(saveFormState, 3000);
+                // Restore saved answers when page loads
+                restoreFormState();
+                // Save answers when they change
+                quizForm.addEventListener('input', saveFormState);
+                // Setup auto-save every 3 seconds
+                autoSaveTimer = setInterval(saveFormState, 3000);
               }
 
               // Clear timer and storage when form is submitted normally
@@ -198,29 +205,19 @@
           if (footer && typeof footer.remove === "function") footer.remove();
       }
 
-      const quiz = document.getElementById('quiz-container');
-      if (quiz && featureFlags.disableCopy && !isAssistiveUser()) {
-          quiz.addEventListener('contextmenu', e => e.preventDefault());
-          quiz.addEventListener('selectstart', e => e.preventDefault());
-      }
   </script>
+  {% if not quiz.enable_copy_paste_and_text_selection %}
   <style>
       /* Disable right-click menu */
-          {
-          % if not quiz.enable_copy_paste_and_text_selection %
-      }
-
       body {
-          -webkit-user-select: none;
-          -moz-user-select: none;
-          -ms-user-select: none;
-          user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
       }
-
-          {
-          % endif %
-      }
-
+    </style>
+  {% endif %}
+  <style>
       /* Warn users when they first enter */
       .quiz-warning {
           background-color: #fed7d7;
@@ -309,7 +306,7 @@
                         <div class="flex items-center">
                           <input type="checkbox"
                                  id="question_{{ question.id }}_option_{{ option.id }}"
-                                 name="question_{{ question.id }}_option_{{ option.id }}"
+                                 name="question_{{ question.id }}[]"
                                  value="{{ option.id }}"
                                  class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
                           <label for="question_{{ question.id }}_option_{{ option.id }}"

@@ -858,7 +858,7 @@ def course_detail(request, slug):
         # Get user's attempts for this exam
         user_attempt = None
         if request.user.is_authenticated:
-            user_attempt = next((q for q in exam.user_quizzes.all() if q.user == request.user), None)
+            user_attempt = exam.user_quizzes.filter(user=request.user).first()
             user_attempts_count = exam.user_quizzes.filter(user=request.user).count()
 
         # Get submission count for teachers
@@ -888,7 +888,7 @@ def course_detail(request, slug):
             user_attempt = None
             user_attempts_count = 0
             if request.user.is_authenticated:
-                user_attempt = next((q for q in exam.user_quizzes.all() if q.user == request.user), None)
+                user_attempt = user_attempt = exam.user_quizzes.filter(user=request.user).first()
                 user_attempts_count = exam.user_quizzes.filter(user=request.user).count()
 
             # Get submission count for teachers
@@ -3773,9 +3773,9 @@ def challenge_submit(request, challenge_id):
         if form.is_valid():
             try:
                 ai_response = ai_assignment_corrector(challenge_detail)
-            except (ValueError, AttributeError) as e:
+            except (ValueError, AttributeError):
                 # Log the error but continue with default values
-                logger.exception("AI correction failed", e)
+                logger.exception("AI correction failed")
                 ai_response = {
                     "student_feedback": "Automatic feedback unavailable at this time.",
                     "teacher_feedback": "AI evaluation service encountered an error.",

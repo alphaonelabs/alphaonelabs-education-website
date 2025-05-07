@@ -2344,7 +2344,7 @@ class UserQuiz(models.Model):
 
         answers = self._get_answers_dict()
         # Collect all question IDs in one query
-        q_ids = [int(q_id) for q_id in answers.keys()]
+        q_ids = [int(q_id) for q_id in answers]
         questions = QuizQuestion.objects.filter(id__in=q_ids).only("id", "points")
         # Map id -> available points
         points_map = {q.id: q.points for q in questions}

@@ -173,7 +173,7 @@ def quiz_detail(request, quiz_id):
 
         # If quiz is associated with a course, check enrollment
         if hasattr(quiz, "course") and quiz.course:
-            is_enrolled = Enrollment.objects.filter(student=request.user, course=quiz.course, status="active").exists()
+            is_enrolled = Enrollment.objects.filter(student=request.user, course=quiz.course, status="approved").exists()
 
             if not is_enrolled:
                 can_take_quiz = False
@@ -285,10 +285,11 @@ def add_question(request, quiz_id):
                     {"form": form, "formset": formset, "quiz": quiz, "question": None},
                 )
             with transaction.atomic():
-                question = form.save(commit=True)
+                question = form.save(commit=False)
+                # Persist reference answer for AI/manual correction
+                question.reference_answer = request.POST.get("short_answer_reference", "").strip()
                 question.order = next_order
                 question.save()
-                # Get the reference answer
 
             messages.success(request, "Question added successfully.")
 
@@ -525,38 +526,41 @@ def _process_quiz_taking(request, quiz):
             latest_attempt = UserQuiz.objects.filter(quiz=quiz, user=user).order_by("-start_time").first()
             return redirect("quiz_results", user_quiz_id=latest_attempt.id)
 
+    # Always create an attempt record (user may be None for anonymous takers)
     user_quiz = None
     remaining_time = 0
-    # Check for existing incomplete attempts first
-    if user:
-        incomplete_attempt = UserQuiz.objects.filter(quiz=quiz, user=user, completed=False).first()
 
-        if not incomplete_attempt:
-            user_quiz = UserQuiz(quiz=quiz, user=user)
-            user_quiz.save()
-            request.session["active_quiz_id"] = user_quiz.id
-            request.session.save()
-        else:
-            user_quiz = incomplete_attempt
+    incomplete_attempt = UserQuiz.objects.filter(quiz=quiz, user=user, completed=False).first()
 
-        # Now define the helper AFTER user_quiz exists
-        def calculate_remaining_time():
-            delta = timezone.now() - user_quiz.start_time
-            total_secs_remaining = max(0, quiz.time_limit * 60 - delta.total_seconds())
-            return int(total_secs_remaining)
+    if not incomplete_attempt:
+        user_quiz = UserQuiz(quiz=quiz, user=user)
+        user_quiz.save()
+        request.session["active_quiz_id"] = user_quiz.id
+        request.session.save()
 
-        remaining_time = calculate_remaining_time()
+    if not user_quiz:
+        user_quiz = incomplete_attempt or UserQuiz.objects.create(quiz=quiz, user=user)
+    request.session["active_quiz_id"] = user_quiz.id
+    request.session.save()
 
-        if not incomplete_attempt and remaining_time <= 0:
-            user_quiz.complete_quiz()
-            user_quiz.save()
-            request.session["active_quiz_id"] = user_quiz.id
-            request.session.save()
-            messages.error(request, "You have reached the time limit")
+    # Now define the helper AFTER user_quiz exists
+    def calculate_remaining_time():
+        delta = timezone.now() - user_quiz.start_time
+        total_secs_remaining = max(0, quiz.time_limit * 60 - delta.total_seconds())
+        return int(total_secs_remaining)
 
-        # Shuffle questions if quiz settings require it
-        if quiz.randomize_questions:
-            random.shuffle(questions)
+    remaining_time = calculate_remaining_time()
+
+    if not incomplete_attempt and remaining_time <= 0:
+        user_quiz.complete_quiz()
+        user_quiz.save()
+        request.session["active_quiz_id"] = user_quiz.id
+        request.session.save()
+        messages.error(request, "You have reached the time limit")
+
+    # Shuffle questions if quiz settings require it
+    if quiz.randomize_questions:
+        random.shuffle(questions)
 
     # Prepare questions and options for display
     prepared_questions = []
@@ -614,10 +618,7 @@ def _process_quiz_taking(request, quiz):
                     (points/int(corr_ans)) * int(stu_corr_ans) - (points/total_options) * int(Stu_incorr_ans)
                     """
 
-                    user_answers = []
-                    for key in request.POST:
-                        if key.startswith(f"question_{q_id}_option_"):
-                            user_answers.append(key[len(f"question_{q_id}_option_") :])
+                    user_answers = request.POST.getlist(f'question_{q_id}[]')
 
                     correct_options = list(question_obj.options.filter(is_correct=True).values_list("id", flat=True))
                     all_options = question_obj.options.all().values_list("id", flat=True)
@@ -746,7 +747,7 @@ def _process_quiz_taking(request, quiz):
         "quiz": quiz,
         "questions": prepared_questions,
         "form": form,
-        "user_quiz_id": user_quiz.id,
+        "user_quiz_id": user_quiz.id if user_quiz else None,
         "quiz_id": quiz.id,
         "user_quiz": user_quiz,
         "time_limit": quiz.time_limit,
@@ -1112,7 +1113,7 @@ def student_exam_correction(
             if question_id in answers:
                 answers[question_id]["is_graded"] = True
                 answers[question_id]["points_awarded"] = points_awarded
-                answers[question_id]["is_correct"] = True if points_awarded >= (question.points / 2) else False
+                answers[question_id]["is_correct"] = points_awarded >= (question.points / 2)
 
                 # Check if all questions are graded
                 all_graded = True

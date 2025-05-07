@@ -7,7 +7,8 @@
 {% endblock title %}
 {% block extra_head %}
   <!-- Chart.js for analytics visualizations -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.2.1"
+  integrity="sha384-gdQErvCNWvHQZj6XZM0dNsAoY4v+j5P1XDpNkcM3HJG1Yx04ecqIHk7+4VBOCHOG"
           crossorigin="anonymous"></script>
   {{ question_analysis|json_script:"question-analysis-data" }}
   {{ score_distribution|json_script:"score-distribution-data" }}
@@ -63,7 +64,8 @@
                       tooltip: {
                           callbacks: {
                               label: function(context) {
-                                  return context.raw + ' attempt' + (context.raw !== 1 ? 's' : '');
+                                  const value = context.raw ?? 0;
+                                  return `${value} attempt${value === 1 ? '' : 's'}`;
                               }
                           }
                       }
@@ -397,7 +399,7 @@
                     </td>
                     <td class="py-3 px-4 text-sm text-gray-800 dark:text-gray-200">{{ attempt.created_at|date:"M d, Y H:i" }}</td>
                     {% if attempt.correction_status == "in_progress" %}
-                      <td class="py-3 px-4 text-sm font-medium text-blue-600 dark:text-red-400">In Progress</td>
+                      <td class="py-3 px-4 text-sm font-medium text-blue-600 dark:text-blue-400">In Progress</td>
                       <td class="py-3 px-4 text-sm">-</td>
                     {% else %}
                       <td class="py-3 px-4 text-sm font-medium {% if attempt.status == 'passed' %}text-green-600 dark:text-green-400 {% else %}text-red-600 dark:text-red-400{% endif %}">

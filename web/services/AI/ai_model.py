@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import sys
 import re
 from typing import Union
 
@@ -8,18 +9,25 @@ import google.generativeai as genai
 
 logger = logging.getLogger(__name__)
 
-api_key = os.getenv("GOOGLE_API_KEY")
 
-if not api_key:
-    # Defer hard failure; functions will return structured error objects instead.
-    print("⚠️  GOOGLE_API_KEY not found - AI correction disabled")
+# Todo add GOOGLE_API_KEY to the environment variables for production
+# api_key = os.getenv("GOOGLE_API_KEY")
+# if not api_key:
+#     # Defer hard failure; functions will return structured error objects instead.
+#     print("⚠️  GOOGLE_API_KEY not found - AI correction disabled")
 
+# Only for Development
+api_key = "AIzaSyBy4TChPPK4nn-3IWRidnZqmQ7Qx5jvoIU"
 
 if api_key:
     genai.configure(api_key=api_key)
 
-# Initialize the model with 'gemini-1.5-flash'
-model = genai.GenerativeModel("gemini-1.5-flash")
+if api_key:
+    # Initialize the model only when credentials are present
+    model = genai.GenerativeModel("gemini-1.5-flash")
+else:
+    # Prevent import‐time failures when no API key is provided
+    model = None
 
 
 def ai_assignment_corrector(challenge_form: dict) -> dict:
@@ -90,7 +98,7 @@ def ai_assignment_corrector(challenge_form: dict) -> dict:
 
         return response_object
 
-    except (json.JSONDecodeError, genai.types.GenerationError, ValueError) as e:
+    except Exception as e:
         logger.exception("Error in AI processing: ", e)
         return {
             "degree": 0,
@@ -167,9 +175,18 @@ def ai_quiz_corrector(quiz_data: dict) -> Union[str, dict]:
     # Generate response
     try:
         response = model.generate_content(user_input)
-        return response.text[7:-4]
+        print("response.text", response.text)
 
-    except (json.JSONDecodeError, genai.types.GenerationError, ValueError) as e:
+        response = model.generate_content(user_input)
+        json_match = re.search(r"\{.*?\}", response.text, re.DOTALL)
+        if not json_match:
+            raise ValueError("No JSON object found in response")
+        print("response.text", json_match.group(0))
+        return json.loads(json_match.group(0))
+    
+        # return response.text[7:-4]
+
+    except Exception as e:
         logger.exception("Error in AI processing: ", e)
         return {
             "degree": 0,

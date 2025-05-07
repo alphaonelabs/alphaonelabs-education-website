@@ -152,7 +152,7 @@
                               <input type="checkbox"
                                      class="w-5 mr-2 opacity-[0.7]"
                                      {% if option.id|stringformat:"i" in question.user_answer %}checked{% endif %}
-                                     onclick="return false;" />
+                                     disabled />
                               <span class="text-gray-700 dark:text-gray-300 {% if option.id|stringformat:"i" in question.user_answer %}font-medium {% if option.is_correct %}text-green-700 dark:text-green-400 {% else %}text-red-700 dark:text-red-400{% endif %} {% elif option.is_correct %}font-medium text-green-700 dark:text-green-400{% endif %}">
                                 {{ option.text }}
                                 {% if option.is_correct %}
@@ -176,7 +176,7 @@
                               <input type="radio"
                                      class="w-5 mr-2 opacity-[0.7]"
                                      {% if option.id|stringformat:"i" in question.user_answer %}checked{% endif %}
-                                     onclick="return false;" />
+                                     disabled />
                               <span class="text-gray-700 dark:text-gray-300 {% if option.id|stringformat:"i" == question.user_answer %}font-medium {% if option.is_correct %}text-green-700 dark:text-green-400 {% else %}text-red-700 dark:text-red-400{% endif %} {% elif option.is_correct %}font-medium text-green-700 dark:text-green-400{% endif %}">
                                 <span class="mr-5 font-medium">{{ option.text }}</span>
                                 {% if option.is_correct %}
