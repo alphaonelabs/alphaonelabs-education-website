@@ -63,12 +63,15 @@
                   if (!input.name) return;
 
                   // Handle different input types
-                  if (input.type === 'checkbox' || input.type === 'radio') {
+                  if (input.type === 'checkbox') {
+                      // accumulate an array of checked values
+                      formData[input.name] = formData[input.name] || [];
+                      if (input.checked) {
+                          formData[input.name].push(input.value);
+                      }
+                  } else if (input.type === 'radio') {
                       if (input.checked) {
                           formData[input.name] = input.value;
-                      } else {
-                          // Explicitly clear previously-saved state
-                          formData[input.name] = null;
                       }
                   } else if (input.type === 'select-multiple') {
                       const selectedOptions = Array.from(input.selectedOptions).map(opt => opt.value);

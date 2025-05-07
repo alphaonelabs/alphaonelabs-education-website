@@ -2209,9 +2209,9 @@ class Quiz(models.Model):
         help_text="If enabled, AI will automatically attempt to correct text questions",
     )
     enable_copy_paste_and_text_selection = models.BooleanField(
-        default=False, help_text="If enabled, the student will be able to copy/paste and select text inside the exam."
+        default=False,
+        help_text="If enabled, the student will be able to copy/paste and select text inside the exam.",
     )
-
     # New fields for exam functionality
     exam_type = models.CharField(max_length=10, choices=EXAM_TYPES, default="quiz", db_index=True)
     course = models.ForeignKey("Course", on_delete=models.CASCADE, related_name="exams", null=True, blank=True)
@@ -2347,9 +2347,8 @@ class UserQuiz(models.Model):
             return self._points_cache
 
         answers = self._get_answers_dict()
-        # Collect all question IDs in one query
-        q_ids = [int(q_id) for q_id in answers]
-        questions = QuizQuestion.objects.filter(id__in=q_ids).only("id", "points")
+        # Collect *all* questions belonging to the quiz
+        questions = self.quiz.questions.only("id", "points")
         # Map id -> available points
         points_map = {q.id: q.points for q in questions}
 
@@ -2370,12 +2369,12 @@ class UserQuiz(models.Model):
         return self._points_cache
 
     @property
-    def max_score(self):
+    def max_score(self) -> int:
         """Calculate max_score dynamically from the answered questions."""
         return self._compute_points()[1]
 
     @property
-    def score(self):
+    def score(self) -> int:
         """Calculate max_score dynamically from the answered questions."""
         return self._compute_points()[0]
 

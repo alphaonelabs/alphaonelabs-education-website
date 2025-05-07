@@ -888,7 +888,7 @@ def course_detail(request, slug):
             user_attempt = None
             user_attempts_count = 0
             if request.user.is_authenticated:
-                user_attempt = user_attempt = exam.user_quizzes.filter(user=request.user).first()
+                user_attempt = exam.user_quizzes.filter(user=request.user).first()
                 user_attempts_count = exam.user_quizzes.filter(user=request.user).count()
 
             # Get submission count for teachers

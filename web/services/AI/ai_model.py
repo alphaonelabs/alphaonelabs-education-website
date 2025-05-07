@@ -1,23 +1,28 @@
 import json
 import logging
-
-# import os
+import os
 import re
 from typing import Union
 
+import environ
 import google.generativeai as genai
 
 logger = logging.getLogger(__name__)
 
+# Initialize environ
+env = environ.Env()
+# Set the path to .env.sample
+env_file = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), ".env.sample"
+)
+# Read the .env.sample file
+environ.Env.read_env(env_file)
+# Get API key from the environment loaded from .env.sample
+api_key = env("GOOGLE_API_KEY", default=None)
 
-# Todo add GOOGLE_API_KEY to the environment variables for production
-# api_key = os.getenv("GOOGLE_API_KEY")
-# if not api_key:
-#     # Defer hard failure; functions will return structured error objects instead.
-#     print("⚠️  GOOGLE_API_KEY not found - AI correction disabled")
-
-# Only for Development
-api_key = "AIzaSyBy4TChPPK4nn-3IWRidnZqmQ7Qx5jvoIU"
+if not api_key:
+    # Defer hard failure; functions will return structured error objects instead.
+    print("⚠️  GOOGLE_API_KEY not found - AI correction disabled")
 
 if api_key:
     genai.configure(api_key=api_key)

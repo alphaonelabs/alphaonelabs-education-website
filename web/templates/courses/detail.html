@@ -1067,7 +1067,7 @@
                     {% endif %}
                   </div>
                 </div>
-                <!-- Progress Tab -->content-analytics
+                <!-- Progress Tab -->
                 {% if is_enrolled and enrollment %}
                   <div id="content-progress"
                        class="tab-content hidden"
@@ -1456,7 +1456,7 @@
               });
           });
 
-          labels = JSON.parse('{{ Analytics.labels|safe }}');
+          const labels = JSON.parse('{{ Analytics.labels|default:"[]"|escapejs }}');
           attendanceLabels = JSON.parse('{{ Analytics.session_labels|safe }}');
           session_attendance_data = JSON.parse('{{ Analytics.session_attendance_data|safe }}');
           progress_data = JSON.parse('{{ Analytics.progress_data|safe }}');

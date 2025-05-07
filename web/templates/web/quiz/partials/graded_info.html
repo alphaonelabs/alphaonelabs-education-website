@@ -2,10 +2,7 @@
      class="mt-4 bg-green-50 dark:bg-green-900/30 p-3 rounded-md">
   <div class="flex justify-between items-center">
     <div class="flex items-center gap-[15px]">
-      <input type="hidden"
-             id="user_score_{{ question.id }}"
-             value="{{ user_quiz.score }}"
-             disabled />
+      <input type="hidden" id="user_score" value="{{ user_quiz.score }}" disabled />
       <input type="hidden"
              id="correction_status_{{ question.id }}"
              value="{{ user_quiz.correction_status }}"
@@ -28,13 +25,12 @@
         </div>
       </div>
       <input type="hidden"
-             class="hidden"
-             class="question-correction-status"
+             class="question-correction-status hidden"
              data-question-id="{{ question.id }}"
              value="{% if points_awarded >= half_question_points %}Correct{% else %}Incorrect{% endif %}"
              disabled />
-      <div id="change_grade" class="hidden w-full md:w-1/3">
-        <label for="points_awarded"
+      <div id="change_grade_{{ question.id }}" class="hidden w-full md:w-1/3">
+        <label for="grade-input-{{ question.id }}"
                class="block text-sm text-gray-700 dark:text-gray-300 mb-1">Points (max: {{ question.points }})</label>
         <input type="number"
                name="points_awarded"

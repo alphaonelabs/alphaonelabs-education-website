@@ -136,7 +136,7 @@
                         {% endif %}
                       </span>
                       <span class="font-medium text-lg text-gray-800 dark:text-white">Question {{ forloop.counter }}</span>
-                      <span class="ml-4 dark:bg-gray-700 p-2 rounded-lg text-gray-800 dark:text-white {% if question.original_points|div:2 <= question.points_awarded %} bg-green-50 {% else %} bg-red-200 {% endif %}">
+                      <span class="ml-4 dark:bg-gray-700 p-2 rounded-lg text-gray-800 dark:text-white {% if question.original_points|div:2 <= question.points_awarded %}bg-green-50{% else %}bg-red-200{% endif %}">
                       Points: {{ question.points_awarded }}/{{ question.original_points }}</span>
                     </div>
                     <div class="ml-11">

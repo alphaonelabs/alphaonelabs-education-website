@@ -500,7 +500,6 @@ def take_quiz(request, quiz_id):
 
         if active_exams.exists():
             active_exam = active_exams.first()
-            print("## cond ##", quiz_id != active_exam.quiz.id, quiz_id, active_exam.quiz.id)
             if quiz_id != active_exam.quiz.id:
                 messages.error(
                     request,
@@ -653,8 +652,8 @@ def _process_quiz_taking(request, quiz):
                             student_correct_answers += 1
                         else:
                             student_wrong_answers += 1
-                    if len(correct_options) != 0:
-                        correct_points = (question_obj.points / len(correct_options)) * student_correct_answers
+                    num_correct = max(len(correct_options), 1)
+                    correct_points = (question_obj.points / num_correct) * student_correct_answers
 
                     wrong_points = 0
                     if in_correct_options and in_correct_options != 0:

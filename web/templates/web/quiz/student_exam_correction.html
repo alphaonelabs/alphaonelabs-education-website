@@ -11,7 +11,8 @@
 
           const button = event.target;
           const wrapper = button.parentElement.parentElement;
-          const changeGradeDiv = wrapper ? wrapper.querySelector("#change_grade") : null;
+          const changeGradeDiv = wrapper ? wrapper.querySelector(`#change_grade_${question_id}`) : null;
+          console.log("#####", changeGradeDiv)
 
           if (changeGradeDiv) {
               if (changeGradeDiv.classList.contains("hidden")) {
@@ -183,7 +184,6 @@
                       Correct
                     </span>
                   {% else %}
-                    ## {{ question.points_awarded }} --- {{ question.points }} ##
                     <span class="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full text-sm">Incorrect</span>
                   {% endif %}
                 {% else %}
@@ -289,8 +289,8 @@
                 {% csrf_token %}
                 <input type="hidden" name="question_id" value="{{ question.id }}" />
                 <div class="flex flex-col md:flex-row items-center gap-4">
-                  <div id="change_grade" class="w-full md:w-1/3">
-                    <label for="points_awarded"
+                  <div id="change_grade_{{ question.id }}" class="w-full md:w-1/3">
+                    <label for="grade-input-{{ question.id }}"
                            class="block text-sm text-gray-700 dark:text-gray-300 mb-1">
                       Points (max: {{ question.points }})
                     </label>
@@ -320,8 +320,8 @@
                    class="mt-4 bg-green-50 dark:bg-green-900/30 p-3 rounded-md">
                 <div class="flex justify-between items-center">
                   <div class="flex items-center gap-[15px]">
-                    <div id="change_grade" class="hidden w-full md:w-1/3">
-                      <label for="points_awarded"
+                    <div id="change_grade_{{ question.id }}" class="hidden w-full md:w-1/3">
+                      <label for="grade-input-{{ question.id }}"
                              class="block text-sm text-gray-700 dark:text-gray-300 mb-1">
                         Points (max: {{ question.points }})
                       </label>
