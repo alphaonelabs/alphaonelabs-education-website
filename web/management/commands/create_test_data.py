@@ -678,7 +678,7 @@ class Command(BaseCommand):
             # Create questions for course exam
             # Ensure at least one multiple choice and one true/false question
             required_types = ["multiple", "true_false"]
-            
+
             # Create the required questions first
             for i, q_type in enumerate(required_types):
                 question_text = self.get_question_text(q_type)
@@ -694,7 +694,7 @@ class Command(BaseCommand):
 
                 # Add options for multiple choice and true/false questions
                 self.create_question_options(question)
-                
+
             # Create the remaining questions (randomly)
             for i in range(len(required_types), 10):
                 question_type = random.choice(question_types)
@@ -733,24 +733,21 @@ class Command(BaseCommand):
             # For each student, decide enrollment status first, then create submissions only for approved students
             for student in random.sample(students, min(5, len(students))):
                 # Choose a status with weighted probabilities
-                status = random.choices(
-                    ["approved", "pending", "rejected", "completed"],
-                    weights=[0.6, 0.2, 0.1, 0.1]
-                )[0]
-                
+                status = random.choices(["approved", "pending", "rejected", "completed"], weights=[0.6, 0.2, 0.1, 0.1])[
+                    0
+                ]
+
                 # Create the enrollment
                 enrollment, created = Enrollment.objects.get_or_create(
-                    student=student,
-                    course=course,
-                    defaults={"status": status}
+                    student=student, course=course, defaults={"status": status}
                 )
-                
+
                 if not created:
                     enrollment.status = status
                     enrollment.save()
-                    
+
                 self.stdout.write(f"Created {status} enrollment for {student.username} in {course.title}")
-                
+
                 # Only create final exam submissions for approved/completed students
                 if status in ["approved", "completed"]:
                     UserQuiz.objects.create(
@@ -761,7 +758,9 @@ class Command(BaseCommand):
                         end_time=timezone.now() - timedelta(days=random.randint(0, 4)),
                         answers=json.dumps(self.generate_mock_answers(course_exam)),
                     )
-                    self.stdout.write(f"Created submission for approved student {student.username} - {course_exam.title}")
+                    self.stdout.write(
+                        f"Created submission for approved student {student.username} - {course_exam.title}"
+                    )
 
         # Create session exams
         for session in sessions:
@@ -789,7 +788,7 @@ class Command(BaseCommand):
             # Create questions for session exam (fewer than course exam)
             # Ensure at least one multiple choice and one true/false question
             required_types = ["multiple", "true_false"]
-            
+
             # Create the required questions first
             for i, q_type in enumerate(required_types):
                 question_text = self.get_question_text(q_type)
@@ -805,7 +804,7 @@ class Command(BaseCommand):
 
                 # Add options for multiple choice and true/false questions
                 self.create_question_options(question)
-                
+
             # Create the remaining questions (randomly)
             for i in range(len(required_types), 5):
                 question_type = random.choice(question_types)
@@ -913,7 +912,6 @@ class Command(BaseCommand):
                     "is_graded": True,
                     "points_awarded": question.points if random.random() < 0.8 else round(question.points * 0.5),
                     "is_correct": random.random() < 0.8,
-                    "points_awarded": question.points,
                 }
 
             elif question.question_type == "fill_blank":

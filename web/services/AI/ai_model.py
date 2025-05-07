@@ -1,7 +1,7 @@
 import json
 import logging
-import os
-import sys
+
+# import os
 import re
 from typing import Union
 
@@ -89,7 +89,7 @@ def ai_assignment_corrector(challenge_form: dict) -> dict:
         response = model.generate_content(user_input)
 
         # Try to extract JSON from the response
-        json_match = re.search(r"\{.*?\}", response.text, re.DOTALL)  # non-greedy
+        json_match = re.search(r"\{.*\}", response.text, re.DOTALL)
         if json_match:
             json_str = json_match.group(0)
             response_object = json.loads(json_str)
@@ -175,16 +175,11 @@ def ai_quiz_corrector(quiz_data: dict) -> Union[str, dict]:
     # Generate response
     try:
         response = model.generate_content(user_input)
-        print("response.text", response.text)
 
-        response = model.generate_content(user_input)
-        json_match = re.search(r"\{.*?\}", response.text, re.DOTALL)
-        if not json_match:
+        json_match = re.search(r"\{.*\}", response.text, re.DOTALL)
+        if not json_match.group(0):
             raise ValueError("No JSON object found in response")
-        print("response.text", json_match.group(0))
-        return json.loads(json_match.group(0))
-    
-        # return response.text[7:-4]
+        return json_match.group(0)
 
     except Exception as e:
         logger.exception("Error in AI processing: ", e)

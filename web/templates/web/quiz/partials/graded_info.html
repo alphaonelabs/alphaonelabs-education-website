@@ -29,7 +29,8 @@
       </div>
       <input type="hidden"
              class="hidden"
-             class="question-correction-status" data-question-id="{{ question.id }}"
+             class="question-correction-status"
+             data-question-id="{{ question.id }}"
              value="{% if points_awarded >= half_question_points %}Correct{% else %}Incorrect{% endif %}"
              disabled />
       <div id="change_grade" class="hidden w-full md:w-1/3">

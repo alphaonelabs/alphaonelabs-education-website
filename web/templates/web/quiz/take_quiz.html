@@ -25,19 +25,19 @@
                       sessionStorage.setItem(test, test);
                       sessionStorage.removeItem(test);
                       return true;
-                  } catch(e) {
+                  } catch (e) {
                       console.warn('sessionStorage is not available. Quiz state will not be saved.');
                       return false;
                   }
               })();
 
               if (storageAvailable) {
-                // Restore saved answers when page loads
-                restoreFormState();
-                // Save answers when they change
-                quizForm.addEventListener('input', saveFormState);
-                // Setup auto-save every 3 seconds
-                autoSaveTimer = setInterval(saveFormState, 3000);
+                  // Restore saved answers when page loads
+                  restoreFormState();
+                  // Save answers when they change
+                  quizForm.addEventListener('input', saveFormState);
+                  // Setup auto-save every 3 seconds
+                  autoSaveTimer = setInterval(saveFormState, 3000);
               }
 
               // Clear timer and storage when form is submitted normally
@@ -139,7 +139,7 @@
           // Check if we have a time limit
           const timeLimit = parseInt("{{ quiz.time_limit|default:0 }}");
           if (timeLimit > 0) {
-              let remainingTime = parseFloat(localStorage.getItem('quiz_' + quizSecurityData.userQuizId + '_remaining_time') || "{{ remaining_time|default:0 }}");
+              let remainingTime = parseFloat("{{ remaining_time|default:0 }}");
 
               const timerElement = document.getElementById('timer');
               if (!timerElement) return; // Exit if timer element doesn't exist
@@ -181,7 +181,6 @@
               document.getElementById('quiz-form').addEventListener('submit', function() {
                   clearInterval(timerInterval);
                   localStorage.removeItem('quiz_' + quizSecurityData.userQuizId + '_remaining_time');
-
                   // Save the remaining time in the hidden field for server-side processing
                   document.getElementById('quiz_timer_value').value = remainingTime;
               });
@@ -204,17 +203,16 @@
           if (header) header.innerHTML = "";
           if (footer && typeof footer.remove === "function") footer.remove();
       }
-
   </script>
   {% if not quiz.enable_copy_paste_and_text_selection %}
-  <style>
-      /* Disable right-click menu */
-      body {
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
-      }
+    <style>
+        /* Disable right-click menu */
+        body {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
     </style>
   {% endif %}
   <style>

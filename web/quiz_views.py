@@ -173,7 +173,9 @@ def quiz_detail(request, quiz_id):
 
         # If quiz is associated with a course, check enrollment
         if hasattr(quiz, "course") and quiz.course:
-            is_enrolled = Enrollment.objects.filter(student=request.user, course=quiz.course, status="approved").exists()
+            is_enrolled = Enrollment.objects.filter(
+                student=request.user, course=quiz.course, status="approved"
+            ).exists()
 
             if not is_enrolled:
                 can_take_quiz = False
@@ -489,6 +491,25 @@ def take_quiz(request, quiz_id):
         messages.error(request, "This quiz is not currently available.")
         return redirect("quiz_list")
 
+    # If this is an exam (not a regular quiz), check for existing uncompleted exams
+    if quiz.exam_type in ["course", "session"]:
+        # Look for any active/uncompleted exams for this user
+        active_exams = UserQuiz.objects.filter(
+            user=request.user, quiz__exam_type__in=["course", "session"], completed=False
+        ).select_related("quiz")
+
+        if active_exams.exists():
+            active_exam = active_exams.first()
+            print("## cond ##", quiz_id != active_exam.quiz.id, quiz_id, active_exam.quiz.id)
+            if quiz_id != active_exam.quiz.id:
+                messages.error(
+                    request,
+                    f"You have an uncompleted exam: '{active_exam.quiz.title}'. "
+                    "Please complete this exam before starting a new one.",
+                )
+                # Redirect to the active exam
+                return redirect("take_quiz", quiz_id=active_exam.quiz.id)
+
     response = _process_quiz_taking(request, quiz)
 
     # Add no-cache headers to prevent back button issues
@@ -618,7 +639,7 @@ def _process_quiz_taking(request, quiz):
                     (points/int(corr_ans)) * int(stu_corr_ans) - (points/total_options) * int(Stu_incorr_ans)
                     """
 
-                    user_answers = request.POST.getlist(f'question_{q_id}[]')
+                    user_answers = request.POST.getlist(f"question_{q_id}[]")
 
                     correct_options = list(question_obj.options.filter(is_correct=True).values_list("id", flat=True))
                     all_options = question_obj.options.all().values_list("id", flat=True)

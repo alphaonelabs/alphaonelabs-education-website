@@ -698,9 +698,13 @@ class CourseProgress(models.Model):
                 if passed_final:
                     completed_items += 1
 
-        except Exception:
-            # Fallback to just sessions if there's an error with exam calculations
-            pass
+        except (QuizQuestion.DoesNotExist, ValueError) as exc:
+            # Fallback to session-only percentage but surface the root cause for debugging
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "Error computing completion percentage for %s: %s", student, exc, exc_info=True
+            )
 
         # Calculate percentage
         if total_items > 0:
