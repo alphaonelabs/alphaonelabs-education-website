@@ -177,15 +177,18 @@
                 <div class="text-sm text-gray-600 dark:text-gray-400">{{ question.points }} points</div>
               </div>
               <div id="question_correction_div">
-                {% if question.is_correct %}
-                  <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-sm">
-                    Correct
-                  </span>
-                {% elif question.is_graded %}
-                  <span class="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full text-sm">Incorrect</span>
-                {% elif question.needs_grading %}
+                {% if question.is_graded %}
+                  {% if question.is_correct %}
+                    <span class="px-2 py-1 bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200 rounded-full text-sm">
+                      Correct
+                    </span>
+                  {% else %}
+                    ## {{ question.points_awarded }} --- {{ question.points }} ##
+                    <span class="px-2 py-1 bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 rounded-full text-sm">Incorrect</span>
+                  {% endif %}
+                {% else %}
                   <span class="px-2 py-1 bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200 rounded-full text-sm">
-                    Needs Grading
+                    Not Graded
                   </span>
                 {% endif %}
               </div>
