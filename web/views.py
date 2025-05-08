@@ -859,13 +859,15 @@ def course_detail(request, slug):
         # Get user's attempts for this exam
         user_attempt = None
         if request.user.is_authenticated:
-            user_attempt = exam.user_quizzes.filter(user=request.user).first()
-            user_attempts_count = exam.user_quizzes.filter(user=request.user).count()
+            # Get count in a more efficient way without a second query
+            user_attempts = exam.user_quizzes.filter(user=request.user)
+            user_attempt = user_attempts.first()
+            user_attempts_count = user_attempts.count()
 
         # Get submission count for teachers
         submission_count = 0
         if is_teacher:
-            submission_count = sum(1 for q in exam.user_quizzes.all() if q.completed)
+            submission_count = exam.user_quizzes.filter(completed=True).count()
 
         course_exam_data.append(
             {
@@ -889,13 +891,15 @@ def course_detail(request, slug):
             user_attempt = None
             user_attempts_count = 0
             if request.user.is_authenticated:
-                user_attempt = exam.user_quizzes.filter(user=request.user).first()
-                user_attempts_count = exam.user_quizzes.filter(user=request.user).count()
+                # Get count in a more efficient way without a second query
+                user_attempts = exam.user_quizzes.filter(user=request.user)
+                user_attempt = user_attempts.first()
+                user_attempts_count = user_attempts.count()
 
             # Get submission count for teachers
             submission_count = 0
             if is_teacher:
-                submission_count = sum(1 for q in exam.user_quizzes.all() if q.completed)
+                submission_count = exam.user_quizzes.filter(completed=True).count()
 
             session_exam_data.append(
                 {

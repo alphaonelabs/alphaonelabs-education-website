@@ -189,7 +189,9 @@ def ai_quiz_corrector(quiz_data: dict) -> Union[str, dict]:
     except Exception as e:
         logger.exception("Error in AI processing: ", e)
         return {
-            "degree": 0,
-            "student_feedback": "Error: Could not evaluate the answer.",
-            "teacher_feedback": "Error: AI failed to process the response.",
+            "correction": {},
+            "over_all_feedback": {
+                "student_feedback": "Error: Could not evaluate the answer.",
+                "teacher_feedback": "Error: AI failed to process the response.",
+            },
         }

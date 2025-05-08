@@ -491,7 +491,6 @@ def take_quiz(request, quiz_id):
     # If this is an exam (not a regular quiz), check for existing uncompleted exams
     if request.user.is_authenticated and quiz.exam_type in ["course", "session"]:
         # Look for any active/uncompleted exams for this user
-        print("## request.user ##", request.user)
         active_exams = UserQuiz.objects.filter(
             user=request.user, quiz__exam_type__in=["course", "session"], completed=False
         ).select_related("quiz")
@@ -718,10 +717,7 @@ def _process_quiz_taking(request, quiz):
                 ai_correction_results = {}
 
                 # if it comes back as text, parse it
-                if isinstance(raw, str):
-                    ai_correction_results = json.loads(raw)
-                else:
-                    ai_correction_results = raw
+                ai_correction_results = json.loads(raw) if isinstance(raw, str) else raw
 
                 corrected_AI_answers = ai_correction_results.get("correction", {})
 
