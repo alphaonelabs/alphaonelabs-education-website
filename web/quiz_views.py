@@ -57,7 +57,12 @@ def create_course_exam(
         if form.is_valid():
             quiz = form.save(commit=False)
             quiz.creator = request.user
-            quiz.share_code = get_random_string(8)
+            # Ensure global uniqueness – retry until an unused code is found
+            while True:
+                code = get_random_string(8)
+                if not Quiz.objects.filter(share_code=code).exists():
+                    quiz.share_code = code
+                    break
             quiz.exam_type = exam_type
             quiz.course = course
             quiz.session = session
@@ -239,29 +244,31 @@ def add_question(request, quiz_id):
         question_type = request.POST.get("question_type")
 
         # Handle true/false questions differently
-        if form.is_valid() and question_type == "true_false":
-            with transaction.atomic():
-                question = form.save(commit=True)
-                question.order = next_order
-                question.save()
+        if question_type == "true_false":
+            formset = QuizOptionFormSet(prefix="options")  # dummy – not used, but prevents crash
+            if form.is_valid():
+                with transaction.atomic():
+                    question = form.save(commit=True)
+                    question.order = next_order
+                    question.save()
 
-                # Create "True" and "False" options
-                true_correct = request.POST.get("true_false_answer") == "true"
+                    # Create "True" and "False" options
+                    true_correct = request.POST.get("true_false_answer") == "true"
 
-                # Create or update the "True" option
-                true_option = QuizOption(question=question, text="True", is_correct=true_correct, order=0)
-                true_option.save()
+                    # Create or update the "True" option
+                    true_option = QuizOption(question=question, text="True", is_correct=true_correct, order=0)
+                    true_option.save()
 
-                # Create or update the "False" option
-                false_option = QuizOption(question=question, text="False", is_correct=not true_correct, order=1)
-                false_option.save()
+                    # Create or update the "False" option
+                    false_option = QuizOption(question=question, text="False", is_correct=not true_correct, order=1)
+                    false_option.save()
 
-                messages.success(request, "Question added successfully.")
+                    messages.success(request, "Question added successfully.")
 
-                # Check if we should redirect to add another question
-                if "save_and_add" in request.POST:
-                    return redirect("question_form", quiz_id=quiz.id)
-                return redirect("quiz_detail", quiz_id=quiz.id)
+                    # Check if we should redirect to add another question
+                    if "save_and_add" in request.POST:
+                        return redirect("question_form", quiz_id=quiz.id)
+                    return redirect("quiz_detail", quiz_id=quiz.id)
         elif question_type == "multiple":
             # For other question types, use the formset as before
             formset = QuizOptionFormSet(request.POST, request.FILES, prefix="options")
@@ -636,7 +643,8 @@ def _process_quiz_taking(request, quiz):
                     (points/int(corr_ans)) * int(stu_corr_ans) - (points/total_options) * int(Stu_incorr_ans)
                     """
 
-                    user_answers = request.POST.getlist(f"question_{q_id}[]")
+                    # Deduplicate selections to count each option only once
+                    user_answers = list(set(request.POST.getlist(f"question_{q_id}[]")))
 
                     correct_options = list(question_obj.options.filter(is_correct=True).values_list("id", flat=True))
                     all_options = question_obj.options.all().values_list("id", flat=True)
