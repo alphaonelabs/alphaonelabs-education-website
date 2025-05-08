@@ -896,7 +896,7 @@ def quiz_analytics(request, quiz_id):
     average_score = sum(scores) / len(scores) if scores else 0
 
     # Calculate pass rate
-    pass_count = sum(1 for attempt in attempts if attempt.calculate_score() > quiz.passing_score)
+    pass_count = sum(1 for attempt in attempts if attempt.calculate_score() >= quiz.passing_score)
     pass_rate = (pass_count / total_attempts * 100) if total_attempts > 0 else 0
     # We're not using JavaScript calculation anymore, so we don't need to prepare timing data
 
@@ -1118,7 +1118,7 @@ def student_exam_correction(
             points_awarded = float(request.POST.get("points_awarded", "0").strip() or 0)
         except ValueError:
             messages.error(request, "Invalid points value.")
-            return redirect(request.path)
+            return redirect("student_exam_correction", course_id=course_id, quiz_id=quiz_id, user_quiz_id=user_quiz_id)
 
         # Get the question
         question = quiz.questions.filter(id=question_id).first()
