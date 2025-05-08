@@ -78,7 +78,7 @@ def ai_assignment_corrector(challenge_form: dict) -> dict:
             feedback."
 
 
-        **Example of a more complete prompt:**
+        /* End of instructions */
         """
 
     # Construct dynamic user input based on challenge_form

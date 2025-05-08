@@ -12,7 +12,6 @@
           const button = event.target;
           const wrapper = button.parentElement.parentElement;
           const changeGradeDiv = wrapper ? wrapper.querySelector(`#change_grade_${question_id}`) : null;
-          console.log("#####", changeGradeDiv)
 
           if (changeGradeDiv) {
               if (changeGradeDiv.classList.contains("hidden")) {

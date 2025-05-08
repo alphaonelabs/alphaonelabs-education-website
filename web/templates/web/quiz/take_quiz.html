@@ -103,7 +103,9 @@
                       const elements = quizForm.querySelectorAll(`[name="${name}"]`);
 
                       elements.forEach(element => {
-                          if (element.type === 'checkbox' || element.type === 'radio') {
+                          if (element.type === 'checkbox') {
+                              element.checked = Array.isArray(value) && value.includes(element.value);
+                          } else if (element.type === 'radio') {
                               element.checked = (element.value === value);
                           } else if (element.type === 'select-multiple' && Array.isArray(value)) {
                               Array.from(element.options).forEach(option => {

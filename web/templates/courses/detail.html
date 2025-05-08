@@ -627,7 +627,7 @@
                         aria-selected="false"
                         aria-controls="content-exams">
                   <i class="fas fa-file-alt mr-2 text-teal-300 dark:text-teal-400"></i>
-                  Exams
+                  Exam
                 </button>
                 {% if is_teacher %}
                   <button class="px-6 py-3 text-sm font-medium border-b-2 border-transparent text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white hover:border-gray-300 dark:hover:border-gray-600 bg-white dark:bg-gray-800"
@@ -1219,6 +1219,17 @@
                                         <i class="fas fa-pencil-alt mr-1"></i>Take Exam
                                       </a>
                                     {% endif %}
+                                  {% else %}
+                                    {% if item.exam.allow_anonymous %}
+                                      <a href="{% url 'take_quiz' item.exam.id %}"
+                                         class="inline-flex items-center px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm"
+                                         aria-label="Student take exam: {{ item.exam.title }}">
+                                        <i class="fas fa-pencil-alt mr-1"></i>Take Exam
+                                      </a>
+                                    {% else %}
+                                      <span class="font-medium bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-3 py-1 rounded-full text-sm">
+                                        <i class="far fa-x mr-1"></i> Anonymous users not allowed</span>
+                                    {% endif %}
                                   {% endif %}
                                 </div>
                               </div>
@@ -1296,6 +1307,17 @@
                                                 <i class="fas fa-pencil-alt"></i> Take Quiz
                                               </a>
                                             {% endif %}
+                                          {% else %}
+                                            {% if exam_item.exam.allow_anonymous %}
+                                              <a href="{% url 'take_quiz' exam_item.exam.id %}"
+                                                 class="inline-flex items-center px-3 py-1.5 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm"
+                                                 aria-label="Student take exam: {{ exam_item.exam.title }}">
+                                                <i class="fas fa-pencil-alt mr-1"></i>Take Exam
+                                              </a>
+                                            {% else %}
+                                              <span class="font-medium bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 px-3 py-1 rounded-full text-sm">
+                                                <i class="far fa-x mr-1"></i> Anonymous users not allowed</span>
+                                            {% endif %}
                                           {% endif %}
                                         </div>
                                       </div>
@@ -1310,7 +1332,7 @@
                                       <div class="flex gap-1 items-center">
                                         <a href="{% url 'create_session_exam' course.id item.session.id %}"
                                            class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
-                                          <i class="fas fa-add"></i> Add Quiz
+                                          <i class="fas fa-plus"></i> Add Quiz
                                         </a>
                                       </div>
                                     </div>

@@ -357,16 +357,13 @@ def edit_question(request, question_id):
                 messages.success(request, "Question updated successfully.")
                 return redirect("quiz_detail", quiz_id=quiz.id)
         elif question_type == "multiple":
-            # Handle multiple choice questions with formset
-            question = form.save(commit=True)
-
             formset = QuizOptionFormSet(request.POST, request.FILES, instance=question, prefix="options")
-
-            if formset.is_valid():
-                formset.save()
-
-            messages.success(request, "Question updated successfully.")
-            return redirect("quiz_detail", quiz_id=quiz.id)
+            if form.is_valid() and formset.is_valid():
+                with transaction.atomic():
+                    question = form.save(commit=True)
+                    formset.save()
+                messages.success(request, "Question updated successfully.")
+                return redirect("quiz_detail", quiz_id=quiz.id)
         else:
             # Handle short answer questions
             question = form.save(commit=True)
@@ -409,6 +406,7 @@ def edit_question(request, question_id):
     )
 
 
+@login_required
 def delete_question(request, question_id):
     """Delete a question from a quiz."""
     question = get_object_or_404(QuizQuestion, id=question_id)
@@ -481,7 +479,6 @@ def take_quiz_shared(request, share_code):
     return _process_quiz_taking(request, quiz)
 
 
-@login_required
 def take_quiz(request, quiz_id):
     """Take a quiz as an authenticated user."""
     quiz = get_object_or_404(Quiz, id=quiz_id)
@@ -492,8 +489,9 @@ def take_quiz(request, quiz_id):
         return redirect("quiz_list")
 
     # If this is an exam (not a regular quiz), check for existing uncompleted exams
-    if quiz.exam_type in ["course", "session"]:
+    if request.user.is_authenticated and quiz.exam_type in ["course", "session"]:
         # Look for any active/uncompleted exams for this user
+        print("## request.user ##", request.user)
         active_exams = UserQuiz.objects.filter(
             user=request.user, quiz__exam_type__in=["course", "session"], completed=False
         ).select_related("quiz")
@@ -519,7 +517,6 @@ def take_quiz(request, quiz_id):
     return response
 
 
-@login_required
 def _process_quiz_taking(request, quiz):
     """Helper function to process quiz taking for both routes."""
     from .services.AI.ai_model import ai_quiz_corrector
@@ -665,9 +662,7 @@ def _process_quiz_taking(request, quiz):
                     elif student_score >= question_obj.points:
                         student_score = question_obj.points
 
-                    res = isinstance(student_score, float)
-                    if res:
-                        student_score = round(student_score, 1)
+                    student_score = round(student_score, 1)
 
                     User_answer_true_or_false = student_score >= (question_obj.points / 2)
 

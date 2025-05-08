@@ -853,6 +853,7 @@ def course_detail(request, slug):
     course_exams = course.exams.filter(exam_type="course", session__isnull=True).prefetch_related("user_quizzes")
 
     # 2. Process each course exam (with user attempts and submission counts)
+    user_attempts_count = 0
     course_exam_data = []
     for exam in course_exams:
         # Get user's attempts for this exam
