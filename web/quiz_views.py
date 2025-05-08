@@ -1114,7 +1114,11 @@ def student_exam_correction(
     if request.method == "POST":
         # Get question ID and points from POST data
         question_id = request.POST.get("question_id")
-        points_awarded = float(request.POST.get("points_awarded", 0))
+        try:
+            points_awarded = float(request.POST.get("points_awarded", "0").strip() or 0)
+        except ValueError:
+            messages.error(request, "Invalid points value.")
+            return redirect(request.path)
 
         # Get the question
         question = quiz.questions.filter(id=question_id).first()
