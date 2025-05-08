@@ -191,7 +191,11 @@ def quiz_detail(request, quiz_id):
         total_attempts = UserQuiz.objects.filter(quiz=quiz).count()
         attempts = UserQuiz.objects.filter(quiz=quiz)
 
-        scores = [a.calculate_score() for a in attempts if a.calculate_score() is not None]
+        scores = []
+        for a in attempts:
+            score = a.calculate_score()
+            if score is not None:
+                scores.append(score)
         average_score = sum(scores) / len(scores) if scores else 0
 
     else:
@@ -339,14 +343,12 @@ def edit_question(request, question_id):
                     true_correct = request.POST.get("true_false_answer") == "true"
 
                     # Get or create true/false options
-                    true_option, created_true = QuizOption.objects.get_or_create(
-                        question=question, text="True", is_correct=true_correct, order=0
-                    )
+                    true_option, _ = QuizOption.objects.get_or_create(question=question, text="True", order=0)
+                    true_option.is_correct = true_correct
                     true_option.save()
 
-                    false_option, created_false = QuizOption.objects.get_or_create(
-                        question=question, text="False", is_correct=not true_correct, order=1
-                    )
+                    false_option, _ = QuizOption.objects.get_or_create(question=question, text="False", order=1)
+                    false_option.is_correct = not true_correct
                     false_option.save()
 
                     # Delete any other options that might exist
@@ -886,7 +888,11 @@ def quiz_analytics(request, quiz_id):
     # Calculate overall statistics
     total_attempts = attempts.count()
 
-    scores = [a.calculate_score() for a in attempts if a.calculate_score() is not None]
+    scores = []
+    for a in attempts:
+        score = a.calculate_score()
+        if score is not None:
+            scores.append(score)
     average_score = sum(scores) / len(scores) if scores else 0
 
     # Calculate pass rate
@@ -1130,11 +1136,8 @@ def student_exam_correction(
                 all_graded = True
                 for q in quiz.questions.all():
                     q_id = str(q.id)
-                    if (
-                        q_id in answers
-                        and not answers[q_id].get("is_graded", False)
-                        and not answers[q_id].get("is_correct", False)
-                    ):
+                    # Treat unanswered or ungraded questions as incomplete
+                    if q_id not in answers or not answers[q_id].get("is_graded", False):
                         all_graded = False
                         break
 
