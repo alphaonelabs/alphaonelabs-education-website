@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from io import BytesIO
 from urllib.parse import parse_qs, urlparse
 
+from django.db.models import Avg
 from allauth.account.signals import user_signed_up
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -326,11 +327,9 @@ class Course(models.Model):
         return self.max_students - self.enrollments.count()
 
     @property
-    def average_rating(self):
-        reviews = self.reviews.all()
-        if not reviews:
-            return 0
-        return sum(review.rating for review in reviews) / len(reviews)
+    def average_rating(self) -> float:
+        avg = float(self.reviews.aggregate(avg=Avg("rating"))["avg"] or 0)
+        return round(avg, 2)
 
 
 class Session(models.Model):
