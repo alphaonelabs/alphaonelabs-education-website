@@ -1,6 +1,8 @@
 import re
+from typing import ClassVar
 from urllib.parse import parse_qs, urlparse
 
+import bleach
 from allauth.account.forms import LoginForm, SignupForm
 from captcha.fields import CaptchaField
 from cryptography.fernet import Fernet
@@ -50,6 +52,7 @@ from .models import (
     TeamGoal,
     TeamGoalMember,
     TeamInvite,
+    VideoRequest,
     WaitingRoom,
 )
 from .referrals import handle_referral
@@ -86,6 +89,7 @@ __all__ = [
     "ForumTopicForm",
     "BlogPostForm",
     "MessageTeacherForm",
+    "VideoRequestForm",
     "FeedbackForm",
     "GoodsForm",
     "StorefrontForm",
@@ -1871,6 +1875,58 @@ class StudyGroupForm(forms.ModelForm):
     class Meta:
         model = StudyGroup
         fields = ["name", "description", "course", "max_members", "is_private"]
+
+
+class VideoRequestForm(forms.ModelForm):
+    """Form for users to request educational videos on specific topics, with XSS protection."""
+
+    ALLOWED_TAGS: ClassVar[list[str]] = ["b", "i", "strong", "em", "ul", "ol", "li", "p", "a"]
+    ALLOWED_ATTRIBUTES: ClassVar[dict[str, list[str]]] = {
+        # Only allow href, title and target attributes on anchor tags for security
+        "a": ["href", "title", "target"],
+    }
+
+    class Meta:
+        model = VideoRequest
+        fields = ["title", "description", "category"]
+        widgets = {
+            "title": TailwindInput(attrs={"placeholder": "Title of the video you're requesting"}),
+            "description": TailwindTextarea(
+                attrs={
+                    "rows": 4,
+                    "placeholder": (
+                        "Describe what you'd like to learn from this video "
+                        "(e.g., 'I'd like a video on calculus basics')",
+                    ),
+                }
+            ),
+            "category": TailwindSelect(
+                attrs={
+                    "class": (
+                        "w-full px-4 py-2 border border-gray-300 dark:border-gray-600"
+                        " rounded-lg focus:ring-2 focus:ring-blue-500",
+                    )
+                }
+            ),
+        }
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
+        self.fields["category"].queryset = Subject.objects.all().order_by("name")
+
+    def clean_title(self) -> str:
+        title = self.cleaned_data.get("title", "")  # Added default value
+        # Strip all tags to ensure title contains only plain text
+        return bleach.clean(title, tags=self.ALLOWED_TAGS, attributes=self.ALLOWED_ATTRIBUTES, strip=True)
+
+    def clean_description(self) -> str:
+        description = self.cleaned_data.get("description", "")
+        return bleach.clean(
+            description,
+            tags=self.ALLOWED_TAGS,
+            attributes=self.ALLOWED_ATTRIBUTES,
+            strip=True,
+        )
 
 
 class SurveyForm(forms.ModelForm):

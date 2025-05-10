@@ -5,6 +5,7 @@ import time
 import uuid
 from datetime import datetime, timedelta
 from io import BytesIO
+from urllib.parse import parse_qs, urlparse
 
 from django.db.models import Avg
 from allauth.account.signals import user_signed_up
@@ -684,6 +685,39 @@ class EducationalVideo(models.Model):
 
     def __str__(self):
         return self.title
+
+    @property
+    def thumbnail_url(self):
+        """
+        Build the URL for YouTube’s high-quality default thumbnail.
+        Returns None if this isn’t a YouTube video.
+        """
+        vid = self.youtube_id
+        if vid:
+            return f"https://img.youtube.com/vi/{vid}/hqdefault.jpg"
+        return None
+
+    @property
+    def youtube_id(self):
+        """
+        Extract the YouTube video ID, whether it's a long or short URL.
+        Returns None if not a YouTube link.
+        """
+        parsed = urlparse(self.video_url)
+        host = parsed.netloc.lower()
+
+        # youtu.be/<id>
+        if host in ("youtu.be", "www.youtu.be"):
+            return parsed.path.lstrip("/")
+
+        # youtube.com/watch?v=<id>
+        if host in ("youtube.com", "www.youtube.com"):
+            try:
+                return parse_qs(parsed.query).get("v", [None])[0]
+            except Exception:
+                return None
+
+        return None
 
 
 class Achievement(models.Model):
@@ -2927,6 +2961,42 @@ class Discount(models.Model):
 
     def __str__(self):
         return f"{self.code} for {self.user.username} on {self.course.title}"
+
+
+class VideoRequest(models.Model):
+    """Model for users to request educational videos on specific topics."""
+
+    title = models.CharField(max_length=200, help_text="Short title describing the requested video")
+    description = models.TextField(help_text="Detailed description of what you'd like to learn from this video")
+    category = models.ForeignKey(Subject, on_delete=models.PROTECT, related_name="video_requests")
+    requester = models.ForeignKey(User, on_delete=models.CASCADE, related_name="video_requests")
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("pending", "Pending"),
+            ("approved", "Approved"),
+            ("fulfilled", "Fulfilled"),
+            ("rejected", "Rejected"),
+        ],
+        default="pending",
+    )
+    fulfilled_by = models.ForeignKey(
+        EducationalVideo,
+        on_delete=models.SET_NULL,
+        related_name="fulfilling_requests",
+        null=True,
+        blank=True,
+        help_text="Educational video that fulfills this request",
+    )
+
+    class Meta:
+        verbose_name = "Video Request"
+        verbose_name_plural = "Video Requests"
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return self.title
 
 
 class Survey(models.Model):

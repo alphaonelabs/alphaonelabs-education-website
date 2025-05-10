@@ -101,6 +101,7 @@ from .forms import (
     TeamGoalForm,
     TeamInviteForm,
     UserRegistrationForm,
+    VideoRequestForm,
 )
 from .marketing import (
     generate_social_share_content,
@@ -168,6 +169,7 @@ from .models import (
     TeamInvite,
     TimeSlot,
     UserBadge,
+    VideoRequest,
     WaitingRoom,
     WebRequest,
     default_valid_until,
@@ -5147,45 +5149,55 @@ def donation_cancel(request):
     return redirect("donate")
 
 
-def educational_videos_list(request):
-    """View for listing educational videos with optional category filtering."""
+def educational_videos_list(request: HttpRequest) -> HttpResponse:
+    """View for listing educational videos with requests included at the bottom."""
     # Get category filter from query params
     selected_category = request.GET.get("category")
 
-    # Base queryset
+    # Base querysets
     videos = EducationalVideo.objects.select_related("uploader", "category").order_by("-uploaded_at")
+    video_requests = VideoRequest.objects.select_related("requester", "category", "fulfilled_by").order_by(
+        "-created_at"
+    )
 
     # Apply category filter if provided
     if selected_category:
         videos = videos.filter(category__slug=selected_category)
+        video_requests = video_requests.filter(category__slug=selected_category)
         selected_category_obj = get_object_or_404(Subject, slug=selected_category)
         selected_category_display = selected_category_obj.name
     else:
         selected_category_display = None
 
-    # Get category counts for sidebar
+    # Paginate videos (9 per page)
+    paginator = Paginator(videos, 9)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    # Limit video requests to 5
+    video_requests = video_requests[:5]
+    video_requests_paginated = VideoRequest.objects.count() > 5
+
+    # Category counts for sidebar
     category_counts = dict(
-        EducationalVideo.objects.values("category__name", "category__slug")
+        EducationalVideo.objects.values("category__slug")
         .annotate(count=Count("id"))
-        .values_list("category__slug", "count")
+        .values_list("category__slug", "count"),
     )
 
-    # Get all subjects for the dropdown
+    # Get all subjects
     subjects = Subject.objects.all().order_by("order", "name")
-
-    # Paginate results
-    paginator = Paginator(videos, 12)  # 12 videos per page
-    page_number = request.GET.get("page", 1)
-    page_obj = paginator.get_page(page_number)
 
     context = {
         "videos": page_obj,
-        "is_paginated": paginator.num_pages > 1,
+        "is_paginated": page_obj.has_other_pages(),
         "page_obj": page_obj,
         "subjects": subjects,
         "selected_category": selected_category,
         "selected_category_display": selected_category_display,
         "category_counts": category_counts,
+        "video_requests": video_requests,
+        "video_requests_paginated": video_requests_paginated,
     }
 
     return render(request, "videos/list.html", context)
@@ -7609,6 +7621,58 @@ def contributors_list_view(request):
         print(f"Error fetching contributors: {e}")
         # Return an empty list in case of error
         return render(request, "web/contributors_list.html", {"contributors": []})
+
+
+@login_required
+def video_request_list(request):
+    """View for listing video requests with optional category filtering."""
+    # Get category filter from query params
+    selected_category = request.GET.get("category")
+
+    # Base queryset
+    requests = VideoRequest.objects.select_related("requester", "category").order_by("-created_at")
+
+    # Apply category filter if provided
+    if selected_category:
+        requests = requests.filter(category__slug=selected_category)
+        selected_category_obj = get_object_or_404(Subject, slug=selected_category)
+        selected_category_display = selected_category_obj.name
+    else:
+        selected_category_display = None
+
+    # Get category counts for sidebar
+    category_counts = {
+        category.slug: VideoRequest.objects.filter(category=category).count() for category in Subject.objects.all()
+    }
+
+    # Context
+    context = {
+        "requests": requests,
+        "categories": Subject.objects.all(),
+        "category_counts": category_counts,
+        "selected_category": selected_category,
+        "selected_category_display": selected_category_display,
+    }
+
+    return render(request, "videos/request_list.html", context)
+
+
+@login_required
+def submit_video_request(request):
+    """View for submitting a new video request."""
+    if request.method == "POST":
+        form = VideoRequestForm(request.POST)
+        if form.is_valid():
+            video_request = form.save(commit=False)
+            video_request.requester = request.user
+            video_request.save()
+
+            messages.success(request, "Your video request has been submitted successfully!")
+            return redirect("video_request_list")
+    else:
+        form = VideoRequestForm()
+
+    return render(request, "videos/submit_request.html", {"form": form})
 
 
 class SurveyListView(LoginRequiredMixin, ListView):
