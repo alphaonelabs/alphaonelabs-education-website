@@ -528,6 +528,8 @@ def profile(request):
     if request.method == "POST":
         form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
         if form.is_valid():
+            print("POST data:", request.POST)  # Print form field data
+            print("FILES data:", request.FILES)  # Print uploaded files
             form.save()  # Save the form data
             request.user.profile.refresh_from_db()  # Refresh to load updated profile
             messages.success(request, "Profile updated successfully!")

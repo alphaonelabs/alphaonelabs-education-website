@@ -539,11 +539,9 @@
       mainForm.addEventListener('submit', function(e) {
           e.preventDefault();
 
-          const formData = new FormData(mainForm);
-
-          // Only include avatar if it was changed
           if (sessionStorage.getItem('avatarChanged') !== 'true') {
-              formData.delete('avatar');
+              // disable the file input so the browser will not include it
+              avatarInput.disabled = true;
           }
 
           // Reset the flag
