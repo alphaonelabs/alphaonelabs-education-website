@@ -8,62 +8,290 @@
 {% block extra_head %}
   <script>
       document.addEventListener('DOMContentLoaded', function() {
+          // Get DOM elements
           const questionTypeField = document.getElementById('id_question_type');
-          const optionsSection = document.getElementById('options-section');
+          const multipleChoiceOptions = document.getElementById('multiple-choice-options');
+          const trueFalseOptions = document.getElementById('true-false-options');
+          const shortAnswerOptions = document.getElementById('short-answer-options');
+          const form = document.getElementById('form');
 
-          // Function to toggle options visibility
-          function toggleOptionsVisibility() {
-              if (questionTypeField.value === 'short') {
-                  optionsSection.classList.add('hidden');
-              } else {
-                  optionsSection.classList.remove('hidden');
+          // Function to toggle question type sections
+          function toggleQuestionType() {
+              // Hide all sections first
+              multipleChoiceOptions.classList.add('hidden');
+              trueFalseOptions.classList.add('hidden');
+              shortAnswerOptions.classList.add('hidden');
+
+              // Show the relevant section based on selection
+              switch (questionTypeField.value) {
+                  case 'multiple':
+                      multipleChoiceOptions.classList.remove('hidden');
+                      handleInputsWithQuestionType(questionTypeField.value)
+                      break;
+                  case 'true_false':
+                      trueFalseOptions.classList.remove('hidden');
+                      setupTrueFalseOptions();
+                      handleInputsWithQuestionType(questionTypeField.value)
+                      break;
+                  default:
+                      shortAnswerOptions.classList.remove('hidden');
+                      handleInputsWithQuestionType(questionTypeField.value)
+                      // Short answer needs exactly one placeholder option
+                      document.getElementById('id_options-TOTAL_FORMS').value = '1';
+                      break;
               }
           }
 
-          // Set initial state
-          toggleOptionsVisibility();
+          function handleInputsWithQuestionType(questionType) {
+              trueFalseOptions.querySelectorAll("input").forEach(element => {
+                  element.disabled = true
+              });
+              multipleChoiceOptions.querySelectorAll("input").forEach(element => {
+                  element.disabled = true
+              });
+              shortAnswerOptions.querySelectorAll("input").forEach(element => {
+                  element.disabled = true
+              });
 
-          // Add event listener for changes
-          questionTypeField.addEventListener('change', toggleOptionsVisibility);
+              if (questionType == "multiple") {
+                  multipleChoiceOptions.querySelectorAll("input").forEach(element => {
+                      element.disabled = false
+                  });
+              } else if (questionType == "true_false") {
+                  trueFalseOptions.querySelectorAll("input").forEach(element => {
+                      element.disabled = false
+                  });
+              } else {
+                  shortAnswerOptions.querySelectorAll("input").forEach(element => {
+                      element.disabled = false
+                  });
+              }
+          }
+
+          // Setup true/false options with correct initial state
+          function setupTrueFalseOptions() {
+              const trueRadio = document.getElementById('true_answer');
+              const falseRadio = document.getElementById('false_answer');
+
+              // Initialize the total forms for true/false (always 2 options)
+              document.getElementById('id_options-TOTAL_FORMS').value = '2';
+
+              // Update hidden values
+              updateTrueFalseHiddenValues();
+          }
+
+          // Update hidden form values for true/false questions
+          function updateTrueFalseHiddenValues() {
+              const trueRadio = document.getElementById('true_answer');
+              const falseRadio = document.getElementById('false_answer');
+              const trueOptionValue = document.getElementById('true_is_correct');
+              const falseOptionValue = document.getElementById('false_is_correct');
+
+              if (trueRadio.checked) {
+                  trueOptionValue.value = '1';
+                  falseOptionValue.value = '0';
+              } else if (falseRadio.checked) {
+                  trueOptionValue.value = '0';
+                  falseOptionValue.value = '1';
+              }
+          }
+
+          function handleDeleteOptions(event) {
+              const clickedButton = event.target.closest(".delete-option-btn");
+              if (!clickedButton) return false;
+
+              let optionForm = clickedButton.closest(".option-form");
+              let visibleOptions = document.querySelectorAll(".option-form:not([style*='display: none'])").length;
+
+              // check for at least two options
+              if (visibleOptions <= 2) {
+                  alert('There must be at least two answers to multiple-choice questions.');
+                  return false;
+              }
+
+              const deleteInput = optionForm.querySelector('input[name$="-DELETE"]');
+
+              if (deleteInput) {
+                  // Mark for deletion in database and hide
+                  deleteInput.value = 'on';
+                  optionForm.style.display = 'none';
+              } else {
+                  // Try to find any input to determine the index
+                  const anyInput = optionForm.querySelector("input[name^='options-']");
+
+                  if (anyInput) {
+                      const match = anyInput.name.match(/^options-(\d+)-/);
+
+                      if (match) {
+                          const deleteInput = document.createElement("input");
+                          deleteInput.type = "hidden";
+                          deleteInput.name = `options-${match[1]}-DELETE`;
+                          deleteInput.id = `id_options-${match[1]}-DELETE`;
+                          deleteInput.value = "on";
+                          optionForm.appendChild(deleteInput);
+                      }
+                  }
+
+                  // hide the form
+                  optionForm.style.display = 'none';
+              }
+
+              // Update form count and reindex
+              updateOptionCount();
+          }
+
+          // Update option count and indices
+          function updateOptionCount() {
+              const totalFormsField = document.getElementById('id_options-TOTAL_FORMS');
+              const initialFormsField = document.getElementById('id_options-INITIAL_FORMS');
+              const visibleOptions = document.querySelectorAll('.option-form:not([style*="display: none"])');
+
+              // Update the total forms count
+              totalFormsField.value = visibleOptions.length;
+          }
+
+          let allDeleteOptionsButtons = document.querySelectorAll(".delete-option-btn")
+          allDeleteOptionsButtons.forEach(element => {
+              element.addEventListener('click', handleDeleteOptions);
+          });
+
+          // Event listeners for true/false radio buttons
+          document.getElementById('true_answer').addEventListener('change', updateTrueFalseHiddenValues);
+          document.getElementById('false_answer').addEventListener('change', updateTrueFalseHiddenValues);
 
           // Add option button functionality
           const addOptionBtn = document.getElementById('add-option-btn');
-          if (addOptionBtn) {
-              addOptionBtn.addEventListener('click', function(e) {
-                  e.preventDefault();
-                  const totalFormsField = document.getElementById('id_options-TOTAL_FORMS');
-                  const optionsContainer = document.getElementById('options-container');
+          addOptionBtn.addEventListener('click', function(e) {
+              e.preventDefault();
 
-                  // Get current form count
-                  let formCount = parseInt(totalFormsField.value);
+              const totalFormsField = document.getElementById('id_options-TOTAL_FORMS');
+              const optionsContainer = document.getElementById('options-container');
 
-                  // Clone the first option form
-                  const formTemplate = document.querySelector('.option-form').cloneNode(true);
+              // Get current form count
+              let formCount = parseInt(totalFormsField.value);
 
-                  // Update all IDs and names to use the new index
-                  const inputs = formTemplate.querySelectorAll('input, select, textarea');
-                  inputs.forEach(input => {
-                      input.id = input.id.replace('-0-', `-${formCount}-`);
-                      input.name = input.name.replace('-0-', `-${formCount}-`);
+              // Clone the first option form
+              const formTemplate = document.querySelector('.option-form').cloneNode(true);
 
-                      // Clear values except for hidden inputs
-                      if (!input.classList.contains('keep-value')) {
-                          input.value = '';
-                      }
+              const optionIdElement = formTemplate.querySelector('input[id^="id_options-"][id$="-id"]');
+              optionIdElement.value = ''
 
-                      // Uncheck checkboxes
-                      if (input.type === 'checkbox') {
-                          input.checked = false;
+              // Update all IDs and names to use the new index
+              const inputs = formTemplate.querySelectorAll('input');
+              inputs.forEach(input => {
+                  input.id = input.id.replace('-0-', `-${formCount}-`);
+                  input.name = input.name.replace('-0-', `-${formCount}-`);
+
+                  // Clear values
+                  if (input.type === 'text') {
+                      input.value = '';
+                  } else if (input.type === 'checkbox') {
+                      input.checked = false;
+                  }
+              });
+
+              formTemplate.querySelector(".delete-option-btn").addEventListener('click', handleDeleteOptions);
+
+              // Update form count
+              totalFormsField.value = formCount + 1;
+
+              // Add the new form
+              optionsContainer.appendChild(formTemplate);
+          });
+
+          // Form submission validation
+          form.addEventListener('submit', function(e) {
+              const questionType = questionTypeField.value;
+
+              if (questionType === 'multiple') {
+                  // Check if at least one option is marked as correct
+
+                  // Get all option forms
+                  let allChoices = document.querySelectorAll(".option-form");
+                  let validOptions = [];
+                  let emptyInputs = []
+
+                  // First, identify all non-empty options
+                  allChoices.forEach(element => {
+                      // Add this check for options marked for deletion
+                      const deleteInput = element.querySelector('input[name$="-DELETE"]');
+                      // const isMarkedForDeletion = deleteInput && deleteInput.value === 'on'
+
+                      let textInput = element.querySelector('input[type="text"]');
+                      // Include options that either have text OR are marked for deletion
+                      if ((getComputedStyle(element).display !== 'none' && textInput.value.trim().length > 0)) {
+                          validOptions.push(element);
+                      } else {
+                          emptyInputs.push(element)
                       }
                   });
 
-                  // Update form count
-                  totalFormsField.value = formCount + 1;
+                  // Update the total forms count
+                  const totalFormsField = document.getElementById('id_options-TOTAL_FORMS');
+                  totalFormsField.value = allChoices.length;
 
-                  // Add the new form
-                  optionsContainer.appendChild(formTemplate);
-              });
-          }
+                  if (validOptions.length < 2) {
+                      alert('Please add at least two non-empty option for multiple choice questions.');
+                      e.preventDefault();
+                      return;
+                  }
+
+                  // All option-form that didn`t deleted
+                  const visibleOptions = [...document.querySelectorAll('.option-form')].filter(el => getComputedStyle(el).display !== 'none');
+
+                  let correctCheckboxes = [];
+                  visibleOptions.forEach(option => {
+                      const checked = option.querySelectorAll('input[name$="-is_correct"]:checked');
+                      correctCheckboxes.push(...checked);
+                  });
+
+                  if (correctCheckboxes.length === 0) {
+                      alert('Please select at least one correct answer for multiple choice questions.');
+                      e.preventDefault();
+                      return;
+                  }
+
+              } else if (questionType === 'true_false') {
+                  // Ensure a radio button is selected for true/false
+                  const trueRadio = document.getElementById('true_answer');
+                  const falseRadio = document.getElementById('false_answer');
+
+                  if (!trueRadio.checked && !falseRadio.checked) {
+                      e.preventDefault();
+                      alert('Please select either True or False as the correct answer.');
+                      return false;
+                  }
+
+                  // Update hidden values for true/false
+                  updateTrueFalseHiddenValues();
+              } else {
+                  // For short answer, copy reference to hidden field
+                  const shortAnswerRef = document.getElementById('short-answer-reference');
+                  const firstOptionText = document.getElementById('id_options-0-text');
+                  const firstOptionCorrect = document.getElementById('id_options-0-is_correct');
+
+                  // Ensure we have at least one option for the formset
+                  document.getElementById('id_options-TOTAL_FORMS').value = '1';
+
+                  // Set the text and mark as correct
+                  if (firstOptionText) {
+                      firstOptionText.value = shortAnswerRef.value;
+                  }
+
+                  if (firstOptionCorrect) {
+                      firstOptionCorrect.checked = true;
+                  }
+
+                  const formData = new FormData(form);
+
+              }
+          });
+
+          // Set initial state on page load
+          toggleQuestionType();
+
+          // Listen for changes to question type
+          questionTypeField.addEventListener('change', toggleQuestionType);
       });
   </script>
 {% endblock extra_head %}
@@ -89,7 +317,7 @@
     <!-- Question Form -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
       <div class="p-6">
-        <form method="post" enctype="multipart/form-data">
+        <form id="form" method="post" enctype="multipart/form-data">
           {% csrf_token %}
           {% if form.non_field_errors %}
             <div class="mb-6 p-4 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300 rounded-lg">
@@ -169,33 +397,35 @@
               </div>
             </div>
           </div>
-          <!-- Answer Options -->
-          <div id="options-section" class="mb-8">
+          {{ formset.management_form }}
+          <!-- Multiple Choice Options -->
+          <div id="multiple-choice-options" class="mb-8">
             <div class="flex justify-between items-center mb-4">
-              <h2 class="text-xl font-bold text-gray-800 dark:text-white">Answer Options</h2>
+              <h2 class="text-xl font-bold text-gray-800 dark:text-white">Multiple Choice Options</h2>
               <button id="add-option-btn"
                       class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded-lg text-sm">
                 <i class="fas fa-plus mr-1"></i> Add Option
               </button>
             </div>
-            <!-- Management form for formset -->
-            {{ formset.management_form }}
             <div id="options-container" class="space-y-4">
               {% for option_form in formset %}
-                <div class="option-form bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                <div class="relative option-form bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                  <div class="text-end">
+                    <button type="button" class="delete-option-btn pl-[15px]">
+                      <i class="fas fa-trash text-red-600"></i>
+                    </button>
+                  </div>
                   <div class="grid grid-cols-12 gap-4">
                     <div class="col-span-10">
                       <label for="{{ option_form.text.id_for_label }}"
                              class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         Option Text
-                        {% if forloop.first %}<span class="text-red-600">*</span>{% endif %}
                       </label>
                       <input type="text"
                              name="{{ option_form.text.html_name }}"
                              id="{{ option_form.text.id_for_label }}"
                              value="{{ option_form.text.value|default:'' }}"
-                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
-                             {% if forloop.first %}required{% endif %} />
+                             class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white" />
                       {% if option_form.text.errors %}
                         <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ option_form.text.errors.0 }}</p>
                       {% endif %}
@@ -218,8 +448,71 @@
               {% endfor %}
             </div>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
-              For multiple choice questions, select all correct options. For true/false, mark only one option as correct.
+              For multiple choice questions, you must select at least one correct answer.
             </p>
+          </div>
+          <!-- True/False Options -->
+          <div id="true-false-options" class="mb-8 hidden">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">True/False Answer</h2>
+            <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+              <div class="space-y-4">
+                <div class="flex items-center">
+                  <input type="radio"
+                         name="true_false_answer"
+                         id="true_answer"
+                         value="true"
+                         class="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300"
+                         {% if true_is_correct %}checked{% endif %} />
+                  <label for="true_answer"
+                         class="ml-3 block text-gray-700 dark:text-gray-300 font-medium">True</label>
+                </div>
+                <div class="flex items-center">
+                  <input type="radio"
+                         name="true_false_answer"
+                         id="false_answer"
+                         value="false"
+                         class="h-5 w-5 text-teal-600 focus:ring-teal-500 border-gray-300"
+                         {% if question %} {% if not true_is_correct %}checked{% endif %}
+                         {% endif %} />
+                  <label for="false_answer"
+                         class="ml-3 block text-gray-700 dark:text-gray-300 font-medium">False</label>
+                </div>
+              </div>
+              <p class="text-sm text-gray-500 dark:text-gray-400 mt-4">Select the correct answer for this true/false question.</p>
+              <!-- Hidden fields to store the true/false answer in the formset format -->
+              <div class="hidden">
+                <input type="hidden" name="options-0-text" value="True" />
+                <input type="hidden" name="options-0-is_correct" id="true_is_correct" />
+                <input type="hidden" name="options-1-text" value="False" />
+                <input type="hidden" name="options-1-is_correct" id="false_is_correct" />
+              </div>
+            </div>
+          </div>
+          <!-- Short Answer Options -->
+          <div id="short-answer-options" class="mb-8 hidden">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">Answer Reference</h2>
+            <div class="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg">
+              <div>
+                <label for="short-answer-reference"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  Answer Reference (for grading).
+                  <span class="text-red-600 dark:border-red-400">Important for AI-auto correction.</span>
+                </label>
+                <textarea name="reference_answer"
+                          id="short-answer-reference"
+                          rows="3"
+                          class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                          placeholder="Enter the expected answer here for your reference">{{ form.reference_answer.value|default:'' }}</textarea>
+                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  This reference answer will be stored for your grading purposes only.
+                </p>
+                <!-- Hidden fields to pass formset format -->
+                <div class="hidden">
+                  <input type="hidden" name="options-0-text" />
+                  <input type="hidden" name="options-0-is_correct" />
+                </div>
+              </div>
+            </div>
           </div>
           <!-- Form Buttons -->
           <div class="flex justify-between pt-6 border-t border-gray-200 dark:border-gray-700">

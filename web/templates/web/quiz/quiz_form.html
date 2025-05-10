@@ -30,7 +30,7 @@
     <!-- Quiz Form -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden">
       <div class="p-6">
-        <form method="post">
+        <form id="form" method="post">
           {% csrf_token %}
           {% if form.non_field_errors %}
             <div class="mb-6 p-4 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300 rounded-lg">
@@ -69,30 +69,6 @@
                           placeholder="Provide a brief description of what this quiz covers">{{ form.description.value|default:'' }}</textarea>
                 {% if form.description.errors %}
                   <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.description.errors.0 }}</p>
-                {% endif %}
-              </div>
-              <!-- Subject -->
-              <div>
-                <label for="{{ form.subject.id_for_label }}"
-                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Subject <span class="text-red-600">*</span>
-                </label>
-                <select name="{{ form.subject.html_name }}"
-                        id="{{ form.subject.id_for_label }}"
-                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
-                        required>
-                  <option value="">Select a subject</option>
-                  {% for choice in form.subject.field.choices %}
-                    {% if choice.0 %}
-                      <option value="{{ choice.0 }}"
-                              {% if form.subject.value|stringformat:"s" == choice.0|stringformat:"s" %}selected{% endif %}>
-                        {{ choice.1 }}
-                      </option>
-                    {% endif %}
-                  {% endfor %}
-                </select>
-                {% if form.subject.errors %}
-                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.subject.errors.0 }}</p>
                 {% endif %}
               </div>
               <!-- Status -->
@@ -137,6 +113,22 @@
                   <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.time_limit.errors.0 }}</p>
                 {% endif %}
                 <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Leave blank for no time limit</p>
+              </div>
+              <!-- Passing Score -->
+              <div>
+                <label for="{{ form.passing_score.id_for_label }}"
+                       class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Passing Score</label>
+                <input type="number"
+                       name="{{ form.passing_score.html_name }}"
+                       id="{{ form.passing_score.id_for_label }}"
+                       value="{{ form.passing_score.value|default:'' }}"
+                       min="50"
+                       max="100"
+                       class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 dark:bg-gray-700 dark:text-white"
+                       placeholder="Passing Score" />
+                {% if form.passing_score.errors %}
+                  <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ form.passing_score.errors.0 }}</p>
+                {% endif %}
               </div>
               <!-- Max Attempts -->
               <div>
@@ -185,6 +177,53 @@
                   <label for="{{ form.allow_anonymous.id_for_label }}"
                          class="font-medium text-gray-700 dark:text-gray-300">Allow Anonymous Attempts</label>
                   <p class="text-gray-500 dark:text-gray-400">Allow users to take quiz without signing in</p>
+                </div>
+              </div>
+              <!-- AI-Auto correction -->
+              <div class="flex items-start">
+                <div class="flex items-center h-5">
+                  <input type="checkbox"
+                         name="{{ form.ai_auto_correction.html_name }}"
+                         id="{{ form.ai_auto_correction.id_for_label }}"
+                         {% if form.ai_auto_correction.value %}checked{% endif %}
+                         class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
+                </div>
+                <div class="ml-3 text-sm">
+                  <label for="{{ form.ai_auto_correction.id_for_label }}"
+                         class="font-medium text-gray-700 dark:text-gray-300">Allow AI auto-correction</label>
+                  <p class="text-gray-500 dark:text-gray-400">Allow AI to auto-correct student exams</p>
+                </div>
+              </div>
+              <!-- Enable copy past and text selection -->
+              <div class="flex items-start">
+                <div class="flex items-center h-5">
+                  <input type="checkbox"
+                         name="{{ form.enable_copy_paste_and_text_selection.html_name }}"
+                         id="{{ form.enable_copy_paste_and_text_selection.id_for_label }}"
+                         {% if form.enable_copy_paste_and_text_selection.value %}checked{% endif %}
+                         class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
+                </div>
+                <div class="ml-3 text-sm">
+                  <label for="{{ form.enable_copy_paste_and_text_selection.id_for_label }}"
+                         class="font-medium text-gray-700 dark:text-gray-300">
+                    Allow copy/paste and text selection
+                  </label>
+                  <p class="text-gray-500 dark:text-gray-400">Allow copy/paste and text selection inside exam</p>
+                </div>
+              </div>
+              <!-- Show Correct Answers -->
+              <div class="flex items-start">
+                <div class="flex items-center h-5">
+                  <input type="checkbox"
+                         name="{{ form.show_correct_answers.html_name }}"
+                         id="{{ form.show_correct_answers.id_for_label }}"
+                         {% if form.show_correct_answers.value %}checked{% endif %}
+                         class="h-4 w-4 text-teal-600 focus:ring-teal-500 border-gray-300 rounded" />
+                </div>
+                <div class="ml-3 text-sm">
+                  <label for="{{ form.show_correct_answers.id_for_label }}"
+                         class="font-medium text-gray-700 dark:text-gray-300">Show Correct Answers</label>
+                  <p class="text-gray-500 dark:text-gray-400">Show correct answers after quiz completion</p>
                 </div>
               </div>
             </div>

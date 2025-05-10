@@ -41,12 +41,32 @@
       {% if submissions %}
         <ul class="space-y-4">
           {% for sub in submissions %}
-            <li class="bg-gray-100 dark:bg-gray-900 shadow-sm rounded-lg p-4">
+            <li id="submission-{{ sub.user.id }}"
+                class="bg-gray-100 dark:bg-gray-900 shadow-sm rounded-lg p-4">
               <div class="flex items-center justify-between">
-                <span class="font-semibold text-gray-800 dark:text-gray-200">{{ sub.user.username }}</span>
+                <span class="font-semibold text-gray-800 dark:text-gray-200">
+                  {% if request.user.id == sub.user.id %}
+                    You
+                  {% else %}
+                    {{ sub.user.username }}
+                  {% endif %}
+                </span>
                 <span class="text-sm text-gray-500 dark:text-gray-400">{{ sub.submitted_at|date:"M d, Y - H:i" }}</span>
               </div>
-              <p class="mt-2 text-gray-700 dark:text-gray-300">{{ sub.submission_text }}</p>
+              <div class="flex items-center justify-between mt-4">
+                <p class="mt-2 text-gray-700 dark:text-gray-300">{{ sub.submission_text }}</p>
+                <div class="{% if sub.points_awarded < sub.challenge.max_points|default:10 * 0.5 %} bg-red-200 text-red-800 {% else %} bg-green-200 text-green-800 {% endif %} p-2 rounded-md text-center">
+                  <h2 class="text-md font-bold whitespace-nowrap">
+                    {% if request.user.id == sub.user.id %}Your{% endif %}
+                    Score: {{ sub.points_awarded }}/10
+                  </h2>
+                </div>
+              </div>
+              <!-- Feedback Sections -->
+              <div class="mt-4">
+                <p>Student Feedback: {{ sub.student_feedback|linebreaksbr }}</p>
+                <p>Teacher Feedback: {{ sub.teacher_feedback|linebreaksbr }}</p>
+              </div>
             </li>
           {% endfor %}
         </ul>

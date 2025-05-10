@@ -1724,25 +1724,29 @@ class QuizForm(forms.ModelForm):
         fields = [
             "title",
             "description",
-            "subject",
             "status",
             "time_limit",
             "randomize_questions",
             "show_correct_answers",
             "allow_anonymous",
             "max_attempts",
+            "passing_score",
+            "ai_auto_correction",
+            "enable_copy_paste_and_text_selection",
         ]
         widgets = {
             "title": TailwindInput(attrs={"placeholder": "Quiz Title"}),
             "description": TailwindTextarea(attrs={"rows": 3, "placeholder": "Quiz Description"}),
-            "subject": TailwindSelect(),
             "status": TailwindSelect(),
             "time_limit": TailwindNumberInput(
                 attrs={"min": "0", "placeholder": "Time limit in minutes (leave empty for no limit)"}
             ),
+            "passing_score": TailwindNumberInput(attrs={"min": "50"}),
             "randomize_questions": TailwindCheckboxInput(),
             "show_correct_answers": TailwindCheckboxInput(),
             "allow_anonymous": TailwindCheckboxInput(),
+            "ai_auto_correction": TailwindCheckboxInput(),
+            "enable_copy_paste_and_text_selection": TailwindCheckboxInput(),
             "max_attempts": TailwindNumberInput(attrs={"min": "0", "placeholder": "0 for unlimited attempts"}),
         }
 
@@ -1758,11 +1762,17 @@ class QuizQuestionForm(forms.ModelForm):
 
     class Meta:
         model = QuizQuestion
-        fields = ["text", "question_type", "explanation", "points", "image"]
+        fields = ["text", "question_type", "explanation", "points", "image", "reference_answer"]
         widgets = {
             "text": TailwindTextarea(attrs={"rows": 3, "placeholder": "Question text"}),
             "question_type": TailwindSelect(),
             "explanation": TailwindTextarea(attrs={"rows": 2, "placeholder": "Explanation for the correct answer"}),
+            "reference_answer": TailwindTextarea(
+                attrs={
+                    "rows": 2,
+                    "placeholder": "Reference answer for the questions, important when AI-auto correction",
+                },
+            ),
             "points": TailwindNumberInput(attrs={"min": "1", "value": "1"}),
             "order": TailwindNumberInput(attrs={"min": "0", "value": "0"}),
             "image": TailwindFileInput(attrs={"accept": "image/*"}),
@@ -1778,7 +1788,7 @@ QuizOptionFormSet = forms.inlineformset_factory(
         "text": TailwindInput(attrs={"placeholder": "Option text"}),
         "is_correct": TailwindCheckboxInput(),
     },
-    extra=4,
+    extra=1,
     can_delete=True,
     validate_min=True,
     min_num=1,
@@ -1796,17 +1806,25 @@ class TakeQuizForm(forms.Form):
                     # For multiple choice, add a multi-select field
                     options = question.options.all().order_by("order")
                     choices = [(str(option.id), option.text) for option in options]
-                    self.fields[f"question_{question.id}"] = forms.MultipleChoiceField(
-                        label=question.text, choices=choices, widget=forms.CheckboxSelectMultiple, required=False
+                    self.fields[f"question_{question.id}"] = forms.ChoiceField(
+                        label=question.text,
+                        choices=choices,
+                        widget=forms.RadioSelect,
+                        required=False,
+                        error_messages={"required": "Please select an answer for this question"},
                     )
                 elif question.question_type == "true_false":
-                    # For true/false, add a radio select field
+                    # For true/false, use hardcoded true/false values to match the template
                     options = question.options.all().order_by("order")
                     choices = [(str(option.id), option.text) for option in options]
                     self.fields[f"question_{question.id}"] = forms.ChoiceField(
-                        label=question.text, choices=choices, widget=forms.RadioSelect, required=False
+                        label=question.text,
+                        choices=choices,
+                        widget=forms.RadioSelect,
+                        required=False,
+                        error_messages={"required": "Please select an answer for this question"},
                     )
-                elif question.question_type == "short":
+                else:
                     # For short answer, add a text field
                     self.fields[f"question_{question.id}"] = forms.CharField(
                         label=question.text,
