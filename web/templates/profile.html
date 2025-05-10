@@ -30,37 +30,39 @@
               <span class="bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200 text-sm font-medium px-3 py-1 rounded-full">Teacher</span>
             {% endif %}
           </div>
-          <!-- Profile Picture -->
-          <div class="mb-6 flex flex-col items-center">
-            {% if user.profile.custom_avatar %}
-              <div class="w-full h-full p-1.5 transform hover:scale-105 transition-transform duration-200">
-                <div class="w-full h-full overflow-hidden rounded-full flex items-center justify-center">
-                  {{ user.profile.custom_avatar.svg|safe }}
+          <!-- Main Profile Form -->
+          <form method="post"
+                id="main-form"
+                enctype="multipart/form-data"
+                class="space-y-6">
+            {% csrf_token %}
+            <!-- Profile Picture -->
+            <div class="mb-6 flex flex-col items-center">
+              {% if user.profile.custom_avatar %}
+                <div class="w-full h-full p-1.5 transform hover:scale-105 transition-transform duration-200">
+                  <div class="w-full h-full overflow-hidden rounded-full flex items-center justify-center">
+                    {{ user.profile.custom_avatar.svg|safe }}
+                  </div>
                 </div>
-              </div>
-            {% elif user.profile.avatar %}
-              <img src="{{ user.profile.avatar.url }}"
-                   alt="{{ user.username }}'s avatar"
-                   class="w-32 h-32 rounded-full object-cover mb-4"
-                   height="128"
-                   width="128" />
-            {% else %}
-              {% if user.profile.is_teacher %}
-                <img src="{% static 'images/default_teacher.png' %}"
+              {% elif user.profile.avatar %}
+                <img src="{{ user.profile.avatar.url }}"
                      alt="{{ user.username }}'s avatar"
                      class="w-32 h-32 rounded-full object-cover mb-4"
                      height="128"
                      width="128" />
               {% else %}
-                <div class="w-32 h-32 rounded-full bg-orange-500 flex items-center justify-center text-white text-4xl mb-4">
-                  {{ user.first_name|first|default:user.username|first|upper }}
-                </div>
+                {% if user.profile.is_teacher %}
+                  <img src="{% static 'images/default_teacher.png' %}"
+                       alt="{{ user.username }}'s avatar"
+                       class="w-32 h-32 rounded-full object-cover mb-4"
+                       height="128"
+                       width="128" />
+                {% else %}
+                  <div class="w-32 h-32 rounded-full bg-orange-500 flex items-center justify-center text-white text-4xl mb-4">
+                    {{ user.first_name|first|default:user.username|first|upper }}
+                  </div>
+                {% endif %}
               {% endif %}
-            {% endif %}
-            <form method="post"
-                  enctype="multipart/form-data"
-                  class="w-full flex flex-col items-center">
-              {% csrf_token %}
               <label for="avatar-upload"
                      class="cursor-pointer mb-4 text-sm text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300">
                 <span class="flex items-center">
@@ -74,13 +76,9 @@
                        class="hidden"
                        onchange="this.form.submit()" />
               </label>
-            </form>
-            <h3 class="text-lg font-medium">{{ user.username }}</h3>
-            {% if user.get_full_name %}<p class="text-sm text-gray-500 dark:text-gray-400">{{ user.get_full_name }}</p>{% endif %}
-          </div>
-          <!-- Main Profile Form -->
-          <form method="post" enctype="multipart/form-data" class="space-y-6">
-            {% csrf_token %}
+              <h3 class="text-lg font-medium">{{ user.username }}</h3>
+              {% if user.get_full_name %}<p class="text-sm text-gray-500 dark:text-gray-400">{{ user.get_full_name }}</p>{% endif %}
+            </div>
             <!-- Add hidden avatar field for form processing -->
             {{ form.avatar.as_hidden }}
             <div class="p-5">
@@ -529,6 +527,31 @@
       </div>
     </div>
   </div>
+  <script>
+      const avatarInput = document.getElementById('avatar-upload');
+      const mainForm = document.getElementById('main-form');
+
+      avatarInput.addEventListener('change', function() {
+          // Set a flag indicating the avatar was changed
+          sessionStorage.setItem('avatarChanged', 'true');
+      });
+
+      mainForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+
+          const formData = new FormData(mainForm);
+
+          // Only include avatar if it was changed
+          if (sessionStorage.getItem('avatarChanged') !== 'true') {
+              formData.delete('avatar');
+          }
+
+          // Reset the flag
+          sessionStorage.removeItem('avatarChanged');
+
+          mainForm.submit()
+      });
+  </script>
   {% if discount_codes %}
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mt-6">
       <h2 class="text-xl font-bold mb-4">Your Discount Codes</h2>
