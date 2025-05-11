@@ -111,7 +111,7 @@
                 </div>
               </div>
               <!-- Action Button -->
-              {% if user_courses and course.title in user_courses %}
+              {% if user.is_authenticated and course.title in user_courses %}
                 <a href="{% url 'course_detail' course.slug %}"
                    class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold px-3 py-2 rounded-lg flex items-center justify-center">
                   View Course
