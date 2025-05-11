@@ -65,7 +65,7 @@
                 </div>
                 <div class="flex items-center text-gray-600 dark:text-gray-300">
                   <i class="fas fa-star text-yellow-400 mr-2"></i>
-                  <span>{{ course.average_rating|default:"N/A"|floatformat:1 }}</span>
+                  <span>{{ course.average_rating|floatformat:1|default:"N/A" }}</span>
                 </div>
               </div>
               <!-- Session Dates -->
