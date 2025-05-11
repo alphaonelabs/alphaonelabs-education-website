@@ -1438,6 +1438,25 @@ def course_search(request):
     page_obj = paginator.get_page(page_number)
     is_teacher = getattr(getattr(request.user, "profile", None), "is_teacher", False)
 
+    # initialize the user courses if founded
+    user_course_titles = None
+
+    # check if the user is a student or not
+    is_student = False
+    if request.user.is_authenticated:
+        if not request.user.profile.is_teacher:
+            is_student = True
+
+    # get Teacher courses
+    if is_teacher:
+        teacher_courses = list(Course.objects.filter(teacher=request.user))
+        # Create a set of titles
+        user_course_titles = {course.title for course in teacher_courses}
+    elif is_student:
+        enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
+        # Create a set of titles
+        user_course_titles = {course.course.title for course in enrollments}
+
     context = {
         "page_obj": page_obj,
         "query": query,
@@ -1450,6 +1469,7 @@ def course_search(request):
         "level_choices": Course._meta.get_field("level").choices,
         "total_results": total_results,
         "is_teacher": is_teacher,
+        "user_courses": user_course_titles,
     }
 
     return render(request, "courses/search.html", context)

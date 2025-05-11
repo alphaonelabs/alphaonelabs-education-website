@@ -111,7 +111,12 @@
                 </div>
               </div>
               <!-- Action Button -->
-              {% if course.invite_only %}
+              {% if user_courses and course.title in user_courses %}
+                <a href="{% url 'course_detail' course.slug %}"
+                   class="w-full bg-green-500 hover:bg-green-600 text-white font-semibold px-3 py-2 rounded-lg flex items-center justify-center">
+                  View Course
+                </a>
+              {% elif course.invite_only %}
                 <div class="text-xs text-indigo-600 dark:text-indigo-400 text-center">
                   <i class="fas fa-lock mr-1"></i>
                   Invite Only
