@@ -3046,3 +3046,31 @@ class Response(models.Model):
 
     def __str__(self):
         return f"Response by {self.user.username} to {self.question.text}"
+
+
+class ClassroomGameState(models.Model):
+    """Model to store virtual classroom game state for each user."""
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='classroom_state')
+    session_id = models.CharField(max_length=100, blank=True, null=True, help_text="Optional classroom session identifier")
+    position_x = models.FloatField(default=400, help_text="Player's X position in the classroom")
+    position_y = models.FloatField(default=300, help_text="Player's Y position in the classroom")
+    last_updated = models.DateTimeField(auto_now=True, help_text="Last time the state was updated")
+    
+    def __str__(self):
+        return f"Classroom state for {self.user.username}"
+
+
+class ChairOccupancy(models.Model):
+    """Model to track which user is sitting on which chair in the virtual classroom."""
+    chair_id = models.CharField(max_length=50, help_text="Unique identifier for the chair")
+    user = models.ForeignKey('auth.User', on_delete=models.SET_NULL, null=True, blank=True, related_name='occupied_chairs')
+    session_id = models.CharField(max_length=100, blank=True, null=True, help_text="Optional classroom session identifier")
+    timestamp = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['chair_id', 'session_id']
+    
+    def __str__(self):
+        if self.user:
+            return f"Chair {self.chair_id} occupied by {self.user.username}"
+        return f"Chair {self.chair_id} (unoccupied)"

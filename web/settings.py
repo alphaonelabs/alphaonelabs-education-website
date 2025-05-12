@@ -203,7 +203,7 @@ SITE_DOMAIN = "alphaonelabs.com"
 # Allauth settings
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False  # Since we're using email authentication
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"  # Require email verification
+ACCOUNT_EMAIL_VERIFICATION = "optional"  # Require email verification
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_PREVENT_ENUMERATION = True  # Prevent user enumeration

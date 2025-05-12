@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
-from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
+from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar, classroom_views
 from .secure_messaging import (
     compose_message,
     download_message,
@@ -472,7 +472,11 @@ urlpatterns += i18n_patterns(
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
     path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
-    prefix_default_language=True,
+    # Virtual Classroom
+    path("classroom/", classroom_views.virtual_classroom, name="virtual_classroom"),
+    path("classroom/save-state/", classroom_views.save_classroom_state, name="save_classroom_state"),
+    path("classroom/update-chair/", classroom_views.update_chair_state, name="update_chair_state"),
+    prefix_default_language=False,
 )
 
 handler404 = "web.views.custom_404"
