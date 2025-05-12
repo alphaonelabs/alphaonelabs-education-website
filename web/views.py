@@ -391,6 +391,13 @@ def signup_view(request):
     """Custom signup view that properly handles referral codes."""
     if request.method == "POST":
         form = UserRegistrationForm(request.POST, request=request)
+        print(request.POST)  # Shows all submitted keys and values
+        print("#" * 30)
+        print(form.fields.keys())  # Shows form field names
+        print("#" * 30)
+        # print(form.data)  # Shows the data passed to the form (a QueryDict)
+        # print("## form ##", form)
+        print("## form.is_valid() ##", form.is_valid())
         if form.is_valid():
             form.save(request)
             return redirect("account_email_verification_sent")

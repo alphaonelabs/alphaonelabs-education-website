@@ -143,6 +143,11 @@ class UserRegistrationForm(SignupForm):
         required=True,
         widget=TailwindInput(attrs={"placeholder": "Last Name"}),
     )
+    username = forms.CharField(
+        max_length=30,
+        required=True,
+        widget=TailwindInput(attrs={"placeholder": "Choose a username"}),
+    )
     is_teacher = forms.BooleanField(
         required=False,
         label="Register as a teacher",
@@ -212,6 +217,23 @@ class UserRegistrationForm(SignupForm):
             for field_name in ["first_name", "last_name", "email", "referral_code", "username"]:
                 if field_name in self.data and field_name in self.fields:
                     self.fields[field_name].widget.attrs["value"] = self.data[field_name]
+
+            # Special handling for username field
+            if "username" in self.data:
+                if "username" in self.fields:
+                    self.fields["username"].widget.attrs["value"] = self.data["username"]
+                else:
+                    # Re-add the username field since allauth removed it
+                    self.fields["username"] = forms.CharField(
+                        max_length=30,
+                        required=True,
+                        widget=TailwindInput(
+                            attrs={
+                                "placeholder": "Choose a username",
+                                "value": self.data["username"]
+                            }
+                        ),
+                    )
 
             # Initialize how_did_you_hear_about_us if provided
             if "how_did_you_hear_about_us" in self.data:
