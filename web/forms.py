@@ -143,11 +143,6 @@ class UserRegistrationForm(SignupForm):
         required=True,
         widget=TailwindInput(attrs={"placeholder": "Last Name"}),
     )
-    username = forms.CharField(
-        max_length=30,
-        required=True,
-        widget=TailwindInput(attrs={"placeholder": "Choose a username"}),
-    )
     is_teacher = forms.BooleanField(
         required=False,
         label="Register as a teacher",

@@ -260,7 +260,7 @@
           const password2 = document.querySelector("#id_password2");
           const passwordError = document.createElement("div");
 
-          passwordError.className = "text-red-600 text-xs mt-1 hidden";
+          passwordError.className = "text-red-600 mt-2 text-xs mt-1 hidden";
           passwordError.textContent = "Passwords do not match";
 
           // Insert error message after password2 field
@@ -289,14 +289,14 @@
           }
 
           // Prevent form submission if passwords don't match
-          // if (form) {
-          //     form.addEventListener("submit", function(e) {
-          //         if (!checkPasswords()) {
-          //           password2.focus()
-          //             e.preventDefault();
-          //         }
-          //     });
-          // }
+          if (form) {
+              form.addEventListener("submit", function(e) {
+                  if (!checkPasswords()) {
+                      password2.focus()
+                      e.preventDefault();
+                  }
+              });
+          }
       });
   </script>
 {% endblock content %}
