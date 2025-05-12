@@ -228,10 +228,7 @@ class UserRegistrationForm(SignupForm):
                         max_length=30,
                         required=True,
                         widget=TailwindInput(
-                            attrs={
-                                "placeholder": "Choose a username",
-                                "value": self.data["username"]
-                            }
+                            attrs={"placeholder": "Choose a username", "value": self.data["username"]}
                         ),
                     )
 

@@ -254,48 +254,49 @@
     </div>
   </div>
   <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const form = document.querySelector("#signup_form");
-        const password1 = document.querySelector("#id_password1");
-        const password2 = document.querySelector("#id_password2");
-        const passwordError = document.createElement("div");
-        
-        passwordError.className = "text-red-600 text-sm mt-1 hidden";
-        passwordError.textContent = "Passwords do not match";
-        
-        // Insert error message after password2 field
-        if (password2 && password2.parentNode) {
-            password2.parentNode.appendChild(passwordError);
-        }
-        
-        // Check passwords on input
-        function checkPasswords() {
-            if (password1.value && password2.value) {
-                if (password1.value !== password2.value) {
-                    passwordError.classList.remove("hidden");
-                    return false;
-                } else {
-                    passwordError.classList.add("hidden");
-                    return true;
-                }
-            }
-            return true;
-        }
-        
-        // Add input event listeners
-        if (password1 && password2) {
-            password1.addEventListener("input", checkPasswords);
-            password2.addEventListener("input", checkPasswords);
-        }
-        
-        // Prevent form submission if passwords don't match
-        if (form) {
-            form.addEventListener("submit", function(e) {
-                if (!checkPasswords()) {
-                    e.preventDefault();
-                }
-            });
-        }
-    });
+      document.addEventListener("DOMContentLoaded", function() {
+          const form = document.querySelector("#signup_form");
+          const password1 = document.querySelector("#id_password1");
+          const password2 = document.querySelector("#id_password2");
+          const passwordError = document.createElement("div");
+
+          passwordError.className = "text-red-600 text-xs mt-1 hidden";
+          passwordError.textContent = "Passwords do not match";
+
+          // Insert error message after password2 field
+          if (password2 && password2.parentNode) {
+              password2.parentNode.parentNode.appendChild(passwordError);
+          }
+
+          // Check passwords on input
+          function checkPasswords() {
+              if (password1.value && password2.value) {
+                  if (password1.value !== password2.value) {
+                      passwordError.classList.remove("hidden");
+                      return false;
+                  } else {
+                      passwordError.classList.add("hidden");
+                      return true;
+                  }
+              }
+              return true;
+          }
+
+          // Add input event listeners
+          if (password1 && password2) {
+              password1.addEventListener("input", checkPasswords);
+              password2.addEventListener("input", checkPasswords);
+          }
+
+          // Prevent form submission if passwords don't match
+          // if (form) {
+          //     form.addEventListener("submit", function(e) {
+          //         if (!checkPasswords()) {
+          //           password2.focus()
+          //             e.preventDefault();
+          //         }
+          //     });
+          // }
+      });
   </script>
 {% endblock content %}
