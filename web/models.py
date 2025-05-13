@@ -1,3 +1,4 @@
+import json
 import os
 import random
 import string
@@ -5,6 +6,7 @@ import time
 import uuid
 from datetime import datetime, timedelta
 from io import BytesIO
+from typing import ClassVar
 from urllib.parse import parse_qs, urlparse
 
 from allauth.account.signals import user_signed_up
@@ -590,10 +592,10 @@ class CourseMaterial(models.Model):
 
 class Enrollment(models.Model):
     STATUS_CHOICES = [
-        ("pending", "Pending"),
         ("approved", "Approved"),
-        ("rejected", "Rejected"),
         ("completed", "Completed"),
+        ("pending", "Pending"),
+        ("rejected", "Rejected"),
     ]
 
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="enrollments")
@@ -605,6 +607,7 @@ class Enrollment(models.Model):
 
     class Meta:
         unique_together = ["student", "course"]
+        ordering = ["status", "enrollment_date"]
 
     def __str__(self):
         return f"{self.student.username} - {self.course.title}"
@@ -640,11 +643,73 @@ class CourseProgress(models.Model):
 
     @property
     def completion_percentage(self):
-        total_sessions = self.enrollment.course.sessions.count()
-        if total_sessions == 0:
-            return 0
-        completed = self.completed_sessions.count()
-        return int((completed / total_sessions) * 100)
+        """
+        Calculate the completion percentage considering:
+        1. Completed sessions
+        2. Section exams (if found)
+        3. Final course exam (if found)
+        """
+        course = self.enrollment.course
+        student = self.enrollment.student
+
+        # Get total sessions and completed sessions (original calculation)
+        total_sessions = course.sessions.count()
+        completed_sessions = SessionAttendance.objects.filter(
+            student=student, session__course=course, status__in=["present", "late"]
+        ).count()
+
+        # Initialize counters
+        total_items = total_sessions
+        completed_items = completed_sessions
+
+        try:
+            # Look for section exams (exams with type "session")
+            section_exams = course.exams.filter(exam_type="session")
+            total_section_exams = section_exams.count()
+            total_items += total_section_exams
+
+            # Count completed section exams
+            for exam in section_exams:
+                # Get all completed attempts for this exam by the student
+                completed_attempts = exam.user_quizzes.filter(user=student, completed=True)
+
+                # Check if any attempt has a passing status
+                for attempt in completed_attempts:
+                    score = attempt.calculate_score()
+                    if score >= exam.passing_score:
+                        completed_items += 1
+                        break  # Only count one passing attempt per exam
+
+            # Check for final course exam
+            final_exam = course.exams.filter(exam_type="course").first()
+            if final_exam:
+                total_items += 1  # Count final exam in total
+
+                # Check if student has passed the final exam
+                passed_final = False
+                final_attempts = final_exam.user_quizzes.filter(user=student, completed=True)
+
+                for attempt in final_attempts:
+                    score = attempt.calculate_score()
+                    if score >= final_exam.passing_score:
+                        passed_final = True
+                        break
+
+                if passed_final:
+                    completed_items += 1
+
+        except (QuizQuestion.DoesNotExist, ValueError) as exc:
+            # Fallback to session-only percentage but surface the root cause for debugging
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "Error computing completion percentage for %s: %s", student, exc, exc_info=True
+            )
+
+        # Calculate percentage
+        if total_items > 0:
+            return int((completed_items / total_items) * 100)
+        return 0
 
     @property
     def attendance_rate(self):
@@ -1498,6 +1563,8 @@ class ChallengeSubmission(models.Model):
     submission_text = models.TextField()
     submitted_at = models.DateTimeField(auto_now_add=True)
     points_awarded = models.PositiveIntegerField(default=10)
+    student_feedback = models.TextField(blank=True, default="")
+    teacher_feedback = models.TextField(blank=True, default="")
 
     class Meta:
         unique_together = ["user", "challenge"]
@@ -1532,7 +1599,7 @@ class ChallengeSubmission(models.Model):
                     import logging
 
                     logger = logging.getLogger(__name__)
-                    logger.error(f"Error calculating streak for user {self.user.id}: {e}")
+                    logger.error(f"Error calculating streak for userId {self.user.id}: {e}")
 
 
 class Points(models.Model):
@@ -2115,6 +2182,11 @@ class Quiz(models.Model):
     """Model for storing custom quizzes created by users."""
 
     STATUS_CHOICES = [("draft", "Draft"), ("published", "Published"), ("private", "Private")]
+    EXAM_TYPES: ClassVar[list[tuple[str, str]]] = [
+        ("session", "Session Exam"),
+        ("course", "Course Exam"),
+        ("quiz", "Quiz"),
+    ]
 
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
@@ -2132,57 +2204,55 @@ class Quiz(models.Model):
     show_correct_answers = models.BooleanField(default=False, help_text="Show correct answers after quiz completion")
     randomize_questions = models.BooleanField(default=False, help_text="Randomize the order of questions")
     time_limit = models.PositiveIntegerField(null=True, blank=True, help_text="Time limit in minutes (optional)")
-    max_attempts = models.PositiveIntegerField(
-        null=True, blank=True, help_text="Maximum number of attempts allowed (leave blank for unlimited)"
+    ai_auto_correction = models.BooleanField(
+        default=False,
+        help_text="If enabled, AI will automatically attempt to correct text questions",
     )
-    passing_score = models.PositiveIntegerField(default=70, help_text="Minimum percentage required to pass the quiz")
+    enable_copy_paste_and_text_selection = models.BooleanField(
+        default=False,
+        help_text="If enabled, the student will be able to copy/paste and select text inside the exam.",
+    )
+    # New fields for exam functionality
+    exam_type = models.CharField(max_length=10, choices=EXAM_TYPES, default="quiz", db_index=True)
+    course = models.ForeignKey("Course", on_delete=models.CASCADE, related_name="exams", null=True, blank=True)
+    session = models.ForeignKey("Session", on_delete=models.CASCADE, related_name="exams", null=True, blank=True)
+    passing_score = models.PositiveIntegerField(default=60, help_text="Minimum score to pass the exam (percentage)")
+    max_attempts = models.PositiveIntegerField(default=1, help_text="Maximum attempts allowed")
 
     class Meta:
-        verbose_name_plural = "Quizzes"
-        ordering = ["-created_at"]
+        ordering = ["created_at"]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.title
-
-    def save(self, *args, **kwargs):
-        # Generate a unique share code if not provided
-        if not self.share_code:
-            import random
-            import string
-
-            while True:
-                code = "".join(random.choices(string.ascii_uppercase + string.digits, k=8))
-                if not Quiz.objects.filter(share_code=code).exists():
-                    self.share_code = code
-                    break
-        super().save(*args, **kwargs)
-
-    def get_absolute_url(self):
-        from django.urls import reverse
-
-        return reverse("quiz_detail", kwargs={"pk": self.pk})
-
-    @property
-    def question_count(self):
-        return self.questions.count()
-
-    @property
-    def completion_count(self):
-        return self.user_quizzes.filter(completed=True).count()
 
 
 class QuizQuestion(models.Model):
     """Model for storing quiz questions."""
 
-    QUESTION_TYPES = [("multiple", "Multiple Choice"), ("true_false", "True/False"), ("short", "Short Answer")]
+    QUESTION_TYPES: ClassVar[list[tuple[str, str]]] = [
+        ("multiple", "Multiple Choice"),
+        ("true_false", "True/False"),
+        ("short", "Short Answer"),
+        ("fill_blank", "Fill in the Blanks"),
+        ("open_ended", "Open-Ended Questions"),
+        ("matching", "Matching Questions"),
+        ("problem_solving", "Problem-Solving Questions"),
+        ("scenario", "Scenario-Based Questions"),
+        ("diagram", "Diagram-Based Questions"),
+        ("coding", "Coding Questions"),
+    ]
 
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="questions")
     text = models.TextField()
-    question_type = models.CharField(max_length=10, choices=QUESTION_TYPES, default="multiple")
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPES, default="multiple")
     explanation = models.TextField(blank=True, help_text="Explanation of the correct answer")
     points = models.PositiveIntegerField(default=1)
     order = models.PositiveIntegerField(default=0)
     image = models.ImageField(upload_to="quiz_questions/", blank=True, default="")
+    reference_answer = models.TextField(
+        blank=True,
+        help_text="Reference answer for the questions, important for AI-auto correction",
+    )
 
     class Meta:
         ordering = ["order"]
@@ -2209,17 +2279,30 @@ class QuizOption(models.Model):
 class UserQuiz(models.Model):
     """Model for tracking user quiz attempts and responses"""
 
+    CORRECTION_STATUS: ClassVar[list[tuple[str, str]]] = [
+        ("not_needed", "No Correction Needed"),
+        ("pending", "Correction Pending"),
+        ("in_progress", "Correction In Progress"),
+        ("completed", "Correction Completed"),
+    ]
+
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name="user_quizzes")
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="quiz_attempts", null=True, blank=True)
     anonymous_id = models.CharField(
         max_length=36, blank=True, default="", help_text="Identifier for non-logged-in users"
     )
-    score = models.PositiveIntegerField(default=0)
-    max_score = models.PositiveIntegerField(default=0)
     completed = models.BooleanField(default=False)
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
     answers = models.JSONField(default=dict, blank=True, help_text="JSON storing the user's answers and question IDs")
+    student_feedback = models.TextField(blank=True, default="")
+    teacher_feedback = models.TextField(blank=True, default="")
+    correction_status = models.CharField(
+        max_length=15,
+        choices=CORRECTION_STATUS,
+        default="not_needed",
+        help_text="Status of manual correction for text questions",
+    )
 
     class Meta:
         ordering = ["-start_time"]
@@ -2229,46 +2312,71 @@ class UserQuiz(models.Model):
         user_str = self.user.username if self.user else f"Anonymous ({self.anonymous_id})"
         return f"{user_str} - {self.quiz.title}"
 
-    def calculate_score(self):
-        """Calculate the score based on answers."""
-        score = 0
-        max_score = 0
+    # return percentage from 0% to 100%
+    def calculate_score(self) -> float:
+        """Return percentage score (0-100) using the cached point computation."""
+        score, max_score = self._compute_points()
+        return round((score / max_score) * 100, 1) if max_score else 0.0
 
-        for q_id, answer_data in self.answers.items():
-            try:
-                question = QuizQuestion.objects.get(id=q_id)
-                max_score += question.points
-
-                if question.question_type == "multiple":
-                    # Check if selected options match correct options
-                    correct_options = set(question.options.filter(is_correct=True).values_list("id", flat=True))
-                    selected_options = set(answer_data.get("selected_options", []))
-                    if correct_options == selected_options:
-                        score += question.points
-                elif question.question_type == "true_false":
-                    # For true/false, there should be only one correct option
-                    correct_option = question.options.filter(is_correct=True).first()
-                    if correct_option and str(correct_option.id) == str(answer_data.get("selected_option")):
-                        score += question.points
-                elif question.question_type == "short":
-                    # Short answers require manual grading in this implementation
-                    # We could implement auto-grading logic here for simple cases
-                    pass
-            except QuizQuestion.DoesNotExist:
-                pass
-
-        self.score = score
-        self.max_score = max_score
-        self.save()
-
-    def complete_quiz(self):
+    def complete_quiz(self) -> None:
         """Mark the quiz as completed and calculate final score."""
         from django.utils import timezone
 
         self.completed = True
         self.end_time = timezone.now()
-        self.calculate_score()
         self.save()
+
+    def _get_answers_dict(self) -> dict:
+        """Return answers as a dict, deserializing if stored as a JSON string."""
+        if isinstance(self.answers, str):
+            try:
+                return json.loads(self.answers)
+            except json.JSONDecodeError:
+                return {}
+        return self.answers or {}
+
+    def _compute_points(self) -> tuple[int, int]:
+        """
+        Compute and cache (score, max_score) for this attempt.
+
+        - score: sum of awarded points clamped between 0 and question.points
+        - max_score: sum of question.points for all answered questions
+        """
+        # Return cached result if already computed in this request
+        if hasattr(self, "_points_cache"):
+            return self._points_cache
+
+        answers = self._get_answers_dict()
+        # Collect *all* questions belonging to the quiz
+        questions = self.quiz.questions.only("id", "points")
+        # Map id -> available points
+        points_map = {q.id: q.points for q in questions}
+
+        # Calculate actual score
+        score = 0
+        for q_id_str, answer_data in answers.items():
+            q_id = int(q_id_str)
+            awarded = answer_data.get("points_awarded", 0) or 0
+            # Clamp between 0 and the question's max points
+            max_pts = points_map.get(q_id, 0)
+            score += min(max(awarded, 0), max_pts)
+
+        # Calculate max possible score
+        max_score = sum(points_map.values())
+
+        # Cache on the instance
+        self._points_cache = (score, max_score)
+        return self._points_cache
+
+    @property
+    def max_score(self) -> int:
+        """Calculate max_score dynamically from the answered questions."""
+        return self._compute_points()[1]
+
+    @property
+    def score(self) -> int:
+        """Calculate max_score dynamically from the answered questions."""
+        return self._compute_points()[0]
 
     @property
     def duration(self):
@@ -2319,19 +2427,10 @@ class UserQuiz(models.Model):
 
         # Check if there's a passing score defined on the quiz
         passing_score = getattr(self.quiz, "passing_score", 0)
-        if passing_score and self.score >= passing_score:
+        if (self.score / (self.max_score or 1)) * 100 >= passing_score:
             return "passed"
         else:
             return "failed"
-
-    def get_status_display(self):
-        """Return a human-readable status."""
-        if self.status == "passed":
-            return "Passed"
-        elif self.status == "failed":
-            return "Failed"
-        else:
-            return "In Progress"
 
     @property
     def created_at(self):

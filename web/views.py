@@ -183,6 +183,7 @@ from .notifications import (
     send_enrollment_confirmation,
 )
 from .referrals import send_referral_reward_email
+from .services.AI.ai_model import ai_assignment_corrector
 from .social import get_social_stats
 from .utils import (
     cancel_subscription,
@@ -847,6 +848,121 @@ def course_detail(request, slug):
     for item in rating_counts:
         rating_distribution[item["rating"]] = item["count"]
 
+    # NEW CODE: Prepare exam data in the view
+    # 1. Get course-level exams (not associated with specific sessions)
+    course_exams = course.exams.filter(exam_type="course", session__isnull=True).prefetch_related("user_quizzes")
+
+    # 2. Process each course exam (with user attempts and submission counts)
+    user_attempts_count = 0
+    course_exam_data = []
+    for exam in course_exams:
+        # Get user's attempts for this exam
+        user_attempt = None
+        if request.user.is_authenticated:
+            # Get count in a more efficient way without a second query
+            user_attempts = exam.user_quizzes.filter(user=request.user)
+            user_attempt = user_attempts.first()
+            user_attempts_count = user_attempts.count()
+
+        # Get submission count for teachers
+        submission_count = 0
+        if is_teacher:
+            submission_count = exam.user_quizzes.filter(completed=True).count()
+
+        course_exam_data.append(
+            {
+                "exam": exam,
+                "user_attempt": user_attempt,
+                "submission_count": submission_count,
+                "user_attempts_count": user_attempts_count,
+                "user_remaining_attempts": exam.max_attempts - user_attempts_count,
+            }
+        )
+
+    # 3. Process each session with its exams
+    session_data = []
+    for session in sessions:
+        # Get all exams for this session
+        session_exams = session.exams.all().prefetch_related("user_quizzes")
+        session_exam_data = []
+
+        # Process each exam in this session
+        for exam in session_exams:
+            user_attempt = None
+            user_attempts_count = 0
+            if request.user.is_authenticated:
+                # Get count in a more efficient way without a second query
+                user_attempts = exam.user_quizzes.filter(user=request.user)
+                user_attempt = user_attempts.first()
+                user_attempts_count = user_attempts.count()
+
+            # Get submission count for teachers
+            submission_count = 0
+            if is_teacher:
+                submission_count = exam.user_quizzes.filter(completed=True).count()
+
+            session_exam_data.append(
+                {
+                    "exam": exam,
+                    "user_attempt": user_attempt,
+                    "submission_count": submission_count,
+                    "user_attempts_count": user_attempts_count,
+                    "user_remaining_attempts": exam.max_attempts - user_attempts_count,
+                }
+            )
+
+        session_data.append(
+            {
+                "session": session,
+                "exams": session_exam_data,
+            }
+        )
+
+    # Prepare student analytics data for the chart
+    labels = []
+    progress_data = []
+
+    # Prepare all chart data in the views.py file - no more template JS loops
+    if is_teacher and course.enrollments.exists():
+        # Get all approved enrollments for this course
+        course_enrollments = course.enrollments.filter(status__in=["approved", "completed"]).select_related("student")
+
+        # Prepare student data
+        for enrollment in course_enrollments:
+            student = enrollment.student
+            labels.append(student.username)
+
+            # Get progress percentage
+            progress, created = CourseProgress.objects.get_or_create(enrollment=enrollment)
+            progress_data.append(progress.completion_percentage)
+
+        # Prepare past sessions data for attendance chart
+        session_labels = []
+        session_attendance_data = []
+
+        # Only include past and current sessions
+        for session in past_sessions:
+            session_labels.append(session.title)
+            # For teachers, show how many students attended
+            attendance_count = session.attendances.filter(status__in=["present", "late"]).count()
+            session_attendance_data.append(attendance_count)
+
+        # Create combined Analytics object with all data
+        Analytics = {
+            "labels": json.dumps(labels),
+            "progress_data": json.dumps(progress_data),
+            "session_labels": json.dumps(session_labels),
+            "session_attendance_data": json.dumps(session_attendance_data),
+        }
+    else:
+        # Empty data if not teacher or no enrollments
+        Analytics = {
+            "labels": "[]",
+            "progress_data": "[]",
+            "session_labels": "[]",
+            "session_attendance_data": "[]",
+        }
+
     # Build the absolute discount URL using the discount view's URL name.
     from urllib.parse import urlencode
 
@@ -856,6 +972,7 @@ def course_detail(request, slug):
     context = {
         "course": course,
         "sessions": sessions,
+        "past_sessions": past_sessions,
         "now": now,
         "today": today,
         "is_teacher": is_teacher,
@@ -874,7 +991,11 @@ def course_detail(request, slug):
         "user_review": user_review,
         "rating_distribution": rating_distribution,
         "reviews_num": reviews_num,
+        "course_exams": course_exams,
+        "course_exam_data": course_exam_data,
+        "session_data": session_data,
         "discount_url": discount_url,
+        "Analytics": Analytics,
     }
 
     return render(request, "courses/detail.html", context)
@@ -3663,13 +3784,34 @@ def challenge_submit(request, challenge_id):
 
     if request.method == "POST":
         form = ChallengeSubmissionForm(request.POST)
+        challenge_detail = {
+            "title": challenge.title,
+            "description": challenge.description,
+            "student_answer": request.POST.get("submission_text"),
+        }
+
         if form.is_valid():
+            try:
+                ai_response = ai_assignment_corrector(challenge_detail)
+            except (ValueError, AttributeError):
+                # Log the error but continue with default values
+                logger.exception("AI correction failed")
+                ai_response = {
+                    "student_feedback": "Automatic feedback unavailable at this time.",
+                    "teacher_feedback": "AI evaluation service encountered an error.",
+                    "degree": 0,
+                }
+
             submission = form.save(commit=False)
             submission.user = request.user
             submission.challenge = challenge
+            submission.student_feedback = ai_response["student_feedback"]
+            submission.teacher_feedback = ai_response["teacher_feedback"]
+            submission.points_awarded = ai_response["degree"]
             submission.save()
             messages.success(request, "Your submission has been recorded!")
-            return redirect("challenge_detail", challenge_id=challenge_id)
+            base_url = reverse("challenge_detail", kwargs={"challenge_id": challenge_id})
+            return redirect(f"{base_url}#{request.user.username}")
     else:
         form = ChallengeSubmissionForm()
 

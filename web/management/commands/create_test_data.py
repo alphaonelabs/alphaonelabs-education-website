@@ -1,3 +1,4 @@
+import json
 import random
 from datetime import timedelta
 from decimal import Decimal
@@ -8,6 +9,7 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.crypto import get_random_string
 from django.utils.text import slugify
 
 from web.models import (
@@ -29,12 +31,16 @@ from web.models import (
     Points,
     ProductImage,
     Profile,
+    Quiz,
+    QuizOption,
+    QuizQuestion,
     Review,
     Session,
     SessionAttendance,
     Storefront,
     StudyGroup,
     Subject,
+    UserQuiz,
     WaitingRoom,
 )
 
@@ -53,6 +59,10 @@ class Command(BaseCommand):
         """Clear all existing data from the models."""
         self.stdout.write("Clearing existing data...")
         models = [
+            UserQuiz,
+            QuizOption,
+            QuizQuestion,
+            Quiz,
             BlogComment,
             BlogPost,
             PeerMessage,
@@ -115,7 +125,7 @@ class Command(BaseCommand):
             students.append(user)
             self.stdout.write(f"Created student: {user.username}")
 
-        # Create challenges first
+        # Create weekly challenges
         challenges = []
         for i in range(5):
             week_num = i + 1
@@ -124,14 +134,30 @@ class Command(BaseCommand):
                 continue
 
             challenge = Challenge.objects.create(
-                title=f"Weekly Challenge {i + 1}",
-                description=f"Description for challenge {i + 1}",
+                title="Write a short poem",
+                description="Compose a short poem on any topic that inspires you.",
                 week_number=week_num,
                 start_date=timezone.now().date() - timedelta(days=14),  # Start from 2 weeks ago
                 end_date=(timezone.now() + timedelta(days=7)).date(),
             )
             challenges.append(challenge)
             self.stdout.write(f"Created challenge: {challenge.title}, {challenge.start_date},- {challenge.end_date}")
+
+        # Create one-time challenges
+        one_time_challenges = []
+        for i in range(3):  # Adjust the number as needed.
+            challenge = Challenge.objects.create(
+                title=f"One-time Challenge {i + 1}",
+                description=f"Description for one-time challenge {i + 1}",
+                challenge_type="one_time",  # Explicitly set to one-time.
+                # week_number is omitted for one-time challenges.
+                start_date=timezone.now().date(),
+                end_date=(timezone.now() + timedelta(days=7)).date(),
+            )
+            one_time_challenges.append(challenge)
+            self.stdout.write(
+                f"Created one-time challenge: {challenge.title}, {challenge.start_date} - {challenge.end_date}",
+            )
 
         if not challenges:
             self.stdout.write(self.style.WARNING("No new challenges created, all week numbers already exist."))
@@ -171,6 +197,7 @@ class Command(BaseCommand):
                 )
                 for i, challenge in enumerate(completed_challenges):
                     # Create submission (will auto-create points through save method)
+
                     submission = ChallengeSubmission.objects.create(
                         user=student,
                         challenge=challenge,
@@ -344,7 +371,16 @@ class Command(BaseCommand):
         now = timezone.now()
         for course in courses:
             for i in range(5):
-                start_time = now + timedelta(days=i * 7)
+                # Randomly decide if the session should be in the past or future
+                in_future = random.choice([True, False])
+
+                # Set the session time accordingly
+                if in_future:
+                    # Between now and the next 5 weeks
+                    start_time = now + timedelta(days=random.randint(1, 35))
+                else:
+                    # Between 1 and 21 days ago
+                    start_time = now - timedelta(days=random.randint(1, 21))
                 is_virtual = random.choice([True, False])
                 session = Session.objects.create(
                     course=course,
@@ -359,6 +395,9 @@ class Command(BaseCommand):
                 )
                 sessions.append(session)
             self.stdout.write(f"Created sessions for course: {course.title}")
+
+        # # In the handle method, add this line after creating sessions
+        self.create_exams_and_quizzes(courses, sessions, students)
 
         # Create enrollments and progress
         for student in students:
@@ -379,9 +418,33 @@ class Command(BaseCommand):
                 completed_sessions = random.sample(list(course_sessions), random.randint(0, course_sessions.count()))
                 progress.completed_sessions.add(*completed_sessions)
 
-                # Create session attendance
-                for session in completed_sessions:
-                    SessionAttendance.objects.create(student=student, session=session, status="completed")
+                # Get all sessions for this course
+                course_sessions = Session.objects.filter(course=course)
+
+                # For each session, randomly determine attendance status
+                for session in course_sessions:
+                    # 70% chance of attending if the session is in the past
+
+                    if session.end_time < timezone.now() and random.random() < 0.7:
+                        # Randomly select attendance status with weighted probabilities
+                        status_options = ["present", "late", "excused", "absent"]
+                        status_weights = [0.7, 0.1, 0.1, 0.1]  # 70% present, 10% each for other statuses
+                        status = random.choices(status_options, weights=status_weights)[0]
+
+                        # Create attendance record
+                        SessionAttendance.objects.create(
+                            student=student,
+                            session=session,
+                            status=status,
+                        )
+
+                        # If the status is present or late, mark it as completed in progress
+                        if status in ["present", "late"]:
+                            progress.completed_sessions.add(session)
+
+                        self.stdout.write(
+                            f"Created {status} attendance for {student.username} in session: {session.title}"
+                        )
 
                 self.stdout.write(f"Created enrollment for {student.username} in {course.title}")
 
@@ -433,7 +496,7 @@ class Command(BaseCommand):
                 )
                 self.stdout.write(
                     f"Created review, student: {student}, course: {course},"
-                    "featured: {is_featured}, review: Great course!"
+                    f"featured: {is_featured}, review: Great course!"
                 )
 
         # Create forum categories and topics
@@ -575,3 +638,307 @@ class Command(BaseCommand):
             self.stdout.write(f"Created images for product: {product.name}")
 
         self.stdout.write(self.style.SUCCESS("Successfully created test data"))
+
+    def create_exams_and_quizzes(self, courses: list, sessions: list, students: list) -> None:
+        """Create exams, quizzes, and student submissions for testing."""
+        self.stdout.write("Creating exams and quizzes...")
+
+        # Question types
+        question_types = [
+            "multiple",
+            "true_false",
+            "short",
+            "fill_blank",
+            "open_ended",
+            "problem_solving",
+            "scenario",
+            "coding",
+            "matching",
+            "diagram",
+        ]
+
+        # Create course exams (final exams)
+        for course in courses:
+            # Create final course exam
+            course_exam = Quiz.objects.create(
+                title=f"Final Exam - {course.title}",
+                description=f"Final comprehensive exam for {course.title}",
+                creator=course.teacher,
+                subject=course.subject,
+                status="published",
+                exam_type="course",
+                course=course,
+                time_limit=90,  # 90 minutes
+                passing_score=70,
+                max_attempts=2,
+                randomize_questions=True,
+                show_correct_answers=False,
+                share_code=get_random_string(8),
+            )
+
+            # Create questions for course exam
+            # Ensure at least one multiple choice and one true/false question
+            required_types = ["multiple", "true_false"]
+
+            # Create the required questions first
+            for i, q_type in enumerate(required_types):
+                question_text = self.get_question_text(q_type)
+
+                question = QuizQuestion.objects.create(
+                    quiz=course_exam,
+                    text=f"Question {i + 1}: {question_text}",
+                    question_type=q_type,
+                    explanation=f"Explanation for question {i + 1}",
+                    points=random.randint(1, 5),
+                    order=i + 1,
+                )
+
+                # Add options for multiple choice and true/false questions
+                self.create_question_options(question)
+
+            # Create the remaining questions (randomly)
+            for i in range(len(required_types), 10):
+                question_type = random.choice(question_types)
+
+                # Generate appropriate question text
+                question_text = self.get_question_text(question_type)
+
+                question = QuizQuestion.objects.create(
+                    quiz=course_exam,
+                    text=f"Question {i + 1}: {question_text}",
+                    question_type=question_type,
+                    explanation=f"Explanation for question {i + 1}",
+                    points=random.randint(1, 5),
+                    order=i + 1,
+                )
+
+                # Add options for appropriate question types
+                if question_type in ["multiple", "true_false"]:
+                    self.create_question_options(question)
+
+                # Add specialized fields for other question types
+                if question_type == "coding":
+                    question.code_starter = "def solution():\n    # Your code here\n    pass"
+                    question.expected_output = "Expected output for the code"
+                    question.save()
+                elif question_type == "matching":
+                    question.matching_items = {
+                        "items": ["Item 1", "Item 2", "Item 3"],
+                        "matches": ["Match 1", "Match 2", "Match 3"],
+                    }
+                    question.save()
+
+            self.stdout.write(f"Created course exam for: {course.title}")
+
+            # SOLUTION: Create enrollments and submissions together
+            # For each student, decide enrollment status first, then create submissions only for approved students
+            for student in random.sample(students, min(5, len(students))):
+                # Choose a status with weighted probabilities
+                status = random.choices(["approved", "pending", "rejected", "completed"], weights=[0.6, 0.2, 0.1, 0.1])[
+                    0
+                ]
+
+                # Create the enrollment
+                enrollment, created = Enrollment.objects.get_or_create(
+                    student=student, course=course, defaults={"status": status}
+                )
+
+                if not created:
+                    enrollment.status = status
+                    enrollment.save()
+
+                self.stdout.write(f"Created {status} enrollment for {student.username} in {course.title}")
+
+                # Only create final exam submissions for approved/completed students
+                if status in ["approved", "completed"]:
+                    UserQuiz.objects.create(
+                        quiz=course_exam,
+                        user=student,
+                        completed=True,
+                        start_time=timezone.now() - timedelta(days=random.randint(1, 5)),
+                        end_time=timezone.now() - timedelta(days=random.randint(0, 4)),
+                        answers=json.dumps(self.generate_mock_answers(course_exam)),
+                    )
+                    self.stdout.write(
+                        f"Created submission for approved student {student.username} - {course_exam.title}"
+                    )
+
+        # Create session exams
+        for session in sessions:
+            # Create session exam (50% probability)
+            if random.random() < 0.5:
+                continue
+
+            session_exam = Quiz.objects.create(
+                title=f"Quiz - {session.title}",
+                description=f"Quiz for session: {session.title}",
+                creator=session.course.teacher,
+                subject=session.course.subject,
+                status="published",
+                exam_type="session",
+                course=session.course,
+                session=session,
+                time_limit=30,  # 30 minutes
+                passing_score=60,
+                randomize_questions=False,
+                show_correct_answers=True,
+                ai_auto_correction=True,
+                share_code=get_random_string(8),
+            )
+
+            # Create questions for session exam (fewer than course exam)
+            # Ensure at least one multiple choice and one true/false question
+            required_types = ["multiple", "true_false"]
+
+            # Create the required questions first
+            for i, q_type in enumerate(required_types):
+                question_text = self.get_question_text(q_type)
+
+                question = QuizQuestion.objects.create(
+                    quiz=session_exam,
+                    text=f"Question {i + 1}: {question_text}",
+                    question_type=q_type,
+                    explanation=f"Explanation for question {i + 1}",
+                    points=1,
+                    order=i + 1,
+                )
+
+                # Add options for multiple choice and true/false questions
+                self.create_question_options(question)
+
+            # Create the remaining questions (randomly)
+            for i in range(len(required_types), 5):
+                question_type = random.choice(question_types)
+
+                # Generate appropriate question text
+                question_text = self.get_question_text(question_type)
+
+                question = QuizQuestion.objects.create(
+                    quiz=session_exam,
+                    text=f"Question {i + 1}: {question_text}",
+                    question_type=question_type,
+                    explanation=f"Explanation for question {i + 1}",
+                    points=1,
+                    order=i + 1,
+                )
+
+                # Add options for appropriate question types
+                if question_type in ["multiple", "true_false"]:
+                    self.create_question_options(question)
+
+            self.stdout.write(f"Created session exam for: {session.title}")
+
+    def get_question_text(self, question_type: str) -> str:
+        """Generate appropriate question text based on question type."""
+        question_map = {
+            "multiple": "Which of the following options is correct?",
+            "true_false": "Is the following statement true or false?",
+            "short": "Provide a short answer to the following question.",
+            "fill_blank": "Complete the following sentence: The capital of France is _____.",
+            "open_ended": "Explain the concept of machine learning in your own words.",
+            "problem_solving": (
+                "Solve the following problem: If a train travels at 60 mph, "
+                "how long will it take to travel 240 miles?"
+            ),
+            "scenario": (
+                "You are a software developer working on a critical project. "
+                "The deadline is approaching, but you've discovered a major bug. What do you do?"
+            ),
+            "coding": "Write a function that returns the sum of two numbers.",
+        }
+        return question_map.get(question_type, "Sample question text.")
+
+    def create_question_options(self, question: QuizQuestion) -> None:
+        """Create options for a question based on its type."""
+        if question.question_type == "multiple":
+            # Create 4 options with one correct answer
+            for i in range(4):
+                QuizOption.objects.create(
+                    question=question,
+                    text=f"Option {i + 1}",
+                    is_correct=(i == 0),
+                    order=i + 1,  # First option is correct
+                )
+        elif question.question_type == "true_false":
+            # Create true/false options
+            # always the True choice will be true
+            QuizOption.objects.create(question=question, text="True", is_correct=True, order=1)
+            QuizOption.objects.create(question=question, text="False", is_correct=False, order=2)
+
+    def generate_mock_answers(self, quiz: Quiz) -> dict:
+        """Generate mock answers for a quiz submission."""
+        answers = {}
+        questions = quiz.questions.all()
+
+        for question in questions:
+            q_id = str(question.id)
+
+            if question.question_type == "multiple":
+                correct_option = question.options.filter(is_correct=True).first()
+                # 70% chance of choosing the correct answer
+                if random.random() < 0.7:
+                    answers[q_id] = {
+                        "user_answer": str(correct_option.id) if correct_option else "",
+                        "is_correct": True,
+                        "points_awarded": question.points,
+                    }
+                else:
+                    incorrect_option = question.options.filter(is_correct=False).first()
+                    answers[q_id] = {
+                        "user_answer": str(incorrect_option.id) if incorrect_option else "",
+                        "is_correct": False,
+                        "points_awarded": 0,
+                    }
+
+            elif question.question_type == "true_false":
+                correct_option = question.options.filter(is_correct=True).first()
+                # 50% chance of choosing the correct answer
+                if random.random() < 0.5:
+                    answers[q_id] = {
+                        "user_answer": str(correct_option.id) if correct_option else "",
+                        "is_correct": True,
+                        "points_awarded": question.points,
+                    }
+                else:
+                    incorrect_option = question.options.filter(is_correct=False).first()
+                    answers[q_id] = {
+                        "user_answer": str(incorrect_option.id) if incorrect_option else "",
+                        "is_correct": False,
+                        "points_awarded": 0,
+                    }
+
+            elif question.question_type == "short":
+                answers[q_id] = {
+                    "user_answer": "Sample short answer response",
+                    "is_graded": True,
+                    "points_awarded": question.points if random.random() < 0.8 else round(question.points * 0.5),
+                    "is_correct": random.random() < 0.8,
+                }
+
+            elif question.question_type == "fill_blank":
+                answers[q_id] = {
+                    "user_answer": "Paris" if random.random() < 0.9 else "London",
+                    "is_correct": random.random() < 0.9,
+                }
+
+            elif question.question_type in ["open_ended", "problem_solving", "scenario", "coding"]:
+                answers[q_id] = {
+                    "user_answer": f"Sample answer for {question.question_type} question",
+                    "is_graded": True,
+                    "points_awarded": question.points if random.random() < 0.7 else round(question.points * 0.6),
+                    "is_correct": random.random() < 0.7,
+                }
+
+            elif question.question_type == "matching":
+                answers[q_id] = {
+                    "user_answer": {"0": "2", "1": "0", "2": "1"},  # Matching indices
+                    "is_correct": random.random() < 0.6,
+                }
+
+            elif question.question_type == "diagram":
+                answers[q_id] = {
+                    "user_answer": {"part1": "label1", "part2": "label2"},
+                    "is_correct": random.random() < 0.7,
+                }
+
+        return answers

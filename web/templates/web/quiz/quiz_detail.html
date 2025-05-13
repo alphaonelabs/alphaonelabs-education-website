@@ -7,7 +7,24 @@
 {% endblock title %}
 {% block extra_head %}
   <!-- For clipboard copy functionality -->
-  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- htmx.org -->
+  <script src="https://unpkg.com/htmx.org@1.9.6"
+          integrity="sha384-FhXw7b6AlE/jyjlZH5iHa/tTe9EpJ1Y55RjcgPbjeWMskSxZt1v9qkxLJWNJaGni"
+          crossorigin="anonymous"></script>
+  <!-- Alpine.js -->
+  <script defer
+          src="https://unpkg.com/alpinejs@3.10.5/dist/cdn.min.js"
+          integrity="sha384-wICldTX7sscvjqLJybc/rlXSacpC5MFOqoVDpexYWhfwjOtC+GH8CtGt+AmIFoxO"
+          crossorigin="anonymous"></script>
+  <!-- Toastr CSS -->
+  <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.css"
+        integrity="sha512-vKMx8UnXk60zUwyUnUPM3HbQo8QfmNx7+ltw8Pm5zLusl1XIfwcxo8DbWCqMGKaWeNxWA8yrx5v3SaVpMvR3CA=="
+        crossorigin="anonymous" />
+  <!-- Toastr JS -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/2.1.4/toastr.min.js"
+          integrity="sha512-VEd+nq25CkR676O+pLBnDW09R7VQX9Mdiij052gVCp5yVH3jGtH70Ho/UUv4mJDsEdTvqRCFZg0NKGiojGnUCw=="
+          crossorigin="anonymous"></script>
   <script>
       function copyToClipboard(text) {
           navigator.clipboard.writeText(text).then(() => {
@@ -17,6 +34,33 @@
               console.error('Could not copy text: ', err);
           });
       }
+
+      document.addEventListener('DOMContentLoaded', function() {
+          document.body.addEventListener('htmx:afterOnLoad', function(evt) {
+              const triggerHeader = evt.detail.xhr.getResponseHeader('HX-Trigger');
+
+              // Set default toastr options once
+              toastr.options = {
+                  "positionClass": "toast-top-right",
+                  "timeOut": "3000"
+              };
+
+              // Process trigger header if present
+              if (!triggerHeader) return;
+
+              try {
+                  const triggerData = JSON.parse(triggerHeader);
+                  if (triggerData['show-toast']) {
+                      const toast = triggerData['show-toast'];
+                      toastr[toast.level || 'info'](toast.message);
+                  }
+              } catch (e) {
+                  toastr.error('Something went wrong while processing the response');
+                  console.error('Failed to parse HX-Trigger header:', e);
+              }
+
+          });
+      });
   </script>
 {% endblock extra_head %}
 {% block content %}
@@ -27,6 +71,9 @@
       <span class="mx-2">/</span>
       <a href="{% url 'quiz_list' %}"
          class="text-blue-600 hover:text-blue-800">Quizzes</a>
+      <span class="mx-2">/</span>
+      <a href="{% url 'course_detail' quiz.course.slug %}"
+         class="text-blue-600 hover:text-blue-800">{{ quiz.course }}</a>
       <span class="mx-2">/</span>
       <span class="text-gray-600">{{ quiz.title }}</span>
     </nav>
@@ -67,10 +114,12 @@
                 </button>
               </form>
             {% endif %}
-            <a href="{% url 'take_quiz' quiz.id %}"
-               class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
-              <i class="fas fa-play mr-2"></i> Take Quiz
-            </a>
+            {% if can_take_quiz %}
+              <a href="{% url 'take_quiz' quiz.id %}"
+                 class="bg-teal-600 hover:bg-teal-700 text-white py-2 px-4 rounded-lg inline-flex items-center">
+                <i class="fas fa-play mr-2"></i> Take Quiz
+              </a>
+            {% endif %}
           </div>
         </div>
         <!-- Quiz description -->
@@ -113,9 +162,25 @@
                 <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Randomize Questions</h3>
                 <p class="text-gray-800 dark:text-white">{{ quiz.randomize_questions|yesno:"Yes,No" }}</p>
               </div>
+              <!-- Show Answers -->
               <div>
                 <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Show Answers</h3>
-                <p class="text-gray-800 dark:text-white">{{ quiz.show_answers|yesno:"Yes,No" }}</p>
+                <p class="text-gray-800 dark:text-white">{{ quiz.show_correct_answers|yesno:"Yes,No" }}</p>
+              </div>
+              <!-- Allow Anonymous Attempts -->
+              <div>
+                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Allow Anonymous</h3>
+                <p class="text-gray-800 dark:text-white">{{ quiz.allow_anonymous|yesno:"Yes,No" }}</p>
+              </div>
+              <!-- AI auto correction -->
+              <div>
+                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">AI auto correction</h3>
+                <p class="text-gray-800 dark:text-white">{{ quiz.ai_auto_correction|yesno:"Yes,No" }}</p>
+              </div>
+              <!-- Enable copy/paste and text selection -->
+              <div>
+                <h3 class="text-sm font-medium text-gray-600 dark:text-gray-400">Enable copy/paste & text selection</h3>
+                <p class="text-gray-800 dark:text-white">{{ quiz.enable_copy_paste_and_text_selection|yesno:"Yes,No" }}</p>
               </div>
             </div>
           </div>
@@ -162,7 +227,8 @@
               <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
                 <ul class="divide-y divide-gray-200 dark:divide-gray-700">
                   {% for question in questions %}
-                    <li class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <li id="question-item-{{ question.id }}"
+                        class="p-4 hover:bg-gray-50 dark:hover:bg-gray-700">
                       <div class="flex justify-between items-start">
                         <div class="flex-1">
                           <p class="text-sm font-medium text-gray-900 dark:text-white mb-1">{{ question.text }}</p>
@@ -170,10 +236,11 @@
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 mr-2">
                               {{ question.get_question_type_display }}
                             </span>
-                            <span>{{ question.option_count }} options</span>
-                            <span class="mx-2">•</span>
-                            <span>{{ question.points }} point
-                              {% if question.points != 1 %}s{% endif %}
+                            <span>{{ question.points }} point{{ question.points|pluralize }}
+                              {% if question.question_type == "multiple" %}
+                                <span class="mx-2">•</span>
+                                <span>{{ question.option_count }} option{{ question.option_count|pluralize }}</span>
+                              {% endif %}
                             </span>
                           </div>
                         </div>
@@ -182,16 +249,15 @@
                              class="bg-blue-600 hover:bg-blue-700 text-white py-1 px-3 rounded inline-flex items-center text-sm">
                             <i class="fas fa-edit mr-1"></i> Edit
                           </a>
-                          <form action="{% url 'delete_question' question.id %}"
-                                method="post"
-                                class="inline"
-                                onsubmit="return confirm('Are you sure you want to delete this question?');">
-                            {% csrf_token %}
-                            <button type="submit"
-                                    class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded inline-flex items-center text-sm">
-                              <i class="fas fa-trash-alt mr-1"></i> Delete
-                            </button>
-                          </form>
+                          <button hx-post="{% url 'delete_question' question.id %}"
+                                  hx-confirm="Are you sure you want to delete this question?"
+                                  hx-target="#question-item-{{ question.id }}"
+                                  hx-swap="outerHTML"
+                                  hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
+                                  type="button"
+                                  class="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded inline-flex items-center text-sm">
+                            <i class="fas fa-trash-alt mr-1"></i> Delete
+                          </button>
                         </div>
                       </div>
                     </li>

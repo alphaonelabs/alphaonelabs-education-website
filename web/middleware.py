@@ -1,19 +1,21 @@
 import logging
 import traceback
+from typing import Any, Callable
 
 import sentry_sdk
-from django.http import Http404
-from django.shortcuts import render
+from django.contrib import messages
+from django.http import Http404, HttpRequest, HttpResponse
+from django.shortcuts import redirect, render
 from django.urls import Resolver404, resolve
 
-from .models import Course, WebRequest
+from .models import Course, UserQuiz, WebRequest
 from .views import send_slack_message
 
 logger = logging.getLogger(__name__)
 
 
 class HostnameRewriteMiddleware:
-    def __init__(self, get_response):
+    def __init__(self, get_response) -> None:
         self.get_response = get_response
 
     def __call__(self, request):
@@ -141,3 +143,56 @@ class WebRequestMiddleware:
             # Report to Sentry
             sentry_sdk.capture_exception(e)
             return self.get_response(request)
+
+
+class QuizSecurityMiddleware:
+    def __init__(self, get_response: Callable[[Any], HttpResponse]) -> None:
+        self.get_response = get_response
+
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        # Skip for non-authenticated users, static files, or development tools
+        if (
+            not request.user.is_authenticated or "/static/" in request.path or "__reload__" in request.path
+        ):  # Skip Django Browser Reload
+            return self.get_response(request)
+
+        # Check if user has an active quiz in session
+        active_quiz_id = request.session.get("active_quiz_id")
+
+        if active_quiz_id:
+            # Get current URL details
+            resolver_match = resolve(request.path_info)
+            current_url_name = resolver_match.url_name
+
+            # Only allowed urls during an active quiz
+            allowed_urls = ["take_quiz"]
+
+            # If navigating to a non-allowed URL while quiz is active
+            if current_url_name not in allowed_urls:
+                # Get the active quiz
+                try:
+                    user_quiz = UserQuiz.objects.get(id=active_quiz_id, user=request.user, completed=False)
+                    # Mark quiz as completed
+                    try:
+                        user_quiz.complete_quiz()
+                        user_quiz.save()
+                    except Exception as e:
+                        logger.exception("Error completing quiz %s: %s", active_quiz_id, e)
+
+                    # Still clear the session to prevent getting stuck
+                    # Clear active quiz from session
+                    request.session.pop("active_quiz_id", None)
+                    request.session.save()
+
+                    # Notify user
+                    messages.warning(request, "Your quiz has been automatically submitted because you navigated away.")
+
+                    # Redirect to results page
+                    return redirect("quiz_results", user_quiz_id=active_quiz_id)
+                except UserQuiz.DoesNotExist:
+                    # If quiz doesn't exist, clear the session variable
+                    request.session.pop("active_quiz_id", None)
+                    request.session.save()
+
+        # Continue with regular request processing
+        return self.get_response(request)

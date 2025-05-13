@@ -2,25 +2,26 @@ name: Docker Build & Test
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'Dockerfile'
-      - '.dockerignore'
-      - 'requirements.txt'
-      - '**.py'
+      - "Dockerfile"
+      - ".dockerignore"
+      - "requirements.txt"
+      - "**.py"
   pull_request:
-    branches: [ main ]
+    branches: [main]
     paths:
-      - 'Dockerfile'
-      - '.dockerignore'
-      - 'requirements.txt'
-      - '**.py'
+      - "Dockerfile"
+      - ".dockerignore"
+      - "requirements.txt"
+      - "**.py"
   workflow_dispatch:
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
+    env:
+      GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
     services:
       mysql:
         image: mysql:8.0
@@ -29,6 +30,7 @@ jobs:
           MYSQL_DATABASE: test_db
           MYSQL_USER: django
           MYSQL_PASSWORD: django_password
+
         ports:
           - 3306:3306
         options: >-
