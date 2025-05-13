@@ -628,14 +628,24 @@
           link.click();
       }
 
-      // Set initial view and dark mode preference
       window.addEventListener('load', () => {
-          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          // Read theme from localStorage as string
+          const darkModeSetting = localStorage.getItem('darkMode');
+
+          // Convert it to a boolean (handle null case as fallback)
+          const prefersDark = darkModeSetting === 'true';
+
+          // Sync UI elements
           document.getElementById('darkMode').checked = prefersDark;
           isDarkMode = prefersDark;
+
+          // Apply or remove the dark class
           if (prefersDark) {
               document.documentElement.classList.add('dark');
+          } else {
+              document.documentElement.classList.remove('dark');
           }
+
           resetView();
       });
   </script>
