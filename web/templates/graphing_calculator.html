@@ -613,13 +613,24 @@
 
       function toggleDarkMode() {
           isDarkMode = document.getElementById('darkMode').checked;
+
+          // ✅ Save user choice
+          localStorage.setItem('darkMode', isDarkMode.toString());
+
           if (isDarkMode) {
               document.documentElement.classList.add('dark');
           } else {
               document.documentElement.classList.remove('dark');
           }
+
           redraw();
+
+          // ✅ Optional: notify other components
+          document.dispatchEvent(new CustomEvent('themeChanged', {
+              detail: isDarkMode
+          }));
       }
+
 
       function exportImage() {
           const link = document.createElement('a');
@@ -633,7 +644,9 @@
           const darkModeSetting = localStorage.getItem('darkMode');
 
           // Convert it to a boolean (handle null case as fallback)
-          const prefersDark = darkModeSetting === 'true';
+          const prefersDark =
+              darkModeSetting === 'true' ||
+              (darkModeSetting === null && window.matchMedia('(prefers-color-scheme: dark)').matches);
 
           // Sync UI elements
           document.getElementById('darkMode').checked = prefersDark;
@@ -647,6 +660,18 @@
           }
 
           resetView();
+      });
+      document.addEventListener('themeChanged', (e) => {
+          isDarkMode = e.detail;
+          document.getElementById('darkMode').checked = isDarkMode;
+
+          if (isDarkMode) {
+              document.documentElement.classList.add('dark');
+          } else {
+              document.documentElement.classList.remove('dark');
+          }
+
+          redraw();
       });
   </script>
 {% endblock %}
