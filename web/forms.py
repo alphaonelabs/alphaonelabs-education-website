@@ -213,20 +213,6 @@ class UserRegistrationForm(SignupForm):
                 if field_name in self.data and field_name in self.fields:
                     self.fields[field_name].widget.attrs["value"] = self.data[field_name]
 
-            # Special handling for username field
-            if "username" in self.data:
-                if "username" in self.fields:
-                    self.fields["username"].widget.attrs["value"] = self.data["username"]
-                else:
-                    # Re-add the username field since allauth removed it
-                    self.fields["username"] = forms.CharField(
-                        max_length=30,
-                        required=True,
-                        widget=TailwindInput(
-                            attrs={"placeholder": "Choose a username", "value": self.data["username"]}
-                        ),
-                    )
-
             # Initialize how_did_you_hear_about_us if provided
             if "how_did_you_hear_about_us" in self.data:
                 self.fields["how_did_you_hear_about_us"].initial = self.data["how_did_you_hear_about_us"]
