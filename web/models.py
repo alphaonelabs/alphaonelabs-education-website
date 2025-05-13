@@ -1599,7 +1599,7 @@ class ChallengeSubmission(models.Model):
                     import logging
 
                     logger = logging.getLogger(__name__)
-                    logger.error(f"Error calculating streak for user {self.user.id}: {e}")
+                    logger.error(f"Error calculating streak for userId {self.user.id}: {e}")
 
 
 class Points(models.Model):

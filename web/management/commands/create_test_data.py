@@ -197,6 +197,7 @@ class Command(BaseCommand):
                 )
                 for i, challenge in enumerate(completed_challenges):
                     # Create submission (will auto-create points through save method)
+
                     submission = ChallengeSubmission.objects.create(
                         user=student,
                         challenge=challenge,
@@ -495,7 +496,7 @@ class Command(BaseCommand):
                 )
                 self.stdout.write(
                     f"Created review, student: {student}, course: {course},"
-                    "featured: {is_featured}, review: Great course!"
+                    f"featured: {is_featured}, review: Great course!"
                 )
 
         # Create forum categories and topics
