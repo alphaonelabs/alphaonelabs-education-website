@@ -5635,14 +5635,14 @@ def public_profile(request, username):
 
     is_profile_public = profile.is_profile_public
 
-    context = {"profile": profile}
+    context = {"profile": profile, "is_profile_public": is_profile_public}
+
+    if not is_profile_public:
+        return render(request, "public_profile_detail.html", context)
 
     if profile.is_teacher:
-        courses = None
-        total_students = None
-        if is_profile_public:
-            courses = Course.objects.filter(teacher=user)
-            total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
+        courses = Course.objects.filter(teacher=user)
+        total_students = sum(course.enrollments.filter(status="approved").count() for course in courses)
         context.update(
             {
                 "teacher_stats": {
@@ -5653,22 +5653,17 @@ def public_profile(request, username):
             }
         )
     else:
-        total_courses = None
-        total_completed = None
-        avg_progress = None
-        completed_enrollments = None
-        if is_profile_public:
-            enrollments = Enrollment.objects.filter(student=user)
-            completed_enrollments = enrollments.filter(status="completed")
-            total_courses = enrollments.count()
-            total_completed = completed_enrollments.count()
-            total_progress = 0
-            progress_count = 0
-            for enrollment in enrollments:
-                progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
-                total_progress += progress.completion_percentage
-                progress_count += 1
-            avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
+        enrollments = Enrollment.objects.filter(student=user)
+        completed_enrollments = enrollments.filter(status="completed")
+        total_courses = enrollments.count()
+        total_completed = completed_enrollments.count()
+        total_progress = 0
+        progress_count = 0
+        for enrollment in enrollments:
+            progress, _ = CourseProgress.objects.get_or_create(enrollment=enrollment)
+            total_progress += progress.completion_percentage
+            progress_count += 1
+        avg_progress = round(total_progress / progress_count) if progress_count > 0 else 0
         context.update(
             {
                 "total_courses": total_courses,
@@ -5677,7 +5672,6 @@ def public_profile(request, username):
                 "completed_courses": completed_enrollments,
             }
         )
-    context.update({"is_profile_public": is_profile_public})
 
     return render(request, "public_profile_detail.html", context)
 

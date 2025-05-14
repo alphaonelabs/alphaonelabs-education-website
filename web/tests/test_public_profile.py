@@ -84,7 +84,7 @@ class PublicProfileViewTest(TestCase):
         self.assertTemplateUsed(response, "public_profile_detail.html")
 
     def test_private_profile(self):
-        # For a private profile, the view calls custom_404, so the response should have status 404.
+        # For a private profile, the view returns 200 but sets is_profile_public to False.
         url = reverse("public_profile", kwargs={"username": self.private_user.username})
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
