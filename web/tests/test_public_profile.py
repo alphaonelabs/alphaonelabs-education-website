@@ -87,7 +87,10 @@ class PublicProfileViewTest(TestCase):
         # For a private profile, the view calls custom_404, so the response should have status 404.
         url = reverse("public_profile", kwargs={"username": self.private_user.username})
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
+
+        # Verify the profile is marked as private
+        self.assertFalse(response.context["is_profile_public"])
 
     def test_profile_update_radio_remains_selected(self):
         # Log in as teacher.

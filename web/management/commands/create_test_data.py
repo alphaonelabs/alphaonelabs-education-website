@@ -96,10 +96,11 @@ class Command(BaseCommand):
                 last_name="Smith",
                 last_login=timezone.now(),
             )
-            Profile.objects.filter(user=user).update(is_teacher=True)
+            is_profile_public = random.choice([True, False])
+            Profile.objects.filter(user=user).update(is_teacher=True, is_profile_public=is_profile_public)
             EmailAddress.objects.create(user=user, email=user.email, primary=True, verified=True)
             teachers.append(user)
-            self.stdout.write(f"Created teacher: {user.username}")
+            self.stdout.write(f"Created teacher: {user.username}, is_profile_public: {is_profile_public}")
 
         students = []
         for i in range(10):
@@ -111,9 +112,11 @@ class Command(BaseCommand):
                 last_name="Doe",
                 last_login=timezone.now(),
             )
+            is_profile_public = random.choice([True, False])
+            Profile.objects.filter(user=user).update(is_profile_public=is_profile_public)
             EmailAddress.objects.create(user=user, email=user.email, primary=True, verified=True)
             students.append(user)
-            self.stdout.write(f"Created student: {user.username}")
+            self.stdout.write(f"Created student: {user.username}, is_profile_public: {is_profile_public}")
 
         # Create challenges first
         challenges = []
