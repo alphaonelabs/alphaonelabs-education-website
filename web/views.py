@@ -5645,7 +5645,7 @@ def public_profile(request, username):
             {
                 "teacher_stats": {
                     "courses": courses,
-                    "total_courses": courses.count() if courses else None,
+                    "total_courses": courses.count(),
                     "total_students": total_students,
                 }
             }
