@@ -26,88 +26,80 @@
         <!-- Profile Details Section -->
         <div class="md:w-2/3 p-6">
           <h1 class="text-3xl font-bold mb-2">{{ profile.user.username }}</h1>
-          {% if is_profile_public %}
-            {% if profile.expertise %}<p class="text-gray-600 dark:text-gray-400 mb-4">{{ profile.expertise }}</p>{% endif %}
-            <p class="mb-4">
-              <strong>Bio:</strong> {{ profile.bio|default:"No bio provided." }}
-            </p>
-            {% if profile.is_teacher %}
-              <div class="mt-6">
-                <h2 class="text-2xl font-semibold mb-2">Teacher Stats</h2>
-                <div class="flex space-x-4">
-                  <div class="flex-1 bg-teal-100 dark:bg-teal-900 rounded-lg p-4 text-center">
-                    <p class="text-xl font-bold">{{ teacher_stats.total_courses }}</p>
-                    <p class="text-sm">Courses Taught</p>
-                  </div>
-                  <div class="flex-1 bg-blue-100 dark:bg-blue-900 rounded-lg p-4 text-center">
-                    <p class="text-xl font-bold">{{ teacher_stats.total_students }}</p>
-                    <p class="text-sm">Students Enrolled</p>
-                  </div>
+          {% if profile.expertise %}<p class="text-gray-600 dark:text-gray-400 mb-4">{{ profile.expertise }}</p>{% endif %}
+          <p class="mb-4">
+            <strong>Bio:</strong> {{ profile.bio|default:"No bio provided." }}
+          </p>
+          {% if profile.is_teacher %}
+            <div class="mt-6">
+              <h2 class="text-2xl font-semibold mb-2">Teacher Stats</h2>
+              <div class="flex space-x-4">
+                <div class="flex-1 bg-teal-100 dark:bg-teal-900 rounded-lg p-4 text-center">
+                  <p class="text-xl font-bold">{{ teacher_stats.total_courses }}</p>
+                  <p class="text-sm">Courses Taught</p>
                 </div>
-                {% if teacher_stats.courses %}
-                  <div class="mt-6">
-                    <h3 class="text-xl font-semibold mb-2">Courses</h3>
-                    <ul class="list-disc list-inside">
-                      {% for course in teacher_stats.courses %}
-                        <li class="text-gray-700 dark:text-gray-300">{{ course.title }}</li>
-                      {% endfor %}
-                    </ul>
-                  </div>
-                {% endif %}
-              </div>
-            {% else %}
-              <div class="mt-6">
-                <h2 class="text-2xl font-semibold mb-2">Student Stats</h2>
-                <div class="flex space-x-4">
-                  <div class="flex-1 bg-green-100 dark:bg-green-900 rounded-lg p-4 text-center">
-                    <p class="text-xl font-bold">{{ total_courses }}</p>
-                    <p class="text-sm">Courses Enrolled</p>
-                  </div>
-                  <div class="flex-1 bg-yellow-100 dark:bg-yellow-900 rounded-lg p-4 text-center">
-                    <p class="text-xl font-bold">{{ total_completed }}</p>
-                    <p class="text-sm">Completed Courses</p>
-                  </div>
-                  <div class="flex-1 bg-blue-100 dark:bg-blue-900 rounded-lg p-4 text-center">
-                    <p class="text-xl font-bold">{{ avg_progress }}%</p>
-                    <p class="text-sm">Average Progress</p>
-                  </div>
+                <div class="flex-1 bg-blue-100 dark:bg-blue-900 rounded-lg p-4 text-center">
+                  <p class="text-xl font-bold">{{ teacher_stats.total_students }}</p>
+                  <p class="text-sm">Students Enrolled</p>
                 </div>
               </div>
-            {% endif %}
+              {% if teacher_stats.courses %}
+                <div class="mt-6">
+                  <h3 class="text-xl font-semibold mb-2">Courses</h3>
+                  <ul class="list-disc list-inside">
+                    {% for course in teacher_stats.courses %}
+                      <li class="text-gray-700 dark:text-gray-300">{{ course.title }}</li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              {% endif %}
+            </div>
           {% else %}
-            <div class="flex-1 mt-5 bg-red-100 dark:bg-red-900 rounded-lg p-4 text-center">
-              <p class="text-xl font-bold">This profile is private</p>
+            <div class="mt-6">
+              <h2 class="text-2xl font-semibold mb-2">Student Stats</h2>
+              <div class="flex space-x-4">
+                <div class="flex-1 bg-green-100 dark:bg-green-900 rounded-lg p-4 text-center">
+                  <p class="text-xl font-bold">{{ total_courses }}</p>
+                  <p class="text-sm">Courses Enrolled</p>
+                </div>
+                <div class="flex-1 bg-yellow-100 dark:bg-yellow-900 rounded-lg p-4 text-center">
+                  <p class="text-xl font-bold">{{ total_completed }}</p>
+                  <p class="text-sm">Completed Courses</p>
+                </div>
+                <div class="flex-1 bg-blue-100 dark:bg-blue-900 rounded-lg p-4 text-center">
+                  <p class="text-xl font-bold">{{ avg_progress }}%</p>
+                  <p class="text-sm">Average Progress</p>
+                </div>
+              </div>
             </div>
           {% endif %}
         </div>
-        {% if is_profile_public %}
-          <!-- Social Media Links -->
-          <div class="mb-4">
-            <h3 class="text-lg font-semibold mb-2">Social Profiles</h3>
-            <div class="flex gap-4">
-              {% if profile.discord_username %}
-                <div class="flex items-center">
-                  <i class="fab fa-discord mr-2"></i>
-                  <span>{{ profile.discord_username }}</span>
-                </div>
-              {% endif %}
-              {% if profile.slack_username %}
-                <div class="flex items-center">
-                  <i class="fab fa-slack mr-2"></i>
-                  <span>{{ profile.slack_username }}</span>
-                </div>
-              {% endif %}
-              {% if profile.github_username %}
-                <div class="flex items-center">
-                  <i class="fab fa-github mr-2"></i>
-                  <a href="https://github.com/{{ profile.github_username }}"
-                     target="_blank"
-                     class="hover:underline">@{{ profile.github_username }}</a>
-                </div>
-              {% endif %}
-            </div>
+        <!-- Social Media Links -->
+        <div class="mb-4">
+          <h3 class="text-lg font-semibold mb-2">Social Profiles</h3>
+          <div class="flex gap-4">
+            {% if profile.discord_username %}
+              <div class="flex items-center">
+                <i class="fab fa-discord mr-2"></i>
+                <span>{{ profile.discord_username }}</span>
+              </div>
+            {% endif %}
+            {% if profile.slack_username %}
+              <div class="flex items-center">
+                <i class="fab fa-slack mr-2"></i>
+                <span>{{ profile.slack_username }}</span>
+              </div>
+            {% endif %}
+            {% if profile.github_username %}
+              <div class="flex items-center">
+                <i class="fab fa-github mr-2"></i>
+                <a href="https://github.com/{{ profile.github_username }}"
+                   target="_blank"
+                   class="hover:underline">@{{ profile.github_username }}</a>
+              </div>
+            {% endif %}
           </div>
-        {% endif %}
+        </div>
       </div>
     </div>
   </div>

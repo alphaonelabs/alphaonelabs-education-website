@@ -5633,12 +5633,10 @@ def public_profile(request, username):
         # Instead of raising Http404, we call custom_404.
         return custom_404(request, "Profile not found.")
 
-    is_profile_public = profile.is_profile_public
+    if not profile.is_profile_public:
+        return custom_404(request, "Profile not found.")
 
-    context = {"profile": profile, "is_profile_public": is_profile_public}
-
-    if not is_profile_public:
-        return render(request, "public_profile_detail.html", context)
+    context = {"profile": profile}
 
     if profile.is_teacher:
         courses = Course.objects.filter(teacher=user)

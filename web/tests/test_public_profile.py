@@ -87,10 +87,7 @@ class PublicProfileViewTest(TestCase):
         # For a private profile, the view returns 200 but sets is_profile_public to False.
         url = reverse("public_profile", kwargs={"username": self.private_user.username})
         response = self.client.get(url)
-        self.assertEqual(response.status_code, 200)
-
-        # Verify the profile is marked as private
-        self.assertFalse(response.context["is_profile_public"])
+        self.assertEqual(response.status_code, 404)
 
     def test_profile_update_radio_remains_selected(self):
         # Log in as teacher.
