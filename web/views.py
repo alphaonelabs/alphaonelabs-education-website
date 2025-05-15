@@ -5286,8 +5286,14 @@ def upload_educational_video(request):
     return render(request, "videos/upload.html", {"form": form})
 
 
-def play_youtube_videos(request, video_title, video_id):
+def play_youtube_videos(request: HttpRequest, video_id: str) -> HttpResponse:
+    # Display a YouTube video in the internal player page.
+
     video = EducationalVideo.objects.filter(video_id=video_id).first()
+
+    if not video:
+        messages.error(request, "The requested video could not be found.")
+        return redirect("educational_videos_list")
 
     context = {
         "video": video,
