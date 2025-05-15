@@ -97,18 +97,7 @@
                       <img src="{{ video.thumbnail_url }}"
                            alt="{{ video.title }} thumbnail"
                            class="w-full h-full object-cover" />
-                      <a href="{{ video.video_url }}"
-                         target="_blank"
-                         class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-25 hover:bg-opacity-0 transition-opacity">
-                        <i class="fas fa-play text-white text-4xl"></i>
-                      </a>
-                    </div>
-                  {% elif video.thumbnail_url %}
-                    <div class="relative aspect-w-16 aspect-h-9 overflow-hidden rounded-lg shadow-sm">
-                      <img src="{{ video.thumbnail_url }}"
-                           alt="{{ video.title }} thumbnail"
-                           class="w-full h-full object-cover" />
-                      <a href="{{ video.video_url }}"
+                      <a href="{% url 'play_youtube_videos' video.title video.video_id %}"
                          target="_blank"
                          class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-25 hover:bg-opacity-0 transition-opacity">
                         <i class="fas fa-play text-white text-4xl"></i>

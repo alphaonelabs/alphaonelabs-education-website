@@ -678,6 +678,9 @@ class EducationalVideo(models.Model):
         help_text="User who uploaded the video. If null, the submission is considered anonymous.",
     )
     uploaded_at = models.DateTimeField(auto_now_add=True)
+    video_id = models.CharField(
+        max_length=12, unique=True, editable=False, default="", help_text="Auto-generated unique video identifier."
+    )
 
     class Meta:
         verbose_name = "Educational Video"
@@ -719,6 +722,16 @@ class EducationalVideo(models.Model):
                 return None
 
         return None
+
+    def save(self, *args, **kwargs):
+        if not self.video_id:
+            # Keep generating until a unique ID is found
+            while True:
+                new_id = uuid.uuid4().hex[:12]
+                if not EducationalVideo.objects.filter(video_id=new_id).exists():
+                    self.video_id = new_id
+                    break
+        super().save(*args, **kwargs)
 
 
 class Achievement(models.Model):

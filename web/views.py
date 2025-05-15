@@ -5286,6 +5286,16 @@ def upload_educational_video(request):
     return render(request, "videos/upload.html", {"form": form})
 
 
+def play_youtube_videos(request, video_title, video_id):
+    video = EducationalVideo.objects.filter(video_id=video_id).first()
+
+    context = {
+        "video": video,
+    }
+
+    return render(request, "videos/play_youtube_videos.html", context)
+
+
 def certificate_detail(request, certificate_id):
     certificate = get_object_or_404(Certificate, certificate_id=certificate_id)
     if request.user != certificate.user and not request.user.is_staff:

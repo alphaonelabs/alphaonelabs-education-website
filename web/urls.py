@@ -298,6 +298,7 @@ urlpatterns += i18n_patterns(
     path("challenges/<int:challenge_id>/submit/", views.challenge_submit, name="challenge_submit"),
     path("current-weekly-challenge/", views.current_weekly_challenge, name="current_weekly_challenge"),
     # Educational Videos URLs
+    path("videos/play/<str:video_title>/<str:video_id>", views.play_youtube_videos, name="play_youtube_videos"),
     path("videos/", views.educational_videos_list, name="educational_videos_list"),
     path("videos/upload/", views.upload_educational_video, name="upload_educational_video"),
     path("fetch-video-title/", views.fetch_video_title, name="fetch_video_title"),

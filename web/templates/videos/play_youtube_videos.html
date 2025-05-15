@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% load static %}
+{% load dict_filters %}
+
+{% block title %}Educational Videos{% endblock %}
+{% block content %}
+  <main class="flex-1 w-full max-w-7xl mx-auto px-4 md:px-6 py-8">
+    <div class="flex flex-col gap-6">
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h1 class="text-2xl font-bold mb-2">Title: {{ video.title }}</h1>
+        <!-- Video Description -->
+        {% if video.description %}
+          <div class="mt-4">
+            <h2 class="text-lg font-semibold mb-2">Description:</h2>
+            <p class="text-gray-700 whitespace-pre-line">{{ video.description }}</p>
+          </div>
+        {% endif %}
+        <!-- Additional Info -->
+        <div class="mt-4 mb-4 text-md text-gray-500">
+          <p>Category: {{ video.category.name }}</p>
+          <p>Uploaded: {{ video.uploaded_at|date:"F j, Y" }}</p>
+        </div>
+        <!-- YouTube Video Embed -->
+        <div class="relative w-full rounded-lg overflow-hidden aspect-w-16 aspect-h-9 mb-6">
+          {% if video.video_url %}
+            <iframe class=" w-full"
+                    width="1351"
+                    height="480"
+                    src="https://www.youtube.com/embed/{{ video.youtube_id }}"
+                    title="{{ video.title }}"
+                    frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen>
+            </iframe>
+          {% else %}
+            <div class="flex items-center justify-center bg-gray-200 w-full h-full">
+              <p class="text-gray-500">Video not available</p>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </main>
+{% endblock %}
