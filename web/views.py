@@ -5286,7 +5286,7 @@ def upload_educational_video(request):
     return render(request, "videos/upload.html", {"form": form})
 
 
-def play_youtube_videos(request: HttpRequest, video_id: str) -> HttpResponse:
+def play_youtube_video(request: HttpRequest, video_id: str) -> HttpResponse:
     # Display a YouTube video in the internal player page.
 
     video = EducationalVideo.objects.filter(video_id=video_id).first()
@@ -5299,7 +5299,7 @@ def play_youtube_videos(request: HttpRequest, video_id: str) -> HttpResponse:
         "video": video,
     }
 
-    return render(request, "videos/play_youtube_videos.html", context)
+    return render(request, "videos/play_youtube_video.html", context)
 
 
 def certificate_detail(request, certificate_id):

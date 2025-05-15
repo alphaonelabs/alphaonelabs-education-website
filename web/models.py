@@ -683,7 +683,7 @@ class EducationalVideo(models.Model):
     )
 
     @property
-    def youtube_id(self):
+    def youtube_id(self) -> str | None:
         parsed = urlparse(self.video_url)
         host = parsed.netloc.lower()
 

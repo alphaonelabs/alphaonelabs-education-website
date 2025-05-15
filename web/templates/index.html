@@ -696,328 +696,335 @@
                          placeholder="Video title "
                          class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" />
                   <!-- description  -->
-                  <label for="video-description" class="text-start opacity-65">Video description</label>
-                  <textarea id="video-description" name="description" rows="3" placeholder="Video description" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                  </textarea>
-                  <!-- Category + submit -->
-                  <div class="flex gap-2">
-                    <select id="video-category"
-                            name="category"
-                            required
-                            class="flex-1 px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500">
-                      <option value="">Select a category</option>
-                      {% for subject in subjects %}
-                        <option value="{{ subject.id }}">{{ subject.name }}</option>
-                      {% endfor %}
-                    </select>
-                    <button type="submit"
-                            class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center">
-                      <i class="fas fa-plus mr-2"></i> Add
-                    </button>
-                  </div>
-                  <!-- Feedback message -->
-                  <div id="quick-add-message" class="text-sm hidden"></div>
-                </form>
-              </div>
-              <div class="mt-4 flex justify-center gap-4">
-                {% if user.is_authenticated %}
-                  <a href="{% url 'upload_educational_video' %}"
-                     class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full flex items-center">
-                    <i class="fas fa-upload mr-2"></i> Upload
-                  </a>
-                {% endif %}
-                <a href="{% url 'educational_videos_list' %}"
+                  <label for="video-description"
+                         class="block text-start text-sm text-gray-700 dark:text-gray-300 mb-1">
+                    Video description
+                  </label>
+                  <textarea id="video-description"
+                            name="description"
+                            rows="3"
+                            placeholder="Video description"
+                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"></textarea>
+                </textarea>
+                <!-- Category + submit -->
+                <div class="flex gap-2">
+                  <select id="video-category"
+                          name="category"
+                          required
+                          class="flex-1 px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500">
+                    <option value="">Select a category</option>
+                    {% for subject in subjects %}
+                      <option value="{{ subject.id }}">{{ subject.name }}</option>
+                    {% endfor %}
+                  </select>
+                  <button type="submit"
+                          class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg flex items-center">
+                    <i class="fas fa-plus mr-2"></i> Add
+                  </button>
+                </div>
+                <!-- Feedback message -->
+                <div id="quick-add-message" class="text-sm hidden"></div>
+              </form>
+            </div>
+            <div class="mt-4 flex justify-center gap-4">
+              {% if user.is_authenticated %}
+                <a href="{% url 'upload_educational_video' %}"
                    class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full flex items-center">
-                  <i class="fas fa-play-circle mr-2"></i> Browse
+                  <i class="fas fa-upload mr-2"></i> Upload
                 </a>
-              </div>
+              {% endif %}
+              <a href="{% url 'educational_videos_list' %}"
+                 class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded-full flex items-center">
+                <i class="fas fa-play-circle mr-2"></i> Browse
+              </a>
             </div>
-          </div>
-        </div>
-        <!-- Recent Forum Post -->
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h2 class="text-lg font-semibold mb-2 flex items-center">
-            <i class="fa-solid fa-comments text-purple-600 dark:text-purple-400 mr-2"></i>
-            Recent Forum Post
-          </h2>
-          <p class="text-sm">
-            <strong class="block text-gray-900 dark:text-gray-200 mb-1">{{ latest_topic.title|default:"How to get started with advanced mathematics?" }}</strong>
-            "{{ latest_topic.content|default:"I'm looking for resources on group theory and number theory. Any recommendations?" }}" — <em>posted by {{ latest_topic.author.username|default:"user123" }}</em>
-          </p>
-          <a href="{% if latest_topic %}{% url 'forum_topic' latest_topic.category.slug latest_topic.id %}{% else %}{% url 'forum_categories' %}{% endif %}"
-             class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block mt-2">View Discussion →</a>
-        </div>
-        <!-- Recent Blog Post -->
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h2 class="text-lg font-semibold mb-2 flex items-center">
-            <i class="fa-solid fa-blog text-red-600 dark:text-red-400 mr-2"></i>
-            Recent Blog Post
-          </h2>
-          <p class="text-sm">
-            <strong class="block text-gray-900 dark:text-gray-200 mb-1">{{ latest_post.title|default:"The Future of Online Education" }}</strong>
-            {{ latest_post.excerpt|default:"Learn how new technologies are shaping the way we teach and learn, including AI-driven insights and personalized curriculum..." }}
-          </p>
-          <a href="{% if latest_post %}{% url 'blog_detail' latest_post.slug %}{% else %}{% url 'blog_list' %}{% endif %}"
-             class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block mt-2">Read More →</a>
-        </div>
-        <!-- Success Stories -->
-        <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
-          <h2 class="text-lg font-semibold mb-2 flex items-center">
-            <i class="fa-solid fa-trophy text-yellow-600 dark:text-yellow-400 mr-2"></i>
-            Success Story
-          </h2>
-          <p class="text-sm">
-            <strong class="block text-gray-900 dark:text-gray-200 mb-1">{{ latest_success_story.title|default:"From Beginner to Expert in 3 Months" }}</strong>
-            {{ latest_success_story.excerpt|default:"Discover how our platform helped a complete beginner transform into a confident expert through personalized learning paths and dedicated mentorship..." }}
-          </p>
-          <div class="flex justify-between items-center mt-2">
-            <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}"
-               class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block">Read More →</a>
-            <a href="{% url 'create_success_story' %}"
-               class="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded-md inline-flex items-center">
-              <i class="fas fa-plus mr-1"></i> Share Your Story
-            </a>
-          </div>
-        </div>
-        <div class="grid grid-cols-1  gap-4">
-          {% for request in latest_waiting_room_requests %}
-            <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow duration-200">
-              <h3 class="text-lg font-medium mb-2">{{ request.title }}</h3>
-              <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">
-                Created by <span class="font-semibold">{{ request.creator.username }}</span>
-              </p>
-              <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-2">
-                <span class="mr-3">
-                  <i class="fa-solid fa-book mr-1"></i>
-                  {{ request.subject }}
-                </span>
-                <span>
-                  <i class="fa-solid fa-clock mr-1"></i>
-                  {{ request.created_at|date:"M d, Y" }}
-                </span>
-              </div>
-              <p class="text-sm text-gray-700 dark:text-gray-300 mb-3">{{ request.description|truncatechars:120 }}</p>
-              <div class="flex flex-wrap gap-2 mb-3">
-                {% for topic in request.topics.split|slice:":3" %}
-                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
-                    {{ topic }}
-                  </span>
-                {% endfor %}
-              </div>
-              <div class="mt-2">
-                <a href="{% url 'waiting_room_detail' request.id %}"
-                   class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                  View Details
-                  <i class="fa-solid fa-arrow-right ml-2"></i>
-                </a>
-              </div>
-            </div>
-          {% empty %}
-            <div class="col-span-full text-center py-4">
-              <p class="text-sm text-gray-600 dark:text-gray-400">No waiting room requests available at this time.</p>
-            </div>
-          {% endfor %}
-        </div>
-        <!-- GitHub Contributors Section (Now in sidebar) -->
-        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
-          <h3 class="text-lg font-semibold mb-4 flex items-center">
-            <i class="fa-brands fa-github text-gray-800 dark:text-gray-200 mr-2"></i>
-            Thank you to our Contributors!
-          </h3>
-          <!-- Top Contributors -->
-          <div class="mb-4">
-            <h4 class="text-sm font-medium mb-3 flex items-center">
-              <i class="fa-solid fa-trophy text-amber-600 dark:text-amber-400 mr-1"></i>
-              Top Contributors (<span id="current-month-display"></span>)
-            </h4>
-            <div class="space-y-2" id="top-contributors-section">
-              <div class="animate-pulse space-y-2">
-                {% for i in "12345"|make_list %}
-                  <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                    <div class="flex-1">
-                      <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                      <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-1"></div>
-                    </div>
-                  </div>
-                {% endfor %}
-              </div>
-            </div>
-          </div>
-          <!-- New Contributors -->
-          <div class="mb-4">
-            <h4 class="text-sm font-medium mb-3 flex items-center">
-              <i class="fa-solid fa-user-plus text-green-600 dark:text-green-400 mr-1"></i>
-              New Contributors
-            </h4>
-            <div class="space-y-2" id="new-contributors-section">
-              <div class="animate-pulse space-y-2">
-                {% for i in "12345"|make_list %}
-                  <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                    <div class="flex-1">
-                      <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                      <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-1"></div>
-                    </div>
-                  </div>
-                {% endfor %}
-              </div>
-            </div>
-          </div>
-          <!-- Recent Contributions -->
-          <div class="mb-4">
-            <h4 class="text-sm font-medium mb-3 flex items-center">
-              <i class="fa-solid fa-code-pull-request text-purple-600 dark:text-purple-400 mr-1"></i>
-              Recently Merged PRs
-            </h4>
-            <div class="space-y-2" id="recent-contributors-section">
-              <div class="animate-pulse space-y-2">
-                {% for i in "12345"|make_list %}
-                  <div class="flex items-center space-x-2">
-                    <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
-                    <div class="flex-1">
-                      <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
-                      <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-1"></div>
-                    </div>
-                  </div>
-                {% endfor %}
-              </div>
-            </div>
-          </div>
-          <div class="text-center">
-            <a href="{% url 'contributors_list_view' %}"
-               class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
-              <i class="fas fa-users mr-1"></i>
-              View All Contributors
-            </a>
           </div>
         </div>
       </div>
+      <!-- Recent Forum Post -->
+      <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+        <h2 class="text-lg font-semibold mb-2 flex items-center">
+          <i class="fa-solid fa-comments text-purple-600 dark:text-purple-400 mr-2"></i>
+          Recent Forum Post
+        </h2>
+        <p class="text-sm">
+          <strong class="block text-gray-900 dark:text-gray-200 mb-1">{{ latest_topic.title|default:"How to get started with advanced mathematics?" }}</strong>
+          "{{ latest_topic.content|default:"I'm looking for resources on group theory and number theory. Any recommendations?" }}" — <em>posted by {{ latest_topic.author.username|default:"user123" }}</em>
+        </p>
+        <a href="{% if latest_topic %}{% url 'forum_topic' latest_topic.category.slug latest_topic.id %}{% else %}{% url 'forum_categories' %}{% endif %}"
+           class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block mt-2">View Discussion →</a>
+      </div>
+      <!-- Recent Blog Post -->
+      <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+        <h2 class="text-lg font-semibold mb-2 flex items-center">
+          <i class="fa-solid fa-blog text-red-600 dark:text-red-400 mr-2"></i>
+          Recent Blog Post
+        </h2>
+        <p class="text-sm">
+          <strong class="block text-gray-900 dark:text-gray-200 mb-1">{{ latest_post.title|default:"The Future of Online Education" }}</strong>
+          {{ latest_post.excerpt|default:"Learn how new technologies are shaping the way we teach and learn, including AI-driven insights and personalized curriculum..." }}
+        </p>
+        <a href="{% if latest_post %}{% url 'blog_detail' latest_post.slug %}{% else %}{% url 'blog_list' %}{% endif %}"
+           class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block mt-2">Read More →</a>
+      </div>
+      <!-- Success Stories -->
+      <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+        <h2 class="text-lg font-semibold mb-2 flex items-center">
+          <i class="fa-solid fa-trophy text-yellow-600 dark:text-yellow-400 mr-2"></i>
+          Success Story
+        </h2>
+        <p class="text-sm">
+          <strong class="block text-gray-900 dark:text-gray-200 mb-1">{{ latest_success_story.title|default:"From Beginner to Expert in 3 Months" }}</strong>
+          {{ latest_success_story.excerpt|default:"Discover how our platform helped a complete beginner transform into a confident expert through personalized learning paths and dedicated mentorship..." }}
+        </p>
+        <div class="flex justify-between items-center mt-2">
+          <a href="{% if latest_success_story %}{% url 'success_story_detail' latest_success_story.slug %}{% else %}{% url 'success_story_list' %}{% endif %}"
+             class="text-orange-500 dark:text-orange-400 text-sm hover:underline inline-block">Read More →</a>
+          <a href="{% url 'create_success_story' %}"
+             class="bg-orange-500 hover:bg-orange-600 text-white text-sm px-3 py-1 rounded-md inline-flex items-center">
+            <i class="fas fa-plus mr-1"></i> Share Your Story
+          </a>
+        </div>
+      </div>
+      <div class="grid grid-cols-1  gap-4">
+        {% for request in latest_waiting_room_requests %}
+          <div class="rounded-lg border border-gray-200 dark:border-gray-700 p-4 hover:shadow-md transition-shadow duration-200">
+            <h3 class="text-lg font-medium mb-2">{{ request.title }}</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">
+              Created by <span class="font-semibold">{{ request.creator.username }}</span>
+            </p>
+            <div class="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-2">
+              <span class="mr-3">
+                <i class="fa-solid fa-book mr-1"></i>
+                {{ request.subject }}
+              </span>
+              <span>
+                <i class="fa-solid fa-clock mr-1"></i>
+                {{ request.created_at|date:"M d, Y" }}
+              </span>
+            </div>
+            <p class="text-sm text-gray-700 dark:text-gray-300 mb-3">{{ request.description|truncatechars:120 }}</p>
+            <div class="flex flex-wrap gap-2 mb-3">
+              {% for topic in request.topics.split|slice:":3" %}
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-100">
+                  {{ topic }}
+                </span>
+              {% endfor %}
+            </div>
+            <div class="mt-2">
+              <a href="{% url 'waiting_room_detail' request.id %}"
+                 class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                View Details
+                <i class="fa-solid fa-arrow-right ml-2"></i>
+              </a>
+            </div>
+          </div>
+        {% empty %}
+          <div class="col-span-full text-center py-4">
+            <p class="text-sm text-gray-600 dark:text-gray-400">No waiting room requests available at this time.</p>
+          </div>
+        {% endfor %}
+      </div>
+      <!-- GitHub Contributors Section (Now in sidebar) -->
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+        <h3 class="text-lg font-semibold mb-4 flex items-center">
+          <i class="fa-brands fa-github text-gray-800 dark:text-gray-200 mr-2"></i>
+          Thank you to our Contributors!
+        </h3>
+        <!-- Top Contributors -->
+        <div class="mb-4">
+          <h4 class="text-sm font-medium mb-3 flex items-center">
+            <i class="fa-solid fa-trophy text-amber-600 dark:text-amber-400 mr-1"></i>
+            Top Contributors (<span id="current-month-display"></span>)
+          </h4>
+          <div class="space-y-2" id="top-contributors-section">
+            <div class="animate-pulse space-y-2">
+              {% for i in "12345"|make_list %}
+                <div class="flex items-center space-x-2">
+                  <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                  <div class="flex-1">
+                    <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                    <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-1"></div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <!-- New Contributors -->
+        <div class="mb-4">
+          <h4 class="text-sm font-medium mb-3 flex items-center">
+            <i class="fa-solid fa-user-plus text-green-600 dark:text-green-400 mr-1"></i>
+            New Contributors
+          </h4>
+          <div class="space-y-2" id="new-contributors-section">
+            <div class="animate-pulse space-y-2">
+              {% for i in "12345"|make_list %}
+                <div class="flex items-center space-x-2">
+                  <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                  <div class="flex-1">
+                    <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                    <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-1"></div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <!-- Recent Contributions -->
+        <div class="mb-4">
+          <h4 class="text-sm font-medium mb-3 flex items-center">
+            <i class="fa-solid fa-code-pull-request text-purple-600 dark:text-purple-400 mr-1"></i>
+            Recently Merged PRs
+          </h4>
+          <div class="space-y-2" id="recent-contributors-section">
+            <div class="animate-pulse space-y-2">
+              {% for i in "12345"|make_list %}
+                <div class="flex items-center space-x-2">
+                  <div class="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                  <div class="flex-1">
+                    <div class="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                    <div class="h-2 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mt-1"></div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        <div class="text-center">
+          <a href="{% url 'contributors_list_view' %}"
+             class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors duration-200">
+            <i class="fas fa-users mr-1"></i>
+            View All Contributors
+          </a>
+        </div>
+      </div>
     </div>
-  </main>
-  <script>
-      // Top Contributors - For Current Month
-      function fetchTopContributors() {
-          // Create a helper function to fetch paginated data
-          async function fetchPage(page) {
-              const response = await fetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=closed&per_page=100&page=${page}`);
-              return response.json();
-          }
+  </div>
+</main>
+<script>
+    // Top Contributors - For Current Month
+    function fetchTopContributors() {
+        // Create a helper function to fetch paginated data
+        async function fetchPage(page) {
+            const response = await fetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=closed&per_page=100&page=${page}`);
+            return response.json();
+        }
 
-          // Get the first day of the current month
-          const now = new Date();
-          const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+        // Get the first day of the current month
+        const now = new Date();
+        const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
 
-          // Get month name for display
-          const monthNames = ["January", "February", "March", "April", "May", "June",
-              "July", "August", "September", "October", "November", "December"
-          ];
-          const currentMonth = monthNames[now.getMonth()];
+        // Get month name for display
+        const monthNames = ["January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ];
+        const currentMonth = monthNames[now.getMonth()];
 
-          // Display current month in the heading
-          document.getElementById('current-month-display').textContent = currentMonth;
+        // Display current month in the heading
+        document.getElementById('current-month-display').textContent = currentMonth;
 
-          // Fetch 2 pages of data
-          Promise.all([fetchPage(1), fetchPage(2)])
-              .then(results => {
-                  // Combine the results from both pages
-                  const pulls = [...results[0], ...results[1]];
-                  const contributors = {};
-                  pulls.forEach(pull => {
-                      const username = pull.user.login;
-                      const mergedAt = new Date(pull.merged_at);
+        // Fetch 2 pages of data
+        Promise.all([fetchPage(1), fetchPage(2)])
+            .then(results => {
+                // Combine the results from both pages
+                const pulls = [...results[0], ...results[1]];
+                const contributors = {};
+                pulls.forEach(pull => {
+                    const username = pull.user.login;
+                    const mergedAt = new Date(pull.merged_at);
 
-                      //skipping bots and specific users
-                      if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
-                          return;
-                      }
+                    //skipping bots and specific users
+                    if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
+                        return;
+                    }
 
-                      //only count merged PRs from the current month
-                      if (!pull.merged_at || mergedAt < firstDay) {
-                          return;
-                      }
+                    //only count merged PRs from the current month
+                    if (!pull.merged_at || mergedAt < firstDay) {
+                        return;
+                    }
 
-                      if (!contributors[username]) {
-                          contributors[username] = {
-                              username: username,
-                              avatar_url: pull.user.avatar_url,
-                              profile_url: pull.user.html_url,
-                              merged_count: 0,
-                              prs: [],
-                              latest_merged_at: null
-                          };
-                      }
+                    if (!contributors[username]) {
+                        contributors[username] = {
+                            username: username,
+                            avatar_url: pull.user.avatar_url,
+                            profile_url: pull.user.html_url,
+                            merged_count: 0,
+                            prs: [],
+                            latest_merged_at: null
+                        };
+                    }
 
-                      contributors[username].merged_count++;
+                    contributors[username].merged_count++;
 
-                      contributors[username].prs.push({
-                          number: pull.number,
-                          title: pull.title,
-                          url: pull.html_url,
-                          merged_at: pull.merged_at,
-                          created_at: pull.created_at
-                      });
+                    contributors[username].prs.push({
+                        number: pull.number,
+                        title: pull.title,
+                        url: pull.html_url,
+                        merged_at: pull.merged_at,
+                        created_at: pull.created_at
+                    });
 
-                      if (!contributors[username].latest_merged_at ||
-                          new Date(pull.merged_at) > new Date(contributors[username].latest_merged_at)) {
-                          contributors[username].latest_merged_at = pull.merged_at;
-                      }
-                  });
+                    if (!contributors[username].latest_merged_at ||
+                        new Date(pull.merged_at) > new Date(contributors[username].latest_merged_at)) {
+                        contributors[username].latest_merged_at = pull.merged_at;
+                    }
+                });
 
-                  //sort by number of PRs, then by most recent PR
-                  const topContributors = Object.values(contributors)
-                      .sort((a, b) => {
-                          const countDiff = b.merged_count - a.merged_count;
-                          if (countDiff !== 0) return countDiff;
-                          return new Date(b.latest_merged_at) - new Date(a.latest_merged_at);
-                      })
-                      .slice(0, 5); // taking top 5
+                //sort by number of PRs, then by most recent PR
+                const topContributors = Object.values(contributors)
+                    .sort((a, b) => {
+                        const countDiff = b.merged_count - a.merged_count;
+                        if (countDiff !== 0) return countDiff;
+                        return new Date(b.latest_merged_at) - new Date(a.latest_merged_at);
+                    })
+                    .slice(0, 5); // taking top 5
 
-                  // Sort PRs for each contributor by merged_at date (newest first)
-                  topContributors.forEach(contributor => {
-                      contributor.prs.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
-                  });
+                // Sort PRs for each contributor by merged_at date (newest first)
+                topContributors.forEach(contributor => {
+                    contributor.prs.sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at));
+                });
 
-                  const container = document.getElementById('top-contributors-section');
-                  container.innerHTML = '';
+                const container = document.getElementById('top-contributors-section');
+                container.innerHTML = '';
 
-                  if (topContributors.length === 0) {
-                      container.innerHTML = `
+                if (topContributors.length === 0) {
+                    container.innerHTML = `
             <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
               No contributions found this month.
             </div>
           `;
-                      return;
-                  }
+                    return;
+                }
 
-                  // Top Contributors - Simplified for sidebar
-                  topContributors.forEach((contributor, index) => {
-                      const div = document.createElement('div');
-                      div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
+                // Top Contributors - Simplified for sidebar
+                topContributors.forEach((contributor, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
 
-                      let rankBadgeInner = '';
-                      if (index === 0) {
-                          rankBadgeInner = '🥇';
-                      } else if (index === 1) {
-                          rankBadgeInner = '🥈';
-                      } else if (index === 2) {
-                          rankBadgeInner = '🥉';
-                      } else {
-                          rankBadgeInner = `${index + 1}`;
-                      }
+                    let rankBadgeInner = '';
+                    if (index === 0) {
+                        rankBadgeInner = '🥇';
+                    } else if (index === 1) {
+                        rankBadgeInner = '🥈';
+                    } else if (index === 2) {
+                        rankBadgeInner = '🥉';
+                    } else {
+                        rankBadgeInner = `${index + 1}`;
+                    }
 
-                      let rankBadgeClass = '';
-                      if (index === 0) {
-                          rankBadgeClass = 'bg-yellow-500 border-yellow-600';
-                      } else if (index === 1) {
-                          rankBadgeClass = 'bg-gray-300 border-gray-400';
-                      } else if (index === 2) {
-                          rankBadgeClass = 'bg-amber-600 border-amber-700';
-                      } else {
-                          rankBadgeClass = 'bg-blue-500 border-blue-600';
-                      }
+                    let rankBadgeClass = '';
+                    if (index === 0) {
+                        rankBadgeClass = 'bg-yellow-500 border-yellow-600';
+                    } else if (index === 1) {
+                        rankBadgeClass = 'bg-gray-300 border-gray-400';
+                    } else if (index === 2) {
+                        rankBadgeClass = 'bg-amber-600 border-amber-700';
+                    } else {
+                        rankBadgeClass = 'bg-blue-500 border-blue-600';
+                    }
 
-                      div.innerHTML = `
+                    div.innerHTML = `
                           <div class="relative">
                               <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-8 h-8 rounded-full" loading="lazy" width="32" height="32" />
                               <div class="absolute -bottom-1 -left-1 w-4 h-4 ${rankBadgeClass} text-white text-xs font-bold flex items-center justify-center rounded-full border-2 border-white dark:border-gray-800">
@@ -1038,122 +1045,122 @@
                               </p>
                           </div>
                       `;
-                      container.appendChild(div);
-                  });
-              })
-              .catch(error => {
-                  const container = document.getElementById('top-contributors-section');
-                  container.innerHTML = `
+                    container.appendChild(div);
+                });
+            })
+            .catch(error => {
+                const container = document.getElementById('top-contributors-section');
+                container.innerHTML = `
         <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
           <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
           Failed to load contributors.
         </div>
     `;
-                  console.error('Error fetching top contributors:', error);
-              });
-      }
+                console.error('Error fetching top contributors:', error);
+            });
+    }
 
-      // New Contributors
-      function fetchNewContributors() {
-          // Create a helper function to fetch paginated data
-          async function fetchPage(page) {
-              const response = await fetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=${page}`);
-              return response.json();
-          }
+    // New Contributors
+    function fetchNewContributors() {
+        // Create a helper function to fetch paginated data
+        async function fetchPage(page) {
+            const response = await fetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=${page}`);
+            return response.json();
+        }
 
-          // Calculate date 30 days ago for "new" threshold
-          const thirtyDaysAgo = new Date();
-          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        // Calculate date 30 days ago for "new" threshold
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-          // Fetch 2 pages of data
-          Promise.all([fetchPage(1), fetchPage(2)])
-              .then(results => {
-                  // Combine the results from both pages
-                  const pulls = [...results[0], ...results[1]];
-                  const userPrs = {};
-                  const firstMergedPrDetails = {};
+        // Fetch 2 pages of data
+        Promise.all([fetchPage(1), fetchPage(2)])
+            .then(results => {
+                // Combine the results from both pages
+                const pulls = [...results[0], ...results[1]];
+                const userPrs = {};
+                const firstMergedPrDetails = {};
 
-                  pulls.forEach(pull => {
-                      const username = pull.user.login;
+                pulls.forEach(pull => {
+                    const username = pull.user.login;
 
-                      //bots and specific users ignored
-                      if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
-                          return;
-                      }
+                    //bots and specific users ignored
+                    if (username.includes('[bot]') || username.includes('dependabot') || username === 'A1L13N') {
+                        return;
+                    }
 
-                      if (!pull.merged_at) {
-                          return;
-                      }
+                    if (!pull.merged_at) {
+                        return;
+                    }
 
-                      if (!userPrs[username]) {
-                          userPrs[username] = [];
-                      }
+                    if (!userPrs[username]) {
+                        userPrs[username] = [];
+                    }
 
-                      userPrs[username].push({
-                          number: pull.number,
-                          title: pull.title,
-                          url: pull.html_url,
-                          merged_at: pull.merged_at,
-                          created_at: pull.created_at,
-                          avatar_url: pull.user.avatar_url,
-                          profile_url: pull.user.html_url,
-                          state: pull.state
-                      });
-                  });
+                    userPrs[username].push({
+                        number: pull.number,
+                        title: pull.title,
+                        url: pull.html_url,
+                        merged_at: pull.merged_at,
+                        created_at: pull.created_at,
+                        avatar_url: pull.user.avatar_url,
+                        profile_url: pull.user.html_url,
+                        state: pull.state
+                    });
+                });
 
-                  //finding the first merged PR for each user
-                  Object.entries(userPrs).forEach(([username, prs]) => {
-                      if (prs.length > 0) {
-                          //sorting PRs by merged_at date (oldest first)
-                          prs.sort((a, b) => new Date(a.merged_at) - new Date(b.merged_at));
+                //finding the first merged PR for each user
+                Object.entries(userPrs).forEach(([username, prs]) => {
+                    if (prs.length > 0) {
+                        //sorting PRs by merged_at date (oldest first)
+                        prs.sort((a, b) => new Date(a.merged_at) - new Date(b.merged_at));
 
-                          const firstPr = prs[0];
-                          const firstPrDate = new Date(firstPr.merged_at);
+                        const firstPr = prs[0];
+                        const firstPrDate = new Date(firstPr.merged_at);
 
-                          // Only include if their first PR was within the last 30 days
-                          if (firstPrDate >= thirtyDaysAgo) {
-                              firstMergedPrDetails[username] = {
-                                  username: username,
-                                  avatar_url: firstPr.avatar_url,
-                                  pr_url: firstPr.url,
-                                  pr_title: firstPr.title,
-                                  pr_number: firstPr.number,
-                                  created_at: firstPr.created_at,
-                                  profile_url: firstPr.profile_url,
-                                  merged_at: firstPr.merged_at,
-                                  state: firstPr.state,
-                                  // Add the GSoC-style PRs URL
-                                  prs_url: `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${username}+is:merged`
-                              };
-                          }
-                      }
-                  });
+                        // Only include if their first PR was within the last 30 days
+                        if (firstPrDate >= thirtyDaysAgo) {
+                            firstMergedPrDetails[username] = {
+                                username: username,
+                                avatar_url: firstPr.avatar_url,
+                                pr_url: firstPr.url,
+                                pr_title: firstPr.title,
+                                pr_number: firstPr.number,
+                                created_at: firstPr.created_at,
+                                profile_url: firstPr.profile_url,
+                                merged_at: firstPr.merged_at,
+                                state: firstPr.state,
+                                // Add the GSoC-style PRs URL
+                                prs_url: `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${username}+is:merged`
+                            };
+                        }
+                    }
+                });
 
-                  //converting to array and sorting by most recently merged first PR
-                  const newContributors = Object.values(firstMergedPrDetails)
-                      .sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at))
-                      .slice(0, 5); // taking top 5
+                //converting to array and sorting by most recently merged first PR
+                const newContributors = Object.values(firstMergedPrDetails)
+                    .sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at))
+                    .slice(0, 5); // taking top 5
 
-                  const container = document.getElementById('new-contributors-section');
-                  container.innerHTML = '';
+                const container = document.getElementById('new-contributors-section');
+                container.innerHTML = '';
 
-                  if (newContributors.length === 0) {
-                      container.innerHTML = `
+                if (newContributors.length === 0) {
+                    container.innerHTML = `
                           <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
                               No new contributors in the last 30 days.
                           </div>
                       `;
-                      return;
-                  }
+                    return;
+                }
 
-                  newContributors.forEach(contributor => {
-                      const div = document.createElement('div');
-                      div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
+                newContributors.forEach(contributor => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
 
-                      const daysAgo = Math.floor((new Date() - new Date(contributor.merged_at)) / (1000 * 60 * 60 * 24));
-                      const timeLabel = daysAgo === 0 ? 'Today' : daysAgo === 1 ? 'Yesterday' : `${daysAgo} days ago`;
+                    const daysAgo = Math.floor((new Date() - new Date(contributor.merged_at)) / (1000 * 60 * 60 * 24));
+                    const timeLabel = daysAgo === 0 ? 'Today' : daysAgo === 1 ? 'Yesterday' : `${daysAgo} days ago`;
 
-                      div.innerHTML = `
+                    div.innerHTML = `
                           <img src="${contributor.avatar_url}" alt="${contributor.username}" class="w-8 h-8 rounded-full" loading="lazy" width="32" height="32" />
                           <div class="flex-1 min-w-0">
                               <div class="flex items-center justify-between">
@@ -1169,82 +1176,82 @@
                               </p>
                           </div>
                       `;
-                      container.appendChild(div);
-                  });
-              })
-              .catch(error => {
-                  const container = document.getElementById('new-contributors-section');
-                  container.innerHTML = `
+                    container.appendChild(div);
+                });
+            })
+            .catch(error => {
+                const container = document.getElementById('new-contributors-section');
+                container.innerHTML = `
                       <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
                           <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
                           Failed to load new contributors.
                       </div>
                   `;
-                  console.error('Error processing new contributors:', error);
-              });
-      }
+                console.error('Error processing new contributors:', error);
+            });
+    }
 
-      // Recent Contributors
-      function fetchRecentContributions() {
-          // Create a helper function to fetch paginated data
-          async function fetchPage(page) {
-              const response = await fetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=${page}`);
-              return response.json();
-          }
+    // Recent Contributors
+    function fetchRecentContributions() {
+        // Create a helper function to fetch paginated data
+        async function fetchPage(page) {
+            const response = await fetch(`https://api.github.com/repos/AlphaOneLabs/education-website/pulls?state=all&per_page=100&page=${page}`);
+            return response.json();
+        }
 
-          // Fetch 2 pages of data
-          Promise.all([fetchPage(1), fetchPage(2)])
-              .then(results => {
-                  // Combine the results from both pages
-                  const pulls = [...results[0], ...results[1]];
-                  const filteredPulls = pulls.filter(pull => {
-                          const username = pull.user.login;
-                          return !username.includes('[bot]') &&
-                              !username.includes('dependabot') &&
-                              username !== 'A1L13N' &&
-                              pull.merged_at !== null;
-                      })
-                      .sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at))
-                      .slice(0, 5); //taking top 5
+        // Fetch 2 pages of data
+        Promise.all([fetchPage(1), fetchPage(2)])
+            .then(results => {
+                // Combine the results from both pages
+                const pulls = [...results[0], ...results[1]];
+                const filteredPulls = pulls.filter(pull => {
+                        const username = pull.user.login;
+                        return !username.includes('[bot]') &&
+                            !username.includes('dependabot') &&
+                            username !== 'A1L13N' &&
+                            pull.merged_at !== null;
+                    })
+                    .sort((a, b) => new Date(b.merged_at) - new Date(a.merged_at))
+                    .slice(0, 5); //taking top 5
 
-                  const container = document.getElementById('recent-contributors-section');
-                  container.innerHTML = '';
+                const container = document.getElementById('recent-contributors-section');
+                container.innerHTML = '';
 
-                  if (filteredPulls.length === 0) {
-                      container.innerHTML = `
+                if (filteredPulls.length === 0) {
+                    container.innerHTML = `
                           <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
                               No merged pull requests found.
                           </div>
                       `;
-                      return;
-                  }
+                    return;
+                }
 
-                  filteredPulls.forEach(pull => {
-                      const div = document.createElement('div');
-                      div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
+                filteredPulls.forEach(pull => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center space-x-2 p-1 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors duration-200';
 
-                      // Create the GSoC-style PRs URL for this user
-                      const prs_url = `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${pull.user.login}+is:merged`;
+                    // Create the GSoC-style PRs URL for this user
+                    const prs_url = `https://github.com/AlphaOneLabs/education-website/pulls?q=is:pr+author:${pull.user.login}+is:merged`;
 
-                      // Calculate how long ago the PR was merged
-                      const mergedDate = new Date(pull.merged_at);
-                      const now = new Date();
-                      const diffTime = Math.abs(now - mergedDate);
-                      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                      const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    // Calculate how long ago the PR was merged
+                    const mergedDate = new Date(pull.merged_at);
+                    const now = new Date();
+                    const diffTime = Math.abs(now - mergedDate);
+                    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                    const diffHours = Math.floor((diffTime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
 
-                      let timeAgo;
-                      if (diffDays > 0) {
-                          timeAgo = diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
-                      } else if (diffHours > 0) {
-                          timeAgo = diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
-                      } else {
-                          const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
-                          timeAgo = diffMinutes === 0 ? 'just now' :
-                              diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`;
-                      }
+                    let timeAgo;
+                    if (diffDays > 0) {
+                        timeAgo = diffDays === 1 ? '1 day ago' : `${diffDays} days ago`;
+                    } else if (diffHours > 0) {
+                        timeAgo = diffHours === 1 ? '1 hour ago' : `${diffHours} hours ago`;
+                    } else {
+                        const diffMinutes = Math.floor((diffTime % (1000 * 60 * 60)) / (1000 * 60));
+                        timeAgo = diffMinutes === 0 ? 'just now' :
+                            diffMinutes === 1 ? '1 minute ago' : `${diffMinutes} minutes ago`;
+                    }
 
-                      div.innerHTML = `
+                    div.innerHTML = `
                           <img src="${pull.user.avatar_url}" alt="${pull.user.login}" class="w-8 h-8 rounded-full" loading="lazy" width="32" height="32" />
                           <div class="flex-1 min-w-0">
                               <div class="flex items-center justify-between">
@@ -1260,27 +1267,27 @@
                               </p>
                           </div>
                       `;
-                      container.appendChild(div);
-                  });
-              })
-              .catch(error => {
-                  const container = document.getElementById('recent-contributors-section');
-                  container.innerHTML = `
+                    container.appendChild(div);
+                });
+            })
+            .catch(error => {
+                const container = document.getElementById('recent-contributors-section');
+                container.innerHTML = `
                       <div class="text-xs text-gray-600 dark:text-gray-400 text-center py-2">
                           <i class="fas fa-exclamation-circle text-red-500 mr-1"></i>
                           Failed to load contributions.
                       </div>
                   `;
-                  console.error('Error fetching recent contributions:', error);
-              });
-      }
+                console.error('Error fetching recent contributions:', error);
+            });
+    }
 
-      document.addEventListener('DOMContentLoaded', function() {
-          fetchTopContributors();
-          fetchNewContributors();
-          fetchRecentContributions();
-      });
-  </script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchTopContributors();
+        fetchNewContributors();
+        fetchRecentContributions();
+    });
+</script>
 {% endblock content %}
 {% block extra_js %}
   {{ block.super }}
