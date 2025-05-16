@@ -107,11 +107,13 @@
       function updateCurrentToolDisplay() {
           currentToolDisplaySpan.textContent = toolSelect.options[toolSelect.selectedIndex].text;
       }
-       
+      
+
       function getCanvasBackgroundColor() {
           const isDark = root.classList.contains('dark') || 
                       window.matchMedia('(prefers-color-scheme: dark)').matches;
           
+
           const cssVarName = isDark ? '--canvas-bg-dark' : '--canvas-bg-light';
           let bgColor = rootStyles.getPropertyValue(cssVarName).trim();
           
@@ -269,7 +271,7 @@
 
           if (currentTool === 'pen' || currentTool === 'eraser' || currentTool === 'highlighter') {
               if (currentTool === 'eraser') {
-                  updateEraserColor();
+                  updateEraserColor(); 
                   ctx.globalAlpha = 1.0;
               } else if (currentTool === 'pen') {
                   ctx.strokeStyle = penColor;
@@ -344,6 +346,7 @@
       
       if (window.matchMedia) {
           const mql = window.matchMedia('(prefers-color-scheme: dark)');
+
           if (mql.addEventListener) {
               mql.addEventListener('change', updateEraserColor);
           } else {
@@ -359,6 +362,9 @@
           });
       });
       
-      observer.observe(document.documentElement, { attributes: true });
+      observer.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+      });
   </script>
 {% endblock content %}
