@@ -4,17 +4,31 @@
   Advanced Whiteboard
 {% endblock title %}
 {% block content %}
+  <style>
+    :root {
+      --canvas-bg-light: #FFFFFF;
+      --canvas-bg-dark: #1F2937;
+      --text-light: #000000;
+      --text-dark: #F3F4F6;
+    }
+    
+    .theme-canvas-bg {
+      background-color: var(--canvas-bg-light);
+    }
+    
+    .dark .theme-canvas-bg {
+      background-color: var(--canvas-bg-dark);
+    }
+  </style>
+  
   <div class="container mx-auto p-4">
     <h1 class="text-2xl font-bold mb-4 dark:text-gray-200">Advanced Whiteboard</h1>
-    <div id="currentToolDisplay" class="mb-3 text-sm dark:text-gray-300">
-      Current Tool: <span class="font-semibold">Pen</span>
-    </div>
+    <div id="currentToolDisplay" class="mb-3 text-sm dark:text-gray-300">Current Tool: <span class="font-semibold">Pen</span></div>
     <!-- Toolbar -->
     <div class="flex flex-wrap items-center gap-4 mb-4">
       <div class="flex items-center gap-2">
         <label for="toolSelect" class="font-medium dark:text-gray-300">Tool:</label>
-        <select id="toolSelect"
-                class="border rounded p-1 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">
+        <select id="toolSelect" class="border rounded p-1 dark:bg-gray-700 dark:text-gray-200 dark:border-gray-600">
           <option value="pen">Pen</option>
           <option value="eraser">Eraser</option>
           <option value="highlighter">Highlighter</option>
@@ -28,10 +42,7 @@
       <!-- Color picker -->
       <div class="flex items-center gap-2">
         <label for="penColor" class="font-medium dark:text-gray-300">Color:</label>
-        <input type="color"
-               id="penColor"
-               value="#000000"
-               class="border rounded p-1 dark:border-gray-600" />
+        <input type="color" id="penColor" value="#000000" class="border rounded p-1 dark:border-gray-600" />
       </div>
       <!-- Pen width -->
       <div class="flex items-center gap-2">
@@ -61,7 +72,7 @@
     <!-- Canvas -->
     <div class="overflow-auto">
       <canvas id="whiteboard"
-              class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+              class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 theme-canvas-bg"
               width="1500"
               height="600">
         Your browser does not support the HTML5 canvas.
@@ -88,13 +99,25 @@
       let penWidth = parseInt(penWidthInput.value, 10);
       let imageScale = 1.0;
       let uploadedImage = null;
-
-
+      
       function getCanvasBackgroundColor() {
-          const computedStyle = window.getComputedStyle(canvas);
-          return computedStyle.backgroundColor || (document.documentElement.classList.contains('dark') ? "#1F2937" : "#FFFFFF");
+          const isDark = document.documentElement.classList.contains('dark') || 
+                        window.matchMedia('(prefers-color-scheme: dark)').matches;
+          
+          const cssVarName = isDark ? '--canvas-bg-dark' : '--canvas-bg-light';
+          let bgColor = getComputedStyle(document.documentElement).getPropertyValue(cssVarName).trim();
+          
+          if (!bgColor) {
+              bgColor = window.getComputedStyle(canvas).backgroundColor;
+          }
+          
+          if (!bgColor || bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent') {
+              return isDark ? '#1F2937' : '#FFFFFF';
+          }
+          
+          return bgColor;
       }
-
+      
       function updateEraserColor() {
           if (currentTool === 'eraser') {
               ctx.strokeStyle = getCanvasBackgroundColor();
@@ -104,7 +127,7 @@
       toolSelect.addEventListener('change', function() {
           currentTool = this.value;
           document.querySelector('#currentToolDisplay span').textContent = this.options[this.selectedIndex].text;
-
+          
           if (currentTool === 'pen') {
               ctx.globalAlpha = 1.0;
           } else if (currentTool === 'highlighter') {
@@ -163,7 +186,7 @@
       }
       window.addEventListener('load', () => {
           document.querySelector('#currentToolDisplay span').textContent = toolSelect.options[toolSelect.selectedIndex].text;
-
+          
           const dataURL = localStorage.getItem('whiteboardImage');
           if (dataURL) {
               const img = new Image();
@@ -308,13 +331,13 @@
       canvas.addEventListener('mouseleave', () => {
           drawing = false;
       });
-
+      
       if (window.matchMedia) {
           window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
               updateEraserColor();
           });
       }
-
+      
       const observer = new MutationObserver(function(mutations) {
           mutations.forEach(function(mutation) {
               if (mutation.attributeName === 'class') {
@@ -322,9 +345,7 @@
               }
           });
       });
-
-      observer.observe(document.documentElement, {
-          attributes: true
-      });
+      
+      observer.observe(document.documentElement, { attributes: true });
   </script>
 {% endblock content %}
