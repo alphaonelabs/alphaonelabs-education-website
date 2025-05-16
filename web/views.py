@@ -4367,8 +4367,8 @@ def meme_list(request):
     user_filter = request.GET.get("user")
 
     # Get distinct uploaders from the database
-    uploaders = memes.values('uploader__id', 'uploader__username').distinct()
-    memes_creators = {str(uploader['uploader__id']): uploader['uploader__username'] for uploader in uploaders}
+    uploaders = memes.values("uploader__id", "uploader__username").distinct()
+    memes_creators = {str(uploader["uploader__id"]): uploader["uploader__username"] for uploader in uploaders}
 
     if subject_filter and subject_filter != "None":
         memes = memes.filter(subject__slug=subject_filter)
