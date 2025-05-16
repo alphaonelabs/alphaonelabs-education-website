@@ -4,6 +4,14 @@
   Advanced Whiteboard
 {% endblock title %}
 {% block content %}
+  <!-- 
+  Note: In a production environment, these CSS variables should be defined in a global stylesheet:
+  
+  :root {
+    --canvas-bg-light: #FFFFFF;
+    --canvas-bg-dark: #1F2937;
+  }
+  -->
   <script>
     (function() {
       const root = document.documentElement;
@@ -14,12 +22,6 @@
       }
       if (!computedStyle.getPropertyValue('--canvas-bg-dark').trim()) {
         root.style.setProperty('--canvas-bg-dark', '#1F2937');
-      }
-      if (!computedStyle.getPropertyValue('--text-light').trim()) {
-        root.style.setProperty('--text-light', '#000000');
-      }
-      if (!computedStyle.getPropertyValue('--text-dark').trim()) {
-        root.style.setProperty('--text-dark', '#F3F4F6');
       }
     })();
   </script>
@@ -116,7 +118,6 @@
           const cssVarName = isDark ? '--canvas-bg-dark' : '--canvas-bg-light';
           let bgColor = getComputedStyle(document.documentElement).getPropertyValue(cssVarName).trim();
           
-
           if (!bgColor) {
               bgColor = window.getComputedStyle(canvas).backgroundColor;
           }
