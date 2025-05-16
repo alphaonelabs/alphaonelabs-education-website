@@ -6,21 +6,28 @@
 {% block content %}
   <script>
     (function() {
-      const style = document.documentElement.style;
-      if (!style.getPropertyValue('--canvas-bg-light')) {
-        style.setProperty('--canvas-bg-light', '#FFFFFF');
+      const root = document.documentElement;
+      const computedStyle = getComputedStyle(root);
+      
+      if (!computedStyle.getPropertyValue('--canvas-bg-light').trim()) {
+        root.style.setProperty('--canvas-bg-light', '#FFFFFF');
       }
-      if (!style.getPropertyValue('--canvas-bg-dark')) {
-        style.setProperty('--canvas-bg-dark', '#1F2937');
+      if (!computedStyle.getPropertyValue('--canvas-bg-dark').trim()) {
+        root.style.setProperty('--canvas-bg-dark', '#1F2937');
       }
-      if (!style.getPropertyValue('--text-light')) {
-        style.setProperty('--text-light', '#000000');
+      if (!computedStyle.getPropertyValue('--text-light').trim()) {
+        root.style.setProperty('--text-light', '#000000');
       }
-      if (!style.getPropertyValue('--text-dark')) {
-        style.setProperty('--text-dark', '#F3F4F6');
+      if (!computedStyle.getPropertyValue('--text-dark').trim()) {
+        root.style.setProperty('--text-dark', '#F3F4F6');
       }
     })();
   </script>
+  <style>
+    .dark #whiteboard {
+      background-color: var(--canvas-bg-dark);
+    }
+  </style>
   <!-- Canvas -->
   <div class="container mx-auto p-4">
     <h1 class="text-2xl font-bold mb-4 dark:text-gray-200">Advanced Whiteboard</h1>
@@ -73,7 +80,8 @@
     <!-- Canvas -->
     <div class="overflow-auto">
       <canvas id="whiteboard"
-              class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800"
+              class="border border-gray-300 dark:border-gray-600"
+              style="background-color: var(--canvas-bg-light);"
               width="1500"
               height="600">
         Your browser does not support the HTML5 canvas.
@@ -100,24 +108,25 @@
       let penWidth = parseInt(penWidthInput.value, 10);
       let imageScale = 1.0;
       let uploadedImage = null;
-       
-          function getCanvasBackgroundColor() {
-              const isDark = document.documentElement.classList.contains('dark') || 
-                          window.matchMedia('(prefers-color-scheme: dark)').matches;
-              
-              const cssVarName = isDark ? '--canvas-bg-dark' : '--canvas-bg-light';
-              let bgColor = getComputedStyle(document.documentElement).getPropertyValue(cssVarName).trim();
-              
-              if (!bgColor) {
-                  bgColor = window.getComputedStyle(canvas).backgroundColor;
-              }
-              
-              if (!bgColor || bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent') {
-                  return isDark ? '#1F2937' : '#FFFFFF';
-              }
-              
-              return bgColor;
+      
+      function getCanvasBackgroundColor() {
+          const isDark = document.documentElement.classList.contains('dark') || 
+                      window.matchMedia('(prefers-color-scheme: dark)').matches;
+          
+          const cssVarName = isDark ? '--canvas-bg-dark' : '--canvas-bg-light';
+          let bgColor = getComputedStyle(document.documentElement).getPropertyValue(cssVarName).trim();
+          
+
+          if (!bgColor) {
+              bgColor = window.getComputedStyle(canvas).backgroundColor;
           }
+          
+          if (!bgColor || bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent') {
+              return isDark ? '#1F2937' : '#FFFFFF';
+          }
+          
+          return bgColor;
+      }
       
       function updateEraserColor() {
           if (currentTool === 'eraser') {
