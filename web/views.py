@@ -4359,21 +4359,24 @@ def graphing_calculator(request):
 def meme_list(request):
     memes = Meme.objects.all().order_by("-created_at")
     subjects = Subject.objects.filter(memes__isnull=False).distinct()
+
     # Filter by subject if provided
     subject_filter = request.GET.get("subject")
+
+    # Filter by user if provided
     user_filter = request.GET.get("user")
 
     memes_creators = {}
     for meme in memes:
         creator = meme.uploader.username
         creator_id = meme.uploader.id
-        if creator not in memes_creators:
+        if str(creator_id) not in memes_creators:
             memes_creators[str(creator_id)] = creator
 
-    if subject_filter:
+    if subject_filter and subject_filter != "None":
         memes = memes.filter(subject__slug=subject_filter)
 
-    if user_filter:
+    if user_filter and user_filter != "None":
         memes = memes.filter(uploader_id=user_filter)
 
     paginator = Paginator(memes, 12)  # Show 12 memes per page

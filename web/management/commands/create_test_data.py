@@ -583,7 +583,7 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS("Successfully created test data"))
 
-    def create_meme_test_data(self, subjects, users):
+    def create_meme_test_data(self, subjects: list[Subject], users: list[User]) -> None:
         """Create test data for educational memes."""
         self.stdout.write("Creating educational meme test data...")
 
