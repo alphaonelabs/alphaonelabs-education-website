@@ -4,23 +4,7 @@
   Advanced Whiteboard
 {% endblock title %}
 {% block content %}
-  <style>
-    :root {
-      --canvas-bg-light: #FFFFFF;
-      --canvas-bg-dark: #1F2937;
-      --text-light: #000000;
-      --text-dark: #F3F4F6;
-    }
-    
-    .theme-canvas-bg {
-      background-color: var(--canvas-bg-light);
-    }
-    
-    .dark .theme-canvas-bg {
-      background-color: var(--canvas-bg-dark);
-    }
-  </style>
-  
+  <!-- Canvas -->
   <div class="container mx-auto p-4">
     <h1 class="text-2xl font-bold mb-4 dark:text-gray-200">Advanced Whiteboard</h1>
     <div id="currentToolDisplay" class="mb-3 text-sm dark:text-gray-300">Current Tool: <span class="font-semibold">Pen</span></div>
@@ -72,7 +56,7 @@
     <!-- Canvas -->
     <div class="overflow-auto">
       <canvas id="whiteboard"
-              class="border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 theme-canvas-bg"
+              class="border border-gray-300 dark:border-gray-600 theme-canvas-bg"
               width="1500"
               height="600">
         Your browser does not support the HTML5 canvas.
@@ -187,6 +171,9 @@
       window.addEventListener('load', () => {
           document.querySelector('#currentToolDisplay span').textContent = toolSelect.options[toolSelect.selectedIndex].text;
           
+          // Initialize eraser color on page load
+          updateEraserColor();
+          
           const dataURL = localStorage.getItem('whiteboardImage');
           if (dataURL) {
               const img = new Image();
@@ -259,7 +246,7 @@
 
           if (currentTool === 'pen' || currentTool === 'eraser' || currentTool === 'highlighter') {
               if (currentTool === 'eraser') {
-                  ctx.strokeStyle = getCanvasBackgroundColor();
+                  updateEraserColor(); // Use updateEraserColor() instead of direct assignment
                   ctx.globalAlpha = 1.0;
               } else if (currentTool === 'pen') {
                   ctx.strokeStyle = penColor;
