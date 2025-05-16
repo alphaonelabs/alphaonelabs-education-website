@@ -17,11 +17,6 @@
       }
     })();
   </script>
-  <style>
-    .dark #whiteboard {
-      background-color: var(--canvas-bg-dark);
-    }
-  </style>
   <!-- Canvas -->
   <div class="container mx-auto p-4">
     <h1 class="text-2xl font-bold mb-4 dark:text-gray-200">Advanced Whiteboard</h1>
@@ -74,8 +69,7 @@
     <!-- Canvas -->
     <div class="overflow-auto">
       <canvas id="whiteboard"
-              class="border border-gray-300 dark:border-gray-600"
-              style="background-color: var(--canvas-bg-light);"
+              class="border border-gray-300 dark:border-gray-600 bg-[var(--canvas-bg-light)] dark:bg-[var(--canvas-bg-dark)]"
               width="1500"
               height="600">
         Your browser does not support the HTML5 canvas.
@@ -113,7 +107,7 @@
       function updateCurrentToolDisplay() {
           currentToolDisplaySpan.textContent = toolSelect.options[toolSelect.selectedIndex].text;
       }
-      
+       
       function getCanvasBackgroundColor() {
           const isDark = root.classList.contains('dark') || 
                       window.matchMedia('(prefers-color-scheme: dark)').matches;
