@@ -272,7 +272,7 @@
 
           if (currentTool === 'pen' || currentTool === 'eraser' || currentTool === 'highlighter') {
               if (currentTool === 'eraser') {
-                  updateEraserColor(); 
+                  updateEraserColor();
                   ctx.globalAlpha = 1.0;
               } else if (currentTool === 'pen') {
                   ctx.strokeStyle = penColor;
@@ -346,9 +346,12 @@
       });
       
       if (window.matchMedia) {
-          window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
-              updateEraserColor();
-          });
+          const mql = window.matchMedia('(prefers-color-scheme: dark)');
+          if (mql.addEventListener) {
+              mql.addEventListener('change', updateEraserColor);
+          } else {
+              mql.addListener(updateEraserColor);
+          }
       }
       
       const observer = new MutationObserver(function(mutations) {
