@@ -89,6 +89,7 @@
       let startX = 0;
       let startY = 0;
       let snapshot = null;
+      
       const toolSelect = document.getElementById('toolSelect');
       const penColorInput = document.getElementById('penColor');
       const penWidthInput = document.getElementById('penWidth');
@@ -97,21 +98,31 @@
       const uploadBtn = document.getElementById('uploadBoard');
       const loadInput = document.getElementById('loadInput');
       const downloadBtn = document.getElementById('downloadBoard');
+      const currentToolDisplaySpan = document.querySelector('#currentToolDisplay span');
+      
+      const root = document.documentElement;
+      const rootStyles = getComputedStyle(root);
+      const canvasComputedStyle = getComputedStyle(canvas);
+      
       let currentTool = toolSelect.value;
       let penColor = penColorInput.value;
       let penWidth = parseInt(penWidthInput.value, 10);
       let imageScale = 1.0;
       let uploadedImage = null;
       
+      function updateCurrentToolDisplay() {
+          currentToolDisplaySpan.textContent = toolSelect.options[toolSelect.selectedIndex].text;
+      }
+      
       function getCanvasBackgroundColor() {
-          const isDark = document.documentElement.classList.contains('dark') || 
+          const isDark = root.classList.contains('dark') || 
                       window.matchMedia('(prefers-color-scheme: dark)').matches;
           
           const cssVarName = isDark ? '--canvas-bg-dark' : '--canvas-bg-light';
-          let bgColor = getComputedStyle(document.documentElement).getPropertyValue(cssVarName).trim();
+          let bgColor = rootStyles.getPropertyValue(cssVarName).trim();
           
           if (!bgColor) {
-              bgColor = window.getComputedStyle(canvas).backgroundColor;
+              bgColor = canvasComputedStyle.backgroundColor;
           }
           
           if (!bgColor || bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent') {
@@ -129,7 +140,7 @@
 
       toolSelect.addEventListener('change', function() {
           currentTool = this.value;
-          document.querySelector('#currentToolDisplay span').textContent = this.options[this.selectedIndex].text;
+          updateCurrentToolDisplay();
           
           if (currentTool === 'pen') {
               ctx.globalAlpha = 1.0;
@@ -188,7 +199,7 @@
           ctx.drawImage(uploadedImage, 0, 0, newWidth, newHeight);
       }
       window.addEventListener('load', () => {
-          document.querySelector('#currentToolDisplay span').textContent = toolSelect.options[toolSelect.selectedIndex].text;
+          updateCurrentToolDisplay();
           
           updateEraserColor();
           
