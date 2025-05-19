@@ -125,6 +125,7 @@ urlpatterns += i18n_patterns(
     path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
     path("social-media/create/", views.create_scheduled_post, name="create_scheduled_post"),
     path("social-media/delete/<int:post_id>/", views.delete_post, name="delete_post"),
+    path("external/twitter/", views.redirect_to_twitter, name="external_twitter"),
     # Video URLs
     path("videos/requests/", views.video_request_list, name="video_request_list"),
     path("videos/requests/submit/", login_required(views.submit_video_request), name="submit_video_request"),

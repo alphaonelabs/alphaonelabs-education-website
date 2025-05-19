@@ -7225,6 +7225,10 @@ def update_payment_method_api(request) -> JsonResponse:
         return JsonResponse({"error": str(e)}, status=400)
 
 
+def redirect_to_twitter(request):
+    return redirect("https://twitter.com/alphaonelabs")  # Replace with your actual Twitter handle
+
+
 def social_media_manager_required(user):
     """Check if user has social media manager permissions."""
     return user.is_authenticated and (user.is_staff or getattr(user.profile, "is_social_media_manager", False))
