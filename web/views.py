@@ -102,6 +102,8 @@ from .forms import (
     TeamInviteForm,
     UserRegistrationForm,
     VideoRequestForm,
+    VirtualClassroomForm,
+    VirtualClassroomCustomizationForm,
 )
 from .marketing import (
     generate_social_share_content,
@@ -172,6 +174,8 @@ from .models import (
     VideoRequest,
     WaitingRoom,
     WebRequest,
+    VirtualClassroom,
+    VirtualClassroomCustomization,
     default_valid_until,
 )
 from .notifications import (
@@ -4643,6 +4647,98 @@ def delete_team_goal(request, goal_id):
 
     return render(request, "teams/delete_confirm.html", {"goal": goal})
 
+@login_required
+def virtual_classroom_list(request):
+    """View to list all virtual classrooms for the current user."""
+    classrooms = VirtualClassroom.objects.filter(teacher=request.user)
+    return render(request, 'virtual_classroom/list.html', {
+        'classrooms': classrooms
+    })
+
+@login_required
+def virtual_classroom_create(request):
+    """View to create a new virtual classroom."""
+    if request.method == 'POST':
+        form = VirtualClassroomForm(request.POST)
+        if form.is_valid():
+            classroom = form.save(commit=False)
+            classroom.teacher = request.user
+            classroom.save()
+            
+            # Create default customization
+            customization = VirtualClassroomCustomization.objects.create(classroom=classroom)
+            classroom.customization = customization
+            classroom.save()
+            
+            messages.success(request, 'Virtual classroom created successfully!')
+            return redirect('virtual_classroom_customize', classroom_id=classroom.id)
+    else:
+        form = VirtualClassroomForm()
+    
+    return render(request, 'virtual_classroom/create.html', {
+        'form': form
+    })
+
+@login_required
+def virtual_classroom_customize(request, classroom_id):
+    """View to customize a virtual classroom."""
+    classroom = get_object_or_404(VirtualClassroom, id=classroom_id, teacher=request.user)
+    
+    if request.method == 'POST':
+        form = VirtualClassroomCustomizationForm(request.POST, instance=classroom.customization)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Classroom customization saved successfully!')
+            return redirect('virtual_classroom_detail', classroom_id=classroom.id)
+        else:
+            form = VirtualClassroomCustomizationForm(instance=classroom.customization)
+    
+    return render(request, 'virtual_classroom/customize.html', {
+        'form': form,
+        'classroom': classroom
+    })
+
+@login_required
+def virtual_classroom_detail(request, classroom_id):
+    """View to display a virtual classroom."""
+    classroom = get_object_or_404(VirtualClassroom, id=classroom_id, teacher=request.user)
+    return render(request, 'virtual_classroom/index.html', {
+        'classroom': classroom
+    })
+
+@login_required
+def virtual_classroom_edit(request, classroom_id):
+    """View to edit a virtual classroom."""
+    classroom = get_object_or_404(VirtualClassroom, id=classroom_id, teacher=request.user)
+    
+    if request.method == 'POST':
+        form = VirtualClassroomForm(request.POST, instance=classroom)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Virtual classroom updated successfully!')
+            return redirect('virtual_classroom_detail', classroom_id=classroom.id)
+    else:
+        form = VirtualClassroomForm(instance=classroom)
+    
+    return render(request, 'virtual_classroom/edit.html', {
+        'form': form,
+        'classroom': classroom
+    })
+
+@login_required
+def virtual_classroom_delete(request, classroom_id):
+    """View to delete a virtual classroom."""
+    classroom = get_object_or_404(VirtualClassroom, id=classroom_id, teacher=request.user)
+    
+    if request.method == 'POST':
+        classroom.delete()
+        messages.success(request, 'Virtual classroom deleted successfully!')
+        return redirect('virtual_classroom_list')
+    
+    return render(request, 'virtual_classroom/delete.html', {
+        'classroom': classroom
+    })
+
 
 @teacher_required
 def add_student_to_course(request, slug):
@@ -4659,7 +4755,7 @@ def add_student_to_course(request, slug):
             # Check if a user with this email already exists.
             if User.objects.filter(email=email).exists():
                 form.add_error("email", "A user with this email already exists.")
-            else:
+        else:
                 # Generate a username without using the email address
                 timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
                 generated_username = f"user_{timestamp}"
@@ -5127,7 +5223,7 @@ def donation_success(request):
                     # You could enqueue a Celery task or use another background task system
                     # to retry the verification process
                     logger.warning("Retry %d/3 scheduled for payment verification: %s", retry_count + 1, payment_intent)
-                else:
+        else:
                     logger.error("Max retries reached for payment verification: %s", payment_intent)
 
                 # Continue to show the success page even if verification fails;
@@ -5220,7 +5316,7 @@ def educational_videos_list(request: HttpRequest) -> HttpResponse:
 
 def fetch_video_oembed(video_url):
     """
-    Hits YouTube or Vimeo’s oEmbed endpoint and returns a dict
+    Hits YouTube or Vimeo's oEmbed endpoint and returns a dict
     containing 'title' and 'description' (if available).
     """
     # YouTube IDs are always 11 chars
@@ -6018,7 +6114,7 @@ def update_teacher_notes(request, enrollment_id):
     if request.user != course.teacher:
         messages.error(request, "Only the course teacher can update notes!")
         return redirect("course_detail", slug=course.slug)
-
+    
     if request.method == "POST":
         notes = request.POST.get("teacher_notes", "")
 

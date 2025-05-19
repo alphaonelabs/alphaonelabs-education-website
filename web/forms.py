@@ -54,6 +54,8 @@ from .models import (
     TeamInvite,
     VideoRequest,
     WaitingRoom,
+    VirtualClassroom,
+    VirtualClassroomCustomization,
 )
 from .referrals import handle_referral
 from .widgets import (
@@ -108,6 +110,8 @@ __all__ = [
     "LinkGradeForm",
     "AwardAchievementForm",
     "SurveyForm",
+    "VirtualClassroomForm",
+    "VirtualClassroomCustomizationForm",
 ]
 
 fernet = Fernet(settings.SECURE_MESSAGE_KEY)
@@ -1945,3 +1949,40 @@ class SurveyForm(forms.ModelForm):
         if len(title) < 5:
             raise forms.ValidationError(_("Title too short"), code="invalid_length", params={"min_length": 5})
         return title
+
+
+class VirtualClassroomForm(forms.ModelForm):
+    """Form for creating and editing virtual classrooms."""
+    class Meta:
+        model = VirtualClassroom
+        fields = ['name', 'course', 'max_students']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500'}),
+            'course': forms.Select(attrs={'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500'}),
+            'max_students': forms.NumberInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500'}),
+        }
+
+
+class VirtualClassroomCustomizationForm(forms.ModelForm):
+    """Form for customizing virtual classroom appearance."""
+    class Meta:
+        model = VirtualClassroomCustomization
+        fields = [
+            'wall_color', 'floor_color', 'desk_color', 'chair_color', 'board_color',
+            'number_of_rows', 'desks_per_row', 'has_plants', 'has_windows',
+            'has_bookshelf', 'has_clock', 'has_carpet'
+        ]
+        widgets = {
+            'wall_color': forms.TextInput(attrs={'type': 'color', 'class': 'w-full h-10 rounded-lg cursor-pointer'}),
+            'floor_color': forms.TextInput(attrs={'type': 'color', 'class': 'w-full h-10 rounded-lg cursor-pointer'}),
+            'desk_color': forms.TextInput(attrs={'type': 'color', 'class': 'w-full h-10 rounded-lg cursor-pointer'}),
+            'chair_color': forms.TextInput(attrs={'type': 'color', 'class': 'w-full h-10 rounded-lg cursor-pointer'}),
+            'board_color': forms.TextInput(attrs={'type': 'color', 'class': 'w-full h-10 rounded-lg cursor-pointer'}),
+            'number_of_rows': forms.NumberInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500', 'min': '1', 'max': '10'}),
+            'desks_per_row': forms.NumberInput(attrs={'class': 'w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500', 'min': '1', 'max': '8'}),
+            'has_plants': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'}),
+            'has_windows': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'}),
+            'has_bookshelf': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'}),
+            'has_clock': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'}),
+            'has_carpet': forms.CheckboxInput(attrs={'class': 'w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500'}),
+        }

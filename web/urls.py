@@ -472,6 +472,13 @@ urlpatterns += i18n_patterns(
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
     path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
+    # Virtual Classroom URLs
+    path('virtual-classroom/', views.virtual_classroom_list, name='virtual_classroom_list'),
+    path('virtual-classroom/create/', views.virtual_classroom_create, name='virtual_classroom_create'),
+    path('virtual-classroom/<int:classroom_id>/', views.virtual_classroom_detail, name='virtual_classroom_detail'),
+    path('virtual-classroom/<int:classroom_id>/edit/', views.virtual_classroom_edit, name='virtual_classroom_edit'),
+    path('virtual-classroom/<int:classroom_id>/customize/', views.virtual_classroom_customize, name='virtual_classroom_customize'),
+    path('virtual-classroom/<int:classroom_id>/delete/', views.virtual_classroom_delete, name='virtual_classroom_delete'),
     prefix_default_language=True,
 )
 

@@ -3046,3 +3046,46 @@ class Response(models.Model):
 
     def __str__(self):
         return f"Response by {self.user.username} to {self.question.text}"
+
+
+class VirtualClassroom(models.Model):
+    """Model for storing virtual classroom instances."""
+    name = models.CharField(max_length=200)
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name="virtual_classrooms")
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="virtual_classrooms", null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    max_students = models.PositiveIntegerField(default=30)
+    customization = models.OneToOneField('VirtualClassroomCustomization', on_delete=models.SET_NULL, null=True, blank=True)
+    
+    def __str__(self):
+        return f"{self.name} - {self.teacher.username}"
+
+    class Meta:
+        ordering = ['-created_at']
+
+class VirtualClassroomCustomization(models.Model):
+    """Model for storing virtual classroom customization settings."""
+    classroom = models.OneToOneField(VirtualClassroom, on_delete=models.CASCADE, related_name='customization_settings')
+    wall_color = models.CharField(max_length=7, default="#FFFFFF")  # Hex color
+    floor_color = models.CharField(max_length=7, default="#F5F5F5")  # Hex color
+    desk_color = models.CharField(max_length=7, default="#8B4513")  # Hex color
+    chair_color = models.CharField(max_length=7, default="#4B0082")  # Hex color
+    board_color = models.CharField(max_length=7, default="#000000")  # Hex color
+    number_of_rows = models.PositiveIntegerField(default=5)
+    desks_per_row = models.PositiveIntegerField(default=6)
+    has_plants = models.BooleanField(default=True)
+    has_windows = models.BooleanField(default=True)
+    has_bookshelf = models.BooleanField(default=True)
+    has_clock = models.BooleanField(default=True)
+    has_carpet = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Customization for {self.classroom.name}"
+
+    class Meta:
+        verbose_name = "Virtual Classroom Customization"
+        verbose_name_plural = "Virtual Classroom Customizations"
