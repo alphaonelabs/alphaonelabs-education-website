@@ -4755,7 +4755,7 @@ def add_student_to_course(request, slug):
             # Check if a user with this email already exists.
             if User.objects.filter(email=email).exists():
                 form.add_error("email", "A user with this email already exists.")
-        else:
+            else:
                 # Generate a username without using the email address
                 timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
                 generated_username = f"user_{timestamp}"
@@ -5223,7 +5223,7 @@ def donation_success(request):
                     # You could enqueue a Celery task or use another background task system
                     # to retry the verification process
                     logger.warning("Retry %d/3 scheduled for payment verification: %s", retry_count + 1, payment_intent)
-        else:
+                else:
                     logger.error("Max retries reached for payment verification: %s", payment_intent)
 
                 # Continue to show the success page even if verification fails;
