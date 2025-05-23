@@ -102,6 +102,8 @@ from .forms import (
     TeamInviteForm,
     UserRegistrationForm,
     VideoRequestForm,
+    VirtualClassroomForm,
+    VirtualClassroomCustomizationForm,
 )
 from .marketing import (
     generate_social_share_content,
@@ -172,6 +174,8 @@ from .models import (
     VideoRequest,
     WaitingRoom,
     WebRequest,
+    VirtualClassroom,
+    VirtualClassroomCustomization,
     default_valid_until,
 )
 from .notifications import (
@@ -853,6 +857,10 @@ def course_detail(request, slug):
     discount_relative = reverse("apply_discount_via_referrer")
     discount_params = urlencode({"course_id": course.id})
     discount_url = request.build_absolute_uri(f"{discount_relative}?{discount_params}")
+
+    # Get active virtual classroom for the course
+    virtual_classroom = course.virtual_classrooms.filter(is_active=True).first()
+
     context = {
         "course": course,
         "sessions": sessions,
@@ -875,6 +883,7 @@ def course_detail(request, slug):
         "rating_distribution": rating_distribution,
         "reviews_num": reviews_num,
         "discount_url": discount_url,
+        "virtual_classroom": virtual_classroom,
     }
 
     return render(request, "courses/detail.html", context)
@@ -4643,6 +4652,145 @@ def delete_team_goal(request, goal_id):
 
     return render(request, "teams/delete_confirm.html", {"goal": goal})
 
+@login_required
+def virtual_classroom_list(request):
+    """View to list all virtual classrooms for the current user."""
+    classrooms = VirtualClassroom.objects.filter(teacher=request.user)
+    return render(request, 'virtual_classroom/list.html', {
+        'classrooms': classrooms,
+        'user': request.user  # Pass the user object which includes the profile
+    })
+
+@login_required
+def virtual_classroom_create(request):
+    """View to create a new virtual classroom."""
+    if request.method == 'POST':
+        form = VirtualClassroomForm(request.POST, user=request.user)
+        if form.is_valid():
+            classroom = form.save(commit=False)
+            classroom.teacher = request.user
+            classroom.save()
+            
+            # Create default customization
+            customization = VirtualClassroomCustomization.objects.create(classroom=classroom)
+            classroom.customization = customization
+            classroom.save()
+            
+            messages.success(request, 'Virtual classroom created successfully!')
+            return redirect('virtual_classroom_customize', classroom_id=classroom.id)
+    else:
+        form = VirtualClassroomForm(user=request.user)
+    
+    return render(request, 'virtual_classroom/create.html', {
+        'form': form
+    })
+
+@login_required
+def virtual_classroom_customize(request, classroom_id):
+    """View to customize a virtual classroom."""
+    classroom = get_object_or_404(VirtualClassroom, id=classroom_id, teacher=request.user)
+    
+    # Get or create customization settings
+    customization, created = VirtualClassroomCustomization.objects.get_or_create(classroom=classroom)
+    
+    if request.method == 'POST':
+        form = VirtualClassroomCustomizationForm(request.POST, instance=customization)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Classroom customization saved successfully!')
+            return redirect('virtual_classroom_detail', classroom_id=classroom.id)
+    else:
+        form = VirtualClassroomCustomizationForm(instance=customization)
+    
+    return render(request, 'virtual_classroom/customize.html', {
+        'form': form,
+        'classroom': classroom
+    })
+
+@login_required
+def virtual_classroom_detail(request, classroom_id):
+    """View to display a virtual classroom."""
+    classroom = get_object_or_404(VirtualClassroom, id=classroom_id)
+    
+    # Check if user is teacher or enrolled student
+    is_teacher = request.user == classroom.teacher
+    is_enrolled = False
+    if classroom.course:
+        is_enrolled = classroom.course.enrollments.filter(student=request.user, status="approved").exists()
+    
+    if not (is_teacher or is_enrolled):
+        messages.error(request, "You do not have access to this virtual classroom.")
+        return redirect("course_detail", slug=classroom.course.slug if classroom.course else "course_search")
+    
+    if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        if not is_teacher:  # Only teachers can customize
+            return JsonResponse({'status': 'error', 'message': 'Only teachers can customize the classroom'}, status=403)
+            
+        try:
+            data = json.loads(request.body)
+            customization = classroom.customization_settings
+            
+            # Update customization settings
+            customization.wall_color = data.get('wall_color', customization.wall_color)
+            customization.floor_color = data.get('floor_color', customization.floor_color)
+            customization.desk_color = data.get('desk_color', customization.desk_color)
+            customization.chair_color = data.get('chair_color', customization.chair_color)
+            customization.board_color = data.get('board_color', customization.board_color)
+            customization.number_of_rows = data.get('number_of_rows', customization.number_of_rows)
+            customization.desks_per_row = data.get('desks_per_row', customization.desks_per_row)
+            customization.has_plants = data.get('has_plants', customization.has_plants)
+            customization.has_windows = data.get('has_windows', customization.has_windows)
+            customization.has_bookshelf = data.get('has_bookshelf', customization.has_bookshelf)
+            customization.has_clock = data.get('has_clock', customization.has_clock)
+            customization.has_carpet = data.get('has_carpet', customization.has_carpet)
+            
+            customization.save()
+            return JsonResponse({'status': 'success'})
+        except json.JSONDecodeError:
+            return JsonResponse({'status': 'error', 'message': 'Invalid JSON data'}, status=400)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
+    return render(request, 'virtual_classroom/index.html', {
+        'classroom': classroom,
+        'customization': classroom.customization_settings,
+        'is_teacher': is_teacher,
+        'is_enrolled': is_enrolled
+    })
+
+@login_required
+def virtual_classroom_edit(request, classroom_id):
+    """View to edit a virtual classroom."""
+    classroom = get_object_or_404(VirtualClassroom, id=classroom_id, teacher=request.user)
+    
+    if request.method == 'POST':
+        form = VirtualClassroomForm(request.POST, instance=classroom, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Virtual classroom updated successfully!')
+            return redirect('virtual_classroom_detail', classroom_id=classroom.id)
+    else:
+        form = VirtualClassroomForm(instance=classroom, user=request.user)
+    
+    return render(request, 'virtual_classroom/edit.html', {
+        'form': form,
+        'classroom': classroom
+    })
+
+@login_required
+def virtual_classroom_delete(request, classroom_id):
+    """View to delete a virtual classroom."""
+    classroom = get_object_or_404(VirtualClassroom, id=classroom_id, teacher=request.user)
+    
+    if request.method == 'POST':
+        classroom.delete()
+        messages.success(request, 'Virtual classroom deleted successfully!')
+        return redirect('virtual_classroom_list')
+    
+    return render(request, 'virtual_classroom/delete.html', {
+        'classroom': classroom
+    })
+
 
 @teacher_required
 def add_student_to_course(request, slug):
@@ -5220,7 +5368,7 @@ def educational_videos_list(request: HttpRequest) -> HttpResponse:
 
 def fetch_video_oembed(video_url):
     """
-    Hits YouTube or Vimeo’s oEmbed endpoint and returns a dict
+    Hits YouTube or Vimeo's oEmbed endpoint and returns a dict
     containing 'title' and 'description' (if available).
     """
     # YouTube IDs are always 11 chars
@@ -6018,7 +6166,7 @@ def update_teacher_notes(request, enrollment_id):
     if request.user != course.teacher:
         messages.error(request, "Only the course teacher can update notes!")
         return redirect("course_detail", slug=course.slug)
-
+    
     if request.method == "POST":
         notes = request.POST.get("teacher_notes", "")
 
@@ -7098,7 +7246,7 @@ def membership_settings(request) -> HttpResponse:
 
         context = {
             "membership": membership,
-            "invoices": invoices.data if invoices else [],
+            "invoices": invoices.data if invoices.data else [],
             "events": events,
         }
         return render(request, "membership_settings.html", context)
