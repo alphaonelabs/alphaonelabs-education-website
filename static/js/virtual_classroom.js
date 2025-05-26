@@ -2,6 +2,80 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Lucide icons
     lucide.createIcons();
 
+    // Add interaction state
+    const interactionState = {
+        nearInteractive: false,
+        currentInteractive: null,
+        interactiveElements: {
+            blackboard: { x: 0, y: 0, width: 0, height: 0 },
+            bookshelf: { x: 0, y: 0, width: 0, height: 0 },
+            teacherDesk: { x: 0, y: 0, width: 0, height: 0 },
+            seats: []
+        }
+    };
+
+    // Helper function to check if character is near an interactive element
+    function isNearInteractive(charX, charY, element, threshold = 50) {
+        const centerX = element.x + element.width / 2;
+        const centerY = element.y + element.height / 2;
+        const distance = Math.sqrt(
+            Math.pow(charX - centerX, 2) + 
+            Math.pow(charY - centerY, 2)
+        );
+        return distance < threshold;
+    }
+
+    // Add interaction popup
+    function showInteractionPopup(x, y) {
+        let popup = document.getElementById('interactionPopup');
+        if (!popup) {
+            popup = document.createElement('div');
+            popup.id = 'interactionPopup';
+            popup.className = 'absolute bg-black bg-opacity-75 text-white px-3 py-1 rounded-lg z-50 pointer-events-none';
+            popup.innerHTML = 'Press E to interact';
+            classroomContainer.appendChild(popup);
+        }
+        popup.style.left = `${x}px`;
+        popup.style.top = `${y - 30}px`;
+        popup.style.display = 'block';
+    }
+
+    function hideInteractionPopup() {
+        const popup = document.getElementById('interactionPopup');
+        if (popup) {
+            popup.style.display = 'none';
+        }
+    }
+
+    // Handle keyboard interactions
+    window.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 'e' && interactionState.nearInteractive) {
+            const element = interactionState.currentInteractive;
+            if (element) {
+                // Redirect based on the interactive element
+                let redirectUrl = '';
+                switch(element) {
+                    case 'blackboard':
+                        redirectUrl = '/classroom/blackboard';
+                        break;
+                    case 'bookshelf':
+                        redirectUrl = '/classroom/library';
+                        break;
+                    case 'teacherDesk':
+                        redirectUrl = '/classroom/teacher-resources';
+                        break;
+                    default:
+                        if (element.startsWith('seat-')) {
+                            redirectUrl = `/classroom/student-desk/${element.split('-')[1]}`;
+                        }
+                }
+                if (redirectUrl) {
+                    window.location.href = redirectUrl;
+                }
+            }
+        }
+    });
+
     // Helper function to darken colors
     function darkenColor(hex, percent) {
         let r = parseInt(hex.substring(1,3), 16);
@@ -415,6 +489,14 @@ document.addEventListener('DOMContentLoaded', () => {
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         `;
 
+        // Store teacher's desk position for interaction
+        interactionState.interactiveElements.teacherDesk = {
+            x: classroomContainer.clientWidth * 0.1,
+            y: classroomContainer.clientHeight * 0.3,
+            width: 140,
+            height: 70
+        };
+
         // Desk items
         const paper = document.createElement('div');
         paper.className = 'absolute top-2 left-4 w-8 h-10 bg-white rounded-sm shadow-sm transform rotate-10';
@@ -453,11 +535,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const spacingX = roomWidth / desks_per_row;
         const spacingY = roomDepth / number_of_rows;
 
+        // Clear previous seats array
+        interactionState.interactiveElements.seats = [];
+
         for (let row = 0; row < number_of_rows; row++) {
             for (let col = 0; col < desks_per_row; col++) {
                 const x = startX + col * spacingX;
                 const y = startY + row * spacingY * 0.6;
-                const zIndex = 10 + (number_of_rows - row);
+
+                // Store seat position for interaction
+                interactionState.interactiveElements.seats.push({
+                    id: `seat-${row}-${col}`,
+                    x: x,
+                    y: y + deskDepth,
+                    width: deskWidth * 0.6,
+                    height: deskDepth * 0.5
+                });
 
                 // Create desk-chair set container
                 const deskChairSet = document.createElement('div');
@@ -472,7 +565,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     height: ${deskDepth}px;
                     background-color: ${state.settings.desk_color};
                     transform: perspective(500px) rotateX(30deg);
-                    z-index: ${zIndex};
+                    z-index: ${10 + (number_of_rows - row)};
                     border-radius: 2px;
                     box-shadow: 0 2px 4px rgba(0,0,0,0.3);
                 `;
@@ -494,7 +587,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     background-color: ${state.settings.chair_color};
                     top: ${deskDepth + 5}px;
                     left: ${deskWidth * 0.2}px;
-                    z-index: ${zIndex - 1};
+                    z-index: ${10 + (number_of_rows - row) - 1};
                     border-top-left-radius: 8px;
                     border-top-right-radius: 8px;
                     border-bottom-left-radius: 3px;
@@ -538,6 +631,15 @@ document.addEventListener('DOMContentLoaded', () => {
             border-radius: 4px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         `;
+
+        // Store blackboard position for interaction
+        const boardRect = {
+            x: classroomContainer.clientWidth * 0.175,
+            y: classroomContainer.clientHeight * 0.07,
+            width: classroomContainer.clientWidth * 0.65,
+            height: classroomContainer.clientHeight * 0.2
+        };
+        interactionState.interactiveElements.blackboard = boardRect;
 
         const text = document.createElement('div');
         text.className = 'text-white text-center h-full flex items-center justify-center text-xl font-bold';
@@ -610,45 +712,45 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!state.settings.has_bookshelf) return;
 
         const bookshelf = document.createElement('div');
-        bookshelf.className = 'absolute rounded-sm shadow-lg transition-all duration-300';
+        bookshelf.className = 'absolute';
         bookshelf.style.cssText = `
+            right: 5%;
+            top: 15%;
             width: 100px;
-            height: 140px;
-            background-color: #854D0E;
-            right: 6%;
-            top: 25%;
-            z-index: 15;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            border: 1px solid #5c3507;
+            height: 150px;
+            z-index: 7;
         `;
 
-        // Add shelves
-        [25, 50, 75].forEach(topPos => {
-            const shelf = document.createElement('div');
-            shelf.className = 'absolute w-full h-2 bg-[#5c3507]';
-            shelf.style.top = `${topPos}%`;
-            bookshelf.appendChild(shelf);
-        });
+        // Store bookshelf position for interaction
+        interactionState.interactiveElements.bookshelf = {
+            x: classroomContainer.clientWidth * 0.95 - 100,
+            y: classroomContainer.clientHeight * 0.15,
+            width: 100,
+            height: 150
+        };
 
-        // Add books
-        const bookColors = ['blue-600', 'red-600', 'green-600', 'purple-600', 'yellow-600', 'indigo-600', 'pink-600'];
-        [0, 1, 2].forEach(row => {
-            const bookRow = document.createElement('div');
-            bookRow.className = 'flex justify-center items-end h-1/4 pb-1';
-            if (row > 0) bookRow.classList.add('mt-1');
-
-            for (let i = 0; i < 3; i++) {
-                const book = document.createElement('i');
-                book.setAttribute('data-lucide', i % 2 === 0 ? 'book' : 'book-open');
-                book.className = `text-${bookColors[Math.floor(Math.random() * bookColors.length)]} mx-1`;
-                book.style.fontSize = `${16 + Math.random() * 2}px`;
-                bookRow.appendChild(book);
-            }
-            bookshelf.appendChild(bookRow);
-        });
+        // Create bookshelf HTML structure
+        bookshelf.innerHTML = `
+            <div class="relative w-full h-full bg-[#8B4513] rounded-sm shadow-lg">
+                <div class="absolute top-0 left-0 w-full h-1/3 border-b-2 border-[#6b4226] flex justify-around items-center px-2">
+                    <div class="w-4 h-12 bg-red-800"></div>
+                    <div class="w-4 h-12 bg-blue-800"></div>
+                    <div class="w-4 h-12 bg-green-800"></div>
+                </div>
+                <div class="absolute top-1/3 left-0 w-full h-1/3 border-b-2 border-[#6b4226] flex justify-around items-center px-2">
+                    <div class="w-4 h-12 bg-yellow-800"></div>
+                    <div class="w-4 h-12 bg-purple-800"></div>
+                    <div class="w-4 h-12 bg-orange-800"></div>
+                </div>
+                <div class="absolute top-2/3 left-0 w-full h-1/3 flex justify-around items-center px-2">
+                    <div class="w-4 h-12 bg-pink-800"></div>
+                    <div class="w-4 h-12 bg-indigo-800"></div>
+                    <div class="w-4 h-12 bg-teal-800"></div>
+                </div>
+            </div>
+        `;
 
         classroomContainer.appendChild(bookshelf);
-        lucide.createIcons();
     }
 
     function renderClock() {
@@ -946,6 +1048,63 @@ document.addEventListener('DOMContentLoaded', () => {
 
         state.character.position = { x: newX, y: newY };
         state.character.velocity = { x: newVx, y: newVy };
+
+        // Check for interactions
+        let nearInteractive = false;
+        let currentInteractive = null;
+
+        // Check blackboard
+        if (isNearInteractive(
+            state.character.position.x,
+            state.character.position.y,
+            interactionState.interactiveElements.blackboard
+        )) {
+            nearInteractive = true;
+            currentInteractive = 'blackboard';
+        }
+
+        // Check teacher's desk
+        if (isNearInteractive(
+            state.character.position.x,
+            state.character.position.y,
+            interactionState.interactiveElements.teacherDesk
+        )) {
+            nearInteractive = true;
+            currentInteractive = 'teacherDesk';
+        }
+
+        // Check bookshelf
+        if (state.settings.has_bookshelf && isNearInteractive(
+            state.character.position.x,
+            state.character.position.y,
+            interactionState.interactiveElements.bookshelf
+        )) {
+            nearInteractive = true;
+            currentInteractive = 'bookshelf';
+        }
+
+        // Check seats
+        for (const seat of interactionState.interactiveElements.seats) {
+            if (isNearInteractive(
+                state.character.position.x,
+                state.character.position.y,
+                seat
+            )) {
+                nearInteractive = true;
+                currentInteractive = seat.id;
+                break;
+            }
+        }
+
+        // Update interaction state and popup
+        interactionState.nearInteractive = nearInteractive;
+        interactionState.currentInteractive = currentInteractive;
+
+        if (nearInteractive) {
+            showInteractionPopup(state.character.position.x, state.character.position.y);
+        } else {
+            hideInteractionPopup();
+        }
 
         renderCharacter();
         requestAnimationFrame(updateCharacter);

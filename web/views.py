@@ -4791,6 +4791,27 @@ def virtual_classroom_delete(request, classroom_id):
         'classroom': classroom
     })
 
+@login_required
+def classroom_blackboard(request):
+    """View for the classroom blackboard interaction."""
+    return render(request, 'virtual_classroom/blackboard.html')
+
+@login_required
+def classroom_library(request):
+    """View for the classroom library/bookshelf interaction."""
+    return render(request, 'virtual_classroom/library.html')
+
+@login_required
+def classroom_teacher_resources(request):
+    """View for the teacher's desk resources."""
+    return render(request, 'virtual_classroom/teacher_resources.html')
+
+@login_required
+def classroom_student_desk(request, seat_id):
+    """View for individual student desk interaction."""
+    return render(request, 'virtual_classroom/student_desk.html', {
+        'seat_id': seat_id
+    })
 
 @teacher_required
 def add_student_to_course(request, slug):

@@ -479,6 +479,10 @@ urlpatterns += i18n_patterns(
     path('virtual-classroom/<int:classroom_id>/edit/', views.virtual_classroom_edit, name='virtual_classroom_edit'),
     path('virtual-classroom/<int:classroom_id>/customize/', views.virtual_classroom_customize, name='virtual_classroom_customize'),
     path('virtual-classroom/<int:classroom_id>/delete/', views.virtual_classroom_delete, name='virtual_classroom_delete'),
+    path('classroom/blackboard', views.classroom_blackboard, name='classroom_blackboard'),
+    path('classroom/library', views.classroom_library, name='classroom_library'),
+    path('classroom/teacher-resources', views.classroom_teacher_resources, name='classroom_teacher_resources'),
+    path('classroom/student-desk/<str:seat_id>', views.classroom_student_desk, name='classroom_student_desk'),
     prefix_default_language=True,
 )
 
