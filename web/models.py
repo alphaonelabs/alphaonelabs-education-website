@@ -3088,3 +3088,18 @@ class VirtualClassroomCustomization(models.Model):
     class Meta:
         verbose_name = "Virtual Classroom Customization"
         verbose_name_plural = "Virtual Classroom Customizations"
+
+class VirtualClassroomParticipant(models.Model):
+    """Model for tracking active participants in a virtual classroom."""
+    classroom = models.ForeignKey(VirtualClassroom, on_delete=models.CASCADE, related_name='active_participants')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='active_classrooms')
+    joined_at = models.DateTimeField(auto_now_add=True)
+    last_active = models.DateTimeField(auto_now=True)
+    seat_id = models.CharField(max_length=50, null=True, blank=True)
+
+    class Meta:
+        unique_together = ('classroom', 'user')
+        ordering = ['joined_at']
+
+    def __str__(self):
+        return f"{self.user.username} in {self.classroom.name}"

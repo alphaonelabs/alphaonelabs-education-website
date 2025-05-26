@@ -12,13 +12,38 @@
     <header class="bg-white shadow-md p-4">
         <div class="max-w-7xl mx-auto flex justify-between items-center">
             <h1 class="text-2xl font-bold text-gray-800">{{ classroom.name }}</h1>
-            <button id="toggleControls" 
-                    class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2">
-                <i data-lucide="layout"></i>
-                <span>Show Controls</span>
-            </button>
+            <div class="flex items-center space-x-4">
+                <!-- Student List Button -->
+                <button id="toggleStudentList" 
+                        class="px-4 py-2 bg-teal-300 text-white rounded-md hover:bg-teal-400 transition-colors flex items-center gap-2">
+                    <i data-lucide="users"></i>
+                    <span>Students</span>
+                </button>
+                <button id="toggleControls" 
+                        class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2">
+                    <i data-lucide="layout"></i>
+                    <span>Show Controls</span>
+                </button>
+            </div>
         </div>
     </header>
+
+    <!-- Student List Sidebar -->
+    <div id="studentList" class="fixed right-0 top-0 h-full w-80 bg-white shadow-lg transform translate-x-full transition-transform duration-300 ease-in-out z-50">
+        <div class="p-4 border-b">
+            <div class="flex justify-between items-center">
+                <h2 class="text-xl font-semibold text-gray-800">Active Students</h2>
+                <button id="closeStudentList" class="text-gray-500 hover:text-gray-700">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+        </div>
+        <div class="p-4">
+            <div id="studentsList" class="space-y-3">
+                <!-- Students will be populated here -->
+            </div>
+        </div>
+    </div>
 
     <div class="flex-1 flex flex-col md:flex-row overflow-hidden">
         <!-- Control Panel -->
@@ -201,63 +226,84 @@
         </div>
     </div>
 
-    <script src="{% static 'js/virtual_classroom.js' %}"></script>
     <script>
-        // Save customization to database
-        function saveCustomization() {
-            const data = {
-                wallColor: document.getElementById('wallColor').value,
-                floorColor: document.getElementById('floorColor').value,
-                deskColor: document.getElementById('deskColor').value,
-                chairColor: document.getElementById('chairColor').value,
-                boardColor: document.getElementById('boardColor').value,
-                numRows: parseInt(document.getElementById('numRows').value),
-                desksPerRow: parseInt(document.getElementById('desksPerRow').value),
-                hasPlants: document.getElementById('hasPlants').checked,
-                hasWindows: document.getElementById('hasWindows').checked,
-                hasBookshelf: document.getElementById('hasBookshelf').checked,
-                hasClock: document.getElementById('hasClock').checked,
-                hasCarpet: document.getElementById('hasCarpet').checked
-            };
+        // Initialize WebSocket connection
+        const classroomId = '{{ classroom.id }}';
+        const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
+        const ws_path = `${ws_scheme}://${window.location.host}/ws/classroom/${classroomId}/`;
+        const socket = new WebSocket(ws_path);
 
-            fetch(window.location.href, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    console.log('Customization saved successfully');
-                }
-            })
-            .catch(error => console.error('Error saving customization:', error));
-        }
+        // Student list functionality
+        const studentList = document.getElementById('studentList');
+        const toggleStudentList = document.getElementById('toggleStudentList');
+        const closeStudentList = document.getElementById('closeStudentList');
+        const studentsList = document.getElementById('studentsList');
 
-        // Get CSRF token from cookies
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
-                    }
-                }
-            }
-            return cookieValue;
-        }
-
-        // Add event listeners to save customization when values change
-        document.querySelectorAll('input[type="color"], input[type="range"], input[type="checkbox"]').forEach(input => {
-            input.addEventListener('change', saveCustomization);
+        toggleStudentList.addEventListener('click', () => {
+            studentList.classList.toggle('translate-x-full');
         });
+
+        closeStudentList.addEventListener('click', () => {
+            studentList.classList.add('translate-x-full');
+        });
+
+        // WebSocket event handlers
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            
+            switch(data.type) {
+                case 'participants_list':
+                    updateStudentsList(data.participants);
+                    break;
+                case 'participant_joined':
+                    addStudent(data.user, data.seat_id);
+                    break;
+                case 'participant_left':
+                    removeStudent(data.user);
+                    break;
+            }
+        };
+
+        function updateStudentsList(participants) {
+            studentsList.innerHTML = '';
+            participants.forEach(participant => {
+                addStudent(participant, participant.seat_id);
+            });
+        }
+
+        function addStudent(user, seatId) {
+            const studentElement = document.createElement('div');
+            studentElement.id = `student-${user.username}`;
+            studentElement.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
+            studentElement.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-teal-300 rounded-full flex items-center justify-center text-white font-semibold">
+                        ${user.full_name.charAt(0)}
+                    </div>
+                    <div>
+                        <p class="font-medium text-gray-800">${user.full_name}</p>
+                        <p class="text-sm text-gray-500">${seatId ? `Seat ${seatId}` : 'Not seated'}</p>
+                    </div>
+                </div>
+            `;
+            studentsList.appendChild(studentElement);
+        }
+
+        function removeStudent(user) {
+            const studentElement = document.getElementById(`student-${user.username}`);
+            if (studentElement) {
+                studentElement.remove();
+            }
+        }
+
+        // Update seat when interacting with a desk
+        function updateSeat(seatId) {
+            socket.send(JSON.stringify({
+                type: 'update_seat',
+                seat_id: seatId
+            }));
+        }
     </script>
+    <script src="{% static 'js/virtual_classroom.js' %}"></script>
 </body>
 </html> 
