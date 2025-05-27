@@ -231,7 +231,10 @@
         const classroomId = '{{ classroom.id }}';
         const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
         const ws_path = `${ws_scheme}://${window.location.host}/ws/classroom/${classroomId}/`;
-        const socket = new WebSocket(ws_path);
+        let socket = null;
+        let reconnectAttempts = 0;
+        const maxReconnectAttempts = 5;
+        const reconnectDelay = 3000; // 3 seconds
 
         // Student list functionality
         const studentList = document.getElementById('studentList');
@@ -247,62 +250,122 @@
             studentList.classList.add('translate-x-full');
         });
 
-        // WebSocket event handlers
-        socket.onmessage = function(e) {
-            const data = JSON.parse(e.data);
-            
-            switch(data.type) {
-                case 'participants_list':
-                    updateStudentsList(data.participants);
-                    break;
-                case 'participant_joined':
-                    addStudent(data.user, data.seat_id);
-                    break;
-                case 'participant_left':
-                    removeStudent(data.user);
-                    break;
-            }
-        };
+        function connectWebSocket() {
+            socket = new WebSocket(ws_path);
+
+            socket.onopen = function() {
+                console.log('WebSocket connected');
+                reconnectAttempts = 0; // Reset reconnect attempts on successful connection
+            };
+
+            socket.onclose = function(e) {
+                console.log('WebSocket disconnected');
+                if (reconnectAttempts < maxReconnectAttempts) {
+                    setTimeout(() => {
+                        console.log('Attempting to reconnect...');
+                        reconnectAttempts++;
+                        connectWebSocket();
+                    }, reconnectDelay);
+                } else {
+                    console.error('Max reconnection attempts reached');
+                }
+            };
+
+            socket.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+
+            // WebSocket event handlers
+            socket.onmessage = function(e) {
+                const data = JSON.parse(e.data);
+                
+                switch(data.type) {
+                    case 'participants_list':
+                        updateStudentsList(data.participants);
+                        break;
+                    case 'participant_joined':
+                        addStudent(data.user, data.seat_id);
+                        showNotification(`${data.user.full_name} joined the classroom`);
+                        break;
+                    case 'participant_left':
+                        removeStudent(data.user);
+                        showNotification(`${data.user.full_name} left the classroom`);
+                        break;
+                }
+            };
+        }
 
         function updateStudentsList(participants) {
             studentsList.innerHTML = '';
             participants.forEach(participant => {
                 addStudent(participant, participant.seat_id);
             });
+            updateParticipantCount(participants.length);
         }
 
         function addStudent(user, seatId) {
             const studentElement = document.createElement('div');
-            studentElement.id = `student-${user.username}`;
-            studentElement.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg';
+            studentElement.className = 'flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm border border-gray-100 mb-2';
+            studentElement.setAttribute('data-username', user.username);
+            
             studentElement.innerHTML = `
-                <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-teal-300 rounded-full flex items-center justify-center text-white font-semibold">
-                        ${user.full_name.charAt(0)}
-                    </div>
-                    <div>
-                        <p class="font-medium text-gray-800">${user.full_name}</p>
-                        <p class="text-sm text-gray-500">${seatId ? `Seat ${seatId}` : 'Not seated'}</p>
+                <div class="flex-shrink-0">
+                    <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span class="text-blue-600 font-medium">${user.full_name.charAt(0)}</span>
                     </div>
                 </div>
+                <div class="flex-1">
+                    <span class="text-gray-900">${user.full_name}</span>
+                    ${seatId ? `<span class="text-sm text-gray-500 block">Seat: ${seatId}</span>` : ''}
+                </div>
             `;
+            
             studentsList.appendChild(studentElement);
         }
 
         function removeStudent(user) {
-            const studentElement = document.getElementById(`student-${user.username}`);
+            const studentElement = studentsList.querySelector(`[data-username="${user.username}"]`);
             if (studentElement) {
                 studentElement.remove();
             }
         }
 
-        // Update seat when interacting with a desk
-        function updateSeat(seatId) {
-            socket.send(JSON.stringify({
-                type: 'update_seat',
-                seat_id: seatId
-            }));
+        function updateParticipantCount(count) {
+            const countElement = document.querySelector('#participantCount');
+            if (countElement) {
+                countElement.textContent = count;
+            }
         }
+
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-500 opacity-0';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+
+            // Fade in
+            setTimeout(() => {
+                notification.classList.remove('opacity-0');
+            }, 100);
+
+            // Fade out and remove
+            setTimeout(() => {
+                notification.classList.add('opacity-0');
+                setTimeout(() => {
+                    notification.remove();
+                }, 500);
+            }, 3000);
+        }
+
+        // Initialize WebSocket connection
+        connectWebSocket();
+
+        // Handle page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible' && (!socket || socket.readyState === WebSocket.CLOSED)) {
+                connectWebSocket();
+            }
+        });
     </script>
     <script src="{% static 'js/virtual_classroom.js' %}"></script>
 </body>

@@ -4813,33 +4813,70 @@ def classroom_student_desk(request, seat_id):
         'seat_id': seat_id
     })
 
+
+@login_required
 @teacher_required
 def add_student_to_course(request, slug):
     course = get_object_or_404(Course, slug=slug)
     if course.teacher != request.user:
         return HttpResponseForbidden("You are not authorized to enroll students in this course.")
+    
+    # Check if course is full
+    if course.max_students and course.enrollments.count() >= course.max_students:
+        messages.error(request, "This course is full. Cannot enroll more students.")
+        return redirect("course_detail", slug=course.slug)
+    
     if request.method == "POST":
         form = StudentEnrollmentForm(request.POST)
         if form.is_valid():
+            email = form.cleaned_data["email"]
             first_name = form.cleaned_data["first_name"]
             last_name = form.cleaned_data["last_name"]
-            email = form.cleaned_data["email"]
 
-            # Check if a user with this email already exists.
-            if User.objects.filter(email=email).exists():
-                form.add_error("email", "A user with this email already exists.")
+            # Try to find existing user
+            student = User.objects.filter(email=email).first()
+            
+            if student:
+                # Check if student is already enrolled
+                if Enrollment.objects.filter(course=course, student=student).exists():
+                    form.add_error(None, "Student is already enrolled in this course.")
+                else:
+                    # Enroll existing student
+                    enrollment = Enrollment.objects.create(course=course, student=student, status="approved")
+                    messages.success(request, f"{student.get_full_name()} has been enrolled in the course.")
+                    
+                    # Send enrollment notifications
+                    send_enrollment_confirmation(enrollment)
+                    notify_teacher_new_enrollment(enrollment)
+                    
+                    # Send enrollment notification email to existing student
+                    context = {
+                        "student": student,
+                        "course": course,
+                        "teacher": request.user,
+                        "is_existing_user": True
+                    }
+                    html_message = render_to_string("emails/student_enrollment.html", context)
+                    send_mail(
+                        f"You have been enrolled in {course.title}",
+                        f"You have been enrolled in {course.title} by {request.user.get_full_name() or request.user.username}.",
+                        settings.DEFAULT_FROM_EMAIL,
+                        [email],
+                        html_message=html_message,
+                        fail_silently=False,
+                    )
+                    return redirect("course_detail", slug=course.slug)
             else:
-                # Generate a username without using the email address
-                timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
-                generated_username = f"user_{timestamp}"
-
-                # Ensure the username is unique
-                while User.objects.filter(username=generated_username).exists():
-                    generated_username = f"user_{timestamp}_{get_random_string(6)}"
-
-                # Create a new student account with an auto-generated password.
-                random_password = get_random_string(10)
+                # Create new student account
                 try:
+                    # Generate a unique username
+                    timestamp = timezone.now().strftime("%Y%m%d%H%M%S")
+                    generated_username = f"user_{timestamp}"
+                    while User.objects.filter(username=generated_username).exists():
+                        generated_username = f"user_{timestamp}_{get_random_string(6)}"
+
+                    # Create new user
+                    random_password = get_random_string(10)
                     student = User.objects.create_user(
                         username=generated_username,
                         email=email,
@@ -4847,43 +4884,43 @@ def add_student_to_course(request, slug):
                         first_name=first_name,
                         last_name=last_name,
                     )
-                    # Mark the new user as a student (not a teacher).
                     student.profile.is_teacher = False
                     student.profile.save()
 
-                    # Enroll the new student in the course if not already enrolled.
-                    if Enrollment.objects.filter(course=course, student=student).exists():
-                        form.add_error(None, "Student is already enrolled.")
-                    else:
-                        Enrollment.objects.create(course=course, student=student, status="approved")
-                        messages.success(request, f"{first_name} {last_name} has been enrolled in the course.")
+                    # Enroll the new student
+                    enrollment = Enrollment.objects.create(course=course, student=student, status="approved")
+                    messages.success(request, f"{first_name} {last_name} has been enrolled in the course.")
 
-                        # Send enrollment notification and password reset link to student
-                        reset_link = request.build_absolute_uri(reverse("account_reset_password"))
-                        context = {
-                            "student": student,
-                            "course": course,
-                            "teacher": request.user,
-                            "reset_link": reset_link,
-                        }
-                        html_message = render_to_string("emails/student_enrollment.html", context)
-                        send_mail(
-                            f"You have been enrolled in {course.title}",
-                            f"You have been enrolled in {course.title} by\
-                                {request.user.get_full_name() or request.user.username}. "
-                            f"Please visit {reset_link} to set your password.",
-                            settings.DEFAULT_FROM_EMAIL,
-                            [email],
-                            html_message=html_message,
-                            fail_silently=False,
-                        )
-                        return redirect("course_detail", slug=course.slug)
+                    # Send enrollment notifications
+                    send_enrollment_confirmation(enrollment)
+                    notify_teacher_new_enrollment(enrollment)
+
+                    # Send enrollment notification and password reset link to new student
+                    reset_link = request.build_absolute_uri(reverse("account_reset_password"))
+                    context = {
+                        "student": student,
+                        "course": course,
+                        "teacher": request.user,
+                        "reset_link": reset_link,
+                        "is_existing_user": False
+                    }
+                    html_message = render_to_string("emails/student_enrollment.html", context)
+                    send_mail(
+                        f"You have been enrolled in {course.title}",
+                        f"You have been enrolled in {course.title} by {request.user.get_full_name() or request.user.username}. "
+                        f"Please visit {reset_link} to set your password.",
+                        settings.DEFAULT_FROM_EMAIL,
+                        [email],
+                        html_message=html_message,
+                        fail_silently=False,
+                    )
+                    return redirect("course_detail", slug=course.slug)
                 except IntegrityError:
                     form.add_error(None, "Failed to create user account. Please try again.")
     else:
         form = StudentEnrollmentForm()
 
-    return render(request, "courses/add_student.html", {"form": form, "course": course})
+    return render(request, "courses/add_student.html", {"form": form, "course": course}) 
 
 
 def donate(request):
