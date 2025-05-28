@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 from io import BytesIO
 from urllib.parse import parse_qs, urlparse
 
-from django.db.models import Avg
 from allauth.account.signals import user_signed_up
 from django.conf import settings
 from django.contrib.auth.models import User
@@ -16,6 +15,7 @@ from django.core.files.base import ContentFile
 from django.core.mail import send_mail
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Avg
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
@@ -327,7 +327,7 @@ class Course(models.Model):
         return self.max_students - self.enrollments.count()
 
     @property
-    def average_rating(self) -> float:
+    def average_rating(self):
         avg = float(self.reviews.aggregate(avg=Avg("rating"))["avg"] or 0)
         return round(avg, 2)
 
