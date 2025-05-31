@@ -3091,15 +3091,40 @@ class VirtualClassroomCustomization(models.Model):
 
 class VirtualClassroomParticipant(models.Model):
     """Model for tracking active participants in a virtual classroom."""
-    classroom = models.ForeignKey(VirtualClassroom, on_delete=models.CASCADE, related_name='active_participants')
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='active_classrooms')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    classroom = models.ForeignKey(VirtualClassroom, on_delete=models.CASCADE)
     joined_at = models.DateTimeField(auto_now_add=True)
     last_active = models.DateTimeField(auto_now=True)
-    seat_id = models.CharField(max_length=50, null=True, blank=True)
+    seat_id = models.CharField(max_length=20, null=True, blank=True)
 
     class Meta:
         unique_together = ('classroom', 'user')
-        ordering = ['joined_at']
 
     def __str__(self):
         return f"{self.user.username} in {self.classroom.name}"
+
+    def to_dict(self):
+        return {
+            'username': self.user.username,
+            'full_name': f"{self.user.first_name} {self.user.last_name}",
+            'joined_at': self.joined_at.isoformat(),
+            'seat_id': self.seat_id,
+            'last_active': self.last_active.isoformat()
+        }
+
+class VirtualClassroomWhiteboard(models.Model):
+    """Model to store whiteboard data for each virtual classroom"""
+    classroom = models.OneToOneField(VirtualClassroom, on_delete=models.CASCADE, related_name='whiteboard')
+    canvas_data = models.JSONField(default=dict, blank=True)
+    background_image = models.TextField(blank=True, null=True)
+    last_updated = models.DateTimeField(auto_now=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    last_updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+
+    def __str__(self):
+        return f"Whiteboard for {self.classroom.name}"
+
+    class Meta:
+        ordering = ['-last_updated']
+        verbose_name = "Virtual Classroom Whiteboard"
+        verbose_name_plural = "Virtual Classroom Whiteboards"

@@ -4670,17 +4670,17 @@ def virtual_classroom_create(request):
             classroom = form.save(commit=False)
             classroom.teacher = request.user
             classroom.save()
-            
+
             # Create default customization
             customization = VirtualClassroomCustomization.objects.create(classroom=classroom)
             classroom.customization = customization
             classroom.save()
-            
+
             messages.success(request, 'Virtual classroom created successfully!')
             return redirect('virtual_classroom_customize', classroom_id=classroom.id)
     else:
         form = VirtualClassroomForm(user=request.user)
-    
+
     return render(request, 'virtual_classroom/create.html', {
         'form': form
     })
@@ -4689,10 +4689,10 @@ def virtual_classroom_create(request):
 def virtual_classroom_customize(request, classroom_id):
     """View to customize a virtual classroom."""
     classroom = get_object_or_404(VirtualClassroom, id=classroom_id, teacher=request.user)
-    
+
     # Get or create customization settings
     customization, created = VirtualClassroomCustomization.objects.get_or_create(classroom=classroom)
-    
+
     if request.method == 'POST':
         form = VirtualClassroomCustomizationForm(request.POST, instance=customization)
         if form.is_valid():
@@ -4701,7 +4701,7 @@ def virtual_classroom_customize(request, classroom_id):
             return redirect('virtual_classroom_detail', classroom_id=classroom.id)
     else:
         form = VirtualClassroomCustomizationForm(instance=customization)
-    
+
     return render(request, 'virtual_classroom/customize.html', {
         'form': form,
         'classroom': classroom
@@ -4711,25 +4711,25 @@ def virtual_classroom_customize(request, classroom_id):
 def virtual_classroom_detail(request, classroom_id):
     """View to display a virtual classroom."""
     classroom = get_object_or_404(VirtualClassroom, id=classroom_id)
-    
+
     # Check if user is teacher or enrolled student
     is_teacher = request.user == classroom.teacher
     is_enrolled = False
     if classroom.course:
         is_enrolled = classroom.course.enrollments.filter(student=request.user, status="approved").exists()
-    
+
     if not (is_teacher or is_enrolled):
         messages.error(request, "You do not have access to this virtual classroom.")
         return redirect("course_detail", slug=classroom.course.slug if classroom.course else "course_search")
-    
+
     if request.method == 'POST' and request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         if not is_teacher:  # Only teachers can customize
             return JsonResponse({'status': 'error', 'message': 'Only teachers can customize the classroom'}, status=403)
-            
+
         try:
             data = json.loads(request.body)
             customization = classroom.customization_settings
-            
+
             # Update customization settings
             customization.wall_color = data.get('wall_color', customization.wall_color)
             customization.floor_color = data.get('floor_color', customization.floor_color)
@@ -4743,14 +4743,14 @@ def virtual_classroom_detail(request, classroom_id):
             customization.has_bookshelf = data.get('has_bookshelf', customization.has_bookshelf)
             customization.has_clock = data.get('has_clock', customization.has_clock)
             customization.has_carpet = data.get('has_carpet', customization.has_carpet)
-            
+
             customization.save()
             return JsonResponse({'status': 'success'})
         except json.JSONDecodeError:
             return JsonResponse({'status': 'error', 'message': 'Invalid JSON data'}, status=400)
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-    
+
     return render(request, 'virtual_classroom/index.html', {
         'classroom': classroom,
         'customization': classroom.customization_settings,
@@ -4762,7 +4762,7 @@ def virtual_classroom_detail(request, classroom_id):
 def virtual_classroom_edit(request, classroom_id):
     """View to edit a virtual classroom."""
     classroom = get_object_or_404(VirtualClassroom, id=classroom_id, teacher=request.user)
-    
+
     if request.method == 'POST':
         form = VirtualClassroomForm(request.POST, instance=classroom, user=request.user)
         if form.is_valid():
@@ -4771,7 +4771,7 @@ def virtual_classroom_edit(request, classroom_id):
             return redirect('virtual_classroom_detail', classroom_id=classroom.id)
     else:
         form = VirtualClassroomForm(instance=classroom, user=request.user)
-    
+
     return render(request, 'virtual_classroom/edit.html', {
         'form': form,
         'classroom': classroom
@@ -4781,12 +4781,12 @@ def virtual_classroom_edit(request, classroom_id):
 def virtual_classroom_delete(request, classroom_id):
     """View to delete a virtual classroom."""
     classroom = get_object_or_404(VirtualClassroom, id=classroom_id, teacher=request.user)
-    
+
     if request.method == 'POST':
         classroom.delete()
         messages.success(request, 'Virtual classroom deleted successfully!')
         return redirect('virtual_classroom_list')
-    
+
     return render(request, 'virtual_classroom/delete.html', {
         'classroom': classroom
     })
@@ -4820,12 +4820,12 @@ def add_student_to_course(request, slug):
     course = get_object_or_404(Course, slug=slug)
     if course.teacher != request.user:
         return HttpResponseForbidden("You are not authorized to enroll students in this course.")
-    
+
     # Check if course is full
     if course.max_students and course.enrollments.count() >= course.max_students:
         messages.error(request, "This course is full. Cannot enroll more students.")
         return redirect("course_detail", slug=course.slug)
-    
+
     if request.method == "POST":
         form = StudentEnrollmentForm(request.POST)
         if form.is_valid():
@@ -4835,7 +4835,7 @@ def add_student_to_course(request, slug):
 
             # Try to find existing user
             student = User.objects.filter(email=email).first()
-            
+
             if student:
                 # Check if student is already enrolled
                 if Enrollment.objects.filter(course=course, student=student).exists():
@@ -4844,11 +4844,11 @@ def add_student_to_course(request, slug):
                     # Enroll existing student
                     enrollment = Enrollment.objects.create(course=course, student=student, status="approved")
                     messages.success(request, f"{student.get_full_name()} has been enrolled in the course.")
-                    
+
                     # Send enrollment notifications
                     send_enrollment_confirmation(enrollment)
                     notify_teacher_new_enrollment(enrollment)
-                    
+
                     # Send enrollment notification email to existing student
                     context = {
                         "student": student,
@@ -4920,7 +4920,7 @@ def add_student_to_course(request, slug):
     else:
         form = StudentEnrollmentForm()
 
-    return render(request, "courses/add_student.html", {"form": form, "course": course}) 
+    return render(request, "courses/add_student.html", {"form": form, "course": course})
 
 
 def donate(request):
@@ -6224,7 +6224,7 @@ def update_teacher_notes(request, enrollment_id):
     if request.user != course.teacher:
         messages.error(request, "Only the course teacher can update notes!")
         return redirect("course_detail", slug=course.slug)
-    
+
     if request.method == "POST":
         notes = request.POST.get("teacher_notes", "")
 

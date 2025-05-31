@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
-from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
+from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar, views_whiteboard
 from .secure_messaging import (
     compose_message,
     download_message,
@@ -483,6 +483,11 @@ urlpatterns += i18n_patterns(
     path('classroom/library', views.classroom_library, name='classroom_library'),
     path('classroom/teacher-resources', views.classroom_teacher_resources, name='classroom_teacher_resources'),
     path('classroom/student-desk/<str:seat_id>', views.classroom_student_desk, name='classroom_student_desk'),
+    # Whiteboard URLs
+    path('whiteboard/<int:classroom_id>/', views_whiteboard.classroom_whiteboard, name='classroom_whiteboard'),
+    path('whiteboard/<int:classroom_id>/data/', views_whiteboard.get_whiteboard_data, name='get_whiteboard_data'),
+    path('whiteboard/<int:classroom_id>/save/', views_whiteboard.save_whiteboard_data, name='save_whiteboard_data'),
+    path('whiteboard/<int:classroom_id>/clear/', views_whiteboard.clear_whiteboard, name='clear_whiteboard'),
     prefix_default_language=True,
 )
 

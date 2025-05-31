@@ -11,7 +11,8 @@ document.addEventListener('DOMContentLoaded', () => {
             bookshelf: { x: 0, y: 0, width: 0, height: 0 },
             teacherDesk: { x: 0, y: 0, width: 0, height: 0 },
             seats: []
-        }
+        },
+        occupiedSeats: new Set() // Track which seats are occupied
     };
 
     // Helper function to check if character is near an interactive element
@@ -26,24 +27,35 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Add interaction popup
-    function showInteractionPopup(x, y) {
-        let popup = document.getElementById('interactionPopup');
-        if (!popup) {
-            popup = document.createElement('div');
-            popup.id = 'interactionPopup';
-            popup.className = 'absolute bg-black bg-opacity-75 text-white px-3 py-1 rounded-lg z-50 pointer-events-none';
-            popup.innerHTML = 'Press E to interact';
-            classroomContainer.appendChild(popup);
+    function showInteractionPopup(message) {
+        hideInteractionPopup();
+        
+        // Different message if user is seated
+        if (state.isSeated) {
+            if (message.includes('seat')) {
+                message = 'Press E to stand up';
+            } else {
+                message = 'Stand up first to interact with other elements';
+            }
         }
-        popup.style.left = `${x}px`;
-        popup.style.top = `${y - 30}px`;
-        popup.style.display = 'block';
+        
+        const popup = document.createElement('div');
+        popup.id = 'interaction-popup';
+        popup.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-75 text-white px-4 py-2 rounded-lg z-50 pointer-events-none';
+        popup.textContent = message;
+        
+        document.body.appendChild(popup);
+        
+        // Auto-hide after 3 seconds
+        setTimeout(() => {
+            hideInteractionPopup();
+        }, 3000);
     }
 
     function hideInteractionPopup() {
-        const popup = document.getElementById('interactionPopup');
+        const popup = document.getElementById('interaction-popup');
         if (popup) {
-            popup.style.display = 'none';
+            popup.remove();
         }
     }
 
@@ -52,25 +64,53 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key.toLowerCase() === 'e' && interactionState.nearInteractive) {
             const element = interactionState.currentInteractive;
             if (element) {
-                // Redirect based on the interactive element
-                let redirectUrl = '';
-                switch(element) {
-                    case 'blackboard':
-                        redirectUrl = '/classroom/blackboard';
-                        break;
-                    case 'bookshelf':
-                        redirectUrl = '/classroom/library';
-                        break;
-                    case 'teacherDesk':
-                        redirectUrl = '/classroom/teacher-resources';
-                        break;
-                    default:
-                        if (element.startsWith('seat-')) {
-                            redirectUrl = `/classroom/student-desk/${element.split('-')[1]}`;
+                if (element.startsWith('seat-')) {
+                    if (state.isSeated && state.currentSeat === element) {
+                        // Stand up from current seat
+                        if (socket && socket.readyState === WebSocket.OPEN) {
+                            socket.send(JSON.stringify({
+                                type: 'leave_seat',
+                                seat_id: element
+                            }));
                         }
-                }
-                if (redirectUrl) {
-                    window.location.href = redirectUrl;
+                        state.isSeated = false;
+                        state.currentSeat = null;
+                    } else if (!state.isSeated) {
+                        // Check if seat is occupied before trying to take it
+                        if (isSeatOccupied(element)) {
+                            showNotification('This seat is already taken by another student.', 'warning');
+                        } else {
+                            // Take the seat
+                            if (socket && socket.readyState === WebSocket.OPEN) {
+                                socket.send(JSON.stringify({
+                                    type: 'update_seat',
+                                    seat_id: element
+                                }));
+                            }
+                            // Optimistically update state (will be corrected if seat is actually occupied)
+                            state.isSeated = true;
+                            state.currentSeat = element;
+                        }
+                    }
+                } else {
+                    // Only allow other interactions if not seated
+                    if (!state.isSeated) {
+                        let redirectUrl = '';
+                        switch(element) {
+                            case 'blackboard':
+                                redirectUrl = `/whiteboard/${classroomId}/`;
+                                break;
+                            case 'bookshelf':
+                                redirectUrl = '/classroom/library';
+                                break;
+                            case 'teacherDesk':
+                                redirectUrl = '/classroom/teacher-resources';
+                                break;
+                        }
+                        if (redirectUrl) {
+                            window.location.href = redirectUrl;
+                        }
+                    }
                 }
             }
         }
@@ -121,7 +161,9 @@ document.addEventListener('DOMContentLoaded', () => {
             walkFrame: 0
         },
         keysPressed: {},
-        lastUpdateTime: Date.now()
+        lastUpdateTime: Date.now(),
+        isSeated: false,
+        currentSeat: null
     };
 
     // Initialize COLORS and SETTINGS from state
@@ -365,17 +407,285 @@ document.addEventListener('DOMContentLoaded', () => {
     // Movement handlers
     window.addEventListener('keydown', (e) => {
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-            state.keysPressed[e.key] = true;
-            e.preventDefault();
+            // Only allow movement if not seated
+            if (!state.isSeated) {
+                state.keysPressed[e.key] = true;
+                e.preventDefault();
+            }
         }
     });
 
     window.addEventListener('keyup', (e) => {
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
-            state.keysPressed[e.key] = false;
-            e.preventDefault();
+            // Only allow movement if not seated
+            if (!state.isSeated) {
+                state.keysPressed[e.key] = false;
+                e.preventDefault();
+            }
         }
     });
+
+    // Initialize WebSocket connection
+    const classroomId = document.querySelector('meta[name="classroom-id"]').content;
+    const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
+    const ws_path = `${ws_scheme}://${window.location.host}/ws/classroom/${classroomId}/`;
+    let socket = null;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    const reconnectDelay = 3000; // 3 seconds
+
+    function connectWebSocket() {
+        socket = new WebSocket(ws_path);
+
+        socket.onopen = function() {
+            console.log('WebSocket connected');
+            reconnectAttempts = 0;
+        };
+
+        socket.onclose = function(e) {
+            console.log('WebSocket disconnected');
+            if (reconnectAttempts < maxReconnectAttempts) {
+                setTimeout(() => {
+                    console.log('Attempting to reconnect...');
+                    reconnectAttempts++;
+                    connectWebSocket();
+                }, reconnectDelay);
+            }
+        };
+
+        socket.onerror = function(error) {
+            console.error('WebSocket error:', error);
+        };
+
+        socket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            console.log('Received message:', data); // Debug log
+
+            switch(data.type) {
+                case 'participants_list':
+                    console.log('Processing participants list:', data.participants); // Debug log
+                    // Clear all seat labels first
+                    document.querySelectorAll('.student-name').forEach(label => {
+                        label.classList.add('hidden');
+                    });
+                    
+                    // Clear occupied seats tracking
+                    interactionState.occupiedSeats.clear();
+                    
+                    // Update seats and student list
+                    data.participants.forEach(participant => {
+                        if (participant.seat_id) {
+                            console.log('Setting seat label for participant:', participant.full_name, participant.seat_id); // Debug log
+                            updateSeatLabel(participant.seat_id, participant.full_name);
+                            markSeatOccupied(participant.seat_id);
+                        }
+                    });
+                    updateStudentsList(data.participants);
+                    break;
+
+                case 'seat_updated':
+                    if (data.seat_id) {
+                        console.log('Updating seat label:', data.seat_id, data.user.full_name); // Debug log
+                        // Wait a bit to ensure the classroom is rendered
+                        setTimeout(() => {
+                            updateSeatLabel(data.seat_id, data.user.full_name);
+                        }, 100);
+                        
+                        // Mark seat as occupied
+                        markSeatOccupied(data.seat_id);
+                        
+                        // Show notification
+                        showNotification(`${data.user.full_name} has taken seat ${data.seat_id}`, 'info');
+                        
+                        // If this is the current user taking a seat, update their state
+                        if (data.user.username === getCurrentUsername()) {
+                            state.isSeated = true;
+                            state.currentSeat = data.seat_id;
+                        }
+                    }
+                    break;
+
+                case 'seat_left':
+                    if (data.seat_id) {
+                        console.log('User left seat:', data.seat_id, data.user.full_name); // Debug log
+                        clearSeatLabel(data.seat_id);
+                        
+                        // Mark seat as available
+                        markSeatAvailable(data.seat_id);
+                        
+                        // Show notification
+                        showNotification(`${data.user.full_name} has left seat ${data.seat_id}`, 'info');
+                        
+                        // If this is the current user leaving a seat, update their state
+                        if (data.user.username === getCurrentUsername()) {
+                            state.isSeated = false;
+                            state.currentSeat = null;
+                        }
+                    }
+                    break;
+
+                case 'participant_left':
+                    const participant = document.querySelector(`[data-username="${data.user.username}"]`);
+                    if (participant) {
+                        const seatId = participant.querySelector('.text-sm')?.textContent?.replace('Seat: ', '');
+                        if (seatId) {
+                            clearSeatLabel(seatId);
+                            markSeatAvailable(seatId);
+                        }
+                    }
+                    removeStudent(data.user);
+                    
+                    // Show notification
+                    showNotification(`${data.user.full_name} has left the classroom`, 'info');
+                    break;
+
+                case 'participant_joined':
+                    addStudent(data.user, data.seat_id);
+                    if (data.seat_id) {
+                        updateSeatLabel(data.seat_id, data.user.full_name);
+                        markSeatOccupied(data.seat_id);
+                    }
+                    
+                    // Show notification
+                    showNotification(`${data.user.full_name} has joined the classroom`, 'success');
+                    break;
+
+                case 'seat_occupied':
+                    console.log('Seat is occupied:', data.seat_id); // Debug log
+                    showNotification(data.message || 'This seat is already taken by another student.', 'warning');
+                    // Reset user's seated state since they couldn't take the seat
+                    state.isSeated = false;
+                    state.currentSeat = null;
+                    break;
+            }
+        };
+    }
+
+    // Connect WebSocket
+    connectWebSocket();
+
+    // Handle page visibility changes
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && (!socket || socket.readyState === WebSocket.CLOSED)) {
+            connectWebSocket();
+        }
+    });
+
+    // Add function to update seat labels
+    function updateSeatLabel(seatId, studentName) {
+        console.log('Updating seat label for:', seatId, studentName); // Debug log
+        
+        const nameLabel = document.querySelector(`[data-seat-id="${seatId}"]`);
+        console.log('Found name label:', nameLabel); // Debug log
+        
+        if (nameLabel) {
+            nameLabel.textContent = studentName;
+            nameLabel.classList.remove('hidden');
+            console.log('Successfully updated seat label:', seatId, studentName); // Debug log
+        } else {
+            console.error('Name label not found for seat:', seatId);
+            // List all available name labels for debugging
+            const allLabels = document.querySelectorAll('[data-seat-id]');
+            console.log('Available name labels:', Array.from(allLabels).map(el => el.getAttribute('data-seat-id')));
+        }
+    }
+
+    // Add function to clear seat label
+    function clearSeatLabel(seatId) {
+        const nameLabel = document.querySelector(`[data-seat-id="${seatId}"]`);
+        if (nameLabel) {
+            nameLabel.textContent = '';
+            nameLabel.classList.add('hidden');
+        }
+    }
+
+    // Student list management functions
+    function updateStudentsList(participants) {
+        const studentsList = document.getElementById('studentsList');
+        if (studentsList) {
+            studentsList.innerHTML = '';
+            participants.forEach(participant => {
+                addStudent(participant, participant.seat_id);
+            });
+            updateParticipantCount(participants.length);
+        }
+    }
+
+    function addStudent(user, seatId) {
+        const studentsList = document.getElementById('studentsList');
+        if (!studentsList) return;
+
+        const studentElement = document.createElement('div');
+        studentElement.className = 'flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm border border-gray-100 mb-2';
+        studentElement.setAttribute('data-username', user.username);
+
+        studentElement.innerHTML = `
+            <div class="flex-shrink-0">
+                <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <span class="text-blue-600 font-medium">${user.full_name.charAt(0)}</span>
+                </div>
+            </div>
+            <div class="flex-1">
+                <span class="text-gray-900">${user.full_name}</span>
+                ${seatId ? `<span class="text-sm text-gray-500 block">Seat: ${seatId}</span>` : ''}
+            </div>
+        `;
+
+        studentsList.appendChild(studentElement);
+    }
+
+    function removeStudent(user) {
+        const studentsList = document.getElementById('studentsList');
+        if (!studentsList) return;
+
+        const studentElement = studentsList.querySelector(`[data-username="${user.username}"]`);
+        if (studentElement) {
+            studentElement.remove();
+        }
+    }
+
+    function updateParticipantCount(count) {
+        const countElement = document.querySelector('#participantCount');
+        if (countElement) {
+            countElement.textContent = count;
+        }
+    }
+
+    function showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        let bgColorClass;
+        
+        switch(type) {
+            case 'warning':
+                bgColorClass = 'bg-yellow-600';
+                break;
+            case 'error':
+                bgColorClass = 'bg-red-600';
+                break;
+            case 'success':
+                bgColorClass = 'bg-green-600';
+                break;
+            default:
+                bgColorClass = 'bg-blue-600';
+        }
+        
+        notification.className = `fixed bottom-4 right-4 ${bgColorClass} text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-500 opacity-0`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        // Fade in
+        setTimeout(() => {
+            notification.classList.remove('opacity-0');
+        }, 100);
+
+        // Fade out and remove
+        setTimeout(() => {
+            notification.classList.add('opacity-0');
+            setTimeout(() => {
+                notification.remove();
+            }, 500);
+        }, 3000);
+    }
 
     // Rendering functions
     function renderClassroom() {
@@ -555,6 +865,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Create desk-chair set container
                 const deskChairSet = document.createElement('div');
                 deskChairSet.className = 'desk-chair-set absolute';
+                deskChairSet.id = `desk-chair-${row}-${col}`;
                 deskChairSet.style.cssText = `left: ${x}px; top: ${y}px;`;
 
                 // Create desk
@@ -604,6 +915,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     border-top-right-radius: 4px;
                 `;
                 chair.appendChild(chairBack);
+
+                // Add student name label (hidden by default)
+                const nameLabel = document.createElement('div');
+                nameLabel.className = 'student-name absolute text-white text-sm font-bold bg-gray-800 bg-opacity-90 px-3 py-2 rounded-lg hidden';
+                nameLabel.setAttribute('data-seat-id', `seat-${row}-${col}`);
+                nameLabel.style.cssText = `
+                    left: ${x + (deskWidth * 0.5)}px;
+                    top: ${y + deskDepth - 20}px;
+                    transform: translateX(-50%);
+                    white-space: nowrap;
+                    z-index: 10000;
+                    pointer-events: none;
+                    border: 2px solid rgba(255, 255, 255, 0.5);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+                    backdrop-filter: blur(2px);
+                `;
+                
+                // Append to classroom container instead of chair
+                classroomContainer.appendChild(nameLabel);
 
                 deskChairSet.appendChild(desk);
                 deskChairSet.appendChild(chair);
@@ -848,6 +1178,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const existingCharacter = classroomContainer.querySelector('.character-facing-up, .character-facing-down, .character-facing-left, .character-facing-right');
         if (existingCharacter) {
             existingCharacter.remove();
+        }
+
+        // Don't render character if seated
+        if (state.isSeated) {
+            return;
         }
 
         const character = document.createElement('div');
@@ -1101,7 +1436,23 @@ document.addEventListener('DOMContentLoaded', () => {
         interactionState.currentInteractive = currentInteractive;
 
         if (nearInteractive) {
-            showInteractionPopup(state.character.position.x, state.character.position.y);
+            let message;
+            if (currentInteractive && currentInteractive.startsWith('seat-')) {
+                if (state.isSeated && state.currentSeat === currentInteractive) {
+                    message = 'Press E to stand up';
+                } else if (state.isSeated) {
+                    message = 'Stand up first to change seats';
+                } else {
+                    message = 'Press E to sit down';
+                }
+            } else {
+                if (state.isSeated) {
+                    message = 'Stand up first to interact with other elements';
+                } else {
+                    message = 'Press E to interact';
+                }
+            }
+            showInteractionPopup(message);
         } else {
             hideInteractionPopup();
         }
@@ -1124,6 +1475,29 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
         return cookieValue;
+    }
+
+    // Function to get current username (you may need to adjust this based on how you store user info)
+    function getCurrentUsername() {
+        // This should return the current user's username
+        // You might need to add this as a meta tag or global variable
+        const userMeta = document.querySelector('meta[name="current-user"]');
+        return userMeta ? userMeta.content : null;
+    }
+
+    // Function to check if a seat is occupied
+    function isSeatOccupied(seatId) {
+        return interactionState.occupiedSeats.has(seatId);
+    }
+
+    // Function to mark a seat as occupied
+    function markSeatOccupied(seatId) {
+        interactionState.occupiedSeats.add(seatId);
+    }
+
+    // Function to mark a seat as available
+    function markSeatAvailable(seatId) {
+        interactionState.occupiedSeats.delete(seatId);
     }
 
     // Call init directly

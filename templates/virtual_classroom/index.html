@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="classroom-id" content="{{ classroom.id }}">
     <title>Virtual Classroom</title>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,12 +15,12 @@
             <h1 class="text-2xl font-bold text-gray-800">{{ classroom.name }}</h1>
             <div class="flex items-center space-x-4">
                 <!-- Student List Button -->
-                <button id="toggleStudentList" 
+                <button id="toggleStudentList"
                         class="px-4 py-2 bg-teal-300 text-white rounded-md hover:bg-teal-400 transition-colors flex items-center gap-2">
                     <i data-lucide="users"></i>
                     <span>Students</span>
                 </button>
-                <button id="toggleControls" 
+                <button id="toggleControls"
                         class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2">
                     <i data-lucide="layout"></i>
                     <span>Show Controls</span>
@@ -49,7 +50,7 @@
         <!-- Control Panel -->
         <div id="controlPanel" class="hidden w-full md:w-1/4 bg-white p-4 overflow-auto shadow-md">
             <h2 class="text-xl font-semibold mb-4">Customize Classroom</h2>
-            
+
             <!-- Color Settings -->
             <div class="space-y-4 mb-6">
                 <div>
@@ -117,7 +118,7 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Layout Settings -->
             <div class="space-y-4 mb-6">
                 <div>
@@ -146,7 +147,7 @@
                     <span class="text-sm" id="desksPerRowValue">{{ customization.desks_per_row|default:6 }}</span>
                 </div>
             </div>
-            
+
             <!-- Toggle Settings -->
             <div class="space-y-3">
                 <div class="flex items-center">
@@ -206,7 +207,7 @@
             <div id="classroomContainer" class="w-full h-[calc(100vh-10rem)] relative overflow-hidden rounded-xl shadow-xl bg-slate-800">
                 <!-- Classroom elements will be rendered here -->
             </div>
-            
+
             <!-- Controls Info -->
             <div class="mt-4 bg-white p-3 rounded-md shadow-md">
                 <h3 class="text-lg font-semibold mb-2">Controls</h3>
@@ -227,20 +228,10 @@
     </div>
 
     <script>
-        // Initialize WebSocket connection
-        const classroomId = '{{ classroom.id }}';
-        const ws_scheme = window.location.protocol === "https:" ? "wss" : "ws";
-        const ws_path = `${ws_scheme}://${window.location.host}/ws/classroom/${classroomId}/`;
-        let socket = null;
-        let reconnectAttempts = 0;
-        const maxReconnectAttempts = 5;
-        const reconnectDelay = 3000; // 3 seconds
-
         // Student list functionality
         const studentList = document.getElementById('studentList');
         const toggleStudentList = document.getElementById('toggleStudentList');
         const closeStudentList = document.getElementById('closeStudentList');
-        const studentsList = document.getElementById('studentsList');
 
         toggleStudentList.addEventListener('click', () => {
             studentList.classList.toggle('translate-x-full');
@@ -249,124 +240,7 @@
         closeStudentList.addEventListener('click', () => {
             studentList.classList.add('translate-x-full');
         });
-
-        function connectWebSocket() {
-            socket = new WebSocket(ws_path);
-
-            socket.onopen = function() {
-                console.log('WebSocket connected');
-                reconnectAttempts = 0; // Reset reconnect attempts on successful connection
-            };
-
-            socket.onclose = function(e) {
-                console.log('WebSocket disconnected');
-                if (reconnectAttempts < maxReconnectAttempts) {
-                    setTimeout(() => {
-                        console.log('Attempting to reconnect...');
-                        reconnectAttempts++;
-                        connectWebSocket();
-                    }, reconnectDelay);
-                } else {
-                    console.error('Max reconnection attempts reached');
-                }
-            };
-
-            socket.onerror = function(error) {
-                console.error('WebSocket error:', error);
-            };
-
-            // WebSocket event handlers
-            socket.onmessage = function(e) {
-                const data = JSON.parse(e.data);
-                
-                switch(data.type) {
-                    case 'participants_list':
-                        updateStudentsList(data.participants);
-                        break;
-                    case 'participant_joined':
-                        addStudent(data.user, data.seat_id);
-                        showNotification(`${data.user.full_name} joined the classroom`);
-                        break;
-                    case 'participant_left':
-                        removeStudent(data.user);
-                        showNotification(`${data.user.full_name} left the classroom`);
-                        break;
-                }
-            };
-        }
-
-        function updateStudentsList(participants) {
-            studentsList.innerHTML = '';
-            participants.forEach(participant => {
-                addStudent(participant, participant.seat_id);
-            });
-            updateParticipantCount(participants.length);
-        }
-
-        function addStudent(user, seatId) {
-            const studentElement = document.createElement('div');
-            studentElement.className = 'flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm border border-gray-100 mb-2';
-            studentElement.setAttribute('data-username', user.username);
-            
-            studentElement.innerHTML = `
-                <div class="flex-shrink-0">
-                    <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span class="text-blue-600 font-medium">${user.full_name.charAt(0)}</span>
-                    </div>
-                </div>
-                <div class="flex-1">
-                    <span class="text-gray-900">${user.full_name}</span>
-                    ${seatId ? `<span class="text-sm text-gray-500 block">Seat: ${seatId}</span>` : ''}
-                </div>
-            `;
-            
-            studentsList.appendChild(studentElement);
-        }
-
-        function removeStudent(user) {
-            const studentElement = studentsList.querySelector(`[data-username="${user.username}"]`);
-            if (studentElement) {
-                studentElement.remove();
-            }
-        }
-
-        function updateParticipantCount(count) {
-            const countElement = document.querySelector('#participantCount');
-            if (countElement) {
-                countElement.textContent = count;
-            }
-        }
-
-        function showNotification(message) {
-            const notification = document.createElement('div');
-            notification.className = 'fixed bottom-4 right-4 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-500 opacity-0';
-            notification.textContent = message;
-            document.body.appendChild(notification);
-
-            // Fade in
-            setTimeout(() => {
-                notification.classList.remove('opacity-0');
-            }, 100);
-
-            // Fade out and remove
-            setTimeout(() => {
-                notification.classList.add('opacity-0');
-                setTimeout(() => {
-                    notification.remove();
-                }, 500);
-            }, 3000);
-        }
-
-        // Initialize WebSocket connection
-        connectWebSocket();
-
-        // Handle page visibility changes
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState === 'visible' && (!socket || socket.readyState === WebSocket.CLOSED)) {
-                connectWebSocket();
-            }
-        });
     </script>
     <script src="{% static 'js/virtual_classroom.js' %}"></script>
 </body>
-</html> 
+</html>
