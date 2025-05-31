@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
-from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
+from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar, views_whiteboard
 from .secure_messaging import (
     compose_message,
     download_message,
@@ -472,6 +472,22 @@ urlpatterns += i18n_patterns(
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
     path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
+    # Virtual Classroom URLs
+    path('virtual-classroom/', views.virtual_classroom_list, name='virtual_classroom_list'),
+    path('virtual-classroom/create/', views.virtual_classroom_create, name='virtual_classroom_create'),
+    path('virtual-classroom/<int:classroom_id>/', views.virtual_classroom_detail, name='virtual_classroom_detail'),
+    path('virtual-classroom/<int:classroom_id>/edit/', views.virtual_classroom_edit, name='virtual_classroom_edit'),
+    path('virtual-classroom/<int:classroom_id>/customize/', views.virtual_classroom_customize, name='virtual_classroom_customize'),
+    path('virtual-classroom/<int:classroom_id>/delete/', views.virtual_classroom_delete, name='virtual_classroom_delete'),
+    path('classroom/blackboard', views.classroom_blackboard, name='classroom_blackboard'),
+    path('classroom/library', views.classroom_library, name='classroom_library'),
+    path('classroom/teacher-resources', views.classroom_teacher_resources, name='classroom_teacher_resources'),
+    path('classroom/student-desk/<str:seat_id>', views.classroom_student_desk, name='classroom_student_desk'),
+    # Whiteboard URLs
+    path('whiteboard/<int:classroom_id>/', views_whiteboard.classroom_whiteboard, name='classroom_whiteboard'),
+    path('whiteboard/<int:classroom_id>/data/', views_whiteboard.get_whiteboard_data, name='get_whiteboard_data'),
+    path('whiteboard/<int:classroom_id>/save/', views_whiteboard.save_whiteboard_data, name='save_whiteboard_data'),
+    path('whiteboard/<int:classroom_id>/clear/', views_whiteboard.clear_whiteboard, name='clear_whiteboard'),
     prefix_default_language=True,
 )
 

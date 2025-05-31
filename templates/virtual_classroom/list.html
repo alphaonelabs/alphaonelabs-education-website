@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Virtual Classrooms{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200">Virtual Classrooms</h1>
+        {% if user.profile.is_teacher %}
+        <a href="{% url 'virtual_classroom_create' %}" 
+           class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+            Create New Classroom
+        </a>
+        {% endif %}
+    </div>
+
+    {% if classrooms %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {% for classroom in classrooms %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <div class="flex justify-between items-start mb-4">
+                <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">{{ classroom.name }}</h2>
+                {% if classroom.teacher == user %}
+                <div class="flex space-x-2">
+                    <a href="{% url 'virtual_classroom_edit' classroom.id %}" 
+                       class="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                    <a href="{% url 'virtual_classroom_delete' classroom.id %}" 
+                       class="text-red-600 hover:text-red-800 dark:text-red-400">
+                        <i class="fas fa-trash"></i>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="space-y-2 text-gray-600 dark:text-gray-300">
+                <p><i class="fas fa-chalkboard-teacher mr-2"></i>Teacher: {{ classroom.teacher.get_full_name|default:classroom.teacher.username }}</p>
+                {% if classroom.course %}
+                <p><i class="fas fa-book mr-2"></i>Course: {{ classroom.course.title }}</p>
+                {% endif %}
+                <p><i class="fas fa-users mr-2"></i>Max Students: {{ classroom.max_students }}</p>
+            </div>
+
+            <div class="mt-6">
+                <a href="{% url 'virtual_classroom_detail' classroom.id %}" 
+                   class="block w-full text-center bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg transition duration-200">
+                    Enter Classroom
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12">
+        <p class="text-gray-600 dark:text-gray-400 text-lg">No virtual classrooms available.</p>
+        {% if user.profile.is_teacher %}
+        <a href="{% url 'virtual_classroom_create' %}" 
+           class="inline-block mt-4 bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+            Create Your First Classroom
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %} 
