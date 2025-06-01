@@ -408,7 +408,7 @@ class WhiteboardConsumer(AsyncWebsocketConsumer):
                         data.get('canvas_data', ''),
                         data.get('background_image', '')
                     )
-                    
+
                     # Broadcast to all users except sender
                     await self.channel_layer.group_send(
                         self.room_group_name,
@@ -440,7 +440,7 @@ class WhiteboardConsumer(AsyncWebsocketConsumer):
                 if is_teacher:
                     # Clear database
                     await self.clear_canvas_data()
-                    
+
                     # Broadcast clear action
                     await self.channel_layer.group_send(
                         self.room_group_name,
@@ -495,18 +495,18 @@ class WhiteboardConsumer(AsyncWebsocketConsumer):
         """Verify user has access to this whiteboard/classroom"""
         try:
             classroom = VirtualClassroom.objects.get(id=self.classroom_id)
-            
+
             # Check if user is the teacher
             if classroom.teacher == self.user:
                 return True
-            
+
             # Check if user is enrolled in the course
             if classroom.course:
                 return classroom.course.enrollments.filter(
                     student=self.user,
                     status='approved'
                 ).exists()
-            
+
             return False
         except VirtualClassroom.DoesNotExist:
             return False
@@ -538,13 +538,13 @@ class WhiteboardConsumer(AsyncWebsocketConsumer):
                     'last_updated_by': self.user
                 }
             )
-            
+
             whiteboard.canvas_data = {'data': canvas_data}
             if background_image:
                 whiteboard.background_image = background_image
             whiteboard.last_updated_by = self.user
             whiteboard.save()
-            
+
             return True
         except Exception as e:
             logger.error(f"Error saving canvas data: {str(e)}")
@@ -562,12 +562,12 @@ class WhiteboardConsumer(AsyncWebsocketConsumer):
                     'last_updated_by': self.user
                 }
             )
-            
+
             whiteboard.canvas_data = {}
             whiteboard.background_image = ''
             whiteboard.last_updated_by = self.user
             whiteboard.save()
-            
+
             return True
         except Exception as e:
             logger.error(f"Error clearing canvas data: {str(e)}")
@@ -579,14 +579,14 @@ class WhiteboardConsumer(AsyncWebsocketConsumer):
         """Add user to active users list"""
         if self.room_group_name not in WhiteboardConsumer.active_users:
             WhiteboardConsumer.active_users[self.room_group_name] = set()
-        
+
         WhiteboardConsumer.active_users[self.room_group_name].add(self.user.username)
 
     async def remove_user_from_room(self):
         """Remove user from active users list"""
         if self.room_group_name in WhiteboardConsumer.active_users:
             WhiteboardConsumer.active_users[self.room_group_name].discard(self.user.username)
-            
+
             # Clean up empty rooms
             if not WhiteboardConsumer.active_users[self.room_group_name]:
                 del WhiteboardConsumer.active_users[self.room_group_name]
@@ -596,7 +596,7 @@ class WhiteboardConsumer(AsyncWebsocketConsumer):
         users_list = []
         if self.room_group_name in WhiteboardConsumer.active_users:
             users_list = [
-                {'username': username} 
+                {'username': username}
                 for username in WhiteboardConsumer.active_users[self.room_group_name]
             ]
 

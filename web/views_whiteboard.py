@@ -16,7 +16,7 @@ def classroom_whiteboard(request, classroom_id):
     # Get the classroom or course
     classroom = None
     course = None
-    
+
     # First try to get by classroom_id
     try:
         classroom = get_object_or_404(VirtualClassroom, id=classroom_id)
@@ -38,21 +38,21 @@ def classroom_whiteboard(request, classroom_id):
         except:
             messages.error(request, "Classroom or course not found.")
             return redirect('virtual_classroom_list')
-    
+
     # Check if user has access (teacher or enrolled student)
     is_teacher = classroom.teacher == request.user
     is_enrolled = False
-    
+
     if course:
         is_enrolled = course.enrollments.filter(
-            student=request.user, 
+            student=request.user,
             status='approved'
         ).exists()
-    
+
     if not (is_teacher or is_enrolled):
         messages.error(request, "You don't have access to this classroom.")
         return redirect('virtual_classroom_list')
-    
+
     # Get or create whiteboard for this classroom
     whiteboard, created = VirtualClassroomWhiteboard.objects.get_or_create(
         classroom=classroom,
@@ -61,7 +61,7 @@ def classroom_whiteboard(request, classroom_id):
             'last_updated_by': request.user
         }
     )
-    
+
     context = {
         'classroom': classroom,
         'course': course,
@@ -71,7 +71,7 @@ def classroom_whiteboard(request, classroom_id):
         'classroom_id': classroom.id,
         'room_name': f"whiteboard_{classroom.id}",
     }
-    
+
     return render(request, 'virtual_classroom/live_whiteboard.html', context)
 
 
@@ -84,20 +84,20 @@ def save_whiteboard_data(request, classroom_id):
     """
     try:
         classroom = get_object_or_404(VirtualClassroom, id=classroom_id)
-        
+
         # Check permissions
         is_teacher = classroom.teacher == request.user
         is_enrolled = False
-        
+
         if classroom.course:
             is_enrolled = classroom.course.enrollments.filter(
                 student=request.user,
                 status='approved'
             ).exists()
-        
+
         if not (is_teacher or is_enrolled):
             return JsonResponse({'error': 'Access denied'}, status=403)
-        
+
         # Get whiteboard
         whiteboard, created = VirtualClassroomWhiteboard.objects.get_or_create(
             classroom=classroom,
@@ -106,24 +106,24 @@ def save_whiteboard_data(request, classroom_id):
                 'last_updated_by': request.user
             }
         )
-        
+
         # Parse the request data
         data = json.loads(request.body)
         canvas_data = data.get('canvas_data', {})
         background_image = data.get('background_image', '')
-        
+
         # Update whiteboard
         whiteboard.canvas_data = canvas_data
         if background_image:
             whiteboard.background_image = background_image
         whiteboard.last_updated_by = request.user
         whiteboard.save()
-        
+
         return JsonResponse({
             'success': True,
             'message': 'Whiteboard saved successfully'
         })
-        
+
     except Exception as e:
         return JsonResponse({
             'error': str(e)
@@ -137,25 +137,31 @@ def get_whiteboard_data(request, classroom_id):
     """
     try:
         classroom = get_object_or_404(VirtualClassroom, id=classroom_id)
-        
+
         # Check permissions
         is_teacher = classroom.teacher == request.user
         is_enrolled = False
-        
+
         if classroom.course:
             is_enrolled = classroom.course.enrollments.filter(
                 student=request.user,
                 status='approved'
             ).exists()
-        
+
         if not (is_teacher or is_enrolled):
             return JsonResponse({'error': 'Access denied'}, status=403)
-        
+
         # Get whiteboard
         try:
             whiteboard = VirtualClassroomWhiteboard.objects.get(classroom=classroom)
+            
+            # Extract canvas data from the wrapper format
+            canvas_data = whiteboard.canvas_data
+            if isinstance(canvas_data, dict) and 'data' in canvas_data:
+                canvas_data = canvas_data['data']  # Extract the actual base64 string
+            
             return JsonResponse({
-                'canvas_data': whiteboard.canvas_data,
+                'canvas_data': canvas_data,
                 'background_image': whiteboard.background_image or '',
                 'last_updated': whiteboard.last_updated.isoformat(),
                 'last_updated_by': whiteboard.last_updated_by.username if whiteboard.last_updated_by else None
@@ -167,7 +173,7 @@ def get_whiteboard_data(request, classroom_id):
                 'last_updated': None,
                 'last_updated_by': None
             })
-            
+
     except Exception as e:
         return JsonResponse({
             'error': str(e)
@@ -183,11 +189,11 @@ def clear_whiteboard(request, classroom_id):
     """
     try:
         classroom = get_object_or_404(VirtualClassroom, id=classroom_id)
-        
+
         # Check if user is teacher (only teachers can clear)
         if classroom.teacher != request.user:
             return JsonResponse({'error': 'Only teachers can clear the whiteboard'}, status=403)
-        
+
         # Get whiteboard
         try:
             whiteboard = VirtualClassroomWhiteboard.objects.get(classroom=classroom)
@@ -195,7 +201,7 @@ def clear_whiteboard(request, classroom_id):
             whiteboard.background_image = ''
             whiteboard.last_updated_by = request.user
             whiteboard.save()
-            
+
             return JsonResponse({
                 'success': True,
                 'message': 'Whiteboard cleared successfully'
@@ -205,8 +211,8 @@ def clear_whiteboard(request, classroom_id):
                 'success': True,
                 'message': 'Whiteboard was already empty'
             })
-            
+
     except Exception as e:
         return JsonResponse({
             'error': str(e)
-        }, status=500) 
+        }, status=500)

@@ -613,22 +613,36 @@
                   <p class="text-gray-600 dark:text-gray-400">
                     Enter your virtual classroom to interact with other students and access course materials in real-time.
                   </p>
-                  <a href="{% url 'virtual_classroom_detail' classroom_id=virtual_classroom.id %}" 
-                     class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 inline-flex items-center">
-                    <i class="fas fa-door-open mr-2"></i>
-                    Enter Virtual Classroom
-                  </a>
+                  <div class="flex flex-wrap gap-3">
+                    <a href="{% url 'virtual_classroom_detail' classroom_id=virtual_classroom.id %}" 
+                       class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 inline-flex items-center">
+                      <i class="fas fa-door-open mr-2"></i>
+                      Enter Virtual Classroom
+                    </a>
+                    <a href="{% url 'classroom_whiteboard' classroom_id=virtual_classroom.id %}" 
+                       class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 inline-flex items-center">
+                      <i class="fas fa-chalkboard mr-2"></i>
+                      Whiteboard
+                    </a>
+                  </div>
                 </div>
               {% elif is_teacher %}
                 <div class="space-y-4">
                   <p class="text-gray-600 dark:text-gray-400">
                     Create a virtual classroom to provide an interactive learning environment for your students.
                   </p>
-                  <a href="{% url 'virtual_classroom_create' %}?course={{ course.id }}" 
-                     class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 inline-flex items-center">
-                    <i class="fas fa-plus mr-2"></i>
-                    Create Virtual Classroom
-                  </a>
+                  <div class="flex flex-wrap gap-3">
+                    <a href="{% url 'virtual_classroom_create' %}?course={{ course.id }}" 
+                       class="bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 inline-flex items-center">
+                      <i class="fas fa-plus mr-2"></i>
+                      Create Virtual Classroom
+                    </a>
+                    <a href="{% url 'classroom_whiteboard' classroom_id=course.id %}" 
+                       class="bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-6 rounded-lg transition duration-200 inline-flex items-center">
+                      <i class="fas fa-chalkboard mr-2"></i>
+                      Whiteboard
+                    </a>
+                  </div>
                 </div>
               {% endif %}
             </section>

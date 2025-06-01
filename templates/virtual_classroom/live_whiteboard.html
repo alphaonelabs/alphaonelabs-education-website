@@ -30,7 +30,7 @@
                     {% trans "Connecting..." %}
                 </div>
                 {% if is_teacher %}
-                    <button id="clearBoard" 
+                    <button id="clearBoard"
                             class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition duration-200">
                         {% trans "Clear Board" %}
                     </button>
@@ -54,29 +54,29 @@
                     <option value="arrow">{% trans "Arrow" %}</option>
                 </select>
             </div>
-            
+
             <div class="flex items-center gap-2">
                 <label for="penColor" class="font-medium text-gray-700 dark:text-gray-300">{% trans "Color:" %}</label>
                 <input type="color" id="penColor" value="#000000" class="border border-gray-300 dark:border-gray-600 rounded w-10 h-8" />
             </div>
-            
+
             <div class="flex items-center gap-2">
                 <label for="penWidth" class="font-medium text-gray-700 dark:text-gray-300">{% trans "Width:" %}</label>
                 <input type="range" id="penWidth" min="1" max="10" value="2" class="w-24" />
                 <span id="penWidthValue" class="text-sm text-gray-600 dark:text-gray-400">2</span>
             </div>
-            
+
             <div class="flex items-center gap-2">
                 <label for="imageScale" class="font-medium text-gray-700 dark:text-gray-300">{% trans "Image Scale:" %}</label>
                 <input type="range" id="imageScale" min="10" max="300" value="100" class="w-24" />
                 <span id="imageScaleValue" class="text-sm text-gray-600 dark:text-gray-400">100%</span>
             </div>
-            
+
             <button id="uploadBoard" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded transition duration-200">
                 {% trans "Load Image" %}
             </button>
             <input type="file" id="loadInput" accept="image/*" style="display: none;" />
-            
+
             <button id="downloadBoard" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded transition duration-200">
                 {% trans "Download" %}
             </button>
@@ -104,7 +104,7 @@
 
         <!-- Back Button -->
         <div class="mt-6">
-            <a href="{% url 'virtual_classroom_detail' classroom.id %}" 
+            <a href="{% url 'virtual_classroom_detail' classroom.id %}"
                class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition duration-200">
                 {% trans "Back to Classroom" %}
             </a>
@@ -145,7 +145,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeCanvas();
     connectWebSocket();
     loadWhiteboardData();
-    
+
     {% if is_teacher %}
     setupTeacherControls();
     {% endif %}
@@ -155,14 +155,14 @@ function initializeCanvas() {
     // Set canvas background
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+
     // Setup drawing event listeners
     {% if is_teacher %}
     canvas.addEventListener('mousedown', startDrawing);
     canvas.addEventListener('mousemove', draw);
     canvas.addEventListener('mouseup', stopDrawing);
     canvas.addEventListener('mouseleave', stopDrawing);
-    
+
     // Touch events for mobile
     canvas.addEventListener('touchstart', handleTouchStart);
     canvas.addEventListener('touchmove', handleTouchMove);
@@ -181,7 +181,7 @@ function setupTeacherControls() {
     const loadInput = document.getElementById('loadInput');
     const downloadBtn = document.getElementById('downloadBoard');
     const clearBtn = document.getElementById('clearBoard');
-    
+
     toolSelect.addEventListener('change', function() {
         currentTool = this.value;
         if (currentTool === 'highlighter') {
@@ -190,16 +190,16 @@ function setupTeacherControls() {
             ctx.globalAlpha = 1.0;
         }
     });
-    
+
     penColorInput.addEventListener('change', function() {
         penColor = this.value;
     });
-    
+
     penWidthInput.addEventListener('input', function() {
         penWidth = parseInt(this.value, 10);
         document.getElementById('penWidthValue').textContent = penWidth;
     });
-    
+
     imageScaleInput.addEventListener('input', function() {
         imageScale = parseInt(this.value, 10) / 100;
         document.getElementById('imageScaleValue').textContent = this.value + '%';
@@ -207,24 +207,24 @@ function setupTeacherControls() {
             redrawBackground();
         }
     });
-    
+
     uploadBtn.addEventListener('click', () => loadInput.click());
-    
+
     loadInput.addEventListener('change', handleImageUpload);
-    
+
     downloadBtn.addEventListener('click', downloadCanvas);
-    
+
     clearBtn.addEventListener('click', clearWhiteboard);
 }
 
 function startDrawing(e) {
     if (!isTeacher) return;
-    
+
     drawing = true;
     const rect = canvas.getBoundingClientRect();
     startX = e.clientX - rect.left;
     startY = e.clientY - rect.top;
-    
+
     if (currentTool === 'pen' || currentTool === 'eraser' || currentTool === 'highlighter') {
         ctx.beginPath();
         ctx.moveTo(startX, startY);
@@ -244,14 +244,14 @@ function startDrawing(e) {
 
 function draw(e) {
     if (!drawing || !isTeacher) return;
-    
+
     const rect = canvas.getBoundingClientRect();
     const currentX = e.clientX - rect.left;
     const currentY = e.clientY - rect.top;
-    
+
     if (currentTool === 'pen' || currentTool === 'eraser' || currentTool === 'highlighter') {
         ctx.lineWidth = penWidth;
-        
+
         if (currentTool === 'eraser') {
             ctx.strokeStyle = "#FFFFFF";
             ctx.globalAlpha = 1.0;
@@ -262,10 +262,10 @@ function draw(e) {
             ctx.strokeStyle = penColor;
             ctx.globalAlpha = 0.3;
         }
-        
+
         ctx.lineTo(currentX, currentY);
         ctx.stroke();
-        
+
         // Broadcast drawing data in real-time
         broadcastDrawingAction({
             type: 'draw',
@@ -282,7 +282,7 @@ function draw(e) {
         restoreSnapshot();
         ctx.lineWidth = penWidth;
         ctx.strokeStyle = penColor;
-        
+
         if (currentTool === 'line') {
             ctx.beginPath();
             ctx.moveTo(startX, startY);
@@ -305,19 +305,19 @@ function draw(e) {
 
 function stopDrawing(e) {
     if (!drawing || !isTeacher) return;
-    
+
     drawing = false;
-    
+
     if (currentTool !== 'pen' && currentTool !== 'eraser' && currentTool !== 'highlighter') {
         const rect = canvas.getBoundingClientRect();
         const currentX = e.clientX - rect.left;
         const currentY = e.clientY - rect.top;
-        
+
         // Finalize shapes
         restoreSnapshot();
         ctx.lineWidth = penWidth;
         ctx.strokeStyle = penColor;
-        
+
         if (currentTool === 'line') {
             ctx.beginPath();
             ctx.moveTo(startX, startY);
@@ -336,7 +336,7 @@ function stopDrawing(e) {
             drawArrow(startX, startY, currentX, currentY);
         }
     }
-    
+
     // Broadcast final canvas state
     broadcastCanvasData();
 }
@@ -371,7 +371,7 @@ function handleTouchEnd(e) {
 function handleImageUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     const reader = new FileReader();
     reader.onload = function(e) {
         const dataURL = e.target.result;
@@ -390,7 +390,7 @@ function redrawBackground() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = 'white';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
+
     if (uploadedImage) {
         const newWidth = uploadedImage.width * imageScale;
         const newHeight = uploadedImage.height * imageScale;
@@ -408,28 +408,13 @@ function downloadCanvas() {
 
 function clearWhiteboard() {
     if (!isTeacher) return;
-    
+
     if (confirm('{% trans "Are you sure you want to clear the whiteboard? This action cannot be undone." %}')) {
-        fetch(`/whiteboard/${classroomId}/clear/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': getCookie('csrftoken'),
-                'Content-Type': 'application/json',
-            }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                clearCanvas();
-                broadcastClearAction();
-            } else {
-                alert(data.error || '{% trans "Error clearing whiteboard" %}');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('{% trans "Error clearing whiteboard" %}');
-        });
+        // Clear the canvas locally
+        clearCanvas();
+        
+        // Broadcast the clear action to other users via WebSocket
+        broadcastClearAction();
     }
 }
 {% endif %}
@@ -454,12 +439,12 @@ function restoreSnapshot() {
 function drawArrow(fromX, fromY, toX, toY) {
     const headlen = 10;
     const angle = Math.atan2(toY - fromY, toX - fromX);
-    
+
     ctx.beginPath();
     ctx.moveTo(fromX, fromY);
     ctx.lineTo(toX, toY);
     ctx.stroke();
-    
+
     ctx.beginPath();
     ctx.moveTo(toX, toY);
     ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI / 6), toY - headlen * Math.sin(angle - Math.PI / 6));
@@ -471,22 +456,22 @@ function drawArrow(fromX, fromY, toX, toY) {
 // WebSocket functions
 function connectWebSocket() {
     socket = new WebSocket(wsPath);
-    
+
     socket.onopen = function(e) {
         console.log('WebSocket connection established');
         updateConnectionStatus(true);
         reconnectAttempts = 0;
     };
-    
+
     socket.onmessage = function(e) {
         const data = JSON.parse(e.data);
         handleWebSocketMessage(data);
     };
-    
+
     socket.onclose = function(e) {
         console.log('WebSocket connection closed');
         updateConnectionStatus(false);
-        
+
         // Attempt to reconnect
         if (reconnectAttempts < maxReconnectAttempts) {
             setTimeout(() => {
@@ -495,7 +480,7 @@ function connectWebSocket() {
             }, 2000 * reconnectAttempts);
         }
     };
-    
+
     socket.onerror = function(e) {
         console.error('WebSocket error:', e);
         updateConnectionStatus(false);
@@ -557,7 +542,7 @@ function loadCanvasFromData(canvasData, backgroundImage) {
         };
         img.src = canvasData;
     }
-    
+
     if (backgroundImage) {
         const bgImg = new Image();
         bgImg.onload = function() {
@@ -572,7 +557,7 @@ function applyDrawingAction(action) {
     if (action.type === 'draw') {
         ctx.lineWidth = action.width;
         ctx.strokeStyle = action.color;
-        
+
         if (action.tool === 'eraser') {
             ctx.strokeStyle = "#FFFFFF";
             ctx.globalAlpha = 1.0;
@@ -581,7 +566,7 @@ function applyDrawingAction(action) {
         } else {
             ctx.globalAlpha = 1.0;
         }
-        
+
         ctx.lineTo(action.x, action.y);
         ctx.stroke();
     }
@@ -601,7 +586,7 @@ function updateConnectionStatus(connected) {
 function updateActiveUsers(users) {
     const activeUsersElement = document.getElementById('activeUsers');
     activeUsersElement.innerHTML = '';
-    
+
     users.forEach(user => {
         const userElement = document.createElement('div');
         userElement.className = 'px-3 py-1 bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-200 rounded-full text-sm';
@@ -614,7 +599,7 @@ function loadWhiteboardData() {
     fetch(`/whiteboard/${classroomId}/data/`)
         .then(response => response.json())
         .then(data => {
-            if (data.canvas_data && Object.keys(data.canvas_data).length > 0) {
+            if (data.canvas_data && data.canvas_data.length > 0) {
                 loadCanvasFromData(data.canvas_data, data.background_image);
             }
         })
@@ -638,4 +623,4 @@ function getCookie(name) {
     return cookieValue;
 }
 </script>
-{% endblock content %} 
+{% endblock content %}

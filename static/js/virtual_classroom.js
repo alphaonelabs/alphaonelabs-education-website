@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const centerX = element.x + element.width / 2;
         const centerY = element.y + element.height / 2;
         const distance = Math.sqrt(
-            Math.pow(charX - centerX, 2) + 
+            Math.pow(charX - centerX, 2) +
             Math.pow(charY - centerY, 2)
         );
         return distance < threshold;
@@ -29,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add interaction popup
     function showInteractionPopup(message) {
         hideInteractionPopup();
-        
+
         // Different message if user is seated
         if (state.isSeated) {
             if (message.includes('seat')) {
@@ -38,14 +38,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 message = 'Stand up first to interact with other elements';
             }
         }
-        
+
         const popup = document.createElement('div');
         popup.id = 'interaction-popup';
         popup.className = 'fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black bg-opacity-75 text-white px-4 py-2 rounded-lg z-50 pointer-events-none';
         popup.textContent = message;
-        
+
         document.body.appendChild(popup);
-        
+
         // Auto-hide after 3 seconds
         setTimeout(() => {
             hideInteractionPopup();
@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(data => {
             if (data.status === 'success') {
                 console.log('Customization saved successfully');
-                
+
                 // Add delay to ensure state persistence
                 setTimeout(() => {
                     // Update state and constants
@@ -247,16 +247,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // Update color inputs
         document.getElementById('wallColor').value = settings.wall_color;
         document.getElementById('wallColorValue').textContent = settings.wall_color;
-        
+
         document.getElementById('floorColor').value = settings.floor_color;
         document.getElementById('floorColorValue').textContent = settings.floor_color;
-        
+
         document.getElementById('deskColor').value = settings.desk_color;
         document.getElementById('deskColorValue').textContent = settings.desk_color;
-        
+
         document.getElementById('chairColor').value = settings.chair_color;
         document.getElementById('chairColorValue').textContent = settings.chair_color;
-        
+
         document.getElementById('boardColor').value = settings.board_color;
         document.getElementById('boardColorValue').textContent = settings.board_color;
 
@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
             numRowsInput.value = settings.number_of_rows;
             numRowsValue.textContent = settings.number_of_rows;
         }
-        
+
         const desksPerRowInput = document.getElementById('desksPerRow');
         const desksPerRowValue = document.getElementById('desksPerRowValue');
         if (desksPerRowInput && desksPerRowValue) {
@@ -296,7 +296,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function init() {
         // Initialize form with current settings FIRST
         updateFormValues(state.settings);
-        
+
         // Initialize COLORS and SETTINGS from state
         Object.assign(COLORS, {
             WALL: state.settings.wall_color,
@@ -365,7 +365,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Event listeners for controls
     toggleControls.addEventListener('click', () => {
         controlPanel.classList.toggle('hidden');
-        toggleControls.querySelector('span').textContent = 
+        toggleControls.querySelector('span').textContent =
             controlPanel.classList.contains('hidden') ? 'Show Controls' : 'Hide Controls';
     });
 
@@ -468,10 +468,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.querySelectorAll('.student-name').forEach(label => {
                         label.classList.add('hidden');
                     });
-                    
+
                     // Clear occupied seats tracking
                     interactionState.occupiedSeats.clear();
-                    
+
                     // Update seats and student list
                     data.participants.forEach(participant => {
                         if (participant.seat_id) {
@@ -490,13 +490,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         setTimeout(() => {
                             updateSeatLabel(data.seat_id, data.user.full_name);
                         }, 100);
-                        
+
                         // Mark seat as occupied
                         markSeatOccupied(data.seat_id);
-                        
+
                         // Show notification
                         showNotification(`${data.user.full_name} has taken seat ${data.seat_id}`, 'info');
-                        
+
                         // If this is the current user taking a seat, update their state
                         if (data.user.username === getCurrentUsername()) {
                             state.isSeated = true;
@@ -509,13 +509,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (data.seat_id) {
                         console.log('User left seat:', data.seat_id, data.user.full_name); // Debug log
                         clearSeatLabel(data.seat_id);
-                        
+
                         // Mark seat as available
                         markSeatAvailable(data.seat_id);
-                        
+
                         // Show notification
                         showNotification(`${data.user.full_name} has left seat ${data.seat_id}`, 'info');
-                        
+
                         // If this is the current user leaving a seat, update their state
                         if (data.user.username === getCurrentUsername()) {
                             state.isSeated = false;
@@ -534,7 +534,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     }
                     removeStudent(data.user);
-                    
+
                     // Show notification
                     showNotification(`${data.user.full_name} has left the classroom`, 'info');
                     break;
@@ -545,7 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         updateSeatLabel(data.seat_id, data.user.full_name);
                         markSeatOccupied(data.seat_id);
                     }
-                    
+
                     // Show notification
                     showNotification(`${data.user.full_name} has joined the classroom`, 'success');
                     break;
@@ -574,10 +574,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // Add function to update seat labels
     function updateSeatLabel(seatId, studentName) {
         console.log('Updating seat label for:', seatId, studentName); // Debug log
-        
+
         const nameLabel = document.querySelector(`[data-seat-id="${seatId}"]`);
         console.log('Found name label:', nameLabel); // Debug log
-        
+
         if (nameLabel) {
             nameLabel.textContent = studentName;
             nameLabel.classList.remove('hidden');
@@ -654,7 +654,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function showNotification(message, type = 'info') {
         const notification = document.createElement('div');
         let bgColorClass;
-        
+
         switch(type) {
             case 'warning':
                 bgColorClass = 'bg-yellow-600';
@@ -668,7 +668,7 @@ document.addEventListener('DOMContentLoaded', () => {
             default:
                 bgColorClass = 'bg-blue-600';
         }
-        
+
         notification.className = `fixed bottom-4 right-4 ${bgColorClass} text-white px-6 py-3 rounded-lg shadow-lg transform transition-all duration-500 opacity-0`;
         notification.textContent = message;
         document.body.appendChild(notification);
@@ -766,7 +766,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderCarpet() {
         if (!state.settings.has_carpet) return;
-        
+
         const carpet = document.createElement('div');
         carpet.className = 'absolute rounded-lg transition-all duration-300';
         carpet.style.cssText = `
@@ -835,13 +835,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const { number_of_rows, desks_per_row } = state.settings;
         const roomWidth = classroomContainer.clientWidth * 0.8;
         const roomDepth = classroomContainer.clientHeight * 0.8;
-        
+
         const startX = classroomContainer.clientWidth * 0.1;
         const startY = classroomContainer.clientHeight * 0.5;
-        
+
         const deskWidth = Math.min(80, roomWidth / desks_per_row);
         const deskDepth = Math.min(60, roomDepth / number_of_rows);
-        
+
         const spacingX = roomWidth / desks_per_row;
         const spacingY = roomDepth / number_of_rows;
 
@@ -931,7 +931,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
                     backdrop-filter: blur(2px);
                 `;
-                
+
                 // Append to classroom container instead of chair
                 classroomContainer.appendChild(nameLabel);
 
@@ -1044,8 +1044,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const bookshelf = document.createElement('div');
         bookshelf.className = 'absolute';
         bookshelf.style.cssText = `
-            right: 5%;
-            top: 15%;
+            right: 6%;
+            top: 24%;
             width: 100px;
             height: 150px;
             z-index: 7;
@@ -1221,12 +1221,10 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'left':
                 return `
                     <div class="absolute w-14 h-7 bg-[#8B4513] rounded-t-full top-0 left-1"></div>
-                    <div class="absolute w-3 h-8 bg-[#8B4513] rounded-l-full top-4 left-0"></div>
                 `;
             case 'right':
                 return `
                     <div class="absolute w-14 h-7 bg-[#8B4513] rounded-t-full top-0 left-1"></div>
-                    <div class="absolute w-3 h-8 bg-[#8B4513] rounded-r-full top-4 right-0"></div>
                 `;
             default:
                 return '';
@@ -1261,17 +1259,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function getCharacterBodyHTML() {
         const isMoving = state.character.isMoving;
         const walkFrame = state.character.walkFrame;
-        
+
         return `
             <div class="relative w-20 h-24 -mt-4">
                 <div class="w-16 h-16 bg-blue-600 rounded-md mx-auto ${isMoving ? 'animate-pulse' : ''}"
                      style="background-color: ${isMoving ? '#4169E1' : '#3457D1'}">
-                    <div class="absolute inset-x-0 top-0 h-4 bg-blue-700 rounded-t-md"></div>
-                    <div class="absolute inset-x-4 top-4 h-8 w-8 bg-blue-500 rounded-md"></div>
                 </div>
                 ${getCharacterArmsHTML()}
                 ${getCharacterLegsHTML()}
-                <div class="absolute bottom-0 w-12 h-3 bg-black opacity-30 rounded-full -z-10 transform translate-y-2"></div>
+                <div class="absolute bottom-0 w-16 h-12 bg-black opacity-30 -z-10 rounded-md transform translate-y-[-3px] translate-x-[9px]"></div>
             </div>
         `;
     }
@@ -1297,7 +1293,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getCharacterLegsHTML() {
         const isMoving = state.character.isMoving;
         const walkFrame = state.character.walkFrame;
-        
+
         return `
             <div class="absolute bottom-0 left-4 w-12 h-2 bg-transparent flex justify-between">
                 <div class="w-4 h-10 bg-[#1F456E] rounded-md transform origin-top ${
@@ -1502,4 +1498,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Call init directly
     init();
-}); 
+});

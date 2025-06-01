@@ -25,7 +25,7 @@ def signal_handler(sig, frame):
 if __name__ == "__main__":
     # Register signal handler
     signal.signal(signal.SIGINT, signal_handler)
-    
+
     # Configure and run server
     config = uvicorn.Config(
         "web.asgi:application",
