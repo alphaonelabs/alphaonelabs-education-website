@@ -412,7 +412,7 @@ function clearWhiteboard() {
     if (confirm('{% trans "Are you sure you want to clear the whiteboard? This action cannot be undone." %}')) {
         // Clear the canvas locally
         clearCanvas();
-        
+
         // Broadcast the clear action to other users via WebSocket
         broadcastClearAction();
     }

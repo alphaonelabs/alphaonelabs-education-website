@@ -154,12 +154,12 @@ def get_whiteboard_data(request, classroom_id):
         # Get whiteboard
         try:
             whiteboard = VirtualClassroomWhiteboard.objects.get(classroom=classroom)
-            
+
             # Extract canvas data from the wrapper format
             canvas_data = whiteboard.canvas_data
             if isinstance(canvas_data, dict) and 'data' in canvas_data:
                 canvas_data = canvas_data['data']  # Extract the actual base64 string
-            
+
             return JsonResponse({
                 'canvas_data': canvas_data,
                 'background_image': whiteboard.background_image or '',

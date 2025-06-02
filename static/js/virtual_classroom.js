@@ -2,6 +2,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize Lucide icons
     lucide.createIcons();
 
+    // Cache for container rect to avoid layout recalculations
+    let cachedRect = null;
+    
+    function refreshContainerRect() {
+        cachedRect = classroomContainer.getBoundingClientRect();
+    }
+
     // Add interaction state
     const interactionState = {
         nearInteractive: false,
@@ -216,27 +223,24 @@ document.addEventListener('DOMContentLoaded', () => {
             if (data.status === 'success') {
                 console.log('Customization saved successfully');
 
-                // Add delay to ensure state persistence
-                setTimeout(() => {
-                    // Update state and constants
-                    state.settings = settings;
-                    COLORS.WALL = settings.wall_color;
-                    COLORS.FLOOR = settings.floor_color;
-                    COLORS.DESK = settings.desk_color;
-                    COLORS.CHAIR = settings.chair_color;
-                    COLORS.BOARD = settings.board_color;
+                // Update state and constants
+                state.settings = settings;
+                COLORS.WALL = settings.wall_color;
+                COLORS.FLOOR = settings.floor_color;
+                COLORS.DESK = settings.desk_color;
+                COLORS.CHAIR = settings.chair_color;
+                COLORS.BOARD = settings.board_color;
 
-                    SETTINGS.NUM_ROWS = settings.number_of_rows;
-                    SETTINGS.DESKS_PER_ROW = settings.desks_per_row;
-                    SETTINGS.HAS_PLANTS = settings.has_plants;
-                    SETTINGS.HAS_WINDOWS = settings.has_windows;
-                    SETTINGS.HAS_BOOKSHELF = settings.has_bookshelf;
-                    SETTINGS.HAS_CLOCK = settings.has_clock;
-                    SETTINGS.HAS_CARPET = settings.has_carpet;
+                SETTINGS.NUM_ROWS = settings.number_of_rows;
+                SETTINGS.DESKS_PER_ROW = settings.desks_per_row;
+                SETTINGS.HAS_PLANTS = settings.has_plants;
+                SETTINGS.HAS_WINDOWS = settings.has_windows;
+                SETTINGS.HAS_BOOKSHELF = settings.has_bookshelf;
+                SETTINGS.HAS_CLOCK = settings.has_clock;
+                SETTINGS.HAS_CARPET = settings.has_carpet;
 
-                    // Re-render the classroom with updated settings
-                    renderClassroom();
-                }, 100);
+                // Re-render the classroom with updated settings
+                renderClassroom();
             }
         })
         .catch(error => console.error('Error saving customization:', error));
@@ -316,40 +320,6 @@ document.addEventListener('DOMContentLoaded', () => {
             HAS_CARPET: state.settings.has_carpet
         });
 
-        // Add event listeners for all inputs
-        const colorInputs = ['wallColor', 'floorColor', 'deskColor', 'chairColor', 'boardColor'];
-        colorInputs.forEach(id => {
-            const input = document.getElementById(id);
-            if (input) {
-                input.addEventListener('change', () => {
-                    const newSettings = loadSettings();
-                    saveSettings(newSettings);
-                });
-            }
-        });
-
-        const rangeInputs = ['numRows', 'desksPerRow'];
-        rangeInputs.forEach(id => {
-            const input = document.getElementById(id);
-            if (input) {
-                input.addEventListener('change', () => {
-                    const newSettings = loadSettings();
-                    saveSettings(newSettings);
-                });
-            }
-        });
-
-        const checkboxInputs = ['hasPlants', 'hasWindows', 'hasBookshelf', 'hasClock', 'hasCarpet'];
-        checkboxInputs.forEach(id => {
-            const input = document.getElementById(id);
-            if (input) {
-                input.addEventListener('change', () => {
-                    const newSettings = loadSettings();
-                    saveSettings(newSettings);
-                });
-            }
-        });
-
         // Initial render
         renderClassroom();
 
@@ -361,6 +331,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const classroomContainer = document.getElementById('classroomContainer');
     const controlPanel = document.getElementById('controlPanel');
     const toggleControls = document.getElementById('toggleControls');
+
+    // Initialize cached rect and set up resize listener
+    refreshContainerRect();
+    window.addEventListener('resize', refreshContainerRect);
 
     // Event listeners for controls
     toggleControls.addEventListener('click', () => {
@@ -480,7 +454,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             markSeatOccupied(participant.seat_id);
                         }
                     });
-                    updateStudentsList(data.participants);
+                    
+                    updateStudentsList(data.participants)
                     break;
 
                 case 'seat_updated':
@@ -525,7 +500,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     break;
 
                 case 'participant_left':
-                    const participant = document.querySelector(`[data-username="${data.user.username}"]`);
+                    // Use a safer approach to find the participant element
+                    const participants = document.querySelectorAll('[data-username]');
+                    const participant = Array.from(participants).find(el => 
+                        el.getAttribute('data-username') === data.user.username
+                    );
+                    
                     if (participant) {
                         const seatId = participant.querySelector('.text-sm')?.textContent?.replace('Seat: ', '');
                         if (seatId) {
@@ -619,18 +599,39 @@ document.addEventListener('DOMContentLoaded', () => {
         studentElement.className = 'flex items-center space-x-3 p-3 bg-white rounded-lg shadow-sm border border-gray-100 mb-2';
         studentElement.setAttribute('data-username', user.username);
 
-        studentElement.innerHTML = `
-            <div class="flex-shrink-0">
-                <div class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <span class="text-blue-600 font-medium">${user.full_name.charAt(0)}</span>
-                </div>
-            </div>
-            <div class="flex-1">
-                <span class="text-gray-900">${user.full_name}</span>
-                ${seatId ? `<span class="text-sm text-gray-500 block">Seat: ${seatId}</span>` : ''}
-            </div>
-        `;
+        // Create avatar container
+        const avatarContainer = document.createElement('div');
+        avatarContainer.className = 'flex-shrink-0';
+        
+        const avatar = document.createElement('div');
+        avatar.className = 'h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center';
+        
+        const avatarText = document.createElement('span');
+        avatarText.className = 'text-blue-600 font-medium';
+        avatarText.textContent = user.full_name.charAt(0); // Safe: textContent escapes HTML
+        
+        avatar.appendChild(avatarText);
+        avatarContainer.appendChild(avatar);
 
+        // Create info container
+        const infoContainer = document.createElement('div');
+        infoContainer.className = 'flex-1';
+        
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'text-gray-900';
+        nameSpan.textContent = user.full_name; // Safe: textContent escapes HTML
+        
+        infoContainer.appendChild(nameSpan);
+        
+        if (seatId) {
+            const seatSpan = document.createElement('span');
+            seatSpan.className = 'text-sm text-gray-500 block';
+            seatSpan.textContent = `Seat: ${seatId}`; // Safe: textContent escapes HTML
+            infoContainer.appendChild(seatSpan);
+        }
+
+        studentElement.appendChild(avatarContainer);
+        studentElement.appendChild(infoContainer);
         studentsList.appendChild(studentElement);
     }
 
@@ -638,7 +639,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const studentsList = document.getElementById('studentsList');
         if (!studentsList) return;
 
-        const studentElement = studentsList.querySelector(`[data-username="${user.username}"]`);
+        // Use a safer approach to find the student element
+        const students = studentsList.querySelectorAll('[data-username]');
+        const studentElement = Array.from(students).find(el => 
+            el.getAttribute('data-username') === user.username
+        );
+        
         if (studentElement) {
             studentElement.remove();
         }
@@ -1282,9 +1288,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="absolute right-0 top-2 w-4 h-10 bg-[#FFD9B3] rounded-full transform ${walkFrame % 2 === 0 ? '-rotate-6' : 'rotate-6'}"></div>
                 `;
             case 'left':
-                return '<div class="absolute left-1 top-2 w-4 h-10 bg-[#FFD9B3] rounded-full transform ${walkFrame % 2 === 0 ? "translate-y-1" : "-translate-y-1"}"></div>';
+                return `<div class="absolute left-1 top-2 w-4 h-10 bg-[#FFD9B3] rounded-full transform ${walkFrame % 2 === 0 ? "translate-y-1" : "-translate-y-1"}"></div>`;
             case 'right':
-                return '<div class="absolute right-1 top-2 w-4 h-10 bg-[#FFD9B3] rounded-full transform ${walkFrame % 2 === 0 ? "translate-y-1" : "-translate-y-1"}"></div>';
+                return `<div class="absolute right-1 top-2 w-4 h-10 bg-[#FFD9B3] rounded-full transform ${walkFrame % 2 === 0 ? "translate-y-1" : "-translate-y-1"}"></div>`;
             default:
                 return '';
         }
@@ -1345,7 +1351,8 @@ document.addEventListener('DOMContentLoaded', () => {
         newVx *= friction;
         newVy *= friction;
 
-        const containerRect = classroomContainer.getBoundingClientRect();
+        // Use cached rect instead of querying getBoundingClientRect every frame
+        const containerRect = cachedRect;
         const paddingX = 40;
         const paddingY = 40;
 
