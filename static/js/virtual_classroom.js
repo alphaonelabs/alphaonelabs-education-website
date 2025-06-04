@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Cache for container rect to avoid layout recalculations
     let cachedRect = null;
-    
+
     function refreshContainerRect() {
         cachedRect = classroomContainer.getBoundingClientRect();
     }
@@ -454,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             markSeatOccupied(participant.seat_id);
                         }
                     });
-                    
+
                     updateStudentsList(data.participants)
                     break;
 
@@ -502,10 +502,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'participant_left':
                     // Use a safer approach to find the participant element
                     const participants = document.querySelectorAll('[data-username]');
-                    const participant = Array.from(participants).find(el => 
+                    const participant = Array.from(participants).find(el =>
                         el.getAttribute('data-username') === data.user.username
                     );
-                    
+
                     if (participant) {
                         const seatId = participant.querySelector('.text-sm')?.textContent?.replace('Seat: ', '');
                         if (seatId) {
@@ -602,27 +602,27 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create avatar container
         const avatarContainer = document.createElement('div');
         avatarContainer.className = 'flex-shrink-0';
-        
+
         const avatar = document.createElement('div');
         avatar.className = 'h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center';
-        
+
         const avatarText = document.createElement('span');
         avatarText.className = 'text-blue-600 font-medium';
         avatarText.textContent = user.full_name.charAt(0); // Safe: textContent escapes HTML
-        
+
         avatar.appendChild(avatarText);
         avatarContainer.appendChild(avatar);
 
         // Create info container
         const infoContainer = document.createElement('div');
         infoContainer.className = 'flex-1';
-        
+
         const nameSpan = document.createElement('span');
         nameSpan.className = 'text-gray-900';
         nameSpan.textContent = user.full_name; // Safe: textContent escapes HTML
-        
+
         infoContainer.appendChild(nameSpan);
-        
+
         if (seatId) {
             const seatSpan = document.createElement('span');
             seatSpan.className = 'text-sm text-gray-500 block';
@@ -641,10 +641,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Use a safer approach to find the student element
         const students = studentsList.querySelectorAll('[data-username]');
-        const studentElement = Array.from(students).find(el => 
+        const studentElement = Array.from(students).find(el =>
             el.getAttribute('data-username') === user.username
         );
-        
+
         if (studentElement) {
             studentElement.remove();
         }

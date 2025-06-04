@@ -8,7 +8,7 @@
     <div class="max-w-2xl mx-auto">
         <div class="flex items-center justify-between mb-8">
             <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200">Customize Virtual Classroom</h1>
-            <a href="{% url 'virtual_classroom_detail' classroom.id %}" 
+            <a href="{% url 'virtual_classroom_detail' classroom.id %}"
                class="text-gray-600 hover:text-gray-800 dark:text-gray-400">
                 <i class="fas fa-arrow-left mr-2"></i>Back to Classroom
             </a>
@@ -17,7 +17,7 @@
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
             <form method="post" class="space-y-8">
                 {% csrf_token %}
-                
+
                 <!-- Color Settings -->
                 <div class="space-y-6">
                     <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Colors</h2>
@@ -25,7 +25,7 @@
                         {% for field in form %}
                             {% if 'color' in field.name %}
                             <div class="space-y-2">
-                                <label for="{{ field.id_for_label }}" 
+                                <label for="{{ field.id_for_label }}"
                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                     {{ field.label }}
                                 </label>
@@ -48,7 +48,7 @@
                         {% for field in form %}
                             {% if 'rows' in field.name or 'per_row' in field.name %}
                             <div class="space-y-2">
-                                <label for="{{ field.id_for_label }}" 
+                                <label for="{{ field.id_for_label }}"
                                        class="block text-sm font-medium text-gray-700 dark:text-gray-300">
                                     {{ field.label }}
                                 </label>
@@ -72,7 +72,7 @@
                             {% if 'has_' in field.name %}
                             <div class="flex items-center space-x-3">
                                 {{ field }}
-                                <label for="{{ field.id_for_label }}" 
+                                <label for="{{ field.id_for_label }}"
                                        class="text-sm text-gray-700 dark:text-gray-300">
                                     {{ field.label }}
                                 </label>
@@ -88,11 +88,11 @@
                 </div>
 
                 <div class="flex justify-end space-x-4 pt-6">
-                    <a href="{% url 'virtual_classroom_detail' classroom.id %}" 
+                    <a href="{% url 'virtual_classroom_detail' classroom.id %}"
                        class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200">
                         Cancel
                     </a>
-                    <button type="submit" 
+                    <button type="submit"
                             class="bg-teal-700 hover:bg-teal-800 text-white px-6 py-2 rounded-lg transition duration-200">
                         Save Customization
                     </button>
@@ -101,4 +101,4 @@
         </div>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}
