@@ -1,10 +1,10 @@
+import json
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.contrib import messages
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-import json
 from .models import VirtualClassroom, VirtualClassroomWhiteboard, Course
 
 
@@ -124,9 +124,13 @@ def save_whiteboard_data(request, classroom_id):
             'message': 'Whiteboard saved successfully'
         })
 
-    except Exception as e:
+    except json.JSONDecodeError:
         return JsonResponse({
-            'error': str(e)
+            'error': 'Invalid request data', 
+        }, status=400) 
+    except Exception: 
+        return JsonResponse({ 
+             'error': 'An error occurred while saving the whiteboard',
         }, status=500)
 
 
@@ -174,9 +178,9 @@ def get_whiteboard_data(request, classroom_id):
                 'last_updated_by': None
             })
 
-    except Exception as e:
+    except Exception:
         return JsonResponse({
-            'error': str(e)
+            'error': 'An error occurred while retrieving whiteboard data',
         }, status=500)
 
 

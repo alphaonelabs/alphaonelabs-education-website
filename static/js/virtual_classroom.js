@@ -108,10 +108,10 @@ document.addEventListener('DOMContentLoaded', () => {
                                 redirectUrl = `/whiteboard/${classroomId}/`;
                                 break;
                             case 'bookshelf':
-                                redirectUrl = '/classroom/library';
+                                redirectUrl = `/virtual-classroom/${classroomId}/library/`;
                                 break;
                             case 'teacherDesk':
-                                redirectUrl = '/classroom/teacher-resources';
+                                redirectUrl = `/virtual-classroom/${classroomId}/teacher-resources/`;
                                 break;
                         }
                         if (redirectUrl) {

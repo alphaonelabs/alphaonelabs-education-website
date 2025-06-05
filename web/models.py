@@ -3058,11 +3058,11 @@ class VirtualClassroom(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     max_students = models.PositiveIntegerField(default=30)
 
-    def __str__(self):
-        return f"{self.name} - {self.teacher.username}"
-
     class Meta:
         ordering = ['-created_at']
+
+    def __str__(self) -> str:
+        return f"{self.name} - {self.teacher.username}"
 
 class VirtualClassroomCustomization(models.Model):
     """Model for storing virtual classroom customization settings."""

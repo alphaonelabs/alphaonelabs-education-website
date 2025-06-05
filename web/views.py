@@ -4673,8 +4673,6 @@ def virtual_classroom_create(request):
 
             # Create default customization
             customization = VirtualClassroomCustomization.objects.create(classroom=classroom)
-            classroom.customization = customization
-            classroom.save()
 
             messages.success(request, 'Virtual classroom created successfully!')
             return redirect('virtual_classroom_customize', classroom_id=classroom.id)
@@ -4792,25 +4790,88 @@ def virtual_classroom_delete(request, classroom_id):
     })
 
 @login_required
-def classroom_blackboard(request):
+def classroom_blackboard(request, classroom_id):
     """View for the classroom blackboard interaction."""
-    return render(request, 'virtual_classroom/blackboard.html')
+    classroom = get_object_or_404(VirtualClassroom, id=classroom_id)
+    
+    # Check if user is teacher or enrolled student
+    is_teacher = request.user == classroom.teacher
+    is_enrolled = False
+    if classroom.course:
+        is_enrolled = classroom.course.enrollments.filter(student=request.user, status="approved").exists()
+    
+    if not (is_teacher or is_enrolled):
+        messages.error(request, "You do not have access to this virtual classroom.")
+        return redirect("virtual_classroom_list")
+    
+    return render(request, 'virtual_classroom/blackboard.html', {
+        'classroom': classroom,
+        'is_teacher': is_teacher,
+        'is_enrolled': is_enrolled
+    })
 
 @login_required
-def classroom_library(request):
+def classroom_library(request, classroom_id):
     """View for the classroom library/bookshelf interaction."""
-    return render(request, 'virtual_classroom/library.html')
+    classroom = get_object_or_404(VirtualClassroom, id=classroom_id)
+    
+    # Check if user is teacher or enrolled student
+    is_teacher = request.user == classroom.teacher
+    is_enrolled = False
+    if classroom.course:
+        is_enrolled = classroom.course.enrollments.filter(student=request.user, status="approved").exists()
+    
+    if not (is_teacher or is_enrolled):
+        messages.error(request, "You do not have access to this virtual classroom.")
+        return redirect("virtual_classroom_list")
+    
+    return render(request, 'virtual_classroom/library.html', {
+        'classroom': classroom,
+        'is_teacher': is_teacher,
+        'is_enrolled': is_enrolled
+    })
 
 @login_required
-def classroom_teacher_resources(request):
+def classroom_teacher_resources(request, classroom_id):
     """View for the teacher's desk resources."""
-    return render(request, 'virtual_classroom/teacher_resources.html')
+    classroom = get_object_or_404(VirtualClassroom, id=classroom_id)
+    
+    # Check if user is teacher or enrolled student
+    is_teacher = request.user == classroom.teacher
+    is_enrolled = False
+    if classroom.course:
+        is_enrolled = classroom.course.enrollments.filter(student=request.user, status="approved").exists()
+    
+    if not (is_teacher or is_enrolled):
+        messages.error(request, "You do not have access to this virtual classroom.")
+        return redirect("virtual_classroom_list")
+    
+    return render(request, 'virtual_classroom/teacher_resources.html', {
+        'classroom': classroom,
+        'is_teacher': is_teacher,
+        'is_enrolled': is_enrolled
+    })
 
 @login_required
-def classroom_student_desk(request, seat_id):
+def classroom_student_desk(request, classroom_id, seat_id):
     """View for individual student desk interaction."""
+    classroom = get_object_or_404(VirtualClassroom, id=classroom_id)
+    
+    # Check if user is teacher or enrolled student
+    is_teacher = request.user == classroom.teacher
+    is_enrolled = False
+    if classroom.course:
+        is_enrolled = classroom.course.enrollments.filter(student=request.user, status="approved").exists()
+    
+    if not (is_teacher or is_enrolled):
+        messages.error(request, "You do not have access to this virtual classroom.")
+        return redirect("virtual_classroom_list")
+    
     return render(request, 'virtual_classroom/student_desk.html', {
-        'seat_id': seat_id
+        'classroom': classroom,
+        'seat_id': seat_id,
+        'is_teacher': is_teacher,
+        'is_enrolled': is_enrolled
     })
 
 
