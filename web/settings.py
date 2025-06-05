@@ -391,13 +391,13 @@ GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
 # Channel Layers Configuration
 CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": ( 
-            "channels_redis.core.RedisChannelLayer"
-            if not DEBUG  
-            else "channels.layers.InMemoryChannelLayer"
+        "BACKEND": ("channels_redis.core.RedisChannelLayer" if not DEBUG else "channels.layers.InMemoryChannelLayer"),
+        "CONFIG": (
+            {
+                "hosts": [env.str("REDIS_URL", default="redis://localhost:6379")],
+            }
+            if not DEBUG
+            else {}
         ),
-        "CONFIG": {
-            "hosts": [env.str("REDIS_URL", default="redis://localhost:6379")],
-        } if not DEBUG else {},
     }
 }

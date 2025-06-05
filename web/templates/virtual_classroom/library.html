@@ -1,37 +1,38 @@
 {% extends 'base.html' %}
+
 {% load i18n %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
+  <div class="container mx-auto px-4 py-8">
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-        <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">{% trans "Classroom Library" %}</h1>
-        
-        <!-- Library Content -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- Book Cards -->
-            {% for i in "123456"|make_list %}
-            <div class="bg-white dark:bg-gray-700 rounded-lg shadow-md p-4 hover:shadow-lg transition duration-200">
-                <div class="aspect-w-2 aspect-h-3 bg-gray-200 dark:bg-gray-600 rounded-md mb-4">
-                    <div class="flex items-center justify-center">
-                        <i data-lucide="book" class="w-12 h-12 text-gray-400"></i>
-                    </div>
-                </div>
-                <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">{% trans "Book Title" %} {{ i }}</h3>
-                <p class="text-gray-600 dark:text-gray-300 text-sm mb-4">{% trans "Brief description of the book and its contents." %}</p>
-                <button class="w-full bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200">
-                    {% trans "Read Book" %}
-                </button>
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">{% trans "Classroom Library" %}</h1>
+      <!-- Library Content -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Book Cards -->
+        {% for i in "123456"|make_list %}
+          <div class="bg-white dark:bg-gray-700 rounded-lg shadow-md p-4 hover:shadow-lg transition duration-200">
+            <div class="aspect-w-2 aspect-h-3 bg-gray-200 dark:bg-gray-600 rounded-md mb-4">
+              <div class="flex items-center justify-center">
+                <i data-lucide="book" class="w-12 h-12 text-gray-400"></i>
+              </div>
             </div>
-            {% endfor %}
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="flex justify-between items-center mt-8">
-            <a href="javascript:history.back()" 
-               class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition duration-200">
-                {% trans "Back to Classroom" %}
-            </a>
-        </div>
+            <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">{% trans "Book Title" %} {{ i }}</h3>
+            <p class="text-gray-600 dark:text-gray-300 text-sm mb-4">
+              {% trans "Brief description of the book and its contents." %}
+            </p>
+            <button class="w-full bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200">
+              {% trans "Read Book" %}
+            </button>
+          </div>
+        {% endfor %}
+      </div>
+      <!-- Action Buttons -->
+      <div class="flex justify-between items-center mt-8">
+        <a href="javascript:history.back()"
+           class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition duration-200">
+          {% trans "Back to Classroom" %}
+        </a>
+      </div>
     </div>
-</div>
-{% endblock %} 
+  </div>
+{% endblock %}

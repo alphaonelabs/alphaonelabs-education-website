@@ -3050,23 +3050,28 @@ class Response(models.Model):
 
 class VirtualClassroom(models.Model):
     """Model for storing virtual classroom instances."""
+
     name = models.CharField(max_length=200)
     teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name="virtual_classrooms")
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="virtual_classrooms", null=True, blank=True)
+    course = models.ForeignKey(
+        Course, on_delete=models.CASCADE, related_name="virtual_classrooms", null=True, blank=True
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     max_students = models.PositiveIntegerField(default=30)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-created_at"]
 
     def __str__(self) -> str:
         return f"{self.name} - {self.teacher.username}"
 
+
 class VirtualClassroomCustomization(models.Model):
     """Model for storing virtual classroom customization settings."""
-    classroom = models.OneToOneField(VirtualClassroom, on_delete=models.CASCADE, related_name='customization_settings')
+
+    classroom = models.OneToOneField(VirtualClassroom, on_delete=models.CASCADE, related_name="customization_settings")
     wall_color = models.CharField(max_length=7, default="#E6E2D7")  # Hex color
     floor_color = models.CharField(max_length=7, default="#C7B299")  # Hex color
     desk_color = models.CharField(max_length=7, default="#8B4513")  # Hex color
@@ -3089,34 +3094,38 @@ class VirtualClassroomCustomization(models.Model):
         verbose_name = "Virtual Classroom Customization"
         verbose_name_plural = "Virtual Classroom Customizations"
 
+
 class VirtualClassroomParticipant(models.Model):
     """Model for tracking active participants in a virtual classroom."""
+
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     classroom = models.ForeignKey(VirtualClassroom, on_delete=models.CASCADE)
     joined_at = models.DateTimeField(auto_now_add=True)
     last_active = models.DateTimeField(auto_now=True)
-    seat_id = models.CharField(max_length=20, null=True, blank=True)
+    seat_id = models.CharField(max_length=20, blank=True, default="")
 
     class Meta:
-        unique_together = ('classroom', 'user')
+        unique_together = ("classroom", "user")
 
     def __str__(self):
         return f"{self.user.username} in {self.classroom.name}"
 
     def to_dict(self):
         return {
-            'username': self.user.username,
-            'full_name': f"{self.user.first_name} {self.user.last_name}",
-            'joined_at': self.joined_at.isoformat(),
-            'seat_id': self.seat_id,
-            'last_active': self.last_active.isoformat()
+            "username": self.user.username,
+            "full_name": f"{self.user.first_name} {self.user.last_name}",
+            "joined_at": self.joined_at.isoformat(),
+            "seat_id": self.seat_id,
+            "last_active": self.last_active.isoformat(),
         }
+
 
 class VirtualClassroomWhiteboard(models.Model):
     """Model to store whiteboard data for each virtual classroom"""
-    classroom = models.OneToOneField(VirtualClassroom, on_delete=models.CASCADE, related_name='whiteboard')
+
+    classroom = models.OneToOneField(VirtualClassroom, on_delete=models.CASCADE, related_name="whiteboard")
     canvas_data = models.JSONField(default=dict, blank=True)
-    background_image = models.TextField(blank=True, null=True)
+    background_image = models.TextField(blank=True, default="")
     last_updated = models.DateTimeField(auto_now=True)
     created_at = models.DateTimeField(default=timezone.now)
     last_updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
@@ -3125,6 +3134,6 @@ class VirtualClassroomWhiteboard(models.Model):
         return f"Whiteboard for {self.classroom.name}"
 
     class Meta:
-        ordering = ['-last_updated']
+        ordering = ["-last_updated"]
         verbose_name = "Virtual Classroom Whiteboard"
         verbose_name_plural = "Virtual Classroom Whiteboards"
