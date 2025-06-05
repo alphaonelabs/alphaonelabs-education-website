@@ -112,19 +112,10 @@
   <script>
       // WebSocket and Canvas Configuration
       const roomName = '{{ room_name }}';
-      const classroomId = {
-          {
-              classroom_id
-          }
-      };
-      const isTeacher = {
-          {
-              is_teacher | yesno: "true,false"
-          }
-      };
+      const classroomId = {{ classroom_id }};
+      const isTeacher = {{ is_teacher|yesno:"true,false" }};
       const wsScheme = window.location.protocol === 'https:' ? 'wss' : 'ws';
       const wsPath = `${wsScheme}://${window.location.host}/ws/whiteboard/${roomName}/`;
-
       // Canvas setup
       const canvas = document.getElementById('whiteboard');
       const ctx = canvas.getContext('2d');
