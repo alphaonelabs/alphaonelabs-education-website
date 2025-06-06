@@ -325,9 +325,9 @@ def index(request):
     # Get top latest 3 leaderboard users
     try:
         top_leaderboard_users, user_rank = get_leaderboard(request.user, period=None, limit=3)
-    except Exception as e:
+    except Exception:
         logger = logging.getLogger(__name__)
-        logger.error(f"Error getting leaderboard data: {e}")
+        logger.error("Error getting leaderboard data", exc_info=True)
         top_leaderboard_users = []
 
     # Get signup form if needed
@@ -1015,10 +1015,10 @@ def github_update(request):
         os.utime(settings.PA_WSGI, (current_time, current_time))
         send_slack_message("Repository updated successfully")
         return HttpResponse("Repository updated successfully")
-    except Exception as e:
-        print(f"Deploy error: {e}")
-        send_slack_message(f"Deploy error: {e}")
-        return HttpResponse("Deploy error see logs.")
+    except Exception:
+        logger.error("Deploy error occurred", exc_info=True)
+        send_slack_message("Deploy error occurred - check logs for details")
+        return HttpResponse("Deploy error occurred. Please check logs.", status=500)
 
 
 def send_slack_message(message):
@@ -1031,8 +1031,8 @@ def send_slack_message(message):
     try:
         response = requests.post(webhook_url, json=payload)
         response.raise_for_status()  # Raise exception for bad status codes
-    except Exception as e:
-        print(f"Failed to send Slack message: {e}")
+    except Exception:
+        logger.error("Failed to send Slack message", exc_info=True)
 
 
 def get_wsgi_last_modified_time():
@@ -1523,8 +1523,12 @@ def create_payment_intent(request, slug):
             },
         )
         return JsonResponse({"clientSecret": intent.client_secret})
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=403)
+    except stripe.error.StripeError:
+        logger.error("Stripe error occurred", exc_info=True)
+        return JsonResponse({"error": "Payment processing error. Please try again."}, status=400)
+    except Exception:
+        logger.error("Unexpected error in payment intent creation", exc_info=True)
+        return JsonResponse({"error": "An unexpected error occurred. Please try again."}, status=500)
 
 
 @csrf_exempt
