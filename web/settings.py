@@ -115,6 +115,7 @@ INSTALLED_APPS = [
     "allauth.account",
     "captcha",
     "markdownx",
+    "channels",
     "web",
 ]
 
@@ -145,7 +146,7 @@ ROOT_URLCONF = "web.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates", BASE_DIR / "web/templates"],
+        "DIRS": [BASE_DIR / "web/templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -203,7 +204,7 @@ SITE_DOMAIN = "alphaonelabs.com"
 # Allauth settings
 ACCOUNT_EMAIL_REQUIRED = True
 ACCOUNT_USERNAME_REQUIRED = False  # Since we're using email authentication
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"  # Require email verification
+ACCOUNT_EMAIL_VERIFICATION = "optional"  # Require email verification
 ACCOUNT_LOGIN_METHODS = {"email"}
 ACCOUNT_UNIQUE_EMAIL = True
 ACCOUNT_PREVENT_ENUMERATION = True  # Prevent user enumeration
@@ -386,3 +387,17 @@ USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+
+# Channel Layers Configuration
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": ("channels_redis.core.RedisChannelLayer" if not DEBUG else "channels.layers.InMemoryChannelLayer"),
+        "CONFIG": (
+            {
+                "hosts": [env.str("REDIS_URL", default="redis://localhost:6379")],
+            }
+            if not DEBUG
+            else {}
+        ),
+    }
+}

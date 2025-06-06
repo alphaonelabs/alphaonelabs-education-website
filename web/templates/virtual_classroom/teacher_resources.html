@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% load i18n %}
+
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">{% trans "Teacher's Resources" %}</h1>
+      <!-- Resources Content -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Lesson Plans -->
+        <div class="bg-white dark:bg-gray-700 rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+            <i data-lucide="book-open" class="inline-block w-6 h-6 mr-2"></i>
+            {% trans "Lesson Plans" %}
+          </h2>
+          <ul class="space-y-3">
+            <li class="flex items-center text-gray-600 dark:text-gray-300">
+              <i data-lucide="file-text" class="w-5 h-5 mr-2"></i>
+              {% trans "Today's Lesson Plan" %}
+            </li>
+            <li class="flex items-center text-gray-600 dark:text-gray-300">
+              <i data-lucide="calendar" class="w-5 h-5 mr-2"></i>
+              {% trans "Weekly Schedule" %}
+            </li>
+            <li class="flex items-center text-gray-600 dark:text-gray-300">
+              <i data-lucide="list-checks" class="w-5 h-5 mr-2"></i>
+              {% trans "Assessment Criteria" %}
+            </li>
+          </ul>
+        </div>
+        <!-- Teaching Materials -->
+        <div class="bg-white dark:bg-gray-700 rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+            <i data-lucide="folder" class="inline-block w-6 h-6 mr-2"></i>
+            {% trans "Teaching Materials" %}
+          </h2>
+          <ul class="space-y-3">
+            <li class="flex items-center text-gray-600 dark:text-gray-300">
+              <i data-lucide="presentation" class="w-5 h-5 mr-2"></i>
+              {% trans "Presentations" %}
+            </li>
+            <li class="flex items-center text-gray-600 dark:text-gray-300">
+              <i data-lucide="file" class="w-5 h-5 mr-2"></i>
+              {% trans "Worksheets" %}
+            </li>
+            <li class="flex items-center text-gray-600 dark:text-gray-300">
+              <i data-lucide="video" class="w-5 h-5 mr-2"></i>
+              {% trans "Educational Videos" %}
+            </li>
+          </ul>
+        </div>
+      </div>
+      <!-- Action Buttons -->
+      <div class="flex justify-between items-center">
+        <a href="javascript:history.back()"
+           class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition duration-200">
+          {% trans "Back to Classroom" %}
+        </a>
+      </div>
+    </div>
+  </div>
+{% endblock %}
