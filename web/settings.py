@@ -116,6 +116,7 @@ INSTALLED_APPS = [
     "captcha",
     "markdownx",
     "web",
+    "web.virtual_lab.apps.VirtualLabConfig",
 ]
 
 if DEBUG and not TESTING:

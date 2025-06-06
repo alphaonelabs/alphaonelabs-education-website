@@ -1,0 +1,49 @@
+{# web/virtual_lab/templates/virtual_lab/home.html #}
+{% extends "virtual_lab/layout.html" %}
+
+{% load static %}
+
+{% block virtual_lab_content %}
+  <div class="max-w-5xl mx-auto px-6 py-8">
+    <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+      <div class="px-8 py-6">
+        <h2 class="text-4xl font-extrabold text-gray-800 mb-4">Welcome to the Alpha Science Lab</h2>
+        <p class="text-gray-600 mb-8">
+          Dive into interactive experiments and deepen your understanding of fundamental concepts. Click on any card below to begin.
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <!-- Pendulum Motion Card -->
+          <a href="{% url 'virtual_lab:physics_pendulum' %}"
+             class="block bg-gradient-to-b from-blue-50 to-white border border-blue-200 rounded-lg p-6 shadow hover:shadow-md transition">
+            <h3 class="text-2xl font-semibold text-blue-700 mb-2">Pendulum Motion</h3>
+            <p class="text-blue-600">Visualize how length affects a pendulum's period.</p>
+          </a>
+          <!-- Projectile Motion Card -->
+          <a href="{% url 'virtual_lab:physics_projectile' %}"
+             class="block bg-gradient-to-b from-green-50 to-white border border-green-200 rounded-lg p-6 shadow hover:shadow-md transition">
+            <h3 class="text-2xl font-semibold text-green-700 mb-2">Projectile Motion</h3>
+            <p class="text-green-600">Launch a projectile and observe its real‐time trajectory.</p>
+          </a>
+          <!-- Inclined Plane Card -->
+          <a href="{% url 'virtual_lab:physics_inclined' %}"
+             class="block bg-gradient-to-b from-yellow-50 to-white border border-yellow-200 rounded-lg p-6 shadow hover:shadow-md transition">
+            <h3 class="text-2xl font-semibold text-yellow-800 mb-2">Inclined Plane</h3>
+            <p class="text-yellow-700">See a block slide down and discover acceleration on a ramp.</p>
+          </a>
+          <!-- Mass–Spring Oscillation Card -->
+          <a href="{% url 'virtual_lab:physics_mass_spring' %}"
+             class="block bg-gradient-to-b from-purple-50 to-white border border-purple-200 rounded-lg p-6 shadow hover:shadow-md transition">
+            <h3 class="text-2xl font-semibold text-purple-700 mb-2">Mass–Spring Oscillation</h3>
+            <p class="text-purple-600">Set k and m, drag the mass, then watch it oscillate and view x(t).</p>
+          </a>
+          <!-- Basic Electrical Circuit Card -->
+          <a href="{% url 'virtual_lab:physics_electrical_circuit' %}"
+             class="block bg-gradient-to-b from-teal-50 to-white border border-teal-200 rounded-lg p-6 shadow hover:shadow-md transition">
+            <h3 class="text-2xl font-semibold text-teal-700 mb-2">Basic Electrical Circuit</h3>
+            <p class="text-teal-600">Build an RC circuit, adjust R, C, and V₀, and watch the capacitor charge in real time.</p>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
