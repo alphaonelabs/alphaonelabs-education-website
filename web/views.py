@@ -4905,7 +4905,7 @@ def add_student_to_course(request, slug):
             if student:
                 # Check if student is already enrolled
                 if Enrollment.objects.filter(course=course, student=student).exists():
-                    form.add_error(None, "Student is already enrolled in this course.")
+                    form.add_error(None, "A user with this email already exists.")
                 else:
                     # Enroll existing student
                     enrollment = Enrollment.objects.create(course=course, student=student, status="approved")
