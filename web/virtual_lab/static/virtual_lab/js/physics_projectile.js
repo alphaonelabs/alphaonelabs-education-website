@@ -85,8 +85,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const vxReadout = document.getElementById("vx-readout");
   const vyReadout = document.getElementById("vy-readout");
 
-  let g = parseFloat(gravitySlider.value);
-  let windAccel = parseFloat(windSlider.value);
+  let g = Number.parseFloat(gravitySlider.value);
+  let windAccel = Number.parseFloat(windSlider.value);
 
   let originY = canvas.height - 10;
   let pixelsPerMeter = 10;
@@ -164,11 +164,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // -------- 4. Gravity & Wind Slider Handlers -------- //
   gravitySlider.addEventListener("input", () => {
-    g = parseFloat(gravitySlider.value);
+    g = Number.parseFloat(gravitySlider.value);
     gravityValue.textContent = g.toFixed(2);
   });
   windSlider.addEventListener("input", () => {
-    windAccel = parseFloat(windSlider.value);
+    windAccel = Number.parseFloat(windSlider.value);
     windValue.textContent = windAccel.toFixed(2);
   });
 
