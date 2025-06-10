@@ -94,7 +94,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let v0 = 0, thetaRad = 0, vx = 0, vy0 = 0;
   let maxRange = 0, maxHeight = 0;
 
-  // Stores discrete trajectory points and velocities
+  // Stores trajectory points and velocities
   let trajectoryPoints = []; // { x_m, y_m, vx_t, vy_t }
   let currentFrame = 0;
   let animationId = null;
