@@ -39,9 +39,7 @@
           </p>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 px-6 py-4">
-          <!-- ===== Left Column: Controls moved ABOVE the Canvas ===== -->
           <div class="space-y-4">
-            <!-- Controls: Move here from right column -->
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 flex flex-wrap gap-4">
               <div class="flex items-center space-x-2">
                 <label for="angle-slider" class="font-medium text-gray-700">Angle (°):</label>
@@ -127,7 +125,15 @@
                 <span>Friction (μ mg cos α)</span>
               </div>
             </div>
-            <!-- Energy Bars -->
+          </div>
+          <!-- ===== Right Column: Position vs Time Graph + Quiz + Energy Bars ===== -->
+          <div class="space-y-6">
+            <!-- Real-Time Graph: Position vs Time -->
+            <div class="bg-white border border-gray-200 rounded-lg p-4">
+              <h3 class="text-lg font-semibold text-gray-800 mb-2">Position vs Time</h3>
+              <canvas id="position-chart" height="200"></canvas>
+            </div>
+            <!-- Energy Bars (moved below the graph) -->
             <div class="flex space-x-4 items-end">
               <div class="w-1/2">
                 <p class="text-center text-sm font-semibold">Potential Energy</p>
@@ -141,14 +147,6 @@
                   <div id="bar-ke" class="bg-indigo-500 w-full h-0"></div>
                 </div>
               </div>
-            </div>
-          </div>
-          <!-- ===== Right Column: Position vs Time Graph + Quiz ===== -->
-          <div class="space-y-6">
-            <!-- Real-Time Graph: Position vs Time -->
-            <div class="bg-white border border-gray-200 rounded-lg p-4">
-              <h3 class="text-lg font-semibold text-gray-800 mb-2">Position vs Time</h3>
-              <canvas id="position-chart" height="200"></canvas>
             </div>
             <!-- Post-Lab Quiz (hidden until bottom) -->
             <div id="postlab-quiz"

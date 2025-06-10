@@ -92,9 +92,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const equilibriumX = canvas.width / 2; // center pixel is equilibrium (x=0)
 
   // DOM Element–related state
-  let k = parseFloat(kSlider.value);    // N/m
-  let m = parseFloat(mSlider.value);    // kg
-  let A = parseFloat(ASlider.value);    // m
+  let k = Number.parseFloat(kSlider.value);    // N/m
+  let m = Number.parseFloat(mSlider.value);    // kg
+  let A = Number.parseFloat(ASlider.value);    // m
   let omega = Math.sqrt(k / m);         // rad/s
 
   // Simulation state
@@ -245,7 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ==== 4. Slider Change Handlers ====
   kSlider.addEventListener("input", () => {
-    k = parseFloat(kSlider.value);
+    k = Number.parseFloat(kSlider.value);
     kValue.textContent = k.toFixed(0);
     omega = Math.sqrt(k / m);
     maxT  = (2 * Math.PI) / omega;
@@ -255,7 +255,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   mSlider.addEventListener("input", () => {
-    m = parseFloat(mSlider.value);
+    m = Number.parseFloat(mSlider.value);
     mValue.textContent = `${m.toFixed(1)} kg`;
     omega = Math.sqrt(k / m);
     maxT  = (2 * Math.PI) / omega;
@@ -265,7 +265,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   ASlider.addEventListener("input", () => {
-    A = parseFloat(ASlider.value);
+    A = Number.parseFloat(ASlider.value);
     AValue.textContent = A.toFixed(2);
     if (!running) {
       drawScene(0);

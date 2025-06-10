@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ["Use the sliders to set battery voltage \(V_0\), resistor \(R\), and capacitor \(C\)."],
     ["Click “Start” to begin charging the capacitor through \(R\). Watch \(V_C(t)\) rise."],
     ["Observe how \(I(t)\) decreases as the capacitor charges."],
-    ["After \(5\tau\), answer the quiz questions."]
+    ["After \(5\ tau\), answer the quiz questions."]
   ];
 
   let currentStep = 0;

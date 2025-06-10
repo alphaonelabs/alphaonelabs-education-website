@@ -60,6 +60,11 @@ document.addEventListener("DOMContentLoaded", () => {
   // ==== 2. DOM References & State ====
   const canvas         = document.getElementById("inclined-canvas");
   const ctx            = canvas.getContext("2d");
+  if(!ctx)
+  {
+    console.error("Failed to get 2D context for canvas");
+    return;
+  }
 
   const angleSlider    = document.getElementById("angle-slider");
   const angleValue     = document.getElementById("angle-value");
@@ -99,11 +104,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const originY = H - 50;               // bottom margin
 
   // Experiment state
-  let alphaDeg = parseFloat(angleSlider.value);     // initial angle
+  let alphaDeg = Number.parseFloat(angleSlider.value);     // initial angle
   let alphaRad = (alphaDeg * Math.PI) / 180;
 
-  let mu       = parseFloat(frictionSlider.value);  // friction coefficient
-  let mass     = parseFloat(massSlider.value);      // mass in kg
+  let mu       = Number.parseFloat(frictionSlider.value);  // friction coefficient
+  let mass     = Number.parseFloat(massSlider.value);      // mass in kg
 
   let aAcc     = G * Math.sin(alphaRad)            // net accel down-ramp
                  - mu * G * Math.cos(alphaRad);
@@ -297,7 +302,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // ==== 4. Slider Change Handlers ====
   angleSlider.addEventListener("input", () => {
-    alphaDeg = parseFloat(angleSlider.value);
+    alphaDeg = Number.parseFloat(angleSlider.value);
     alphaRad = (alphaDeg * Math.PI) / 180;
     angleValue.textContent = `${alphaDeg}°`;
     updateDynamics();
@@ -309,14 +314,14 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   frictionSlider.addEventListener("input", () => {
-    mu = parseFloat(frictionSlider.value);
+    mu = Number.parseFloat(frictionSlider.value);
     frictionValue.textContent = mu.toFixed(2);
     updateDynamics();
     if (!running) drawScene();
   });
 
   massSlider.addEventListener("input", () => {
-    mass = parseFloat(massSlider.value);
+    mass = Number.parseFloat(massSlider.value);
     massValue.textContent = `${mass.toFixed(1)} kg`;
     if (!running) drawScene();
   });

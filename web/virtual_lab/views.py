@@ -32,8 +32,14 @@ def physics_inclined_view(request):
 
 
 def physics_mass_spring_view(request):
+    """
+    Renders the Mass-Spring Oscillation simulation page (physics/mass_spring.html).
+    """
     return render(request, "virtual_lab/physics/mass_spring.html")
 
 
 def physics_electrical_circuit_view(request):
+    """
+    Renders the Electrical Circuit simulation page (physics/circuit.html).
+    """
     return render(request, "virtual_lab/physics/circuit.html")

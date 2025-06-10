@@ -102,7 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const pixelsPerMeter = 100; // 1 m → 100 px
   const bobRadius = 15;       // px
 
-  let L = parseFloat(lengthSlider.value); // length in meters
+  let L = Number.parseFloat(lengthSlider.value); // length in meters
   let omega = Math.sqrt(g / L);           // angular frequency
   let theta0 = 0.3;    // initial amplitude (rad)
   let currentAngle = theta0;
@@ -200,7 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const h = L * (1 - Math.cos(angle));   // height above bottom
     const pe = g * h;                      // PE = m g h (m=1)
     // Velocity: v = L * (dθ/dt) = L * (−θ₀ ω sin(ωt))
-    const v = L * theta0 * omega * Math.sin(omega * elapsedSec);
+    const v = -L * theta0 * omega * Math.sin(omega * elapsedSec);
     const ke = 0.5 * v * v;                // KE = ½ m v² (m=1)
     const E = pe + ke;
     const pePct = E ? (pe / E) * 100 : 0;
@@ -239,7 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Update length L & ω on slider input
   lengthSlider.addEventListener("input", () => {
-    L = parseFloat(lengthSlider.value);
+    L = Number.parseFloat(lengthSlider.value);
     lengthValue.textContent = `${L.toFixed(1)} m`;
     omega = Math.sqrt(g / L);
     // Adjust chart y-axis
@@ -299,35 +299,50 @@ document.addEventListener("DOMContentLoaded", () => {
     drawPendulum(currentAngle, L);
   });
 
-  // -------- Drag & Release Logic -------- //
+  // -------- Drag & Release Logic (Mouse + Touch) -------- //
 
-  canvas.addEventListener("mousedown", (e) => {
+  // Helper function to get coordinates from mouse or touch event
+  function getEventCoords(e) {
+    const rect = canvas.getBoundingClientRect();
+    if (e.type.startsWith('touch')) {
+      return {
+        x: e.touches[0].clientX - rect.left,
+        y: e.touches[0].clientY - rect.top
+      };
+    } else {
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+    }
+  }
+
+  // Helper function to start dragging
+  function startDrag(e) {
     if (animationId) {
       cancelAnimationFrame(animationId);
       animationId = null;
     }
 
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
+    const coords = getEventCoords(e);
     const r = L * pixelsPerMeter;
     const bobX = originX + r * Math.sin(currentAngle);
     const bobY = originY + r * Math.cos(currentAngle);
-    const distToBob = Math.hypot(mouseX - bobX, mouseY - bobY);
+    const distToBob = Math.hypot(coords.x - bobX, coords.y - bobY);
 
     if (distToBob <= bobRadius + 3) {
       isDragging = true;
       dragAngle = currentAngle;
+      e.preventDefault(); // Prevent default for touch events
     }
-  });
+  }
 
-  canvas.addEventListener("mousemove", (e) => {
+  // Helper function to handle dragging
+  function handleDrag(e) {
     if (!isDragging) return;
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    dragAngle = computeAngleFromMouse(mouseX, mouseY, L);
+
+    const coords = getEventCoords(e);
+    dragAngle = computeAngleFromMouse(coords.x, coords.y, L);
     currentAngle = dragAngle;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     drawPendulum(currentAngle, L);
@@ -343,9 +358,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const total = pe;
     peBar.style.width = total ? `${((pe / total) * 100).toFixed(1)}%` : "0%";
     keBar.style.width = "0%";
-  });
 
-  canvas.addEventListener("mouseup", () => {
+    e.preventDefault(); // Prevent scrolling on touch
+  }
+
+  // Helper function to end dragging
+  function endDrag() {
     if (!isDragging) return;
     isDragging = false;
     theta0 = dragAngle;
@@ -355,22 +373,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
     startTime = null;
     animationId = requestAnimationFrame(animatePendulum);
-  });
+  }
 
-  canvas.addEventListener("mouseleave", () => {
-    if (isDragging) {
-      isDragging = false;
-      theta0 = dragAngle;
-      angleChart.options.scales.y.min = -theta0;
-      angleChart.options.scales.y.max = theta0;
-      angleChart.update("none");
-      startTime = null;
-      animationId = requestAnimationFrame(animatePendulum);
-    }
-  });
+  // Mouse events
+  canvas.addEventListener("mousedown", startDrag);
+  canvas.addEventListener("mousemove", handleDrag);
+  canvas.addEventListener("mouseup", endDrag);
+  canvas.addEventListener("mouseleave", endDrag);
 
+  // Touch events for mobile
+  canvas.addEventListener("touchstart", startDrag);
+  canvas.addEventListener("touchmove", handleDrag);
+  canvas.addEventListener("touchend", endDrag);
+  canvas.addEventListener("touchcancel", endDrag);
+
+  // Prevent default drag behavior
   canvas.addEventListener("dragstart", (e) => {
     e.preventDefault();
   });
+
   // -------- End Drag & Release Logic -------- //
 });
