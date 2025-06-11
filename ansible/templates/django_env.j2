@@ -1,0 +1,30 @@
+# Django Configuration
+SECRET_KEY={{ django_secret_key }}
+DEBUG={{ django_debug | lower }}
+ENVIRONMENT={{ environment }}
+
+# Database Configuration
+DATABASE_URL=postgresql://{{ db_user }}:{{ db_password }}@{{ db_host }}:{{ db_port }}/{{ db_name }}
+
+# External Services
+STRIPE_PUBLISHABLE_KEY={{ stripe_publishable_key }}
+STRIPE_SECRET_KEY={{ stripe_secret_key }}
+STRIPE_WEBHOOK_SECRET={{ stripe_webhook_secret }}
+SENDGRID_API_KEY={{ sendgrid_api_key }}
+SENDGRID_PASSWORD={{ sendgrid_api_key }}
+SLACK_WEBHOOK_URL={{ slack_webhook_url }}
+
+# Security
+MESSAGE_ENCRYPTION_KEY={{ vault_message_encryption_key | default('') }}
+
+# Email Configuration
+EMAIL_FROM=noreply@{{ domain_name | default('localhost') }}
+
+# Server Configuration
+ALLOWED_HOSTS={{ domain_name | default('localhost') }},{{ ansible_host }},127.0.0.1,localhost
+
+# Social Media (if configured)
+TWITTER_API_KEY={{ vault_twitter_api_key | default('') }}
+TWITTER_API_SECRET_KEY={{ vault_twitter_api_secret_key | default('') }}
+TWITTER_ACCESS_TOKEN={{ vault_twitter_access_token | default('') }}
+TWITTER_ACCESS_TOKEN_SECRET={{ vault_twitter_access_token_secret | default('') }}

@@ -1,0 +1,66 @@
+# This file should be encrypted with ansible-vault
+# Run: ansible-vault encrypt group_vars/all/vault.yml
+
+# Test credentials for development deployment
+# This is for testing purposes only
+
+# SSH
+vault_ssh_password: "your_server_password_here"
+
+# Database
+vault_db_password: "test_secure_password_123"
+
+# Django
+vault_secret_key: "django-insecure-test-key-for-development-only-do-not-use-in-production"
+vault_debug: false
+
+# Domain (using IP for testing)
+vault_domain_name: "45.76.4.171"
+vault_dev_domain_name: "45.76.4.171"
+
+# API Keys (dummy values for testing)
+vault_stripe_secret_key: "sk_test_dummy_key"
+vault_stripe_publishable_key: "pk_test_dummy_key"
+vault_stripe_webhook_secret: "whsec_dummy_secret"
+vault_stripe_connect_webhook_secret: "whsec_dummy_connect_secret"
+vault_sendgrid_password: "dummy_sendgrid_password"
+
+# Notifications (empty for testing)
+vault_slack_webhook_url: ""
+
+# Server credentials (for reference, actual connection uses inventory)
+vault_server_ip: "45.76.4.171"
+vault_server_user: "root"
+vault_server_password: "Jm-7Yt?(,KLQ!r$Q"
+
+# Server credentials
+vault_primary_server_ip: "YOUR_PRIMARY_SERVER_IP"
+vault_primary_server_user: "YOUR_PRIMARY_SERVER_USER"
+vault_primary_server_password: "YOUR_PRIMARY_SERVER_PASSWORD"
+vault_primary_domain_name: "YOUR_PRIMARY_DOMAIN.com"
+
+vault_secondary_server_ip: "YOUR_SECONDARY_SERVER_IP"
+vault_secondary_server_user: "YOUR_SECONDARY_SERVER_USER"
+vault_secondary_server_password: "YOUR_SECONDARY_SERVER_PASSWORD"
+vault_secondary_domain_name: "YOUR_SECONDARY_DOMAIN.com"
+
+vault_staging_server_ip: "YOUR_STAGING_SERVER_IP"
+vault_staging_server_user: "YOUR_STAGING_SERVER_USER"
+vault_staging_server_password: "YOUR_STAGING_SERVER_PASSWORD"
+vault_staging_domain_name: "staging.yourdomain.com"
+
+vault_dev_server_ip: "YOUR_DEV_SERVER_IP"
+vault_dev_server_user: "YOUR_DEV_SERVER_USER"
+vault_dev_server_password: "YOUR_DEV_SERVER_PASSWORD"
+
+# Application secrets
+vault_django_secret_key: "YOUR_DJANGO_SECRET_KEY_HERE"
+
+# External service keys
+vault_sendgrid_api_key: "SG.dummy_sendgrid_key_for_testing"
+
+# Additional secrets
+vault_message_encryption_key: "YOUR_MESSAGE_ENCRYPTION_KEY"
+
+# Backup
+vault_backup_encryption_key: "dummy_backup_key_for_testing"

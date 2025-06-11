@@ -1,0 +1,16 @@
+# Development Environment Configuration
+
+# Development-specific settings
+debug_mode: true
+environment: development
+
+# Override for development
+gunicorn_workers: 2
+enable_firewall: true
+enable_ssl: false
+
+# Development database settings
+db_name: "education_website_dev"
+
+# Development domain (using IP for now)
+domain_name: "45.76.4.171"

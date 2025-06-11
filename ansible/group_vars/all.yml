@@ -1,0 +1,87 @@
+# Education Website - Main Configuration Variables
+
+# Project Configuration
+project_name: "education-website"
+project_user: "{{ ansible_user }}"
+project_path: "/home/{{ project_user }}/{{ project_name }}"
+git_repo: "https://github.com/AlphaOneLabs/education-website.git"
+git_branch: "main"
+
+# Python Configuration
+python_version: "3.11"
+python_executable: "python3.11"
+venv_path: "{{ project_path }}/venv"
+
+# Application Configuration
+app_port: 8000
+debug_mode: false
+
+# Gunicorn Configuration
+gunicorn_workers: 4
+gunicorn_worker_class: "uvicorn.workers.UvicornWorker"
+gunicorn_bind: "127.0.0.1:{{ app_port }}"
+
+# Database Configuration
+db_name: "{{ project_name | replace('-', '_') }}"
+db_user: "{{ project_user }}"
+db_host: "localhost"
+db_port: 5432
+
+# Nginx Configuration
+nginx_client_max_body_size: "100M"
+nginx_worker_processes: "auto"
+nginx_worker_connections: 1024
+
+# SSL Configuration
+ssl_email: "admin@{{ domain_name | default('example.com') }}"
+ssl_cert_path: "/etc/letsencrypt/live/{{ domain_name }}/fullchain.pem"
+ssl_key_path: "/etc/letsencrypt/live/{{ domain_name }}/privkey.pem"
+
+# Security Configuration
+enable_firewall: true
+enable_ssl: false
+
+# Backup Configuration
+backup_retention_days: 7
+backup_path: "/home/{{ project_user }}/backups"
+
+# System Packages
+system_packages:
+  - "python{{ python_version }}"
+  - "python{{ python_version }}-venv"
+  - python3-pip
+  - python3-full
+  - nginx
+  - git
+  - certbot
+  - python3-certbot-nginx
+  - ufw
+  - fail2ban
+  - postgresql
+  - postgresql-contrib
+  - python3-dev
+  - libpq-dev
+  - build-essential
+  - curl
+  - wget
+  - htop
+  - vim
+
+# Python Packages (additional to requirements.txt)
+additional_python_packages:
+  - uvicorn
+  - gunicorn
+  - psycopg2-binary
+
+# Service Configuration
+systemd_service_name: "{{ project_name }}"
+systemd_service_description: "{{ project_name }} website"
+
+# Environment Variables
+django_settings_module: "web.settings"
+timezone: "UTC"
+
+# Encrypted Variables (reference vault.yml)
+db_password: "{{ vault_db_password }}"
+secret_key: "{{ vault_secret_key }}"
+domain_name: "{{ vault_domain_name }}"

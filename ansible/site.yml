@@ -1,0 +1,377 @@
+---
+- name: Deploy Education Website
+  hosts: all
+  become: yes
+  vars_files:
+    - group_vars/all.yml
+    - group_vars/{{ environment }}.yml
+
+  tasks:
+    # Common tasks
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+      when: ansible_os_family == "Debian"
+
+    - name: Install system packages
+      apt:
+        name: "{{ system_packages }}"
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Create project user if not exists
+      user:
+        name: "{{ project_user }}"
+        shell: /bin/bash
+        create_home: yes
+        state: present
+      when: project_user != "root"
+
+    - name: Create project directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ project_user }}"
+        group: "{{ project_user }}"
+        mode: '0755'
+      loop:
+        - "{{ project_path }}"
+        - "{{ project_path }}/logs"
+        - "{{ project_path }}/backups"
+        - "{{ backup_path }}"
+        - "/home/{{ project_user }}/webhooks"
+
+    - name: Set timezone
+      timezone:
+        name: "{{ timezone }}"
+
+    - name: Configure system limits
+      pam_limits:
+        domain: "{{ project_user }}"
+        limit_type: "{{ item.type }}"
+        limit_item: "{{ item.item }}"
+        value: "{{ item.value }}"
+      loop:
+        - { type: 'soft', item: 'nofile', value: '65536' }
+        - { type: 'hard', item: 'nofile', value: '65536' }
+
+    # Security tasks
+    - name: Reset UFW to defaults
+      ufw:
+        state: reset
+      when: enable_firewall | default(true)
+
+    - name: Set UFW default policies
+      ufw:
+        direction: "{{ item.direction }}"
+        policy: "{{ item.policy }}"
+      loop:
+        - { direction: 'incoming', policy: 'deny' }
+        - { direction: 'outgoing', policy: 'allow' }
+      when: enable_firewall | default(true)
+
+    - name: Allow SSH
+      ufw:
+        rule: allow
+        port: 22
+        proto: tcp
+      when: enable_firewall | default(true)
+
+    - name: Allow HTTP
+      ufw:
+        rule: allow
+        port: 80
+        proto: tcp
+      when: enable_firewall | default(true)
+
+    - name: Allow HTTPS
+      ufw:
+        rule: allow
+        port: 443
+        proto: tcp
+      when: enable_ssl | default(false)
+
+    - name: Allow application port
+      ufw:
+        rule: allow
+        port: "{{ app_port }}"
+        proto: tcp
+      when: enable_firewall | default(true)
+
+    - name: Enable UFW
+      ufw:
+        state: enabled
+      when: enable_firewall | default(true)
+
+    - name: Install fail2ban
+      apt:
+        name: fail2ban
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Enable and start fail2ban
+      systemd:
+        name: fail2ban
+        state: started
+        enabled: yes
+
+    # PostgreSQL tasks
+    - name: Install PostgreSQL packages
+      apt:
+        name:
+          - postgresql
+          - postgresql-contrib
+          - python3-psycopg2
+          - libpq-dev
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Start and enable PostgreSQL
+      systemd:
+        name: postgresql
+        state: started
+        enabled: yes
+
+    - name: Wait for PostgreSQL to be ready
+      wait_for:
+        port: 5432
+        timeout: 30
+      when: not ansible_check_mode
+
+    - name: Create database user
+      postgresql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        role_attr_flags: CREATEDB,NOSUPERUSER
+      become_user: postgres
+
+    - name: Create database
+      postgresql_db:
+        name: "{{ db_name }}"
+        owner: "{{ db_user }}"
+        encoding: UTF-8
+        lc_collate: C.UTF-8
+        lc_ctype: C.UTF-8
+        template: template0
+      become_user: postgres
+
+    - name: Grant database privileges
+      postgresql_privs:
+        database: "{{ db_name }}"
+        roles: "{{ db_user }}"
+        privs: ALL
+        type: database
+        grant_option: yes
+      become_user: postgres
+
+    # Python tasks
+    - name: Install Python and development packages
+      apt:
+        name: "{{ system_packages | select('match', '^python.*') | list }}"
+        state: present
+        update_cache: yes
+
+    - name: Create virtual environment
+      command: "{{ python_executable }} -m venv {{ venv_path }}"
+      args:
+        creates: "{{ venv_path }}/bin/activate"
+
+    - name: Upgrade pip in virtual environment
+      pip:
+        name: pip
+        state: latest
+        virtualenv: "{{ venv_path }}"
+        virtualenv_command: "{{ python_executable }} -m venv"
+        extra_args: "--break-system-packages"
+
+    # Django deployment tasks
+    - name: Ensure git is available
+      package:
+        name: git
+        state: present
+
+    - name: Remove conflicting files from project directory
+      shell: |
+        cd {{ project_path }} && \
+        find . -maxdepth 1 -type f -delete && \
+        find . -maxdepth 1 -type d ! -name '.' ! -name 'logs' ! -name 'backups' ! -name 'venv' -exec rm -rf {} +
+      ignore_errors: yes
+
+    - name: Clone project repository to temporary directory
+      git:
+        repo: "{{ git_repo }}"
+        dest: "{{ project_path }}/temp_clone"
+        version: "{{ git_branch }}"
+        force: yes
+
+    - name: Move cloned files to project directory
+      shell: |
+        cd {{ project_path }}/temp_clone && \
+        find . -maxdepth 1 ! -name '.' -exec mv {} {{ project_path }}/ \;
+      ignore_errors: yes
+
+    - name: Remove temporary clone directory
+      file:
+        path: "{{ project_path }}/temp_clone"
+        state: absent
+
+    - name: Install Python requirements
+      pip:
+        requirements: "{{ project_path }}/requirements.txt"
+        virtualenv: "{{ project_path }}/venv"
+      become_user: "{{ project_user }}"
+      notify: restart application
+
+    - name: Create Django environment file
+      template:
+        src: templates/django_env.j2
+        dest: "{{ project_path }}/.env"
+        mode: '0600'
+        owner: "{{ project_user }}"
+        group: "{{ project_user }}"
+      notify: restart application
+
+    - name: Set proper permissions for project directory
+      file:
+        path: "{{ project_path }}"
+        owner: "{{ project_user }}"
+        group: "{{ project_user }}"
+        recurse: yes
+        state: directory
+
+    - name: Make manage.py executable
+      file:
+        path: "{{ project_path }}/manage.py"
+        mode: '0755'
+        owner: "{{ project_user }}"
+        group: "{{ project_user }}"
+
+    - name: Fix manage.py shebang
+      lineinfile:
+        path: "{{ project_path }}/manage.py"
+        regexp: '^#!/usr/bin/env python.*'
+        line: '#!/usr/bin/env python3'
+        firstmatch: yes
+
+    - name: Run Django migrations
+      django_manage:
+        command: migrate
+        app_path: "{{ project_path }}"
+        virtualenv: "{{ project_path }}/venv"
+        settings: "{{ django_settings_module }}"
+      become_user: "{{ project_user }}"
+      environment:
+        DJANGO_SETTINGS_MODULE: "{{ django_settings_module }}"
+
+    - name: Collect Django static files
+      django_manage:
+        command: collectstatic
+        app_path: "{{ project_path }}"
+        virtualenv: "{{ project_path }}/venv"
+        settings: "{{ django_settings_module }}"
+      become_user: "{{ project_user }}"
+      environment:
+        DJANGO_SETTINGS_MODULE: "{{ django_settings_module }}"
+
+    # Nginx tasks
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+      when: ansible_os_family == "Debian"
+
+    - name: Remove default Nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+      notify: restart nginx
+
+    - name: Create Nginx configuration
+      template:
+        src: templates/nginx_site.j2
+        dest: "/etc/nginx/sites-available/{{ project_name }}"
+        backup: yes
+      notify: restart nginx
+
+    - name: Enable Nginx site
+      file:
+        src: "/etc/nginx/sites-available/{{ project_name }}"
+        dest: "/etc/nginx/sites-enabled/{{ project_name }}"
+        state: link
+      notify: restart nginx
+
+    - name: Create Nginx log directory
+      file:
+        path: "/var/log/nginx/{{ project_name }}"
+        state: directory
+        owner: www-data
+        group: adm
+        mode: '0755'
+
+    - name: Test Nginx configuration
+      command: nginx -t
+      register: nginx_test
+      changed_when: false
+
+    - name: Start and enable Nginx
+      systemd:
+        name: nginx
+        state: started
+        enabled: yes
+
+    # Systemd service tasks
+    - name: Create systemd service file
+      template:
+        src: templates/systemd_service.j2
+        dest: "/etc/systemd/system/{{ project_name }}.service"
+        mode: '0644'
+      notify:
+        - reload systemd
+        - restart application
+
+    - name: Start and enable application service
+      systemd:
+        name: "{{ project_name }}"
+        state: started
+        enabled: yes
+        daemon_reload: yes
+
+    # Final checks
+    - name: Ensure all services are running
+      systemd:
+        name: "{{ item }}"
+        state: started
+      loop:
+        - nginx
+        - postgresql
+        - "{{ project_name }}"
+
+    - name: Display deployment summary
+      debug:
+        msg: |
+          Deployment completed successfully!
+          Application: {{ project_name }}
+          Server: {{ inventory_hostname }}
+          Domain: {{ domain_name }}
+          SSL: {{ 'Enabled' if enable_ssl else 'Disabled' }}
+
+  handlers:
+    - name: restart nginx
+      systemd:
+        name: nginx
+        state: restarted
+
+    - name: restart postgresql
+      systemd:
+        name: postgresql
+        state: restarted
+
+    - name: reload systemd
+      systemd:
+        daemon_reload: yes
+
+    - name: restart application
+      systemd:
+        name: "{{ project_name }}"
+        state: restarted

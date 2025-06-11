@@ -1,0 +1,30 @@
+[Unit]
+Description={{ project_name }} Django Application
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=exec
+User={{ project_user }}
+Group={{ project_user }}
+WorkingDirectory={{ project_path }}
+Environment="PATH={{ project_path }}/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+Environment="DJANGO_SETTINGS_MODULE={{ django_settings_module }}"
+ExecStart={{ project_path }}/venv/bin/gunicorn {{ django_settings_module.split('.')[0] }}.wsgi:application \
+    --workers {{ gunicorn_workers }} \
+    --bind 127.0.0.1:{{ app_port }} \
+    --access-logfile {{ project_path }}/logs/gunicorn_access.log \
+    --error-logfile {{ project_path }}/logs/gunicorn_error.log \
+    --log-level info \
+    --timeout 120 \
+    --keep-alive 5 \
+    --max-requests 1000 \
+    --max-requests-jitter 100 \
+    --preload
+
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
