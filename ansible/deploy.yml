@@ -1,0 +1,344 @@
+---
+- name: Deploy Django Education Website with Channels
+  hosts: all
+  become: yes
+  vars_files:
+    - secrets.yml
+
+  tasks:
+    # ===========================================
+    # 1. SYSTEM SETUP
+    # ===========================================
+    - name: Update package cache
+      apt:
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install system packages
+      apt:
+        name:
+          - python3.11
+          - python3.11-venv
+          - python3.11-dev
+          - python3-pip
+          - python3-psycopg2
+          - nginx
+          - git
+          - postgresql
+          - postgresql-contrib
+          - libpq-dev
+          - build-essential
+          - redis-server
+          - supervisor
+          - ufw
+          - fail2ban
+          - curl
+          - wget
+        state: present
+
+    - name: Create project user
+      user:
+        name: "{{ project_user }}"
+        shell: /bin/bash
+        home: "/home/{{ project_user }}"
+        create_home: yes
+        groups: sudo
+        append: yes
+
+    - name: Create project directory
+      file:
+        path: "{{ project_dir }}"
+        state: directory
+        owner: "{{ project_user }}"
+        group: "{{ project_user }}"
+        mode: '0755'
+
+    # ===========================================
+    # 2. FIREWALL SETUP
+    # ===========================================
+    - name: Configure UFW firewall
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+      loop: [22, 80, 443]
+
+    - name: Enable UFW firewall
+      ufw:
+        state: enabled
+        policy: deny
+
+    # ===========================================
+    # 3. POSTGRESQL SETUP
+    # ===========================================
+    - name: Start PostgreSQL
+      systemd:
+        name: postgresql
+        enabled: yes
+        state: started
+
+    - name: Create database user
+      postgresql_user:
+        name: "{{ db_user }}"
+        password: "{{ database_password }}"
+        state: present
+      become_user: postgres
+
+    - name: Create database
+      postgresql_db:
+        name: "{{ db_name }}"
+        owner: "{{ db_user }}"
+        state: present
+      become_user: postgres
+
+    # ===========================================
+    # 4. REDIS SETUP
+    # ===========================================
+    - name: Configure Redis
+      lineinfile:
+        path: /etc/redis/redis.conf
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      loop:
+        - { regexp: "^bind", line: "bind 127.0.0.1" }
+        - { regexp: "^# requirepass", line: "requirepass {{ redis_password }}" }
+        - { regexp: "^protected-mode", line: "protected-mode no" }
+      notify: restart redis
+
+    - name: Start Redis
+      systemd:
+        name: redis-server
+        enabled: yes
+        state: started
+
+    # ===========================================
+    # 5. DJANGO APPLICATION SETUP
+    # ===========================================
+    - name: Clone Django project
+      git:
+        repo: https://github.com/AlphaOneLabs/education-website.git
+        dest: "{{ project_dir }}"
+        force: yes
+      become_user: "{{ project_user }}"
+
+    - name: Create virtual environment
+      pip:
+        virtualenv: "{{ project_dir }}/venv"
+        virtualenv_python: "python{{ python_version }}"
+        name: pip
+        state: latest
+      become_user: "{{ project_user }}"
+
+    - name: Install Django dependencies
+      pip:
+        requirements: "{{ project_dir }}/requirements.txt"
+        virtualenv: "{{ project_dir }}/venv"
+      become_user: "{{ project_user }}"
+
+    - name: Install production packages
+      pip:
+        name: [uvicorn, gunicorn, psycopg2-binary, redis, channels, channels-redis, django-environ]
+        virtualenv: "{{ project_dir }}/venv"
+      become_user: "{{ project_user }}"
+
+    - name: Create Django .env file
+      copy:
+        content: |
+          DEBUG=False
+          ENVIRONMENT=production
+          SECRET_KEY={{ django_secret_key }}
+          DATABASE_URL=postgresql://{{ db_user }}:{{ database_password }}@localhost:5432/{{ db_name }}
+          DJANGO_ALLOWED_HOSTS={{ ansible_host }},localhost,127.0.0.1
+          REDIS_URL=redis://:{{ redis_password }}@{{ redis_host }}:{{ redis_port }}/0
+          STATIC_ROOT={{ project_dir }}/staticfiles
+          MEDIA_ROOT={{ project_dir }}/media
+          EMAIL_FROM={{ email_from }}
+          SENDGRID_API_KEY={{ sendgrid_api_key }}
+          SENDGRID_PASSWORD={{ sendgrid_password }}
+          STRIPE_PUBLISHABLE_KEY={{ stripe_publishable_key }}
+          STRIPE_SECRET_KEY={{ stripe_secret_key }}
+          STRIPE_WEBHOOK_SECRET={{ stripe_webhook_secret }}
+          ADMIN_URL={{ admin_url }}
+          MESSAGE_ENCRYPTION_KEY={{ message_encryption_key }}
+          SLACK_WEBHOOK_URL={{ slack_webhook_url }}
+          TWITTER_API_KEY={{ twitter_api_key }}
+          TWITTER_API_SECRET_KEY={{ twitter_api_secret_key }}
+          TWITTER_ACCESS_TOKEN={{ twitter_access_token }}
+          TWITTER_ACCESS_TOKEN_SECRET={{ twitter_access_token_secret }}
+          GS_BUCKET_NAME={{ gs_bucket_name }}
+          GS_PROJECT_ID={{ gs_project_id }}
+          SERVICE_ACCOUNT_FILE={{ service_account_file }}
+          GITHUB_TOKEN={{ github_token }}
+        dest: "{{ project_dir }}/.env"
+        owner: "{{ project_user }}"
+        group: "{{ project_user }}"
+        mode: '0600'
+
+    - name: Create static and media directories
+      file:
+        path: "{{ project_dir }}/{{ item }}"
+        state: directory
+        owner: "{{ project_user }}"
+        group: "{{ project_user }}"
+        mode: '0755'
+      loop: [staticfiles, media]
+
+    - name: Run Django migrations
+      django_manage:
+        command: migrate
+        app_path: "{{ project_dir }}"
+        virtualenv: "{{ project_dir }}/venv"
+      become_user: "{{ project_user }}"
+
+    - name: Collect Django static files
+      django_manage:
+        command: collectstatic
+        app_path: "{{ project_dir }}"
+        virtualenv: "{{ project_dir }}/venv"
+      become_user: "{{ project_user }}"
+
+    # ===========================================
+    # 6. NGINX SETUP
+    # ===========================================
+    - name: Remove default nginx site
+      file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Create nginx configuration
+      copy:
+        content: |
+          upstream django_app {
+              server 127.0.0.1:{{ app_port }};
+          }
+
+          server {
+              listen 80;
+              server_name {{ ansible_host }};
+
+              client_max_body_size 50M;
+
+              location /static/ {
+                  alias {{ project_dir }}/staticfiles/;
+                  expires 30d;
+              }
+
+              location /media/ {
+                  alias {{ project_dir }}/media/;
+                  expires 7d;
+              }
+
+              location /ws/ {
+                  proxy_pass http://django_app;
+                  proxy_http_version 1.1;
+                  proxy_set_header Upgrade $http_upgrade;
+                  proxy_set_header Connection "upgrade";
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_redirect off;
+              }
+
+              location / {
+                  proxy_pass http://django_app;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_redirect off;
+              }
+          }
+        dest: "/etc/nginx/sites-available/{{ project_name }}"
+      notify: restart nginx
+
+    - name: Enable nginx site
+      file:
+        src: "/etc/nginx/sites-available/{{ project_name }}"
+        dest: "/etc/nginx/sites-enabled/{{ project_name }}"
+        state: link
+      notify: restart nginx
+
+    - name: Start nginx
+      systemd:
+        name: nginx
+        enabled: yes
+        state: started
+
+    # ===========================================
+    # 7. SUPERVISOR SETUP
+    # ===========================================
+    - name: Create supervisor configuration for Django
+      copy:
+        content: |
+          [program:{{ project_name }}-django]
+          command={{ project_dir }}/venv/bin/gunicorn web.asgi:application -w 4 -k uvicorn.workers.UvicornWorker -b 127.0.0.1:{{ app_port }}
+          directory={{ project_dir }}
+          user={{ project_user }}
+          autostart=true
+          autorestart=true
+          redirect_stderr=true
+          stdout_logfile=/var/log/supervisor/{{ project_name }}-django.log
+
+          [program:{{ project_name }}-channels]
+          command={{ project_dir }}/venv/bin/python manage.py runworker
+          directory={{ project_dir }}
+          user={{ project_user }}
+          autostart=true
+          autorestart=true
+          redirect_stderr=true
+          stdout_logfile=/var/log/supervisor/{{ project_name }}-channels.log
+        dest: "/etc/supervisor/conf.d/{{ project_name }}.conf"
+      notify: restart supervisor
+
+    - name: Start supervisor
+      systemd:
+        name: supervisor
+        enabled: yes
+        state: started
+
+    - name: Reload supervisor configuration
+      supervisorctl:
+        name: all
+        state: reloaded
+
+    - name: Start Django services
+      supervisorctl:
+        name: "{{ item }}"
+        state: started
+      loop:
+        - "{{ project_name }}-django"
+        - "{{ project_name }}-channels"
+
+    # ===========================================
+    # 8. FINAL CHECKS
+    # ===========================================
+    - name: Wait for Django to start
+      wait_for:
+        port: "{{ app_port }}"
+        host: 127.0.0.1
+        timeout: 30
+
+    - name: Test application
+      uri:
+        url: "http://127.0.0.1:{{ app_port }}"
+        method: GET
+        status_code: 200
+      retries: 3
+      delay: 5
+
+  # ===========================================
+  # HANDLERS
+  # ===========================================
+  handlers:
+    - name: restart nginx
+      systemd:
+        name: nginx
+        state: restarted
+
+    - name: restart redis
+      systemd:
+        name: redis-server
+        state: restarted
+
+    - name: restart supervisor
+      systemd:
+        name: supervisor
+        state: restarted

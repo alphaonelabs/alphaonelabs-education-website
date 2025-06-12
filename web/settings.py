@@ -82,6 +82,11 @@ ALLOWED_HOSTS = [
     ".alphaonelabs.com",
 ]
 
+# Add hosts from environment variable for deployment flexibility
+if env.str("DJANGO_ALLOWED_HOSTS", default=""):
+    additional_hosts = env.str("DJANGO_ALLOWED_HOSTS").split(",")
+    ALLOWED_HOSTS.extend([host.strip() for host in additional_hosts if host.strip()])
+
 # Timezone settings
 TIME_ZONE = "America/New_York"
 USE_TZ = True
