@@ -12,6 +12,10 @@
       <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
         <form method="post" class="space-y-6">
           {% csrf_token %}
+
+          <div class="g-recaptcha" data-sitekey="6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI"></div>
+          <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+
           {% if form.non_field_errors %}
             <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">{{ form.non_field_errors }}</div>
           {% endif %}
