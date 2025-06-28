@@ -1,0 +1,201 @@
+---
+- name: 0️⃣  Bootstrap OS
+  hosts: all
+  gather_facts: false
+  become: true
+  vars:
+    pkgs:
+      - python3.11
+      - python3.11-venv
+      - python3-pip
+      - git
+      - nginx
+      - postgresql
+      - postgresql-contrib
+      - libpq-dev
+
+  tasks:
+    - name: Install base packages (non-interactive, synchronous)
+      apt:
+        name: "{{ pkgs }}"
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+      environment: {DEBIAN_FRONTEND: noninteractive}
+
+    - name: Reboot and wait
+      reboot:
+        reboot_timeout: 900
+      register: rebooted
+
+    - name: Wait for SSH
+      wait_for_connection:
+        delay: 10
+        timeout: 300
+      when: rebooted is changed
+
+    - name: Create 2 GB swapfile if not present
+      shell: |
+        set -e
+        if ! swapon --show | grep -q '^/swapfile'; then
+          fallocate -l 2G /swapfile || dd if=/dev/zero of=/swapfile bs=1M count=2048
+          chmod 600 /swapfile
+          mkswap /swapfile
+          swapon /swapfile
+        fi
+      args:
+        creates: /swapfile
+
+    - name: Persist swapfile in /etc/fstab
+      lineinfile:
+        path: /etc/fstab
+        line: "/swapfile none swap sw 0 0"
+        state: present
+
+- name: 1️⃣  Deploy application
+  hosts: all
+  gather_facts: false
+  vars:
+    project_root: /home/{{ vps_user }}/{{ project_name }}
+    git_repo: "https://github.com/AlphaOneLabs/education-website.git"
+    git_branch: "main"
+
+  tasks:
+    - name: Read .env file into list
+      set_fact:
+        env_lines: "{{ lookup('ansible.builtin.file', '../.env').splitlines() }}"
+
+    - name: Init empty env_vars dict
+      set_fact:
+        env_vars: {}
+
+    - name: Build env_vars dict line-by-line
+      set_fact:
+        env_vars: "{{ env_vars | combine({ key: val }) }}"
+      vars:
+        clean: "{{ item.split('#',1)[0] | trim }}"
+        key: "{{ clean.split('=',1)[0] | trim }}"
+        val: "{{ (clean.split('=',1)[1] | trim) if ('=' in clean) else '' }}"
+      loop: "{{ env_lines }}"
+      when: clean != '' and not clean.startswith('#')
+      loop_control:
+        label: "{{ key }}"
+
+    - name: Promote env_vars to play vars
+      set_fact: "{{ env_vars }}"
+
+    - name: Map essential env vars to lowercase variables expected by templates
+      set_fact:
+        secret_key: "{{ env_vars.SECRET_KEY }}"
+        debug: "{{ env_vars.DEBUG }}"
+        stripe_secret_key: "{{ env_vars.STRIPE_SECRET_KEY | default('') }}"
+        stripe_publishable_key: "{{ env_vars.STRIPE_PUBLISHABLE_KEY | default('') }}"
+        stripe_webhook_secret: "{{ env_vars.STRIPE_WEBHOOK_SECRET | default('') }}"
+        stripe_connect_webhook_secret: "{{ env_vars.STRIPE_CONNECT_WEBHOOK_SECRET | default('') }}"
+        sendgrid_api_key: "{{ env_vars.SENDGRID_API_KEY | default('') }}"
+        sendgrid_password: "{{ env_vars.SENDGRID_PASSWORD | default('') }}"
+        email_from: "{{ env_vars.EMAIL_FROM | default('') }}"
+        slack_webhook_url: "{{ env_vars.SLACK_WEBHOOK_URL | default('') }}"
+        message_encryption_key: "{{ env_vars.MESSAGE_ENCRYPTION_KEY | default('') }}"
+        admin_url: "{{ env_vars.ADMIN_URL | default('') }}"
+        gs_bucket_name: "{{ env_vars.GS_BUCKET_NAME | default('') }}"
+        gs_project_id: "{{ env_vars.GS_PROJECT_ID | default('') }}"
+        service_account_file: "{{ env_vars.SERVICE_ACCOUNT_FILE | default('') }}"
+        django_debug: "{{ env_vars.DJANGO_DEBUG | default('') }}"
+        enable_https_redirect: "{{ env_vars.ENABLE_HTTPS_REDIRECT | default('True') }}"
+        domain_name: "{{ env_vars.DOMAIN_NAME | default('') }}"
+        app_port: "{{ env_vars.APP_PORT | default('8000') }}"
+        vps_user: "{{ env_vars.VPS_USER | default('django') }}"
+        db_name: "{{ env_vars.DB_NAME | default('education_website') }}"
+        db_user: "{{ env_vars.DB_USER | default('root') }}"
+        db_password: "{{ env_vars.DB_PASSWORD | default('change_me') }}"
+        project_name: "{{ env_vars.PROJECT_NAME | default('education-website') }}"
+        git_repo: "{{ env_vars.GIT_REPO | default(git_repo) }}"
+        git_branch: "{{ env_vars.GIT_BRANCH | default(git_branch) }}"
+        allowed_hosts: "{{ env_vars.ALLOWED_HOSTS | default('localhost,127.0.0.1') }}"
+        csrf_trusted_origins: "{{ env_vars.CSRF_TRUSTED_ORIGINS | default('localhost,127.0.0.1') }}"
+
+    - name: Ensure application user exists
+      user: { name: "{{ vps_user }}", system: true, create_home: true, shell: /bin/bash }
+
+    - name: Clone code
+      git:
+        repo: "{{ git_repo }}"
+        dest: "{{ project_root }}"
+        version: "{{ git_branch }}"
+        force: yes
+      register: git_clone
+
+    - name: Ensure correct ownership of project directory
+      file:
+        path: "{{ project_root }}"
+        state: directory
+        recurse: yes
+        owner: "{{ vps_user }}"
+        group: "{{ vps_user }}"
+      when: git_clone is changed
+
+    - name: Create venv + install deps
+      become: yes
+      become_user: "{{ vps_user }}"
+      shell: |
+        python3.11 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip wheel
+        pip install -r requirements.txt uvicorn gunicorn psycopg2-binary
+      args:
+        chdir: "{{ project_root }}"
+        executable: /bin/bash
+
+    - name: Generate .env for server
+      template:
+        src: env.j2          # unchanged template
+        dest: "{{ project_root }}/.env"
+        mode: '0600'
+        owner: "{{ vps_user }}"
+        group: "{{ vps_user }}"
+
+    - name: Django migrate + collectstatic
+      become: yes
+      become_user: "{{ vps_user }}"
+      shell: |
+        set -e
+        source venv/bin/activate
+        export DJANGO_SETTINGS_MODULE=web.settings
+        python manage.py migrate --noinput
+        python manage.py collectstatic --noinput
+      args:
+        chdir: "{{ project_root }}"
+        executable: /bin/bash
+
+- name: 2️⃣  Harden & run
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Configure nginx
+      template:
+        src: nginx-http.conf.j2
+        dest: /etc/nginx/nginx.conf
+      notify: restart nginx
+
+    - name: Copy systemd service
+      template:
+        src: education-website.service.j2
+        dest: /etc/systemd/system/education-website.service
+      notify: restart app
+
+    - name: Allow ports
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+      loop: [22, 80, 443]
+
+    - name: Enable firewall (now that everything is ready)
+      ufw:
+        state: enabled
+
+  handlers:
+    - name: restart nginx
+      service: {name: nginx, state: restarted, enabled: yes}
+    - name: restart app
+      service: {name: education-website, state: restarted, enabled: yes}
