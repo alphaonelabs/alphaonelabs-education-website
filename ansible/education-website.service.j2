@@ -1,0 +1,17 @@
+[Unit]
+Description={{ project_name }} website
+After=network.target
+
+[Service]
+User={{ vps_user }}
+Group={{ vps_user }}
+WorkingDirectory=/home/{{ vps_user }}/{{ project_name }}
+Environment="PATH=/home/{{ vps_user }}/{{ project_name }}/venv/bin"
+ExecStart=/home/{{ vps_user }}/{{ project_name }}/venv/bin/gunicorn \
+         web.asgi:application -w 4 -k uvicorn.workers.UvicornWorker \
+         --timeout 120 \
+         -b 127.0.0.1:{{ app_port }}
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
