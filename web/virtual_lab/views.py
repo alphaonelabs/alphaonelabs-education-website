@@ -43,3 +43,27 @@ def physics_electrical_circuit_view(request):
     Renders the Electrical Circuit simulation page (physics/circuit.html).
     """
     return render(request, "virtual_lab/physics/circuit.html")
+
+
+def chemistry_home(request):
+    return render(request, "virtual_lab/chemistry/index.html")
+
+
+def titration_view(request):
+    return render(request, "virtual_lab/chemistry/titration.html")
+
+
+def reaction_rate_view(request):
+    return render(request, "virtual_lab/chemistry/reaction_rate.html")
+
+
+def solubility_view(request):
+    return render(request, "virtual_lab/chemistry/solubility.html")
+
+
+def precipitation_view(request):
+    return render(request, "virtual_lab/chemistry/precipitation.html")
+
+
+def ph_indicator_view(request):
+    return render(request, "virtual_lab/chemistry/ph_indicator.html")
