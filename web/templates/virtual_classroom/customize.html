@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block title %}Customize Virtual Classroom{% endblock %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="max-w-2xl mx-auto">
+      <div class="flex items-center justify-between mb-8">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-200">Customize Virtual Classroom</h1>
+        <a href="{% url 'virtual_classroom_detail' classroom.id %}"
+           class="text-gray-600 hover:text-gray-800 dark:text-gray-400">
+          <i class="fas fa-arrow-left mr-2"></i>Back to Classroom
+        </a>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <form method="post" class="space-y-8">
+          {% csrf_token %}
+          <!-- Color Settings -->
+          <div class="space-y-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Colors</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {% for field in form %}
+                {% if 'color' in field.name %}
+                  <div class="space-y-2">
+                    <label for="{{ field.id_for_label }}"
+                           class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}<div class="text-red-600 dark:text-red-400 text-sm">{{ field.errors }}</div>{% endif %}
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+          <!-- Layout Settings -->
+          <div class="space-y-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Layout</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {% for field in form %}
+                {% if 'rows' in field.name or 'per_row' in field.name %}
+                  <div class="space-y-2">
+                    <label for="{{ field.id_for_label }}"
+                           class="block text-sm font-medium text-gray-700 dark:text-gray-300">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}<div class="text-red-600 dark:text-red-400 text-sm">{{ field.errors }}</div>{% endif %}
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+          <!-- Toggle Settings -->
+          <div class="space-y-6">
+            <h2 class="text-xl font-semibold text-gray-800 dark:text-gray-200">Elements</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {% for field in form %}
+                {% if 'has_' in field.name %}
+                  <div class="flex items-center space-x-3">
+                    {{ field }}
+                    <label for="{{ field.id_for_label }}"
+                           class="text-sm text-gray-700 dark:text-gray-300">{{ field.label }}</label>
+                    {% if field.errors %}<div class="text-red-600 dark:text-red-400 text-sm">{{ field.errors }}</div>{% endif %}
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+          <div class="flex justify-end space-x-4 pt-6">
+            <a href="{% url 'virtual_classroom_detail' classroom.id %}"
+               class="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-200">
+              Cancel
+            </a>
+            <button type="submit"
+                    class="bg-teal-700 hover:bg-teal-800 text-white px-6 py-2 rounded-lg transition duration-200">
+              Save Customization
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}

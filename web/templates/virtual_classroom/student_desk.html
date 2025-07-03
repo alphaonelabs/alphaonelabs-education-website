@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% load i18n %}
+
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-white mb-6">{% trans "Student Desk" %} {{ seat_id }}</h1>
+      <!-- Desk Content -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <!-- Notes Section -->
+        <div class="bg-white dark:bg-gray-700 rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+            <i data-lucide="pencil" class="inline-block w-6 h-6 mr-2"></i>
+            {% trans "Notes" %}
+          </h2>
+          <div class="bg-gray-100 dark:bg-gray-600 rounded-lg p-4">
+            <textarea class="w-full h-40 bg-transparent text-gray-800 dark:text-white resize-none focus:outline-none"
+                      placeholder="{% trans 'Take notes here...' %}"></textarea>
+          </div>
+        </div>
+        <!-- Personal Items -->
+        <div class="bg-white dark:bg-gray-700 rounded-lg shadow-md p-6">
+          <h2 class="text-xl font-semibold text-gray-800 dark:text-white mb-4">
+            <i data-lucide="briefcase" class="inline-block w-6 h-6 mr-2"></i>
+            {% trans "Personal Items" %}
+          </h2>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-gray-100 dark:bg-gray-600 rounded-lg p-4 flex items-center">
+              <i data-lucide="book"
+                 class="w-6 h-6 mr-2 text-gray-600 dark:text-gray-300"></i>
+              <span class="text-gray-800 dark:text-white">{% trans "Textbook" %}</span>
+            </div>
+            <div class="bg-gray-100 dark:bg-gray-600 rounded-lg p-4 flex items-center">
+              <i data-lucide="pen-tool"
+                 class="w-6 h-6 mr-2 text-gray-600 dark:text-gray-300"></i>
+              <span class="text-gray-800 dark:text-white">{% trans "Pencil Case" %}</span>
+            </div>
+            <div class="bg-gray-100 dark:bg-gray-600 rounded-lg p-4 flex items-center">
+              <i data-lucide="calculator"
+                 class="w-6 h-6 mr-2 text-gray-600 dark:text-gray-300"></i>
+              <span class="text-gray-800 dark:text-white">{% trans "Calculator" %}</span>
+            </div>
+            <div class="bg-gray-100 dark:bg-gray-600 rounded-lg p-4 flex items-center">
+              <i data-lucide="file"
+                 class="w-6 h-6 mr-2 text-gray-600 dark:text-gray-300"></i>
+              <span class="text-gray-800 dark:text-white">{% trans "Assignments" %}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Action Buttons -->
+      <div class="flex justify-between items-center">
+        <a href="javascript:history.back()"
+           class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition duration-200">
+          {% trans "Back to Classroom" %}
+        </a>
+        <button class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+          {% trans "Save Notes" %}
+        </button>
+      </div>
+    </div>
+  </div>
+{% endblock %}
