@@ -1,6 +1,14 @@
 # web/virtual_lab/views.py
 
+import json
+import os
+import subprocess
+import sys
+import tempfile
+
+from django.http import JsonResponse
 from django.shortcuts import render
+from django.views.decorators.http import require_POST
 
 
 def virtual_lab_home(request):
@@ -67,3 +75,31 @@ def precipitation_view(request):
 
 def ph_indicator_view(request):
     return render(request, "virtual_lab/chemistry/ph_indicator.html")
+
+
+def code_editor_view(request):
+    # note the extra “code_editor/” directory in the path
+    return render(request, "virtual_lab/code_editor/code_editor.html")
+
+
+@require_POST
+def evaluate_code(request):
+    """
+    Runs Python code locally in a temp file.
+    """
+    data = json.loads(request.body)
+    code = data.get("code", "")
+    stdin = data.get("stdin", "")
+
+    # write to a temp file
+    with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
+        f.write(code)
+        path = f.name
+
+    try:
+        proc = subprocess.run([sys.executable, path], input=stdin, capture_output=True, text=True, timeout=5)
+        return JsonResponse({"stdout": proc.stdout, "stderr": proc.stderr})
+    except subprocess.TimeoutExpired:
+        return JsonResponse({"stdout": "", "stderr": "Execution timed out."}, status=504)
+    finally:
+        os.remove(path)

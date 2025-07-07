@@ -2,6 +2,8 @@ from django.urls import path
 
 from .views import (
     chemistry_home,
+    code_editor_view,
+    evaluate_code,
     ph_indicator_view,
     physics_electrical_circuit_view,
     physics_inclined_view,
@@ -30,4 +32,6 @@ urlpatterns = [
     path("virtual_lab/chemistry/solubility/", solubility_view, name="solubility"),
     path("virtual_lab/chemistry/precipitation/", precipitation_view, name="precipitation"),
     path("virtual_lab/chemistry/ph-indicator/", ph_indicator_view, name="ph_indicator"),
+    path("code-editor/", code_editor_view, name="code_editor"),
+    path("evaluate-code/", evaluate_code, name="evaluate_code"),
 ]
