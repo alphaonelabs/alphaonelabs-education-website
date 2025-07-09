@@ -1,11 +1,14 @@
 # web/virtual_lab/views.py
 
 import json
+import logging
 
 import requests
 from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_POST
+
+logger = logging.getLogger(__name__)
 
 
 def virtual_lab_home(request):
@@ -113,8 +116,13 @@ def evaluate_code(request):
     try:
         resp = requests.post(PISTON_EXECUTE_URL, json=payload, timeout=10)
         resp.raise_for_status()
-    except requests.RequestException as e:
-        return JsonResponse({"stderr": str(e)}, status=502)
+    except requests.RequestException:
+        # Log the full details for your own troubleshooting
+        logger.exception("Failed to call Piston execute endpoint")
+        # Return a safe, generic message to the user
+        return JsonResponse(
+            {"stderr": "Code execution service is currently unavailable. Please try again later."}, status=502
+        )
 
     result = resp.json()
     # Piston returns a structure like:
