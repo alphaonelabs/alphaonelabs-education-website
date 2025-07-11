@@ -44,6 +44,68 @@
               </div>
             </div>
           {% endif %}
+          
+          {% comment %} Session Waiting Room - Show if session has passed and user is not a teacher {% endcomment %}
+          {% if session.end_time < now and not is_teacher %}
+            {% if next_session %}
+              <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900 text-blue-700 dark:text-blue-200 rounded-lg">
+                <div class="flex items-start space-x-3">
+                  <i class="fa-solid fa-clock-rotate-left text-lg mt-1"></i>
+                  <div class="flex-1">
+                    <h3 class="font-semibold mb-2">{% trans "This session has ended" %}</h3>
+                    <p class="text-sm mb-3">
+                      {% trans "The next session is scheduled for" %} <strong>{{ next_session.start_time|date:"M j, Y" }}</strong> {% trans "at" %} <strong>{{ next_session.start_time|time:"g:i A e" }}</strong>
+                    </p>
+                    {% if user_in_session_waiting_room %}
+                      <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-check-circle text-green-600 dark:text-green-400"></i>
+                        <span class="text-sm font-medium">{% trans "You're in the waiting room for the next session" %}</span>
+                        <a href="{% url 'leave_session_waiting_room' session.course.slug %}"
+                           class="ml-2 text-xs bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 px-2 py-1 rounded">
+                          {% trans "Leave" %}
+                        </a>
+                      </div>
+                    {% else %}
+                      <a href="{% url 'join_session_waiting_room' session.course.slug %}"
+                         class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded-lg text-sm">
+                        <i class="fa-solid fa-user-plus mr-2"></i>
+                        {% trans "Join waiting room for next session" %}
+                      </a>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% else %}
+              <div class="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-200 rounded-lg">
+                <div class="flex items-start space-x-3">
+                  <i class="fa-solid fa-clock-rotate-left text-lg mt-1"></i>
+                  <div class="flex-1">
+                    <h3 class="font-semibold mb-2">{% trans "This session has ended" %}</h3>
+                    <p class="text-sm mb-3">
+                      {% trans "No upcoming sessions are currently scheduled for this course." %}
+                    </p>
+                    {% if user_in_session_waiting_room %}
+                      <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-check-circle text-green-600 dark:text-green-400"></i>
+                        <span class="text-sm font-medium">{% trans "You're in the waiting room for the next session" %}</span>
+                        <a href="{% url 'leave_session_waiting_room' session.course.slug %}"
+                           class="ml-2 text-xs bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 px-2 py-1 rounded">
+                          {% trans "Leave" %}
+                        </a>
+                      </div>
+                    {% else %}
+                      <a href="{% url 'join_session_waiting_room' session.course.slug %}"
+                         class="inline-flex items-center bg-yellow-600 hover:bg-yellow-700 text-white font-semibold px-4 py-2 rounded-lg text-sm">
+                        <i class="fa-solid fa-user-plus mr-2"></i>
+                        {% trans "Join waiting room for next session" %}
+                      </a>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          {% endif %}
+          
           {% if is_teacher %}
             <div class="mt-6 flex space-x-4">
               <a href="{% url 'edit_session' session.id %}"

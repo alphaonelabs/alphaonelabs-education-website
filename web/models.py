@@ -2360,6 +2360,57 @@ class WaitingRoom(models.Model):
     def __str__(self):
         return self.title
 
+    def participant_count(self):
+        """Return the number of participants in the waiting room."""
+        return self.participants.count()
+
+    def topic_list(self):
+        """Return the list of topics as a list."""
+        return [topic.strip() for topic in self.topics.split(",") if topic.strip()]
+
+    def mark_as_fulfilled(self, course=None):
+        """Mark the waiting room as fulfilled and notify participants."""
+        self.status = "fulfilled"
+        self.save()
+
+        if course:
+            from .notifications import notify_waiting_room_fulfilled
+
+            notify_waiting_room_fulfilled(self, course)
+
+
+class SessionWaitingRoom(models.Model):
+    """Model for storing waiting room requests for the next session of a specific course."""
+
+    STATUS_CHOICES = [("open", "Open"), ("closed", "Closed")]
+
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="session_waiting_rooms")
+    participants = models.ManyToManyField(User, related_name="joined_session_waiting_rooms", blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="open")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ["course"]  # Only one waiting room per course
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Waiting room for next session of {self.course.title}"
+
+    def participant_count(self):
+        """Return the number of participants in the waiting room."""
+        return self.participants.count()
+
+    def get_next_session(self):
+        """Get the next upcoming session for this course."""
+        from django.utils import timezone
+        return self.course.sessions.filter(start_time__gt=timezone.now()).order_by('start_time').first()
+
+    def close_waiting_room(self):
+        """Close the waiting room."""
+        self.status = "closed"
+        self.save()
+
 
 class GradeableLink(models.Model):
     """Model for storing links that users want to get grades on."""
@@ -2385,24 +2436,6 @@ class GradeableLink(models.Model):
 
     def __str__(self):
         return self.title
-
-    def participant_count(self):
-        """Return the number of participants in the waiting room."""
-        return self.participants.count()
-
-    def topic_list(self):
-        """Return the list of topics as a list."""
-        return [topic.strip() for topic in self.topics.split(",") if topic.strip()]
-
-    def mark_as_fulfilled(self, course=None):
-        """Mark the waiting room as fulfilled and notify participants."""
-        self.status = "fulfilled"
-        self.save()
-
-        if course:
-            from .notifications import notify_waiting_room_fulfilled
-
-            notify_waiting_room_fulfilled(self, course)
 
     def get_absolute_url(self):
         return reverse("gradeable_link_detail", kwargs={"pk": self.pk})
