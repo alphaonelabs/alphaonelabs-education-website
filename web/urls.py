@@ -473,6 +473,16 @@ urlpatterns += i18n_patterns(
     path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
+    # Flashcard URLs
+    path("flashcards/", views.flashcard_deck_list, name="flashcard_deck_list"),
+    path("flashcards/create/", views.flashcard_deck_create, name="flashcard_deck_create"),
+    path("flashcards/<slug:slug>/", views.flashcard_deck_detail, name="flashcard_deck_detail"),
+    path("flashcards/<slug:slug>/edit/", views.flashcard_deck_edit, name="flashcard_deck_edit"),
+    path("flashcards/<slug:slug>/delete/", views.flashcard_deck_delete, name="flashcard_deck_delete"),
+    path("flashcards/<slug:slug>/study/", views.flashcard_study, name="flashcard_study"),
+    path("flashcards/<slug:deck_slug>/cards/add/", views.flashcard_create, name="flashcard_create"),
+    path("flashcards/<slug:deck_slug>/cards/<int:card_id>/edit/", views.flashcard_edit, name="flashcard_edit"),
+    path("flashcards/<slug:deck_slug>/cards/<int:card_id>/delete/", views.flashcard_delete, name="flashcard_delete"),
     path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
     prefix_default_language=True,
 )
