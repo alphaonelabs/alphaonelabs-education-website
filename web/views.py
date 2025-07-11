@@ -158,6 +158,7 @@ from .models import (
     Session,
     SessionAttendance,
     SessionEnrollment,
+    SessionWaitingRoom,
     Storefront,
     StudyGroup,
     StudyGroupInvite,
@@ -2358,10 +2359,27 @@ def session_detail(request, session_id):
         ):
             return HttpResponseForbidden("You don't have access to this session")
 
+        # Get next session for waiting room functionality
+        next_session = None
+        user_in_session_waiting_room = False
+        
+        if request.user.is_authenticated:
+            # Get the next upcoming session for this course
+            next_session = session.course.sessions.filter(start_time__gt=timezone.now()).order_by('start_time').first()
+            
+            # Check if user is in the session waiting room
+            try:
+                session_waiting_room = SessionWaitingRoom.objects.get(course=session.course)
+                user_in_session_waiting_room = request.user in session_waiting_room.participants.all()
+            except SessionWaitingRoom.DoesNotExist:
+                user_in_session_waiting_room = False
+
         context = {
             "session": session,
             "is_teacher": request.user == session.course.teacher,
             "now": timezone.now(),
+            "next_session": next_session,
+            "user_in_session_waiting_room": user_in_session_waiting_room,
         }
 
         return render(request, "web/study/session_detail.html", context)
@@ -7927,3 +7945,54 @@ class SurveyDeleteView(LoginRequiredMixin, DeleteView):
     def handle_no_permission(self):
         messages.error(self.request, "You can only delete surveys that you created.")
         return redirect("surveys")
+
+
+@login_required
+def join_session_waiting_room(request, course_slug):
+    """View for joining a session waiting room for the next session of a course."""
+    course = get_object_or_404(Course, slug=course_slug)
+    
+    # Get or create the session waiting room for this course
+    session_waiting_room, created = SessionWaitingRoom.objects.get_or_create(
+        course=course,
+        defaults={'status': 'open'}
+    )
+    
+    # Check if the waiting room is open
+    if session_waiting_room.status != "open":
+        messages.error(request, "This session waiting room is no longer open for joining.")
+        return redirect("course_detail", slug=course_slug)
+    
+    # Add the user to participants if not already in
+    if request.user not in session_waiting_room.participants.all():
+        session_waiting_room.participants.add(request.user)
+        next_session = session_waiting_room.get_next_session()
+        if next_session:
+            messages.success(request, f"You have joined the waiting room for the next session of {course.title}. Next session is on {next_session.start_time.strftime('%B %d, %Y at %I:%M %p')}.")
+        else:
+            messages.success(request, f"You have joined the waiting room for the next session of {course.title}. You'll be notified when a new session is scheduled.")
+    else:
+        messages.info(request, "You are already in the waiting room for the next session of this course.")
+    
+    return redirect("course_detail", slug=course_slug)
+
+
+@login_required
+def leave_session_waiting_room(request, course_slug):
+    """View for leaving a session waiting room."""
+    course = get_object_or_404(Course, slug=course_slug)
+    
+    try:
+        session_waiting_room = SessionWaitingRoom.objects.get(course=course)
+    except SessionWaitingRoom.DoesNotExist:
+        messages.info(request, "No session waiting room found for this course.")
+        return redirect("course_detail", slug=course_slug)
+    
+    # Remove the user from participants
+    if request.user in session_waiting_room.participants.all():
+        session_waiting_room.participants.remove(request.user)
+        messages.success(request, f"You have left the session waiting room for {course.title}")
+    else:
+        messages.info(request, "You are not in the session waiting room for this course.")
+    
+    return redirect("course_detail", slug=course_slug)
