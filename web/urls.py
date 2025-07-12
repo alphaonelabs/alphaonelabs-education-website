@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
-from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
+from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar, views_whiteboard
 from .secure_messaging import (
     compose_message,
     download_message,
@@ -26,6 +26,7 @@ from .views import (
     SurveyResultsView,
     add_goods_to_cart,
     apply_discount_via_referrer,
+    classroom_attendance,
     feature_vote,
     feature_vote_count,
     features_page,
@@ -35,6 +36,8 @@ from .views import (
     sales_data,
     streak_detail,
     submit_survey,
+    update_session_attendance,
+    update_student_attendance,
 )
 
 # Non-prefixed URLs
@@ -429,14 +432,14 @@ urlpatterns += i18n_patterns(
         name="mark_session_completed",
     ),
     path(
-        "update_student_attendance/",
+        "update_student_attendance/<int:classroom_id>/",
         views.update_student_attendance,
-        name="update_student_attendance",
+        name="update_student_attendance_legacy",
     ),
     path(
-        "get_student_attendance/",
-        views.get_student_attendance,
-        name="get_student_attendance",
+        "update_session_attendance/",
+        update_session_attendance,
+        name="update_session_attendance",
     ),
     # Student Management URLs
     path(
@@ -474,6 +477,28 @@ urlpatterns += i18n_patterns(
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
     path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
+    # Virtual Classroom URLs
+    path("virtual-classroom/", views.virtual_classroom_list, name="virtual_classroom_list"),
+    path("virtual-classroom/create/", views.virtual_classroom_create, name="virtual_classroom_create"),
+    path("virtual-classroom/<int:classroom_id>/", views.virtual_classroom_detail, name="virtual_classroom_detail"),
+    path("virtual-classroom/<int:classroom_id>/edit/", views.virtual_classroom_edit, name="virtual_classroom_edit"),
+    path(
+        "virtual-classroom/<int:classroom_id>/customize/",
+        views.virtual_classroom_customize,
+        name="virtual_classroom_customize",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/delete/", views.virtual_classroom_delete, name="virtual_classroom_delete"
+    ),
+    path("virtual-classroom/<int:classroom_id>/blackboard/", views.classroom_blackboard, name="classroom_blackboard"),
+    path("virtual-classroom/<int:classroom_id>/attendance/", classroom_attendance, name="classroom_attendance"),
+    path("attendance/<int:classroom_id>/update/", update_student_attendance, name="update_student_attendance"),
+    path("virtual-classroom/<int:classroom_id>/reset-attendance/", views.reset_attendance, name="reset_attendance"),
+    # Whiteboard URLs
+    path("whiteboard/<int:classroom_id>/", views_whiteboard.classroom_whiteboard, name="classroom_whiteboard"),
+    path("whiteboard/<int:classroom_id>/data/", views_whiteboard.get_whiteboard_data, name="get_whiteboard_data"),
+    path("whiteboard/<int:classroom_id>/save/", views_whiteboard.save_whiteboard_data, name="save_whiteboard_data"),
+    path("whiteboard/<int:classroom_id>/clear/", views_whiteboard.clear_whiteboard, name="clear_whiteboard"),
     prefix_default_language=True,
 )
 
