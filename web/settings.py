@@ -165,7 +165,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "web.context_processors.last_modified",
-                "social_django.context_processors.backends"
+                "social_django.context_processors.backends",
             ],
         },
     },
