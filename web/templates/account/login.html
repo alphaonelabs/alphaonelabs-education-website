@@ -10,12 +10,12 @@
 {% block content %}
   <div class="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
-      <h2 class="mt-10 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900 dark:text-white">
+      <h2 class="mt-2 text-center text-2xl font-bold leading-9 tracking-tight text-gray-900 dark:text-white">
         <i class="fas fa-sign-in-alt text-orange-500 mr-2"></i>
         Sign in to your account
       </h2>
     </div>
-    <div class="mt-10 sm:mx-auto sm:w-full sm:max-w-md">
+    <div class="mt-4 sm:mx-auto sm:w-full sm:max-w-md">
       <form class="space-y-6" action="{% url 'account_login' %}" method="post">
         {% csrf_token %}
         {% if form.errors %}
@@ -34,7 +34,7 @@
             <i class="fas fa-envelope text-gray-400 mr-1"></i>
             Email Address
           </label>
-          <div class="mt-2">
+          <div class="mt-1">
             <input id="id_login"
                    name="login"
                    type="email"
@@ -67,7 +67,7 @@
                    {% if form.remember.value %}checked{% endif %}
                    class="h-4 w-4 text-orange-500 focus:ring-orange-500 border-gray-300 dark:border-gray-600 rounded cursor-pointer" />
             <label for="id_remember"
-                   class="ml-2 mt-2 block text-sm text-gray-900 dark:text-gray-200 cursor-pointer">Remember me</label>
+                   class="ml-2 mt-1 block text-sm text-gray-900 dark:text-gray-200 cursor-pointer">Remember me</label>
           </div>
           <div class="text-sm">
             <a href="{% url 'account_reset_password' %}"
@@ -87,13 +87,37 @@
           </button>
         </div>
       </form>
-      <p class="mt-10 text-center text-sm text-gray-500 dark:text-gray-400">
-        Don't have an account?
-        <a href="{% url 'account_signup' %}"
-           class="font-semibold leading-6 text-orange-500 hover:text-orange-600">
-          Sign up <i class="fas fa-arrow-right text-xs ml-1"></i>
-        </a>
-      </p>
+      </form>
+
+<!-- Divider -->
+<div class="relative my-6">
+  <div class="absolute inset-0 flex items-center">
+    <div class="w-full border-t border-gray-300 dark:border-gray-600"></div>
+  </div>
+  <div class="relative flex justify-center text-sm">
+    <span class="bg-white dark:bg-gray-900 px-2 text-gray-500 dark:text-gray-400">or</span>
+  </div>
+</div>
+
+<!-- Google Login Button -->
+<div>
+  <a href="{% url 'social:begin' 'google-oauth2' %}?next={{ request.path }}"
+     class="flex w-full justify-center items-center gap-3 rounded-md bg-red-600 px-4 py-2 text-base font-semibold leading-6 text-white shadow-sm hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 transition-all duration-200">
+    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google icon" class="w-5 h-5" />
+    Login with Google
+  </a>
+</div>
+
+<!-- Signup Link -->
+<p class="mt-10 text-center text-sm text-gray-500 dark:text-gray-400">
+  Don't have an account?
+  <a href="{% url 'account_signup' %}"
+     class="font-semibold leading-6 text-orange-500 hover:text-orange-600">
+    Sign up <i class="fas fa-arrow-right text-xs ml-1"></i>
+  </a>
+</p>
+
+
     </div>
   </div>
 {% endblock content %}

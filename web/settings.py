@@ -123,6 +123,7 @@ INSTALLED_APPS = [
     "allauth.account",
     "captcha",
     "markdownx",
+    "social_django",
     "web",
     "web.virtual_lab.apps.VirtualLabConfig",
 ]
@@ -142,6 +143,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
+    'social_django.middleware.SocialAuthExceptionMiddleware',
     "web.middleware.WebRequestMiddleware",
     # "web.middleware.GlobalExceptionMiddleware",
 ]
@@ -163,6 +165,7 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "web.context_processors.last_modified",
+                "social_django.context_processors.backends"
             ],
         },
     },
@@ -232,6 +235,7 @@ ACCOUNT_EMAIL_CONFIRMATION_ANONYMOUS_REDIRECT_URL = "account_login"
 
 # Authentication backends
 AUTHENTICATION_BACKENDS = [
+    'social_core.backends.google.GoogleOAuth2',
     "django.contrib.auth.backends.ModelBackend",
     "allauth.account.auth_backends.AuthenticationBackend",
 ]
@@ -395,3 +399,9 @@ USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+
+
+
+SOCIAL_AUTH_GOOGLE_OAUTH2_KEY=env.str("SOCIAL_AUTH_GOOGLE_OAUTH2_KEY",default="")
+SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET =env.str("SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET",default="")
+SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI =env.str("SOCIAL_AUTH_GOOGLE_OAUTH2_REDIRECT_URI",default="")
