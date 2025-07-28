@@ -55,6 +55,8 @@ from .models import (
     VideoRequest,
     WaitingRoom,
     WebRequest,
+    ClassroomGameState,
+    ChairOccupancy,
 )
 
 admin.site.unregister(EmailAddress)
@@ -889,3 +891,17 @@ class VideoRequestAdmin(admin.ModelAdmin):
     list_display = ("title", "status", "category", "requester", "created_at")
     list_filter = ("status", "category")
     search_fields = ("title", "description", "requester__username")
+
+
+@admin.register(ClassroomGameState)
+class ClassroomGameStateAdmin(admin.ModelAdmin):
+    list_display = ('user', 'session_id', 'position_x', 'position_y', 'last_updated')
+    list_filter = ('session_id', 'last_updated')
+    search_fields = ('user__username', 'session_id')
+
+
+@admin.register(ChairOccupancy)
+class ChairOccupancyAdmin(admin.ModelAdmin):
+    list_display = ('chair_id', 'user', 'session_id', 'timestamp')
+    list_filter = ('session_id', 'timestamp')
+    search_fields = ('chair_id', 'user__username', 'session_id')

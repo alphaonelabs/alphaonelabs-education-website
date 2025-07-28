@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Virtual Classroom{% endblock title %}
+
+{% block extra_head %}
+<!-- Phaser.js library -->
+<script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+<!-- CSRF Token -->
+{% csrf_token %}
+{% endblock extra_head %}
+
+{% block content %}
+<div class="w-full h-[calc(100vh-4rem)] bg-white dark:bg-gray-800 flex flex-col">
+  <div class="flex-1 flex flex-row">
+    <!-- Game container full screen -->
+    <div class="flex-1 flex items-center justify-center">
+      <div id="classroom-game" class="w-full h-full rounded-lg overflow-hidden border-2 border-teal-300"></div>
+    </div>
+    <!-- Users list on the right -->
+    <div class="w-80 bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 m-4 h-fit self-start">
+      <h2 class="text-xl font-bold mb-2 text-gray-700 dark:text-gray-300">Classroom Occupants</h2>
+      <div id="users-list" class="space-y-2">
+        <!-- Users will be populated here via JavaScript -->
+      </div>
+      <div class="mt-6 flex flex-col items-center">
+        <button id="swap-character-btn" class="bg-gray-100 hover:bg-teal-300 dark:bg-gray-700 dark:hover:bg-teal-400 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg shadow transition duration-200 flex flex-col items-center">
+          <img src="{% static 'images/classroom/character-2.png' %}" alt="Character 2" class="w-12 h-12 mb-1 rounded" />
+          <span class="text-xs">Switch Character</span>
+        </button>
+      </div>
+    </div>
+  </div>
+  <!-- Action button that appears when near interactive objects -->
+  <div id="interaction-button" class="fixed bottom-10 right-10 bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200 shadow-lg hidden z-50">
+    <span id="interaction-text">Interact</span>
+  </div>
+</div>
+
+<!-- Game data from backend -->
+<script id="game-state-json" type="application/json">{{ game_state|safe }}</script>
+<script id="current-user-json" type="application/json">{
+  "id": {% if user.id %}{{ user.id }}{% else %}null{% endif %},
+  "username": {% if user.username %}"{{ user.username }}"{% else %}"Guest"{% endif %},
+  "avatar": {% if user.profile.avatar_url %}"{{ user.profile.avatar_url }}"{% else %}""{% endif %}
+}</script>
+<script>
+  // Parse game state and user data from JSON script tags
+  const initialGameState = JSON.parse(document.getElementById('game-state-json').textContent || 'null');
+  const currentUser = JSON.parse(document.getElementById('current-user-json').textContent || '{}');
+
+  // Initialize interaction button
+  document.addEventListener('DOMContentLoaded', function() {
+    const interactButton = document.getElementById('interaction-button');
+    if (interactButton) {
+      interactButton.addEventListener('click', () => {
+        interactButton.classList.add('clicked');
+        setTimeout(() => {
+          interactButton.classList.remove('clicked');
+        }, 100);
+      });
+    }
+  });
+</script>
+
+<script src="{% static 'js/classroom/game.js' %}"></script>
+{% endblock content %} 
