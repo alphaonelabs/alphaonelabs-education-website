@@ -4359,7 +4359,7 @@ def meme_list(request):
     memes = Meme.objects.all().order_by("-created_at")
     
     subjects = Subject.objects.filter(memes__isnull=False).distinct()
-    users = User.objects.filter(meme__isnull=False).distinct()  # Get users who have posted memes
+    users = User.objects.filter(memes__isnull=False).distinct()  # Get users who have posted memes
 
     # Filter by subject if provided
     subject_filter = request.GET.get("subject")
