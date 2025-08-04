@@ -120,6 +120,8 @@ urlpatterns += i18n_patterns(
     path("secure/inbox/", inbox, name="inbox"),
     path("secure/download/<int:message_id>/", download_message, name="download_message"),
     path("secure/toggle_star/<int:message_id>/", toggle_star_message, name="toggle_star_message"),
+    # Virtual Lab Links
+    path("virtual_lab/", include("web.virtual_lab.urls", namespace="virtual_lab")),
     # Social media sharing URLs
     path("social-media/", views.social_media_dashboard, name="social_media_dashboard"),
     path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
