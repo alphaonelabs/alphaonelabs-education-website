@@ -17,6 +17,9 @@ jobs:
 
       - uses: actions/checkout@v3
 
+      - name: Prepare pip cache dir
+        run: mkdir -p ~/.cache/pip
+
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
         with:
@@ -52,6 +55,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+
+      - name: Prepare pip cache dir
+        run: mkdir -p ~/.cache/pip
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
@@ -89,6 +95,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+
+      - name: Prepare pip cache dir
+        run: mkdir -p ~/.cache/pip
 
       - name: Set up Python 3.10
         uses: actions/setup-python@v4
