@@ -1,5 +1,7 @@
 {% extends "base.html" %}
+
 {% load custom_filters %}
+
 {% block title %}
   Explore Our Products
 {% endblock title %}
@@ -42,13 +44,15 @@
                 {% with count=store_product_counts|get_item:name %}
                   {% with is_empty=count|add:0 %}
                     {% if is_empty == 0 %}
-                      <option value="{{ name }}" disabled title="No products available"
-                        {% if request.GET.store_name == name %}selected{% endif %}>
+                      <option value="{{ name }}"
+                              disabled
+                              title="No products available"
+                              {% if request.GET.store_name == name %}selected{% endif %}>
                         {{ name }} (No products available)
                       </option>
                     {% else %}
                       <option value="{{ name }}"
-                        {% if request.GET.store_name == name %}selected{% endif %}>
+                              {% if request.GET.store_name == name %}selected{% endif %}>
                         {{ name }} ({{ count }} product{{ count|pluralize }} available)
                       </option>
                     {% endif %}
