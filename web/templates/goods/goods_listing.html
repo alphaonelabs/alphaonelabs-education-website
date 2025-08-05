@@ -40,11 +40,19 @@
               <option value="">All</option>
               {% for name in store_names %}
                 {% with count=store_product_counts|get_item:name %}
-                  <option value="{{ name }}"
-                          {% if count == 0 %}disabled title="No products available"{% endif %}
-                          {% if request.GET.store_name == name %}selected{% endif %}>
-                    {{ name }} {% if count == 0 %}(No products available){% else %}({{ count }} products available){% endif %}
-                  </option>
+                  {% with is_empty=count|add:0 %}
+                    {% if is_empty == 0 %}
+                      <option value="{{ name }}" disabled title="No products available"
+                        {% if request.GET.store_name == name %}selected{% endif %}>
+                        {{ name }} (No products available)
+                      </option>
+                    {% else %}
+                      <option value="{{ name }}"
+                        {% if request.GET.store_name == name %}selected{% endif %}>
+                        {{ name }} ({{ count }} product{{ count|pluralize }} available)
+                      </option>
+                    {% endif %}
+                  {% endwith %}
                 {% endwith %}
               {% endfor %}
             </select>
@@ -150,7 +158,7 @@
             {% if request.GET.store_name %}
               <p>No products available in {{ request.GET.store_name }} at the moment.</p>
             {% else %}
-              <p>No products available in this store at the moment.</p>
+              <p>No products are available at the moment.</p>
             {% endif %}
           </div>
         {% endfor %}
