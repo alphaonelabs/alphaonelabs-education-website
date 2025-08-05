@@ -1,11 +1,12 @@
-from django import template
+from typing import Any, Dict, Union
 
+from django import template
 
 register = template.Library()
 
 
 @register.filter
-def get_item(dictionary, key):
+def get_item(dictionary: Union[Dict[str, Any], Any], key: str) -> Any:
     """
     Custom template filter to access dictionary values by key.
     Usage: {{ store_product_counts|get_item:name }}

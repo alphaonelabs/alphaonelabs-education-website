@@ -15,7 +15,7 @@ from collections import Counter, defaultdict
 from datetime import timedelta
 from decimal import Decimal
 from urllib.parse import urlparse
-from django.db.models import Count
+
 import requests
 import stripe
 import tweepy
