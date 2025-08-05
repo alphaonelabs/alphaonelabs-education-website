@@ -1,5 +1,6 @@
-from typing import Any
 from collections.abc import Mapping
+from typing import Any
+
 from django import template
 
 register = template.Library()
