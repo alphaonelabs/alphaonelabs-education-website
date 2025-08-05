@@ -1,12 +1,12 @@
 from typing import Any
-
+from collections.abc import Mapping
 from django import template
 
 register = template.Library()
 
 
 @register.filter
-def get_item(dictionary: Any, key: str) -> Any:
+def get_item(dictionary: Mapping[str, Any] | Any, key: str) -> Any:
     """
     Custom template filter to access dictionary values by key.
     Usage: {{ store_product_counts|get_item:name }}
