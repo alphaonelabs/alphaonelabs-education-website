@@ -3941,7 +3941,7 @@ class GoodsListingView(ListView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        stores_with_counts = Storefront.objects.annotate(product_count=Count('goods'))
+        stores_with_counts = Storefront.objects.annotate(product_count=Count("goods"))
         context["store_names"] = [store.name for store in stores_with_counts]
         context["store_product_counts"] = {store.name: store.product_count for store in stores_with_counts}
         context["categories"] = Goods.objects.values_list("category", flat=True).distinct()
