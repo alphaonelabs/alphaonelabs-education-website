@@ -4,9 +4,9 @@
   Calendar Links - {{ session.title }}
 {% endblock title %}
 {% block content %}
-  <main class="container mx-auto px-4 py-8" role="main">
-    <div class="grid gap-4">
-      <div class="w-full">
+  <main class="container mx-auto px-4 py-8">
+    <div class="mb-4">
+      <div>
         <h1 class="text-3xl font-bold mb-4">Add to Calendar</h1>
         <h2 class="text-xl text-gray-600 mb-3">{{ session.course.title }} - {{ session.title }}</h2>
       </div>
@@ -15,12 +15,16 @@
       <div class="md:col-span-8">
         <div class="bg-white rounded-lg shadow-md">
           <div class="p-6">
-            <h5 class="text-xl font-semibold mb-4">Session Details</h5>
+            <h2 class="text-xl font-semibold mb-4">Session Details</h2>
             <p class="mb-2">
-              <strong>Date:</strong> {{ session.start_time|date:"F j, Y" }}
+              <strong>Date:</strong>
+              <time datetime="{{ session.start_time|date:'c' }}">{{ session.start_time|date:"F j, Y" }}</time>
             </p>
             <p class="mb-2">
-              <strong>Time:</strong> {{ session.start_time|time:"g:i A" }} - {{ session.end_time|time:"g:i A" }}
+              <strong>Time:</strong>
+              <time datetime="{{ session.start_time|date:'c' }}">{{ session.start_time|time:"g:i A" }}</time>
+              -
+              <time datetime="{{ session.end_time|date:'c' }}">{{ session.end_time|time:"g:i A" }}</time>
             </p>
             {% if session.is_virtual %}
               <p class="mb-2">
@@ -36,7 +40,7 @@
         </div>
         <div class="bg-white rounded-lg shadow-md mt-4">
           <div class="p-6">
-            <h5 class="text-xl font-semibold mb-4">Calendar Options</h5>
+            <h2 class="text-xl font-semibold mb-4">Calendar Options</h2>
             <div class="space-y-2">
               <!-- Google Calendar -->
               <a href="{{ calendar_links.google }}"
@@ -45,8 +49,8 @@
                  class="block p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                 <div class="flex justify-between items-center">
                   <div>
-                    <h6 class="font-medium">Add to Google Calendar</h6>
-                    <small class="text-gray-500">Opens in a new window</small>
+                    <p class="font-medium">Add to Google Calendar</p>
+                    <p class="text-gray-500">Opens in a new window</p>
                   </div>
                   <i class="fas fa-external-link-alt text-gray-400"></i>
                 </div>
@@ -58,19 +62,20 @@
                  class="block p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                 <div class="flex justify-between items-center">
                   <div>
-                    <h6 class="font-medium">Add to Outlook Calendar</h6>
-                    <small class="text-gray-500">Opens in a new window</small>
+                    <p class="font-medium">Add to Outlook Calendar</p>
+                    <p class="text-gray-500">Opens in a new window</p>
                   </div>
                   <i class="fas fa-external-link-alt text-gray-400"></i>
                 </div>
               </a>
               <!-- iCal Feed -->
               <a href="{% url 'calendar_feed' %}"
+                 download
                  class="block p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                 <div class="flex justify-between items-center">
                   <div>
-                    <h6 class="font-medium">Download iCal File</h6>
-                    <small class="text-gray-500">Compatible with Apple Calendar, Outlook, and other calendar apps</small>
+                    <p class="font-medium">Download iCal File</p>
+                    <p class="text-gray-500">Compatible with Apple Calendar, Outlook, and other calendar apps</p>
                   </div>
                   <i class="fas fa-download text-gray-400"></i>
                 </div>
@@ -87,7 +92,7 @@
               <p class="text-gray-600 mb-4">
                 Choose your preferred calendar application from the options on the left. The session will be automatically added to your calendar with all the necessary details.
               </p>
-              <h6 class="font-medium mt-6 mb-3">Calendar Sync Instructions:</h6>
+              <h3 class="font-medium mt-6 mb-3">Calendar Sync Instructions:</h3>
               <ol class="space-y-2">
                 <li class="flex items-center">
                   <i class="fas fa-check text-green-500 mr-2"></i> Click your preferred calendar option
