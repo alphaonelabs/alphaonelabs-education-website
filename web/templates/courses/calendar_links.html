@@ -4,11 +4,11 @@
   Calendar Links - {{ session.title }}
 {% endblock title %}
 {% block content %}
-  <div class="container py-4">
+  <main class="container py-4" role="main">
     <div class="row">
       <div class="col-12">
         <h1 class="mb-4">Add to Calendar</h1>
-        <h4 class="text-muted mb-3">{{ session.course.title }} - {{ session.title }}</h4>
+        <h2 class="text-muted mb-3">{{ session.course.title }} - {{ session.title }}</h2>
       </div>
     </div>
     <div class="row">
@@ -78,30 +78,32 @@
         </div>
       </div>
       <div class="col-md-4">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title">Need Help?</h5>
-            <p class="card-text">
-              Choose your preferred calendar application from the options on the left. The session will be automatically added to your calendar with all the necessary details.
-            </p>
-            <h6 class="mt-3">Calendar Sync Instructions:</h6>
-            <ul class="list-unstyled">
-              <li>
-                <i class="fas fa-check text-success me-2"></i> Click your preferred calendar option
-              </li>
-              <li>
-                <i class="fas fa-check text-success me-2"></i> Review the event details
-              </li>
-              <li>
-                <i class="fas fa-check text-success me-2"></i> Click save or add to calendar
-              </li>
-              <li>
-                <i class="fas fa-check text-success me-2"></i> The session is now in your calendar!
-              </li>
-            </ul>
+        <section aria-labelledby="help-heading">
+          <div class="card">
+            <div class="card-body">
+              <h5 id="help-heading" class="card-title">Need Help?</h5>
+              <p class="card-text">
+                Choose your preferred calendar application from the options on the left. The session will be automatically added to your calendar with all the necessary details.
+              </p>
+              <h6 class="mt-3">Calendar Sync Instructions:</h6>
+              <ul class="list-unstyled">
+                <li>
+                  <i class="fas fa-check text-success me-2"></i> Click your preferred calendar option
+                </li>
+                <li>
+                  <i class="fas fa-check text-success me-2"></i> Review the event details
+                </li>
+                <li>
+                  <i class="fas fa-check text-success me-2"></i> Click save or add to calendar
+                </li>
+                <li>
+                  <i class="fas fa-check text-success me-2"></i> The session is now in your calendar!
+                </li>
+              </ul>
+            </div>
           </div>
-        </div>
+        </section>
       </div>
     </div>
-  </div>
+  </main>
 {% endblock content %}
