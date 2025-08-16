@@ -6,10 +6,10 @@
 {% block content %}
   <main class="container mx-auto px-4 py-8">
     <div class="mb-4">
-      <div>
+
         <h1 class="text-3xl font-bold mb-4">Add to Calendar</h1>
         <h2 class="text-xl text-gray-600 mb-3">{{ session.course.title }} - {{ session.title }}</h2>
-      </div>
+
     </div>
     <div class="grid md:grid-cols-12 gap-4">
       <div class="md:col-span-8">
@@ -25,6 +25,7 @@
               <time datetime="{{ session.start_time|date:'c' }}">{{ session.start_time|time:"g:i A" }}</time>
               -
               <time datetime="{{ session.end_time|date:'c' }}">{{ session.end_time|time:"g:i A" }}</time>
+              <span class="ml-1 text-gray-500">({{ session.start_time|date:"e" }})</span>
             </p>
             {% if session.is_virtual %}
               <p class="mb-2">
@@ -46,13 +47,13 @@
               <a href="{{ calendar_links.google }}"
                  target="_blank"
                  rel="noopener noreferrer"
-                 class="block p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                  class="block p-4 border rounded-lg hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600">
                 <div class="flex justify-between items-center">
                   <div>
                     <p class="font-medium">Add to Google Calendar</p>
                     <p class="text-gray-500">Opens in a new window</p>
                   </div>
-                  <i class="fas fa-external-link-alt text-gray-400"></i>
+                  <i class="fas fa-external-link-alt text-gray-400" aria-hidden="true"></i>
                 </div>
               </a>
               <!-- Outlook Calendar -->
@@ -65,19 +66,18 @@
                     <p class="font-medium">Add to Outlook Calendar</p>
                     <p class="text-gray-500">Opens in a new window</p>
                   </div>
-                  <i class="fas fa-external-link-alt text-gray-400"></i>
+                  <i class="fas fa-external-link-alt text-gray-400" aria-hidden="true"></i>
                 </div>
               </a>
               <!-- iCal Feed -->
               <a href="{% url 'calendar_feed' %}"
-                 download
                  class="block p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                 <div class="flex justify-between items-center">
                   <div>
                     <p class="font-medium">Download iCal File</p>
                     <p class="text-gray-500">Compatible with Apple Calendar, Outlook, and other calendar apps</p>
                   </div>
-                  <i class="fas fa-download text-gray-400"></i>
+                  <i class="fas fa-download text-gray-400" aria-hidden="true"></i>
                 </div>
               </a>
             </div>
