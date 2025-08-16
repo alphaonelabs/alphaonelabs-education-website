@@ -6,10 +6,8 @@
 {% block content %}
   <main class="container mx-auto px-4 py-8">
     <div class="mb-4">
-
-        <h1 class="text-3xl font-bold mb-4">Add to Calendar</h1>
-        <h2 class="text-xl text-gray-600 mb-3">{{ session.course.title }} - {{ session.title }}</h2>
-
+      <h1 class="text-3xl font-bold mb-4">Add to Calendar</h1>
+      <h2 class="text-xl text-gray-600 mb-3">{{ session.course.title }} - {{ session.title }}</h2>
     </div>
     <div class="grid md:grid-cols-12 gap-4">
       <div class="md:col-span-8">
@@ -47,7 +45,7 @@
               <a href="{{ calendar_links.google }}"
                  target="_blank"
                  rel="noopener noreferrer"
-                  class="block p-4 border rounded-lg hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600">
+                 class="block p-4 border rounded-lg hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600">
                 <div class="flex justify-between items-center">
                   <div>
                     <p class="font-medium">Add to Google Calendar</p>
@@ -71,7 +69,7 @@
               </a>
               <!-- iCal Feed -->
               <a href="{% url 'calendar_feed' %}"
-                 class="block p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                 class="block p-4 border rounded-lg hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600">
                 <div class="flex justify-between items-center">
                   <div>
                     <p class="font-medium">Download iCal File</p>
@@ -92,19 +90,19 @@
               <p class="text-gray-600 mb-4">
                 Choose your preferred calendar application from the options on the left. The session will be automatically added to your calendar with all the necessary details.
               </p>
-              <h3 class="font-medium mt-6 mb-3">Calendar Sync Instructions:</h3>
+              <h6 class="font-medium mt-6 mb-3">Calendar Sync Instructions:</h6>
               <ol class="space-y-2">
                 <li class="flex items-center">
-                  <i class="fas fa-check text-green-500 mr-2"></i> Click your preferred calendar option
+                  <i class="fas fa-check text-green-500 mr-2" aria-hidden="true"></i> Click your preferred calendar option
                 </li>
                 <li class="flex items-center">
-                  <i class="fas fa-check text-green-500 mr-2"></i> Review the event details
+                  <i class="fas fa-check text-green-500 mr-2" aria-hidden="true"></i> Review the event details
                 </li>
                 <li class="flex items-center">
-                  <i class="fas fa-check text-green-500 mr-2"></i> Click save or add to calendar
+                  <i class="fas fa-check text-green-500 mr-2" aria-hidden="true"></i> Click save or add to calendar
                 </li>
                 <li class="flex items-center">
-                  <i class="fas fa-check text-green-500 mr-2"></i> The session is now in your calendar!
+                  <i class="fas fa-check text-green-500 mr-2" aria-hidden="true"></i> The session is now in your calendar!
                 </li>
               </ol>
             </div>
