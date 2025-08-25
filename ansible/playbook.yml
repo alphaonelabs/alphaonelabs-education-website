@@ -164,15 +164,18 @@
         group: "{{ vps_user }}"
       no_log: true
 
-    - name: Create venv + install deps (uses system default python3)
+    - name: Create venv + install deps via Poetry (single source of truth)
       become: yes
       become_user: "{{ vps_user }}"
       shell: |
         python3 -m venv venv
         source venv/bin/activate
         pip install --upgrade pip wheel
-        # Install project requirements plus gunicorn and mysqlclient (MySQL backend)
-        pip install -r requirements.txt uvicorn gunicorn mysqlclient
+        # Install Poetry (pinned) if not present
+        if ! command -v poetry >/dev/null 2>&1; then pip install poetry==1.8.3; fi
+        # Install into current virtualenv rather than creating a new one
+        poetry config virtualenvs.create false --local || true
+        poetry install --only main --no-interaction --no-ansi
       args:
         chdir: "{{ project_root }}"
         executable: /bin/bash
@@ -236,7 +239,7 @@
         mode: '0600'
       when: mysql_dump_present | default(false) and (mysql_import_result is defined) and mysql_import_result.rc == 0
 
-    - name: Django migrate + collectstatic
+    - name: Django migrate + collectstatic (Poetry env)
       become: yes
       become_user: "{{ vps_user }}"
       shell: |

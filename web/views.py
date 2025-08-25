@@ -1031,28 +1031,48 @@ def github_update(request):
     venv_pip = os.path.join(repo_dir, "venv", "bin", "pip")
     log_lines = []
 
+    # Resolve git binary explicitly since systemd service Environment may override PATH.
+    import shutil
+
+    git_bin = shutil.which("git") or "/usr/bin/git"
+    if not os.path.exists(git_bin):
+        msg = f"Git binary not found at resolved path: {git_bin}. Aborting lightweight deploy."
+        send_slack_message(msg)
+        return HttpResponse(status=500, content=msg)
+
     def run_cmd(cmd):
         proc = subprocess.run(cmd, cwd=repo_dir, capture_output=True, text=True)
         summary = f"$ {' '.join(cmd)}\nrc={proc.returncode}\nstdout={proc.stdout[-400:]}\nstderr={proc.stderr[-400:]}"
         log_lines.append(summary)
         return proc.returncode == 0
 
+    poetry_bin = os.path.join(repo_dir, "venv", "bin", "poetry")
     steps = [
-        ["git", "fetch", "--all", "--prune"],
-        ["git", "reset", "--hard", "origin/main"],
+        [git_bin, "fetch", "--all", "--prune"],
+        [git_bin, "reset", "--hard", "origin/main"],
         [venv_pip, "install", "--upgrade", "pip", "wheel"],
-        [venv_pip, "install", "-r", "requirements.txt"],
+        [venv_pip, "install", "poetry==1.8.3"],
+        [poetry_bin, "config", "virtualenvs.create", "false", "--local"],
+        [poetry_bin, "install", "--only", "main", "--no-interaction", "--no-ansi"],
         [venv_python, "manage.py", "migrate", "--noinput"],
         [venv_python, "manage.py", "collectstatic", "--noinput"],
     ]
 
     ok = True
     for step in steps:
-        if not run_cmd(step):
+        try:
+            if not run_cmd(step):
+                ok = False
+                break
+        except FileNotFoundError as fe:
+            # Capture explicit binary not found errors, send Slack, abort early.
+            err_msg = f"Webhook deploy step failed (missing binary): {fe}"
+            log_lines.append(err_msg)
+            send_slack_message(err_msg)
             ok = False
             break
 
-    # Always attempt a reload so code changes take effect (gunicorn systemd unit)
+    # Always attempt a reload so code changes take effect (application systemd unit)
     subprocess.run(["/bin/systemctl", "restart", "education-website"], capture_output=True)
 
     # Slack summary (truncate to avoid long messages)
