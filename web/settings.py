@@ -5,14 +5,10 @@ from pathlib import Path
 import environ
 import sentry_sdk
 from cryptography.fernet import Fernet
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# Initialize Sentry SDK for error reporting
-sentry_sdk.init(
-    dsn=os.environ.get("SENTRY_DSN", ""),
-    send_default_pii=True,
-)
 
 env = environ.Env()
 
@@ -27,6 +23,21 @@ if os.path.exists(env_file):
     environ.Env.read_env(env_file)
 else:
     print("No .env file found.")
+
+# Re-initialize / initialize Sentry AFTER environment variables are loaded so DSN is present.
+SENTRY_DSN = env.str("SENTRY_DSN", default="")
+if SENTRY_DSN:
+    sentry_logging = LoggingIntegration(level=os.getenv("SENTRY_LOG_LEVEL", "INFO"), event_level=None)
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration(), sentry_logging],
+        environment=env.str("ENVIRONMENT", default="development"),
+        send_default_pii=True,
+        traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", 0.0)),  # set >0 to enable performance
+    )
+else:
+    # Helpful notice for ops without breaking startup
+    print("Sentry DSN not configured; error events will not be sent.")
 
 SECRET_KEY = env.str("SECRET_KEY", default="django-insecure-5kyff0s@l_##j3jawec5@b%!^^e(j7v)ouj4b7q6kru#o#a)o3")
 # Debug settings
@@ -120,6 +131,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.sites",
     "django.contrib.humanize",
+    "channels",
     "allauth",
     "allauth.account",
     "captcha",
@@ -183,6 +195,15 @@ WSGI_APPLICATION = "web.wsgi.application"
 
 # Add ASGI application configuration
 ASGI_APPLICATION = "web.asgi.application"
+
+# Channels / Redis channel layer configuration (assumes a local Redis unless overridden)
+REDIS_URL = env.str("REDIS_URL", default="redis://127.0.0.1:6379/0")
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {"hosts": [REDIS_URL]},
+    }
+}
 
 DATABASES = {
     "default": {
