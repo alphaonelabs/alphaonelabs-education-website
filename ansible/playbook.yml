@@ -1,0 +1,387 @@
+---
+- name: Provision & Deploy (single block)
+  hosts: all
+  gather_facts: false
+  become: true
+  vars:
+    vps_user: django
+    project_name: education-website
+    project_root: /home/{{ vps_user }}/{{ project_name }}
+    # NOTE: Updated to point to the canonical repo that now contains new management commands (e.g., dbdiag).
+    # Previously this pointed to https://github.com/AlphaOneLabs/education-website.git which lacked recent commits.
+    git_repo: "https://github.com/AlphaOneLabs/alphaonelabs-education-website.git"
+    git_branch: "main"
+    domain_name: "www1.alphaonelabs.com"
+    app_port: 8000
+    force_full_reimport: false  # set true to re-import postgresql_dump.sql from scratch
+    data_diagnostics: true      # set false to skip post-import data verification queries
+    restart_after_deploy: true  # control automatic restart of gunicorn after deploy steps
+    pkgs:
+      - python3
+      - python3-venv
+      - python3-pip
+      - build-essential
+      - python3-dev
+      - default-libmysqlclient-dev
+      - git
+      - nginx
+      - mysql-server
+      - redis-server
+      - ufw
+  tasks:
+    - name: Install base packages (non-interactive, synchronous)
+      apt:
+        name: "{{ pkgs }}"
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+      environment: {DEBIAN_FRONTEND: noninteractive}
+
+    - name: Ensure application user exists
+      user: { name: "{{ vps_user }}", system: true, create_home: true, shell: /bin/bash }
+
+    - name: Read local .env.production
+      set_fact:
+        env_prod_content: "{{ lookup('ansible.builtin.file', '../.env.production') }}"
+
+    - name: Extract MySQL DATABASE_URL
+      set_fact:
+        database_url_line: "{{ env_prod_content.split('\n') | select('match','^DATABASE_URL=mysql://') | list | first | default('') }}"
+      when: env_prod_content is defined
+
+    - name: Fail if MySQL DATABASE_URL is missing
+      fail:
+        msg: "DATABASE_URL (mysql://...) not found in .env.production; cannot provision MySQL."
+      when: database_url_line | length == 0
+
+    - name: Parse MySQL DATABASE_URL components
+      set_fact:
+        db_user: "{{ database_url_line | regex_replace('^DATABASE_URL=mysql://([^:]+):.*$','\\1') }}"
+        db_password: "{{ database_url_line | regex_replace('^DATABASE_URL=mysql://[^:]+:([^@]+)@.*$','\\1') }}"
+        db_name: "{{ database_url_line | regex_replace('^DATABASE_URL=mysql://[^/]+/([^\\n?]+).*','\\1') }}"
+        db_host: "{{ database_url_line | regex_replace('^DATABASE_URL=mysql://[^:]+:[^@]+@([^/]+?)/.*','\\1') | default('localhost') }}"
+        db_name_shell_safe: "{{ (database_url_line | regex_replace('^DATABASE_URL=mysql://[^/]+/([^\\n?]+).*','\\1')) | replace('$','\\$') }}"
+      when: database_url_line | length > 0
+
+    - name: Show parsed MySQL DB values
+      debug:
+        msg: "Using MySQL DATABASE_URL user={{ db_user }}, db={{ db_name }}, host={{ db_host }}"
+
+    - name: Ensure MySQL service is started and enabled
+      service:
+        name: mysql
+        state: started
+        enabled: yes
+
+    - name: (Optional) Drop & recreate database for full reimport
+      shell: |
+        set -e
+        mysql -uroot -e "DROP DATABASE IF EXISTS \`{{ db_name_shell_safe }}\`;"; \
+        mysql -uroot -e "CREATE DATABASE \`{{ db_name_shell_safe }}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+      when: force_full_reimport | bool
+
+    - name: Ensure MySQL database exists
+      shell: |
+        set -e
+        mysql -uroot -e "CREATE DATABASE IF NOT EXISTS \`{{ db_name_shell_safe }}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+    - name: Ensure MySQL user & grants exist (localhost)
+      shell: |
+        set -e
+        mysql -uroot -e "CREATE USER IF NOT EXISTS '{{ db_user }}'@'localhost' IDENTIFIED BY '{{ db_password }}';"
+        mysql -uroot -e "ALTER USER '{{ db_user }}'@'localhost' IDENTIFIED WITH mysql_native_password BY '{{ db_password }}';" || true
+        mysql -uroot -e "GRANT ALL PRIVILEGES ON \`{{ db_name_shell_safe }}\`.* TO '{{ db_user }}'@'localhost'; FLUSH PRIVILEGES;"
+      when: db_user is defined and db_user != ''
+
+    - name: Ensure MySQL user & grants exist (%)
+      shell: |
+        set -e
+        mysql -uroot -e "CREATE USER IF NOT EXISTS '{{ db_user }}'@'%' IDENTIFIED BY '{{ db_password }}';"
+        mysql -uroot -e "ALTER USER '{{ db_user }}'@'%' IDENTIFIED WITH mysql_native_password BY '{{ db_password }}';" || true
+        mysql -uroot -e "GRANT ALL PRIVILEGES ON \`{{ db_name_shell_safe }}\`.* TO '{{ db_user }}'@'%'; FLUSH PRIVILEGES;"
+      when: db_user is defined and db_user != ''
+
+
+    - name: Clone code
+      become: yes
+      become_user: "{{ vps_user }}"
+      git:
+        repo: "{{ git_repo }}"
+        dest: "{{ project_root }}"
+        version: "{{ git_branch }}"
+        force: yes
+      register: git_clone
+      notify: restart app
+
+    - name: Check for MySQL dump file (dump.sql)
+      become: false
+      stat:
+        path: "../dump.sql"
+      delegate_to: localhost
+      register: local_mysql_dump_stat
+      run_once: true
+
+    - name: Set fact if dump.sql exists
+      set_fact:
+        mysql_dump_present: true
+      when: local_mysql_dump_stat.stat.exists
+
+
+    - name: Ensure correct ownership of project directory
+      file:
+        path: "{{ project_root }}"
+        state: directory
+        recurse: yes
+        owner: "{{ vps_user }}"
+        group: "{{ vps_user }}"
+      when: git_clone is changed
+
+    - name: Discover candidate JSON files at repo root (controller)
+      set_fact:
+        service_account_candidates: "{{ lookup('ansible.builtin.fileglob','../*.json', wantlist=True) }}"
+      no_log: true
+
+    - name: Identify Google service account JSON (first file containing 'service_account')
+      set_fact:
+        service_account_file: "{{ item }}"
+      loop: "{{ service_account_candidates | default([]) }}"
+      when: >-
+        ('service_account' in lookup('ansible.builtin.file', item)) and
+        (service_account_file is not defined)
+      no_log: true
+
+    - name: Fail if service account JSON not found
+      fail:
+        msg: "No service_account JSON file found in project root."
+      when: service_account_file is not defined
+
+    - name: Copy Google service account file dynamically
+      copy:
+        src: "{{ service_account_file }}"
+        dest: "{{ project_root }}/{{ service_account_file | basename }}"
+        mode: '0600'
+        owner: "{{ vps_user }}"
+        group: "{{ vps_user }}"
+      no_log: true
+
+    - name: Create venv + install deps (uses system default python3)
+      become: yes
+      become_user: "{{ vps_user }}"
+      shell: |
+        python3 -m venv venv
+        source venv/bin/activate
+        pip install --upgrade pip wheel
+        # Install project requirements plus gunicorn and mysqlclient (MySQL backend)
+        pip install -r requirements.txt uvicorn gunicorn mysqlclient
+      args:
+        chdir: "{{ project_root }}"
+        executable: /bin/bash
+
+    - name: Copy .env.production to server as .env
+      copy:
+        src: ../.env.production
+        dest: "{{ project_root }}/.env"
+        mode: '0600'
+        owner: "{{ vps_user }}"
+        group: "{{ vps_user }}"
+      notify: restart app
+
+    - name: Copy MySQL dump to server (if present)
+      copy:
+        src: ../dump.sql
+        dest: "{{ project_root }}/scripts/dump.sql"
+        owner: "{{ vps_user }}"
+        group: "{{ vps_user }}"
+        mode: '0644'
+      when: mysql_dump_present | default(false)
+
+    - name: Preprocess MySQL dump to remove original CREATE/USE statements
+      shell: |
+        set -e
+        ORIG="{{ project_root }}/scripts/dump.sql"
+        MOD="{{ project_root }}/scripts/modified_dump.sql"
+        # Only regenerate if force_full_reimport or modified missing
+        if [ -f "$MOD" ] && [ "{{ force_full_reimport | bool }}" != "True" ]; then
+          echo "Modified dump already present; skipping rewrite"; exit 0; fi
+        if [ ! -s "$ORIG" ]; then echo "Original dump missing or empty"; exit 1; fi
+        # Remove any CREATE DATABASE ... and USE `...`; lines (case-insensitive) so import stays in target DB
+        sed -E '/^CREATE DATABASE /Id; /^USE `/Id' "$ORIG" > "$MOD.tmp"
+        mv "$MOD.tmp" "$MOD"
+        echo "Rewritten dump saved to $MOD" >&2
+      when: mysql_dump_present | default(false)
+      args:
+        executable: /bin/bash
+
+    - name: Import MySQL dump (schema+data)
+      shell: |
+        set -e
+        if [ -f "{{ project_root }}/.data_import_done" ] && [ "{{ force_full_reimport | bool }}" != "True" ]; then
+          echo "Import marker present; skipping import"; exit 0; fi
+        DUMP_FILE="{{ project_root }}/scripts/modified_dump.sql"
+        if [ ! -s "$DUMP_FILE" ]; then DUMP_FILE="{{ project_root }}/scripts/dump.sql"; fi
+        if [ ! -s "$DUMP_FILE" ]; then echo "Dump file missing or empty"; exit 1; fi
+        mysql -u"{{ db_user }}" -p"{{ db_password }}" {{ db_name_shell_safe | quote }} < "$DUMP_FILE"
+      args:
+        executable: /bin/bash
+      when: mysql_dump_present | default(false)
+      register: mysql_import_result
+      notify: restart app
+
+    - name: Create data import marker file
+      become: yes
+      become_user: "{{ vps_user }}"
+      file:
+        path: "{{ project_root }}/.data_import_done"
+        state: touch
+        mode: '0600'
+      when: mysql_dump_present | default(false) and (mysql_import_result is defined) and mysql_import_result.rc == 0
+
+    - name: Django migrate + collectstatic
+      become: yes
+      become_user: "{{ vps_user }}"
+      shell: |
+        set -e
+        source venv/bin/activate
+        export DJANGO_SETTINGS_MODULE=web.settings
+        python manage.py migrate --noinput
+        python manage.py collectstatic --noinput
+      args:
+        chdir: "{{ project_root }}"
+        executable: /bin/bash
+      notify: restart app
+
+    # (Legacy MySQL migration removed.)
+
+    - name: Run data diagnostics - course & featured counts (MySQL)
+      shell: |
+        set -e
+        echo "COURSE_COUNT=$(mysql -N -u"{{ db_user }}" -p"{{ db_password }}" -D {{ db_name | quote }} -e "SELECT COUNT(*) FROM web_course;")";
+        echo "FEATURED_PUBLISHED_COUNT=$(mysql -N -u"{{ db_user }}" -p"{{ db_password }}" -D {{ db_name | quote }} -e "SELECT COUNT(*) FROM web_course WHERE status='published' AND is_featured=1;")";
+        echo "ENROLLMENT_COUNT=$(mysql -N -u"{{ db_user }}" -p"{{ db_password }}" -D {{ db_name | quote }} -e "SELECT COUNT(*) FROM web_enrollment;")";
+      register: data_diag_raw
+      changed_when: false
+      when: data_diagnostics | bool and (mysql_import_result is defined) and mysql_import_result.rc == 0
+
+    - name: Parse data diagnostics output (MySQL)
+      set_fact:
+        course_count: "{{ (data_diag_raw.stdout_lines | select('match','^COURSE_COUNT=') | list | first | default('COURSE_COUNT=0')) | regex_replace('^COURSE_COUNT=','') | int }}"
+        featured_published_count: "{{ (data_diag_raw.stdout_lines | select('match','^FEATURED_PUBLISHED_COUNT=') | list | first | default('FEATURED_PUBLISHED_COUNT=0')) | regex_replace('^FEATURED_PUBLISHED_COUNT=','') | int }}"
+        enrollment_count: "{{ (data_diag_raw.stdout_lines | select('match','^ENROLLMENT_COUNT=') | list | first | default('ENROLLMENT_COUNT=0')) | regex_replace('^ENROLLMENT_COUNT=','') | int }}"
+      when: data_diagnostics | bool and data_diag_raw is defined and data_diag_raw.stdout is defined
+
+    - name: Show data diagnostics summary (MySQL)
+      debug:
+        msg: >-
+          Data diagnostics: courses={{ course_count }}, featured_published={{ featured_published_count }}, enrollments={{ enrollment_count }}
+      when: data_diagnostics | bool and course_count is defined
+
+    - name: Show sample featured courses (MySQL)
+      shell: |
+        mysql -u"{{ db_user }}" -p"{{ db_password }}" -D {{ db_name | quote }} -e "SELECT id, title, status, is_featured FROM web_course WHERE status='published' AND is_featured=1 ORDER BY created_at DESC LIMIT 5;"
+      register: featured_sample
+      changed_when: false
+      when: data_diagnostics | bool and (mysql_import_result is defined) and mysql_import_result.rc == 0
+
+    - name: Display featured courses sample table (MySQL)
+      debug:
+        var: featured_sample.stdout
+      when: data_diagnostics | bool and featured_sample is defined
+
+    - name: Ensure user home is accessible to nginx (execute bit)
+      file:
+        path: "/home/{{ vps_user }}"
+        mode: '0755'
+        state: directory
+
+    - name: Ensure staticfiles directory readable
+      file:
+        path: "{{ project_root }}/staticfiles"
+        mode: '0755'
+        state: directory
+
+    - name: Ensure media directory exists and readable
+      file:
+        path: "{{ project_root }}/media"
+        state: directory
+        mode: '0755'
+        owner: "{{ vps_user }}"
+        group: "{{ vps_user }}"
+
+    - name: Configure nginx
+      template:
+        src: nginx-http.conf.j2
+        dest: /etc/nginx/nginx.conf
+      notify: restart nginx
+
+    - name: Copy systemd service
+      template:
+        src: education-website.service.j2
+        dest: /etc/systemd/system/education-website.service
+      notify: restart app
+
+    - name: Ensure application service enabled and started
+      systemd:
+        name: education-website
+        enabled: true
+        state: started
+        daemon_reload: true
+
+    - name: Conditional restart after deploy (if handlers suppressed)
+      systemd:
+        name: education-website
+        state: restarted
+      when: restart_after_deploy | bool and (git_clone is defined and git_clone.changed or (mysql_import_result is defined and mysql_import_result.changed))
+
+    - name: Allow ports
+      community.general.ufw:
+        rule: allow
+        port: "{{ item }}"
+      loop: [22, 80, 443]
+
+    - name: Enable firewall (now that everything is ready)
+      community.general.ufw:
+        state: enabled
+
+    - name: Ensure Redis service is enabled and running
+      service:
+        name: redis-server
+        state: started
+        enabled: yes
+
+    - name: Ensure logs directory exists
+      file:
+        path: "{{ project_root }}/logs"
+        state: directory
+        owner: "{{ vps_user }}"
+        group: "{{ vps_user }}"
+        mode: '0755'
+
+    - name: Cron job - session reminders hourly
+      cron:
+        name: "session reminders"
+        user: "{{ vps_user }}"
+        minute: "0"
+        job: 'bash -lc "cd {{ project_root }} && {{ project_root }}/venv/bin/python manage.py send_session_reminders >> {{ project_root }}/logs/cron.log 2>&1"'
+
+    - name: Cron job - weekly progress updates Monday 8AM
+      cron:
+        name: "weekly progress updates"
+        user: "{{ vps_user }}"
+        minute: "0"
+        hour: "8"
+        weekday: "1"
+        job: 'bash -lc "cd {{ project_root }} && {{ project_root }}/venv/bin/python manage.py send_weekly_updates >> {{ project_root }}/logs/cron.log 2>&1"'
+
+    - name: Cron job - assignment reminders daily 8AM
+      cron:
+        name: "assignment reminders"
+        user: "{{ vps_user }}"
+        minute: "0"
+        hour: "8"
+        job: 'bash -lc "cd {{ project_root }} && {{ project_root }}/venv/bin/python manage.py send_assignment_reminders >> {{ project_root }}/logs/reminder_log.log 2>&1"'
+
+  handlers:
+    - name: restart nginx
+      service: {name: nginx, state: restarted, enabled: yes}
+    - name: restart app
+      service: {name: education-website, state: restarted, enabled: yes}

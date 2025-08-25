@@ -3,15 +3,12 @@ import sys
 from pathlib import Path
 
 import environ
+import sentry_sdk
 from cryptography.fernet import Fernet
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# # Initialize Sentry SDK for error reporting
-# sentry_sdk.init(
-#     dsn=os.environ.get("SENTRY_DSN", ""),
-#     send_default_pii=True,
-# )
 
 env = environ.Env()
 
@@ -26,6 +23,21 @@ if os.path.exists(env_file):
     environ.Env.read_env(env_file)
 else:
     print("No .env file found.")
+
+# Re-initialize / initialize Sentry AFTER environment variables are loaded so DSN is present.
+SENTRY_DSN = env.str("SENTRY_DSN", default="")
+if SENTRY_DSN:
+    sentry_logging = LoggingIntegration(level=os.getenv("SENTRY_LOG_LEVEL", "INFO"), event_level=None)
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration(), sentry_logging],
+        environment=env.str("ENVIRONMENT", default="development"),
+        send_default_pii=True,
+        traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", 0.0)),  # set >0 to enable performance
+    )
+else:
+    # Helpful notice for ops without breaking startup
+    print("Sentry DSN not configured; error events will not be sent.")
 
 SECRET_KEY = env.str("SECRET_KEY", default="django-insecure-5kyff0s@l_##j3jawec5@b%!^^e(j7v)ouj4b7q6kru#o#a)o3")
 # Debug settings
@@ -73,25 +85,33 @@ if not DEBUG:
     SECURE_SSL_HOST = "alphaonelabs.com"
     SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
-ALLOWED_HOSTS = [
-    "alphaonelabs99282llkb.pythonanywhere.com",
-    "0.0.0.0",
-    "127.0.0.1",
-    "localhost",
-    "alphaonelabs.com",
-    ".alphaonelabs.com",
-]
+# Allow hosts list can be overridden via .env (comma-separated) while providing a strong default.
+ALLOWED_HOSTS = env.list(
+    "ALLOWED_HOSTS",
+    default=[
+        "alphaonelabs99282llkb.pythonanywhere.com",
+        "0.0.0.0",
+        "127.0.0.1",
+        "localhost",
+        "alphaonelabs.com",
+        ".alphaonelabs.com",
+    ],
+)
+
+# CSRF trusted origins can also be overridden through .env (comma-separated).
+CSRF_TRUSTED_ORIGINS = env.list(
+    "CSRF_TRUSTED_ORIGINS",
+    default=[
+        "https://alphaonelabs.com",
+        "https://www.alphaonelabs.com",
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+    ],
+)
 
 # Timezone settings
 TIME_ZONE = "America/New_York"
 USE_TZ = True
-
-CSRF_TRUSTED_ORIGINS = [
-    "https://alphaonelabs.com",
-    "https://www.alphaonelabs.com",
-    "http://127.0.0.1:8000",
-    "http://localhost:8000",
-]
 
 # Error handling
 handler404 = "web.views.custom_404"
@@ -116,6 +136,7 @@ INSTALLED_APPS = [
     "captcha",
     "markdownx",
     "web",
+    "web.virtual_lab.apps.VirtualLabConfig",
 ]
 
 if DEBUG and not TESTING:
@@ -255,15 +276,28 @@ USE_I18N = True
 USE_TZ = True
 
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-if not DEBUG:
-    MEDIA_ROOT = "/home/alphaonelabs99282llkb/web/media"
-else:
-    MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+"""
+Media files configuration
+
+Previously MEDIA_ROOT for production was hard-coded to the legacy PythonAnywhere
+path (/home/alphaonelabs99282llkb/web/media). That prevented the live server
+from locating media we now place under the project directory on the new VPS.
+
+We switch to an environment-variable override with a sane default pointing to
+<project>/media for both dev and prod (unless a cloud storage backend is
+configured later). This keeps URLs stable (/media/...) while aligning file
+paths with the Nginx alias in ansible/nginx-http.conf.j2:
+    location /media/ { alias /home/django/education-website/media/; }
+
+If GS_BUCKET_NAME is set above, DEFAULT_FILE_STORAGE will override this with
+Google Cloud Storage; in that case MEDIA_ROOT is less relevant.
+"""
+MEDIA_ROOT = env.str("MEDIA_ROOT", default=str(BASE_DIR / "media"))
 MEDIA_URL = "/media/"
 
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
@@ -386,3 +420,4 @@ USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET", "")
