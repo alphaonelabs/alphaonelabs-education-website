@@ -45,11 +45,13 @@
               <a href="{{ calendar_links.google }}"
                  target="_blank"
                  rel="noopener noreferrer"
-                 class="block p-4 border rounded-lg hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600">
+                 class="block p-4 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600">
                 <div class="flex justify-between items-center">
-                  <div>
-                    <p class="font-medium">Add to Google Calendar</p>
-                    <p class="text-gray-500">Opens in a new window</p>
+                  <div class="flex items-center space-x-2">
+                    <i class="fab fa-google text-red-500 text-lg" aria-hidden="true"></i>
+                    <div>
+                      <p class="font-medium text-black dark:text-white">Add to Google Calendar</p>
+                    </div>
                   </div>
                   <i class="fas fa-external-link-alt text-gray-400" aria-hidden="true"></i>
                 </div>
@@ -58,22 +60,28 @@
               <a href="{{ calendar_links.outlook }}"
                  target="_blank"
                  rel="noopener noreferrer"
-                 class="block p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                 class="block p-4 border rounded-lg hover:bg-gray-50 transition-colors hover:bg-gray-100 dark:hover:bg-gray-700">
                 <div class="flex justify-between items-center">
-                  <div>
-                    <p class="font-medium">Add to Outlook Calendar</p>
-                    <p class="text-gray-500">Opens in a new window</p>
+                  <div class="flex items-center space-x-2">
+                    <!-- Outlook Icon -->
+                    <i class="fab fa-microsoft text-blue-700 text-lg" aria-hidden="true"></i>
+                    <div>
+                      <p class="font-medium text-black dark:text-white">Add to Outlook Calendar</p>
+                    </div>
                   </div>
                   <i class="fas fa-external-link-alt text-gray-400" aria-hidden="true"></i>
                 </div>
               </a>
               <!-- iCal Feed -->
               <a href="{% url 'calendar_feed' %}"
-                 class="block p-4 border rounded-lg hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600">
+                 class="block p-4 border rounded-lg hover:bg-gray-50 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600 hover:bg-gray-100 dark:hover:bg-gray-700">
                 <div class="flex justify-between items-center">
-                  <div>
-                    <p class="font-medium">Download iCal File</p>
-                    <p class="text-gray-500">Compatible with Apple Calendar, Outlook, and other calendar apps</p>
+                  <div class="flex items-center space-x-2">
+                    <!-- iCal / Calendar Icon -->
+                    <i class="far fa-calendar-alt text-green-600 text-lg" aria-hidden="true"></i>
+                    <div>
+                      <p class="font-medium text-black dark:text-white">Download iCal File</p>
+                    </div>
                   </div>
                   <i class="fas fa-download text-gray-400" aria-hidden="true"></i>
                 </div>
