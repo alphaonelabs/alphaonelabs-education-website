@@ -3,15 +3,16 @@ import sys
 from pathlib import Path
 
 import environ
+import sentry_sdk
 from cryptography.fernet import Fernet
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# # Initialize Sentry SDK for error reporting
-# sentry_sdk.init(
-#     dsn=os.environ.get("SENTRY_DSN", ""),
-#     send_default_pii=True,
-# )
+# Initialize Sentry SDK for error reporting
+sentry_sdk.init(
+    dsn=os.environ.get("SENTRY_DSN", ""),
+    send_default_pii=True,
+)
 
 env = environ.Env()
 
@@ -264,15 +265,28 @@ USE_I18N = True
 USE_TZ = True
 
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-if not DEBUG:
-    MEDIA_ROOT = "/home/alphaonelabs99282llkb/web/media"
-else:
-    MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+"""
+Media files configuration
+
+Previously MEDIA_ROOT for production was hard-coded to the legacy PythonAnywhere
+path (/home/alphaonelabs99282llkb/web/media). That prevented the live server
+from locating media we now place under the project directory on the new VPS.
+
+We switch to an environment-variable override with a sane default pointing to
+<project>/media for both dev and prod (unless a cloud storage backend is
+configured later). This keeps URLs stable (/media/...) while aligning file
+paths with the Nginx alias in ansible/nginx-http.conf.j2:
+    location /media/ { alias /home/django/education-website/media/; }
+
+If GS_BUCKET_NAME is set above, DEFAULT_FILE_STORAGE will override this with
+Google Cloud Storage; in that case MEDIA_ROOT is less relevant.
+"""
+MEDIA_ROOT = env.str("MEDIA_ROOT", default=str(BASE_DIR / "media"))
 MEDIA_URL = "/media/"
 
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
@@ -395,3 +409,4 @@ USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET", "")

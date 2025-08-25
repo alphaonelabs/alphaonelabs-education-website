@@ -991,25 +991,82 @@ def delete_course(request, slug):
 
 @csrf_exempt
 def github_update(request):
-    send_slack_message("New commit pulled from GitHub")
-    root_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    try:
-        subprocess.run(["chmod", "+x", f"{root_directory}/setup.sh"])
-        result = subprocess.run(["bash", f"{root_directory}/setup.sh"], capture_output=True, text=True)
-        if result.returncode != 0:
-            raise Exception(
-                f"setup.sh failed with return code {result.returncode} and output: {result.stdout} {result.stderr}"
-            )
-        send_slack_message("CHMOD success about to set time on: " + settings.PA_WSGI)
+    """GitHub webhook endpoint to trigger a lightweight deploy.
 
-        current_time = time.time()
-        os.utime(settings.PA_WSGI, (current_time, current_time))
-        send_slack_message("Repository updated successfully")
-        return HttpResponse("Repository updated successfully")
-    except Exception as e:
-        print(f"Deploy error: {e}")
-        send_slack_message(f"Deploy error: {e}")
-        return HttpResponse("Deploy error see logs.")
+    Hardening applied:
+    - Require POST.
+    - Validate X-Hub-Signature-256 using shared secret env var GITHUB_WEBHOOK_SECRET.
+    - Ignore unsupported events (only push by default).
+    - Run a safe pull + dependency install + migrate + collectstatic via a minimal bash snippet.
+    - Send concise status updates to Slack; avoid leaking secrets.
+
+    NOTE: Full provisioning (packages, DB grants, etc.) still belongs to Ansible.
+    This endpoint just brings the already‑provisioned instance up to latest commit.
+    """
+    if request.method != "POST":
+        return HttpResponseBadRequest("POST required")
+
+    secret = getattr(settings, "GITHUB_WEBHOOK_SECRET", None)
+    signature = request.META.get("HTTP_X_HUB_SIGNATURE_256")
+    body = request.body
+
+    if secret:
+        import hashlib
+        import hmac
+
+        expected = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+        if not signature or not hmac.compare_digest(expected, signature):
+            send_slack_message("GitHub webhook signature mismatch")
+            return HttpResponseForbidden("Invalid signature")
+    else:
+        # If no secret configured, refuse (better to explicitly set one)
+        return HttpResponseForbidden("Webhook secret not configured")
+
+    event = request.META.get("HTTP_X_GITHUB_EVENT", "")
+    if event not in {"push"}:
+        return HttpResponse("Ignored event", status=202)
+
+    repo_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    venv_python = os.path.join(repo_dir, "venv", "bin", "python")
+    venv_pip = os.path.join(repo_dir, "venv", "bin", "pip")
+    log_lines = []
+
+    def run_cmd(cmd):
+        proc = subprocess.run(cmd, cwd=repo_dir, capture_output=True, text=True)
+        summary = f"$ {' '.join(cmd)}\nrc={proc.returncode}\nstdout={proc.stdout[-400:]}\nstderr={proc.stderr[-400:]}"
+        log_lines.append(summary)
+        return proc.returncode == 0
+
+    steps = [
+        ["git", "fetch", "--all", "--prune"],
+        ["git", "reset", "--hard", "origin/main"],
+        [venv_pip, "install", "--upgrade", "pip", "wheel"],
+        [venv_pip, "install", "-r", "requirements.txt"],
+        [venv_python, "manage.py", "migrate", "--noinput"],
+        [venv_python, "manage.py", "collectstatic", "--noinput"],
+    ]
+
+    ok = True
+    for step in steps:
+        if not run_cmd(step):
+            ok = False
+            break
+
+    # Always attempt a reload so code changes take effect (gunicorn systemd unit)
+    subprocess.run(["/bin/systemctl", "restart", "education-website"], capture_output=True)
+
+    # Slack summary (truncate to avoid long messages)
+    slack_msg = (
+        ("Deploy success" if ok else "Deploy FAILED")
+        + " (github webhook)\n"
+        + "\n---\n"
+        + "\n---\n".join(line[:600] for line in log_lines[:4])
+    )
+    send_slack_message(slack_msg[:3500])
+
+    if ok:
+        return HttpResponse("OK")
+    return HttpResponse(status=500, content="Deploy failed; see logs")
 
 
 def send_slack_message(message):
