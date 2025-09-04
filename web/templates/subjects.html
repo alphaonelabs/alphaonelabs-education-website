@@ -25,7 +25,7 @@
                    name="search"
                    value="{{ search_query }}"
                    placeholder="Search by name or description..."
-                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
+                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
           </div>
           <!-- Level Filter -->
           <div class="space-y-1">
@@ -33,7 +33,7 @@
                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Difficulty Level</label>
             <select id="level"
                     name="level"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
               <option value="">All Levels</option>
               <option value="beginner" {% if level == 'beginner' %}selected{% endif %}>Beginner</option>
               <option value="intermediate"
@@ -51,7 +51,7 @@
                    value="{{ min_courses }}"
                    min="0"
                    placeholder="0"
-                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
+                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
           </div>
           <!-- Minimum Students -->
           <div class="space-y-1">
@@ -63,7 +63,7 @@
                    value="{{ min_students }}"
                    min="0"
                    placeholder="0"
-                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
+                   class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500" />
           </div>
         </div>
         <!-- Second Row of Filters -->
@@ -74,7 +74,7 @@
                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Sort By</label>
             <select id="sort_by"
                     name="sort_by"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
               <option value="order" {% if sort_by == 'order' %}selected{% endif %}>Default Order</option>
               <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Name</option>
               <option value="created_at"
@@ -87,7 +87,7 @@
                    class="block text-sm font-medium text-gray-700 dark:text-gray-300">Order</label>
             <select id="sort_order"
                     name="sort_order"
-                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
               <option value="asc" {% if sort_order == 'asc' %}selected{% endif %}>Ascending</option>
               <option value="desc" {% if sort_order == 'desc' %}selected{% endif %}>Descending</option>
             </select>
@@ -106,7 +106,7 @@
             <!-- Clear Filters -->
             {% if filter_active %}
               <a href="{% url 'subjects' %}"
-                 class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm transition-colors">
+                 class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-6 py-2 rounded-lg text-sm transition duration-200 focus:outline-none focus:ring-2 focus:ring-teal-300">
                 Clear All
               </a>
             {% endif %}
@@ -114,7 +114,7 @@
         </div>
         <!-- Results Summary -->
         <div class="flex justify-between items-center pt-4 border-t border-gray-200 dark:border-gray-600">
-          <p class="text-sm text-gray-600 dark:text-gray-400">Showing {{ subjects.count }} of {{ total_count }} subjects</p>
+          <p class="text-sm text-gray-600 dark:text-gray-400">Showing {{ subjects|length }} of {{ total_count }} subjects</p>
           <div class="text-xs text-gray-500 dark:text-gray-400">
             Filters will apply automatically as you type or change selections
           </div>
@@ -122,7 +122,7 @@
       </form>
     </div>
     <!-- Subjects Results -->
-    <div id="results">
+    <div id="results" aria-live="polite">
       {% if subjects %}
         <!-- Subjects Grid -->
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
@@ -140,26 +140,26 @@
               <!-- Stats -->
               <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-1 mb-4">
                 <li>
-                  <strong>Interested:</strong> {{ subject.interested_students_count|default:0 }} learner{{ subject.interested_students_count|pluralize }}
+                  <strong>Interested:</strong> {{ subject.a_interested_students|default:0 }} learner{{ subject.a_interested_students|pluralize }}
                 </li>
                 <li>
                   <strong>Teacher Available:</strong>
-                  {% if subject.teacher_available %}
+                  {% if subject.a_teacher_available %}
                     <span class="text-green-600 dark:text-green-400">Yes</span>
                   {% else %}
                     <span class="text-red-600 dark:text-red-400">No</span>
                   {% endif %}
                 </li>
                 <li>
-                  <strong>Courses:</strong> {{ subject.courses_count|default:0 }}
+                  <strong>Courses:</strong> {{ subject.a_courses_count|default:0 }}
                 </li>
               </ul>
               <!-- Teach or Learn Buttons -->
               <div class="flex space-x-2 mt-auto">
                 <a href="{% url 'teach' %}?subject={{ subject.slug }}"
-                   class="bg-indigo-500 text-white py-1 px-2 rounded hover:bg-indigo-600 text-sm transition-colors">Teach</a>
+                   class="bg-teal-300 hover:bg-teal-400 text-white px-3 py-1.5 rounded-lg text-sm transition duration-200 focus:outline-none focus:ring-2 focus:ring-teal-300">Teach</a>
                 <a href="{% url 'learn' %}?subject={{ subject.slug }}"
-                   class="bg-orange-500 text-white py-1 px-2 rounded hover:bg-orange-600 text-sm transition-colors">Learn</a>
+                   class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-1.5 rounded-lg text-sm transition duration-200 focus:outline-none focus:ring-2 focus:ring-teal-300">Learn</a>
               </div>
             </div>
           {% endfor %}
@@ -167,19 +167,24 @@
         <!-- Pagination -->
         {% if subjects_page.has_other_pages %}
           <div class="mt-8 flex justify-center">
-            <nav class="flex items-center space-x-2">
+            <nav class="flex items-center space-x-2" aria-label="Pagination">
               {% if subjects_page.has_previous %}
-                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ subjects_page.previous_page_number }}"
-                   class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700">
+                <a href="?{{ base_query }}page={{ subjects_page.previous_page_number }}"
+                   data-ajax="1"
+                   rel="prev"
+                   class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700">
                   Previous
                 </a>
               {% endif %}
-              <span class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300">
+              <span class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300"
+                    aria-current="page">
                 Page {{ subjects_page.number }} of {{ subjects_page.paginator.num_pages }}
               </span>
               {% if subjects_page.has_next %}
-                <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ subjects_page.next_page_number }}"
-                   class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700">
+                <a href="?{{ base_query }}page={{ subjects_page.next_page_number }}"
+                   data-ajax="1"
+                   rel="next"
+                   class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-teal-300 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700">
                   Next
                 </a>
               {% endif %}
@@ -201,8 +206,8 @@
             </p>
             {% if filter_active %}
               <a href="{% url 'subjects' %}"
-                 class="inline-flex items-center px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-md transition-colors">
-                <i class="fa-solid fa-refresh mr-2"></i>
+                 class="inline-flex items-center px-6 py-2 bg-teal-300 hover:bg-teal-400 text-white rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-teal-300">
+                <i class="fa-solid fa-rotate-right mr-2" aria-hidden="true"></i>
                 Clear All Filters
               </a>
             {% endif %}
@@ -228,13 +233,13 @@
             <div class="flex space-x-2">
               <button type="button"
                       onclick="submitInterest('teach')"
-                      class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg flex items-center space-x-2 transition-colors">
+                      class="px-6 py-2 bg-teal-300 hover:bg-teal-400 text-white rounded-lg flex items-center space-x-2 transition duration-200 focus:outline-none focus:ring-2 focus:ring-teal-300">
                 <i class="fa-solid fa-chalkboard-user"></i>
                 <span>Teach</span>
               </button>
               <button type="button"
                       onclick="submitInterest('learn')"
-                      class="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg flex items-center space-x-2 transition-colors">
+                      class="px-6 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg flex items-center space-x-2 transition duration-200 focus:outline-none focus:ring-2 focus:ring-teal-300">
                 <i class="fa-solid fa-graduation-cap"></i>
                 <span>Learn</span>
               </button>

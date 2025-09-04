@@ -1034,7 +1034,14 @@ def get_wsgi_last_modified_time():
 
 
 def subjects(request):
-    subjects_queryset = Subject.objects.all()
+    from django.db.models import Count, Exists, OuterRef
+
+    # Optimize queryset with annotations to prevent N+1 queries
+    subjects_queryset = Subject.objects.annotate(
+        a_interested_students=Count("courses__enrollments__student", distinct=True),
+        a_courses_count=Count("courses", distinct=True),
+        a_teacher_available=Exists(Course.objects.filter(subject=OuterRef("pk"), teacher__isnull=False)),
+    )
 
     # Search filter
     search_query = request.GET.get("search", "").strip()
@@ -1051,16 +1058,14 @@ def subjects(request):
     # Teacher availability filter
     teacher_available = request.GET.get("teacher_available", "")
     if teacher_available == "true":
-        subjects_queryset = subjects_queryset.filter(courses__teacher__isnull=False).distinct()
+        subjects_queryset = subjects_queryset.filter(a_teacher_available=True)
 
     # Courses count filter
     min_courses = request.GET.get("min_courses", "")
     if min_courses:
         try:
             min_courses = int(min_courses)
-            subjects_queryset = subjects_queryset.annotate(courses_count_filter=Count("courses")).filter(
-                courses_count_filter__gte=min_courses
-            )
+            subjects_queryset = subjects_queryset.filter(a_courses_count__gte=min_courses)
         except ValueError:
             pass
 
@@ -1069,9 +1074,7 @@ def subjects(request):
     if min_students:
         try:
             min_students = int(min_students)
-            subjects_queryset = subjects_queryset.annotate(
-                students_count=Count("courses__enrollments", distinct=True)
-            ).filter(students_count__gte=min_students)
+            subjects_queryset = subjects_queryset.filter(a_interested_students__gte=min_students)
         except ValueError:
             pass
 
@@ -1093,6 +1096,11 @@ def subjects(request):
     page_number = request.GET.get("page")
     subjects_page = paginator.get_page(page_number)
 
+    # Build base_query (all GET params except 'page') for pagination links
+    params = request.GET.copy()
+    params.pop("page", None)
+    base_query = params.urlencode()
+
     context = {
         "subjects": subjects_page,
         "subjects_page": subjects_page,
@@ -1103,8 +1111,9 @@ def subjects(request):
         "min_students": min_students,
         "sort_by": request.GET.get("sort_by", "order"),
         "sort_order": sort_order,
-        "total_count": subjects_queryset.count(),
-        "filter_active": any([search_query, level, teacher_available, min_courses, min_students]),
+        "total_count": paginator.count,
+        "filter_active": any([search_query, level, teacher_available == "true", min_courses, min_students]),
+        "base_query": (base_query + "&") if base_query else "",
     }
 
     # Handle AJAX requests
