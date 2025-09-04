@@ -168,57 +168,45 @@
                   {% endif %}
                 </div>
               {% endif %}
-              {% if user == topic.author %}
-                <div class="mt-6 flex justify-end">
-                  <form method="post" class="inline">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="delete_topic" />
-                    <button type="submit"
-                            class="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm">
-                      <i class="fas fa-trash-alt mr-1"></i> Delete
+              <div class="mt-6 flex justify-end">
+                <!-- Topic Content with Voting -->
+                <div class="flex items-start">
+                  <!-- Voting Column -->
+                  <div class="flex flex-col items-center mr-4 bg-gray-100 dark:bg-gray-700 rounded-md p-1 pb-0">
+                    <!-- Upvote button -->
+                    <button type="button"
+                            class="vote-btn p-1 hover:text-teal-500 transition-colors duration-200 focus:outline-none"
+                            data-topic="{{ topic.id }}"
+                            data-vote-type="up"
+                            aria-label="Upvote this topic"
+                            aria-pressed="{% if user_topic_vote == 'up' %}true{% else %}false{% endif %}">
+                      <svg xmlns="http://www.w3.org/2000/svg"
+                           class="w-6 h-6 {% if user_topic_vote == 'up' %}text-teal-500{% endif %}"
+                           fill="none"
+                           viewBox="0 0 24 24"
+                           stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                      </svg>
                     </button>
-                  </form>
-                  <!-- Topic Content with Voting -->
-                  <div class="flex items-start">
-                    <!-- Voting Column -->
-                    <div class="flex flex-col items-center mr-4 bg-gray-100 dark:bg-gray-700 rounded-md p-1 pb-0">
-                      <!-- Upvote button -->
-                      <button type="button"
-                              class="vote-btn p-1 hover:text-teal-500 transition-colors duration-200 focus:outline-none"
-                              data-topic="{{ topic.id }}"
-                              data-vote-type="up"
-                              aria-label="Upvote this topic"
-                              aria-pressed="{% if user_topic_vote == 'up' %}true{% else %}false{% endif %}">
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                             class="w-6 h-6 {% if user_topic_vote == 'up' %}text-teal-500{% endif %}"
-                             fill="none"
-                             viewBox="0 0 24 24"
-                             stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                        </svg>
-                      </button>
-                      <!-- Vote score -->
-                      <span class="vote-score text-sm font-bold my-1 {% if topic.vote_score > 0 %}text-teal-500{% elif topic.vote_score < 0 %}text-red-500{% else %}text-gray-500 dark:text-gray-400{% endif %}">
-                        {{ topic.vote_score }}
-                      </span>
-                      <!-- Downvote button -->
-                      <button type="button"
-                              class="vote-btn p-1 hover:text-red-500 transition-colors duration-200 focus:outline-none"
-                              data-topic="{{ topic.id }}"
-                              data-vote-type="down"
-                              aria-label="Downvote this topic"
-                              aria-pressed="{% if user_topic_vote == 'down' %}true{% else %}false{% endif %}">
-                        <svg xmlns="http://www.w3.org/2000/svg"
-                             class="w-6 h-6 {% if user_topic_vote == 'down' %}text-red-500{% endif %}"
-                             fill="none"
-                             viewBox="0 0 24 24"
-                             stroke="currentColor">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </button>
-                    </div>
-                    <!-- Topic Content -->
-                    <div class="prose dark:prose-invert max-w-none text-gray-700 dark:text-gray-300">{{ topic.content|linebreaks }}</div>
+                    <!-- Vote score -->
+                    <span class="vote-score text-sm font-bold my-1 {% if topic.vote_score > 0 %}text-teal-500{% elif topic.vote_score < 0 %}text-red-500{% else %}text-gray-500 dark:text-gray-400{% endif %}">
+                      {{ topic.vote_score }}
+                    </span>
+                    <!-- Downvote button -->
+                    <button type="button"
+                            class="vote-btn p-1 hover:text-red-500 transition-colors duration-200 focus:outline-none"
+                            data-topic="{{ topic.id }}"
+                            data-vote-type="down"
+                            aria-label="Downvote this topic"
+                            aria-pressed="{% if user_topic_vote == 'down' %}true{% else %}false{% endif %}">
+                      <svg xmlns="http://www.w3.org/2000/svg"
+                           class="w-6 h-6 {% if user_topic_vote == 'down' %}text-red-500{% endif %}"
+                           fill="none"
+                           viewBox="0 0 24 24"
+                           stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
                   </div>
                   <!-- Voting Stats and Delete Option -->
                   <div class="mt-6 flex justify-between items-center">
@@ -441,7 +429,8 @@
                   return csrfInput ? csrfInput.value : '';
               }
 
-              const loginUrl = "{% url 'account_signup' %}";
+              // Fix: Change signup to login URL
+              const loginUrl = "{% url 'account_login' %}?next={{ request.path }}";
 
               // Event handler for vote buttons
               function handleVote(e) {
@@ -524,5 +513,4 @@
               });
           });
       </script>
-    {% endif %}
-  {% endblock content %}
+    {% endblock content %}
