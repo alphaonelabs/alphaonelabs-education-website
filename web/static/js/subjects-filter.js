@@ -5,18 +5,27 @@ document.addEventListener('DOMContentLoaded', function() {
     const resultsContainer = document.getElementById('results'); // <-- add a div for results
     let searchTimeout;
 
-    // Fetch results via AJAX
-    function fetchResults() {
+    if (!form || !resultsContainer){
+        // Nothing to wire; exit safely on pages without the filter UI.
+        return;
+    }
+
+    // Fetch results via AJAX with optional pagination reset
+    function fetchResults(urlOverride, resetPagination = false) {
         const formData = new FormData(form);
         const params = new URLSearchParams();
 
         for (let [key, value] of formData.entries()) {
             if (value && value.trim() !== '') {
+                // Skip page parameter if we're resetting pagination
+                if (resetPagination && key === 'page') {
+                    continue;
+                }
                 params.append(key, value);
             }
         }
 
-        const url = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+        const url = urlOverride || (window.location.pathname + (params.toString() ? '?' + params.toString() : ''));
 
         // Update URL without reload
         window.history.replaceState({}, '', url);
@@ -35,6 +44,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Replace results section
             if (resultsContainer) {
                 resultsContainer.innerHTML = html;
+                // No need to re-attach pagination handlers - using event delegation instead
             }
         })
         .catch(error => {
@@ -42,17 +52,29 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Debounced search
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(fetchResults, 500);
+    // Handle pagination clicks with AJAX using event delegation
+    resultsContainer.addEventListener('click', function(e) {
+        const paginationLink = e.target.closest('nav a[href*="page="]');
+        if (paginationLink) {
+            e.preventDefault();
+            const url = paginationLink.getAttribute('href');
+            fetchResults(url); // Don't reset pagination when navigating pages
+        }
     });
+
+    // Debounced search
+    if (searchInput){
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => fetchResults(null, true), 500); // Reset pagination on search
+        });
+    }
 
     // Auto-submit on filter changes
     const filterControls = form.querySelectorAll('select, input[type="checkbox"], input[type="number"]');
     filterControls.forEach(function(element) {
         if (element.id !== 'search') {
-            element.addEventListener('change', fetchResults);
+            element.addEventListener('change', () => fetchResults(null, true)); // Reset pagination on filter change
         }
     });
 
@@ -65,7 +87,7 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 element.value = '';
             }
-            fetchResults();
+            fetchResults(null, true); // Reset pagination when clearing filters
         }
     };
 
@@ -73,6 +95,6 @@ document.addEventListener('DOMContentLoaded', function() {
     window.resetAllFilters = function() {
         window.history.replaceState({}, '', window.location.pathname);
         form.reset();
-        fetchResults();
+        fetchResults(null, true); // Reset pagination when resetting all filters
     };
 });

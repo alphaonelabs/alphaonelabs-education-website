@@ -27,6 +27,13 @@ from PIL import Image
 
 from web.utils import calculate_and_update_user_streak
 
+# Level choices used by both Subject and Course models
+LEVEL_CHOICES = [
+    ("beginner", "Beginner"),
+    ("intermediate", "Intermediate"),
+    ("advanced", "Advanced"),
+]
+
 
 class Notification(models.Model):
     NOTIFICATION_TYPES = [
@@ -204,13 +211,10 @@ class Subject(models.Model):
     order = models.IntegerField(default=0)
     level = models.CharField(
         max_length=20,
-        choices=[
-            ("beginner", "Beginner"),
-            ("intermediate", "Intermediate"),
-            ("advanced", "Advanced"),
-        ],
+        choices=LEVEL_CHOICES,
         default="beginner",
         blank=True,
+        db_index=True,
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -224,7 +228,7 @@ class Subject(models.Model):
     @property
     def interested_students_count(self):
         """Count of students interested in this subject"""
-        return self.courses.aggregate(total=models.Count("enrollments", distinct=True))["total"] or 0
+        return self.courses.aggregate(total=models.Count("enrollments__student", distinct=True))["total"] or 0
 
     @property
     def courses_count(self):
@@ -293,12 +297,9 @@ class Course(models.Model):
 
     level = models.CharField(
         max_length=20,
-        choices=[
-            ("beginner", "Beginner"),
-            ("intermediate", "Intermediate"),
-            ("advanced", "Advanced"),
-        ],
+        choices=LEVEL_CHOICES,
         default="beginner",
+        db_index=True,
     )
     tags = models.CharField(max_length=200, blank=True, help_text="Comma-separated tags")
     is_featured = models.BooleanField(default=False)
