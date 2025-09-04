@@ -1111,7 +1111,84 @@ def get_wsgi_last_modified_time():
 
 
 def subjects(request):
-    return render(request, "subjects.html")
+    subjects_queryset = Subject.objects.all()
+
+    # Search filter
+    search_query = request.GET.get("search", "").strip()
+    if search_query:
+        subjects_queryset = subjects_queryset.filter(
+            Q(name__icontains=search_query) | Q(description__icontains=search_query)
+        )
+
+    # Level filter
+    level = request.GET.get("level", "")
+    if level:
+        subjects_queryset = subjects_queryset.filter(level=level)
+
+    # Teacher availability filter
+    teacher_available = request.GET.get("teacher_available", "")
+    if teacher_available == "true":
+        subjects_queryset = subjects_queryset.filter(courses__teacher__isnull=False).distinct()
+
+    # Courses count filter
+    min_courses = request.GET.get("min_courses", "")
+    if min_courses:
+        try:
+            min_courses = int(min_courses)
+            subjects_queryset = subjects_queryset.annotate(courses_count_filter=Count("courses")).filter(
+                courses_count_filter__gte=min_courses
+            )
+        except ValueError:
+            pass
+
+    # Students interest filter
+    min_students = request.GET.get("min_students", "")
+    if min_students:
+        try:
+            min_students = int(min_students)
+            subjects_queryset = subjects_queryset.annotate(
+                students_count=Count("courses__enrollments", distinct=True)
+            ).filter(students_count__gte=min_students)
+        except ValueError:
+            pass
+
+    # Sorting
+    sort_by = request.GET.get("sort_by", "order")
+    sort_order = request.GET.get("sort_order", "asc")
+
+    valid_sort_fields = ["name", "created_at", "order"]
+    if sort_by not in valid_sort_fields:
+        sort_by = "order"
+
+    if sort_order == "desc":
+        sort_by = f"-{sort_by}"
+
+    subjects_queryset = subjects_queryset.order_by(sort_by, "name")
+
+    # Pagination
+    paginator = Paginator(subjects_queryset, 12)  # 12 subjects per page
+    page_number = request.GET.get("page")
+    subjects_page = paginator.get_page(page_number)
+
+    context = {
+        "subjects": subjects_page,
+        "subjects_page": subjects_page,
+        "search_query": search_query,
+        "level": level,
+        "teacher_available": teacher_available,
+        "min_courses": min_courses,
+        "min_students": min_students,
+        "sort_by": request.GET.get("sort_by", "order"),
+        "sort_order": sort_order,
+        "total_count": subjects_queryset.count(),
+        "filter_active": any([search_query, level, teacher_available, min_courses, min_students]),
+    }
+
+    # Handle AJAX requests
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return render(request, "subjects_results.html", context)
+
+    return render(request, "subjects.html", context)
 
 
 def about(request):

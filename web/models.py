@@ -202,6 +202,16 @@ class Subject(models.Model):
     description = models.TextField(blank=True)
     icon = models.CharField(max_length=50, help_text="Font Awesome icon class", blank=True)
     order = models.IntegerField(default=0)
+    level = models.CharField(
+        max_length=20,
+        choices=[
+            ("beginner", "Beginner"),
+            ("intermediate", "Intermediate"),
+            ("advanced", "Advanced"),
+        ],
+        default="beginner",
+        blank=True,
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -210,6 +220,21 @@ class Subject(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def interested_students_count(self):
+        """Count of students interested in this subject"""
+        return self.courses.aggregate(total=models.Count("enrollments", distinct=True))["total"] or 0
+
+    @property
+    def courses_count(self):
+        """Count of courses in this subject"""
+        return self.courses.count()
+
+    @property
+    def teacher_available(self):
+        """Check if there are teachers for this subject"""
+        return self.courses.filter(teacher__isnull=False).exists()
 
     def save(self, *args, **kwargs):
         if not self.slug:
