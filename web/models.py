@@ -15,6 +15,7 @@ from django.core.files.base import ContentFile
 from django.core.mail import send_mail
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Avg
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.urls import reverse
@@ -352,10 +353,8 @@ class Course(models.Model):
 
     @property
     def average_rating(self):
-        reviews = self.reviews.all()
-        if not reviews:
-            return 0
-        return sum(review.rating for review in reviews) / len(reviews)
+        avg = float(self.reviews.aggregate(avg=Avg("rating"))["avg"] or 0)
+        return round(avg, 2)
 
 
 class Session(models.Model):
