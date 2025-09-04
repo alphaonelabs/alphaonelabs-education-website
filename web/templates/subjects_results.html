@@ -1,0 +1,86 @@
+{% if subjects %}
+  <!-- Subjects Grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+    {% for subject in subjects %}
+      <div class="relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex flex-col justify-between shadow hover:shadow-md transition-shadow">
+        <!-- Subject Icon/Name -->
+        <div class="flex items-center space-x-2 mb-2">
+          {% if subject.icon %}
+            <i class="{{ subject.icon }}"></i>
+          {% else %}
+            <i class="fa-solid fa-book text-gray-500"></i>
+          {% endif %}
+          <h2 class="text-lg font-semibold">{{ subject.name }}</h2>
+        </div>
+        <!-- Stats -->
+        <ul class="text-sm text-gray-700 dark:text-gray-300 space-y-1 mb-4">
+          <li>
+            <strong>Interested:</strong> {{ subject.interested_students_count|default:0 }} learner{{ subject.interested_students_count|pluralize }}
+          </li>
+          <li>
+            <strong>Teacher Available:</strong>
+            {% if subject.teacher_available %}
+              <span class="text-green-600 dark:text-green-400">Yes</span>
+            {% else %}
+              <span class="text-red-600 dark:text-red-400">No</span>
+            {% endif %}
+          </li>
+          <li>
+            <strong>Courses:</strong> {{ subject.courses_count|default:0 }}
+          </li>
+        </ul>
+        <!-- Teach or Learn Buttons -->
+        <div class="flex space-x-2 mt-auto">
+          <a href="{% url 'teach' %}?subject={{ subject.slug }}"
+             class="bg-indigo-500 text-white py-1 px-2 rounded hover:bg-indigo-600 text-sm transition-colors">Teach</a>
+          <a href="{% url 'learn' %}?subject={{ subject.slug }}"
+             class="bg-orange-500 text-white py-1 px-2 rounded hover:bg-orange-600 text-sm transition-colors">Learn</a>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+  <!-- Pagination -->
+  {% if subjects_page.has_other_pages %}
+    <div class="mt-8 flex justify-center">
+      <nav class="flex items-center space-x-2">
+        {% if subjects_page.has_previous %}
+          <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ subjects_page.previous_page_number }}"
+             class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700">
+            Previous
+          </a>
+        {% endif %}
+        <span class="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md dark:bg-gray-800 dark:border-gray-700 dark:text-gray-300">
+          Page {{ subjects_page.number }} of {{ subjects_page.paginator.num_pages }}
+        </span>
+        {% if subjects_page.has_next %}
+          <a href="?{% for key, value in request.GET.items %}{% if key != 'page' %}{{ key }}={{ value }}&{% endif %}{% endfor %}page={{ subjects_page.next_page_number }}"
+             class="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700">
+            Next
+          </a>
+        {% endif %}
+      </nav>
+    </div>
+  {% endif %}
+{% else %}
+  <!-- No Results Message -->
+  <div class="text-center py-12">
+    <div class="max-w-md mx-auto">
+      <i class="fa-solid fa-search text-6xl text-gray-300 dark:text-gray-600 mb-4"></i>
+      <h3 class="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No subjects found</h3>
+      <p class="text-gray-500 dark:text-gray-400 mb-4">
+        {% if filter_active %}
+          No subjects match your current filters. Try adjusting your search criteria.
+        {% else %}
+          No subjects are available at the moment. Check back later!
+        {% endif %}
+      </p>
+      {% if filter_active %}
+        <a href="{% url 'subjects' %}"
+           class="inline-flex items-center px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-md transition-colors">
+          <i class="fa-solid fa-refresh mr-2"></i>
+          Clear All Filters
+        </a>
+      {% endif %}
+    </div>
+  </div>
+{% endif %}
