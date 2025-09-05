@@ -3,6 +3,7 @@ name: Check PR for media attachments when HTML files change
 on:
   pull_request:
     types: [opened, synchronize]
+    # optionally: [opened, synchronize, reopened]
 
 jobs:
   check-media-attachments:
