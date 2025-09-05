@@ -72,17 +72,15 @@ jobs:
                 }
                 
                 // Check for media files referenced
-                const mediaMatches = content.match(/(src|href)=["'][^"']*\.(jpg|jpeg|png|gif|webp|svg|mp4|avi|mov|pdf)["']/gi);
+                const mediaMatches = content.match(/(?:\b(?:src|href)\s*=\s*["'][^"']*\.(?:avif|webp|jpe?g|png|gif|svg|mp4|webm|mov|avi|mkv|mp3|wav|ogg|m4a|flac|pdf))["']/gi);
                 if (mediaMatches && mediaMatches.length > 0) {
                   mediaReferences.push(`**${file.filename}**: References ${mediaMatches.length} media file(s)`);
                   console.log(`  - Found ${mediaMatches.length} media reference(s)`);
                   
                   // Check for large image formats that could be optimized
-                  const unoptimizedImages = mediaMatches.filter(match => 
-                    /\.(jpg|jpeg|png)["']/i.test(match)
-                  );
+                  const unoptimizedImages = mediaMatches.filter(m => /\.(?:jpe?g|png)\b/i.test(m));
                   if (unoptimizedImages.length > 0) {
-                    issues.push(`**${file.filename}**: Consider using WebP format for ${unoptimizedImages.length} image(s) for better performance`);
+                    issues.push(`**${file.filename}**: Consider AVIF/WebP for ${unoptimizedImages.length} JPEG/PNG image(s) for better performance`);
                   }
                 }
                 
