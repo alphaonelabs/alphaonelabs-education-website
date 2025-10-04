@@ -1799,17 +1799,6 @@ docs = ["mdx-gh-links (>=0.2)", "mkdocs (>=1.5)", "mkdocs-gen-files", "mkdocs-li
 testing = ["coverage", "pyyaml"]
 
 [[package]]
-name = "mnemonic"
-version = "0.21"
-description = "Implementation of Bitcoin BIP-0039"
-optional = false
-python-versions = ">=3.8.1"
-files = [
-    {file = "mnemonic-0.21-py3-none-any.whl", hash = "sha256:72dc9de16ec5ef47287237b9b6943da11647a03fe7cf1f139fc3d7c4a7439288"},
-    {file = "mnemonic-0.21.tar.gz", hash = "sha256:1fe496356820984f45559b1540c80ff10de448368929b9c60a2b55744cc88acf"},
-]
-
-[[package]]
 name = "msgpack"
 version = "1.1.1"
 description = "MessagePack serializer"
@@ -3543,4 +3532,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "856a5f97847fa931d219ca5c216402d3e81a5aec395cd2c092ae9655d22128d1"
+content-hash = "b4a5efa19c79c5fbf0da0648b0460a0a2aa7252482301076ee82859b87298201"

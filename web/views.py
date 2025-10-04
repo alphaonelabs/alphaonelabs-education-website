@@ -5831,44 +5831,50 @@ def award_nft_badge(request, student_id=None):
 
 
 @login_required
-def show_mnemonic(request):
-    """Displays the mnemonic phrase once and removes it from session."""
-    mnemonic = request.session.get("mnemonic")
-    public_key = request.session.get("public_key")
-
-    if not mnemonic:
-        messages.error(request, "Mnemonic not found or already viewed.")
-        return redirect("student_dashboard")
-
-    # Remove mnemonic from session after displaying
-    del request.session["mnemonic"]
-    del request.session["public_key"]
-
-    return render(request, "crypto-wallet/show_mnemonic.html", {"mnemonic": mnemonic, "public_key": public_key})
-
-
-def create_student_wallet(request):
-    """Handles wallet creation and displays mnemonic once."""
-    student = request.user  # Get logged-in student
-    from web.services.wallet_services import create_student_wallet
+@login_required
+def link_external_wallet(request):
+    """Handles linking an external wallet address to the user's profile."""
+    student = request.user
+    
+    # If user already has a wallet, show it
+    existing_wallet = ""
+    if hasattr(student, "profile") and student.profile.wallet_address:
+        existing_wallet = student.profile.wallet_address
 
     if request.method == "POST":
+        wallet_address = request.POST.get("wallet_address", "").strip()
+        
+        # Validate wallet address format (Ethereum/Polygon)
+        if not wallet_address:
+            messages.error(request, "Please enter a wallet address.")
+            return render(request, "crypto-wallet/create_wallet.html", {"wallet_address": wallet_address})
+        
+        if not wallet_address.startswith("0x") or len(wallet_address) != 42:
+            messages.error(request, "Invalid wallet address format. Must be 42 characters starting with 0x.")
+            return render(request, "crypto-wallet/create_wallet.html", {"wallet_address": wallet_address})
+        
+        # Validate hex characters
         try:
-            wallet_data = create_student_wallet()  # Now generates a mnemonic
-            # Store only public address
+            int(wallet_address[2:], 16)
+        except ValueError:
+            messages.error(request, "Invalid wallet address. Must contain only hexadecimal characters after 0x.")
+            return render(request, "crypto-wallet/create_wallet.html", {"wallet_address": wallet_address})
+        
+        try:
+            # Store the wallet address
             profile, created = Profile.objects.get_or_create(user=student)
-            profile.wallet_address = wallet_data["address"]
+            profile.wallet_address = wallet_address
             profile.save()
-            # Wallet address successfully saved to profile
-            # Store mnemonic temporarily in session (Do NOT store in DB)
-            request.session["mnemonic"] = wallet_data["mnemonic"]
-            request.session["public_key"] = wallet_data["address"]
-            return redirect("show_mnemonic")  # Redirect to mnemonic page
-        except Exception as e:
-            messages.error(request, "Failed to create wallet. Please try again.")
-            logger.error(f"Wallet creation error: {str(e)}")
+            
+            messages.success(request, f"Wallet address successfully linked: {wallet_address[:10]}...{wallet_address[-8:]}")
             return redirect("student_dashboard")
-    return render(request, "crypto-wallet/create_wallet.html")
+        except Exception as e:
+            messages.error(request, "Failed to link wallet. Please try again.")
+            logger.error(f"Wallet linking error: {str(e)}")
+            return render(request, "crypto-wallet/create_wallet.html", {"wallet_address": wallet_address})
+    
+    return render(request, "crypto-wallet/create_wallet.html", {"wallet_address": existing_wallet})
+
 
 
 def public_profile(request, username):
