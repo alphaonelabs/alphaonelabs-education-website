@@ -32,6 +32,7 @@ def localtime_filter(value) -> any:
 
     return localtime(value)
 
+
 @register.filter(name="localtime_format")
 def localtime_format(value, format_string=None) -> str:
     """
@@ -72,6 +73,7 @@ def localtime_format(value, format_string=None) -> str:
             # Fallback if format string is invalid
             return local_dt.isoformat()
     return local_dt.isoformat()
+
 
 @register.simple_tag(takes_context=True)
 def current_timezone(context):
