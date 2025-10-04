@@ -37,26 +37,15 @@ function sendTimezoneToServer(timezone) {
             const cookies = document.cookie.split(';');
             for (let i = 0; i < cookies.length; i++) {
                 const cookie = cookies[i].trim();
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === `${name}=`) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
+                if (cookie.substring(0, name.length + 1) === `${name}=`) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                     break;
                 }
             }
         }
         return cookieValue;
     }
+    
     const csrftoken = getCookie('csrftoken');
 
     // Send the request
@@ -73,9 +62,6 @@ function getCookie(name) {
             }
             return response.json();
         })
-        .then(data => {
-            // existing success/error handling logic
-        .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
                 console.log('Timezone set successfully:', data.timezone);

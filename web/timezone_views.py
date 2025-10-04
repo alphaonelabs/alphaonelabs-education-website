@@ -22,9 +22,6 @@ def set_timezone(request):
     except pytz.exceptions.UnknownTimeZoneError:
         return JsonResponse({"status": "error", "message": "Invalid timezone"}, status=400)
 
-from django.http import HttpRequest
-
-def set_timezone(request: HttpRequest) -> JsonResponse:
     # Store in session
     request.session["user_timezone"] = timezone_name
 
