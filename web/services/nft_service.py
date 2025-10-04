@@ -221,8 +221,8 @@ def send_nft_badge(achievement_id, wallet_address, contract_address, admin_priva
 
             # If we couldn't get the token ID from logs, use a fallback
             if token_id is None:
-                # Use a timestamp-based ID as fallback
-                token_id = f"{achievement.id}-{int(timezone.now().timestamp())}"
+                # Use a timestamp-based integer ID as fallback
+                token_id = achievement.id * 1_000_000 + int(timezone.now().timestamp())
 
             nft_badge = NFTBadge.objects.create(
                 achievement=achievement,
