@@ -1,5 +1,5 @@
 /**
- * Timezone detector script
+ * Timezone detector script for website
  * Automatically detects the user's timezone and sends it to the server
  */
 
