@@ -9,7 +9,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from web.forms import LearnForm, TeachForm
-from web.models import Course, Enrollment, Profile, Session, SessionAttendance, Subject
+from web.models import BlogComment, BlogPost, Course, Enrollment, Profile, Session, SessionAttendance, Subject
 from web.utils import get_or_create_cart
 from web.views import send_welcome_email
 
@@ -657,3 +657,150 @@ class CourseDetailTests(TestCase):
         response = self.client.get(reverse("course_detail", args=[course.slug]))
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, reverse("update_course", args=[course.slug]))
+
+
+class BlogCommentViewTest(TestCase):
+    """Test blog comment functionality including add and delete."""
+
+    def setUp(self):
+        """Set up test data for blog comments."""
+        self.client = Client()
+        
+        # Create test users
+        self.user1 = User.objects.create_user(
+            username="user1",
+            email="user1@example.com",
+            password="testpass123"
+        )
+        self.user2 = User.objects.create_user(
+            username="user2",
+            email="user2@example.com",
+            password="testpass123"
+        )
+        
+        # Create a test blog post
+        self.blog_post = BlogPost.objects.create(
+            title="Test Blog Post",
+            slug="test-blog-post",
+            author=self.user1,
+            content="This is a test blog post content.",
+            status="published",
+            published_at=timezone.now()
+        )
+    
+    def test_add_comment_authenticated(self):
+        """Test that authenticated users can add comments."""
+        self.client.login(username="user1", password="testpass123")
+        
+        response = self.client.post(
+            reverse("blog_detail", args=[self.blog_post.slug]),
+            {"content": "This is a test comment"}
+        )
+        
+        # Check redirect
+        self.assertEqual(response.status_code, 302)
+        
+        # Check comment was created
+        self.assertEqual(BlogComment.objects.count(), 1)
+        comment = BlogComment.objects.first()
+        self.assertEqual(comment.content, "This is a test comment")
+        self.assertEqual(comment.author, self.user1)
+        self.assertEqual(comment.post, self.blog_post)
+        
+    def test_add_comment_unauthenticated(self):
+        """Test that unauthenticated users cannot add comments."""
+        response = self.client.post(
+            reverse("blog_detail", args=[self.blog_post.slug]),
+            {"content": "This should not be posted"}
+        )
+        
+        # Should redirect to login
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("login", response.url)
+        
+        # No comment should be created
+        self.assertEqual(BlogComment.objects.count(), 0)
+    
+    def test_delete_own_comment(self):
+        """Test that users can delete their own comments."""
+        # Create a comment
+        comment = BlogComment.objects.create(
+            post=self.blog_post,
+            author=self.user1,
+            content="My comment",
+            is_approved=True
+        )
+        
+        self.client.login(username="user1", password="testpass123")
+        
+        response = self.client.post(
+            reverse("blog_detail", args=[self.blog_post.slug]),
+            {
+                "action": "delete_comment",
+                "comment_id": comment.id
+            }
+        )
+        
+        # Check redirect
+        self.assertEqual(response.status_code, 302)
+        
+        # Check comment was deleted
+        self.assertEqual(BlogComment.objects.count(), 0)
+    
+    def test_cannot_delete_others_comment(self):
+        """Test that users cannot delete other users' comments."""
+        # User1 creates a comment
+        comment = BlogComment.objects.create(
+            post=self.blog_post,
+            author=self.user1,
+            content="User1's comment",
+            is_approved=True
+        )
+        
+        # User2 tries to delete it
+        self.client.login(username="user2", password="testpass123")
+        
+        response = self.client.post(
+            reverse("blog_detail", args=[self.blog_post.slug]),
+            {
+                "action": "delete_comment",
+                "comment_id": comment.id
+            }
+        )
+        
+        # Check redirect
+        self.assertEqual(response.status_code, 302)
+        
+        # Comment should still exist
+        self.assertEqual(BlogComment.objects.count(), 1)
+    
+    def test_delete_nonexistent_comment(self):
+        """Test deleting a comment that doesn't exist."""
+        self.client.login(username="user1", password="testpass123")
+        
+        response = self.client.post(
+            reverse("blog_detail", args=[self.blog_post.slug]),
+            {
+                "action": "delete_comment",
+                "comment_id": 99999  # Non-existent ID
+            }
+        )
+        
+        # Check redirect
+        self.assertEqual(response.status_code, 302)
+    
+    def test_comment_success_message_no_id(self):
+        """Test that comment success message doesn't expose database ID."""
+        self.client.login(username="user1", password="testpass123")
+        
+        response = self.client.post(
+            reverse("blog_detail", args=[self.blog_post.slug]),
+            {"content": "Test comment"},
+            follow=True
+        )
+        
+        # Check that success message doesn't contain "#<number>"
+        messages = list(response.context['messages'])
+        self.assertEqual(len(messages), 1)
+        self.assertEqual(str(messages[0]), "Comment added successfully!")
+        self.assertNotIn("#", str(messages[0]))

@@ -2500,12 +2500,27 @@ def blog_detail(request, slug):
             messages.error(request, "Please log in to comment.")
             return redirect("account_login")
 
+        action = request.POST.get("action")
+        
+        if action == "delete_comment":
+            comment_id = request.POST.get("comment_id")
+            try:
+                comment = BlogComment.objects.get(id=comment_id, post=post)
+                if request.user == comment.author:
+                    comment.delete()
+                    messages.success(request, "Comment deleted successfully!")
+                else:
+                    messages.error(request, "You can only delete your own comments.")
+            except BlogComment.DoesNotExist:
+                messages.error(request, "Comment not found.")
+            return redirect("blog_detail", slug=slug)
+        
         comment_content = request.POST.get("content")
         if comment_content:
             comment = BlogComment.objects.create(
                 post=post, author=request.user, content=comment_content, is_approved=True  # Auto-approve for now
             )
-            messages.success(request, f"Comment #{comment.id} added successfully!")
+            messages.success(request, "Comment added successfully!")
             return redirect("blog_detail", slug=slug)
 
     # Get view count from WebRequest
