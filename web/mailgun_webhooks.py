@@ -4,12 +4,12 @@ import hashlib
 import hmac
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpResponseForbidden
-from django.utils import timezone
+from django.utils import timezone as django_timezone
 from django.views.decorators.csrf import csrf_exempt
 
 from .models import EmailEvent
@@ -106,9 +106,9 @@ def process_mailgun_event(event):
             # Mailgun timestamp is Unix epoch seconds (can be float)
             dt = datetime.fromtimestamp(float(timestamp), tz=timezone.utc)
         except (ValueError, TypeError):
-            dt = timezone.now()
+            dt = django_timezone.now()
     else:
-        dt = timezone.now()
+        dt = django_timezone.now()
 
     # Find the associated user
     user = User.objects.filter(email__iexact=email).first()
