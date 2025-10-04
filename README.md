@@ -46,10 +46,9 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 ### Backend
 
 - Python 3.10+
-- Django 4.x
-- Celery for async tasks
-- Redis for caching
-- PostgreSQL (production) / SQLite (development)
+- Django 5.x
+- Redis (channels + caching)
+- MySQL (production) / SQLite (development optional)
 
 ### Frontend
 
@@ -62,8 +61,9 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 
 - Docker support
 - Nginx
-- Gunicorn
-- SendGrid for emails
+- Uvicorn (ASGI)
+- Django Channels (WebSockets)
+- SendGrid for emails (graceful fallback)
 - Stripe for payments
 
 ## Setup Instructions
@@ -90,21 +90,18 @@ Alpha One Labs is an education platform designed to facilitate both learning and
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. Install dependencies:
+3. Install dependencies (Poetry is the single source of truth):
 
    ```bash
-   # Using pip
-   pip install -r requirements.txt
+   # Ensure Poetry installed (once)
+   pip install --upgrade pip
+   pip install poetry==1.8.3
 
-   # Using poetry
+   # Install project deps into local venv (recommended)
    poetry install
 
-   If you are having isues on windows try;
-   poetry lock
-   poetry install
-   poetry self add poetry-plugin shell
-   poetry shell
-   poetry run pre-commit run --all-files
+   # Activate virtualenv (Poetry 1.8 auto-detects)
+   poetry shell  # or just use: poetry run <command>
    ```
 
 4. Set up environment variables:
@@ -193,19 +190,11 @@ Copy `.env.sample` to `.env` and configure the variables.
 
 ### Pre-commit Hooks (Important)
 
-We use pre-commit hooks to ensure code quality and automatically format code:
+We use pre-commit to enforce formatting (black, isort), linting (flake8, djlint), etc.
 
 ```bash
-# Install pre-commit
-pip install pre-commit
-
-# Install the git hooks
-pre-commit install
-
-# Automatically fix formatting issues
+poetry run pre-commit install
 poetry run pre-commit run --hook-stage commit
-
-# Run all checks on all files
 poetry run pre-commit run --all-files
 ```
 

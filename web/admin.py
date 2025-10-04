@@ -53,6 +53,7 @@ from .models import (
     SuccessStory,
     UserBadge,
     UserMembership,
+    VideoRequest,
     WaitingRoom,
     WebRequest,
 )
@@ -902,3 +903,10 @@ class PointsAdmin(admin.ModelAdmin):
         ("Related Data", {"fields": ("challenge", "current_streak")}),
         ("Timestamps", {"fields": ("awarded_at", "updated_at"), "classes": ("collapse",)}),
     )
+
+
+@admin.register(VideoRequest)
+class VideoRequestAdmin(admin.ModelAdmin):
+    list_display = ("title", "status", "category", "requester", "created_at")
+    list_filter = ("status", "category")
+    search_fields = ("title", "description", "requester__username")
