@@ -383,6 +383,13 @@ urlpatterns += i18n_patterns(
         name="grade_short_answer",
     ),
     path("quizzes/<int:quiz_id>/analytics/", quiz_views.quiz_analytics, name="quiz_analytics"),
+    # NFT badge urls
+    path("students/<int:student_id>/award-nft-badge/", views.award_nft_badge, name="award_nft_badge"),
+    path("award-nft-badge/", views.award_nft_badge, name="award_nft_badge_search"),
+    path("achievements/<int:achievement_id>/send-nft-badge/", views.send_nft_badge, name="send_nft_badge"),
+    path("achievements/<int:achievement_id>/", views.achievement_detail, name="achievement_detail"),
+    path("create-wallet/", views.create_student_wallet, name="create_student_wallet"),
+    path("show-mnemonic/", views.show_mnemonic, name="show_mnemonic"),
     # Grade-a-Link URLs
     path("grade-links/", GradeableLinkListView.as_view(), name="gradeable_link_list"),
     path("grade-links/submit/", GradeableLinkCreateView.as_view(), name="gradeable_link_create"),
