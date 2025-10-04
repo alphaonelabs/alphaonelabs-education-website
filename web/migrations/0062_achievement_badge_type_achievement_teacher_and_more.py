@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("web", "0053_goods_featured"),
+        ("web", "0061_alter_educationalvideo_description_videorequest"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
