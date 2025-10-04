@@ -71,8 +71,14 @@
                         }
 
                         const {
-                            clientSecret
+                            clientSecret,
+                            error
                         } = data;
+
+                        if (error) {
+                            showError(error);
+                            return;
+                        }
 
                         const appearance = {
                             theme: document.documentElement.classList.contains('dark') ? 'night' : 'stripe',

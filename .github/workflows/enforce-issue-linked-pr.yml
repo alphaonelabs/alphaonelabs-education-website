@@ -25,7 +25,7 @@ jobs:
             console.log(`Checking PR #${prNumber} for linked issues in Development section`);
 
             // Check for exempt users
-            const exemptUsers = ['A1L13N'];
+            const exemptUsers = ['A1L13N', 'copilot-swe-agent[bot]'];
             if (exemptUsers.includes(pr.user.login)) {
               console.log(`PR author ${pr.user.login} is exempt from issue link requirement`);
               return;
