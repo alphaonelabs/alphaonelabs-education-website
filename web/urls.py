@@ -42,6 +42,8 @@ urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs
     path("captcha/", include("captcha.urls")),  # CAPTCHA URLs should not be language-prefixed
     path("markdownx/", include("markdownx.urls")),
+    # GitHub webhook (non-localized stable endpoint)
+    path("github_update/", views.github_update, name="github_update"),
 ]
 
 if settings.DEBUG:
@@ -151,7 +153,6 @@ urlpatterns += i18n_patterns(
     path("avatar/set-as-profile/", views_avatar.set_avatar_as_profile_pic, name="set_avatar_as_profile_pic"),
     path("avatar/preview/", views_avatar.preview_avatar, name="preview_avatar"),
     # Admin and Utilities
-    path("github_update/", views.github_update, name="github_update"),
     path(f"{settings.ADMIN_URL}/dashboard/", admin_views.admin_dashboard, name="admin_dashboard"),
     path(f"{settings.ADMIN_URL}/", admin.site.urls),
     path("waiting-rooms/<int:waiting_room_id>/delete/", views.delete_waiting_room, name="delete_waiting_room"),
