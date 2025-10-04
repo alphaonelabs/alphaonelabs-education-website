@@ -112,7 +112,7 @@ class NFTBadgeService:
 
     def create_metadata(self, achievement):
         """Creates and uploads metadata JSON for the NFT badge to IPFS"""
-        image_path = f"static/images/badges/{achievement.achievement_type}.png"
+        image_path = f"web/static/images/badges/{achievement.achievement_type}.png"
 
         # Verify file exists before upload
         if not os.path.exists(image_path):
