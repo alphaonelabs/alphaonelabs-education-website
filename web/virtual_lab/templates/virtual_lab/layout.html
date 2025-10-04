@@ -27,9 +27,10 @@
                  class="block px-4 py-2 hover:bg-yellow-50">Inclined Plane</a>
             </div>
           </div>
-          <!-- Placeholder Links (disabled) -->
-          <span class="opacity-50 cursor-not-allowed">{% trans "Chemistry" %}</span>
-          <span class="opacity-50 cursor-not-allowed">{% trans "Code Editor" %}</span>
+          <a href="{% url 'virtual_lab:chemistry_home' %}"
+             class="hover:text-indigo-600 transition">{% trans "Chemistry" %}</a>
+          <a href="{% url 'virtual_lab:code_editor' %}"
+             class="hover:text-indigo-600 transition">{% trans "Code Editor" %}</a>
         </nav>
       </div>
     </header>
