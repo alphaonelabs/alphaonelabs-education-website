@@ -155,4 +155,8 @@ jobs:
 
       - name: Stop Docker container
         if: always()
-        run: docker stop education-app
+        run: docker stop education-app || true
+
+      - name: Remove Docker container
+        if: always()
+        run: docker rm education-app || true
