@@ -3,7 +3,7 @@ import traceback
 
 import pytz
 import sentry_sdk
-from django.http import Http404
+from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.urls import Resolver404, resolve
 from django.utils import timezone
@@ -152,14 +152,15 @@ class TimeZoneMiddleware:
     """
     def __init__(self, get_response) -> None:
         self.get_response = get_response
-     def __call__(self, request: HttpRequest) -> HttpResponse:
-         # Try to get the timezone from the session
-         tzname = request.session.get("user_timezone")
 
-         if tzname:
-             # If found, activate this timezone for the current request
-             try:
-                 timezone.activate(pytz.timezone(tzname))
+    def __call__(self, request: HttpRequest) -> HttpResponse:
+        # Try to get the timezone from the session
+        tzname = request.session.get("user_timezone")
+
+        if tzname:
+            # If found, activate this timezone for the current request
+            try:
+                timezone.activate(pytz.timezone(tzname))
             except (pytz.exceptions.UnknownTimeZoneError, AttributeError):
                 # If timezone is invalid, use the default
                 timezone.deactivate()
