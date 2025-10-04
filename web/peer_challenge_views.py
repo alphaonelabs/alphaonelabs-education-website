@@ -316,7 +316,7 @@ def calculate_leaderboard(challenge):
 
     # Now get all completed invitations
     invitations = PeerChallengeInvitation.objects.filter(
-        challenge=challenge, status="completed", user_quiz__isnull=False
+        challenge=challenge, status="completed", user_quiz__isnull=False, participant__profile__is_profile_public=True
     ).select_related("participant", "user_quiz")
 
     leaderboard_data = []

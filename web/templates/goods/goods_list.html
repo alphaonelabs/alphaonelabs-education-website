@@ -20,9 +20,11 @@
       {% for product in products %}
         <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-5 transition-transform transform hover:scale-105 flex flex-col border border-gray-200">
           <div class="h-48 w-full overflow-hidden rounded-md">
-            <img src="{{ product.image.url }}"
+            <img src="{{ product.image_url }}"
                  alt="{{ product.name|default:'Product Image' }}"
-                 class="w-full h-full object-cover aspect-[4/3]" />
+                 class="w-full h-full object-cover aspect-[4/3]"
+                 width="192"
+                 height="144" />
           </div>
           <h3 class="mt-4 text-lg font-bold text-gray-900 dark:text-white">{{ product.name }}</h3>
           <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">{{ product.description|truncatewords:15 }}</p>
