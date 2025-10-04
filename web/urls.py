@@ -475,6 +475,12 @@ urlpatterns += i18n_patterns(
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
     path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
+    # Voice chat URLs
+    path("voice-chat/", views.list_voice_chat_rooms, name="voice_chat_list"),
+    path("voice-chat/create/", views.create_voice_chat_room, name="voice_chat_create"),
+    path("voice-chat/room/<uuid:room_id>/", views.voice_chat_room, name="voice_chat_room"),
+    path("voice-chat/room/<uuid:room_id>/delete/", views.delete_voice_chat_room, name="delete_voice_chat_room"),
+    path("voice-chat/signal/<uuid:room_id>/", views.signal_handler, name="voice_chat_signal"),
     prefix_default_language=True,
 )
 
