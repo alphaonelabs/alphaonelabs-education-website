@@ -3045,3 +3045,34 @@ class Response(models.Model):
 
     def __str__(self):
         return f"Response by {self.user.username} to {self.question.text}"
+
+
+class VoiceChatRoom(models.Model):
+    """Model for voice chat rooms where users can communicate via encrypted audio."""
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    name = models.CharField(max_length=100)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_voice_rooms")
+    created_at = models.DateTimeField(auto_now_add=True)
+    participants = models.ManyToManyField(User, related_name="voice_chat_rooms", blank=True)
+    is_active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.name
+
+    class Meta:
+        ordering = ["-created_at"]
+
+
+class VoiceChatParticipant(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    room = models.ForeignKey(VoiceChatRoom, on_delete=models.CASCADE)
+    joined_at = models.DateTimeField(auto_now_add=True)
+    is_speaking = models.BooleanField(default=False)
+    is_muted = models.BooleanField(default=False)
+
+    class Meta:
+        unique_together = ("user", "room")
+
+    def __str__(self):
+        return f"{self.user.username} in {self.room.name}"
