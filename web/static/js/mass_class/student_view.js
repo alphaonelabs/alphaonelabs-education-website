@@ -66,6 +66,10 @@ document.addEventListener('DOMContentLoaded', function() {
             hidePoll();
             break;
 
+          case 'hand_raised':
+            handId = data.hand_id;
+            break;
+
           case 'hand_acknowledged':
             if (data.hand_id === handId) {
               handAcknowledged();
@@ -155,14 +159,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateQuestionStatus(questionId, status) {
-      // In a real implementation, you'd have a map of question IDs to elements
-      // This is a simplified version
-      const questions = document.querySelectorAll('.my-question.pending');
-      if (questions.length > 0) {
-        const question = questions[0]; // Assume first pending question
-        question.classList.remove('pending');
-        question.classList.add(status);
-        question.querySelector('.question-status').textContent = 'Status: Answered';
+      const questionElement = document.querySelector(`.my-question[data-id="${questionId}"]`);
+      if (questionElement) {
+        questionElement.classList.remove('pending');
+        questionElement.classList.add(status);
+        questionElement.querySelector('.question-status').textContent = 'Status: Answered';
       }
     }
 

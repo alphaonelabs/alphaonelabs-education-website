@@ -15,7 +15,8 @@
         </button>
         <button id="stopStream"
                 class="btn btn-danger bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
-                disabled>Stop Streaming</button>
+                disabled
+                data-confirm="Are you sure you want to stop streaming? This will end the session for all students.">Stop Streaming</button>
         <div class="stream-status text-gray-700">
           Status: <span id="streamStatus" class="font-semibold">Offline</span>
         </div>
@@ -26,9 +27,11 @@
         <h3 class="text-xl font-semibold text-gray-800 mb-4">Live Preview</h3>
         <div class="video-preview relative bg-black rounded overflow-hidden">
           <video id="localVideo" autoplay playsinline muted class="w-full h-64">
+            <p>Your browser doesn't support HTML5 video. Please upgrade to a modern browser.</p>
           </video>
           <div class="webcam-container absolute inset-0 flex justify-center items-center">
             <video id="webcamVideo" autoplay playsinline muted class="w-1/2 h-1/2">
+              <p>Your browser doesn't support HTML5 video. Please upgrade to a modern browser.</p>
             </video>
           </div>
         </div>
@@ -126,6 +129,16 @@
   </div>
 {% endblock %}
 {% block extra_js %}
-  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js" onerror="handleScriptError('WebRTC adapter')"></script>
   <script src="{% static 'js/mass_class/teacher_broadcast.js' %}"></script>
+  <script>
+    function handleScriptError(scriptName) {
+      console.error(`Failed to load ${scriptName} script. Some features may not work.`);
+      // Display a user-friendly notification
+      const notification = document.createElement('div');
+      notification.className = 'alert alert-warning';
+      notification.innerHTML = `<strong>Warning:</strong> Some broadcast features may not work properly. Please refresh the page or try a different browser.`;
+      document.querySelector('.studio-header').appendChild(notification);
+    }
+  </script>
 {% endblock %}

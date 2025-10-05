@@ -72,11 +72,11 @@
       </div>
     </div>
   </div>
-  <div id="streamEndedModal" class="modal hidden">
+  <div id="streamEndedModal" class="modal hidden" role="dialog" aria-labelledby="streamEndedTitle" aria-hidden="true">
     <div class="modal-content">
-      <h3>Stream Ended</h3>
+      <h3 id="streamEndedTitle">Stream Ended</h3>
       <p>The teacher has ended the live stream.</p>
-      <button class="btn btn-primary" onclick="window.location.reload()">Refresh</button>
+      <button class="btn btn-primary" onclick="window.location.reload()" autofocus>Refresh</button>
     </div>
   </div>
 {% endblock %}
@@ -89,7 +89,15 @@
       function onYouTubeIframeAPIReady() {
           // Extract video ID from YouTube URL
           const youtubeUrl = "{{ stream.youtube_url }}";
-          const videoId = youtubeUrl.split('v=')[1];
+          let videoId;
+          if (youtubeUrl.includes('v=')) {
+              videoId = youtubeUrl.split('v=')[1].split('&')[0];
+          } else if (youtubeUrl.includes('youtu.be/')) {
+              videoId = youtubeUrl.split('youtu.be/')[1].split('?')[0];
+          } else {
+              console.error('Invalid YouTube URL format');
+              // Fallback or error handling
+          }
 
           player = new YT.Player('youtubePlayer', {
               height: '100%',
@@ -113,7 +121,28 @@
       }
 
       function onPlayerStateChange(event) {
-          // You can handle state changes (playing, paused, etc.)
+          // Handle different player states
+          switch(event.data) {
+              case YT.PlayerState.ENDED:
+                  document.getElementById('streamStatus').textContent = 'Ended';
+                  document.getElementById('streamEndedModal').classList.remove('hidden');
+                  break;
+              case YT.PlayerState.PLAYING:
+                  document.getElementById('streamStatus').textContent = 'Live';
+                  break;
+              case YT.PlayerState.PAUSED:
+                  // Handle paused state
+                  break;
+              case YT.PlayerState.BUFFERING:
+                  // Handle buffering state
+                  break;
+              case YT.PlayerState.CUED:
+                  // Handle video cued
+                  break;
+              case -1: // Unstarted
+                  // Handle unstarted state
+                  break;
+          }
       }
   </script>
   <script src="{% static 'js/mass_class/student_view.js' %}"></script>
