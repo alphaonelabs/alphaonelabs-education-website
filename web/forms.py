@@ -877,7 +877,7 @@ class EducationalVideoForm(forms.ModelForm):
             vid = qs.get("v", [""])[0]
             if len(vid) == 11 and re.match(r"^[A-Za-z0-9_-]{11}$", vid):
                 return url
-            
+
             # YouTube embed URLs like /embed/VIDEO_ID
             if parsed.path.startswith("/embed/"):
                 vid = parsed.path[7:]  # Remove "/embed/"
@@ -894,7 +894,7 @@ class EducationalVideoForm(forms.ModelForm):
         if host == "vimeo.com" or host == "www.vimeo.com":
             path_parts = parsed.path.lstrip("/").split("/")
             vid = path_parts[-1]  # Get the last part of the path
-            
+
             # Handle both /VIDEO_ID and /video/VIDEO_ID formats
             if vid.isdigit() and len(vid) >= 8:
                 return url
