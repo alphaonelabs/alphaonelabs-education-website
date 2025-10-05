@@ -44,7 +44,6 @@
               </div>
             </div>
           {% endif %}
-          
           {% comment %} Session Waiting Room - Show if session has passed and user is not a teacher {% endcomment %}
           {% if session.end_time < now and not is_teacher %}
             {% if next_session %}
@@ -81,9 +80,7 @@
                   <i class="fa-solid fa-clock-rotate-left text-lg mt-1"></i>
                   <div class="flex-1">
                     <h3 class="font-semibold mb-2">{% trans "This session has ended" %}</h3>
-                    <p class="text-sm mb-3">
-                      {% trans "No upcoming sessions are currently scheduled for this course." %}
-                    </p>
+                    <p class="text-sm mb-3">{% trans "No upcoming sessions are currently scheduled for this course." %}</p>
                     {% if user_in_session_waiting_room %}
                       <div class="flex items-center space-x-2">
                         <i class="fa-solid fa-check-circle text-green-600 dark:text-green-400"></i>
@@ -105,7 +102,6 @@
               </div>
             {% endif %}
           {% endif %}
-          
           {% if is_teacher %}
             <div class="mt-6 flex space-x-4">
               <a href="{% url 'edit_session' session.id %}"

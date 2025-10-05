@@ -2403,7 +2403,8 @@ class SessionWaitingRoom(models.Model):
     def get_next_session(self):
         """Get the next upcoming session for this course."""
         from django.utils import timezone
-        return self.course.sessions.filter(start_time__gt=timezone.now()).order_by('start_time').first()
+
+        return self.course.sessions.filter(start_time__gt=timezone.now()).order_by("start_time").first()
 
     def close_waiting_room(self):
         """Close the waiting room."""
