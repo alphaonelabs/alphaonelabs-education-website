@@ -112,6 +112,7 @@ CSRF_TRUSTED_ORIGINS = env.list(
     default=[
         "https://alphaonelabs.com",
         "https://www.alphaonelabs.com",
+        "https://alphaonelabs99282llkb.pythonanywhere.com",
         "http://127.0.0.1:8000",
         "http://localhost:8000",
     ],
