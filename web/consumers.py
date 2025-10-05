@@ -68,7 +68,12 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
             print(f"Participants in room {self.room_id}: {participants}")
 
             # Notify the new user about existing participants
-            await self.send(text_data=json.dumps({"type": "participants_list", "participants": participants}))
+            await self.send(text_data=json.dumps({
+                "type": "participants_list",
+                "from": "server",
+                "timestamp": int(time.time() * 1000),
+                "participants": participants
+            }))
 
             # Notify others about the new user
             await self.channel_layer.group_send(
