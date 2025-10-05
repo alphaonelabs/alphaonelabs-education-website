@@ -374,12 +374,16 @@
                         <i class="fas fa-clock-rotate-left text-lg mt-1"></i>
                         <div class="flex-1">
                           <h3 class="font-semibold mb-2">All sessions have ended</h3>
-                          <p class="text-sm mb-3">No upcoming sessions are currently scheduled for this course.</p>
+                          <p class="text-sm mb-3">
+                            No upcoming sessions are currently scheduled for this course.
+                          </p>
                           {% if user.is_authenticated %}
                             {% if user_in_session_waiting_room %}
                               <div class="flex items-center space-x-2">
                                 <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
-                                <span class="text-sm font-medium">You're in the waiting room for the next session</span>
+                                <span class="text-sm font-medium">
+                                  You're in the waiting room for the next session
+                                </span>
                                 <a href="{% url 'leave_session_waiting_room' course.slug %}"
                                    class="ml-2 text-xs bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 px-2 py-1 rounded">
                                   Leave
