@@ -1,6 +1,7 @@
 import logging
 import traceback
 
+import sentry_sdk
 from django.http import Http404
 from django.shortcuts import render
 from django.urls import Resolver404, resolve
@@ -11,20 +12,38 @@ from .views import send_slack_message
 logger = logging.getLogger(__name__)
 
 
+class HostnameRewriteMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        # Rewrite the hostname only if it contains alphaonelabs99282llkb
+        if "alphaonelabs99282llkb" in request.META.get("HTTP_HOST", ""):
+            request.META["HTTP_HOST"] = "alphaonelabs.com"
+
+        # Proceed with the request
+        response = self.get_response(request)
+        return response
+
+
 class GlobalExceptionMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
 
     def __call__(self, request):
-        # Rewrite the hostname
-        request.META["HTTP_HOST"] = "alphaonelabs.com"
-
         # Proceed with the request
         response = self.get_response(request)
         return response
 
     def process_exception(self, request, exception):
         from django.conf import settings
+
+        # Don't handle 404 errors, let Django's built-in handling work
+        if isinstance(exception, Http404):
+            return None
+
+        # Report to Sentry
+        sentry_sdk.capture_exception(exception)
 
         # Print exception details to console
         print("\n=== Exception Details ===")
@@ -111,6 +130,8 @@ class WebRequestMiddleware:
             logger.debug(f"Caught 404 error: {str(e)}")
             return self.get_response(request)
         except Exception as e:
-            # For any other errors, let Django handle them
+            # Log and report unexpected errors before letting Django handle them
             logger.error(f"Unexpected error in middleware: {str(e)}")
+            # Report to Sentry
+            sentry_sdk.capture_exception(e)
             return self.get_response(request)

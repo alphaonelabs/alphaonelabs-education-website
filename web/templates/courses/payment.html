@@ -47,41 +47,53 @@
           .addEventListener("submit", handleSubmit);
 
       async function initialize() {
-          const response = await fetch("{% url 'create_payment_intent' course.slug %}");
-          const data = await response.json();
+          try {
+              const response = await fetch("{% url 'create_payment_intent' course.slug %}");
 
-          // Handle free courses
-          if (data.free_course) {
-              // Redirect to course detail page for free courses
-              window.location.href = "{% url 'course_detail' course.slug %}";
-              return;
-          }
+              if (!response.ok) {
+                  throw new Error('Failed to create payment intent');
+              }
 
-          const {
-              clientSecret,
-              error
-          } = data;
+              const data = await response.json();
 
-          if (error) {
+              // Handle free courses
+              if (data.free_course) {
+                  // Redirect to course detail page for free courses
+                  window.location.href = "{% url 'course_detail' course.slug %}";
+                  return;
+              }
+
+              const {
+                  clientSecret,
+                  error
+              } = data;
+
+              if (error) {
+                  const messageContainer = document.querySelector("#payment-message");
+                  messageContainer.textContent = error;
+                  messageContainer.classList.remove("d-none");
+                  return;
+              }
+
+              const appearance = {
+                  theme: 'night',
+                  variables: {
+                      colorPrimary: '#f0ad4e',
+                  },
+              };
+
+              elements = stripe.elements({
+                  appearance,
+                  clientSecret
+              });
+              const paymentElement = elements.create("payment");
+              paymentElement.mount("#payment-element");
+          } catch (error) {
+              console.error('Error initializing payment:', error);
               const messageContainer = document.querySelector("#payment-message");
-              messageContainer.textContent = error;
+              messageContainer.textContent = "Failed to initialize payment. Please try again.";
               messageContainer.classList.remove("d-none");
-              return;
           }
-
-          const appearance = {
-              theme: 'night',
-              variables: {
-                  colorPrimary: '#f0ad4e',
-              },
-          };
-
-          elements = stripe.elements({
-              appearance,
-              clientSecret
-          });
-          const paymentElement = elements.create("payment");
-          paymentElement.mount("#payment-element");
       }
 
       async function handleSubmit(e) {

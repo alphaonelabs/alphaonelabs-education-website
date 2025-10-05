@@ -1,31 +1,69 @@
+import logging
 import os
 import sys
 from pathlib import Path
 
 import environ
+import sentry_sdk
+from cryptography.fernet import Fernet
+from django.core.exceptions import DisallowedHost
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-SECRET_KEY = "django-insecure-5kyff0s@l_##j3jawec5@b%!^^e(j7v)ouj4b7q6kru#o#a)o3"
 
 env = environ.Env()
 
 env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
 
+
+# Set encryption key for secure messaging; in production, this must come from the environment
+MESSAGE_ENCRYPTION_KEY = env.str("MESSAGE_ENCRYPTION_KEY", default=Fernet.generate_key()).strip()
+SECURE_MESSAGE_KEY = MESSAGE_ENCRYPTION_KEY
+
 if os.path.exists(env_file):
-    print(f"Using env file: {env_file}")
     environ.Env.read_env(env_file)
 else:
     print("No .env file found.")
 
+# Re-initialize / initialize Sentry AFTER environment variables are loaded so DSN is present here.
+SENTRY_DSN = env.str("SENTRY_DSN", default="")
+if SENTRY_DSN:
+    # Capture WARNING+ as breadcrumbs and ERROR+ as events
+    sentry_logging = LoggingIntegration(
+        level=getattr(logging, os.getenv("SENTRY_LOG_LEVEL", "INFO").upper(), logging.INFO),
+        event_level=logging.ERROR,
+    )
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[DjangoIntegration(), sentry_logging],
+        environment=env.str("ENVIRONMENT", default="development"),
+        send_default_pii=True,
+        traces_sample_rate=float(os.getenv("SENTRY_TRACES_SAMPLE_RATE", 0.0)),  # set >0 to enable performance
+        # Do not send Invalid Host (DisallowedHost) errors to Sentry
+        ignore_errors=(DisallowedHost,),
+    )
+else:
+    # Helpful notice for ops without breaking startup
+    print("Sentry DSN not configured; error events will not be sent.")
 
+SECRET_KEY = env.str("SECRET_KEY", default="django-insecure-5kyff0s@l_##j3jawec5@b%!^^e(j7v)ouj4b7q6kru#o#a)o3")
+# Debug settings
+ENVIRONMENT = env.str("ENVIRONMENT", default="development")
+
+# Default DEBUG to False for security
+DEBUG = False
+
+# Only enable DEBUG in local environment and only if DJANGO_DEBUG is True
+if ENVIRONMENT == "development":
+    DEBUG = True
+
+# Detect test environment and set DEBUG=True to use local media path
 if "test" in sys.argv:
     TESTING = True
+    DEBUG = True
 else:
     TESTING = False
-
-# Debug settings
-DEBUG = env.bool("DJANGO_DEBUG", default=False)
 
 PA_USER = "alphaonelabs99282llkb"
 PA_HOST = PA_USER + ".pythonanywhere.com"
@@ -55,28 +93,42 @@ if not DEBUG:
     SECURE_SSL_HOST = "alphaonelabs.com"
     SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
-ALLOWED_HOSTS = [
-    "alphaonelabs99282llkb.pythonanywhere.com",
-    "127.0.0.1",
-    "localhost",
-    "alphaonelabs.com",
-    "*.alphaonelabs.com",
-]
+# Allow hosts list can be overridden via .env (comma-separated) while providing a strong default.
+ALLOWED_HOSTS = env.list(
+    "ALLOWED_HOSTS",
+    default=[
+        "alphaonelabs99282llkb.pythonanywhere.com",
+        "0.0.0.0",
+        "127.0.0.1",
+        "localhost",
+        "alphaonelabs.com",
+        ".alphaonelabs.com",
+    ],
+)
+
+# CSRF trusted origins can also be overridden through .env (comma-separated).
+CSRF_TRUSTED_ORIGINS = env.list(
+    "CSRF_TRUSTED_ORIGINS",
+    default=[
+        "https://alphaonelabs.com",
+        "https://www.alphaonelabs.com",
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+    ],
+)
 
 # Timezone settings
 TIME_ZONE = "America/New_York"
 USE_TZ = True
 
-CSRF_TRUSTED_ORIGINS = [
-    "https://alphaonelabs.com",
-    "https://www.alphaonelabs.com",
-    "http://127.0.0.1:8000",
-    "http://localhost:8000",
-]
-
 # Error handling
 handler404 = "web.views.custom_404"
-handler500 = "web.views.custom_500"
+# Custom handler for 429 (too many requests)
+handler429 = "web.views.custom_429"
+
+# Admin notification settings
+ADMINS = [("Admin", os.getenv("EMAIL_FROM"))]
+SERVER_EMAIL = os.getenv("EMAIL_FROM")  # Email address error messages come from
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -87,11 +139,13 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.sites",
     "django.contrib.humanize",
+    "channels",
     "allauth",
     "allauth.account",
     "captcha",
     "markdownx",
     "web",
+    "web.virtual_lab.apps.VirtualLabConfig",
 ]
 
 if DEBUG and not TESTING:
@@ -100,6 +154,7 @@ if DEBUG and not TESTING:
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
+    "web.middleware.HostnameRewriteMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.locale.LocaleMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -109,7 +164,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
     "web.middleware.WebRequestMiddleware",
-    "web.middleware.GlobalExceptionMiddleware",
+    # "web.middleware.GlobalExceptionMiddleware",
 ]
 
 if DEBUG and not TESTING:
@@ -129,7 +184,6 @@ TEMPLATES = [
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
                 "web.context_processors.last_modified",
-                "web.context_processors.invitation_notifications",
             ],
         },
     },
@@ -149,6 +203,15 @@ WSGI_APPLICATION = "web.wsgi.application"
 
 # Add ASGI application configuration
 ASGI_APPLICATION = "web.asgi.application"
+
+# Channels / Redis channel layer configuration (assumes a local Redis unless overridden)
+REDIS_URL = env.str("REDIS_URL", default="redis://127.0.0.1:6379/0")
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {"hosts": [REDIS_URL]},
+    }
+}
 
 DATABASES = {
     "default": {
@@ -244,36 +307,76 @@ USE_I18N = True
 USE_TZ = True
 
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-if not DEBUG:
-    MEDIA_ROOT = "/home/alphaonelabs99282llkb/web/media"
-else:
-    MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+"""
+Media files configuration
+
+Previously MEDIA_ROOT for production was hard-coded to the legacy PythonAnywhere
+path (/home/alphaonelabs99282llkb/web/media). That prevented the live server
+from locating media we now place under the project directory on the new VPS.
+
+We switch to an environment-variable override with a sane default pointing to
+<project>/media for both dev and prod (unless a cloud storage backend is
+configured later). This keeps URLs stable (/media/...) while aligning file
+paths with the Nginx alias in ansible/nginx-http.conf.j2:
+    location /media/ { alias /home/django/education-website/media/; }
+
+If GS_BUCKET_NAME is set above, DEFAULT_FILE_STORAGE will override this with
+Google Cloud Storage; in that case MEDIA_ROOT is less relevant.
+"""
+MEDIA_ROOT = env.str("MEDIA_ROOT", default=str(BASE_DIR / "media"))
 MEDIA_URL = "/media/"
 
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+# Drop noisy Invalid Host messages from logs entirely
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "null": {"class": "logging.NullHandler"},
+        # Ensure any accidental use of 'mail_admins' will be a no-op
+        "mail_admins": {"class": "logging.NullHandler"},
+    },
+    "loggers": {
+        # Django emits DisallowedHost on invalid/missing Host header; silence it
+        "django.security.DisallowedHost": {
+            "handlers": ["null"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        # Do not email admins on request/server errors
+        "django.request": {
+            "handlers": ["null"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        "django.server": {
+            "handlers": ["null"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+    },
+}
+
 # Email settings
 if DEBUG:
     EMAIL_BACKEND = "web.email_backend.SlackNotificationEmailBackend"
     print("Using console email backend with Slack notifications for development")
     DEFAULT_FROM_EMAIL = "noreply@example.com"  # Default for development
-    SENDGRID_API_KEY = None  # Not needed in development
+    MAILGUN_SENDING_KEY = None  # Not needed in development
 else:
     # Production email settings
     EMAIL_BACKEND = "web.email_backend.SlackNotificationEmailBackend"
-    SENDGRID_API_KEY = env.str("SENDGRID_API_KEY", default=env.str("SENDGRID_PASSWORD", default=""))
-    EMAIL_HOST = "smtp.sendgrid.net"
-    EMAIL_PORT = 587
-    EMAIL_USE_TLS = True
-    EMAIL_HOST_USER = "apikey"
-    EMAIL_HOST_PASSWORD = env.str("SENDGRID_PASSWORD", default="")
+    MAILGUN_SENDING_KEY = env.str("MAILGUN_SENDING_KEY", default="")
+    # Optional: set MAILGUN_DOMAIN explicitly; otherwise inferred from DEFAULT_FROM_EMAIL
+    MAILGUN_DOMAIN = env.str("MAILGUN_DOMAIN", default="") or None
     DEFAULT_FROM_EMAIL = env.str("EMAIL_FROM", default="noreply@alphaonelabs.com")
     EMAIL_FROM = os.getenv("EMAIL_FROM")
 
@@ -318,7 +421,6 @@ LOCALE_PATHS = [
 USE_L10N = True
 
 if os.environ.get("DATABASE_URL"):
-    DEBUG = False
     DATABASES = {"default": env.db()}
 
     # Only add MySQL-specific options if using MySQL
@@ -376,3 +478,4 @@ USE_X_FORWARDED_HOST = True
 
 # GitHub API Token for fetching contributor data
 GITHUB_TOKEN = os.environ.get("GITHUB_TOKEN", "")
+GITHUB_WEBHOOK_SECRET = os.environ.get("GITHUB_WEBHOOK_SECRET", "")
