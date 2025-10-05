@@ -1,0 +1,189 @@
+name: Check PR for media attachments when HTML files change
+
+"on":
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**/*.html'
+      - '**/*.htm'
+      - '**/*.xhtml'
+
+concurrency:
+  group: check-media-attachments-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check-media-attachments:
+    runs-on: ubuntu-latest
+    name: Check media attachments in HTML files
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Check for media attachments in HTML files
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const { number } = context.payload.pull_request;
+
+            console.log(`Checking PR #${number} for media attachments in HTML files`);
+
+            // Get all changed files across all pages
+            const files = await github.paginate(
+              github.rest.pulls.listFiles,
+              { owner, repo, pull_number: number, per_page: 100 }
+            );
+
+            // Filter for HTML files that were added, modified, or renamed
+            const htmlFiles = files.filter(file =>
+              /\.(?:html?|xhtml)$/i.test(file.filename) &&
+              ['added', 'modified', 'renamed'].includes(file.status)
+            );
+
+            if (htmlFiles.length === 0) {
+              console.log('No HTML files were changed in this PR.');
+              return;
+            }
+
+            console.log(`Found ${htmlFiles.length} HTML file(s) to check:`);
+            htmlFiles.forEach(file => console.log(`- ${file.filename}`));
+
+            let hasIssues = false;
+            const issues = [];
+            const mediaReferences = [];
+
+            for (const file of htmlFiles) {
+              console.log(`\nAnalyzing ${file.filename}...`);
+
+              try {
+                // Get file content from the PR branch
+                const { data: fileData } = await github.rest.repos.getContent({
+                  owner,
+                  repo,
+                  path: file.filename,
+                  ref: context.payload.pull_request.head.sha
+                });
+
+                // Handle truncated content or non-file responses
+                if (Array.isArray(fileData) || fileData.type !== 'file') {
+                  throw new Error('Not a file content response');
+                }
+
+                let content;
+                if (fileData.encoding === 'base64' && fileData.content) {
+                  content = Buffer.from(fileData.content, 'base64').toString('utf8');
+                } else if (fileData.sha) {
+                  const { data: blob } = await github.rest.git.getBlob({
+                    owner,
+                    repo,
+                    file_sha: fileData.sha
+                  });
+                  content = Buffer.from(blob.content, 'base64').toString('utf8');
+                } else {
+                  throw new Error('Unable to retrieve file content');
+                }
+
+                // Check for images without alt attributes
+                const imgWithoutAlt = content.match(/<img(?![^>]*\balt=)[^>]*>/gi);
+                if (imgWithoutAlt && imgWithoutAlt.length > 0) {
+                  hasIssues = true;
+                  issues.push(`**${file.filename}**: Found ${imgWithoutAlt.length} image(s) without alt attributes`);
+                  console.log(`  - Found ${imgWithoutAlt.length} img tag(s) without alt attributes`);
+                }
+
+                // Check for media files referenced (including poster, src, href, and srcset)
+                const direct = [...content.matchAll(/\b(?:src|href|poster)\s*=\s*["']([^"']+\.(?:jpg|jpeg|png|gif|webp|svg|mp4|avi|mov|pdf))(?:\?[^"']*)?["']/gi)]
+                  .map(m => m[1])
+                  .filter(u => !/^data:/i.test(u));
+                const srcsetUrls = [...content.matchAll(/\bsrcset\s*=\s*["']([^"']+)["']/gi)]
+                  .flatMap(m => m[1].split(',').map(s => s.trim().split(/\s+/)[0]))
+                  .filter(u => /\.(?:jpg|jpeg|png|gif|webp|svg)$/i.test(u) && !/^data:/i.test(u));
+                const allMedia = [...new Set([...direct, ...srcsetUrls])];
+
+                if (allMedia.length > 0) {
+                  mediaReferences.push(`**${file.filename}**: References ${allMedia.length} media file(s)`);
+                  console.log(`  - Found ${allMedia.length} media reference(s)`);
+
+                  // Check for large image formats that could be optimized
+                  const unoptimizedImages = allMedia.filter(u => /\.(jpg|jpeg|png)$/i.test(u));
+                  if (unoptimizedImages.length > 0) {
+                    issues.push(`**${file.filename}**: Consider using WebP format for ${unoptimizedImages.length} image(s) for better performance`);
+                  }
+                }
+
+                // Check for missing figure captions for accessibility
+                const figureBlocks = Array.from(content.matchAll(/<figure[^>]*>([\s\S]*?)<\/figure>/gi));
+                const figuresWithoutCaption = figureBlocks.filter(match => !/<figcaption[\s>]/i.test(match[1]));
+                if (figuresWithoutCaption.length > 0) {
+                  issues.push(`**${file.filename}**: Found ${figuresWithoutCaption.length} figure(s) without figcaption for accessibility`);
+                }
+
+              } catch (error) {
+                console.error(`Error processing ${file.filename}: ${error.message}`);
+                issues.push(`**${file.filename}**: Could not analyze file - ${error.message}`);
+              }
+            }
+
+            // Create summary comment
+            let commentBody = '## 📸 Media Attachments Analysis\n\n';
+
+            if (mediaReferences.length > 0) {
+              commentBody += '### Media Files Found\n';
+              commentBody += mediaReferences.map(ref => `- ${ref}`).join('\n') + '\n\n';
+            }
+
+            if (hasIssues) {
+              commentBody += '### ⚠️ Issues Found\n';
+              commentBody += issues.map(issue => `- ${issue}`).join('\n') + '\n\n';
+              commentBody += '**Recommendations:**\n';
+              commentBody += '- Add `alt` attributes to all images for accessibility\n';
+              commentBody += '- Consider using WebP format for better performance\n';
+              commentBody += '- Add `<figcaption>` to `<figure>` elements for screen readers\n\n';
+            } else {
+              commentBody += '### ✅ All Checks Passed\n';
+              commentBody += 'No media-related issues found in the HTML files.\n\n';
+            }
+
+            commentBody += '*This check was automatically performed when HTML files were modified.*';
+
+            // Check if we already commented on this PR
+            const { data: comments } = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number: number,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.user.login === 'github-actions[bot]' &&
+              comment.body.includes('📸 Media Attachments Analysis')
+            );
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: botComment.id,
+                body: commentBody
+              });
+              console.log('Updated existing media attachments comment');
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: number,
+                body: commentBody
+              });
+              console.log('Created new media attachments comment');
+            }
+
+            // Don't fail the workflow, just inform
+            if (hasIssues) {
+              console.log('⚠️ Media attachment issues found, but not failing the workflow');
+            } else {
+              console.log('✅ All media attachment checks passed!');
+            }
