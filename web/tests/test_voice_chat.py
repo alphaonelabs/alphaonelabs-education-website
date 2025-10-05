@@ -1,4 +1,5 @@
 """Tests for Voice Chat functionality."""
+
 from django.contrib.auth.models import User
 from django.test import TestCase
 from django.urls import reverse
@@ -46,9 +47,10 @@ class VoiceChatModelTests(TestCase):
         """Test that a user can only join a room once."""
         room = VoiceChatRoom.objects.create(name="Test Room", created_by=self.user1)
         VoiceChatParticipant.objects.create(user=self.user2, room=room)
-        
+
         # Try to create a duplicate participant
         from django.db import IntegrityError
+
         with self.assertRaises(IntegrityError):
             VoiceChatParticipant.objects.create(user=self.user2, room=room)
 
@@ -56,7 +58,7 @@ class VoiceChatModelTests(TestCase):
         """Test the many-to-many relationship between rooms and users."""
         room = VoiceChatRoom.objects.create(name="Test Room", created_by=self.user1)
         room.participants.add(self.user1, self.user2)
-        
+
         self.assertEqual(room.participants.count(), 2)
         self.assertIn(self.user1, room.participants.all())
         self.assertIn(self.user2, room.participants.all())
@@ -86,7 +88,7 @@ class VoiceChatViewTests(TestCase):
         """Test that a room can be created via POST."""
         response = self.client.post(reverse("voice_chat_create"), {"name": "New Room"})
         self.assertEqual(response.status_code, 302)  # Redirect after creation
-        
+
         # Check that the room was created
         room = VoiceChatRoom.objects.filter(name="New Room").first()
         self.assertIsNotNone(room)
@@ -111,7 +113,7 @@ class VoiceChatViewTests(TestCase):
         room = VoiceChatRoom.objects.create(name="Test Room", created_by=self.user)
         response = self.client.post(reverse("delete_voice_chat_room", kwargs={"room_id": room.id}))
         self.assertEqual(response.status_code, 302)  # Redirect after deletion
-        
+
         # Check that the room was deleted
         self.assertFalse(VoiceChatRoom.objects.filter(id=room.id).exists())
 
@@ -119,21 +121,21 @@ class VoiceChatViewTests(TestCase):
         """Test that only the creator can delete a room."""
         other_user = User.objects.create_user(username="otheruser", password="testpass123")
         room = VoiceChatRoom.objects.create(name="Test Room", created_by=other_user)
-        
+
         response = self.client.post(reverse("delete_voice_chat_room", kwargs={"room_id": room.id}))
         self.assertEqual(response.status_code, 302)  # Redirect
-        
+
         # Check that the room was NOT deleted
         self.assertTrue(VoiceChatRoom.objects.filter(id=room.id).exists())
 
     def test_voice_chat_requires_authentication(self):
         """Test that voice chat views require authentication."""
         self.client.logout()
-        
+
         # Test list view
         response = self.client.get(reverse("voice_chat_list"))
         self.assertEqual(response.status_code, 302)  # Redirect to login
-        
+
         # Test create view
         response = self.client.get(reverse("voice_chat_create"))
         self.assertEqual(response.status_code, 302)  # Redirect to login
