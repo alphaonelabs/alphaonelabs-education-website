@@ -152,9 +152,6 @@ INSTALLED_APPS = [
     "web.virtual_lab.apps.VirtualLabConfig",
 ]
 
-# Custom User model with encrypted PII fields
-AUTH_USER_MODEL = "web.User"
-
 if DEBUG and not TESTING:
     INSTALLED_APPS.append("django_browser_reload")
 

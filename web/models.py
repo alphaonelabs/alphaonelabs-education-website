@@ -9,7 +9,7 @@ from urllib.parse import parse_qs, urlparse
 
 from allauth.account.signals import user_signed_up
 from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.mail import send_mail
@@ -26,9 +26,7 @@ from markdownx.models import MarkdownxField
 from PIL import Image
 
 from web.encryption import CustomEncryptedCharField, CustomEncryptedEmailField, CustomEncryptedJSONField
-from web.user_model import User  # Import custom User model
 from web.utils import calculate_and_update_user_streak
-
 
 
 class Notification(models.Model):
@@ -141,10 +139,6 @@ class Profile(models.Model):
     @property
     def can_receive_payments(self):
         return self.is_teacher and self.stripe_account_id and self.stripe_account_status == "verified"
-        if self.user.email != self.encrypted_email:
-            self.encrypted_email = self.user.email
-            updated = True
-        return updated
 
 
 class Avatar(models.Model):

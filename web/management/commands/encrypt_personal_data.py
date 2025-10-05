@@ -37,24 +37,66 @@ class Command(BaseCommand):
         # Track statistics
         stats = {
             "profile": 0,
-            "profile_user_pii": 0,
+            "user_pii": 0,
             "webrequest": 0,
             "donation": 0,
             "order": 0,
             "featurevote": 0,
         }
 
-        # Encrypt Profile data (including User PII)
-        self.stdout.write("Processing Profile records and syncing User PII...")
-        profiles = Profile.objects.select_related("user").all()
+        # Encrypt User PII data in auth_user table
+        self.stdout.write("Processing User PII in auth_user table...")
+        from django.contrib.auth.models import User
+        
+        users = User.objects.all()
+        for user in users:
+            updated = False
+            
+            # Encrypt first_name
+            if user.first_name:
+                try:
+                    fernet.decrypt(user.first_name.encode("utf-8"))
+                except Exception:
+                    if not dry_run:
+                        encrypted = fernet.encrypt(user.first_name.encode("utf-8"))
+                        user.first_name = encrypted.decode("utf-8")
+                        updated = True
+            
+            # Encrypt last_name
+            if user.last_name:
+                try:
+                    fernet.decrypt(user.last_name.encode("utf-8"))
+                except Exception:
+                    if not dry_run:
+                        encrypted = fernet.encrypt(user.last_name.encode("utf-8"))
+                        user.last_name = encrypted.decode("utf-8")
+                        updated = True
+            
+            # Encrypt email
+            if user.email:
+                try:
+                    fernet.decrypt(user.email.encode("utf-8"))
+                except Exception:
+                    if not dry_run:
+                        encrypted = fernet.encrypt(user.email.encode("utf-8"))
+                        user.email = encrypted.decode("utf-8")
+                        updated = True
+            
+            if updated and not dry_run:
+                user.save()
+                stats["user_pii"] += 1
+        
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Processed {stats['user_pii']} User records with encrypted PII"
+            )
+        )
+
+        # Encrypt Profile data
+        self.stdout.write("Processing Profile records...")
+        profiles = Profile.objects.all()
         for profile in profiles:
             updated = False
-
-            # Sync and encrypt User PII (first_name, last_name, email)
-            if profile.sync_user_pii():
-                if not dry_run:
-                    updated = True
-                    stats["profile_user_pii"] += 1
 
             # Check and encrypt discord_username
             if profile.discord_username:
@@ -92,7 +134,7 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Processed {stats['profile']} Profile records, synced {stats['profile_user_pii']} User PII records"
+                f"Processed {stats['profile']} Profile records"
             )
         )
 
