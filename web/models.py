@@ -65,6 +65,9 @@ class Profile(models.Model):
     discord_username = models.CharField(max_length=50, blank=True, help_text="Your Discord username (e.g., User#1234)")
     slack_username = models.CharField(max_length=50, blank=True, help_text="Your Slack username")
     github_username = models.CharField(max_length=50, blank=True, help_text="Your GitHub username (without @)")
+    youtube_stream_key = models.CharField(
+        max_length=100, blank=True, help_text="Your YouTube Live stream key for broadcasting"
+    )
     referral_code = models.CharField(max_length=20, unique=True, blank=True)
     referred_by = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="referrals")
     referral_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0)

@@ -151,10 +151,17 @@ class RTMPBridgeConsumer(AsyncConsumer):
             del self.processes[session_id]
 
     def _get_youtube_key(self, session_id):
-        """Get YouTube stream key from settings or database"""
-        # In a real implementation, you would get a valid YouTube stream key
-        # This is a placeholder
-        return settings.YOUTUBE_STREAM_KEY if hasattr(settings, "YOUTUBE_STREAM_KEY") else "your-youtube-key"
+        """Get YouTube stream key from the teacher's profile"""
+        try:
+            stream = MassClassStream.objects.get(stream_id=session_id)
+            teacher = stream.teacher
+            # Get the YouTube stream key from the teacher's profile
+            if hasattr(teacher, 'profile') and teacher.profile.youtube_stream_key:
+                return teacher.profile.youtube_stream_key
+            return None
+        except Exception:
+            logger.exception("Error getting YouTube stream key")
+            return None
 
     def _update_stream_status(self, session_id, status, youtube_url=None):
         try:
