@@ -8065,27 +8065,6 @@ def signal_handler(request, room_id):
     return JsonResponse({"status": "success", "message": f"Signal of type {signal_type} processed"})
 
 
-# Removed unused CBVs: VoiceChatListView, VoiceChatCreateView, VoiceChatRoomView
-    """View for accessing a specific voice chat room."""
-
-    model = VoiceChatRoom
-    template_name = "web/voice_chat/room.html"
-    context_object_name = "room"
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        room = self.get_object()
-
-        # Join the room
-        room.participants.add(self.request.user)
-
-        # Get all participants
-        context["participants"] = room.participants.all()
-        context["participants_count"] = room.participants.count()
-
-        return context
-
-
 def delete_voice_chat_room(request, room_id):
     """Delete a voice chat room"""
     logger.info(f"Delete room request received. Method: {request.method}, User: {request.user}, Room ID: {room_id}")
