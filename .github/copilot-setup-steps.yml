@@ -1,0 +1,287 @@
+# GitHub Copilot Setup Steps for Alpha One Labs Education Platform
+# This file outlines the complete setup process for the development environment
+
+version: "1.0"
+project_name: "Alpha One Labs Education Platform"
+description: "Setup steps for local development environment"
+
+prerequisites:
+  - name: "Python"
+    version: "3.10+"
+    description: "Python programming language"
+    installation:
+      macos: "brew install python@3.10"
+      linux: "sudo apt-get install python3.10"
+      windows: "Download from https://www.python.org/downloads/"
+
+  - name: "Git"
+    version: "latest"
+    description: "Version control system"
+    installation:
+      macos: "brew install git"
+      linux: "sudo apt-get install git"
+      windows: "Download from https://git-scm.com/downloads"
+
+  - name: "Poetry"
+    version: "1.8.3"
+    description: "Python dependency management"
+    installation:
+      all_platforms: "pip install poetry==1.8.3"
+
+setup_steps:
+  - step: 1
+    name: "Clone Repository"
+    description: "Clone the repository from GitHub"
+    commands:
+      - "git clone https://github.com/alphaonelabs/alphaonelabs-education-website.git"
+      - "cd alphaonelabs-education-website"
+    notes:
+      - "Ensure you have proper GitHub authentication configured"
+      - "Use SSH for easier authentication: git clone git@github.com:alphaonelabs/alphaonelabs-education-website.git"
+
+  - step: 2
+    name: "Setup Virtual Environment"
+    description: "Create and activate Python virtual environment"
+    commands:
+      - "python -m venv venv"
+    activation:
+      linux_macos: "source venv/bin/activate"
+      windows: "venv\\Scripts\\activate"
+    notes:
+      - "Keep virtual environment activated for all subsequent steps"
+
+  - step: 3
+    name: "Install Poetry and Dependencies"
+    description: "Install Poetry package manager and project dependencies"
+    commands:
+      - "pip install --upgrade pip"
+      - "pip install poetry==1.8.3"
+      - "poetry install"
+    alternative_commands:
+      - "poetry shell  # Activate Poetry-managed virtual environment"
+    notes:
+      - "Poetry is the single source of truth for dependencies"
+      - "Poetry 1.8 auto-detects existing virtual environments"
+
+  - step: 4
+    name: "Configure Environment Variables"
+    description: "Set up environment configuration file"
+    commands:
+      - "cp .env.sample .env"
+    notes:
+      - "Edit .env file with your specific configuration"
+      - "Never commit .env file to version control"
+      - "Required variables are documented in .env.sample"
+
+  - step: 5
+    name: "Run Database Migrations"
+    description: "Apply database schema migrations"
+    commands:
+      - "python manage.py migrate"
+    notes:
+      - "This creates the necessary database tables"
+      - "Uses SQLite by default for local development"
+      - "For MySQL setup, configure DATABASE_URL in .env"
+
+  - step: 6
+    name: "Create Superuser"
+    description: "Create admin account for Django admin panel"
+    commands:
+      - "python manage.py createsuperuser"
+    notes:
+      - "Follow the prompts to set username, email, and password"
+      - "This account has full access to the admin panel"
+
+  - step: 7
+    name: "Create Test Data"
+    description: "Populate database with sample data"
+    commands:
+      - "python manage.py create_test_data"
+    notes:
+      - "Creates sample courses, users, and other data"
+      - "Useful for development and testing"
+      - "Optional but recommended for local development"
+
+  - step: 8
+    name: "Install Pre-commit Hooks"
+    description: "Set up pre-commit hooks for code quality"
+    commands:
+      - "poetry run pre-commit install"
+    verification:
+      - "poetry run pre-commit run --all-files"
+    notes:
+      - "CRITICAL: All code must pass pre-commit checks before committing"
+      - "Includes Black, isort, flake8, djlint, and other quality checks"
+      - "See .github/copilot-instructions.md for detailed pre-commit info"
+
+  - step: 9
+    name: "Collect Static Files"
+    description: "Gather static files for serving"
+    commands:
+      - "python manage.py collectstatic --noinput"
+    notes:
+      - "Required for serving CSS, JavaScript, and images"
+      - "Run this after any static file changes"
+
+  - step: 10
+    name: "Run Development Server"
+    description: "Start the Django development server"
+    commands:
+      - "python manage.py runserver"
+    notes:
+      - "Server runs at http://localhost:8000"
+      - "Admin panel available at http://localhost:8000/admin"
+      - "Press Ctrl+C to stop the server"
+
+docker_setup:
+  description: "Alternative setup using Docker"
+  steps:
+    - step: 1
+      name: "Build Docker Image"
+      commands:
+        - "docker build -t education-website ."
+      notes:
+        - "Builds production-ready Docker image"
+
+    - step: 2
+      name: "Run Docker Container"
+      commands:
+        - "docker run -d -p 8000:8000 education-website"
+      notes:
+        - "Runs container in detached mode"
+        - "Access at http://localhost:8000"
+
+    - step: 3
+      name: "Default Admin Credentials"
+      credentials:
+        email: "admin@example.com"
+        password: "adminpassword"
+      notes:
+        - "Change these credentials in production"
+
+development_workflow:
+  - name: "Pre-commit Checks"
+    description: "Run before every commit"
+    commands:
+      - "poetry run pre-commit run --all-files"
+    critical: true
+
+  - name: "Run Tests"
+    description: "Execute test suite"
+    commands:
+      - "python manage.py test"
+    notes:
+      - "All tests must pass before submitting PR"
+
+  - name: "Code Formatting"
+    tools:
+      - name: "Black"
+        command: "poetry run black ."
+        description: "Python code formatter (120 char line length)"
+
+      - name: "isort"
+        command: "poetry run isort ."
+        description: "Python import sorter"
+
+      - name: "djlint"
+        command: "poetry run djlint --reformat ."
+        description: "Django template formatter"
+
+  - name: "Linting"
+    tools:
+      - name: "flake8"
+        command: "poetry run flake8 ."
+        description: "Python linter (max line length 120)"
+
+tech_stack:
+  backend:
+    - "Python 3.10+"
+    - "Django 5.x"
+    - "Redis (channels + caching)"
+    - "MySQL (production) / SQLite (development)"
+
+  frontend:
+    - "Tailwind CSS"
+    - "Alpine.js"
+    - "Font Awesome icons"
+    - "JavaScript (Vanilla)"
+
+  infrastructure:
+    - "Docker support"
+    - "Nginx"
+    - "Uvicorn (ASGI)"
+    - "Django Channels (WebSockets)"
+    - "SendGrid for emails"
+    - "Stripe for payments"
+
+important_notes:
+  - "Always run pre-commit checks before committing code"
+  - "Follow PEP 8 guidelines for Python code"
+  - "Use Tailwind CSS only (no custom CSS or inline styles)"
+  - "Include dark mode variants using 'dark:' prefix"
+  - "Maximum line length: 120 characters"
+  - "All HTML templates must use djlint formatting"
+  - "See .github/copilot-instructions.md for complete guidelines"
+
+useful_commands:
+  development:
+    run_server: "python manage.py runserver"
+    make_migrations: "python manage.py makemigrations"
+    migrate: "python manage.py migrate"
+    create_superuser: "python manage.py createsuperuser"
+    shell: "python manage.py shell"
+
+  testing:
+    run_all_tests: "python manage.py test"
+    run_specific_test: "python manage.py test web.tests.test_views"
+    run_with_coverage: "coverage run --source='.' manage.py test && coverage report"
+
+  code_quality:
+    pre_commit_all: "poetry run pre-commit run --all-files"
+    pre_commit_file: "poetry run pre-commit run --files <file_path>"
+    format_python: "poetry run black . && poetry run isort ."
+    lint_python: "poetry run flake8 ."
+
+  poetry:
+    install_deps: "poetry install"
+    add_dependency: "poetry add <package>"
+    add_dev_dependency: "poetry add --group dev <package>"
+    update_deps: "poetry update"
+    shell: "poetry shell"
+
+resources:
+  - name: "README.md"
+    description: "Project overview and basic setup"
+    url: "README.md"
+
+  - name: "CONTRIBUTING.md"
+    description: "Contribution guidelines"
+    url: "CONTRIBUTING.md"
+
+  - name: "Copilot Instructions"
+    description: "Detailed GitHub Copilot guidelines"
+    url: ".github/copilot-instructions.md"
+
+  - name: "Django Documentation"
+    description: "Official Django documentation"
+    url: "https://docs.djangoproject.com/"
+
+  - name: "Tailwind CSS Documentation"
+    description: "Tailwind CSS framework documentation"
+    url: "https://tailwindcss.com/docs"
+
+troubleshooting:
+  - issue: "Poetry not found after installation"
+    solution: "Restart your terminal or add Poetry to PATH"
+
+  - issue: "Pre-commit hooks failing"
+    solution: "Run 'poetry run pre-commit run --all-files' to see specific errors and auto-fix where possible"
+
+  - issue: "Database connection errors"
+    solution: "Check DATABASE_URL in .env file and ensure database service is running"
+
+  - issue: "Static files not loading"
+    solution: "Run 'python manage.py collectstatic --noinput' to collect static files"
+
+  - issue: "Import errors after installing dependencies"
+    solution: "Ensure virtual environment is activated and run 'poetry install' again"

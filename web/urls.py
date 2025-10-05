@@ -6,6 +6,14 @@ from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
 from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
+from .secure_messaging import (
+    compose_message,
+    download_message,
+    inbox,
+    messaging_dashboard,
+    send_encrypted_message,
+    toggle_star_message,
+)
 from .views import (
     GoodsListingView,
     GradeableLinkCreateView,
@@ -26,6 +34,9 @@ from .views import (
 urlpatterns = [
     path("i18n/", include("django.conf.urls.i18n")),  # Language selection URLs
     path("captcha/", include("captcha.urls")),  # CAPTCHA URLs should not be language-prefixed
+    path("markdownx/", include("markdownx.urls")),
+    # GitHub webhook (non-localized stable endpoint)
+    path("github_update/", views.github_update, name="github_update"),
 ]
 
 if settings.DEBUG:
@@ -103,6 +114,14 @@ urlpatterns += i18n_patterns(
     ),
     path("teachers/<int:teacher_id>/message/", views.message_teacher, name="message_teacher"),
     path("sessions/<int:session_id>/duplicate/", views.duplicate_session, name="duplicate_session"),
+    path("messaging/dashboard/", messaging_dashboard, name="messaging_dashboard"),
+    path("messaging/compose/", compose_message, name="compose_message"),
+    path("secure/send/", send_encrypted_message, name="send_encrypted_message"),
+    path("secure/inbox/", inbox, name="inbox"),
+    path("secure/download/<int:message_id>/", download_message, name="download_message"),
+    path("secure/toggle_star/<int:message_id>/", toggle_star_message, name="toggle_star_message"),
+    # Virtual Lab Links
+    path("virtual_lab/", include("web.virtual_lab.urls", namespace="virtual_lab")),
     # Social media sharing URLs
     path("social-media/", views.social_media_dashboard, name="social_media_dashboard"),
     path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),
@@ -120,7 +139,6 @@ urlpatterns += i18n_patterns(
     path("avatar/set-as-profile/", views_avatar.set_avatar_as_profile_pic, name="set_avatar_as_profile_pic"),
     path("avatar/preview/", views_avatar.preview_avatar, name="preview_avatar"),
     # Admin and Utilities
-    path("github_update/", views.github_update, name="github_update"),
     path(f"{settings.ADMIN_URL}/dashboard/", admin_views.admin_dashboard, name="admin_dashboard"),
     path(f"{settings.ADMIN_URL}/", admin.site.urls),
     path("waiting-rooms/<int:waiting_room_id>/delete/", views.delete_waiting_room, name="delete_waiting_room"),
@@ -188,6 +206,17 @@ urlpatterns += i18n_patterns(
         views.create_course_from_waiting_room,
         name="create_course_from_waiting_room",
     ),
+    # Session Waiting Room URLs
+    path(
+        "courses/<slug:course_slug>/session-waiting-room/join/",
+        views.join_session_waiting_room,
+        name="join_session_waiting_room",
+    ),
+    path(
+        "courses/<slug:course_slug>/session-waiting-room/leave/",
+        views.leave_session_waiting_room,
+        name="leave_session_waiting_room",
+    ),
     # Progress Visualization
     path("dashboard/progress/", views.progress_visualization, name="progress_visualization"),
     # Forum URLs
@@ -248,7 +277,6 @@ urlpatterns += i18n_patterns(
     path("cart/remove/<int:item_id>/", views.remove_from_cart, name="remove_from_cart"),
     path("cart/payment-intent/", views.create_cart_payment_intent, name="create_cart_payment_intent"),
     path("cart/checkout/success/", views.checkout_success, name="checkout_success"),
-    path("markdownx/", include("markdownx.urls")),
     # Course Invitation URLs
     path("courses/<int:course_id>/invite/", views.invite_student, name="invite_student"),
     path("terms/", views.terms, name="terms"),
@@ -436,14 +464,6 @@ urlpatterns += i18n_patterns(
     path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
-    # Study Planner URLs
-    path("study-planner/", views.study_planner, name="study_planner"),
-    path("study-planner/create/", views.create_study_plan, name="create_study_plan"),
-    path("study-planner/<int:plan_id>/", views.study_plan_detail, name="study_plan_detail"),
-    path("study-planner/<int:plan_id>/add-session/", views.add_study_session, name="add_study_session"),
-    path("study-planner/session/<int:session_id>/complete/", views.mark_session_complete, name="mark_session_complete"),
-    path("study-planner/goal/<int:goal_id>/update/", views.update_study_goal, name="update_study_goal"),
-    path("study-planner/<int:plan_id>/delete/", views.delete_study_plan, name="delete_study_plan"),
     prefix_default_language=True,
 )
 

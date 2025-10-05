@@ -1,0 +1,18 @@
+[Unit]
+Description={{ project_name }} website
+After=network.target
+
+[Service]
+User={{ vps_user }}
+Group={{ vps_user }}
+WorkingDirectory=/home/{{ vps_user }}/{{ project_name }}
+Environment="PATH=/home/{{ vps_user }}/{{ project_name }}/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/bin"
+ExecStart=/home/{{ vps_user }}/{{ project_name }}/venv/bin/uvicorn \
+         web.asgi:application \
+         --host 127.0.0.1 --port {{ app_port }} \
+         --workers 4 \
+         --timeout-keep-alive 120
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

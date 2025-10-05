@@ -227,8 +227,8 @@ def index(request):
     # Get current user's profile if authenticated
     profile = request.user.profile if request.user.is_authenticated else None
 
-    # Get featured courses
-    featured_courses = Course.objects.filter(status="published", is_featured=True).order_by("-created_at")[:3]
+    # Get recent courses
+    featured_courses = Course.objects.filter(status="published").order_by("-created_at")[:6]
 
     # Get current challenge
     current_challenge_obj = Challenge.objects.filter(
@@ -892,25 +892,102 @@ def delete_course(request, slug):
 
 @csrf_exempt
 def github_update(request):
-    send_slack_message("New commit pulled from GitHub")
-    root_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    try:
-        subprocess.run(["chmod", "+x", f"{root_directory}/setup.sh"])
-        result = subprocess.run(["bash", f"{root_directory}/setup.sh"], capture_output=True, text=True)
-        if result.returncode != 0:
-            raise Exception(
-                f"setup.sh failed with return code {result.returncode} and output: {result.stdout} {result.stderr}"
-            )
-        send_slack_message("CHMOD success about to set time on: " + settings.PA_WSGI)
+    """GitHub webhook endpoint to trigger a lightweight deploy.
 
-        current_time = time.time()
-        os.utime(settings.PA_WSGI, (current_time, current_time))
-        send_slack_message("Repository updated successfully")
-        return HttpResponse("Repository updated successfully")
-    except Exception as e:
-        print(f"Deploy error: {e}")
-        send_slack_message(f"Deploy error: {e}")
-        return HttpResponse("Deploy error see logs.")
+    Hardening applied:
+    - Require POST.
+    - Validate X-Hub-Signature-256 using shared secret env var GITHUB_WEBHOOK_SECRET.
+    - Ignore unsupported events (only push by default).
+    - Run a safe pull + dependency install + migrate + collectstatic via a minimal bash snippet.
+    - Send concise status updates to Slack; avoid leaking secrets.
+
+    NOTE: Full provisioning (packages, DB grants, etc.) still belongs to Ansible.
+    This endpoint just brings the already‑provisioned instance up to latest commit.
+    """
+    if request.method != "POST":
+        return HttpResponseBadRequest("POST required")
+
+    secret = getattr(settings, "GITHUB_WEBHOOK_SECRET", None)
+    signature = request.META.get("HTTP_X_HUB_SIGNATURE_256")
+    body = request.body
+
+    if secret:
+        import hashlib
+        import hmac
+
+        expected = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+        if not signature or not hmac.compare_digest(expected, signature):
+            send_slack_message("GitHub webhook signature mismatch")
+            return HttpResponseForbidden("Invalid signature")
+    else:
+        # If no secret configured, refuse (better to explicitly set one)
+        return HttpResponseForbidden("Webhook secret not configured")
+
+    event = request.META.get("HTTP_X_GITHUB_EVENT", "")
+    if event not in {"push"}:
+        return HttpResponse("Ignored event", status=202)
+
+    repo_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    venv_python = os.path.join(repo_dir, "venv", "bin", "python")
+    venv_pip = os.path.join(repo_dir, "venv", "bin", "pip")
+    log_lines = []
+
+    # Resolve git binary explicitly since systemd service Environment may override PATH.
+    import shutil
+
+    git_bin = shutil.which("git") or "/usr/bin/git"
+    if not os.path.exists(git_bin):
+        msg = f"Git binary not found at resolved path: {git_bin}. Aborting lightweight deploy."
+        send_slack_message(msg)
+        return HttpResponse(status=500, content=msg)
+
+    def run_cmd(cmd):
+        proc = subprocess.run(cmd, cwd=repo_dir, capture_output=True, text=True)
+        summary = f"$ {' '.join(cmd)}\nrc={proc.returncode}\nstdout={proc.stdout[-400:]}\nstderr={proc.stderr[-400:]}"
+        log_lines.append(summary)
+        return proc.returncode == 0
+
+    poetry_bin = os.path.join(repo_dir, "venv", "bin", "poetry")
+    steps = [
+        [git_bin, "fetch", "--all", "--prune"],
+        [git_bin, "reset", "--hard", "origin/main"],
+        [venv_pip, "install", "--upgrade", "pip", "wheel"],
+        [venv_pip, "install", "poetry==1.8.3"],
+        [poetry_bin, "config", "virtualenvs.create", "false", "--local"],
+        [poetry_bin, "install", "--only", "main", "--no-interaction", "--no-ansi"],
+        [venv_python, "manage.py", "migrate", "--noinput"],
+        [venv_python, "manage.py", "collectstatic", "--noinput"],
+    ]
+
+    ok = True
+    for step in steps:
+        try:
+            if not run_cmd(step):
+                ok = False
+                break
+        except FileNotFoundError as fe:
+            # Capture explicit binary not found errors, send Slack, abort early.
+            err_msg = f"Webhook deploy step failed (missing binary): {fe}"
+            log_lines.append(err_msg)
+            send_slack_message(err_msg)
+            ok = False
+            break
+
+    # Always attempt a reload so code changes take effect (application systemd unit)
+    subprocess.run(["/bin/systemctl", "restart", "education-website"], capture_output=True)
+
+    # Slack summary (truncate to avoid long messages)
+    slack_msg = (
+        ("Deploy success" if ok else "Deploy FAILED")
+        + " (github webhook)\n"
+        + "\n---\n"
+        + "\n---\n".join(line[:600] for line in log_lines[:4])
+    )
+    send_slack_message(slack_msg[:3500])
+
+    if ok:
+        return HttpResponse("OK")
+    return HttpResponse(status=500, content="Deploy failed; see logs")
 
 
 def send_slack_message(message):
@@ -1345,6 +1422,20 @@ def course_search(request):
     page_obj = paginator.get_page(page_number)
     is_teacher = getattr(getattr(request.user, "profile", None), "is_teacher", False)
 
+    # initialize the user courses if founded
+    user_courses = set()
+
+    # Get authenticated users courses
+    if request.user.is_authenticated:
+        if request.user.profile.is_teacher:
+            teacher_courses = list(Course.objects.filter(teacher=request.user))
+            # Create a set of titles
+            user_courses = {course.title for course in teacher_courses}
+        else:
+            enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
+            # Create a set of titles
+            user_courses = {course.course.title for course in enrollments}
+
     context = {
         "page_obj": page_obj,
         "query": query,
@@ -1357,6 +1448,7 @@ def course_search(request):
         "level_choices": Course._meta.get_field("level").choices,
         "total_results": total_results,
         "is_teacher": is_teacher,
+        "user_courses": user_courses,
     }
 
     return render(request, "courses/search.html", context)
@@ -2213,10 +2305,27 @@ def session_detail(request, session_id):
         ):
             return HttpResponseForbidden("You don't have access to this session")
 
+        # Get next session for waiting room functionality
+        next_session = None
+        user_in_session_waiting_room = False
+
+        if request.user.is_authenticated:
+            # Get the next upcoming session for this course
+            next_session = session.course.sessions.filter(start_time__gt=timezone.now()).order_by("start_time").first()
+
+            # Check if user is in the session waiting room
+            try:
+                session_waiting_room = WaitingRoom.objects.get(course=session.course, status="open")
+                user_in_session_waiting_room = request.user in session_waiting_room.participants.all()
+            except WaitingRoom.DoesNotExist:
+                user_in_session_waiting_room = False
+
         context = {
             "session": session,
             "is_teacher": request.user == session.course.teacher,
             "now": timezone.now(),
+            "next_session": next_session,
+            "user_in_session_waiting_room": user_in_session_waiting_room,
         }
 
         return render(request, "web/study/session_detail.html", context)
@@ -7137,3 +7246,67 @@ def delete_study_plan(request, plan_id):
     
     context = {'study_plan': study_plan}
     return render(request, 'study_planner/delete_plan.html', context)
+
+
+    def handle_no_permission(self):
+        messages.error(self.request, "You can only delete surveys that you created.")
+        return redirect("surveys")
+
+
+@login_required
+def join_session_waiting_room(request, course_slug):
+    """View for joining a session waiting room for the next session of a course."""
+    course = get_object_or_404(Course, slug=course_slug)
+
+    # Get or create the session waiting room for this course
+    session_waiting_room, created = WaitingRoom.objects.get_or_create(
+        course=course, status="open", defaults={"status": "open"}
+    )
+
+    # Check if the waiting room is open
+    if session_waiting_room.status != "open":
+        messages.error(request, "This session waiting room is no longer open for joining.")
+        return redirect("course_detail", slug=course_slug)
+
+    # Add the user to participants if not already in
+    if request.user not in session_waiting_room.participants.all():
+        session_waiting_room.participants.add(request.user)
+        next_session = session_waiting_room.get_next_session()
+        if next_session:
+            next_session_date = next_session.start_time.strftime("%B %d, %Y at %I:%M %p")
+            messages.success(
+                request,
+                f"You have joined the waiting room for the next session of {course.title}. "
+                f"Next session is on {next_session_date}.",
+            )
+        else:
+            messages.success(
+                request,
+                f"You have joined the waiting room for the next session of {course.title}. "
+                f"You'll be notified when a new session is scheduled.",
+            )
+    else:
+        messages.info(request, "You are already in the waiting room for the next session of this course.")
+
+    return redirect("course_detail", slug=course_slug)
+
+
+@login_required
+def leave_session_waiting_room(request, course_slug):
+    """View for leaving a session waiting room."""
+    course = get_object_or_404(Course, slug=course_slug)
+
+    try:
+        session_waiting_room = WaitingRoom.objects.get(course=course, status="open")
+    except WaitingRoom.DoesNotExist:
+        messages.info(request, "No session waiting room found for this course.")
+        return redirect("course_detail", slug=course_slug)
+
+    # Remove the user from participants
+    if request.user in session_waiting_room.participants.all():
+        session_waiting_room.participants.remove(request.user)
+        messages.success(request, f"You have left the session waiting room for {course.title}")
+    else:
+        messages.info(request, "You are not in the session waiting room for this course.")
+
+    return redirect("course_detail", slug=course_slug)

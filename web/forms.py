@@ -113,6 +113,18 @@ __all__ = [
 fernet = Fernet(settings.SECURE_MESSAGE_KEY)
 
 
+class TailwindWidgetMixin:
+    """Mixin providing common Tailwind CSS classes for form widgets."""
+
+    @staticmethod
+    def get_tailwind_attrs():
+        return (
+            "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 "
+            "focus:ring-blue-500 bg-white dark:bg-gray-800 text-gray-700 dark:text-white "
+            "border-gray-300 dark:border-gray-600 dark:focus:ring-blue-400"
+        )
+
+
 class AccountDeleteForm(forms.Form):
     password = forms.CharField(
         label=_("Password"),
@@ -291,19 +303,23 @@ class UserRegistrationForm(SignupForm):
         return user
 
 
-class TailwindInput(forms.widgets.Input):
+class TailwindInput(forms.widgets.Input, TailwindWidgetMixin):
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("attrs", {}).update(
-            {"class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"}
+            {
+                "class": self.get_tailwind_attrs(),
+            }
         )
         super().__init__(*args, **kwargs)
 
 
-class TailwindURLInput(URLInput):
+class TailwindURLInput(URLInput, TailwindWidgetMixin):
     # This widget, subclassing URLInput, ensures input type="url"
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("attrs", {}).update(
-            {"class": "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"}
+            {
+                "class": self.get_tailwind_attrs(),
+            }
         )
         super().__init__(*args, **kwargs)
 
@@ -856,10 +872,17 @@ class EducationalVideoForm(forms.ModelForm):
 
         # YouTube validation
         if host == "youtube.com" or host == "www.youtube.com":
+            # Standard YouTube URLs with ?v= parameter
             qs = parse_qs(parsed.query)
             vid = qs.get("v", [""])[0]
             if len(vid) == 11 and re.match(r"^[A-Za-z0-9_-]{11}$", vid):
                 return url
+
+            # YouTube embed URLs like /embed/VIDEO_ID
+            if parsed.path.startswith("/embed/"):
+                vid = parsed.path[7:]  # Remove "/embed/"
+                if len(vid) == 11 and re.match(r"^[A-Za-z0-9_-]{11}$", vid):
+                    return url
 
         # YouTube short URL validation
         if host == "youtu.be":
@@ -869,7 +892,10 @@ class EducationalVideoForm(forms.ModelForm):
 
         # Vimeo validation
         if host == "vimeo.com" or host == "www.vimeo.com":
-            vid = parsed.path.lstrip("/").split("/")[0]
+            path_parts = parsed.path.lstrip("/").split("/")
+            vid = path_parts[-1]  # Get the last part of the path
+
+            # Handle both /VIDEO_ID and /video/VIDEO_ID formats
             if vid.isdigit() and len(vid) >= 8:
                 return url
 
