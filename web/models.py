@@ -25,6 +25,7 @@ from django.utils.translation import gettext_lazy as _
 from markdownx.models import MarkdownxField
 from PIL import Image
 
+from web.encryption import CustomEncryptedCharField, CustomEncryptedEmailField, CustomEncryptedJSONField
 from web.utils import calculate_and_update_user_streak
 
 
@@ -62,13 +63,15 @@ class Profile(models.Model):
     )
     is_teacher = models.BooleanField(default=False)
     is_social_media_manager = models.BooleanField(default=False)
-    discord_username = models.CharField(max_length=50, blank=True, help_text="Your Discord username (e.g., User#1234)")
-    slack_username = models.CharField(max_length=50, blank=True, help_text="Your Slack username")
-    github_username = models.CharField(max_length=50, blank=True, help_text="Your GitHub username (without @)")
+    discord_username = CustomEncryptedCharField(
+        max_length=255, blank=True, help_text="Your Discord username (e.g., User#1234)"
+    )
+    slack_username = CustomEncryptedCharField(max_length=255, blank=True, help_text="Your Slack username")
+    github_username = CustomEncryptedCharField(max_length=255, blank=True, help_text="Your GitHub username (without @)")
     referral_code = models.CharField(max_length=20, unique=True, blank=True)
     referred_by = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="referrals")
     referral_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    stripe_account_id = models.CharField(max_length=100, blank=True)
+    stripe_account_id = CustomEncryptedCharField(max_length=255, blank=True)
     stripe_account_status = models.CharField(
         max_length=20,
         choices=[
@@ -218,7 +221,7 @@ class Subject(models.Model):
 
 
 class WebRequest(models.Model):
-    ip_address = models.CharField(max_length=100, blank=True, default="")
+    ip_address = CustomEncryptedCharField(max_length=255, blank=True, default="")
     user = models.CharField(max_length=150, blank=True, default="")
     created = models.DateTimeField(auto_now_add=True)
     modified = models.DateTimeField(auto_now=True)
@@ -1619,7 +1622,7 @@ class Order(models.Model):
     storefront = models.ForeignKey(Storefront, on_delete=models.CASCADE, related_name="orders", null=True, blank=True)
     total_price = models.DecimalField(max_digits=10, decimal_places=2, editable=False)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="draft")
-    shipping_address = models.JSONField(blank=True, null=True, help_text="Structured shipping details")
+    shipping_address = CustomEncryptedJSONField(blank=True, null=True, help_text="Structured shipping details")
     tracking_number = models.CharField(max_length=100, blank=True)
     terms_accepted = models.BooleanField(default=False, help_text="User accepted terms during checkout")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -1839,7 +1842,7 @@ class Donation(models.Model):
     )
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="donations")
-    email = models.EmailField()
+    email = CustomEncryptedEmailField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     donation_type = models.CharField(max_length=20, choices=DONATION_TYPES)
     status = models.CharField(max_length=20, choices=DONATION_STATUS, default="pending")
@@ -2748,7 +2751,7 @@ class FeatureVote(models.Model):
 
     feature_id = models.CharField(max_length=100)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    ip_address = CustomEncryptedCharField(max_length=255, null=True, blank=True)
     vote = models.CharField(max_length=4, choices=VOTE_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
 
