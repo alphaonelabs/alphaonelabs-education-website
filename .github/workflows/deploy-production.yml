@@ -7,13 +7,13 @@ jobs:
   deploy:
     name: Deploy to Production Server
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Install sshpass
         run: |
           sudo apt-get update
           sudo apt-get install -y sshpass
-      
+
       - name: Deploy to production server
         env:
           SERVER_IP: ${{ secrets.PRODUCTION_SERVER_IP }}
@@ -23,7 +23,7 @@ jobs:
           # Create SSH key directory
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          
+
           # Disable strict host key checking for deployment
           cat >> ~/.ssh/config <<EOF
           Host production-server
@@ -32,46 +32,46 @@ jobs:
               StrictHostKeyChecking no
               UserKnownHostsFile /dev/null
           EOF
-          
+
           # Deploy via SSH
           sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" << 'ENDSSH'
             set -e
-            
+
             # Navigate to project directory
             cd /home/django/education-website
-            
+
             # Pull latest changes from main branch
             git fetch --all --prune
             git reset --hard origin/main
-            
+
             # Activate virtual environment and upgrade pip
             source venv/bin/activate
             pip install --upgrade pip wheel
-            
+
             # Install/upgrade Poetry
             pip install --upgrade poetry==2.0.1
-            
+
             # Configure Poetry to use existing virtualenv
             poetry config virtualenvs.create false --local || true
-            
+
             # Install dependencies
             poetry install --only main --no-interaction --no-ansi
-            
+
             # Run Django migrations
             python manage.py migrate --noinput
-            
+
             # Collect static files
             python manage.py collectstatic --noinput
-            
+
             # Restart the web server (systemd service)
             sudo systemctl restart education-website
-            
+
             # Restart nginx
             sudo systemctl restart nginx
-            
+
             echo "Deployment completed successfully!"
           ENDSSH
-      
+
       - name: Verify deployment
         env:
           SERVER_IP: ${{ secrets.PRODUCTION_SERVER_IP }}
@@ -82,9 +82,9 @@ jobs:
           sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" << 'ENDSSH'
             # Check if service is running
             sudo systemctl status education-website --no-pager || true
-            
+
             # Check nginx status
             sudo systemctl status nginx --no-pager || true
           ENDSSH
-          
+
           echo "Deployment verification completed!"
