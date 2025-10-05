@@ -221,6 +221,17 @@ urlpatterns += i18n_patterns(
         views.create_course_from_waiting_room,
         name="create_course_from_waiting_room",
     ),
+    # Session Waiting Room URLs
+    path(
+        "courses/<slug:course_slug>/session-waiting-room/join/",
+        views.join_session_waiting_room,
+        name="join_session_waiting_room",
+    ),
+    path(
+        "courses/<slug:course_slug>/session-waiting-room/leave/",
+        views.leave_session_waiting_room,
+        name="leave_session_waiting_room",
+    ),
     # Progress Visualization
     path("dashboard/progress/", views.progress_visualization, name="progress_visualization"),
     # Forum URLs
