@@ -67,13 +67,13 @@ urlpatterns += i18n_patterns(
     path("blog/tag/<str:tag>/", views.blog_tag, name="blog_tag"),
     path("blog/<slug:slug>/", views.blog_detail, name="blog_detail"),
     # Study Planner URLs
-    path("study-planner/", views.study_planner, name="study_planner"),
-    path("study-planner/create/", views.create_study_plan, name="create_study_plan"),
-    path("study-planner/<int:plan_id>/", views.study_plan_detail, name="study_plan_detail"),
-    path("study-planner/<int:plan_id>/add-session/", views.add_study_session, name="add_study_session"),
-    path("study-planner/session/<int:session_id>/complete/", views.mark_session_complete, name="mark_session_complete"),
-    path("study-planner/goal/<int:goal_id>/update/", views.update_study_goal, name="update_study_goal"),
-    path("study-planner/<int:plan_id>/delete/", views.delete_study_plan, name="delete_study_plan"),
+    path("study-planner/", login_required(views.study_planner), name="study_planner"),
+    path("study-planner/create/", login_required(views.create_study_plan), name="create_study_plan"),
+    path("study-planner/<int:plan_id>/", login_required(views.study_plan_detail), name="study_plan_detail"),
+    path("study-planner/<int:plan_id>/add-session/", login_required(views.add_study_session), name="add_study_session"),
+    path("study-planner/session/<int:session_id>/complete/", login_required(views.mark_session_complete), name="mark_session_complete"),
+    path("study-planner/goal/<int:goal_id>/update/", login_required(views.update_study_goal), name="update_study_goal"),
+    path("study-planner/<int:plan_id>/delete/", login_required(views.delete_study_plan), name="delete_study_plan"),
     # Leaderboard URLs
     path("leaderboards/", views.all_leaderboards, name="leaderboards"),
     # Success Stories URLs
