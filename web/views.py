@@ -158,7 +158,6 @@ from .models import (
     Session,
     SessionAttendance,
     SessionEnrollment,
-    SessionWaitingRoom,
     Storefront,
     StudyGroup,
     StudyGroupInvite,
@@ -2446,9 +2445,9 @@ def session_detail(request, session_id):
 
             # Check if user is in the session waiting room
             try:
-                session_waiting_room = SessionWaitingRoom.objects.get(course=session.course)
+                session_waiting_room = WaitingRoom.objects.get(course=session.course, status="open")
                 user_in_session_waiting_room = request.user in session_waiting_room.participants.all()
-            except SessionWaitingRoom.DoesNotExist:
+            except WaitingRoom.DoesNotExist:
                 user_in_session_waiting_room = False
 
         context = {
@@ -8030,7 +8029,9 @@ def join_session_waiting_room(request, course_slug):
     course = get_object_or_404(Course, slug=course_slug)
 
     # Get or create the session waiting room for this course
-    session_waiting_room, created = SessionWaitingRoom.objects.get_or_create(course=course, defaults={"status": "open"})
+    session_waiting_room, created = WaitingRoom.objects.get_or_create(
+        course=course, status="open", defaults={"status": "open"}
+    )
 
     # Check if the waiting room is open
     if session_waiting_room.status != "open":
@@ -8066,8 +8067,8 @@ def leave_session_waiting_room(request, course_slug):
     course = get_object_or_404(Course, slug=course_slug)
 
     try:
-        session_waiting_room = SessionWaitingRoom.objects.get(course=course)
-    except SessionWaitingRoom.DoesNotExist:
+        session_waiting_room = WaitingRoom.objects.get(course=course, status="open")
+    except WaitingRoom.DoesNotExist:
         messages.info(request, "No session waiting room found for this course.")
         return redirect("course_detail", slug=course_slug)
 

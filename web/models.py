@@ -2339,25 +2339,50 @@ class UserQuiz(models.Model):
 
 
 class WaitingRoom(models.Model):
-    """Model for storing waiting room requests for courses on specific subjects."""
+    """Model for storing waiting room requests.
+
+    Can be used for two purposes:
+    1. Waiting for a new course to be created on a subject/topic (creator, title, subject, topics are set)
+    2. Waiting for the next session of an existing course (course is set)
+    """
 
     STATUS_CHOICES = [("open", "Open"), ("closed", "Closed"), ("fulfilled", "Fulfilled")]
 
-    title = models.CharField(max_length=200)
+    # For waiting for new courses
+    title = models.CharField(max_length=200, blank=True)
     description = models.TextField(blank=True)
-    subject = models.CharField(max_length=100)
-    topics = models.TextField(help_text="Comma-separated list of topics")
-    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="created_waiting_rooms")
-    participants = models.ManyToManyField(User, related_name="joined_waiting_rooms", blank=True)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="open")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    subject = models.CharField(max_length=100, blank=True)
+    topics = models.TextField(help_text="Comma-separated list of topics", blank=True)
+    creator = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="created_waiting_rooms", null=True, blank=True
+    )
     fulfilled_course = models.ForeignKey(
         "Course", on_delete=models.SET_NULL, null=True, blank=True, related_name="fulfilled_waiting_rooms"
     )
 
+    # For waiting for next session of existing course
+    course = models.ForeignKey(
+        "Course",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name="session_waiting_rooms",
+        help_text="For waiting for next session of an existing course",
+    )
+
+    # Common fields
+    participants = models.ManyToManyField(User, related_name="joined_waiting_rooms", blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="open")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
     def __str__(self):
-        return self.title
+        if self.course:
+            return f"Waiting room for next session of {self.course.title}"
+        return self.title or "Untitled Waiting Room"
 
     def participant_count(self):
         """Return the number of participants in the waiting room."""
@@ -2365,7 +2390,17 @@ class WaitingRoom(models.Model):
 
     def topic_list(self):
         """Return the list of topics as a list."""
+        if not self.topics:
+            return []
         return [topic.strip() for topic in self.topics.split(",") if topic.strip()]
+
+    def get_next_session(self):
+        """Get the next upcoming session for this course (if waiting for existing course)."""
+        if not self.course:
+            return None
+        from django.utils import timezone
+
+        return self.course.sessions.filter(start_time__gt=timezone.now()).order_by("start_time").first()
 
     def mark_as_fulfilled(self, course=None):
         """Mark the waiting room as fulfilled and notify participants."""
@@ -2376,35 +2411,6 @@ class WaitingRoom(models.Model):
             from .notifications import notify_waiting_room_fulfilled
 
             notify_waiting_room_fulfilled(self, course)
-
-
-class SessionWaitingRoom(models.Model):
-    """Model for storing waiting room requests for the next session of a specific course."""
-
-    STATUS_CHOICES = [("open", "Open"), ("closed", "Closed")]
-
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name="session_waiting_rooms")
-    participants = models.ManyToManyField(User, related_name="joined_session_waiting_rooms", blank=True)
-    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="open")
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-
-    class Meta:
-        unique_together = ["course"]  # Only one waiting room per course
-        ordering = ["-created_at"]
-
-    def __str__(self):
-        return f"Waiting room for next session of {self.course.title}"
-
-    def participant_count(self):
-        """Return the number of participants in the waiting room."""
-        return self.participants.count()
-
-    def get_next_session(self):
-        """Get the next upcoming session for this course."""
-        from django.utils import timezone
-
-        return self.course.sessions.filter(start_time__gt=timezone.now()).order_by("start_time").first()
 
     def close_waiting_room(self):
         """Close the waiting room."""
