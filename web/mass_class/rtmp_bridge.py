@@ -158,7 +158,7 @@ class RTMPBridgeConsumer(AsyncConsumer):
 
     def _update_stream_status(self, session_id, status, youtube_url=None):
         try:
-            stream = MassClassStream.objects.get(session_id=session_id)
+            stream = MassClassStream.objects.get(stream_id=session_id)
             stream.status = status
 
             if youtube_url:
@@ -171,6 +171,6 @@ class RTMPBridgeConsumer(AsyncConsumer):
 
             stream.save()
             return True
-        except Exception as e:
-            logger.error(f"Error updating stream status: {str(e)}")
+        except Exception:
+            logger.exception("Error updating stream status")
             return False

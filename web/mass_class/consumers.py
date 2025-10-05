@@ -131,6 +131,14 @@ class MassClassTeacherConsumer(AsyncWebsocketConsumer):
                 self.room_group_name, {"type": "question_answered", "question_id": data["question_id"]}
             )
 
+        elif msg_type == "dismiss_question":
+            # Mark question as dismissed
+            await database_sync_to_async(self._dismiss_question)(data["question_id"])
+
+            await self.channel_layer.group_send(
+                self.room_group_name, {"type": "question_dismissed", "question_id": data["question_id"]}
+            )
+
     # Stream started event handler
     async def stream_started(self, event):
         await self.send(text_data=json.dumps({"type": "stream_started", "youtube_url": event["youtube_url"]}))
@@ -179,14 +187,14 @@ class MassClassTeacherConsumer(AsyncWebsocketConsumer):
 
     def _create_stream(self, user, session_id, sdp):
         try:
-            stream = MassClassStream.objects.create(teacher=user, session_id=session_id, status="initializing")
+            stream = MassClassStream.objects.create(teacher=user, stream_id=session_id, status="initializing")
             return True
         except Exception:
             return False
 
     def _close_stream(self, session_id):
         try:
-            stream = MassClassStream.objects.get(session_id=session_id)
+            stream = MassClassStream.objects.get(stream_id=session_id)
             stream.status = "ended"
             stream.save()
             return True
@@ -195,7 +203,7 @@ class MassClassTeacherConsumer(AsyncWebsocketConsumer):
 
     def _create_poll(self, session_id, poll_id, question, options):
         try:
-            stream = MassClassStream.objects.get(session_id=session_id)
+            stream = MassClassStream.objects.get(stream_id=session_id)
             poll = MassClassPoll.objects.create(stream=stream, poll_id=poll_id, question=question, is_active=True)
 
             for option in options:
@@ -207,7 +215,7 @@ class MassClassTeacherConsumer(AsyncWebsocketConsumer):
 
     def _end_poll(self, session_id):
         try:
-            stream = MassClassStream.objects.get(session_id=session_id)
+            stream = MassClassStream.objects.get(stream_id=session_id)
             active_poll = MassClassPoll.objects.filter(stream=stream, is_active=True).first()
 
             if active_poll:
@@ -222,6 +230,15 @@ class MassClassTeacherConsumer(AsyncWebsocketConsumer):
         try:
             question = MassClassQuestion.objects.get(id=question_id)
             question.status = "answered"
+            question.save()
+            return True
+        except Exception:
+            return False
+
+    def _dismiss_question(self, question_id):
+        try:
+            question = MassClassQuestion.objects.get(id=question_id)
+            question.status = "dismissed"
             question.save()
             return True
         except Exception:
@@ -411,6 +428,9 @@ class MassClassStudentConsumer(AsyncWebsocketConsumer):
     async def question_answered(self, event):
         await self.send(text_data=json.dumps({"type": "question_answered", "question_id": event["question_id"]}))
 
+    async def question_dismissed(self, event):
+        await self.send(text_data=json.dumps({"type": "question_dismissed", "question_id": event["question_id"]}))
+
     async def stream_ended(self, event):
         await self.send(text_data=json.dumps({"type": "stream_ended"}))
 
@@ -419,11 +439,11 @@ class MassClassStudentConsumer(AsyncWebsocketConsumer):
 
     # Helper methods
     def _check_stream_active(self, session_id):
-        return MassClassStream.objects.filter(session_id=session_id, status__in=["active", "initializing"]).exists()
+        return MassClassStream.objects.filter(stream_id=session_id, status__in=["active", "initializing"]).exists()
 
     def _add_viewer(self, user_id, session_id):
         try:
-            stream = MassClassStream.objects.get(session_id=session_id)
+            stream = MassClassStream.objects.get(stream_id=session_id)
             MassClassViewer.objects.get_or_create(user_id=user_id, stream=stream)
             return True
         except Exception:
@@ -431,7 +451,7 @@ class MassClassStudentConsumer(AsyncWebsocketConsumer):
 
     def _remove_viewer(self, user_id, session_id):
         try:
-            stream = MassClassStream.objects.get(session_id=session_id)
+            stream = MassClassStream.objects.get(stream_id=session_id)
             MassClassViewer.objects.filter(user_id=user_id, stream=stream).delete()
             return True
         except Exception:
@@ -439,14 +459,14 @@ class MassClassStudentConsumer(AsyncWebsocketConsumer):
 
     def _get_viewer_count(self, session_id):
         try:
-            stream = MassClassStream.objects.get(session_id=session_id)
+            stream = MassClassStream.objects.get(stream_id=session_id)
             return stream.viewers.count()
         except Exception:
             return 0
 
     def _get_stream_info(self, session_id):
         try:
-            stream = MassClassStream.objects.get(session_id=session_id)
+            stream = MassClassStream.objects.get(stream_id=session_id)
             return {
                 "youtube_url": stream.youtube_url,
                 "teacher_name": stream.teacher.get_full_name() or stream.teacher.username,
@@ -465,7 +485,7 @@ class MassClassStudentConsumer(AsyncWebsocketConsumer):
 
     def _create_question(self, user_id, session_id, question_text):
         try:
-            stream = MassClassStream.objects.get(session_id=session_id)
+            stream = MassClassStream.objects.get(stream_id=session_id)
             question = MassClassQuestion.objects.create(
                 user_id=user_id, stream=stream, question=question_text, status="pending"
             )
@@ -475,7 +495,7 @@ class MassClassStudentConsumer(AsyncWebsocketConsumer):
 
     def _get_active_poll(self, session_id):
         try:
-            stream = MassClassStream.objects.get(session_id=session_id)
+            stream = MassClassStream.objects.get(stream_id=session_id)
             poll = MassClassPoll.objects.filter(stream=stream, is_active=True).first()
 
             if poll:
@@ -518,7 +538,7 @@ class MassClassStudentConsumer(AsyncWebsocketConsumer):
 
     def _raise_hand(self, user_id, session_id):
         try:
-            stream = MassClassStream.objects.get(session_id=session_id)
+            stream = MassClassStream.objects.get(stream_id=session_id)
             hand_raise = MassClassHandRaise.objects.create(user_id=user_id, stream=stream, status="pending")
             return str(hand_raise.id)
         except Exception:

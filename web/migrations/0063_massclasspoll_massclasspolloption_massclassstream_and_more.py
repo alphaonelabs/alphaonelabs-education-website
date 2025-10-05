@@ -10,7 +10,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("web", "0049_session_latitude_session_longitude_and_more"),
+        ("web", "0062_update_waitingroom_for_sessions"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

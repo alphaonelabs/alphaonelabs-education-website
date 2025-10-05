@@ -44,7 +44,7 @@ def manage_streams(request):
 def student_view(request, session_id):
     """View for students to join a Mass Class"""
     # Get the stream
-    stream = get_object_or_404(MassClassStream, session_id=session_id)
+    stream = get_object_or_404(MassClassStream, stream_id=session_id)
 
     # Check if stream is active
     if stream.status not in ["initializing", "active"]:
