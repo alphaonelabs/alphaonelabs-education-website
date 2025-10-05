@@ -1,5 +1,21 @@
 name: Deploy to Production
 
+# This workflow deploys the application to the production server and automatically
+# creates a new GitHub release with incremented version number.
+#
+# Features:
+# - Deploys code to production server via SSH
+# - Runs migrations and collects static files
+# - Verifies deployment by checking service status
+# - Automatically increments version (e.g., v1.0 -> v1.1)
+# - Creates GitHub release with commit history since last release
+# - Tags the deployed commit with the new version
+#
+# Version Scheme:
+# - Uses semantic versioning (vMAJOR.MINOR)
+# - Automatically increments minor version on each deploy
+# - Default starting version is v0.0 if no previous releases exist
+
 on:
   workflow_dispatch:
 
