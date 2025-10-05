@@ -26,11 +26,13 @@ Field-level encryption has been successfully implemented for all personal data i
 
 ### New Files
 1. **`web/encryption.py`** - Encryption utilities and custom field types
-2. **`web/management/commands/encrypt_personal_data.py`** - Bulk encryption management command
-3. **`web/migrations/0063_add_encryption_to_personal_data.py`** - Database migration
-4. **`web/tests/test_encryption.py`** - Comprehensive test suite
-5. **`ENCRYPTION.md`** - Technical documentation
-6. **`DEPLOYMENT_ENCRYPTION.md`** - Production deployment guide
+2. **`web/user_encryption_patch.py`** - User PII encryption utilities
+3. **`web/management/commands/encrypt_personal_data.py`** - Bulk encryption management command
+4. **`web/migrations/0063_add_encryption_to_personal_data.py`** - Database migration for Profile and other models
+5. **`web/migrations/0064_encrypt_user_pii_inplace.py`** - User table in-place encryption migration
+6. **`web/tests/test_encryption.py`** - Comprehensive test suite
+7. **`ENCRYPTION.md`** - Technical documentation
+8. **`DEPLOYMENT_ENCRYPTION.md`** - Production deployment guide
 
 ### Modified Files
 1. **`web/models.py`** - Updated field types to use encrypted fields

@@ -112,8 +112,10 @@ Ran 7 tests - OK
 
 **New Files:**
 - `web/encryption.py` - Encryption utilities
+- `web/user_encryption_patch.py` - User PII encryption utilities
 - `web/management/commands/encrypt_personal_data.py` - Bulk encryption command
-- `web/migrations/0063_add_encryption_to_personal_data.py` - Database migration
+- `web/migrations/0063_add_encryption_to_personal_data.py` - Database migration for Profile/other models
+- `web/migrations/0064_encrypt_user_pii_inplace.py` - User table in-place encryption migration
 - `web/tests/test_encryption.py` - Test suite
 - `validate_encryption.py` - Validation script
 

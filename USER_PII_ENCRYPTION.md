@@ -142,27 +142,21 @@ python manage.py test web.tests.test_encryption
 
 ## Database Schema
 
-### Profile Table Changes
+### User Table Encryption
 
-Migration 0064 adds three fields to `web_profile`:
+Migration 0064 encrypts User PII data directly in the `auth_user` table:
 
-```sql
-ALTER TABLE web_profile 
-ADD COLUMN encrypted_first_name VARCHAR(255) DEFAULT '';
-
-ALTER TABLE web_profile 
-ADD COLUMN encrypted_last_name VARCHAR(255) DEFAULT '';
-
-ALTER TABLE web_profile 
-ADD COLUMN encrypted_email VARCHAR(255) DEFAULT '';
-```
+- No schema changes required
+- Existing columns (first_name, last_name, email) remain
+- Data is encrypted in-place within those columns
+- Transparent to Django ORM - same table structure
 
 ### Data Flow
 
 ```
-User.first_name --[sync]--> Profile.encrypted_first_name (encrypted)
-User.last_name  --[sync]--> Profile.encrypted_last_name (encrypted)
-User.email      --[sync]--> Profile.encrypted_email (encrypted)
+User.first_name --> encrypted in auth_user.first_name column
+User.last_name  --> encrypted in auth_user.last_name column
+User.email      --> encrypted in auth_user.email column
 ```
 
 ## Security Benefits

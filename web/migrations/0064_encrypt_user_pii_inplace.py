@@ -3,6 +3,8 @@ Migration to encrypt User PII data in-place in the auth_user table.
 
 This migration encrypts existing User data (first_name, last_name, email) 
 in the database without changing the table structure or requiring a custom User model.
+
+This consolidates what were previously migrations 0064, 0065, and 0066.
 """
 
 from django.db import migrations
@@ -123,9 +125,10 @@ def decrypt_user_pii(apps, schema_editor):
 class Migration(migrations.Migration):
     
     dependencies = [
-        ('web', '0064_add_encrypted_user_pii'),
+        ('web', '0063_add_encryption_to_personal_data'),
     ]
     
     operations = [
+        # Encrypt User PII data in-place in the auth_user table
         migrations.RunPython(encrypt_user_pii, decrypt_user_pii),
     ]
