@@ -2360,6 +2360,22 @@ class WaitingRoom(models.Model):
         return self.title
 
 
+class SessionWaitingRoom(models.Model):
+    """Model for storing waiting room for a specific course - one waiting room per course."""
+
+    course = models.ForeignKey("Course", on_delete=models.CASCADE, related_name="waiting_room", unique=True)
+    participants = models.ManyToManyField(User, related_name="session_waiting_rooms", blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Waiting Room for {self.course.title}"
+
+    def participant_count(self):
+        """Return the number of participants in the waiting room."""
+        return self.participants.count()
+
+
 class GradeableLink(models.Model):
     """Model for storing links that users want to get grades on."""
 

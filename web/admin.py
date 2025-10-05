@@ -47,6 +47,7 @@ from .models import (
     SearchLog,
     Session,
     SessionAttendance,
+    SessionWaitingRoom,
     Storefront,
     Subject,
     SuccessStory,
@@ -116,6 +117,20 @@ class WaitingRoomAdmin(admin.ModelAdmin):
     date_hierarchy = "created_at"
     raw_id_fields = ("creator", "participants", "fulfilled_course")
     readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(SessionWaitingRoom)
+class SessionWaitingRoomAdmin(admin.ModelAdmin):
+    list_display = ("course", "participant_count_display", "created_at")
+    search_fields = ("course__title",)
+    date_hierarchy = "created_at"
+    raw_id_fields = ("course", "participants")
+    readonly_fields = ("created_at", "updated_at")
+
+    def participant_count_display(self, obj):
+        return obj.participant_count()
+
+    participant_count_display.short_description = "Participants"
 
 
 @admin.register(Profile)
