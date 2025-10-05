@@ -8118,7 +8118,7 @@ class VoiceChatRoomView(LoginRequiredMixin, DetailView):
 
 def delete_voice_chat_room(request, room_id):
     """Delete a voice chat room"""
-    print(f"Delete room request received. Method: {request.method}, User: {request.user}, Room ID: {room_id}")
+    logger.info(f"Delete room request received. Method: {request.method}, User: {request.user}, Room ID: {room_id}")
 
     if not request.user.is_authenticated:
         return redirect("account_login")
@@ -8126,9 +8126,9 @@ def delete_voice_chat_room(request, room_id):
     # Get the room or return 404
     try:
         room = get_object_or_404(VoiceChatRoom, id=room_id)
-        print(f"Room found: {room.name}, Creator: {room.created_by.username}")
+        logger.info(f"Room found: {room.name}, Creator: {room.created_by.username}")
     except Exception as e:
-        print(f"Error finding room: {e}")
+        logger.exception(f"Error finding room: {e}")
         messages.error(request, f"Room not found: {e}")
         return redirect("voice_chat_list")
 
@@ -8140,7 +8140,7 @@ def delete_voice_chat_room(request, room_id):
     if request.method == "POST":
         try:
             # Log the deletion attempt
-            print(f"Attempting to delete room {room.id} by user {request.user.username}")
+            logger.info(f"Attempting to delete room {room.id} by user {request.user.username}")
 
             # Delete all participants
             VoiceChatParticipant.objects.filter(room=room).delete()
@@ -8150,19 +8150,16 @@ def delete_voice_chat_room(request, room_id):
             room.delete()
 
             messages.success(request, f"Voice chat room '{room_name}' has been deleted.")
-            print("Redirecting to voice_chat_list")
+            logger.info(f"Successfully deleted room {room_id}")
 
             # Always redirect to list page on success
             return redirect("voice_chat_list")
 
         except Exception as e:
-            import traceback
-
-            print(f"Error deleting room: {e}")
-            print(traceback.format_exc())
+            logger.exception(f"Error deleting room: {e}")
             messages.error(request, f"Error deleting room: {e}")
             return redirect("voice_chat_room", room_id=room_id)
 
     # For GET requests, show confirmation page
-    print(f"Rendering confirmation page for room {room_id}")
+    logger.debug(f"Rendering confirmation page for room {room_id}")
     return render(request, "web/voice_chat/delete_confirm.html", {"room": room})

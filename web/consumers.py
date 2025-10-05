@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 import uuid
 
@@ -9,6 +10,7 @@ from django.contrib.auth import get_user_model
 from .models import VoiceChatParticipant, VoiceChatRoom
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 class VoiceChatConsumer(AsyncWebsocketConsumer):
@@ -36,23 +38,18 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
                 try:
                     self.room_id = uuid.UUID(room_id_str)
                 except ValueError:
-                    print(f"Invalid UUID format: {room_id_str}")
+                    logger.error(f"Invalid UUID format: {room_id_str}")
                     await self.close(code=4004)
                     return
 
-            print(f"WebSocket connection attempt for room_id: {self.room_id}, type: {type(self.room_id)}")
-
-            # Debug information
-            print(f"User authentication: {self.scope.get('user', 'No user')}")
-            print(f"Headers: {dict(self.scope.get('headers', []))}")
-            print(f"Query string: {self.scope.get('query_string', b'').decode()}")
+            logger.info(f"WebSocket connection attempt for room_id: {self.room_id}")
 
             self.room_group_name = f"voice_chat_{self.room_id}"
             self.user = self.scope["user"]
 
             # Check if user is authenticated
             if not self.user.is_authenticated:
-                print("User is not authenticated, closing connection")
+                logger.warning("User is not authenticated, closing connection")
                 await self.close(code=4003)
                 return
 
@@ -61,11 +58,11 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
 
             # Accept the connection
             await self.accept()
-            print(f"WebSocket connection accepted for room {self.room_id} and user {self.user.username}")
+            logger.info(f"WebSocket connection accepted for room {self.room_id} and user {self.user.username}")
 
             # Get room participants and notify about new user
             participants = await self.get_room_participants()
-            print(f"Participants in room {self.room_id}: {participants}")
+            logger.debug(f"Participants in room {self.room_id}: {participants}")
 
             # Notify the new user about existing participants
             await self.send(text_data=json.dumps({
@@ -83,12 +80,12 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
             # Update participant status in database
             await self.update_participant_joined()
         except Exception as e:
-            print(f"Error in connect: {e}")
+            logger.exception(f"Error in WebSocket connect: {e}")
             # Try to close connection gracefully
             try:
                 await self.close(code=4500)
             except Exception as close_error:
-                print(f"Error while closing connection: {close_error}")
+                logger.error(f"Error while closing connection: {close_error}")
 
     async def disconnect(self, close_code):
         """Handle WebSocket disconnection."""
@@ -303,7 +300,7 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
 
             return participants
         except Exception as e:
-            print(f"Error getting room participants: {e}")
+            logger.exception(f"Error getting room participants: {e}")
             return []
 
     @database_sync_to_async
@@ -322,7 +319,7 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
                 user=self.user, room=room, defaults={"is_speaking": False, "is_muted": False}
             )
         except Exception as e:
-            print(f"Error updating participant joined: {e}")
+            logger.exception(f"Error updating participant joined: {e}")
 
     @database_sync_to_async
     def update_participant_left(self):
@@ -339,7 +336,7 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
             participant.delete()
             room.participants.remove(self.user)
         except Exception as e:
-            print(f"Error updating participant left: {e}")
+            logger.exception(f"Error updating participant left: {e}")
 
     @database_sync_to_async
     def update_speaking_status(self, is_speaking):
@@ -359,7 +356,7 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
                 participant.is_speaking = is_speaking
                 participant.save()
         except Exception as e:
-            print(f"Error updating speaking status: {e}")
+            logger.exception(f"Error updating speaking status: {e}")
 
     @database_sync_to_async
     def update_mute_status(self, is_muted):
@@ -379,4 +376,4 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
                 participant.is_muted = is_muted
                 participant.save()
         except Exception as e:
-            print(f"Error updating mute status: {e}")
+            logger.exception(f"Error updating mute status: {e}")
