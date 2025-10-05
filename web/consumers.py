@@ -142,16 +142,7 @@ class VoiceChatConsumer(AsyncWebsocketConsumer):
                     "target": data.get("target"),
                 },
             )
-        elif message_type == "encryption-key":
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    "type": "encryption_key",
-                    "keyData": data.get("keyData"),
-                    "from": self.user.id,
-                    "target": data.get("target"),
-                },
-            )
+        # Removed handling of "encryption-key" to avoid relaying key material through the server.
         elif message_type == "speaking_status":
             await self.update_speaking_status(data.get("speaking", False))
             await self.channel_layer.group_send(
