@@ -3089,16 +3089,17 @@ class Response(models.Model):
 
 class FlashcardDeck(models.Model):
     """Model for flashcard decks."""
+
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
-    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='flashcard_decks')
+    creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name="flashcard_decks")
     is_public = models.BooleanField(default=False, help_text="Make this deck visible to other users")
     slug = models.SlugField(unique=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-updated_at']
+        ordering = ["-updated_at"]
 
     def __str__(self):
         return self.name
@@ -3115,7 +3116,7 @@ class FlashcardDeck(models.Model):
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
-        return reverse('flashcard_deck_detail', kwargs={'slug': self.slug})
+        return reverse("flashcard_deck_detail", kwargs={"slug": self.slug})
 
     @property
     def card_count(self):
@@ -3124,7 +3125,8 @@ class FlashcardDeck(models.Model):
 
 class Flashcard(models.Model):
     """Model for individual flashcards within a deck."""
-    deck = models.ForeignKey(FlashcardDeck, on_delete=models.CASCADE, related_name='flashcards')
+
+    deck = models.ForeignKey(FlashcardDeck, on_delete=models.CASCADE, related_name="flashcards")
     front_text = models.TextField(help_text="Question or term")
     back_text = models.TextField(help_text="Answer or definition")
     order = models.PositiveIntegerField(default=0, help_text="Order of card in deck")
@@ -3132,7 +3134,7 @@ class Flashcard(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['order', 'created_at']
+        ordering = ["order", "created_at"]
 
     def __str__(self):
         return f"{self.deck.name} - Card {self.order}"

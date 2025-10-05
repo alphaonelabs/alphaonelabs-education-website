@@ -1,33 +1,26 @@
-from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
-from web.models import FlashcardDeck, Flashcard
+from django.core.management.base import BaseCommand
+
+from web.models import Flashcard, FlashcardDeck
 
 
 class Command(BaseCommand):
-    help = 'Create sample flashcard data for demonstration'
+    help = "Create sample flashcard data for demonstration"
 
     def handle(self, *args, **options):
         # Get or create admin user
         user, created = User.objects.get_or_create(
-            username='admin',
-            defaults={
-                'email': 'admin@example.com',
-                'is_staff': True,
-                'is_superuser': True
-            }
+            username="admin", defaults={"email": "admin@example.com", "is_staff": True, "is_superuser": True}
         )
         if created:
-            user.set_password('admin123')
+            user.set_password("admin123")
             user.save()
 
         # Create Python Programming deck
         python_deck, created = FlashcardDeck.objects.get_or_create(
             name="Python Programming Basics",
             creator=user,
-            defaults={
-                'description': "Essential concepts for learning Python programming",
-                'is_public': True
-            }
+            defaults={"description": "Essential concepts for learning Python programming", "is_public": True},
         )
 
         if created:
@@ -65,21 +58,13 @@ class Command(BaseCommand):
             ]
 
             for i, (front, back) in enumerate(python_cards, 1):
-                Flashcard.objects.create(
-                    deck=python_deck,
-                    front_text=front,
-                    back_text=back,
-                    order=i
-                )
+                Flashcard.objects.create(deck=python_deck, front_text=front, back_text=back, order=i)
 
         # Create Math deck
         math_deck, created = FlashcardDeck.objects.get_or_create(
             name="Basic Mathematics",
             creator=user,
-            defaults={
-                'description': "Fundamental math concepts and formulas",
-                'is_public': True
-            }
+            defaults={"description": "Fundamental math concepts and formulas", "is_public": True},
         )
 
         if created:
@@ -98,21 +83,13 @@ class Command(BaseCommand):
             ]
 
             for i, (front, back) in enumerate(math_cards, 1):
-                Flashcard.objects.create(
-                    deck=math_deck,
-                    front_text=front,
-                    back_text=back,
-                    order=i
-                )
+                Flashcard.objects.create(deck=math_deck, front_text=front, back_text=back, order=i)
 
         # Create History deck
         history_deck, created = FlashcardDeck.objects.get_or_create(
             name="World History Facts",
             creator=user,
-            defaults={
-                'description': "Important dates and events in world history",
-                'is_public': True
-            }
+            defaults={"description": "Important dates and events in world history", "is_public": True},
         )
 
         if created:
@@ -128,21 +105,13 @@ class Command(BaseCommand):
             ]
 
             for i, (front, back) in enumerate(history_cards, 1):
-                Flashcard.objects.create(
-                    deck=history_deck,
-                    front_text=front,
-                    back_text=back,
-                    order=i
-                )
+                Flashcard.objects.create(deck=history_deck, front_text=front, back_text=back, order=i)
 
         # Create a private deck
         private_deck, created = FlashcardDeck.objects.get_or_create(
             name="Personal Study Notes",
             creator=user,
-            defaults={
-                'description': "My private study notes - not visible to others",
-                'is_public': False
-            }
+            defaults={"description": "My private study notes - not visible to others", "is_public": False},
         )
 
         if created:
@@ -153,19 +122,14 @@ class Command(BaseCommand):
             ]
 
             for i, (front, back) in enumerate(private_cards, 1):
-                Flashcard.objects.create(
-                    deck=private_deck,
-                    front_text=front,
-                    back_text=back,
-                    order=i
-                )
+                Flashcard.objects.create(deck=private_deck, front_text=front, back_text=back, order=i)
 
         self.stdout.write(
             self.style.SUCCESS(
-                f'Successfully created sample flashcard data:\n'
-                f'- {python_deck.name}: {python_deck.card_count} cards\n'
-                f'- {math_deck.name}: {math_deck.card_count} cards\n'
-                f'- {history_deck.name}: {history_deck.card_count} cards\n'
-                f'- {private_deck.name}: {private_deck.card_count} cards'
+                f"Successfully created sample flashcard data:\n"
+                f"- {python_deck.name}: {python_deck.card_count} cards\n"
+                f"- {math_deck.name}: {math_deck.card_count} cards\n"
+                f"- {history_deck.name}: {history_deck.card_count} cards\n"
+                f"- {private_deck.name}: {private_deck.card_count} cards"
             )
         )
