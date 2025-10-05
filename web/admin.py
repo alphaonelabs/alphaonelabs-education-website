@@ -170,7 +170,7 @@ class ProfileAdmin(admin.ModelAdmin):
 
     def email_status(self, obj):
         color, label, time_str = get_email_status(obj)
-        return format_html('<span style="color: {}\">● {}</span> {}', color, label, time_str)
+        return format_html('<span style="color: {}">● {}</span> {}', color, label, time_str)
 
     email_status.short_description = "Email Status"
 
