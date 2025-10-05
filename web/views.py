@@ -8045,7 +8045,7 @@ def list_voice_chat_rooms(request):
     return render(request, "web/voice_chat/list.html", context)
 
 
-@csrf_exempt
+@require_POST
 @login_required
 def signal_handler(request, room_id):
     """Handle WebRTC signaling"""
