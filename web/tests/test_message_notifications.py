@@ -1,6 +1,4 @@
-import os
-import tempfile
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core import mail
@@ -16,9 +14,7 @@ class NewMessageNotificationTest(TestCase):
 
     def setUp(self):
         """Set up test users."""
-        self.sender = User.objects.create_user(
-            username="sender", email="sender@example.com", password="testpass123"
-        )
+        self.sender = User.objects.create_user(username="sender", email="sender@example.com", password="testpass123")
         self.receiver = User.objects.create_user(
             username="receiver", email="receiver@example.com", password="testpass123"
         )
@@ -33,7 +29,7 @@ class NewMessageNotificationTest(TestCase):
         mail.outbox = []
 
         # Create a new message
-        message = PeerMessage.objects.create(
+        PeerMessage.objects.create(
             sender=self.sender,
             receiver=self.receiver,
             content="encrypted_test_content",

@@ -434,12 +434,12 @@ def send_new_message_email(message):
     """Send email notification for a new message with a link to the messaging dashboard."""
     try:
         subject = "New Message Received"
-        
+
         # Build the URL to the messaging dashboard
         # Use SITE_DOMAIN if SITE_URL is not available
-        site_url = getattr(settings, 'SITE_URL', f"https://{settings.SITE_DOMAIN}")
+        site_url = getattr(settings, "SITE_URL", f"https://{settings.SITE_DOMAIN}")
         message_url = f"{site_url}/messaging/dashboard/"
-        
+
         # Prepare context for the email template
         context = {
             "receiver": message.receiver,
@@ -447,10 +447,10 @@ def send_new_message_email(message):
             "message_url": message_url,
             "site_url": site_url,
         }
-        
+
         # Render the email template
         html_message = render_to_string("emails/new_message_notification.html", context)
-        
+
         # Send the email
         send_mail(
             subject=subject,
@@ -459,8 +459,8 @@ def send_new_message_email(message):
             recipient_list=[message.receiver.email],
             html_message=html_message,
         )
-        
+
         logger.info(f"New message notification sent to {message.receiver.email}")
-        
+
     except Exception as e:
         logger.error(f"Failed to send new message notification to {message.receiver.email}: {str(e)}")

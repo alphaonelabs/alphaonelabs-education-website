@@ -74,4 +74,5 @@ def send_new_message_notification(sender, instance, created, **kwargs):
     """Send email notification when a new message is created."""
     if created:
         from .notifications import send_new_message_email
+
         send_new_message_email(instance)

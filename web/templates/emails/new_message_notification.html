@@ -87,29 +87,31 @@
       <div class="header">
         <h1>📨 New Message</h1>
       </div>
-      
       <p>Hi {{ receiver.get_full_name|default:receiver.username }},</p>
-      
       <p>You have received a new message in your Alpha One Labs inbox.</p>
-      
       <div class="message-info">
-        <p><strong>From:</strong> <span class="sender-name">{{ sender.get_full_name|default:sender.username }}</span></p>
+        <p>
+          <strong>From:</strong> <span class="sender-name">{{ sender.get_full_name|default:sender.username }}</span>
+        </p>
         {% if sender.email %}
-          <p><strong>Email:</strong> {{ sender.email }}</p>
+          <p>
+            <strong>Email:</strong> {{ sender.email }}
+          </p>
         {% endif %}
       </div>
-      
       <p>Click the button below to view your message:</p>
-      
       <div style="text-align: center;">
         <a href="{{ message_url }}" class="action-button">View Message</a>
       </div>
-      
       <p>Or copy and paste this link into your browser:</p>
-      <p style="word-break: break-all; background-color: #f8f9fa; padding: 10px; border-radius: 4px;">{{ message_url }}</p>
-      
+      <p style="word-break: break-all;
+                background-color: #f8f9fa;
+                padding: 10px;
+                border-radius: 4px">{{ message_url }}</p>
       <div class="footer">
-        <p>This email was sent from <a href="{{ site_url }}">Alpha One Labs Education Platform</a></p>
+        <p>
+          This email was sent from <a href="{{ site_url }}">Alpha One Labs Education Platform</a>
+        </p>
         <p>Please do not reply to this email directly.</p>
       </div>
     </div>
