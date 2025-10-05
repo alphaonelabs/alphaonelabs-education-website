@@ -305,8 +305,6 @@ class PageLoadTests(BaseViewTest):
 
     def test_index_shows_recent_courses(self):
         """Test that index page shows 6 most recent published courses"""
-        from django.utils import timezone
-
         # Create 8 published courses with different creation times
         for i in range(8):
             Course.objects.create(
@@ -336,7 +334,6 @@ class PageLoadTests(BaseViewTest):
         # Courses are created in order 0-7, so most recent should be 7, 6, 5, 4, 3, 2
         expected_titles = [f"Test Course {i}" for i in range(7, 1, -1)]
         self.assertEqual(course_titles, expected_titles)
-
 
 
 class CourseInvitationTests(TestCase):
