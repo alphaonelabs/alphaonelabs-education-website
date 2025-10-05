@@ -8065,37 +8065,7 @@ def signal_handler(request, room_id):
     return JsonResponse({"status": "success", "message": f"Signal of type {signal_type} processed"})
 
 
-class VoiceChatListView(LoginRequiredMixin, ListView):
-    """View for listing all voice chat rooms."""
-
-    model = VoiceChatRoom
-    template_name = "web/voice_chat/index.html"
-    context_object_name = "rooms"
-
-    def get_queryset(self):
-        return VoiceChatRoom.objects.filter(is_active=True)
-
-
-class VoiceChatCreateView(LoginRequiredMixin, CreateView):
-    """View for creating a new voice chat room."""
-
-    model = VoiceChatRoom
-    template_name = "web/voice_chat/create.html"
-    fields = ["name"]
-    success_url = reverse_lazy("voice_chat_list")
-
-    def form_valid(self, form):
-        # Set the creator and save the model
-        form.instance.created_by = self.request.user
-        response = super().form_valid(form)
-
-        # Add the creator to the participants
-        self.object.participants.add(self.request.user)
-
-        return response
-
-
-class VoiceChatRoomView(LoginRequiredMixin, DetailView):
+# Removed unused CBVs: VoiceChatListView, VoiceChatCreateView, VoiceChatRoomView
     """View for accessing a specific voice chat room."""
 
     model = VoiceChatRoom
