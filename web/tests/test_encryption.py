@@ -117,3 +117,42 @@ class EncryptionTestCase(TestCase):
 
         # Null IP should remain null
         self.assertIsNone(featurevote.ip_address)
+
+    def test_user_pii_encryption(self):
+        """Test that User PII (first_name, last_name, email) is encrypted in Profile."""
+        # Create user with PII
+        user = User.objects.create_user(
+            username="piiuser", email="pii@example.com", password="testpass123", first_name="John", last_name="Doe"
+        )
+
+        # Get profile
+        profile = user.profile
+
+        # Sync PII should have happened automatically via signal
+        profile.refresh_from_db()
+
+        # Verify encrypted fields contain the data
+        self.assertEqual(profile.encrypted_first_name, "John")
+        self.assertEqual(profile.encrypted_last_name, "Doe")
+        self.assertEqual(profile.encrypted_email, "pii@example.com")
+
+        # Verify properties return the encrypted data
+        self.assertEqual(profile.first_name, "John")
+        self.assertEqual(profile.last_name, "Doe")
+        self.assertEqual(profile.email, "pii@example.com")
+
+    def test_user_pii_sync_on_update(self):
+        """Test that User PII is synced when User is updated."""
+        # Update user PII
+        self.user.first_name = "Updated"
+        self.user.last_name = "Name"
+        self.user.email = "updated@example.com"
+        self.user.save()
+
+        # Profile should have synced automatically
+        self.user.profile.refresh_from_db()
+
+        # Verify encrypted fields were updated
+        self.assertEqual(self.user.profile.encrypted_first_name, "Updated")
+        self.assertEqual(self.user.profile.encrypted_last_name, "Name")
+        self.assertEqual(self.user.profile.encrypted_email, "updated@example.com")

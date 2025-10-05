@@ -63,6 +63,14 @@ class Profile(models.Model):
     )
     is_teacher = models.BooleanField(default=False)
     is_social_media_manager = models.BooleanField(default=False)
+    # Encrypted PII fields from User model
+    encrypted_first_name = CustomEncryptedCharField(
+        max_length=255, blank=True, help_text="Encrypted first name (synced from User model)"
+    )
+    encrypted_last_name = CustomEncryptedCharField(
+        max_length=255, blank=True, help_text="Encrypted last name (synced from User model)"
+    )
+    encrypted_email = CustomEncryptedEmailField(blank=True, help_text="Encrypted email (synced from User model)")
     discord_username = CustomEncryptedCharField(
         max_length=255, blank=True, help_text="Your Discord username (e.g., User#1234)"
     )
@@ -137,6 +145,36 @@ class Profile(models.Model):
     @property
     def can_receive_payments(self):
         return self.is_teacher and self.stripe_account_id and self.stripe_account_status == "verified"
+
+    @property
+    def first_name(self):
+        """Get decrypted first name."""
+        return self.encrypted_first_name or self.user.first_name
+
+    @property
+    def last_name(self):
+        """Get decrypted last name."""
+        return self.encrypted_last_name or self.user.last_name
+
+    @property
+    def email(self):
+        """Get decrypted email."""
+        return self.encrypted_email or self.user.email
+
+    def sync_user_pii(self):
+        """Sync PII from User model to encrypted fields."""
+        updated = False
+        # Always sync to keep data current
+        if self.user.first_name != self.encrypted_first_name:
+            self.encrypted_first_name = self.user.first_name
+            updated = True
+        if self.user.last_name != self.encrypted_last_name:
+            self.encrypted_last_name = self.user.last_name
+            updated = True
+        if self.user.email != self.encrypted_email:
+            self.encrypted_email = self.user.email
+            updated = True
+        return updated
 
 
 class Avatar(models.Model):
@@ -1047,11 +1085,16 @@ def create_user_profile(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
-    """Save the Profile instance when the User is saved."""
+    """Save the Profile instance when the User is saved and sync encrypted PII."""
     if hasattr(instance, "profile"):
-        instance.profile.save()
+        # Sync PII from User to encrypted fields in Profile
+        if instance.profile.sync_user_pii():
+            instance.profile.save()
     else:
-        Profile.objects.create(user=instance)
+        profile = Profile.objects.create(user=instance)
+        # Sync PII for newly created profile
+        if profile.sync_user_pii():
+            profile.save()
 
 
 class BlogPost(models.Model):

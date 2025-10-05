@@ -8,6 +8,9 @@ All personal data in the AlphaOne Labs Education Platform is now **encrypted at 
 
 | Model | Field | Data Type |
 |-------|-------|-----------|
+| Profile | `encrypted_first_name` | First name (from User) |
+| Profile | `encrypted_last_name` | Last name (from User) |
+| Profile | `encrypted_email` | Email (from User) |
 | Profile | `discord_username` | Discord username |
 | Profile | `slack_username` | Slack username |
 | Profile | `github_username` | GitHub username |
@@ -17,7 +20,9 @@ All personal data in the AlphaOne Labs Education Platform is now **encrypted at 
 | Order | `shipping_address` | Complete address (JSON) |
 | FeatureVote | `ip_address` | IP address |
 
-**Total: 8 sensitive fields** across 5 models
+**Total: 11 sensitive fields** across 5 models
+
+**User PII Sync:** First name, last name, and email from the User model are automatically synced to encrypted fields in the Profile model on every User save, providing encrypted storage while maintaining Django auth compatibility.
 
 ## 🚀 Quick Start
 

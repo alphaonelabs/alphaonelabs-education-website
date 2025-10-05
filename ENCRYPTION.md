@@ -8,6 +8,13 @@ This implementation adds field-level encryption to all personal data in the Alph
 
 The following personal data fields are now encrypted at rest in the database:
 
+### User Model PII (via Profile)
+- `first_name` - First name (synced from User.first_name)
+- `last_name` - Last name (synced from User.last_name)
+- `email` - Email address (synced from User.email)
+
+**Note:** User PII is automatically synced from the User model to encrypted fields in the Profile model whenever a User is saved. This provides encrypted storage while maintaining Django auth compatibility.
+
 ### Profile Model
 - `discord_username` - Discord usernames
 - `slack_username` - Slack usernames  

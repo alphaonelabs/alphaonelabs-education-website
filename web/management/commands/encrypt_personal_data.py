@@ -37,17 +37,24 @@ class Command(BaseCommand):
         # Track statistics
         stats = {
             "profile": 0,
+            "profile_user_pii": 0,
             "webrequest": 0,
             "donation": 0,
             "order": 0,
             "featurevote": 0,
         }
 
-        # Encrypt Profile data
-        self.stdout.write("Processing Profile records...")
-        profiles = Profile.objects.all()
+        # Encrypt Profile data (including User PII)
+        self.stdout.write("Processing Profile records and syncing User PII...")
+        profiles = Profile.objects.select_related("user").all()
         for profile in profiles:
             updated = False
+
+            # Sync and encrypt User PII (first_name, last_name, email)
+            if profile.sync_user_pii():
+                if not dry_run:
+                    updated = True
+                    stats["profile_user_pii"] += 1
 
             # Check and encrypt discord_username
             if profile.discord_username:
@@ -83,7 +90,11 @@ class Command(BaseCommand):
                 profile.save()
                 stats["profile"] += 1
 
-        self.stdout.write(self.style.SUCCESS(f"Processed {stats['profile']} Profile records"))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"Processed {stats['profile']} Profile records, synced {stats['profile_user_pii']} User PII records"
+            )
+        )
 
         # Encrypt WebRequest data
         self.stdout.write("Processing WebRequest records...")
