@@ -297,8 +297,8 @@ def index(request):
     # Get current user's profile if authenticated
     profile = request.user.profile if request.user.is_authenticated else None
 
-    # Get featured courses
-    featured_courses = Course.objects.filter(status="published", is_featured=True).order_by("-created_at")[:3]
+    # Get recent courses
+    featured_courses = Course.objects.filter(status="published").order_by("-created_at")[:6]
 
     # Get featured goods
     featured_goods = Goods.objects.filter(featured=True, is_available=True).order_by("-created_at")[:3]
