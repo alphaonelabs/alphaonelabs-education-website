@@ -10,8 +10,8 @@ class FlashcardModelTests(TestCase):
 
     def setUp(self):
         self.user = User.objects.create_user(
-            username="testuser", 
-            email="test@example.com", 
+            username="testuser",
+            email="test@example.com",
             password="testpass123"
         )
 
@@ -95,11 +95,11 @@ class FlashcardModelTests(TestCase):
             creator=self.user
         )
         self.assertEqual(deck.card_count, 0)
-        
+
         # Add some cards
         Flashcard.objects.create(deck=deck, front_text="Q1", back_text="A1", order=1)
         Flashcard.objects.create(deck=deck, front_text="Q2", back_text="A2", order=2)
-        
+
         # Refresh from database
         deck.refresh_from_db()
         self.assertEqual(deck.card_count, 2)
@@ -111,7 +111,7 @@ class FlashcardViewTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
             username="testuser",
-            email="test@example.com", 
+            email="test@example.com",
             password="testpass123"
         )
         self.other_user = User.objects.create_user(
@@ -141,7 +141,7 @@ class FlashcardViewTests(TestCase):
             'is_public': 'on'
         })
         self.assertEqual(response.status_code, 302)
-        
+
         deck = FlashcardDeck.objects.get(name='Test Deck')
         self.assertEqual(deck.creator, self.user)
         self.assertTrue(deck.is_public)
@@ -153,7 +153,7 @@ class FlashcardViewTests(TestCase):
             creator=self.user,
             is_public=True
         )
-        
+
         self.client.force_login(self.user)
         response = self.client.get(reverse('flashcard_deck_detail', kwargs={'slug': deck.slug}))
         self.assertEqual(response.status_code, 200)
@@ -166,7 +166,7 @@ class FlashcardViewTests(TestCase):
             creator=self.user,
             is_public=False
         )
-        
+
         self.client.force_login(self.other_user)
         response = self.client.get(reverse('flashcard_deck_detail', kwargs={'slug': deck.slug}))
         self.assertEqual(response.status_code, 302)
@@ -178,7 +178,7 @@ class FlashcardViewTests(TestCase):
             creator=self.user,
             is_public=True
         )
-        
+
         self.client.force_login(self.other_user)
         response = self.client.get(reverse('flashcard_deck_detail', kwargs={'slug': deck.slug}))
         self.assertEqual(response.status_code, 200)
@@ -189,14 +189,14 @@ class FlashcardViewTests(TestCase):
             name="Test Deck",
             creator=self.user
         )
-        
+
         self.client.force_login(self.user)
         response = self.client.post(reverse('flashcard_create', kwargs={'deck_slug': deck.slug}), {
             'front_text': 'What is Python?',
             'back_text': 'A programming language'
         })
         self.assertEqual(response.status_code, 302)
-        
+
         card = Flashcard.objects.get(deck=deck)
         self.assertEqual(card.front_text, 'What is Python?')
         self.assertEqual(card.back_text, 'A programming language')
@@ -214,7 +214,7 @@ class FlashcardViewTests(TestCase):
             back_text="Answer 1",
             order=1
         )
-        
+
         self.client.force_login(self.user)
         response = self.client.get(reverse('flashcard_study', kwargs={'slug': deck.slug}))
         self.assertEqual(response.status_code, 200)
@@ -226,7 +226,7 @@ class FlashcardViewTests(TestCase):
             name="Empty Deck",
             creator=self.user
         )
-        
+
         self.client.force_login(self.user)
         response = self.client.get(reverse('flashcard_study', kwargs={'slug': deck.slug}))
         self.assertEqual(response.status_code, 302)
@@ -237,12 +237,12 @@ class FlashcardViewTests(TestCase):
             name="Test Deck",
             creator=self.user
         )
-        
+
         # Owner can edit
         self.client.force_login(self.user)
         response = self.client.get(reverse('flashcard_deck_edit', kwargs={'slug': deck.slug}))
         self.assertEqual(response.status_code, 200)
-        
+
         # Other user cannot edit
         self.client.force_login(self.other_user)
         response = self.client.get(reverse('flashcard_deck_edit', kwargs={'slug': deck.slug}))
@@ -254,12 +254,12 @@ class FlashcardViewTests(TestCase):
             name="Test Deck",
             creator=self.user
         )
-        
+
         # Other user cannot delete
         self.client.force_login(self.other_user)
         response = self.client.get(reverse('flashcard_deck_delete', kwargs={'slug': deck.slug}))
         self.assertEqual(response.status_code, 404)
-        
+
         # Owner can delete
         self.client.force_login(self.user)
         response = self.client.post(reverse('flashcard_deck_delete', kwargs={'slug': deck.slug}))

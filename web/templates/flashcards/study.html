@@ -15,12 +15,12 @@
              class="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300">
             <i class="fas fa-arrow-left mr-2"></i>Back to {{ deck.name }}
           </a>
-          
+
           <div class="text-sm text-gray-500 dark:text-gray-400">
             <span id="current-card">1</span> / {{ card_count }}
           </div>
         </div>
-        
+
         <h1 class="text-3xl font-bold mb-2 text-gray-900 dark:text-white">
           <i class="fas fa-graduation-cap mr-3 text-teal-500"></i>Study: {{ deck.name }}
         </h1>
@@ -54,7 +54,7 @@
                 </div>
               </div>
             </div>
-            
+
             <!-- Back of card -->
             <div id="card-back" class="absolute w-full h-full bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center p-8 backface-hidden transform rotateY-180">
               <div class="w-full">
@@ -77,25 +77,25 @@
 
       <!-- Navigation Controls -->
       <div class="flex justify-between items-center">
-        <button id="prev-btn" 
-                onclick="previousCard()" 
+        <button id="prev-btn"
+                onclick="previousCard()"
                 class="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-lg transition duration-200 inline-flex items-center">
           <i class="fas fa-chevron-left mr-2"></i>Previous
         </button>
-        
+
         <div class="text-center">
-          <button onclick="shuffleCards()" 
+          <button onclick="shuffleCards()"
                   class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 inline-flex items-center mr-3">
             <i class="fas fa-random mr-2"></i>Shuffle
           </button>
-          <button onclick="restartDeck()" 
+          <button onclick="restartDeck()"
                   class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200 inline-flex items-center">
             <i class="fas fa-redo mr-2"></i>Restart
           </button>
         </div>
-        
-        <button id="next-btn" 
-                onclick="nextCard()" 
+
+        <button id="next-btn"
+                onclick="nextCard()"
                 class="bg-teal-600 hover:bg-teal-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white font-bold py-3 px-6 rounded-lg transition duration-200 inline-flex items-center">
           Next<i class="fas fa-chevron-right ml-2"></i>
         </button>
@@ -111,11 +111,11 @@
             <h3 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Study Complete!</h3>
             <p class="text-gray-600 dark:text-gray-300 mb-6">You've studied all {{ card_count }} cards in this deck.</p>
             <div class="flex space-x-3 justify-center">
-              <button onclick="restartDeck()" 
+              <button onclick="restartDeck()"
                       class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
                 Study Again
               </button>
-              <a href="{% url 'flashcard_deck_detail' deck.slug %}" 
+              <a href="{% url 'flashcard_deck_detail' deck.slug %}"
                  class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg transition duration-200">
                 Back to Deck
               </a>
@@ -162,16 +162,16 @@
       const card = flashcards[currentCardIndex];
       document.getElementById('front-content').textContent = card.front;
       document.getElementById('back-content').textContent = card.back;
-      
+
       // Reset card to front side
       isFlipped = false;
       document.getElementById('card-inner').classList.remove('card-flipped');
-      
+
       // Update counter and progress
       document.getElementById('current-card').textContent = currentCardIndex + 1;
       const progress = ((currentCardIndex + 1) / flashcards.length) * 100;
       document.getElementById('progress-bar').style.width = progress + '%';
-      
+
       // Update navigation buttons
       document.getElementById('prev-btn').disabled = currentCardIndex === 0;
       document.getElementById('next-btn').disabled = currentCardIndex === flashcards.length - 1;

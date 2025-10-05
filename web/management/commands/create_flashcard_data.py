@@ -32,14 +32,36 @@ class Command(BaseCommand):
 
         if created:
             python_cards = [
-                ("What is Python?", "Python is a high-level, interpreted programming language known for its simple syntax and readability."),
+                (
+                    "What is Python?",
+                    "Python is a high-level, interpreted programming language "
+                    "known for its simple syntax and readability.",
+                ),
                 ("What does 'print()' do?", "The print() function displays output to the console or terminal."),
-                ("How do you create a variable in Python?", "You create a variable by assigning a value: variable_name = value"),
-                ("What is a list in Python?", "A list is an ordered collection of items that can be changed (mutable). Example: [1, 2, 3]"),
-                ("What is the difference between '==' and 'is'?", "'==' compares values, while 'is' compares object identity (memory location)."),
-                ("What is a function?", "A function is a reusable block of code that performs a specific task. Defined with 'def'."),
-                ("What is indentation used for in Python?", "Indentation defines code blocks and scope, replacing braces used in other languages."),
-                ("What is a dictionary?", "A dictionary is an unordered collection of key-value pairs. Example: {'key': 'value'}"),
+                (
+                    "How do you create a variable in Python?",
+                    "You create a variable by assigning a value: variable_name = value",
+                ),
+                (
+                    "What is a list in Python?",
+                    "A list is an ordered collection of items that can be changed (mutable). Example: [1, 2, 3]",
+                ),
+                (
+                    "What is the difference between '==' and 'is'?",
+                    "'==' compares values, while 'is' compares object identity (memory location).",
+                ),
+                (
+                    "What is a function?",
+                    "A function is a reusable block of code that performs a specific task. Defined with 'def'.",
+                ),
+                (
+                    "What is indentation used for in Python?",
+                    "Indentation defines code blocks and scope, replacing braces used in other languages.",
+                ),
+                (
+                    "What is a dictionary?",
+                    "A dictionary is an unordered collection of key-value pairs. Example: {'key': 'value'}",
+                ),
             ]
 
             for i, (front, back) in enumerate(python_cards, 1):
@@ -66,7 +88,10 @@ class Command(BaseCommand):
                 ("What is the quadratic formula?", "x = (-b ± √(b²-4ac)) / 2a"),
                 ("What is the area of a circle?", "A = πr², where r is the radius"),
                 ("What is the slope formula?", "m = (y₂ - y₁) / (x₂ - x₁)"),
-                ("What is the definition of a prime number?", "A natural number greater than 1 that has no positive divisors other than 1 and itself."),
+                (
+                    "What is the definition of a prime number?",
+                    "A natural number greater than 1 that has no positive divisors other than 1 and itself.",
+                ),
                 ("What is the derivative of x²?", "2x"),
                 ("What is the sum of angles in a triangle?", "180 degrees or π radians"),
                 ("What is the distance formula?", "d = √((x₂-x₁)² + (y₂-y₁)²)"),
