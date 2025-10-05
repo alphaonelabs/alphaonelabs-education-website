@@ -847,6 +847,21 @@ def course_detail(request, slug):
     for item in rating_counts:
         rating_distribution[item["rating"]] = item["count"]
 
+    # Get next session for waiting room functionality
+    next_session = None
+    user_in_session_waiting_room = False
+
+    if request.user.is_authenticated:
+        # Get the next upcoming session for this course
+        next_session = course.sessions.filter(start_time__gt=timezone.now()).order_by("start_time").first()
+
+        # Check if user is in the session waiting room
+        try:
+            session_waiting_room = WaitingRoom.objects.get(course=course, status="open")
+            user_in_session_waiting_room = request.user in session_waiting_room.participants.all()
+        except WaitingRoom.DoesNotExist:
+            user_in_session_waiting_room = False
+
     # Build the absolute discount URL using the discount view's URL name.
     from urllib.parse import urlencode
 
@@ -875,6 +890,8 @@ def course_detail(request, slug):
         "rating_distribution": rating_distribution,
         "reviews_num": reviews_num,
         "discount_url": discount_url,
+        "next_session": next_session,
+        "user_in_session_waiting_room": user_in_session_waiting_room,
     }
 
     return render(request, "courses/detail.html", context)

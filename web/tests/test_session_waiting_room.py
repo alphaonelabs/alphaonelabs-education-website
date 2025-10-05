@@ -169,3 +169,43 @@ class SessionWaitingRoomTestCase(TestCase):
         response = self.client.post(leave_url)
         self.assertEqual(response.status_code, 302)
         self.assertIn("/accounts/login/", response.url)
+
+    def test_course_detail_shows_waiting_room_when_all_sessions_past(self):
+        """Test that course detail page shows waiting room option when all sessions are in the past."""
+        # Delete the future session so all sessions are in the past
+        self.future_session.delete()
+
+        self.client.login(username="student", password="testpass123")
+
+        url = reverse("course_detail", kwargs={"slug": self.course.slug})
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        # Check that next_session is None
+        self.assertIsNone(response.context["next_session"])
+        # Check that user_in_session_waiting_room is in context
+        self.assertIn("user_in_session_waiting_room", response.context)
+        self.assertFalse(response.context["user_in_session_waiting_room"])
+        # Check that the waiting room message appears in the page
+        self.assertContains(response, "All sessions have ended")
+        self.assertContains(response, "Join waiting room for next session")
+
+    def test_course_detail_waiting_room_already_joined(self):
+        """Test that course detail page shows correct status when user is already in waiting room."""
+        # Delete the future session so all sessions are in the past
+        self.future_session.delete()
+
+        # Create waiting room and add student
+        waiting_room = WaitingRoom.objects.create(course=self.course, status="open")
+        waiting_room.participants.add(self.student)
+
+        self.client.login(username="student", password="testpass123")
+
+        url = reverse("course_detail", kwargs={"slug": self.course.slug})
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context["next_session"])
+        self.assertTrue(response.context["user_in_session_waiting_room"])
+        self.assertContains(response, "You're in the waiting room for the next session")
+        self.assertContains(response, "Leave")
