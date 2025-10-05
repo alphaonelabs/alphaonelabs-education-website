@@ -393,6 +393,9 @@ SLACK_WEBHOOK_URL = env.str("SLACK_WEBHOOK_URL", default="")
 # Slack webhook for email notifications
 EMAIL_SLACK_WEBHOOK = env.str("EMAIL_SLACK_WEBHOOK", default=SLACK_WEBHOOK_URL)
 
+# YouTube Live Streaming
+YOUTUBE_STREAM_KEY = env.str("YOUTUBE_STREAM_KEY", default="")
+
 LANGUAGES = [
     ("en", "English"),
     ("es", "Spanish"),
