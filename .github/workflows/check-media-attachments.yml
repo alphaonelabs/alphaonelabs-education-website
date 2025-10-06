@@ -72,12 +72,16 @@ jobs:
             if (mediaFound) {
               console.log('✅ Screenshot or media found in the PR.');
               if (botComment) {
-                await github.rest.issues.deleteComment({
-                  owner,
-                  repo,
-                  comment_id: botComment.id,
-                });
-                console.log('Removed previous warning comment.');
+                try {
+                  await github.rest.issues.deleteComment({
+                    owner,
+                    repo,
+                    comment_id: botComment.id,
+                  });
+                  console.log('Removed previous warning comment.');
+                } catch (e) {
+                  console.warn(`Could not delete previous comment (likely fork perms): ${e.status || ''}`);
+                }
               }
               return;
             }
