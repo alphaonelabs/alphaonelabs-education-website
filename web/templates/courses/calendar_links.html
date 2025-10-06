@@ -23,7 +23,7 @@
               <time datetime="{{ session.start_time|date:'c' }}">{{ session.start_time|time:"g:i A" }}</time>
               -
               <time datetime="{{ session.end_time|date:'c' }}">{{ session.end_time|time:"g:i A" }}</time>
-              <span class="ml-1 text-gray-500 dark:text-gray-300"">({{ session.start_time|date:"e" }})</span>
+              <span class="ml-1 text-gray-500 dark:text-gray-300">({{ session.start_time|date:"e" }})</span>
             </p>
             {% if session.is_virtual %}
               <p class="mb-2 text-black dark:text-white">
@@ -60,7 +60,7 @@
               <a href="{{ calendar_links.outlook }}"
                  target="_blank"
                  rel="noopener noreferrer"
-                 class="block p-4 border rounded-lg hover:bg-gray-100 transition-colors dark:hover:bg-gray-700">
+                 class="block p-4 border rounded-lg hover:bg-gray-100 transition-colors dark:hover:bg-gray-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600">
                 <div class="flex justify-between items-center">
                   <div class="flex items-center space-x-2">
                     <!-- Outlook Icon -->
@@ -74,7 +74,7 @@
               </a>
               <!-- iCal Feed -->
               <a href="{% url 'calendar_feed' %}"
-                 class="block p-4 border rounded-lg hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600  dark:hover:bg-gray-700">
+                 class="block p-4 border rounded-lg hover:bg-gray-100 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-600 dark:hover:bg-gray-700">
                 <div class="flex justify-between items-center">
                   <div class="flex items-center space-x-2">
                     <!-- iCal / Calendar Icon -->
