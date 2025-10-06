@@ -65,7 +65,7 @@ jobs:
                 const content = Buffer.from(fileData.content, 'base64').toString('utf8');
                 
                 // Check for images without alt attributes
-                const imgWithoutAlt = content.match(/<img(?![^>]*\salt=)[^>]*>/gi);
+                const imgWithoutAlt = content.match(/<img(?![^>]*\balt=)[^>]*>/gi);
                 if (imgWithoutAlt && imgWithoutAlt.length > 0) {
                   hasIssues = true;
                   issues.push(`**${file.filename}**: Found ${imgWithoutAlt.length} image(s) without alt attributes`);
@@ -87,9 +87,10 @@ jobs:
                   }
                 }
                 
-                // Check for missing figure captions for accessibility
-                const figuresWithoutCaption = content.match(/<figure(?![^>]*<figcaption)[^>]*>[\s\S]*?<\/figure>/gi);
-                if (figuresWithoutCaption && figuresWithoutCaption.length > 0) {
+                // Find all <figure>...</figure> blocks and check if they lack <figcaption>
+                const figureBlocks = Array.from(content.matchAll(/<figure[^>]*>([\s\S]*?)<\/figure>/gi));
+                const figuresWithoutCaption = figureBlocks.filter(match => !/<figcaption[\s>]/i.test(match[1]));
+                if (figuresWithoutCaption.length > 0) {
                   issues.push(`**${file.filename}**: Found ${figuresWithoutCaption.length} figure(s) without figcaption for accessibility`);
                 }
                 
