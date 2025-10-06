@@ -32,11 +32,10 @@ jobs:
             // --- 1. Get PR body + comments ---
             const prBody = context.payload.pull_request.body || '';
 
-            const { data: comments } = await github.rest.issues.listComments({
-              owner,
-              repo,
-              issue_number: prNumber,
-            });
+            const comments = await github.paginate(
+              github.rest.issues.listComments,
+              { owner, repo, issue_number: prNumber }
+            );
 
             const allCommentsText = comments.map(comment => comment.body || '').join('\n');
             const combinedText = prBody + '\n' + allCommentsText;
