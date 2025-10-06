@@ -1,162 +1,91 @@
-name: Check PR for media attachments when HTML files change
+name: Check PR for Screenshots when HTML changes
 
 on:
   pull_request:
-    types: [opened, synchronize]
-    # optionally: [opened, synchronize, reopened]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '**/*.html'
 
 jobs:
-  check-media-attachments:
+  check-for-screenshots:
     runs-on: ubuntu-latest
-    name: Check media attachments in HTML files
+    name: Check for PR screenshots
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Check for media attachments in HTML files
-        uses: actions/github-script@v6
+      - name: Check for screenshots in PR description or comments
+        uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const { owner, repo } = context.repo;
-            const { number } = context.payload.pull_request;
-            
-            console.log(`Checking PR #${number} for media attachments in HTML files`);
-            
-            // Get the list of files changed in this PR
-            const { data: files } = await github.rest.pulls.listFiles({
-              owner,
-              repo,
-              pull_number: number
-            });
-            
-            // Filter for HTML files that were added or modified
-            const htmlFiles = files.filter(file => 
-              file.filename.endsWith('.html') && 
-              (file.status === 'added' || file.status === 'modified')
-            );
-            
-            if (htmlFiles.length === 0) {
-              console.log('No HTML files were changed in this PR.');
-              return;
-            }
-            
-            console.log(`Found ${htmlFiles.length} HTML file(s) to check:`);
-            htmlFiles.forEach(file => console.log(`- ${file.filename}`));
-            
-            let hasIssues = false;
-            const issues = [];
-            const mediaReferences = [];
-            
-            for (const file of htmlFiles) {
-              console.log(`\nAnalyzing ${file.filename}...`);
-              
-              try {
-                // Get file content from the PR branch
-                const { data: fileData } = await github.rest.repos.getContent({
-                  owner,
-                  repo,
-                  path: file.filename,
-                  ref: context.payload.pull_request.head.sha
-                });
-                
-                const content = Buffer.from(fileData.content, 'base64').toString('utf8');
-                
-                // Check for images without alt attributes
-                const imgWithoutAlt = content.match(/<img(?![^>]*\balt=)[^>]*>/gi);
-                if (imgWithoutAlt && imgWithoutAlt.length > 0) {
-                  hasIssues = true;
-                  issues.push(`**${file.filename}**: Found ${imgWithoutAlt.length} image(s) without alt attributes`);
-                  console.log(`  - Found ${imgWithoutAlt.length} img tag(s) without alt attributes`);
-                }
-                
-                // Check for media files referenced
-                const mediaMatches = content.match(/(src|href)=["'][^"']*\.(jpg|jpeg|png|gif|webp|svg|mp4|avi|mov|pdf)["']/gi);
-                if (mediaMatches && mediaMatches.length > 0) {
-                  mediaReferences.push(`**${file.filename}**: References ${mediaMatches.length} media file(s)`);
-                  console.log(`  - Found ${mediaMatches.length} media reference(s)`);
-                  
-                  // Check for large image formats that could be optimized
-                  const unoptimizedImages = mediaMatches.filter(match => 
-                    /\.(jpg|jpeg|png)["']/i.test(match)
-                  );
-                  if (unoptimizedImages.length > 0) {
-                    issues.push(`**${file.filename}**: Consider using WebP format for ${unoptimizedImages.length} image(s) for better performance`);
-                  }
-                }
-                
-                // Find all <figure>...</figure> blocks and check if they lack <figcaption>
-                const figureBlocks = Array.from(content.matchAll(/<figure[^>]*>([\s\S]*?)<\/figure>/gi));
-                const figuresWithoutCaption = figureBlocks.filter(match => !/<figcaption[\s>]/i.test(match[1]));
-                if (figuresWithoutCaption.length > 0) {
-                  issues.push(`**${file.filename}**: Found ${figuresWithoutCaption.length} figure(s) without figcaption for accessibility`);
-                }
-                
-              } catch (error) {
-                console.error(`Error processing ${file.filename}: ${error.message}`);
-                issues.push(`**${file.filename}**: Could not analyze file - ${error.message}`);
-              }
-            }
-            
-            // Create summary comment
-            let commentBody = '## 📸 Media Attachments Analysis\n\n';
-            
-            if (mediaReferences.length > 0) {
-              commentBody += '### Media Files Found\n';
-              commentBody += mediaReferences.map(ref => `- ${ref}`).join('\n') + '\n\n';
-            }
-            
-            if (hasIssues) {
-              commentBody += '### ⚠️ Issues Found\n';
-              commentBody += issues.map(issue => `- ${issue}`).join('\n') + '\n\n';
-              commentBody += '**Recommendations:**\n';
-              commentBody += '- Add `alt` attributes to all images for accessibility\n';
-              commentBody += '- Consider using WebP format for better performance\n';
-              commentBody += '- Add `<figcaption>` to `<figure>` elements for screen readers\n\n';
-            } else {
-              commentBody += '### ✅ All Checks Passed\n';
-              commentBody += 'No media-related issues found in the HTML files.\n\n';
-            }
-            
-            commentBody += '*This check was automatically performed when HTML files were modified.*';
-            
-            // Check if we already commented on this PR
+            const prNumber = context.payload.pull_request.number;
+            const botCommentIdentifier = '<!-- media-check-bot -->';
+
+            console.log(`Checking PR #${prNumber} for screenshots because HTML files were changed.`);
+
+            // --- 1. Get PR body + comments ---
+            const prBody = context.payload.pull_request.body || '';
+
             const { data: comments } = await github.rest.issues.listComments({
               owner,
               repo,
-              issue_number: number,
+              issue_number: prNumber,
             });
-            
+
+            const allCommentsText = comments.map(comment => comment.body || '').join('\n');
+            const combinedText = prBody + '\n' + allCommentsText;
+
+            // --- 2. Look for actual media (image/video uploads) ---
+            const mediaRegex = /(https:\/\/user-images\.githubusercontent\.com\/\d+\/.+\.(png|jpe?g|gif|webp|mp4|mov))|(!\[.*\]\(.*\.(png|jpe?g|gif|webp)\))/i;
+            const mediaFound = mediaRegex.test(combinedText);
+
+            // --- 3. Find previous bot comment ---
             const botComment = comments.find(comment =>
-              comment.user.login === 'github-actions[bot]' &&
-              comment.body.includes('📸 Media Attachments Analysis')
+              comment.user?.login === 'github-actions[bot]' &&
+              comment.body?.includes(botCommentIdentifier)
             );
+
+            if (mediaFound) {
+              console.log('✅ Screenshot or media found in the PR.');
+              if (botComment) {
+                await github.rest.issues.deleteComment({
+                  owner,
+                  repo,
+                  comment_id: botComment.id,
+                });
+                console.log('Removed previous warning comment.');
+              }
+              return;
+            }
+
+            // --- 4. Post or update warning comment ---
+            const commentBody = `${botCommentIdentifier}
             
+            ## Screenshot Missing
+
+            You've modified **HTML files**, but no screenshots or recordings were found in the PR description or comments.
+
+            *Please attach a screenshot or GIF demonstrating the change.*`;
+
             if (botComment) {
-              // Update existing comment
               await github.rest.issues.updateComment({
                 owner,
                 repo,
                 comment_id: botComment.id,
-                body: commentBody
+                body: commentBody,
               });
-              console.log('Updated existing media attachments comment');
+              console.log('Updated existing warning comment.');
             } else {
-              // Create new comment
               await github.rest.issues.createComment({
                 owner,
                 repo,
-                issue_number: number,
-                body: commentBody
+                issue_number: prNumber,
+                body: commentBody,
               });
-              console.log('Created new media attachments comment');
+              console.log('Created a new warning comment.');
             }
-            
-            // Don't fail the workflow, just inform
-            if (hasIssues) {
-              console.log('⚠️ Media attachment issues found, but not failing the workflow');
-            } else {
-              console.log('✅ All media attachment checks passed!');
-            }
+
+            // --- 5. Fail workflow to block merging ---
+            core.setFailed('Missing screenshots for HTML changes. Please add one to continue.');
