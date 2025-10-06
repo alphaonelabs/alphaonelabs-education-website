@@ -303,6 +303,38 @@ class PageLoadTests(BaseViewTest):
         self.assertTrue("form" in response.context)
         self.assertIsInstance(response.context["form"], TeachForm)
 
+    def test_index_shows_recent_courses(self):
+        """Test that index page shows 6 most recent published courses"""
+        # Create 8 published courses with different creation times
+        for i in range(8):
+            Course.objects.create(
+                title=f"Test Course {i}",
+                description=f"Test Description {i}",
+                teacher=self.teacher,
+                learning_objectives=f"Test Objectives {i}",
+                price=99.99,
+                max_students=50,
+                subject=self.subject,
+                level="beginner",
+                status="published",
+                is_featured=(i < 3),  # Only first 3 are featured
+            )
+
+        # Get the index page
+        response = self.client.get(self.urls_to_test["index"])
+        self.assertEqual(response.status_code, 200)
+
+        # Check that featured_courses contains 6 courses
+        featured_courses = response.context["featured_courses"]
+        self.assertEqual(len(featured_courses), 6)
+
+        # Verify they are the 6 most recent courses (ordered by created_at descending)
+        # The most recently created course should be first
+        course_titles = [course.title for course in featured_courses]
+        # Courses are created in order 0-7, so most recent should be 7, 6, 5, 4, 3, 2
+        expected_titles = [f"Test Course {i}" for i in range(7, 1, -1)]
+        self.assertEqual(course_titles, expected_titles)
+
 
 class CourseInvitationTests(TestCase):
     def setUp(self):

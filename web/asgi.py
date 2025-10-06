@@ -20,6 +20,7 @@ import django
 from channels.auth import AuthMiddlewareStack  # type: ignore
 from channels.routing import ProtocolTypeRouter, URLRouter  # type: ignore
 from django.core.asgi import get_asgi_application
+from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 
 # Initialize Django settings
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "web.settings")
@@ -39,6 +40,9 @@ channels_application = ProtocolTypeRouter(  # type: ignore
         "websocket": AuthMiddlewareStack(URLRouter(websocket_urlpatterns)),  # type: ignore
     }
 )
+
+# Wrap the entire router so both HTTP and WebSocket errors reach Sentry
+channels_application = SentryAsgiMiddleware(channels_application)
 
 
 async def application(
