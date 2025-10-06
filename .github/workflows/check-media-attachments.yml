@@ -42,8 +42,27 @@ jobs:
             const combinedText = prBody + '\n' + allCommentsText;
 
             // --- 2. Look for actual media (image/video uploads) ---
-            const mediaRegex = /(https:\/\/user-images\.githubusercontent\.com\/\d+\/.+\.(png|jpe?g|gif|webp|mp4|mov))|(!\[.*\]\(.*\.(png|jpe?g|gif|webp)\))/i;
-            const mediaFound = mediaRegex.test(combinedText);
+
+            // Extract URLs from Markdown image syntax (![alt](url))
+            const mdImageUrls = [...combinedText.matchAll(/!\[[^\]]*\]\(([^)]+)\)/gi)].map(m => m[1]);
+
+            // Extract all plain URLs in the text
+            const allUrls = [...combinedText.matchAll(/\bhttps?:\/\/[^\s)>"']+/gi)].map(m => m[0]);
+
+            // Merge and deduplicate all URLs
+            const candidates = [...new Set([...mdImageUrls, ...allUrls])];
+
+            // Define file extensions that count as media
+            const mediaExt = /\.(?:png|jpe?g|gif|webp|svg|apng|mp4|mov|webm)$/i;
+
+            // Define known GitHub hosts for attachments (including new user-attachments paths)
+            const ghAssetsHost = /(?:^|\/\/)(?:user-images\.githubusercontent\.com|private-user-images\.githubusercontent\.com|github\.com\/user-attachments\/assets|github-production-user-asset-[^/]+\.s3\.amazonaws\.com)\b/i;
+
+            // Filter candidate URLs: either matches media extensions OR GitHub attachment hosts
+            const mediaUrls = candidates.filter(u => mediaExt.test(u) || ghAssetsHost.test(u));
+
+            // Final flag: true if at least one media URL found
+            const mediaFound = mediaUrls.length > 0;
 
             // --- 3. Find previous bot comment ---
             const botComment = comments.find(comment =>
