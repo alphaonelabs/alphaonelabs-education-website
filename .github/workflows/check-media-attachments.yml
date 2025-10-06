@@ -62,7 +62,7 @@ jobs:
 
             // --- 4. Post or update warning comment ---
             const commentBody = `${botCommentIdentifier}
-            
+
             ## Screenshot Missing
 
             You've modified **HTML files**, but no screenshots or recordings were found in the PR description or comments.
