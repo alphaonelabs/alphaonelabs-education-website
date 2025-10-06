@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import requests
 from django.conf import settings
@@ -20,61 +20,66 @@ class SlackNotificationEmailBackend:
 
         Behaviour:
         - In DEBUG always use console backend.
-        - In production attempt to initialise SendGrid; on any failure (missing
-          key, invalid credentials, HTTP 401 during lazy auth) fall back to
-          console backend and mark sendgrid as disabled so future sends do not
-          keep retrying unnecessarily.
+        - In production attempt to send via Mailgun HTTP API using
+          MAILGUN_SENDING_KEY. On any failure, fall back to console backend
+          semantics (no network send, just log) for the remainder of the
+          process lifetime to avoid repeated errors.
         """
-        self.webhook_url = getattr(settings, "EMAIL_SLACK_WEBHOOK", None)
-        self.sendgrid_enabled = False
+        # Prefer the global SLACK_WEBHOOK_URL; fall back to legacy EMAIL_SLACK_WEBHOOK
+        self.webhook_url = getattr(settings, "SLACK_WEBHOOK_URL", None) or getattr(
+            settings, "EMAIL_SLACK_WEBHOOK", None
+        )
+        self.mailgun_enabled = False
         self._fallback_reason: Optional[str] = None
+        # Allow overriding the Mailgun API base for EU region accounts
+        # Defaults to US region: https://api.mailgun.net
+        self.mailgun_api_base: str = getattr(settings, "MAILGUN_API_BASE", "https://api.mailgun.net").rstrip("/")
 
         if settings.DEBUG:
             self.backend = ConsoleBackend(**kwargs)
             self._fallback_reason = "debug-mode"
         else:
-            # Attempt SendGrid initialisation
-            try:
-                api_key = getattr(settings, "SENDGRID_API_KEY", None) or ""
-                if not api_key:
-                    raise RuntimeError("SENDGRID_API_KEY missing; disabling SendGrid backend")
-                from sendgrid_backend.mail import SendgridBackend  # local import so failure is caught
-
-                self.backend = SendgridBackend(**kwargs)
-                self.sendgrid_enabled = True
-            except Exception as e:  # broad: we explicitly want to swallow any init error
+            # Enable Mailgun if the key is present; we send via HTTP in send_messages
+            api_key = getattr(settings, "MAILGUN_SENDING_KEY", None) or getattr(settings, "MAILGUN_API_KEY", None)
+            if api_key:
+                self.backend = None  # Mailgun HTTP path; no Django backend instance needed
+                self.mailgun_enabled = True
+            else:
                 self.backend = ConsoleBackend(**kwargs)
-                self._fallback_reason = str(e)
-                logger.warning(
-                    "SendGrid backend disabled; using console backend instead (reason=%s)",
-                    self._fallback_reason,
-                )
+                self._fallback_reason = "MAILGUN_SENDING_KEY missing"
+                logger.warning("Mailgun disabled; using console backend instead (reason=%s)", self._fallback_reason)
 
     def open(self):
-        return self.backend.open()
+        if getattr(self, "backend", None):
+            return self.backend.open()
+        return True
 
     def close(self):
-        return self.backend.close()
+        if getattr(self, "backend", None):
+            return self.backend.close()
+        return True
 
     def send_messages(self, email_messages):  # type: ignore[override]
         """Send a batch of messages with graceful failure handling.
 
-        If SendGrid returns an Unauthorized (401) or any other exception, we:
+        If Mailgun returns an error or any exception occurs, we:
         - Log a warning (NOT exception to avoid Sentry noise unless configured)
         - Log each email basic metadata so it's not lost
         - Return 0 to the caller (Django's email API treats that as 'not sent')
         """
-        # If previously disabled, don't attempt network sends repeatedly.
-        if not self.sendgrid_enabled:
+        # If previously disabled or in console fallback, don't attempt network sends repeatedly.
+        if not self.mailgun_enabled:
             return self._log_fallback(email_messages)
 
         try:
-            sent_count = self.backend.send_messages(email_messages)
+            sent_count = 0
+            for message in email_messages:
+                ok = self._send_via_mailgun(message)
+                if ok:
+                    sent_count += 1
         except Exception as e:  # noqa: BLE001
-            # Downgrade to warning; include class name for quick triage.
-            logger.warning("Email send failed via SendGrid (%s): %s", e.__class__.__name__, e)
-            # Disable further attempts this process lifetime to reduce noise.
-            self.sendgrid_enabled = False
+            logger.warning("Email send failed via Mailgun (%s): %s", e.__class__.__name__, e)
+            self.mailgun_enabled = False
             self._fallback_reason = str(e)
             return self._log_fallback(email_messages)
 
@@ -132,3 +137,73 @@ class SlackNotificationEmailBackend:
 
         except Exception as e:
             logger.exception(f"Error sending Slack notification: {str(e)}")
+
+    # ---- Mailgun HTTP helpers ----
+    def _mailgun_auth_and_domain(self) -> Tuple[str, str]:
+        """Return (api_key, domain) for Mailgun.
+
+        - api_key from settings.MAILGUN_SENDING_KEY (or MAILGUN_API_KEY fallback)
+        - domain derived from DEFAULT_FROM_EMAIL/EMAIL_FROM if MAILGUN_DOMAIN is not set
+        """
+        api_key = getattr(settings, "MAILGUN_SENDING_KEY", None) or getattr(settings, "MAILGUN_API_KEY", None)
+        if not api_key:
+            raise RuntimeError("MAILGUN_SENDING_KEY not configured")
+
+        domain = getattr(settings, "MAILGUN_DOMAIN", None)
+        if not domain:
+            from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None) or getattr(settings, "EMAIL_FROM", None)
+            if not from_email or "@" not in from_email:
+                raise RuntimeError("Unable to infer Mailgun domain from DEFAULT_FROM_EMAIL/EMAIL_FROM")
+            domain = from_email.split("@", 1)[1]
+        return api_key, domain
+
+    def _send_via_mailgun(self, email_message) -> bool:
+        api_key, domain = self._mailgun_auth_and_domain()
+
+        # Basic fields
+        from_email = getattr(email_message, "from_email", None) or getattr(settings, "DEFAULT_FROM_EMAIL", "")
+        to_emails = email_message.to or []
+        subject = getattr(email_message, "subject", "")
+
+        # Determine text/html bodies
+        text_body = getattr(email_message, "body", None)
+        html_body = None
+        # EmailMultiAlternatives provides .alternatives as [(content, mimetype), ...]
+        for alt in getattr(email_message, "alternatives", []) or []:
+            try:
+                content, mimetype = alt
+            except Exception:  # pragma: no cover
+                continue
+            if mimetype == "text/html":
+                html_body = content
+                break
+
+        data = {
+            "from": from_email,
+            "to": to_emails,
+            "subject": subject,
+        }
+        if text_body:
+            data["text"] = text_body
+        if html_body:
+            data["html"] = html_body
+
+        # Attachments (best-effort minimal support)
+        files = []
+        for attachment in getattr(email_message, "attachments", []) or []:
+            try:
+                if isinstance(attachment, tuple) and len(attachment) in (2, 3):
+                    # (filename, content[, mimetype])
+                    filename = attachment[0]
+                    content = attachment[1]
+                    files.append(("attachment", (filename, content)))
+            except Exception:  # pragma: no cover
+                continue
+
+        url = f"{self.mailgun_api_base}/v3/{domain}/messages"
+        resp = requests.post(url, auth=("api", api_key), data=data, files=files if files else None, timeout=15)
+        if resp.status_code >= 200 and resp.status_code < 300:
+            return True
+        # Log and return False to trigger fallback logging for this message
+        logger.warning("Mailgun send failed (%s): %s", resp.status_code, resp.text[:500])
+        return False

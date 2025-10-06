@@ -41,17 +41,16 @@
             understanding is always within reach.
           </p>
         </div>
-        <!-- Featured Courses (3 across) -->
+        <!-- Recent Courses (2 columns x 3 rows) -->
         <div class="relative flex py-5 items-center mb-6">
           <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
           <div class="flex-shrink mx-4 flex items-center text-xl font-bold text-gray-800 dark:text-gray-200">
             <i class="fas fa-graduation-cap text-teal-300 dark:text-teal-300 mr-3"></i>
-            Featured Courses
-            <i class="fas fa-star text-yellow-400 ml-2"></i>
+            Recent Courses
           </div>
           <div class="flex-grow border-t border-gray-300 dark:border-gray-700"></div>
         </div>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <!-- Course Card 1 -->
           {% for course in featured_courses %}
             <!-- Course Card -->
@@ -171,7 +170,7 @@
               {% endif %}
             </div>
           {% empty %}
-            <p>No featured courses available.</p>
+            <p>No courses available.</p>
           {% endfor %}
         </div>
         <!-- Add view more link -->
