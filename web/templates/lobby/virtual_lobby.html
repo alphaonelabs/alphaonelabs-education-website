@@ -1,0 +1,377 @@
+{% extends "base.html" %}
+
+{% block title %}
+  Virtual Lobby
+{% endblock title %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="mb-8">
+      <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">Virtual Lobby</h1>
+      <p class="text-gray-600 dark:text-gray-300">Connect with other learners in real-time</p>
+    </div>
+    <!-- Lobby Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div class="flex items-center">
+          <div class="p-3 rounded-full bg-teal-100 dark:bg-teal-900">
+            <svg class="w-8 h-8 text-teal-600 dark:text-teal-300"
+                 fill="none"
+                 stroke="currentColor"
+                 viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Active Users</p>
+            <p id="participants-count"
+               class="text-2xl font-bold text-gray-900 dark:text-white">{{ participants_count }}</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div class="flex items-center">
+          <div class="p-3 rounded-full bg-green-100 dark:bg-green-900">
+            <svg class="w-8 h-8 text-green-600 dark:text-green-300"
+                 fill="none"
+                 stroke="currentColor"
+                 viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Your Status</p>
+            <p id="connection-status"
+               class="text-2xl font-bold text-gray-900 dark:text-white">Connecting...</p>
+          </div>
+        </div>
+      </div>
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <div class="flex items-center">
+          <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900">
+            <svg class="w-8 h-8 text-blue-600 dark:text-blue-300"
+                 fill="none"
+                 stroke="currentColor"
+                 viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </div>
+          <div class="ml-4">
+            <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Messages</p>
+            <p id="message-count"
+               class="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Main Lobby Area -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <!-- Virtual Space (Canvas Area) -->
+      <div class="lg:col-span-2">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Lobby Space</h2>
+          <div class="relative bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden"
+               style="height: 500px">
+            <canvas id="lobby-canvas"
+                    class="w-full h-full cursor-move"
+                    width="800"
+                    height="500"></canvas>
+            <div class="absolute bottom-4 left-4 bg-white dark:bg-gray-800 rounded-lg shadow px-4 py-2">
+              <p class="text-sm text-gray-600 dark:text-gray-400">Click and drag to move around the lobby</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Sidebar with Participants and Chat -->
+      <div class="lg:col-span-1 space-y-6">
+        <!-- Active Participants -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Active Participants</h3>
+          <div id="participants-list" class="space-y-2 max-h-64 overflow-y-auto">
+            {% for participant in active_participants %}
+              <div class="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                   data-username="{{ participant.user.username }}">
+                <div class="w-10 h-10 rounded-full bg-teal-300 dark:bg-teal-600 flex items-center justify-center text-white font-bold">
+                  {{ participant.user.username|slice:":1"|upper }}
+                </div>
+                <div>
+                  <p class="text-sm font-medium text-gray-900 dark:text-white">
+                    {{ participant.user.get_full_name|default:participant.user.username }}
+                  </p>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">@{{ participant.user.username }}</p>
+                </div>
+              </div>
+            {% empty %}
+              <p class="text-gray-500 dark:text-gray-400 text-sm">No active participants yet</p>
+            {% endfor %}
+          </div>
+        </div>
+        <!-- Chat Area -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Chat</h3>
+          <div id="chat-messages"
+               class="space-y-2 max-h-64 overflow-y-auto mb-4 p-2 bg-gray-50 dark:bg-gray-700 rounded-lg"></div>
+          <form id="chat-form" class="flex space-x-2">
+            <input type="text"
+                   id="chat-input"
+                   placeholder="Type a message..."
+                   class="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-300 dark:focus:ring-teal-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                   autocomplete="off" />
+            <button type="submit"
+                    class="bg-teal-300 hover:bg-teal-400 dark:bg-teal-600 dark:hover:bg-teal-700 text-white px-6 py-2 rounded-lg transition duration-200">
+              Send
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+      // WebSocket connection
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const lobbyId = 'main';
+      const wsUrl = `${protocol}//${window.location.host}/ws/lobby/${lobbyId}/`;
+      let socket = null;
+      let reconnectAttempts = 0;
+      const maxReconnectAttempts = 5;
+
+      // Canvas setup
+      const canvas = document.getElementById('lobby-canvas');
+      const ctx = canvas.getContext('2d');
+
+      // Store participants
+      const participants = new Map();
+      let myPosition = {
+          x: 400,
+          y: 300
+      };
+      let isDragging = false;
+
+      // Chat setup
+      const chatMessages = document.getElementById('chat-messages');
+      const chatForm = document.getElementById('chat-form');
+      const chatInput = document.getElementById('chat-input');
+      let messageCount = 0;
+
+      function connectWebSocket() {
+          socket = new WebSocket(wsUrl);
+
+          socket.onopen = function(e) {
+              console.log('WebSocket connected');
+              document.getElementById('connection-status').textContent = 'Connected';
+              document.getElementById('connection-status').classList.add('text-green-600');
+              reconnectAttempts = 0;
+          };
+
+          socket.onmessage = function(event) {
+              const data = JSON.parse(event.data);
+              console.log('Received:', data);
+
+              if (data.type === 'participants_list') {
+                  updateParticipantsList(data.participants);
+              } else if (data.type === 'participant_joined') {
+                  addParticipant(data.user);
+                  addSystemMessage(`${data.user.full_name} joined the lobby`);
+              } else if (data.type === 'participant_left') {
+                  removeParticipant(data.user.username);
+                  addSystemMessage(`${data.user.full_name} left the lobby`);
+              } else if (data.type === 'position_updated') {
+                  updateParticipantPosition(data.user.username, data.position_x, data.position_y);
+              } else if (data.type === 'chat_message') {
+                  addChatMessage(data.user.full_name, data.message);
+              }
+          };
+
+          socket.onerror = function(error) {
+              console.error('WebSocket error:', error);
+              document.getElementById('connection-status').textContent = 'Error';
+              document.getElementById('connection-status').classList.remove('text-green-600');
+              document.getElementById('connection-status').classList.add('text-red-600');
+          };
+
+          socket.onclose = function(event) {
+              console.log('WebSocket closed');
+              document.getElementById('connection-status').textContent = 'Disconnected';
+              document.getElementById('connection-status').classList.remove('text-green-600');
+
+              // Attempt to reconnect
+              if (reconnectAttempts < maxReconnectAttempts) {
+                  reconnectAttempts++;
+                  setTimeout(() => {
+                      console.log(`Reconnecting... (attempt ${reconnectAttempts})`);
+                      connectWebSocket();
+                  }, 2000 * reconnectAttempts);
+              }
+          };
+      }
+
+      function updateParticipantsList(participantsList) {
+          participants.clear();
+          participantsList.forEach(p => {
+              participants.set(p.username, {
+                  full_name: p.full_name,
+                  position_x: p.position_x,
+                  position_y: p.position_y
+              });
+          });
+          updateParticipantsCount();
+          renderLobby();
+      }
+
+      function addParticipant(user) {
+          participants.set(user.username, {
+              full_name: user.full_name,
+              position_x: user.position_x || 400,
+              position_y: user.position_y || 300
+          });
+          updateParticipantsCount();
+          renderLobby();
+      }
+
+      function removeParticipant(username) {
+          participants.delete(username);
+          updateParticipantsCount();
+          renderLobby();
+      }
+
+      function updateParticipantPosition(username, x, y) {
+          if (participants.has(username)) {
+              participants.get(username).position_x = x;
+              participants.get(username).position_y = y;
+              renderLobby();
+          }
+      }
+
+      function updateParticipantsCount() {
+          document.getElementById('participants-count').textContent = participants.size;
+      }
+
+      function renderLobby() {
+          // Clear canvas
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          // Draw background pattern
+          ctx.fillStyle = '#f3f4f6';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // Draw grid
+          ctx.strokeStyle = '#e5e7eb';
+          ctx.lineWidth = 1;
+          for (let i = 0; i < canvas.width; i += 50) {
+              ctx.beginPath();
+              ctx.moveTo(i, 0);
+              ctx.lineTo(i, canvas.height);
+              ctx.stroke();
+          }
+          for (let i = 0; i < canvas.height; i += 50) {
+              ctx.beginPath();
+              ctx.moveTo(0, i);
+              ctx.lineTo(canvas.width, i);
+              ctx.stroke();
+          }
+
+          // Draw participants
+          participants.forEach((participant, username) => {
+              drawAvatar(participant.position_x, participant.position_y, participant.full_name, username === '{{ user.username }}');
+          });
+
+          // Draw current user
+          drawAvatar(myPosition.x, myPosition.y, '{{ user.get_full_name|default:user.username }}', true);
+      }
+
+      function drawAvatar(x, y, name, isCurrentUser) {
+          // Draw circle
+          ctx.beginPath();
+          ctx.arc(x, y, 20, 0, 2 * Math.PI);
+          ctx.fillStyle = isCurrentUser ? '#5eead4' : '#6366f1';
+          ctx.fill();
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          // Draw initials
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 16px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(name.charAt(0).toUpperCase(), x, y);
+
+          // Draw name below avatar
+          ctx.fillStyle = '#1f2937';
+          ctx.font = '12px sans-serif';
+          ctx.fillText(name, x, y + 35);
+      }
+
+      function addChatMessage(sender, message) {
+          const messageEl = document.createElement('div');
+          messageEl.className = 'p-2 rounded-lg bg-white dark:bg-gray-600';
+          messageEl.innerHTML = `
+            <p class="text-xs font-medium text-teal-600 dark:text-teal-300">${sender}</p>
+            <p class="text-sm text-gray-900 dark:text-white">${message}</p>
+        `;
+          chatMessages.appendChild(messageEl);
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+
+          messageCount++;
+          document.getElementById('message-count').textContent = messageCount;
+      }
+
+      function addSystemMessage(message) {
+          const messageEl = document.createElement('div');
+          messageEl.className = 'p-2 rounded-lg bg-gray-100 dark:bg-gray-700';
+          messageEl.innerHTML = `
+            <p class="text-xs text-gray-500 dark:text-gray-400 italic">${message}</p>
+        `;
+          chatMessages.appendChild(messageEl);
+          chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      // Canvas mouse events
+      canvas.addEventListener('mousedown', (e) => {
+          isDragging = true;
+      });
+
+      canvas.addEventListener('mousemove', (e) => {
+          if (isDragging) {
+              const rect = canvas.getBoundingClientRect();
+              const scaleX = canvas.width / rect.width;
+              const scaleY = canvas.height / rect.height;
+
+              myPosition.x = Math.max(30, Math.min(canvas.width - 30, (e.clientX - rect.left) * scaleX));
+              myPosition.y = Math.max(30, Math.min(canvas.height - 30, (e.clientY - rect.top) * scaleY));
+
+              renderLobby();
+          }
+      });
+
+      canvas.addEventListener('mouseup', (e) => {
+          if (isDragging) {
+              isDragging = false;
+              // Send position update to server
+              if (socket && socket.readyState === WebSocket.OPEN) {
+                  socket.send(JSON.stringify({
+                      type: 'update_position',
+                      position_x: myPosition.x,
+                      position_y: myPosition.y
+                  }));
+              }
+          }
+      });
+
+      // Chat form submit
+      chatForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          const message = chatInput.value.trim();
+          if (message && socket && socket.readyState === WebSocket.OPEN) {
+              socket.send(JSON.stringify({
+                  type: 'chat_message',
+                  message: message
+              }));
+              chatInput.value = '';
+          }
+      });
+
+      // Initialize
+      connectWebSocket();
+      renderLobby();
+  </script>
+{% endblock content %}

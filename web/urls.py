@@ -124,6 +124,10 @@ urlpatterns += i18n_patterns(
     path("secure/toggle_star/<int:message_id>/", toggle_star_message, name="toggle_star_message"),
     # Virtual Lab Links
     path("virtual_lab/", include("web.virtual_lab.urls", namespace="virtual_lab")),
+    # Virtual Lobby Links
+    path("lobby/", views.virtual_lobby, name="virtual_lobby"),
+    path("lobby/<int:lobby_id>/join/", views.join_virtual_lobby, name="join_virtual_lobby"),
+    path("lobby/leave/", views.leave_virtual_lobby, name="leave_virtual_lobby"),
     # Social media sharing URLs
     path("social-media/", views.social_media_dashboard, name="social_media_dashboard"),
     path("social-media/post/<int:post_id>/", views.post_to_twitter, name="post_to_twitter"),

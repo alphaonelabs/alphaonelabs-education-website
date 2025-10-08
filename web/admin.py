@@ -53,6 +53,8 @@ from .models import (
     UserBadge,
     UserMembership,
     VideoRequest,
+    VirtualLobby,
+    VirtualLobbyParticipant,
     WaitingRoom,
     WebRequest,
 )
@@ -889,3 +891,31 @@ class VideoRequestAdmin(admin.ModelAdmin):
     list_display = ("title", "status", "category", "requester", "created_at")
     list_filter = ("status", "category")
     search_fields = ("title", "description", "requester__username")
+
+
+@admin.register(VirtualLobby)
+class VirtualLobbyAdmin(admin.ModelAdmin):
+    list_display = ("name", "is_active", "get_active_participants_count", "max_participants", "created_at")
+    list_filter = ("is_active", "created_at")
+    search_fields = ("name", "description")
+    readonly_fields = ("created_at", "updated_at")
+    fieldsets = (
+        (None, {"fields": ("name", "description", "is_active")}),
+        ("Capacity", {"fields": ("max_participants",)}),
+        ("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
+
+
+@admin.register(VirtualLobbyParticipant)
+class VirtualLobbyParticipantAdmin(admin.ModelAdmin):
+    list_display = ("user", "lobby", "joined_at", "last_active", "position_x", "position_y")
+    list_filter = ("lobby", "joined_at", "last_active")
+    search_fields = ("user__username", "user__email", "lobby__name")
+    raw_id_fields = ("user", "lobby")
+    readonly_fields = ("joined_at", "last_active")
+    date_hierarchy = "joined_at"
+    fieldsets = (
+        (None, {"fields": ("user", "lobby")}),
+        ("Position", {"fields": ("position_x", "position_y")}),
+        ("Timestamps", {"fields": ("joined_at", "last_active"), "classes": ("collapse",)}),
+    )

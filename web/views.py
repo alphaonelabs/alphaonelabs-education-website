@@ -8097,3 +8097,78 @@ def leave_session_waiting_room(request, course_slug):
         messages.info(request, "You are not in the session waiting room for this course.")
 
     return redirect("course_detail", slug=course_slug)
+
+
+@login_required
+def virtual_lobby(request):
+    """Main view for the virtual lobby."""
+    from .models import VirtualLobby, VirtualLobbyParticipant
+
+    # Get or create the main lobby
+    lobby, created = VirtualLobby.objects.get_or_create(
+        name="Main Lobby", defaults={"description": "Welcome to the main lobby! Connect with other learners."}
+    )
+
+    # Get active participants (those who were active in the last 5 minutes)
+    five_minutes_ago = timezone.now() - timedelta(minutes=5)
+    active_participants = VirtualLobbyParticipant.objects.filter(
+        lobby=lobby, last_active__gte=five_minutes_ago
+    ).select_related("user")
+
+    # Check if current user is already a participant
+    user_participant = VirtualLobbyParticipant.objects.filter(lobby=lobby, user=request.user).first()
+
+    context = {
+        "lobby": lobby,
+        "active_participants": active_participants,
+        "user_participant": user_participant,
+        "participants_count": active_participants.count(),
+    }
+
+    return render(request, "lobby/virtual_lobby.html", context)
+
+
+@login_required
+@require_POST
+def join_virtual_lobby(request, lobby_id):
+    """API endpoint to join the virtual lobby."""
+    from .models import VirtualLobby, VirtualLobbyParticipant
+
+    try:
+        lobby = get_object_or_404(VirtualLobby, id=lobby_id, is_active=True)
+
+        # Check if lobby is full
+        active_count = lobby.get_active_participants_count()
+        if active_count >= lobby.max_participants:
+            return JsonResponse({"success": False, "error": "Lobby is full"}, status=400)
+
+        # Add user to lobby participants
+        participant, created = VirtualLobbyParticipant.objects.get_or_create(lobby=lobby, user=request.user)
+
+        return JsonResponse(
+            {
+                "success": True,
+                "participant": {
+                    "username": request.user.username,
+                    "full_name": request.user.get_full_name() or request.user.username,
+                    "position_x": participant.position_x,
+                    "position_y": participant.position_y,
+                },
+            }
+        )
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=400)
+
+
+@login_required
+@require_POST
+def leave_virtual_lobby(request):
+    """API endpoint to leave the virtual lobby."""
+    from .models import VirtualLobbyParticipant
+
+    try:
+        VirtualLobbyParticipant.objects.filter(user=request.user).delete()
+        return JsonResponse({"success": True})
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)}, status=400)

@@ -3085,3 +3085,60 @@ class Response(models.Model):
 
     def __str__(self):
         return f"Response by {self.user.username} to {self.question.text}"
+
+
+class VirtualLobby(models.Model):
+    """Model for the global virtual lobby where all users can gather."""
+
+    name = models.CharField(max_length=200, default="Main Lobby")
+    description = models.TextField(blank=True, help_text="Description of the lobby")
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    max_participants = models.PositiveIntegerField(default=100, help_text="Maximum number of participants in the lobby")
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Virtual Lobby"
+        verbose_name_plural = "Virtual Lobbies"
+
+    def __str__(self) -> str:
+        return self.name
+
+    def get_active_participants_count(self):
+        """Return the number of active participants in the lobby."""
+        from datetime import timedelta
+
+        five_minutes_ago = timezone.now() - timedelta(minutes=5)
+        return self.participants.filter(last_active__gte=five_minutes_ago).count()
+
+
+class VirtualLobbyParticipant(models.Model):
+    """Model for tracking active participants in the virtual lobby."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="lobby_participations")
+    lobby = models.ForeignKey(VirtualLobby, on_delete=models.CASCADE, related_name="participants")
+    joined_at = models.DateTimeField(auto_now_add=True)
+    last_active = models.DateTimeField(auto_now=True)
+    position_x = models.FloatField(default=400.0, help_text="X coordinate position in the lobby")
+    position_y = models.FloatField(default=300.0, help_text="Y coordinate position in the lobby")
+
+    class Meta:
+        unique_together = ("lobby", "user")
+        ordering = ["-last_active"]
+        verbose_name = "Virtual Lobby Participant"
+        verbose_name_plural = "Virtual Lobby Participants"
+
+    def __str__(self):
+        return f"{self.user.username} in {self.lobby.name}"
+
+    def to_dict(self):
+        """Return participant data as dictionary for WebSocket communication."""
+        return {
+            "username": self.user.username,
+            "full_name": self.user.get_full_name() or self.user.username,
+            "joined_at": self.joined_at.isoformat(),
+            "position_x": self.position_x,
+            "position_y": self.position_y,
+            "last_active": self.last_active.isoformat(),
+        }
