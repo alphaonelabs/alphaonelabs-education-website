@@ -127,12 +127,58 @@ jobs:
               }
             }
 
+            // Check linked issues for media attachments
+            const issueMediaReferences = [];
+            const prBody = context.payload.pull_request.body || '';
+
+            // Extract issue numbers from PR body (e.g., "Fixes #123", "Closes #456", etc.)
+            const issueMatches = prBody.matchAll(/(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/gi);
+            const linkedIssues = [...new Set([...issueMatches].map(match => parseInt(match[1])))];
+
+            for (const issueNumber of linkedIssues) {
+              try {
+                const { data: issue } = await github.rest.issues.get({
+                  owner,
+                  repo,
+                  issue_number: issueNumber
+                });
+
+                const issueBody = issue.body || '';
+
+                // Check for media in issue body using same detection logic
+                const issueDirect = [...issueBody.matchAll(/\b(?:src|href|poster)\s*=\s*["']([^"']+\.(?:jpg|jpeg|png|gif|webp|svg|mp4|avi|mov|pdf))(?:\?[^"']*)?["']/gi)]
+                  .map(m => m[1])
+                  .filter(u => !/^data:/i.test(u));
+                const issueSrcset = [...issueBody.matchAll(/\bsrcset\s*=\s*["']([^"']+)["']/gi)]
+                  .flatMap(m => m[1].split(',').map(s => s.trim().split(/\s+/)[0]))
+                  .filter(u => /\.(?:jpg|jpeg|png|gif|webp|svg)$/i.test(u) && !/^data:/i.test(u));
+                const issueMedia = [...new Set([...issueDirect, ...issueSrcset])];
+
+                // Also check for direct image/video URLs in markdown format
+                const markdownMedia = [...issueBody.matchAll(/!\[([^\]]*)\]\(([^)]+\.(?:jpg|jpeg|png|gif|webp|svg|mp4))\)/gi)]
+                  .map(m => m[2]);
+                const allIssueMedia = [...new Set([...issueMedia, ...markdownMedia])];
+
+                if (allIssueMedia.length > 0) {
+                  issueMediaReferences.push(`**Issue #${issueNumber}** ([${issue.title}](${issue.html_url})): ${allIssueMedia.length} media file(s) found`);
+                  console.log(`  - Found ${allIssueMedia.length} media reference(s) in issue #${issueNumber}`);
+                }
+              } catch (error) {
+                console.log(`Could not check issue #${issueNumber}: ${error.message}`);
+              }
+            }
+
             // Create summary comment
             let commentBody = '## 📸 Media Attachments Analysis\n\n';
 
             if (mediaReferences.length > 0) {
-              commentBody += '### Media Files Found\n';
+              commentBody += '### Media Files Found in Changed HTML Files\n';
               commentBody += mediaReferences.map(ref => `- ${ref}`).join('\n') + '\n\n';
+            }
+
+            if (issueMediaReferences.length > 0) {
+              commentBody += '### Media Files Found in Linked Issues\n';
+              commentBody += issueMediaReferences.map(ref => `- ${ref}`).join('\n') + '\n\n';
             }
 
             if (hasIssues) {
@@ -142,7 +188,7 @@ jobs:
               commentBody += '- Add `alt` attributes to all images for accessibility\n';
               commentBody += '- Consider using WebP format for better performance\n';
               commentBody += '- Add `<figcaption>` to `<figure>` elements for screen readers\n\n';
-            } else {
+            } else if (mediaReferences.length === 0 && issueMediaReferences.length === 0) {
               commentBody += '### ✅ All Checks Passed\n';
               commentBody += 'No media-related issues found in the HTML files.\n\n';
             }
