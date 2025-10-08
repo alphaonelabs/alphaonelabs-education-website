@@ -94,12 +94,14 @@ from .forms import (
     StudentEnrollmentForm,
     StudyGroupForm,
     SuccessStoryForm,
+    SurveyForm,
     TeacherSignupForm,
     TeachForm,
     TeamGoalCompletionForm,
     TeamGoalForm,
     TeamInviteForm,
     UserRegistrationForm,
+    VideoRequestForm,
 )
 from .marketing import (
     generate_social_share_content,
@@ -116,6 +118,7 @@ from .models import (
     Certificate,
     Challenge,
     ChallengeSubmission,
+    Choice,
     Course,
     CourseMaterial,
     CourseProgress,
@@ -147,6 +150,8 @@ from .models import (
     ProductImage,
     Profile,
     ProgressTracker,
+    Question,
+    Response,
     Review,
     ScheduledPost,
     SearchLog,
@@ -158,11 +163,13 @@ from .models import (
     StudyGroupInvite,
     Subject,
     SuccessStory,
+    Survey,
     TeamGoal,
     TeamGoalMember,
     TeamInvite,
     TimeSlot,
     UserBadge,
+    VideoRequest,
     WaitingRoom,
     WebRequest,
     default_valid_until,
@@ -203,37 +210,95 @@ def sitemap(request):
     return render(request, "sitemap.html")
 
 
+def handle_referral(request, code):
+    """Handle referral link with the format /en/ref/CODE/ and redirect to homepage."""
+    # Store referral code in session
+    request.session["referral_code"] = code
+
+    # The WebRequestMiddleware will automatically log this request with the correct path
+    # containing the referral code, so we don't need to create a WebRequest manually
+
+    # Redirect to homepage
+    return redirect("index")
+
+
 def index(request):
     """Homepage view."""
     from django.conf import settings
 
-    # Store referral code in session if present in URL
+    # Store referral code in session if present in URL (for backward compatibility)
     ref_code = request.GET.get("ref")
 
     if ref_code:
         request.session["referral_code"] = ref_code
+        # The WebRequestMiddleware will track this request automatically
+        # with the query parameter in the path
 
-    # Get top referrers
-    top_referrers = Profile.objects.annotate(
-        total_signups=models.Count("referrals"),
+    # Get top referrers - including both those with referrals and those with clicks
+    # First, find all referral codes that have clicks in WebRequest
+    referral_codes_with_clicks = (
+        WebRequest.objects.filter(models.Q(path__contains="/ref/") | models.Q(path__contains="?ref="))
+        .values_list("path", flat=True)
+        .distinct()
+    )
+
+    # Extract referral codes from the paths
+    active_referral_codes = set()
+    for path in referral_codes_with_clicks:
+        if "/ref/" in path:
+            # Format: /en/ref/CODE/
+            parts = path.split("/ref/")
+            if len(parts) > 1:
+                code = parts[1].strip("/")
+                if code:
+                    active_referral_codes.add(code)
+        elif "?ref=" in path:
+            # Format: /?ref=CODE or ?ref=CODE&other=params
+            parts = path.split("?ref=")
+            if len(parts) > 1:
+                code = parts[1].split("&")[0]  # Handle additional parameters
+                if code:
+                    active_referral_codes.add(code)
+
+    # Get profiles with referrals and/or clicks
+    profiles_with_activity = Profile.objects.filter(
+        models.Q(referrals__isnull=False)  # Has referrals
+        | models.Q(referral_code__in=active_referral_codes)  # Has clicks
+    ).distinct()
+
+    # Annotate with signups and enrollments
+    top_referrers = profiles_with_activity.annotate(
+        total_signups=models.Count("referrals", distinct=True),
         total_enrollments=models.Count(
-            "referrals__user__enrollments", filter=models.Q(referrals__user__enrollments__status="approved")
+            "referrals__user__enrollments",
+            filter=models.Q(referrals__user__enrollments__status="approved"),
+            distinct=True,
         ),
-        total_clicks=models.Count(
-            "referrals__user",
-            filter=models.Q(
-                referrals__user__username__in=WebRequest.objects.filter(path__contains="ref=").values_list(
-                    "user", flat=True
-                )
-            ),
-        ),
-    ).order_by("-total_signups", "-total_enrollments")[:3]
+    ).order_by("-total_signups", "-total_enrollments")[
+        :10
+    ]  # Get more and then sort by clicks
+
+    # Add click counts manually since WebRequest.user is a CharField, not a ForeignKey
+    for referrer in top_referrers:
+        # Look for both new format /ref/CODE/ and old format ?ref=CODE
+        ref_code = referrer.referral_code
+        clicks = WebRequest.objects.filter(
+            models.Q(path__contains=f"/ref/{ref_code}/") | models.Q(path__contains=f"?ref={ref_code}")
+        ).count()
+        referrer.total_clicks = clicks
+
+    # Re-sort to include click count in ranking
+    top_referrers = sorted(
+        top_referrers, key=lambda x: (x.total_signups, x.total_enrollments, x.total_clicks), reverse=True
+    )[
+        :3
+    ]  # Take top 3 after sorting
 
     # Get current user's profile if authenticated
     profile = request.user.profile if request.user.is_authenticated else None
 
-    # Get featured courses
-    featured_courses = Course.objects.filter(status="published", is_featured=True).order_by("-created_at")[:3]
+    # Get recent courses
+    featured_courses = Course.objects.filter(status="published").order_by("-created_at")[:6]
 
     # Get featured goods
     featured_goods = Goods.objects.filter(featured=True, is_available=True).order_by("-created_at")[:3]
@@ -782,6 +847,21 @@ def course_detail(request, slug):
     for item in rating_counts:
         rating_distribution[item["rating"]] = item["count"]
 
+    # Get next session for waiting room functionality
+    next_session = None
+    user_in_session_waiting_room = False
+
+    if request.user.is_authenticated:
+        # Get the next upcoming session for this course
+        next_session = course.sessions.filter(start_time__gt=timezone.now()).order_by("start_time").first()
+
+        # Check if user is in the session waiting room
+        try:
+            session_waiting_room = WaitingRoom.objects.get(course=course, status="open")
+            user_in_session_waiting_room = request.user in session_waiting_room.participants.all()
+        except WaitingRoom.DoesNotExist:
+            user_in_session_waiting_room = False
+
     # Build the absolute discount URL using the discount view's URL name.
     from urllib.parse import urlencode
 
@@ -810,6 +890,8 @@ def course_detail(request, slug):
         "rating_distribution": rating_distribution,
         "reviews_num": reviews_num,
         "discount_url": discount_url,
+        "next_session": next_session,
+        "user_in_session_waiting_room": user_in_session_waiting_room,
     }
 
     return render(request, "courses/detail.html", context)
@@ -906,40 +988,122 @@ def add_review(request, slug):
 
 @login_required
 def delete_course(request, slug):
+    """Handle course deletion, including image deletion."""
     course = get_object_or_404(Course, slug=slug)
+
+    # Ensure only the course teacher can delete the course
     if request.user != course.teacher:
-        messages.error(request, "Only the course teacher can delete the course!")
+        messages.error(request, "You are not authorized to delete this course.")
         return redirect("course_detail", slug=slug)
 
     if request.method == "POST":
+
+        # Delete the course --> this automatically deletes the image too
         course.delete()
         messages.success(request, "Course deleted successfully!")
-        return redirect("profile")
+        return redirect("profile")  # Redirect to the profile page or another success page
 
     return render(request, "courses/delete_confirm.html", {"course": course})
 
 
 @csrf_exempt
 def github_update(request):
-    send_slack_message("New commit pulled from GitHub")
-    root_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    try:
-        subprocess.run(["chmod", "+x", f"{root_directory}/setup.sh"])
-        result = subprocess.run(["bash", f"{root_directory}/setup.sh"], capture_output=True, text=True)
-        if result.returncode != 0:
-            raise Exception(
-                f"setup.sh failed with return code {result.returncode} and output: {result.stdout} {result.stderr}"
-            )
-        send_slack_message("CHMOD success about to set time on: " + settings.PA_WSGI)
+    """GitHub webhook endpoint to trigger a lightweight deploy.
 
-        current_time = time.time()
-        os.utime(settings.PA_WSGI, (current_time, current_time))
-        send_slack_message("Repository updated successfully")
-        return HttpResponse("Repository updated successfully")
-    except Exception as e:
-        print(f"Deploy error: {e}")
-        send_slack_message(f"Deploy error: {e}")
-        return HttpResponse("Deploy error see logs.")
+    Hardening applied:
+    - Require POST.
+    - Validate X-Hub-Signature-256 using shared secret env var GITHUB_WEBHOOK_SECRET.
+    - Ignore unsupported events (only push by default).
+    - Run a safe pull + dependency install + migrate + collectstatic via a minimal bash snippet.
+    - Send concise status updates to Slack; avoid leaking secrets.
+
+    NOTE: Full provisioning (packages, DB grants, etc.) still belongs to Ansible.
+    This endpoint just brings the already‑provisioned instance up to latest commit.
+    """
+    if request.method != "POST":
+        return HttpResponseBadRequest("POST required")
+
+    secret = getattr(settings, "GITHUB_WEBHOOK_SECRET", None)
+    signature = request.META.get("HTTP_X_HUB_SIGNATURE_256")
+    body = request.body
+
+    if secret:
+        import hashlib
+        import hmac
+
+        expected = "sha256=" + hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+        if not signature or not hmac.compare_digest(expected, signature):
+            send_slack_message("GitHub webhook signature mismatch")
+            return HttpResponseForbidden("Invalid signature")
+    else:
+        # If no secret configured, refuse (better to explicitly set one)
+        return HttpResponseForbidden("Webhook secret not configured")
+
+    event = request.META.get("HTTP_X_GITHUB_EVENT", "")
+    if event not in {"push"}:
+        return HttpResponse("Ignored event", status=202)
+
+    repo_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    venv_python = os.path.join(repo_dir, "venv", "bin", "python")
+    venv_pip = os.path.join(repo_dir, "venv", "bin", "pip")
+    log_lines = []
+
+    # Resolve git binary explicitly since systemd service Environment may override PATH.
+    import shutil
+
+    git_bin = shutil.which("git") or "/usr/bin/git"
+    if not os.path.exists(git_bin):
+        msg = f"Git binary not found at resolved path: {git_bin}. Aborting lightweight deploy."
+        send_slack_message(msg)
+        return HttpResponse(status=500, content=msg)
+
+    def run_cmd(cmd):
+        proc = subprocess.run(cmd, cwd=repo_dir, capture_output=True, text=True)
+        summary = f"$ {' '.join(cmd)}\nrc={proc.returncode}\nstdout={proc.stdout[-400:]}\nstderr={proc.stderr[-400:]}"
+        log_lines.append(summary)
+        return proc.returncode == 0
+
+    poetry_bin = os.path.join(repo_dir, "venv", "bin", "poetry")
+    steps = [
+        [git_bin, "fetch", "--all", "--prune"],
+        [git_bin, "reset", "--hard", "origin/main"],
+        [venv_pip, "install", "--upgrade", "pip", "wheel"],
+        [venv_pip, "install", "poetry==1.8.3"],
+        [poetry_bin, "config", "virtualenvs.create", "false", "--local"],
+        [poetry_bin, "install", "--only", "main", "--no-interaction", "--no-ansi"],
+        [venv_python, "manage.py", "migrate", "--noinput"],
+        [venv_python, "manage.py", "collectstatic", "--noinput"],
+    ]
+
+    ok = True
+    for step in steps:
+        try:
+            if not run_cmd(step):
+                ok = False
+                break
+        except FileNotFoundError as fe:
+            # Capture explicit binary not found errors, send Slack, abort early.
+            err_msg = f"Webhook deploy step failed (missing binary): {fe}"
+            log_lines.append(err_msg)
+            send_slack_message(err_msg)
+            ok = False
+            break
+
+    # Always attempt a reload so code changes take effect (application systemd unit)
+    subprocess.run(["/bin/systemctl", "restart", "education-website"], capture_output=True)
+
+    # Slack summary (truncate to avoid long messages)
+    slack_msg = (
+        ("Deploy success" if ok else "Deploy FAILED")
+        + " (github webhook)\n"
+        + "\n---\n"
+        + "\n---\n".join(line[:600] for line in log_lines[:4])
+    )
+    send_slack_message(slack_msg[:3500])
+
+    if ok:
+        return HttpResponse("OK")
+    return HttpResponse(status=500, content="Deploy failed; see logs")
 
 
 def send_slack_message(message):
@@ -1107,10 +1271,12 @@ def learn(request):
 def teach(request):
     """Handles the course creation process for both authenticated and unauthenticated users."""
     if request.method == "POST":
-        form = TeachForm(request.POST, request.FILES)
+        form = TeachForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             # Extract cleaned data
-            email = form.cleaned_data["email"]
+            email = form.cleaned_data.get("email", None)
+            if email is None and request.user.is_authenticated:
+                email = request.user.email
             course_title = form.cleaned_data["course_title"]
             course_description = form.cleaned_data["course_description"]
             course_image = form.cleaned_data.get("course_image")
@@ -1124,14 +1290,6 @@ def teach(request):
             if request.user.is_authenticated:
                 # For authenticated users, always use the logged-in user
                 user = request.user
-
-                # Validate that the provided email matches the logged-in user's email
-                if email != user.email:
-                    form.add_error(
-                        "email",
-                        "The provided email does not match your account email. Please use your account email.",
-                    )
-                    return render(request, "teach.html", {"form": form})
 
                 # Backend validation: Check for duplicate course titles for the logged-in user
                 if Course.objects.filter(title__iexact=course_title, teacher=user).exists():
@@ -1255,7 +1413,7 @@ def teach(request):
         initial_data = {}
         if request.GET.get("subject"):
             initial_data["course_title"] = request.GET.get("subject")
-        form = TeachForm(initial=initial_data)
+        form = TeachForm(initial=initial_data, user=request.user)
 
     return render(request, "teach.html", {"form": form})
 
@@ -1374,6 +1532,20 @@ def course_search(request):
     page_obj = paginator.get_page(page_number)
     is_teacher = getattr(getattr(request.user, "profile", None), "is_teacher", False)
 
+    # initialize the user courses if founded
+    user_courses = set()
+
+    # Get authenticated users courses
+    if request.user.is_authenticated:
+        if request.user.profile.is_teacher:
+            teacher_courses = list(Course.objects.filter(teacher=request.user))
+            # Create a set of titles
+            user_courses = {course.title for course in teacher_courses}
+        else:
+            enrollments = Enrollment.objects.filter(student=request.user).select_related("course")
+            # Create a set of titles
+            user_courses = {course.course.title for course in enrollments}
+
     context = {
         "page_obj": page_obj,
         "query": query,
@@ -1386,6 +1558,7 @@ def course_search(request):
         "level_choices": Course._meta.get_field("level").choices,
         "total_results": total_results,
         "is_teacher": is_teacher,
+        "user_courses": user_courses,
     }
 
     return render(request, "courses/search.html", context)
@@ -1921,6 +2094,8 @@ def create_topic(request, category_slug):
                 author=request.user,
                 title=form.cleaned_data["title"],
                 content=form.cleaned_data["content"],
+                github_issue_url=form.cleaned_data.get("github_issue_url", ""),
+                github_milestone_url=form.cleaned_data.get("github_milestone_url", ""),
             )
             messages.success(request, "Topic created successfully!")
             return redirect("forum_topic", category_slug=category_slug, topic_id=topic.id)
@@ -2277,10 +2452,27 @@ def session_detail(request, session_id):
         ):
             return HttpResponseForbidden("You don't have access to this session")
 
+        # Get next session for waiting room functionality
+        next_session = None
+        user_in_session_waiting_room = False
+
+        if request.user.is_authenticated:
+            # Get the next upcoming session for this course
+            next_session = session.course.sessions.filter(start_time__gt=timezone.now()).order_by("start_time").first()
+
+            # Check if user is in the session waiting room
+            try:
+                session_waiting_room = WaitingRoom.objects.get(course=session.course, status="open")
+                user_in_session_waiting_room = request.user in session_waiting_room.participants.all()
+            except WaitingRoom.DoesNotExist:
+                user_in_session_waiting_room = False
+
         context = {
             "session": session,
             "is_teacher": request.user == session.course.teacher,
             "now": timezone.now(),
+            "next_session": next_session,
+            "user_in_session_waiting_room": user_in_session_waiting_room,
         }
 
         return render(request, "web/study/session_detail.html", context)
@@ -2950,18 +3142,29 @@ def create_forum_category(request):
 
 @login_required
 def edit_topic(request, topic_id):
-    """Edit an existing forum topic."""
     topic = get_object_or_404(ForumTopic, id=topic_id, author=request.user)
     categories = ForumCategory.objects.all()
 
     if request.method == "POST":
-        form = ForumTopicForm(request.POST, instance=topic)
+        form = ForumTopicForm(request.POST)
         if form.is_valid():
-            form.save()
+            # Manually update the topic instance with form data.
+            topic.title = form.cleaned_data["title"]
+            topic.content = form.cleaned_data["content"]
+            topic.github_issue_url = form.cleaned_data.get("github_issue_url", "")
+            topic.github_milestone_url = form.cleaned_data.get("github_milestone_url", "")
+            topic.save()
             messages.success(request, "Topic updated successfully!")
             return redirect("forum_topic", category_slug=topic.category.slug, topic_id=topic.id)
     else:
-        form = ForumTopicForm(instance=topic)
+        # Prepopulate the form with the topic's current data.
+        initial_data = {
+            "title": topic.title,
+            "content": topic.content,
+            "github_issue_url": topic.github_issue_url,
+            "github_milestone_url": topic.github_milestone_url,
+        }
+        form = ForumTopicForm(initial=initial_data)
 
     return render(request, "web/forum/edit_topic.html", {"topic": topic, "form": form, "categories": categories})
 
@@ -5087,94 +5290,124 @@ def donation_cancel(request):
     return redirect("donate")
 
 
-def educational_videos_list(request):
-    """View for listing educational videos with optional category filtering."""
+def educational_videos_list(request: HttpRequest) -> HttpResponse:
+    """View for listing educational videos with requests included at the bottom."""
     # Get category filter from query params
     selected_category = request.GET.get("category")
 
-    # Base queryset
+    # Base querysets
     videos = EducationalVideo.objects.select_related("uploader", "category").order_by("-uploaded_at")
+    video_requests = VideoRequest.objects.select_related("requester", "category", "fulfilled_by").order_by(
+        "-created_at"
+    )
 
     # Apply category filter if provided
     if selected_category:
         videos = videos.filter(category__slug=selected_category)
+        video_requests = video_requests.filter(category__slug=selected_category)
         selected_category_obj = get_object_or_404(Subject, slug=selected_category)
         selected_category_display = selected_category_obj.name
     else:
         selected_category_display = None
 
-    # Get category counts for sidebar
+    # Paginate videos (9 per page)
+    paginator = Paginator(videos, 9)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
+
+    # Limit video requests to 5
+    video_requests = video_requests[:5]
+    video_requests_paginated = VideoRequest.objects.count() > 5
+
+    # Category counts for sidebar
     category_counts = dict(
-        EducationalVideo.objects.values("category__name", "category__slug")
+        EducationalVideo.objects.values("category__slug")
         .annotate(count=Count("id"))
-        .values_list("category__slug", "count")
+        .values_list("category__slug", "count"),
     )
 
-    # Get all subjects for the dropdown
+    # Get all subjects
     subjects = Subject.objects.all().order_by("order", "name")
-
-    # Paginate results
-    paginator = Paginator(videos, 12)  # 12 videos per page
-    page_number = request.GET.get("page", 1)
-    page_obj = paginator.get_page(page_number)
 
     context = {
         "videos": page_obj,
-        "is_paginated": paginator.num_pages > 1,
+        "is_paginated": page_obj.has_other_pages(),
         "page_obj": page_obj,
         "subjects": subjects,
         "selected_category": selected_category,
         "selected_category_display": selected_category_display,
         "category_counts": category_counts,
+        "video_requests": video_requests,
+        "video_requests_paginated": video_requests_paginated,
     }
 
     return render(request, "videos/list.html", context)
 
 
-@login_required
+def fetch_video_oembed(video_url):
+    """
+    Hits YouTube or Vimeo’s oEmbed endpoint and returns a dict
+    containing 'title' and 'description' (if available).
+    """
+    # YouTube IDs are always 11 chars
+    yt_match = re.search(r"(?:v=|youtu\.be/|embed/|shorts/)([\w-]{11})", video_url)
+    if yt_match:
+        video_id = yt_match.group(1)
+        endpoint = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
+    else:
+        # Vimeo URLs look like vimeo.com/12345678…
+        vm_match = re.search(r"vimeo\.com/(?:video/)?(\d+)", video_url)
+        if vm_match:
+            endpoint = f"https://vimeo.com/api/oembed.json?url={video_url}"
+        else:
+            return {}
+
+    try:
+        resp = requests.get(endpoint, timeout=3)
+        if resp.ok:
+            data = resp.json()
+            return {
+                "title": data.get("title", "").strip(),
+                "description": data.get("description", "").strip(),
+            }
+    except requests.RequestException:
+        pass
+
+    return {}
+
+
 def upload_educational_video(request):
-    """View for uploading a new educational video."""
+    """
+    Handles GET → render form, POST → save video.
+    If user leaves title/description blank, we back‑fill from YouTube/Vimeo.
+    """
     if request.method == "POST":
         form = EducationalVideoForm(request.POST)
         if form.is_valid():
             video = form.save(commit=False)
-
-            # Handle anonymous submissions
             if request.user.is_authenticated:
                 video.uploader = request.user
-            else:
-                # For anonymous submissions, store optional submitter name
-                submitter_name = request.POST.get("submitter_name", "")
-                if submitter_name:
-                    video.submitter_name = submitter_name
+
+            # auto‑fetch metadata if missing
+            if not video.title.strip() or not video.description.strip():
+                info = fetch_video_oembed(video.video_url)
+                if not video.title.strip() and info.get("title"):
+                    video.title = info["title"]
+                if not video.description.strip() and info.get("description"):
+                    video.description = info["description"]
 
             video.save()
 
-            # Check if this is an AJAX request (from quick add form)
             if request.headers.get("X-Requested-With") == "XMLHttpRequest":
                 return JsonResponse({"success": True, "message": "Video added successfully!"})
-
             return redirect("educational_videos_list")
-        elif request.headers.get("X-Requested-With") == "XMLHttpRequest":
-            # Return form errors for AJAX requests
-            error_dict = {}
-            for field, errors in form.errors.items():
-                error_dict[field] = [str(error) for error in errors]
 
-            # Better error formatting for display
-            error_text = ""
-            for field, field_errors in error_dict.items():
-                field_name = field.replace("_", " ").title() if field != "__all__" else "Error"
-                error_text += f"{field_name}: {', '.join(field_errors)}. "
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            error_text = " ".join(f"{fld}: {', '.join(errs)}." for fld, errs in form.errors.items())
+            return JsonResponse({"success": False, "error": error_text}, status=400)
 
-            return JsonResponse({"success": False, "error": error_text, "detailed_errors": error_dict}, status=400)
     else:
         form = EducationalVideoForm()
-
-    # For regular GET requests
-    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
-        # AJAX GET request should get a JSON response
-        return JsonResponse({"success": False, "error": "Please submit the form with POST"}, status=400)
 
     return render(request, "videos/upload.html", {"form": form})
 
@@ -7529,3 +7762,353 @@ def contributors_list_view(request):
         print(f"Error fetching contributors: {e}")
         # Return an empty list in case of error
         return render(request, "web/contributors_list.html", {"contributors": []})
+
+
+@login_required
+def video_request_list(request):
+    """View for listing video requests with optional category filtering."""
+    # Get category filter from query params
+    selected_category = request.GET.get("category")
+
+    # Base queryset
+    requests = VideoRequest.objects.select_related("requester", "category").order_by("-created_at")
+
+    # Apply category filter if provided
+    if selected_category:
+        requests = requests.filter(category__slug=selected_category)
+        selected_category_obj = get_object_or_404(Subject, slug=selected_category)
+        selected_category_display = selected_category_obj.name
+    else:
+        selected_category_display = None
+
+    # Get category counts for sidebar
+    category_counts = {
+        category.slug: VideoRequest.objects.filter(category=category).count() for category in Subject.objects.all()
+    }
+
+    # Context
+    context = {
+        "requests": requests,
+        "categories": Subject.objects.all(),
+        "category_counts": category_counts,
+        "selected_category": selected_category,
+        "selected_category_display": selected_category_display,
+    }
+
+    return render(request, "videos/request_list.html", context)
+
+
+@login_required
+def submit_video_request(request):
+    """View for submitting a new video request."""
+    if request.method == "POST":
+        form = VideoRequestForm(request.POST)
+        if form.is_valid():
+            video_request = form.save(commit=False)
+            video_request.requester = request.user
+            video_request.save()
+
+            messages.success(request, "Your video request has been submitted successfully!")
+            return redirect("video_request_list")
+    else:
+        form = VideoRequestForm()
+
+    return render(request, "videos/submit_request.html", {"form": form})
+
+
+class SurveyListView(LoginRequiredMixin, ListView):
+    model = Survey
+    template_name = "surveys/list.html"
+    login_url = "/accounts/login/"
+
+
+class SurveyCreateView(LoginRequiredMixin, CreateView):
+    model = Survey
+    form_class = SurveyForm
+    template_name = "surveys/create.html"
+    login_url = "/accounts/login/"
+
+    def form_valid(self, form):
+        form.instance.author = self.request.user
+        survey = form.save()
+
+        # Process questions
+        question_texts = self.request.POST.getlist("question_text[]")
+        question_types = self.request.POST.getlist("question_type[]")
+        question_choices = self.request.POST.getlist("question_choices[]")
+        scale_mins = self.request.POST.getlist("scale_min[]")
+        scale_maxs = self.request.POST.getlist("scale_max[]")
+
+        for i, (q_text, q_type) in enumerate(zip(question_texts, question_types)):
+            if q_text.strip():
+                # Convert scale values to integers with proper error handling
+                scale_min = 1
+                scale_max = 5
+
+                try:
+                    if q_type == "scale" and i < len(scale_mins) and scale_mins[i]:
+                        scale_min = int(scale_mins[i])
+                    if q_type == "scale" and i < len(scale_maxs) and scale_maxs[i]:
+                        scale_max = int(scale_maxs[i])
+                except (ValueError, IndexError):
+                    # Use defaults if there's an error
+                    scale_min = 1
+                    scale_max = 5
+
+                question = Question.objects.create(
+                    survey=survey,
+                    text=q_text.strip(),
+                    type=q_type,  # This should match your model field name
+                    scale_min=scale_min,
+                    scale_max=scale_max,
+                )
+
+                # Handle choices based on question type
+                if q_type == "true_false":
+                    Choice.objects.create(question=question, text="True")
+                    Choice.objects.create(question=question, text="False")
+                elif q_type == "scale":
+                    for num in range(question.scale_min, question.scale_max + 1):
+                        Choice.objects.create(question=question, text=str(num))
+                elif q_type in ["mcq", "checkbox"]:
+                    # Make sure we have choices for this question
+                    if i < len(question_choices):
+                        for choice_text in question_choices[i].split("\n"):
+                            if choice_text.strip():
+                                Choice.objects.create(question=question, text=choice_text.strip())
+
+        return redirect("surveys")
+
+
+class SurveyDetailView(LoginRequiredMixin, DetailView):
+    model = Survey
+    template_name = "surveys/detail.html"
+    login_url = "/accounts/login/"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        # Check if user has already submitted this survey
+        context["already_submitted"] = Response.objects.filter(
+            user=self.request.user, question__survey=self.object
+        ).exists()
+        # Check if user is the creator of this survey
+        context["is_creator"] = self.object.author == self.request.user
+        return context
+
+
+@login_required
+def submit_survey(request, pk):
+    survey = get_object_or_404(Survey, pk=pk)
+
+    # Check if user already submitted
+    if Response.objects.filter(user=request.user, question__survey=survey).exists():
+        messages.error(request, "You've already submitted this survey!")
+        return redirect("survey-detail", pk=survey.id)
+
+    if request.method == "POST":
+        for question in survey.question_set.all():
+            if question.required and not request.POST.get(f"question_{question.id}"):
+                messages.error(request, f"Please answer required question: {question.text}")
+                return redirect("survey-detail", pk=survey.id)
+
+            if question.type == "checkbox":
+                choices = request.POST.getlist(f"question_{question.id}")
+                for choice_id in choices:
+                    try:
+                        choice = Choice.objects.get(id=choice_id)
+                        if choice.question_id == question.id:
+                            Response.objects.create(user=request.user, question=question, choice=choice)
+                        else:
+                            messages.error(request, "Invalid choice selected")
+                            return redirect("survey-detail", pk=survey.id)
+                    except Choice.DoesNotExist:
+                        messages.error(request, "Invalid choice selected")
+                        return redirect("survey-detail", pk=survey.id)
+            elif question.type == "text":
+                Response.objects.create(
+                    user=request.user, question=question, text_answer=request.POST.get(f"question_{question.id}")
+                )
+            else:
+                choice_id = request.POST.get(f"question_{question.id}")
+                if choice_id:
+                    try:
+                        choice = Choice.objects.get(id=choice_id)
+                        if choice.question_id == question.id:
+                            Response.objects.create(user=request.user, question=question, choice=choice)
+                        else:
+                            messages.error(request, "Invalid choice selected")
+                            return redirect("survey-detail", pk=survey.id)
+                    except Choice.DoesNotExist:
+                        messages.error(request, "Invalid choice selected")
+                        return redirect("survey-detail", pk=survey.id)
+
+        messages.success(request, "Survey submitted successfully!")
+        return redirect("survey-results", pk=survey.id)
+
+    return redirect("survey-detail", pk=survey.id)
+
+
+class SurveyResultsView(LoginRequiredMixin, DetailView):
+    model = Survey
+    template_name = "surveys/results.html"
+    login_url = "/accounts/login/"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+
+        # Process survey results
+        results = []
+        total_participants = 0
+        most_answered_question = None
+        max_responses = 0
+        top_choice = None
+        bottom_choice = None
+        overall_top_choice_count = 0
+        overall_bottom_choice_count = float("inf")
+        total_possible_responses = 0
+        total_actual_responses = 0
+        avg_completion_time = None
+        context["avg_completion_time"] = avg_completion_time
+
+        for question in self.object.question_set.all():
+            choices_data = []
+            question_total = 0
+
+            # Process each choice for this question
+            for choice in question.choice_set.all():
+                count = choice.response_set.count() if hasattr(choice, "response_set") else 0
+
+                question_total += count
+                choices_data.append({"text": choice.text, "count": count})
+
+            if question_total == 0:
+                continue
+            if question_total > 0:
+                total_possible_responses += total_participants * 1  # Each participant could answer this question
+                total_actual_responses += question_total
+
+            if question_total > max_responses:
+                max_responses = question_total
+                most_answered_question = question
+
+            for choice in choices_data:
+                choice["percentage"] = round((choice["count"] / question_total * 100), 1) if question_total > 0 else 0
+
+                if choice["count"] > overall_top_choice_count:
+                    overall_top_choice_count = choice["count"]
+                    top_choice = choice
+
+                if choice["count"] > 0 and choice["count"] < overall_bottom_choice_count:
+                    overall_bottom_choice_count = choice["count"]
+                    bottom_choice = choice
+
+            results.append({"question": question, "choices": choices_data, "total": question_total})
+
+            total_participants = max(total_participants, question_total)
+        engagement_score = 0
+        if total_possible_responses > 0:
+            engagement_score = (total_actual_responses / total_possible_responses) * 100
+
+        context["engagement_score"] = round(engagement_score, 1)
+        target_participants = getattr(self.object, "target_participants", 100)  # default to 100 if not set
+        response_rate = (total_participants / target_participants * 100) if target_participants > 0 else 0
+
+        context.update(
+            {
+                "results": results,
+                "total_participants": total_participants,
+                "response_rate": min(response_rate, 100),  # Cap at 100%
+                "most_answered_question": most_answered_question,
+                "top_choice": top_choice,
+                "bottom_choice": bottom_choice,
+                "is_creator": self.object.author == self.request.user if hasattr(self.object, "author") else False,
+            }
+        )
+
+        chart_data = []
+        for result in results:
+            chart_data.append(
+                {
+                    "question_id": result["question"].id,
+                    "labels": [choice["text"] for choice in result["choices"]],
+                    "data": [choice["count"] for choice in result["choices"]],
+                }
+            )
+        context["chart_data_json"] = json.dumps(chart_data)
+
+        return context
+
+
+class SurveyDeleteView(LoginRequiredMixin, DeleteView):
+    model = Survey
+    success_url = reverse_lazy("surveys")  # Use reverse_lazy
+    template_name = "surveys/delete.html"
+    login_url = "/accounts/login/"
+
+    def get_queryset(self):
+        # Override queryset to only allow creator to access the survey for deletion
+        base_qs = super().get_queryset()
+        return base_qs.filter(author=self.request.user)
+
+    def handle_no_permission(self):
+        messages.error(self.request, "You can only delete surveys that you created.")
+        return redirect("surveys")
+
+
+@login_required
+def join_session_waiting_room(request, course_slug):
+    """View for joining a session waiting room for the next session of a course."""
+    course = get_object_or_404(Course, slug=course_slug)
+
+    # Get or create the session waiting room for this course
+    session_waiting_room, created = WaitingRoom.objects.get_or_create(
+        course=course, status="open", defaults={"status": "open"}
+    )
+
+    # Check if the waiting room is open
+    if session_waiting_room.status != "open":
+        messages.error(request, "This session waiting room is no longer open for joining.")
+        return redirect("course_detail", slug=course_slug)
+
+    # Add the user to participants if not already in
+    if request.user not in session_waiting_room.participants.all():
+        session_waiting_room.participants.add(request.user)
+        next_session = session_waiting_room.get_next_session()
+        if next_session:
+            next_session_date = next_session.start_time.strftime("%B %d, %Y at %I:%M %p")
+            messages.success(
+                request,
+                f"You have joined the waiting room for the next session of {course.title}. "
+                f"Next session is on {next_session_date}.",
+            )
+        else:
+            messages.success(
+                request,
+                f"You have joined the waiting room for the next session of {course.title}. "
+                f"You'll be notified when a new session is scheduled.",
+            )
+    else:
+        messages.info(request, "You are already in the waiting room for the next session of this course.")
+
+    return redirect("course_detail", slug=course_slug)
+
+
+@login_required
+def leave_session_waiting_room(request, course_slug):
+    """View for leaving a session waiting room."""
+    course = get_object_or_404(Course, slug=course_slug)
+
+    try:
+        session_waiting_room = WaitingRoom.objects.get(course=course, status="open")
+    except WaitingRoom.DoesNotExist:
+        messages.info(request, "No session waiting room found for this course.")
+        return redirect("course_detail", slug=course_slug)
+
+    # Remove the user from participants
+    if request.user in session_waiting_room.participants.all():
+        session_waiting_room.participants.remove(request.user)
+        messages.success(request, f"You have left the session waiting room for {course.title}")
+    else:
+        messages.info(request, "You are not in the session waiting room for this course.")
+
+    return redirect("course_detail", slug=course_slug)

@@ -350,7 +350,7 @@
                               </span>
                             {% endif %}
                           {% endif %}
-                          {% if session.is_virtual and session.meeting_link and session.end_time >= now %}
+                          {% if session.is_virtual and session.meeting_link and session.end_time >= now and is_enrolled or is_teacher %}
                             <a href="{{ session.meeting_link }}"
                                target="_blank"
                                class="text-blue-600 hover:text-blue-700 dark:text-blue-400">
@@ -367,6 +367,44 @@
                       </div>
                     {% endfor %}
                   </div>
+                  {% if not next_session and sessions %}
+                    <!-- Waiting room section when all sessions are in the past -->
+                    <div class="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-200 rounded-lg border border-yellow-200 dark:border-yellow-800">
+                      <div class="flex items-start space-x-3">
+                        <i class="fas fa-clock-rotate-left text-lg mt-1"></i>
+                        <div class="flex-1">
+                          <h3 class="font-semibold mb-2">All sessions have ended</h3>
+                          <p class="text-sm mb-3">No upcoming sessions are currently scheduled for this course.</p>
+                          {% if user.is_authenticated %}
+                            {% if user_in_session_waiting_room %}
+                              <div class="flex items-center space-x-2">
+                                <i class="fas fa-check-circle text-green-600 dark:text-green-400"></i>
+                                <span class="text-sm font-medium">You're in the waiting room for the next session</span>
+                                <a href="{% url 'leave_session_waiting_room' course.slug %}"
+                                   class="ml-2 text-xs bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-200 px-2 py-1 rounded">
+                                  Leave
+                                </a>
+                              </div>
+                            {% else %}
+                              <a href="{% url 'join_session_waiting_room' course.slug %}"
+                                 class="inline-flex items-center bg-yellow-600 hover:bg-yellow-700 text-white font-semibold px-4 py-2 rounded-lg text-sm">
+                                <i class="fas fa-user-plus mr-2"></i>
+                                Join waiting room for next session
+                              </a>
+                            {% endif %}
+                          {% else %}
+                            <p class="text-sm">
+                              <a href="{% url 'account_login' %}?next={% url 'course_detail' course.slug %}"
+                                 class="inline-flex items-center bg-yellow-600 hover:bg-yellow-700 text-white font-semibold px-4 py-2 rounded-lg text-sm">
+                                <i class="fas fa-sign-in-alt mr-2"></i>
+                                Login to join waiting room
+                              </a>
+                            </p>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+                  {% endif %}
                 {% else %}
                   <p class="text-sm text-gray-600 dark:text-gray-400">No sessions scheduled yet.</p>
                 {% endif %}
@@ -536,6 +574,13 @@
                      class="inline-flex items-center justify-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition duration-200">
                     <i class="fas fa-user-plus mr-2"></i>
                     Enroll Students
+                  </a>
+                  <a href="{% url 'delete_course' course.slug %}"
+                     aria-label="Delete course"
+                     class="inline-flex items-center justify-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition duration-200">
+                    <i class="fas fa-trash-alt mr-2" aria-hidden="true"></i>
+                    Delete
+                    <span class="sr-only">Delete course</span>
                   </a>
                 </div>
                 <!-- Status Information Alert -->
