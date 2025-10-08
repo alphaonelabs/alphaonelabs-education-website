@@ -8,40 +8,52 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('web', '0062_update_waitingroom_for_sessions'),
+        ("web", "0062_update_waitingroom_for_sessions"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='FlashcardDeck',
+            name="FlashcardDeck",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=200)),
-                ('description', models.TextField(blank=True)),
-                ('is_public', models.BooleanField(default=False, help_text='Make this deck visible to other users')),
-                ('slug', models.SlugField(blank=True, unique=True)),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('creator', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='flashcard_decks', to=settings.AUTH_USER_MODEL)),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("name", models.CharField(max_length=200)),
+                ("description", models.TextField(blank=True)),
+                ("is_public", models.BooleanField(default=False, help_text="Make this deck visible to other users")),
+                ("slug", models.SlugField(blank=True, unique=True)),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "creator",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="flashcard_decks",
+                        to=settings.AUTH_USER_MODEL,
+                    ),
+                ),
             ],
             options={
-                'ordering': ['-updated_at'],
+                "ordering": ["-updated_at"],
             },
         ),
         migrations.CreateModel(
-            name='Flashcard',
+            name="Flashcard",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('front_text', models.TextField(help_text='Question or term')),
-                ('back_text', models.TextField(help_text='Answer or definition')),
-                ('order', models.PositiveIntegerField(default=0, help_text='Order of card in deck')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('updated_at', models.DateTimeField(auto_now=True)),
-                ('deck', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='flashcards', to='web.flashcarddeck')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("front_text", models.TextField(help_text="Question or term")),
+                ("back_text", models.TextField(help_text="Answer or definition")),
+                ("order", models.PositiveIntegerField(default=0, help_text="Order of card in deck")),
+                ("created_at", models.DateTimeField(auto_now_add=True)),
+                ("updated_at", models.DateTimeField(auto_now=True)),
+                (
+                    "deck",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE, related_name="flashcards", to="web.flashcarddeck"
+                    ),
+                ),
             ],
             options={
-                'ordering': ['order', 'created_at'],
+                "ordering": ["order", "created_at"],
             },
         ),
     ]
