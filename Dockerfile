@@ -43,7 +43,7 @@ ENV DJANGO_SUPERUSER_EMAIL=admin@example.com
 ARG DJANGO_SUPERUSER_PASSWORD=adminpassword
 ENV DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD}
 RUN python manage.py createsuperuser --noinput && \
-    python manage.py shell -c "from django.contrib.auth.models import User; import os; u = User.objects.get(username='admin'); u.set_password(os.environ['DJANGO_SUPERUSER_PASSWORD']); u.save()"
+    python manage.py shell -c "import os; from django.contrib.auth import get_user_model; User = get_user_model(); u = User.objects.get(username=os.environ['DJANGO_SUPERUSER_USERNAME']); u.set_password(os.environ['DJANGO_SUPERUSER_PASSWORD']); u.save()"
 
 # Echo message during build
 RUN echo "Your Project is now live on http://localhost:8000"
