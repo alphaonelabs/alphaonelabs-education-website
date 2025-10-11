@@ -1,0 +1,320 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Virtual Lobbies{% endblock %}
+
+{% block extra_css %}
+<style>
+    .lobby-card {
+        transition: transform 0.2s ease-in-out;
+        border: 1px solid #e5e7eb;
+    }
+    .lobby-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    .online-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 8px;
+    }
+    .online-indicator.online {
+        background-color: #10b981;
+    }
+    .online-indicator.offline {
+        background-color: #6b7280;
+    }
+    .create-lobby-btn {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        border: none;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+    .create-lobby-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <!-- Header Section -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+                🎮 Virtual Lobbies
+            </h1>
+            <p class="text-gray-600 dark:text-gray-300">
+                Join virtual spaces to connect, collaborate, and learn together
+            </p>
+        </div>
+        <button 
+            class="create-lobby-btn"
+            onclick="showCreateLobbyModal()"
+        >
+            ➕ Create New Lobby
+        </button>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100 dark:bg-blue-900">
+                    <span class="text-2xl">🏢</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Total Lobbies</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ lobbies|length }}</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100 dark:bg-green-900">
+                    <span class="text-2xl">👥</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Online Users</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white" id="total-online-users">-</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+            <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100 dark:bg-purple-900">
+                    <span class="text-2xl">⭐</span>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600 dark:text-gray-400">Your Lobbies</p>
+                    <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ user_participations|length }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Your Active Lobbies -->
+    {% if user_participations %}
+    <div class="mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            🎯 Your Active Lobbies
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for participation in user_participations %}
+            <div class="lobby-card bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        {{ participation.lobby.name }}
+                    </h3>
+                    <span class="online-indicator online"></span>
+                </div>
+                <p class="text-gray-600 dark:text-gray-300 text-sm mb-4">
+                    {{ participation.lobby.description|truncatewords:20 }}
+                </p>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-500 dark:text-gray-400">
+                        👥 {{ participation.lobby.online_count }}/{{ participation.lobby.max_users }} users
+                    </span>
+                    <a 
+                        href="{% url 'lobby_detail' participation.lobby.id %}"
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition duration-200"
+                    >
+                        Join Now
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- All Available Lobbies -->
+    <div>
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            🌟 Available Lobbies
+        </h2>
+        
+        {% if lobbies %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for lobby in lobbies %}
+            <div class="lobby-card bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
+                        {{ lobby.name }}
+                    </h3>
+                    <div class="flex items-center">
+                        {% if lobby.is_public %}
+                            <span class="text-green-500 text-sm">🌐 Public</span>
+                        {% else %}
+                            <span class="text-yellow-500 text-sm">🔒 Private</span>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <p class="text-gray-600 dark:text-gray-300 text-sm mb-4">
+                    {{ lobby.description|truncatewords:20|default:"Join this virtual space to connect with others!" }}
+                </p>
+                
+                <div class="flex items-center justify-between mb-4">
+                    <span class="text-sm text-gray-500 dark:text-gray-400">
+                        👥 {{ lobby.online_count }}/{{ lobby.max_users }} users
+                    </span>
+                    <span class="text-xs text-gray-400">
+                        Created {{ lobby.created_at|timesince }} ago
+                    </span>
+                </div>
+                
+                <div class="flex space-x-2">
+                    <a 
+                        href="{% url 'lobby_detail' lobby.id %}"
+                        class="flex-1 bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg text-sm font-medium transition duration-200 text-center"
+                    >
+                        Join Lobby
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-12">
+            <div class="text-6xl mb-4">🏢</div>
+            <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                No lobbies available
+            </h3>
+            <p class="text-gray-600 dark:text-gray-300 mb-6">
+                Be the first to create a virtual lobby!
+            </p>
+            <button 
+                class="create-lobby-btn"
+                onclick="showCreateLobbyModal()"
+            >
+                ➕ Create First Lobby
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Create Lobby Modal -->
+<div id="createLobbyModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+        <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Create New Lobby
+        </h3>
+        
+        <form method="post" action="{% url 'create_lobby' %}">
+            {% csrf_token %}
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Lobby Name
+                </label>
+                <input 
+                    type="text" 
+                    name="name" 
+                    required
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter lobby name"
+                >
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Description (Optional)
+                </label>
+                <textarea 
+                    name="description"
+                    rows="3"
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Describe your lobby..."
+                ></textarea>
+            </div>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Max Users
+                </label>
+                <input 
+                    type="number" 
+                    name="max_users" 
+                    value="100"
+                    min="2"
+                    max="500"
+                    class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                >
+            </div>
+            
+            <div class="mb-6">
+                <label class="flex items-center">
+                    <input 
+                        type="checkbox" 
+                        name="is_public" 
+                        checked
+                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    >
+                    <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
+                        Make this lobby public
+                    </span>
+                </label>
+            </div>
+            
+            <div class="flex space-x-3">
+                <button 
+                    type="button"
+                    onclick="hideCreateLobbyModal()"
+                    class="flex-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg transition duration-200"
+                >
+                    Cancel
+                </button>
+                <button 
+                    type="submit"
+                    class="flex-1 bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200"
+                >
+                    Create Lobby
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function showCreateLobbyModal() {
+    document.getElementById('createLobbyModal').classList.remove('hidden');
+    document.getElementById('createLobbyModal').classList.add('flex');
+}
+
+function hideCreateLobbyModal() {
+    document.getElementById('createLobbyModal').classList.add('hidden');
+    document.getElementById('createLobbyModal').classList.remove('flex');
+}
+
+// Load lobby stats
+async function loadLobbyStats() {
+    try {
+        const response = await fetch('/lobby/stats/');
+        const data = await response.json();
+        document.getElementById('total-online-users').textContent = data.total_online_users;
+    } catch (error) {
+        console.error('Error loading lobby stats:', error);
+    }
+}
+
+// Load stats on page load
+document.addEventListener('DOMContentLoaded', loadLobbyStats);
+
+// Close modal when clicking outside
+document.getElementById('createLobbyModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        hideCreateLobbyModal();
+    }
+});
+</script>
+{% endblock %}

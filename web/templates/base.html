@@ -217,6 +217,10 @@
                      class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
                     <i class="fas fa-users mr-2 text-teal-500"></i>Study Groups
                   </a>
+                  <a href="{% url 'lobby_list' %}"
+                     class="block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300">
+                    <i class="fas fa-gamepad mr-2 text-teal-500"></i>Virtual Lobbies
+                  </a>
                 </div>
               </div>
             </div>
@@ -597,6 +601,11 @@
                        class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
                       <i class="fas fa-users mr-2 text-teal-500"></i>
                       <span>Study Groups</span>
+                    </a>
+                    <a href="{% url 'lobby_list' %}"
+                       class="flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md">
+                      <i class="fas fa-gamepad mr-2 text-teal-500"></i>
+                      <span>Virtual Lobbies</span>
                     </a>
                   </div>
                 </div>

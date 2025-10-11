@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
-from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
+from . import admin_views, lobby_views, peer_challenge_views, quiz_views, views, views_avatar
 from .secure_messaging import (
     compose_message,
     download_message,
@@ -220,6 +220,14 @@ urlpatterns += i18n_patterns(
         views.create_course_from_waiting_room,
         name="create_course_from_waiting_room",
     ),
+    # Virtual Lobby URLs
+    path("lobby/", lobby_views.lobby_list, name="lobby_list"),
+    path("lobby/create/", lobby_views.create_lobby, name="create_lobby"),
+    path("lobby/<int:lobby_id>/", lobby_views.lobby_detail, name="lobby_detail"),
+    path("lobby/<int:lobby_id>/leave/", lobby_views.leave_lobby, name="leave_lobby"),
+    path("lobby/<int:lobby_id>/settings/", lobby_views.update_participant_settings, name="update_participant_settings"),
+    path("lobby/<int:lobby_id>/participants/", lobby_views.lobby_participants_api, name="lobby_participants_api"),
+    path("lobby/stats/", lobby_views.lobby_stats, name="lobby_stats"),
     # Session Waiting Room URLs
     path(
         "courses/<slug:course_slug>/session-waiting-room/join/",
