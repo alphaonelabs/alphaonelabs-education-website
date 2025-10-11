@@ -86,8 +86,8 @@
     </script>
     <!-- Font Awesome (Free CDN) -->
     <link rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
-          integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA=="
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+          integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA=="
           crossorigin="anonymous"
           referrerpolicy="no-referrer" />
     <!-- jQuery (required for captcha refresh) -->
@@ -416,12 +416,9 @@
             </button>
             <a href="https://twitter.com/alphaonelabs"
                target="_blank"
-               rel="noopener noreferrer">
-              <img src="{% static 'images/x-logo.svg' %}"
-                   alt="X (Twitter) Logo"
-                   class="w-4 h-4 filter invert"
-                   width="20"
-                   height="20" />
+               rel="noopener noreferrer"
+               class="flex items-center justify-center p-2 hover:bg-teal-700 rounded-lg transition-colors">
+              <i class="fab fa-x-twitter text-xl"></i>
             </a>
           </div>
           <!-- Auth Buttons -->
@@ -988,11 +985,7 @@
                  target="_blank"
                  rel="noopener"
                  class="flex items-center justify-center h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-400 transition-colors">
-                <img src="{% static 'images/x-logo.svg' %}"
-                     alt="X (Twitter) Logo"
-                     class="w-5 h-5 dark:invert"
-                     width="20"
-                     height="20" />
+                <i class="fab fa-x-twitter text-xl"></i>
               </a>
               <a href="https://instagram.com/alphaonelabs1"
                  target="_blank"
