@@ -3085,3 +3085,123 @@ class Response(models.Model):
 
     def __str__(self):
         return f"Response by {self.user.username} to {self.question.text}"
+
+
+class VirtualLobby(models.Model):
+    """Model for virtual lobby rooms where users can interact in real-time."""
+    
+    name = models.CharField(max_length=100, default="Main Lobby")
+    description = models.TextField(blank=True, help_text="Description of the lobby")
+    max_users = models.IntegerField(default=100, help_text="Maximum number of users allowed")
+    is_active = models.BooleanField(default=True, help_text="Whether the lobby is currently active")
+    is_public = models.BooleanField(default=True, help_text="Whether the lobby is public or private")
+    created_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name="created_lobbies"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Virtual Lobby"
+        verbose_name_plural = "Virtual Lobbies"
+        ordering = ["-created_at"]
+    
+    def __str__(self):
+        return f"{self.name} ({self.participants.count()}/{self.max_users} users)"
+    
+    def get_online_participants(self):
+        """Get all currently online participants in this lobby."""
+        return self.participants.filter(is_online=True)
+    
+    def get_online_count(self):
+        """Get the count of online participants."""
+        return self.get_online_participants().count()
+    
+    def can_user_join(self, user):
+        """Check if a user can join this lobby."""
+        if not self.is_active:
+            return False, "Lobby is not active"
+        
+        if not self.is_public and self.created_by != user:
+            return False, "This is a private lobby"
+        
+        if self.get_online_count() >= self.max_users:
+            return False, "Lobby is full"
+        
+        return True, "Can join"
+
+
+class LobbyParticipant(models.Model):
+    """Model for tracking users in virtual lobbies with their positions and status."""
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="lobby_participations")
+    lobby = models.ForeignKey(VirtualLobby, on_delete=models.CASCADE, related_name="participants")
+    
+    # Position in the virtual space (2D coordinates)
+    position_x = models.FloatField(default=0.0, help_text="X coordinate in the virtual space")
+    position_y = models.FloatField(default=0.0, help_text="Y coordinate in the virtual space")
+    
+    # Avatar and appearance
+    avatar_url = models.URLField(blank=True, help_text="Custom avatar URL")
+    display_name = models.CharField(max_length=50, blank=True, help_text="Display name in the lobby")
+    avatar_color = models.CharField(
+        max_length=7, 
+        default="#3B82F6", 
+        help_text="Avatar color in hex format"
+    )
+    
+    # Status and activity
+    is_online = models.BooleanField(default=True, help_text="Whether the user is currently online")
+    last_activity = models.DateTimeField(auto_now=True, help_text="Last activity timestamp")
+    joined_at = models.DateTimeField(auto_now_add=True, help_text="When the user joined the lobby")
+    
+    # Chat and interaction preferences
+    is_muted = models.BooleanField(default=False, help_text="Whether the user is muted")
+    allow_direct_messages = models.BooleanField(default=True, help_text="Allow direct messages from other users")
+    
+    class Meta:
+        unique_together = ['user', 'lobby']  # One user can only be in one lobby at a time
+        ordering = ["-joined_at"]
+    
+    def __str__(self):
+        return f"{self.get_display_name()} in {self.lobby.name}"
+    
+    def get_display_name(self):
+        """Get the display name or fall back to username."""
+        return self.display_name or self.user.username
+    
+    def get_avatar_url(self):
+        """Get the avatar URL or use default."""
+        return self.avatar_url or f"/static/images/default_avatar.png"
+    
+    def is_active(self):
+        """Check if the user was active recently (within last 5 minutes)."""
+        from django.utils import timezone
+        from datetime import timedelta
+        
+        five_minutes_ago = timezone.now() - timedelta(minutes=5)
+        return self.last_activity > five_minutes_ago
+    
+    def update_position(self, x, y):
+        """Update user position in the virtual space."""
+        self.position_x = x
+        self.position_y = y
+        self.last_activity = timezone.now()
+        self.save(update_fields=['position_x', 'position_y', 'last_activity'])
+    
+    def mark_online(self):
+        """Mark user as online and update activity."""
+        from django.utils import timezone
+        
+        self.is_online = True
+        self.last_activity = timezone.now()
+        self.save(update_fields=['is_online', 'last_activity'])
+    
+    def mark_offline(self):
+        """Mark user as offline."""
+        self.is_online = False
+        self.save(update_fields=['is_online'])

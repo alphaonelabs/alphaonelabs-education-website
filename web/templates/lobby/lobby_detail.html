@@ -1,0 +1,1083 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ lobby.name }} - Virtual Lobby{% endblock %}
+
+{% block extra_css %}
+<style>
+    .lobby-container {
+        height: calc(100vh - 80px);
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .lobby-header {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        color: white;
+        padding: 1rem;
+        border-radius: 8px 8px 0 0;
+    }
+    
+    .lobby-main {
+        flex: 1;
+        display: flex;
+        background: #f8fafc;
+    }
+    
+    .virtual-space {
+        flex: 1;
+        position: relative;
+        background: linear-gradient(45deg, #e0f2fe 25%, transparent 25%), 
+                    linear-gradient(-45deg, #e0f2fe 25%, transparent 25%), 
+                    linear-gradient(45deg, transparent 75%, #e0f2fe 75%), 
+                    linear-gradient(-45deg, transparent 75%, #e0f2fe 75%);
+        background-size: 20px 20px;
+        background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        overflow: hidden;
+    }
+    
+    .virtual-space canvas {
+        cursor: crosshair;
+    }
+    
+    .lobby-sidebar {
+        width: 300px;
+        background: white;
+        border-left: 1px solid #e5e7eb;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .participants-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1rem;
+    }
+    
+    .participant-item {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem;
+        border-radius: 6px;
+        margin-bottom: 0.5rem;
+        transition: background-color 0.2s;
+    }
+    
+    .participant-item:hover {
+        background-color: #f3f4f6;
+    }
+    
+    .participant-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        margin-right: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        color: white;
+        font-size: 14px;
+    }
+    
+    .online-indicator {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #10b981;
+        margin-left: auto;
+    }
+    
+    .chat-section {
+        border-top: 1px solid #e5e7eb;
+        padding: 1rem;
+        max-height: 300px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        margin-bottom: 1rem;
+        max-height: 200px;
+    }
+    
+    .chat-message {
+        margin-bottom: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 6px;
+        background-color: #f3f4f6;
+    }
+    
+    .chat-message.own {
+        background-color: #dbeafe;
+        margin-left: 2rem;
+    }
+    
+    .chat-input {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+    
+    .chat-input input {
+        flex: 1;
+        padding: 0.75rem;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: border-color 0.2s ease;
+    }
+    
+    .chat-input input:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .chat-input button {
+        padding: 0.75rem 1rem;
+        background-color: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: background-color 0.2s ease;
+    }
+    
+    .chat-input button:hover {
+        background-color: #2563eb;
+    }
+    
+    .chat-input button:disabled {
+        background-color: #9ca3af;
+        cursor: not-allowed;
+    }
+    
+    .controls-panel {
+        position: absolute;
+        top: 1rem;
+        right: 1rem;
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        z-index: 10;
+        min-width: 180px;
+    }
+    
+    .control-btn {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        border: none;
+        cursor: pointer;
+        margin-bottom: 0.5rem;
+    }
+    
+    .control-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    
+    .control-btn:last-child {
+        margin-bottom: 0;
+    }
+    
+    .mini-map {
+        position: absolute;
+        bottom: 1rem;
+        right: 1rem;
+        width: 150px;
+        height: 100px;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        z-index: 10;
+    }
+    
+    .connection-status {
+        position: absolute;
+        top: 1rem;
+        left: 1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 10;
+    }
+    
+    .connection-status.connected {
+        background-color: #d1fae5;
+        color: #065f46;
+    }
+    
+    .connection-status.disconnected {
+        background-color: #fee2e2;
+        color: #991b1b;
+    }
+    
+    .connection-status.connecting {
+        background-color: #fef3c7;
+        color: #92400e;
+    }
+    
+    @keyframes actionEffect {
+        0% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+        50% {
+            opacity: 0.8;
+            transform: translateY(-20px) scale(1.2);
+        }
+        100% {
+            opacity: 0;
+            transform: translateY(-40px) scale(0.8);
+        }
+    }
+    
+    .action-effect {
+        animation: actionEffect 2s ease-out forwards;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="lobby-container">
+    <!-- Lobby Header -->
+    <div class="lobby-header">
+        <div class="flex justify-between items-center">
+            <div>
+                <h1 class="text-2xl font-bold">{{ lobby.name }}</h1>
+                <p class="text-blue-100">{{ lobby.description|default:"Join the conversation!" }}</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span class="text-blue-100">
+                    👥 <span id="online-count">{{ lobby.get_online_count }}</span>/{{ lobby.max_users }} online
+                </span>
+                <a 
+                    href="{% url 'leave_lobby' lobby.id %}"
+                    onclick="return confirm('Are you sure you want to leave this lobby?')"
+                    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg transition duration-200"
+                >
+                    Leave Lobby
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Lobby Area -->
+    <div class="lobby-main">
+        <!-- Virtual Space -->
+        <div class="virtual-space" id="virtualSpace">
+            <canvas id="lobbyCanvas" width="100%" height="100%"></canvas>
+            
+            <!-- Connection Status -->
+            <div class="connection-status connecting" id="connectionStatus">
+                🔌 Connecting...
+            </div>
+            
+            <!-- Controls Panel -->
+            <div class="controls-panel">
+                <h3 class="font-semibold mb-4 text-gray-800 text-center">Controls</h3>
+                <button 
+                    id="waveBtn"
+                    class="control-btn bg-yellow-400 hover:bg-yellow-500 text-white"
+                >
+                    👋 Wave
+                </button>
+                <button 
+                    id="danceBtn"
+                    class="control-btn bg-purple-400 hover:bg-purple-500 text-white"
+                >
+                    💃 Dance
+                </button>
+                <button 
+                    id="settingsBtn"
+                    class="control-btn bg-gray-500 hover:bg-gray-600 text-white"
+                >
+                    ⚙️ Settings
+                </button>
+            </div>
+            
+            <!-- Mini Map -->
+            <div class="mini-map" id="miniMap">
+                <canvas id="miniMapCanvas" width="150" height="100"></canvas>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="lobby-sidebar">
+            <!-- Participants List -->
+            <div class="participants-list">
+                <h3 class="font-semibold mb-3">Participants</h3>
+                <div id="participantsList">
+                    <!-- Participants will be loaded here -->
+                </div>
+            </div>
+            
+            <!-- Chat Section -->
+            <div class="chat-section">
+                <h3 class="font-semibold mb-3">Chat</h3>
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Chat messages will appear here -->
+                </div>
+                <div class="chat-input">
+                    <input 
+                        type="text" 
+                        id="chatInput"
+                        placeholder="Type a message..."
+                        maxlength="500"
+                    >
+                    <button 
+                        id="sendBtn"
+                        class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded transition duration-200"
+                    >
+                        Send
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4">
+        <h3 class="text-xl font-semibold mb-4 text-gray-800">Avatar Settings</h3>
+        
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                Display Name
+            </label>
+            <input 
+                type="text" 
+                id="displayNameInput"
+                value="{{ participant.get_display_name }}"
+                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                maxlength="50"
+                placeholder="Enter your display name"
+            >
+        </div>
+        
+        <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+                Avatar Color
+            </label>
+            <div class="flex space-x-2">
+                <input 
+                    type="color" 
+                    id="avatarColorInput"
+                    value="{{ participant.avatar_color }}"
+                    class="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+                >
+                <input 
+                    type="text" 
+                    id="avatarColorText"
+                    value="{{ participant.avatar_color }}"
+                    class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="#3B82F6"
+                    pattern="^#[0-9A-Fa-f]{6}$"
+                >
+            </div>
+            <p class="text-xs text-gray-500 mt-1">Choose a color for your avatar</p>
+        </div>
+        
+        <div class="flex space-x-3">
+            <button 
+                id="saveSettingsBtn"
+                class="flex-1 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200 font-medium"
+            >
+                Save Settings
+            </button>
+            <button 
+                onclick="closeSettingsModal()"
+                class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition duration-200 font-medium"
+            >
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+// Virtual Lobby JavaScript
+class VirtualLobby {
+    constructor() {
+        this.canvas = document.getElementById('lobbyCanvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.miniMapCanvas = document.getElementById('miniMapCanvas');
+        this.miniMapCtx = this.miniMapCanvas.getContext('2d');
+        
+        this.websocket = null;
+        this.participants = new Map();
+        this.currentUser = {
+            id: {{ user.id }},
+            username: "{{ user.username }}",
+            displayName: "{{ participant.get_display_name }}",
+            color: "{{ participant.avatar_color }}",
+            x: {{ participant.position_x }},
+            y: {{ participant.position_y }}
+        };
+        
+        this.isMoving = false;
+        this.mousePos = { x: 0, y: 0 };
+        
+        this.init();
+    }
+    
+    init() {
+        this.setupCanvas();
+        this.setupWebSocket();
+        this.setupEventListeners();
+        this.setupControls();
+        this.startRenderLoop();
+    }
+    
+    setupCanvas() {
+        // Set canvas size to fill container
+        const container = document.getElementById('virtualSpace');
+        this.canvas.width = container.clientWidth;
+        this.canvas.height = container.clientHeight;
+        
+        // Add user's avatar to participants
+        this.participants.set(this.currentUser.id, {
+            ...this.currentUser,
+            isCurrentUser: true
+        });
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            this.canvas.width = container.clientWidth;
+            this.canvas.height = container.clientHeight;
+        });
+    }
+    
+    setupWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/lobby/{{ lobby.id }}/`;
+        
+        this.websocket = new WebSocket(wsUrl);
+        
+        this.websocket.onopen = () => {
+            console.log('Connected to lobby');
+            this.updateConnectionStatus('connected');
+        };
+        
+        this.websocket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            this.handleWebSocketMessage(data);
+        };
+        
+        this.websocket.onclose = () => {
+            console.log('Disconnected from lobby');
+            this.updateConnectionStatus('disconnected');
+            // Attempt to reconnect after 3 seconds
+            setTimeout(() => this.setupWebSocket(), 3000);
+        };
+        
+        this.websocket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            this.updateConnectionStatus('disconnected');
+        };
+    }
+    
+    setupEventListeners() {
+        // Mouse movement for avatar control
+        this.canvas.addEventListener('mousemove', (e) => {
+            const rect = this.canvas.getBoundingClientRect();
+            this.mousePos.x = e.clientX - rect.left;
+            this.mousePos.y = e.clientY - rect.top;
+            
+            if (this.isMoving) {
+                this.moveUser(this.mousePos.x, this.mousePos.y);
+            }
+        });
+        
+        this.canvas.addEventListener('mousedown', () => {
+            this.isMoving = true;
+            this.canvas.style.cursor = 'grabbing';
+        });
+        
+        this.canvas.addEventListener('mouseup', () => {
+            this.isMoving = false;
+            this.canvas.style.cursor = 'crosshair';
+        });
+        
+        // Chat input
+        const chatInput = document.getElementById('chatInput');
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                this.sendChatMessage();
+            }
+        });
+        
+        document.getElementById('sendBtn').addEventListener('click', () => {
+            this.sendChatMessage();
+        });
+    }
+    
+    setupControls() {
+        // Wave button
+        document.getElementById('waveBtn').addEventListener('click', () => {
+            this.sendUserAction('wave');
+        });
+        
+        // Dance button
+        document.getElementById('danceBtn').addEventListener('click', () => {
+            this.sendUserAction('dance');
+        });
+        
+        // Settings button
+        document.getElementById('settingsBtn').addEventListener('click', () => {
+            this.showSettingsModal();
+        });
+        
+        // Settings modal
+        document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+            this.saveSettings();
+        });
+        
+        // Color input sync
+        document.getElementById('avatarColorInput').addEventListener('input', (e) => {
+            document.getElementById('avatarColorText').value = e.target.value;
+        });
+        
+        document.getElementById('avatarColorText').addEventListener('input', (e) => {
+            if (e.target.value.match(/^#[0-9A-F]{6}$/i)) {
+                document.getElementById('avatarColorInput').value = e.target.value;
+            }
+        });
+    }
+    
+    handleWebSocketMessage(data) {
+        switch (data.type) {
+            case 'lobby_state':
+                this.handleLobbyState(data);
+                break;
+            case 'user_joined':
+                this.handleUserJoined(data);
+                break;
+            case 'user_left':
+                this.handleUserLeft(data);
+                break;
+            case 'user_moved':
+                this.handleUserMoved(data);
+                break;
+            case 'chat_message':
+                this.handleChatMessage(data);
+                break;
+            case 'user_action':
+                this.handleUserAction(data);
+                break;
+            case 'pong':
+                // Keep alive response
+                break;
+        }
+    }
+    
+    handleLobbyState(data) {
+        // Update participants list
+        this.participants.clear();
+        this.participants.set(this.currentUser.id, {
+            ...this.currentUser,
+            isCurrentUser: true
+        });
+        
+        data.participants.forEach(participant => {
+            if (participant.user_id !== this.currentUser.id) {
+                this.participants.set(participant.user_id, {
+                    id: participant.user_id,
+                    username: participant.username,
+                    displayName: participant.display_name,
+                    color: participant.avatar_color,
+                    x: participant.position_x,
+                    y: participant.position_y,
+                    isCurrentUser: false
+                });
+            }
+        });
+        
+        this.updateParticipantsList();
+        this.updateOnlineCount(data.lobby.online_count);
+    }
+    
+    handleUserJoined(data) {
+        this.participants.set(data.user_id, {
+            id: data.user_id,
+            username: data.username,
+            displayName: data.display_name,
+            color: data.avatar_color,
+            x: data.position_x,
+            y: data.position_y,
+            isCurrentUser: false
+        });
+        
+        this.updateParticipantsList();
+        this.showNotification(`${data.display_name} joined the lobby`);
+    }
+    
+    handleUserLeft(data) {
+        this.participants.delete(data.user_id);
+        this.updateParticipantsList();
+        this.showNotification(`${data.username} left the lobby`);
+    }
+    
+    handleUserMoved(data) {
+        const participant = this.participants.get(data.user_id);
+        if (participant) {
+            participant.x = data.x;
+            participant.y = data.y;
+        }
+    }
+    
+    handleChatMessage(data) {
+        this.addChatMessage(data);
+    }
+    
+    handleUserAction(data) {
+        this.showUserAction(data);
+    }
+    
+    moveUser(x, y) {
+        this.currentUser.x = x;
+        this.currentUser.y = y;
+        
+        // Update local participant
+        const participant = this.participants.get(this.currentUser.id);
+        if (participant) {
+            participant.x = x;
+            participant.y = y;
+        }
+        
+        // Send to server
+        this.sendWebSocketMessage({
+            type: 'user_movement',
+            x: x,
+            y: y
+        });
+    }
+    
+    sendChatMessage() {
+        const input = document.getElementById('chatInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const message = input.value.trim();
+        
+        if (!message) {
+            return;
+        }
+        
+        // Disable input while sending
+        input.disabled = true;
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Sending...';
+        
+        try {
+            if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+                this.sendWebSocketMessage({
+                    type: 'chat_message',
+                    message: message
+                });
+                input.value = '';
+                this.showNotification('Message sent!', 'success');
+            } else {
+                this.showNotification('Connection lost. Reconnecting...', 'warning');
+                // Attempt to reconnect
+                setTimeout(() => this.setupWebSocket(), 1000);
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+            this.showNotification('Failed to send message', 'error');
+        } finally {
+            // Re-enable input
+            input.disabled = false;
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Send';
+            input.focus();
+        }
+    }
+    
+    sendUserAction(action) {
+        this.sendWebSocketMessage({
+            type: 'user_action',
+            action: action
+        });
+    }
+    
+    sendWebSocketMessage(data) {
+        if (this.websocket && this.websocket.readyState === WebSocket.OPEN) {
+            this.websocket.send(JSON.stringify(data));
+        }
+    }
+    
+    updateConnectionStatus(status) {
+        const statusEl = document.getElementById('connectionStatus');
+        statusEl.className = `connection-status ${status}`;
+        
+        switch (status) {
+            case 'connected':
+                statusEl.textContent = '🟢 Connected';
+                break;
+            case 'disconnected':
+                statusEl.textContent = '🔴 Disconnected';
+                break;
+            case 'connecting':
+                statusEl.textContent = '🔌 Connecting...';
+                break;
+        }
+    }
+    
+    updateParticipantsList() {
+        const listEl = document.getElementById('participantsList');
+        listEl.innerHTML = '';
+        
+        this.participants.forEach(participant => {
+            const item = document.createElement('div');
+            item.className = 'participant-item';
+            
+            const avatar = document.createElement('div');
+            avatar.className = 'participant-avatar';
+            avatar.style.backgroundColor = participant.color;
+            avatar.textContent = participant.displayName.charAt(0).toUpperCase();
+            
+            const info = document.createElement('div');
+            info.className = 'flex-1';
+            info.innerHTML = `
+                <div class="font-medium text-sm">${participant.displayName}</div>
+                <div class="text-xs text-gray-500">${participant.username}</div>
+            `;
+            
+            const indicator = document.createElement('div');
+            indicator.className = 'online-indicator';
+            
+            item.appendChild(avatar);
+            item.appendChild(info);
+            item.appendChild(indicator);
+            
+            listEl.appendChild(item);
+        });
+    }
+    
+    updateOnlineCount(count) {
+        document.getElementById('online-count').textContent = count;
+    }
+    
+    addChatMessage(data) {
+        const messagesEl = document.getElementById('chatMessages');
+        const messageEl = document.createElement('div');
+        messageEl.className = `chat-message ${data.user_id === this.currentUser.id ? 'own' : ''}`;
+        
+        messageEl.innerHTML = `
+            <div class="font-medium text-sm" style="color: ${data.avatar_color}">
+                ${data.display_name}
+            </div>
+            <div class="text-sm">${this.escapeHtml(data.message)}</div>
+        `;
+        
+        messagesEl.appendChild(messageEl);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+    
+    showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 transition-all duration-300 ${
+            type === 'success' ? 'bg-green-500 text-white' :
+            type === 'error' ? 'bg-red-500 text-white' :
+            type === 'warning' ? 'bg-yellow-500 text-black' :
+            'bg-blue-500 text-white'
+        }`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+        
+        console.log(`Notification [${type}]:`, message);
+    }
+    
+    getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    
+    showUserAction(data) {
+        // Show user action notification
+        let actionText = '';
+        let emoji = '';
+        
+        switch (data.action) {
+            case 'wave':
+                actionText = `${data.display_name} waved at everyone!`;
+                emoji = '👋';
+                break;
+            case 'dance':
+                actionText = `${data.display_name} is dancing!`;
+                emoji = '💃';
+                break;
+            default:
+                actionText = `${data.display_name} performed an action!`;
+                emoji = '✨';
+        }
+        
+        this.showNotification(`${emoji} ${actionText}`, 'info');
+        
+        // Add visual effect on the canvas for the user
+        if (data.user_id !== this.currentUser.id) {
+            const participant = this.participants.get(data.user_id);
+            if (participant) {
+                this.showActionEffect(participant, data.action);
+            }
+        }
+    }
+    
+    showActionEffect(participant, action) {
+        // Create temporary visual effect
+        const effect = document.createElement('div');
+        effect.className = 'action-effect';
+        effect.style.position = 'absolute';
+        effect.style.left = participant.x + 'px';
+        effect.style.top = (participant.y - 50) + 'px';
+        effect.style.fontSize = '24px';
+        effect.style.pointerEvents = 'none';
+        effect.style.zIndex = '100';
+        effect.style.animation = 'actionEffect 2s ease-out forwards';
+        
+        switch (action) {
+            case 'wave':
+                effect.textContent = '👋';
+                break;
+            case 'dance':
+                effect.textContent = '💃';
+                break;
+            default:
+                effect.textContent = '✨';
+        }
+        
+        this.canvas.parentElement.appendChild(effect);
+        
+        // Remove after animation
+        setTimeout(() => {
+            if (effect.parentNode) {
+                effect.parentNode.removeChild(effect);
+            }
+        }, 2000);
+    }
+    
+    showSettingsModal() {
+        document.getElementById('settingsModal').classList.remove('hidden');
+        document.getElementById('settingsModal').classList.add('flex');
+    }
+    
+    closeSettingsModal() {
+        document.getElementById('settingsModal').classList.add('hidden');
+        document.getElementById('settingsModal').classList.remove('flex');
+    }
+    
+    async saveSettings() {
+        const displayName = document.getElementById('displayNameInput').value.trim();
+        const avatarColor = document.getElementById('avatarColorInput').value;
+        
+        if (!displayName) {
+            this.showNotification('Display name is required', 'error');
+            return;
+        }
+        
+        // Validate color format
+        if (!avatarColor.match(/^#[0-9A-Fa-f]{6}$/)) {
+            this.showNotification('Please enter a valid hex color', 'error');
+            return;
+        }
+        
+        try {
+            // Get CSRF token from cookies
+            const csrfToken = this.getCookie('csrftoken');
+            
+            const response = await fetch(`/lobby/{{ lobby.id }}/settings/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: `display_name=${encodeURIComponent(displayName)}&avatar_color=${encodeURIComponent(avatarColor)}`
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.currentUser.displayName = data.display_name;
+                this.currentUser.color = data.avatar_color;
+                
+                // Update local participant
+                const participant = this.participants.get(this.currentUser.id);
+                if (participant) {
+                    participant.displayName = data.display_name;
+                    participant.color = data.avatar_color;
+                }
+                
+                this.updateParticipantsList();
+                this.closeSettingsModal();
+                this.showNotification('Settings saved successfully!', 'success');
+            } else {
+                this.showNotification('Error saving settings', 'error');
+            }
+        } catch (error) {
+            console.error('Error saving settings:', error);
+            this.showNotification('Error saving settings', 'error');
+        }
+    }
+    
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    render() {
+        // Clear canvas
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Draw grid (optional)
+        this.drawGrid();
+        
+        // Draw participants
+        this.participants.forEach(participant => {
+            this.drawParticipant(participant);
+        });
+        
+        // Update mini map
+        this.updateMiniMap();
+    }
+    
+    drawGrid() {
+        const gridSize = 50;
+        this.ctx.strokeStyle = '#e0e7ff';
+        this.ctx.lineWidth = 1;
+        
+        for (let x = 0; x < this.canvas.width; x += gridSize) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(x, 0);
+            this.ctx.lineTo(x, this.canvas.height);
+            this.ctx.stroke();
+        }
+        
+        for (let y = 0; y < this.canvas.height; y += gridSize) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, y);
+            this.ctx.lineTo(this.canvas.width, y);
+            this.ctx.stroke();
+        }
+    }
+    
+    drawParticipant(participant) {
+        const size = 40;
+        const x = participant.x - size / 2;
+        const y = participant.y - size / 2;
+        
+        // Draw avatar circle
+        this.ctx.fillStyle = participant.color;
+        this.ctx.beginPath();
+        this.ctx.arc(participant.x, participant.y, size / 2, 0, 2 * Math.PI);
+        this.ctx.fill();
+        
+        // Draw border
+        this.ctx.strokeStyle = participant.isCurrentUser ? '#1f2937' : '#6b7280';
+        this.ctx.lineWidth = participant.isCurrentUser ? 3 : 2;
+        this.ctx.stroke();
+        
+        // Draw initial
+        this.ctx.fillStyle = 'white';
+        this.ctx.font = 'bold 16px Arial';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(
+            participant.displayName.charAt(0).toUpperCase(),
+            participant.x,
+            participant.y
+        );
+        
+        // Draw name label
+        this.ctx.fillStyle = '#374151';
+        this.ctx.font = '12px Arial';
+        this.ctx.fillText(
+            participant.displayName,
+            participant.x,
+            participant.y + size / 2 + 15
+        );
+    }
+    
+    updateMiniMap() {
+        this.miniMapCtx.clearRect(0, 0, 150, 100);
+        
+        const scaleX = 150 / this.canvas.width;
+        const scaleY = 100 / this.canvas.height;
+        
+        this.participants.forEach(participant => {
+            const x = participant.x * scaleX;
+            const y = participant.y * scaleY;
+            
+            this.miniMapCtx.fillStyle = participant.color;
+            this.miniMapCtx.beginPath();
+            this.miniMapCtx.arc(x, y, 3, 0, 2 * Math.PI);
+            this.miniMapCtx.fill();
+            
+            if (participant.isCurrentUser) {
+                this.miniMapCtx.strokeStyle = '#1f2937';
+                this.miniMapCtx.lineWidth = 2;
+                this.miniMapCtx.stroke();
+            }
+        });
+    }
+    
+    startRenderLoop() {
+        const render = () => {
+            this.render();
+            requestAnimationFrame(render);
+        };
+        render();
+    }
+}
+
+// Initialize the virtual lobby when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    new VirtualLobby();
+});
+
+// Close settings modal when clicking outside
+document.getElementById('settingsModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        document.querySelector('.closeSettingsModal')();
+    }
+});
+
+// Make closeSettingsModal globally available
+window.closeSettingsModal = function() {
+    document.getElementById('settingsModal').classList.add('hidden');
+    document.getElementById('settingsModal').classList.remove('flex');
+};
+</script>
+{% endblock %}
