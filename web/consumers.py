@@ -191,8 +191,8 @@ class LobbyConsumer(AsyncWebsocketConsumer):
     
     async def send_lobby_state(self):
         """Send current lobby state to the connected user."""
-        participants = await self.get_online_participants()
-        lobby = await self.get_lobby()
+        lobby = await self.get_lobby_with_online_participants()
+        participants = lobby.online_participants_list
         
         state = {
             'type': 'lobby_state',
