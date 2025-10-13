@@ -773,8 +773,8 @@ class VirtualLobby {
         messageEl.className = `chat-message ${data.user_id === this.currentUser.id ? 'own' : ''}`;
         
         messageEl.innerHTML = `
-            <div class="font-medium text-sm" style="color: ${data.avatar_color}">
-                ${data.display_name}
+            <div class="font-medium text-sm" style="color: ${this.escapeHtml(data.avatar_color)}">
+                ${this.escapeHtml(data.display_name)}
             </div>
             <div class="text-sm">${this.escapeHtml(data.message)}</div>
         `;
