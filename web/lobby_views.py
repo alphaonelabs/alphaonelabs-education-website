@@ -17,8 +17,9 @@ def lobby_list(request):
     lobbies = VirtualLobby.objects.filter(is_active=True).order_by('-created_at')
     
     # Add online count for each lobby
-    for lobby in lobbies:
-        lobby.online_count = lobby.get_online_count()
+    lobbies = VirtualLobby.objects.filter(is_active=True).annotate(
+        online_count=Count('participants', filter=Q(participants__is_online=True))
+    ).order_by('-created_at')
     
     context = {
         'lobbies': lobbies,
