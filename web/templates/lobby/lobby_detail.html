@@ -771,14 +771,16 @@ class VirtualLobby {
         const messagesEl = document.getElementById('chatMessages');
         const messageEl = document.createElement('div');
         messageEl.className = `chat-message ${data.user_id === this.currentUser.id ? 'own' : ''}`;
-        
+
+        const safeName = this.escapeHtml(data.display_name);
+        const safeColor = /^#[0-9A-F]{6}$/i.test(data.avatar_color) ? data.avatar_color : '#3B82F6';
         messageEl.innerHTML = `
-            <div class="font-medium text-sm" style="color: ${this.escapeHtml(data.avatar_color)}">
-                ${this.escapeHtml(data.display_name)}
+            <div class="font-medium text-sm" style="color: ${safeColor}">
+                ${safeName}
             </div>
             <div class="text-sm">${this.escapeHtml(data.message)}</div>
         `;
-        
+
         messagesEl.appendChild(messageEl);
         messagesEl.scrollTop = messagesEl.scrollHeight;
     }
