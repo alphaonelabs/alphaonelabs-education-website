@@ -3176,7 +3176,7 @@ class LobbyParticipant(models.Model):
     
     def get_avatar_url(self):
         """Get the avatar URL or use default."""
-        return self.avatar_url or f"/static/images/default_avatar.png"
+        return self.avatar_url or "/static/images/default_avatar.png"
     
     def is_active(self):
         """Check if the user was active recently (within last 5 minutes)."""
