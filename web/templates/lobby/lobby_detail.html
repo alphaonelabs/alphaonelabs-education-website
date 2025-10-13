@@ -1070,7 +1070,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // Close settings modal when clicking outside
 document.getElementById('settingsModal').addEventListener('click', function(e) {
     if (e.target === this) {
-        document.querySelector('.closeSettingsModal')();
+        window.closeSettingsModal();
     }
 });
 
