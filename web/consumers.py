@@ -74,7 +74,7 @@ class LobbyConsumer(AsyncWebsocketConsumer):
             # Mark participant as offline
             participant = await self.get_participant()
             if participant:
-                await participant.mark_offline()
+                participant.mark_offline()
             
             # Leave lobby group
             await self.channel_layer.group_discard(
