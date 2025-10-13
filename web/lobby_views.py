@@ -17,9 +17,16 @@ def lobby_list(request):
     lobbies = VirtualLobby.objects.filter(is_active=True).order_by('-created_at')
     
     # Add online count for each lobby
-    lobbies = VirtualLobby.objects.filter(is_active=True).annotate(
-        online_count=Count('participants', filter=Q(participants__is_online=True))
-    ).order_by('-created_at')
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
+from django.db import transaction
+from django.db.models import Count, Q
+from .models import VirtualLobby, LobbyParticipant
     
     context = {
         'lobbies': lobbies,
