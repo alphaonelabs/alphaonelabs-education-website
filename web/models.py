@@ -3195,7 +3195,6 @@ class LobbyParticipant(models.Model):
     
     def mark_online(self):
         """Mark user as online and update activity."""
-        from django.utils import timezone
         
         self.is_online = True
         self.last_activity = timezone.now()
