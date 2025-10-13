@@ -43,7 +43,7 @@ class LobbyConsumer(AsyncWebsocketConsumer):
         # Create or update participant
         participant = await self.get_or_create_participant()
         if participant:
-            await participant.mark_online()
+            participant.mark_online()
             
             # Accept connection
             await self.accept()
