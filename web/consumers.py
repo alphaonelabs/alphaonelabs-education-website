@@ -123,7 +123,7 @@ class LobbyConsumer(AsyncWebsocketConsumer):
         # Update participant position
         participant = await self.get_participant()
         if participant:
-            await participant.update_position(x, y)
+            participant.update_position(x, y)
             
             # Broadcast movement to other users
             await self.channel_layer.group_send(
