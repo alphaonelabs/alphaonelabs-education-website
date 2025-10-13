@@ -160,7 +160,7 @@ def update_participant_settings(request, lobby_id):
 def lobby_participants_api(request, lobby_id):
     """API endpoint to get lobby participants."""
     lobby = get_object_or_404(VirtualLobby, id=lobby_id)
-    participants = lobby.get_online_participants()
+    participants = lobby.get_online_participants().select_related('user')
     
     participants_data = []
     for participant in participants:
