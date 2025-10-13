@@ -205,7 +205,7 @@ def lobby_stats(request):
             {
                 'id': p.lobby.id,
                 'name': p.lobby.name,
-                'online_count': p.lobby.get_online_count()
+                'online_count': p.lobby_online_count
             }
             for p in user_participations
         ]
