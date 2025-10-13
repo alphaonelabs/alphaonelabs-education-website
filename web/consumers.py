@@ -288,10 +288,10 @@ class LobbyConsumer(AsyncWebsocketConsumer):
         except VirtualLobby.DoesNotExist:
             return None
     
-    @database_sync_to_async
-    def can_user_join_lobby(self):
+    
+    async def can_user_join_lobby(self):
         """Check if user can join the lobby."""
-        lobby = self.get_lobby()
+        lobby = await self.get_lobby()
         if not lobby:
             return False, "Lobby not found"
         return lobby.can_user_join(self.user)
