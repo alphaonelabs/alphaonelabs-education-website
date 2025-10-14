@@ -5,14 +5,11 @@ FROM python:3.10-slim@sha256:f9fd9a142c9e3bc54d906053b756eb7e7e386ee1cf784d82c25
 WORKDIR /app
 
 # Install dependencies
-RUN apt-get update && apt-get install -y \
-    curl \
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     pkg-config \
     default-libmysqlclient-dev \
     build-essential \
-    && rm -rf /var/lib/apt/lists/*
     && rm -rf /var/lib/apt/lists/*
 
 # Copy only dependency manifests first (better layer caching)
