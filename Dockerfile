@@ -36,17 +36,11 @@ COPY .env.sample .env
 # Collect static files
 RUN python manage.py collectstatic --noinput
 
-# Run migrations and create test data
-RUN python manage.py migrate && \
-    python manage.py create_test_data
+# Copy entrypoint script and make it executable
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
-# Create superuser (after test data to avoid being cleared)
-ENV DJANGO_SUPERUSER_USERNAME=admin
-ENV DJANGO_SUPERUSER_EMAIL=admin@example.com
-ARG DJANGO_SUPERUSER_PASSWORD=adminpassword
-ENV DJANGO_SUPERUSER_PASSWORD=${DJANGO_SUPERUSER_PASSWORD}
-RUN python manage.py createsuperuser --noinput && \
-    python manage.py shell -c "import os; from django.contrib.auth import get_user_model; User = get_user_model(); u = User.objects.get(username=os.environ['DJANGO_SUPERUSER_USERNAME']); u.set_password(os.environ['DJANGO_SUPERUSER_PASSWORD']); u.save()"
+# Superuser creation is handled at runtime by the entrypoint (reads env vars).
 
 # Echo message during build
 RUN echo "Your Project is now live on http://localhost:8000"
@@ -54,5 +48,6 @@ RUN echo "Your Project is now live on http://localhost:8000"
 # Expose port
 EXPOSE 8000
 
-# Start the server
+# Start the server via entrypoint
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
