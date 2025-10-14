@@ -486,6 +486,17 @@ urlpatterns += i18n_patterns(
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
     path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
+    # Infographic URLs
+    path("infographics/", views.infographic_list, name="infographic_list"),
+    path("infographics/create/", views.infographic_create, name="infographic_create"),
+    path("infographics/<int:pk>/", views.infographic_detail, name="infographic_detail"),
+    path("infographics/<int:pk>/share/", views.infographic_share, name="infographic_share"),
+    # Lesson Summary URLs
+    path("lesson-summaries/", views.lesson_summary_list, name="lesson_summary_list"),
+    path("lesson-summaries/create/", views.lesson_summary_create, name="lesson_summary_create"),
+    path("lesson-summaries/<int:pk>/", views.lesson_summary_detail, name="lesson_summary_detail"),
+    path("lesson-summaries/<int:pk>/edit/", views.lesson_summary_update, name="lesson_summary_update"),
+    path("lesson-summaries/<int:pk>/delete/", views.lesson_summary_delete, name="lesson_summary_delete"),
     prefix_default_language=True,
 )
 
