@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+{% load static %}
+{% load referral_filters %}
+
+{% block title %}Referral Dashboard - Alpha One Labs{% endblock %}
+
+{% block content %}
+  <div class="container mx-auto px-4 py-8 max-w-7xl">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-2">
+        <i class="fas fa-users text-teal-300 mr-3"></i>
+        Referral Dashboard
+      </h1>
+      <p class="text-gray-600 dark:text-gray-300">Share your referral link and earn rewards when friends join Alpha One Labs!</p>
+    </div>
+    <!-- Stats Overview -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <!-- Total Referrals -->
+      <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg p-6 text-white">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-user-plus text-3xl opacity-80"></i>
+          <span class="text-3xl font-bold">{{ total_referrals }}</span>
+        </div>
+        <p class="text-sm opacity-90">Total Referrals</p>
+      </div>
+      <!-- Total Enrollments -->
+      <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg p-6 text-white">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-graduation-cap text-3xl opacity-80"></i>
+          <span class="text-3xl font-bold">{{ total_enrollments }}</span>
+        </div>
+        <p class="text-sm opacity-90">Total Enrollments</p>
+      </div>
+      <!-- Total Earnings -->
+      <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-lg p-6 text-white">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-dollar-sign text-3xl opacity-80"></i>
+          <span class="text-3xl font-bold">${{ referral_earnings|floatformat:2 }}</span>
+        </div>
+        <p class="text-sm opacity-90">Total Earnings</p>
+      </div>
+      <!-- Total Points -->
+      <div class="bg-gradient-to-br from-yellow-500 to-orange-500 rounded-lg p-6 text-white">
+        <div class="flex items-center justify-between mb-2">
+          <i class="fas fa-star text-3xl opacity-80"></i>
+          <span class="text-3xl font-bold">{{ total_points }}</span>
+        </div>
+        <p class="text-sm opacity-90">Referral Points</p>
+      </div>
+    </div>
+    <!-- Referral Link Section -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+        <i class="fas fa-link text-teal-300 mr-2"></i>
+        Your Referral Link
+      </h2>
+      <div class="flex flex-col md:flex-row gap-4">
+        <div class="flex-1">
+          <input type="text"
+                 id="referralLink"
+                 value="{{ request.scheme }}://{{ request.get_host }}{% url 'handle_referral' referral_code %}"
+                 readonly
+                 class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white" />
+        </div>
+        <button onclick="copyReferralLink()"
+                class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-3 rounded-lg transition duration-200 flex items-center justify-center">
+          <i class="fas fa-copy mr-2"></i>
+          Copy Link
+        </button>
+      </div>
+      <!-- Social Share Buttons -->
+      <div class="mt-6">
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">Share on social media:</p>
+        <div class="flex flex-wrap gap-3">
+          <a href="https://twitter.com/intent/tweet?text=Join%20me%20on%20Alpha%20One%20Labs!&url={{ request.scheme }}://{{ request.get_host }}{% url 'handle_referral' referral_code %}"
+             target="_blank"
+             class="bg-blue-400 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center">
+            <i class="fab fa-twitter mr-2"></i>
+            Twitter
+          </a>
+          <a href="https://www.facebook.com/sharer/sharer.php?u={{ request.scheme }}://{{ request.get_host }}{% url 'handle_referral' referral_code %}"
+             target="_blank"
+             class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center">
+            <i class="fab fa-facebook mr-2"></i>
+            Facebook
+          </a>
+          <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.scheme }}://{{ request.get_host }}{% url 'handle_referral' referral_code %}"
+             target="_blank"
+             class="bg-blue-700 hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center">
+            <i class="fab fa-linkedin mr-2"></i>
+            LinkedIn
+          </a>
+          <a href="mailto:?subject=Join%20me%20on%20Alpha%20One%20Labs&body=I%20thought%20you%20might%20be%20interested%20in%20Alpha%20One%20Labs:%20{{ request.scheme }}://{{ request.get_host }}{% url 'handle_referral' referral_code %}"
+             class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition duration-200 flex items-center">
+            <i class="fas fa-envelope mr-2"></i>
+            Email
+          </a>
+        </div>
+      </div>
+    </div>
+    <!-- Milestone Progress -->
+    {% if next_milestone %}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+          <i class="fas fa-trophy text-yellow-500 mr-2"></i>
+          Next Milestone: {{ next_milestone.title }}
+        </h2>
+        <div class="mb-4">
+          <div class="flex justify-between text-sm text-gray-600 dark:text-gray-400 mb-2">
+            <span>{{ total_referrals }} / {{ next_milestone.referral_count }} referrals</span>
+            <span>{{ referral_progress|floatformat:0 }}%</span>
+          </div>
+          <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
+            <div class="bg-gradient-to-r from-teal-300 to-teal-400 h-4 rounded-full transition-all duration-500"
+                 style="width: {{ referral_progress }}%"></div>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-4 text-sm">
+          {% if next_milestone.monetary_reward > 0 %}
+            <div class="flex items-center text-green-600 dark:text-green-400">
+              <i class="fas fa-dollar-sign mr-2"></i>
+              <span><strong>${{ next_milestone.monetary_reward|floatformat:2 }}</strong> cash reward</span>
+            </div>
+          {% endif %}
+          {% if next_milestone.points_reward > 0 %}
+            <div class="flex items-center text-yellow-600 dark:text-yellow-400">
+              <i class="fas fa-star mr-2"></i>
+              <span><strong>{{ next_milestone.points_reward }}</strong> points</span>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    {% else %}
+      <div class="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg shadow-lg p-6 mb-8 text-white">
+        <h2 class="text-2xl font-bold mb-2">
+          <i class="fas fa-crown mr-2"></i>
+          Congratulations!
+        </h2>
+        <p class="text-lg">You've reached all available milestones! You're a legendary referrer! 🎉</p>
+      </div>
+    {% endif %}
+    <!-- All Milestones -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+      <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+        <i class="fas fa-list text-teal-300 mr-2"></i>
+        Referral Milestones
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for milestone in all_milestones %}
+          {% with earned=earned_rewards|filter_by_milestone:milestone.id %}
+            <div class="border {% if earned %}border-green-500 bg-green-50 dark:bg-green-900/20{% else %}border-gray-300 dark:border-gray-600{% endif %} rounded-lg p-4">
+              <div class="flex items-start justify-between mb-3">
+                <div class="flex items-center">
+                  <i class="{{ milestone.badge_icon }} text-2xl {% if earned %}text-green-600 dark:text-green-400{% else %}text-gray-400 dark:text-gray-500{% endif %} mr-3"></i>
+                  <div>
+                    <h3 class="font-bold text-gray-900 dark:text-white">{{ milestone.title }}</h3>
+                    <p class="text-sm text-gray-600 dark:text-gray-400">{{ milestone.referral_count }} referrals</p>
+                  </div>
+                </div>
+                {% if earned %}
+                  <i class="fas fa-check-circle text-green-600 dark:text-green-400 text-xl"></i>
+                {% endif %}
+              </div>
+              <p class="text-sm text-gray-600 dark:text-gray-400 mb-3">{{ milestone.description }}</p>
+              <div class="flex gap-3 text-xs">
+                {% if milestone.monetary_reward > 0 %}
+                  <span class="bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300 px-2 py-1 rounded">
+                    💰 ${{ milestone.monetary_reward|floatformat:2 }}
+                  </span>
+                {% endif %}
+                {% if milestone.points_reward > 0 %}
+                  <span class="bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300 px-2 py-1 rounded">
+                    ⭐ {{ milestone.points_reward }} pts
+                  </span>
+                {% endif %}
+              </div>
+            </div>
+          {% endwith %}
+        {% endfor %}
+      </div>
+    </div>
+    <!-- Earned Rewards -->
+    {% if earned_rewards %}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-8">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+          <i class="fas fa-gift text-purple-500 mr-2"></i>
+          Your Rewards History
+        </h2>
+        <div class="space-y-4">
+          {% for reward in earned_rewards %}
+            <div class="border border-gray-200 dark:border-gray-700 rounded-lg p-4 flex items-center justify-between">
+              <div class="flex items-center">
+                <i class="{{ reward.milestone.badge_icon }} text-2xl text-purple-600 dark:text-purple-400 mr-4"></i>
+                <div>
+                  <h3 class="font-bold text-gray-900 dark:text-white">{{ reward.milestone.title }}</h3>
+                  <p class="text-sm text-gray-600 dark:text-gray-400">Earned {{ reward.earned_at|date:"M d, Y" }}</p>
+                </div>
+              </div>
+              <div class="text-right">
+                {% if reward.monetary_amount > 0 %}
+                  <p class="text-green-600 dark:text-green-400 font-bold">${{ reward.monetary_amount|floatformat:2 }}</p>
+                {% endif %}
+                {% if reward.points_amount > 0 %}
+                  <p class="text-yellow-600 dark:text-yellow-400 text-sm">+{{ reward.points_amount }} points</p>
+                {% endif %}
+                {% if reward.is_claimed %}
+                  <span class="text-xs text-gray-500 dark:text-gray-400">✓ Claimed</span>
+                {% else %}
+                  <span class="text-xs text-orange-500 dark:text-orange-400">⏳ Pending</span>
+                {% endif %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+    <!-- Referrals List -->
+    {% if referrals %}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+          <i class="fas fa-users text-teal-300 mr-2"></i>
+          Your Referrals ({{ total_referrals }})
+        </h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead class="bg-gray-50 dark:bg-gray-900">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">User</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Joined</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Enrollments</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {% for referral in referrals %}
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex items-center">
+                      <div class="text-sm font-medium text-gray-900 dark:text-white">{{ referral.user.username }}</div>
+                    </div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-500 dark:text-gray-400">{{ referral.created_at|date:"M d, Y" }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900 dark:text-white">{{ referral.user.enrollments.count }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    {% if referral.user.enrollments.count > 0 %}
+                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">Active</span>
+                    {% else %}
+                      <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">Registered</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% else %}
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 text-center">
+        <i class="fas fa-user-friends text-6xl text-gray-400 dark:text-gray-600 mb-4"></i>
+        <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">No Referrals Yet</h3>
+        <p class="text-gray-600 dark:text-gray-400 mb-4">Start sharing your referral link to earn rewards!</p>
+        <button onclick="copyReferralLink()"
+                class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-3 rounded-lg transition duration-200 inline-flex items-center">
+          <i class="fas fa-copy mr-2"></i>
+          Copy Referral Link
+        </button>
+      </div>
+    {% endif %}
+  </div>
+  <script>
+      function copyReferralLink() {
+          const linkInput = document.getElementById('referralLink');
+          linkInput.select();
+          linkInput.setSelectionRange(0, 99999); // For mobile devices
+          
+          // Use modern clipboard API if available
+          if (navigator.clipboard && window.isSecureContext) {
+              navigator.clipboard.writeText(linkInput.value).then(() => {
+                  showCopySuccess();
+              }).catch(() => {
+                  // Fallback to execCommand
+                  document.execCommand('copy');
+                  showCopySuccess();
+              });
+          } else {
+              // Fallback for older browsers
+              document.execCommand('copy');
+              showCopySuccess();
+          }
+      }
+      
+      function showCopySuccess() {
+          // Create a temporary toast notification
+          const toast = document.createElement('div');
+          toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center';
+          toast.innerHTML = '<i class="fas fa-check mr-2"></i>Referral link copied to clipboard!';
+          document.body.appendChild(toast);
+          
+          setTimeout(() => {
+              toast.remove();
+          }, 3000);
+      }
+  </script>
+{% endblock %}

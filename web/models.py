@@ -131,6 +131,78 @@ class Profile(models.Model):
         self.referral_earnings = self.referral_earnings + amount
         self.save()
 
+    def check_referral_milestones(self):
+        """Check if user has reached any new referral milestones and award rewards."""
+        from web.models import ReferralMilestone, ReferralReward
+
+        total_refs = self.total_referrals
+        # Get all active milestones the user has reached but not yet earned
+        milestones_reached = ReferralMilestone.objects.filter(
+            is_active=True, referral_count__lte=total_refs
+        ).exclude(rewards__user=self.user)
+
+        rewards_earned = []
+        for milestone in milestones_reached:
+            # Create the reward record
+            reward = ReferralReward.objects.create(
+                user=self.user, milestone=milestone, monetary_amount=milestone.monetary_reward, points_amount=milestone.points_reward
+            )
+
+            # Add monetary earnings
+            if milestone.monetary_reward > 0:
+                self.add_referral_earnings(milestone.monetary_reward)
+
+            # Add points
+            if milestone.points_reward > 0:
+                from web.models import Points
+
+                Points.add_points(
+                    user=self.user,
+                    amount=milestone.points_reward,
+                    reason=f"Referral milestone: {milestone.title}",
+                    point_type="bonus",
+                )
+
+            rewards_earned.append(reward)
+
+        return rewards_earned
+
+    @property
+    def next_referral_milestone(self):
+        """Get the next referral milestone the user can reach."""
+        from web.models import ReferralMilestone
+
+        total_refs = self.total_referrals
+        return (
+            ReferralMilestone.objects.filter(is_active=True, referral_count__gt=total_refs)
+            .order_by("referral_count")
+            .first()
+        )
+
+    @property
+    def referral_progress_percentage(self):
+        """Calculate progress towards next referral milestone."""
+        next_milestone = self.next_referral_milestone
+        if not next_milestone:
+            return 100  # All milestones reached
+
+        total_refs = self.total_referrals
+        if total_refs == 0:
+            return 0
+
+        # Get the previous milestone count (or 0 if first milestone)
+        from web.models import ReferralMilestone
+
+        prev_milestone = (
+            ReferralMilestone.objects.filter(is_active=True, referral_count__lt=next_milestone.referral_count)
+            .order_by("-referral_count")
+            .first()
+        )
+        prev_count = prev_milestone.referral_count if prev_milestone else 0
+
+        progress = ((total_refs - prev_count) / (next_milestone.referral_count - prev_count)) * 100
+        return min(progress, 100)
+
     @property
     def can_receive_payments(self):
         return self.is_teacher and self.stripe_account_id and self.stripe_account_status == "verified"
@@ -1532,6 +1604,54 @@ class ChallengeSubmission(models.Model):
 
                     logger = logging.getLogger(__name__)
                     logger.error(f"Error calculating streak for user {self.user.id}: {e}")
+
+
+class ReferralMilestone(models.Model):
+    """Model for defining referral milestones and their rewards."""
+
+    referral_count = models.PositiveIntegerField(unique=True, help_text="Number of referrals needed to reach milestone")
+    monetary_reward = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0, help_text="Cash reward in USD for reaching this milestone"
+    )
+    points_reward = models.PositiveIntegerField(default=0, help_text="Points awarded for reaching this milestone")
+    title = models.CharField(max_length=100, help_text="Milestone title (e.g., 'Bronze Referrer', 'Silver Referrer')")
+    description = models.TextField(blank=True, help_text="Description of the milestone achievement")
+    badge_icon = models.CharField(
+        max_length=100,
+        default="fas fa-trophy",
+        help_text="FontAwesome icon class for the milestone badge",
+    )
+    is_active = models.BooleanField(default=True, help_text="Whether this milestone is currently active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["referral_count"]
+        verbose_name = "Referral Milestone"
+        verbose_name_plural = "Referral Milestones"
+
+    def __str__(self):
+        return f"{self.title} - {self.referral_count} referrals"
+
+
+class ReferralReward(models.Model):
+    """Model for tracking referral rewards earned by users."""
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="referral_rewards")
+    milestone = models.ForeignKey(ReferralMilestone, on_delete=models.CASCADE, related_name="rewards")
+    earned_at = models.DateTimeField(auto_now_add=True)
+    monetary_amount = models.DecimalField(max_digits=10, decimal_places=2, help_text="Cash reward earned")
+    points_amount = models.PositiveIntegerField(help_text="Points earned")
+    is_claimed = models.BooleanField(default=False, help_text="Whether the monetary reward has been claimed")
+
+    class Meta:
+        unique_together = ["user", "milestone"]
+        ordering = ["-earned_at"]
+        verbose_name = "Referral Reward"
+        verbose_name_plural = "Referral Rewards"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.milestone.title}"
 
 
 class Points(models.Model):

@@ -13,6 +13,13 @@ def handle_referral(user, referrer_code):
         user.profile.referred_by = referrer
         user.profile.save()
 
+        # Check for referral milestones and award rewards
+        rewards_earned = referrer.check_referral_milestones()
+
+        # Send notification emails for any milestone rewards earned
+        for reward in rewards_earned:
+            send_milestone_reward_email(referrer.user, reward)
+
         # If the referrer is a teacher, check if this is their first student
         if referrer.is_teacher and referrer.total_referrals == 1:
             referrer.add_referral_earnings(5)
@@ -45,3 +52,43 @@ def send_referral_reward_email(user, referred_user, amount, reward_type):
         [user.email],
         fail_silently=True,
     )
+
+
+def send_milestone_reward_email(user, reward):
+    """Send email notification about milestone reward achievement."""
+    subject = f"🎉 Referral Milestone Achievement: {reward.milestone.title}!"
+
+    message = f"""
+Congratulations {user.get_full_name() or user.username}!
+
+You've reached a new referral milestone: {reward.milestone.title}!
+
+{reward.milestone.description}
+
+Your Rewards:
+"""
+
+    if reward.monetary_amount > 0:
+        message += f"💰 Cash Reward: ${reward.monetary_amount}\n"
+
+    if reward.points_amount > 0:
+        message += f"⭐ Points Earned: {reward.points_amount}\n"
+
+    message += f"""
+Total Referrals: {user.profile.total_referrals}
+Total Referral Earnings: ${user.profile.referral_earnings}
+
+Keep sharing and earning! Check out your next milestone in your profile.
+
+Thanks for being an amazing advocate!
+The Alpha One Labs Team
+"""
+
+    send_mail(
+        subject,
+        message,
+        settings.DEFAULT_FROM_EMAIL,
+        [user.email],
+        fail_silently=True,
+    )
+
