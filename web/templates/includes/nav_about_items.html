@@ -1,0 +1,26 @@
+<!-- ABOUT navigation items - shared between desktop and mobile -->
+<a href="{% url 'about' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-circle-info mr-2 text-teal-500"></i>
+  <span>Our Mission</span>
+</a>
+<a href="{% url 'terms' %}#general"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-file-contract mr-2 text-teal-500"></i>
+  <span>Terms</span>
+</a>
+<a href="{% url 'system_status' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-chart-line mr-2 text-teal-500"></i>
+  <span>Status</span>
+</a>
+<a href="{% url 'feedback' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-comment-dots mr-2 text-teal-500"></i>
+  <span>Feedback</span>
+</a>
+<a href="{% url 'donate' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-hand-holding-heart mr-2 text-teal-500"></i>
+  <span>Donate</span>
+</a>

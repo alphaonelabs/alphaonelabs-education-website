@@ -1,0 +1,46 @@
+<!-- LEARN navigation items - shared between desktop and mobile -->
+<a href="{% url 'classes_map' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-map-marker-alt mr-2 text-teal-500"></i>
+  <span>Classes Near Me</span>
+</a>
+<a href="{% url 'course_search' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-book-open mr-2 text-teal-500"></i>
+  <span>Courses</span>
+</a>
+<a href="{% url 'subjects' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-list-check mr-2 text-teal-500"></i>
+  <span>Subjects</span>
+</a>
+<a href="{% url 'quiz_list' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-question-circle mr-2 text-teal-500"></i>
+  <span>Quizzes</span>
+</a>
+<a href="{% url 'educational_videos_list' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-video mr-2 text-teal-500"></i>
+  <span>Videos</span>
+</a>
+<a href="{% url 'challenge_list' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-trophy mr-2 text-teal-500"></i>
+  <span>Challenges</span>
+</a>
+<a href="{% url 'graphing_calculator' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-calculator mr-2 text-teal-500"></i>
+  <span>Graphing Calculator</span>
+</a>
+<a href="{% url 'whiteboard' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-palette mr-2 text-teal-500"></i>
+  <span>Whiteboard</span>
+</a>
+<a href="{% url 'all_study_groups' %}"
+   class="{% if mobile %}flex items-center py-2 px-3 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md{% else %}block px-4 py-2 rounded-md text-gray-700 dark:text-gray-200 hover:bg-teal-50 dark:hover:bg-teal-900 hover:text-teal-600 dark:hover:text-teal-300{% endif %}">
+  <i class="fas fa-users mr-2 text-teal-500"></i>
+  <span>Study Groups</span>
+</a>
