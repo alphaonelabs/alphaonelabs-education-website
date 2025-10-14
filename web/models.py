@@ -2269,6 +2269,26 @@ class UserQuiz(models.Model):
         self.calculate_score()
         self.save()
 
+        # Create a live activity event
+        if self.user:
+            try:
+                # Get user's location from profile if available
+                location = ""
+                if hasattr(self.user, "profile") and self.user.profile:
+                    # We don't have a location field in profile, so we'll use a generic message
+                    location = ""
+
+                # Create activity event
+                LiveActivityEvent.objects.create(
+                    event_type="quiz_completed",
+                    user=self.user,
+                    message=f"{self.user.username} just completed a quiz!",
+                    location=location,
+                )
+            except Exception:
+                # Silently fail if event creation fails to not disrupt quiz completion
+                pass
+
     @property
     def duration(self):
         """Return the duration of the quiz attempt as a formatted string."""
@@ -3085,3 +3105,28 @@ class Response(models.Model):
 
     def __str__(self):
         return f"Response by {self.user.username} to {self.question.text}"
+
+
+class LiveActivityEvent(models.Model):
+    """Model for tracking live activity events like quiz completions, enrollments, etc."""
+
+    EVENT_TYPES = [
+        ("quiz_completed", "Quiz Completed"),
+        ("enrollment", "Course Enrollment"),
+        ("achievement", "Achievement Earned"),
+    ]
+
+    event_type = models.CharField(max_length=20, choices=EVENT_TYPES)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="activity_events", null=True, blank=True)
+    message = models.CharField(max_length=255)
+    location = models.CharField(max_length=100, blank=True, help_text="User's city/state")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.event_type} - {self.message}"

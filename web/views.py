@@ -8097,3 +8097,78 @@ def leave_session_waiting_room(request, course_slug):
         messages.info(request, "You are not in the session waiting room for this course.")
 
     return redirect("course_detail", slug=course_slug)
+
+
+def live_stats_api(request):
+    """API endpoint for live statistics."""
+    from .models import Enrollment, UserQuiz
+
+    # Count active students (those with enrollments in last 30 days)
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+    active_students = Enrollment.objects.filter(enrolled_at__gte=thirty_days_ago).values("student").distinct().count()
+
+    # Count students currently in session (sessions happening now)
+    now = timezone.now()
+    students_in_session = (
+        SessionAttendance.objects.filter(session__start_time__lte=now, session__end_time__gte=now)
+        .values("student")
+        .distinct()
+        .count()
+    )
+
+    # Count total quizzes completed today
+    today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    quizzes_completed_today = UserQuiz.objects.filter(completed=True, end_time__gte=today_start).count()
+
+    # Total enrolled students
+    total_students = Enrollment.objects.values("student").distinct().count()
+
+    return JsonResponse(
+        {
+            "active_students": active_students,
+            "students_in_session": students_in_session,
+            "quizzes_completed_today": quizzes_completed_today,
+            "total_students": total_students,
+        }
+    )
+
+
+def live_activity_feed_api(request):
+    """API endpoint for recent activity feed."""
+    from .models import LiveActivityEvent
+
+    # Get the last 10 activity events
+    recent_events = LiveActivityEvent.objects.select_related("user").order_by("-created_at")[:10]
+
+    events_data = []
+    for event in recent_events:
+        events_data.append(
+            {
+                "id": event.id,
+                "event_type": event.event_type,
+                "message": event.message,
+                "location": event.location,
+                "created_at": event.created_at.isoformat(),
+                "time_ago": _get_time_ago(event.created_at),
+            }
+        )
+
+    return JsonResponse({"events": events_data})
+
+
+def _get_time_ago(dt):
+    """Helper function to get human-readable time ago string."""
+    now = timezone.now()
+    diff = now - dt
+
+    if diff.total_seconds() < 60:
+        return "just now"
+    elif diff.total_seconds() < 3600:
+        minutes = int(diff.total_seconds() / 60)
+        return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+    elif diff.total_seconds() < 86400:
+        hours = int(diff.total_seconds() / 3600)
+        return f"{hours} hour{'s' if hours > 1 else ''} ago"
+    else:
+        days = int(diff.total_seconds() / 86400)
+        return f"{days} day{'s' if days > 1 else ''} ago"

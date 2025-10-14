@@ -486,6 +486,9 @@ urlpatterns += i18n_patterns(
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
     path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
+    # Live Statistics APIs
+    path("api/live-stats/", views.live_stats_api, name="live_stats_api"),
+    path("api/live-activity-feed/", views.live_activity_feed_api, name="live_activity_feed_api"),
     prefix_default_language=True,
 )
 
