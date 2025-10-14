@@ -7,8 +7,8 @@ on:
     types: [opened, reopened, synchronize, ready_for_review, edited]
 
 permissions:
-  contents: read
-  pull-requests: read
+  contents: write  # required to create labels
+  pull-requests: write  # required to add/remove labels on PRs
   issues: write  # required to add/remove labels
 
 jobs:
