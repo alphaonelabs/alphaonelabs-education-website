@@ -183,7 +183,7 @@
           function updateCheckoutUrl(billingPeriod) {
               if (checkoutBtn) {
                   const baseUrl = checkoutBtn.getAttribute('data-base-url');
-                  checkoutBtn.href = `${baseUrl}?billing_period=${billingPeriod}`;
+                  checkoutBtn.href = baseUrl.replace('{billing_period}', billingPeriod);
                   // Update only the text content while preserving the icon
                   const btnText = checkoutBtn.querySelector('span.relative');
                   if (btnText) {
