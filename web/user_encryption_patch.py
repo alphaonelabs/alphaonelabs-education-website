@@ -21,16 +21,16 @@ def get_fernet():
 def encrypt_user_field(value):
     """
     Encrypt a User field value.
-    
+
     Args:
         value: The plaintext value to encrypt
-        
+
     Returns:
         Encrypted value as string, or empty string if value is empty
     """
     if not value:
         return ''
-    
+
     try:
         fernet = get_fernet()
         # Check if already encrypted
@@ -49,16 +49,16 @@ def encrypt_user_field(value):
 def decrypt_user_field(value):
     """
     Decrypt a User field value.
-    
+
     Args:
         value: The encrypted value to decrypt
-        
+
     Returns:
         Decrypted value as string, or the original value if not encrypted
     """
     if not value:
         return ''
-    
+
     try:
         fernet = get_fernet()
         decrypted = fernet.decrypt(value.encode('utf-8'))
@@ -71,10 +71,10 @@ def decrypt_user_field(value):
 def get_user_email(user):
     """
     Get decrypted email from User.
-    
+
     Args:
         user: Django User instance
-        
+
     Returns:
         Decrypted email address
     """
@@ -84,10 +84,10 @@ def get_user_email(user):
 def get_user_first_name(user):
     """
     Get decrypted first name from User.
-    
+
     Args:
         user: Django User instance
-        
+
     Returns:
         Decrypted first name
     """
@@ -97,10 +97,10 @@ def get_user_first_name(user):
 def get_user_last_name(user):
     """
     Get decrypted last name from User.
-    
+
     Args:
         user: Django User instance
-        
+
     Returns:
         Decrypted last name
     """
@@ -110,7 +110,7 @@ def get_user_last_name(user):
 def set_user_email(user, email):
     """
     Set encrypted email on User.
-    
+
     Args:
         user: Django User instance
         email: Email address to encrypt and set
@@ -121,7 +121,7 @@ def set_user_email(user, email):
 def set_user_first_name(user, first_name):
     """
     Set encrypted first name on User.
-    
+
     Args:
         user: Django User instance
         first_name: First name to encrypt and set
@@ -132,7 +132,7 @@ def set_user_first_name(user, first_name):
 def set_user_last_name(user, last_name):
     """
     Set encrypted last name on User.
-    
+
     Args:
         user: Django User instance
         last_name: Last name to encrypt and set

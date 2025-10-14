@@ -17,7 +17,7 @@ The following personal data fields are now encrypted at rest in the database:
 
 ### Profile Model
 - `discord_username` - Discord usernames
-- `slack_username` - Slack usernames  
+- `slack_username` - Slack usernames
 - `github_username` - GitHub usernames
 - `stripe_account_id` - Stripe account identifiers
 

@@ -29,7 +29,7 @@ def save_user_profile(sender, instance, **kwargs):
 
 Three new encrypted fields in Profile model:
 - `encrypted_first_name` - CustomEncryptedCharField
-- `encrypted_last_name` - CustomEncryptedCharField  
+- `encrypted_last_name` - CustomEncryptedCharField
 - `encrypted_email` - CustomEncryptedEmailField
 
 ### Transparent Access
@@ -163,16 +163,16 @@ User.email      --> encrypted in auth_user.email column
 
 ### What's Protected
 
-✅ User PII is encrypted at rest in database  
-✅ Database dumps contain encrypted PII  
-✅ Unauthorized database access cannot read plaintext PII  
-✅ Automatic encryption - no manual steps needed  
+✅ User PII is encrypted at rest in database
+✅ Database dumps contain encrypted PII
+✅ Unauthorized database access cannot read plaintext PII
+✅ Automatic encryption - no manual steps needed
 
 ### What's NOT Protected
 
-⚠️ User model fields (needed for Django auth)  
-⚠️ Data in memory during application runtime  
-⚠️ Data in logs (avoid logging PII)  
+⚠️ User model fields (needed for Django auth)
+⚠️ Data in memory during application runtime
+⚠️ Data in logs (avoid logging PII)
 
 ## Backward Compatibility
 

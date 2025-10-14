@@ -121,7 +121,7 @@ class EncryptionTestCase(TestCase):
     def test_user_pii_encryption(self):
         """Test that User PII (first_name, last_name, email) is encrypted in User table."""
         from web.user_encryption_patch import decrypt_user_field
-        
+
         # Create user with PII
         user = User.objects.create_user(
             username="piiuser", email="pii@example.com", password="testpass123", first_name="John", last_name="Doe"
@@ -137,7 +137,7 @@ class EncryptionTestCase(TestCase):
         decrypted_first_name = decrypt_user_field(user.first_name)
         decrypted_last_name = decrypt_user_field(user.last_name)
         decrypted_email = decrypt_user_field(user.email)
-        
+
         self.assertEqual(decrypted_first_name, "John")
         self.assertEqual(decrypted_last_name, "Doe")
         self.assertEqual(decrypted_email, "pii@example.com")
@@ -145,7 +145,7 @@ class EncryptionTestCase(TestCase):
     def test_user_pii_sync_on_update(self):
         """Test that User PII remains encrypted when updated."""
         from web.user_encryption_patch import decrypt_user_field, encrypt_user_field
-        
+
         # Update user PII with encrypted values
         self.user.first_name = encrypt_user_field("Updated")
         self.user.last_name = encrypt_user_field("Name")

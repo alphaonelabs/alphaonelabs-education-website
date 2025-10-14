@@ -153,7 +153,7 @@ git revert <commit-hash>
 # For SQLite
 cp db.sqlite3.backup_TIMESTAMP db.sqlite3
 
-# For PostgreSQL  
+# For PostgreSQL
 pg_restore -U username -d database_name backup_TIMESTAMP.dump
 
 # For MySQL
@@ -165,7 +165,7 @@ mysql -u username -p database_name < backup_TIMESTAMP.sql
 ### Expected Impact
 
 - **CPU**: Minimal increase (1-2%) for encryption/decryption
-- **Memory**: Negligible 
+- **Memory**: Negligible
 - **Database**: Encrypted fields are ~30-40% larger
 - **Query Performance**: Reads/writes unchanged for encrypted fields
 
@@ -190,7 +190,7 @@ If you see performance issues:
 2. **Cache Frequently Accessed Data**:
    ```python
    from django.core.cache import cache
-   
+
    profile_data = cache.get(f'profile_{user.id}')
    if not profile_data:
        profile_data = user.profile

@@ -47,11 +47,11 @@ class Command(BaseCommand):
         # Encrypt User PII data in auth_user table
         self.stdout.write("Processing User PII in auth_user table...")
         from django.contrib.auth.models import User
-        
+
         users = User.objects.all()
         for user in users:
             updated = False
-            
+
             # Encrypt first_name
             if user.first_name:
                 try:
@@ -61,7 +61,7 @@ class Command(BaseCommand):
                         encrypted = fernet.encrypt(user.first_name.encode("utf-8"))
                         user.first_name = encrypted.decode("utf-8")
                         updated = True
-            
+
             # Encrypt last_name
             if user.last_name:
                 try:
@@ -71,7 +71,7 @@ class Command(BaseCommand):
                         encrypted = fernet.encrypt(user.last_name.encode("utf-8"))
                         user.last_name = encrypted.decode("utf-8")
                         updated = True
-            
+
             # Encrypt email
             if user.email:
                 try:
@@ -81,11 +81,11 @@ class Command(BaseCommand):
                         encrypted = fernet.encrypt(user.email.encode("utf-8"))
                         user.email = encrypted.decode("utf-8")
                         updated = True
-            
+
             if updated and not dry_run:
                 user.save()
                 stats["user_pii"] += 1
-        
+
         self.stdout.write(
             self.style.SUCCESS(
                 f"Processed {stats['user_pii']} User records with encrypted PII"
