@@ -85,6 +85,7 @@ from .forms import (
     LinkGradeForm,
     MemeForm,
     MessageTeacherForm,
+    NFTBadgeForm,
     NotificationPreferencesForm,
     ProfileUpdateForm,
     ProgressTrackerForm,
@@ -5733,6 +5734,181 @@ def toggle_course_status(request, slug):
 
     course.save()
     return redirect("course_detail", slug=slug)
+
+
+# NFT management views
+
+
+@login_required
+@teacher_required
+def send_nft_badge(request, achievement_id):
+    """Send an NFT badge to a student for a specific achievement"""
+    achievement = get_object_or_404(Achievement, id=achievement_id)
+
+    # Ensure it's an NFT badge
+    if achievement.badge_type != "nft":
+        messages.error(request, "This achievement is not marked as an NFT badge!")
+        return redirect("achievement_detail", achievement_id=achievement_id)
+
+    # Check teacher permission
+    if achievement.teacher != request.user and (achievement.course and achievement.course.teacher != request.user):
+        messages.error(request, "You don't have permission to mint this NFT badge!")
+        return redirect("dashboard")
+
+    # Get the student's wallet address (if available)
+    student = achievement.student  # Assuming achievement is linked to a student
+    student_wallet = student.profile.wallet_address if hasattr(student, "profile") else ""
+
+    if request.method == "POST":
+        wallet_address = request.POST.get("wallet_address", student_wallet)
+        contract_address = request.POST.get("contract_address", "")
+        admin_private_key = request.POST.get("private_key", "")
+        icon_url = request.POST.get("icon_url")  # Retrieve icon URL from form
+
+        if not wallet_address:
+            messages.error(request, "Wallet address is required to mint NFT badge!")
+            return redirect("achievement_detail", achievement_id=achievement_id)
+
+        # Validate wallet address format (Ethereum/Polygon example)
+        if not wallet_address.startswith("0x") or len(wallet_address) != 42:
+            messages.error(request, "Invalid wallet address format!")
+            return redirect("achievement_detail", achievement_id=achievement_id)
+
+        # Check if NFT badge already exists
+        if hasattr(achievement, "nft_badge"):
+            messages.warning(request, "NFT badge already minted for this achievement!")
+            return redirect("achievement_detail", achievement_id=achievement_id)
+
+        try:
+            from web.services.nft_service import send_nft_badge as mint_nft_badge
+
+            # Save the icon URL
+            achievement.icon = icon_url
+            achievement.save()
+
+            # Pass achievement ID, wallet address, and icon URL to NFT minting service
+            nft_badge = mint_nft_badge(achievement_id, wallet_address, contract_address, admin_private_key)
+
+            if nft_badge:
+                messages.success(request, f"NFT badge successfully minted and sent to {wallet_address}!")
+                return redirect("achievement_detail", achievement_id=achievement_id)
+            else:
+                messages.error(request, "Failed to mint NFT badge. Please try again later.")
+        except ImportError:
+            messages.error(request, "NFT service module not available. Please contact technical support.")
+        except ValueError as e:
+            messages.error(request, f"Invalid data format: {str(e)}")
+        except ConnectionError:
+            messages.error(request, "Failed to connect to blockchain network. Please try again later.")
+        except Exception as e:
+            messages.error(request, f"Error minting NFT badge: {str(e)}")
+            # Log unexpected errors for debugging
+            logger.exception(f"Unexpected error during NFT minting: {achievement_id}, {wallet_address}")
+
+        return render(
+            request, "achievements/send_nft_badge.html", {"achievement": achievement, "student_wallet": student_wallet}
+        )
+
+    return render(
+        request, "achievements/send_nft_badge.html", {"achievement": achievement, "student_wallet": student_wallet}
+    )
+
+
+@login_required
+def achievement_detail(request, achievement_id):
+    """Detail view for an achievement"""
+    achievement = get_object_or_404(Achievement, id=achievement_id)
+
+    # Modified permission check - student can see their own achievements,
+    # teacher can see achievements they awarded or from their courses
+    is_owner = request.user == achievement.student
+    is_awarding_teacher = request.user == achievement.teacher
+    is_course_teacher = achievement.course and request.user == achievement.course.teacher
+
+    if not (is_owner or is_awarding_teacher or is_course_teacher):
+        messages.error(request, "You don't have permission to view this achievement!")
+        if request.user.is_staff:
+            return redirect("teacher_dashboard")
+        else:
+            return redirect("student_dashboard")
+
+    return render(request, "achievements/achievement_detail.html", {"achievement": achievement})
+
+
+@login_required
+@teacher_required
+def award_nft_badge(request, student_id=None):
+    """Award an NFT badge to any student on the platform"""
+    student = get_object_or_404(User, id=student_id) if student_id else None
+
+    if request.method == "POST":
+        form = NFTBadgeForm(request.POST)
+        if form.is_valid():
+            achievement = form.save(commit=False)
+            achievement.student = student or get_object_or_404(User, id=request.POST.get("student_id"))
+            achievement.teacher = request.user
+            achievement.badge_type = "nft"
+            achievement.save()
+            messages.success(request, f"NFT badge created for {achievement.student.get_full_name()}!")
+            return redirect("send_nft_badge", achievement_id=achievement.id)
+    else:
+        form = NFTBadgeForm()
+
+    # Fetch student USERS instead of Profile
+    all_students = User.objects.filter(profile__is_teacher=False).only("id", "first_name", "last_name", "email")
+
+    return render(
+        request,
+        "achievements/award_nft_badge.html",
+        {"form": form, "student": student, "all_students": all_students},
+    )
+
+
+@login_required
+@login_required
+def link_external_wallet(request):
+    """Handles linking an external wallet address to the user's profile."""
+    student = request.user
+    
+    # If user already has a wallet, show it
+    existing_wallet = ""
+    if hasattr(student, "profile") and student.profile.wallet_address:
+        existing_wallet = student.profile.wallet_address
+
+    if request.method == "POST":
+        wallet_address = request.POST.get("wallet_address", "").strip()
+        
+        # Validate wallet address format (Ethereum/Polygon)
+        if not wallet_address:
+            messages.error(request, "Please enter a wallet address.")
+            return render(request, "crypto-wallet/create_wallet.html", {"wallet_address": wallet_address})
+        
+        if not wallet_address.startswith("0x") or len(wallet_address) != 42:
+            messages.error(request, "Invalid wallet address format. Must be 42 characters starting with 0x.")
+            return render(request, "crypto-wallet/create_wallet.html", {"wallet_address": wallet_address})
+        
+        # Validate hex characters
+        try:
+            int(wallet_address[2:], 16)
+        except ValueError:
+            messages.error(request, "Invalid wallet address. Must contain only hexadecimal characters after 0x.")
+            return render(request, "crypto-wallet/create_wallet.html", {"wallet_address": wallet_address})
+        
+        try:
+            # Store the wallet address
+            profile, created = Profile.objects.get_or_create(user=student)
+            profile.wallet_address = wallet_address
+            profile.save()
+            
+            messages.success(request, f"Wallet address successfully linked: {wallet_address[:10]}...{wallet_address[-8:]}")
+            return redirect("student_dashboard")
+        except Exception as e:
+            messages.error(request, "Failed to link wallet. Please try again.")
+            logger.error(f"Wallet linking error: {str(e)}")
+            return render(request, "crypto-wallet/create_wallet.html", {"wallet_address": wallet_address})
+    
+    return render(request, "crypto-wallet/create_wallet.html", {"wallet_address": existing_wallet})
+
 
 
 def public_profile(request, username):

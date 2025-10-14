@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 px-4">
+    <div class="bg-white dark:bg-gray-800 shadow-md rounded-lg p-6 max-w-md w-full">
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-200 text-center">Link Your External Wallet</h2>
+      <p class="text-gray-600 dark:text-gray-400 mt-2 text-center">
+        Connect your existing Ethereum wallet to receive NFT badges.
+      </p>
+      
+      <form method="POST" class="mt-6">
+        {% csrf_token %}
+        
+        <div class="mb-4">
+          <label for="wallet_address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Wallet Address
+          </label>
+          <input type="text" 
+                 id="wallet_address" 
+                 name="wallet_address" 
+                 required
+                 placeholder="0x..."
+                 pattern="^0x[a-fA-F0-9]{40}$"
+                 class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                 value="{{ wallet_address|default:'' }}">
+          <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Enter your Ethereum wallet address (42 characters starting with 0x)
+          </p>
+        </div>
+
+        <button type="submit"
+                class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition">
+          Link Wallet
+        </button>
+      </form>
+      
+      <div class="mt-6 p-4 bg-blue-50 dark:bg-blue-900 rounded-lg">
+        <h3 class="text-sm font-semibold text-blue-800 dark:text-blue-200 mb-2">
+          <i class="fas fa-info-circle mr-1"></i> Security Note
+        </h3>
+        <p class="text-xs text-blue-700 dark:text-blue-300">
+          We only store your public wallet address. Never share your private keys or seed phrase with anyone, including this platform.
+        </p>
+      </div>
+      
+      <div class="mt-4 text-center">
+        <p class="text-xs text-gray-500 dark:text-gray-400">
+          Don't have a wallet? Get one from 
+          <a href="https://metamask.io" target="_blank" class="text-blue-600 hover:underline">MetaMask</a> or 
+          <a href="https://rainbow.me" target="_blank" class="text-blue-600 hover:underline">Rainbow</a>
+        </p>
+      </div>
+    </div>
+  </div>
+{% endblock %}

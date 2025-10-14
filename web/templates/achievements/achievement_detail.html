@@ -1,0 +1,141 @@
+<!-- Create web/templates/achievements/achievement_detail.html -->
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block content %}
+  <div class="container mx-auto px-4 py-10">
+    <div class="max-w-2xl mx-auto bg-white dark:bg-gray-900 rounded-lg shadow-lg overflow-hidden">
+      <div class="p-6">
+        <!-- Achievement Header -->
+        <div class="flex items-center mb-6">
+          {% if achievement.badge_icon %}
+            <i class="{{ achievement.badge_icon }} text-6xl text-orange-500 mr-4"></i>
+          {% else %}
+            <i class="fas fa-trophy text-6xl text-orange-500 mr-4"></i>
+          {% endif %}
+          <div>
+            <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ achievement.title }}</h1>
+            <p class="text-gray-600 dark:text-gray-400">{{ achievement.get_achievement_type_display }}</p>
+          </div>
+        </div>
+        <!-- Achievement Details -->
+        <div class="mt-4">
+          <p class="text-gray-700 dark:text-gray-300">{{ achievement.description }}</p>
+          <p class="text-sm text-gray-500 mt-2">🏆 Awarded on {{ achievement.awarded_at|date:"F d, Y" }}</p>
+          {% if achievement.course %}
+            <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              📖 For course:
+              <a href="{% url 'course_detail' achievement.course.slug %}"
+                 class="text-blue-500 hover:underline">{{ achievement.course.title }}</a>
+            </p>
+          {% endif %}
+        </div>
+        <!-- NFT Badge Section -->
+        <div class="mt-6 pt-6 border-t border-gray-300 dark:border-gray-700">
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">🎖 NFT Badge</h2>
+          {% if achievement.nft_badge %}
+            <div class="bg-gray-100 dark:bg-gray-800 rounded-lg p-4">
+              <div class="flex flex-col items-center">
+                <img src="{{ achievement.nft_badge.icon_url }}"
+                     alt="NFT Badge"
+                     class="rounded-lg shadow-lg w-40 h-40 object-cover"
+                     loading="lazy" />
+                <p class="font-medium mt-3">NFT Badge Details:</p>
+              </div>
+              <ul class="mt-2 space-y-2 text-sm">
+                <li>
+                  🔗 <span class="text-gray-600 dark:text-gray-400">Blockchain:</span> {{ achievement.nft_badge.get_blockchain_display }}
+                </li>
+                <li>
+                  🆔 <span class="text-gray-600 dark:text-gray-400">Token ID:</span> {{ achievement.nft_badge.token_id }}
+                </li>
+                <li>
+                  📅 <span class="text-gray-600 dark:text-gray-400">Minted on:</span> {{ achievement.nft_badge.minted_at|date:"F d, Y" }}
+                </li>
+                <li>
+                  🔍 <span class="text-gray-600 dark:text-gray-400">Transaction:</span>
+                  <a href="https://amoy.polygonscan.com/tx/{{ achievement.nft_badge.transaction_hash }}"
+                     target="_blank"
+                     class="text-blue-500 hover:underline">View on Polygonscan</a>
+                </li>
+              </ul>
+            </div>
+          {% else %}
+            {% if request.user == achievement.course.teacher %}
+              <div class="bg-yellow-100 dark:bg-yellow-900 border border-yellow-300 dark:border-yellow-700 rounded-lg p-4">
+                <p class="text-yellow-800 dark:text-yellow-200">⚠️ This achievement hasn't been minted as an NFT badge yet.</p>
+                <a href="{% url 'send_nft_badge' achievement.id %}"
+                   class="mt-2 inline-block px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition">
+                  Mint NFT Badge
+                </a>
+              </div>
+            {% elif request.user == achievement.student %}
+              <p class="text-gray-600 dark:text-gray-400">
+                This achievement hasn't been minted as an NFT badge yet. Ask your instructor to mint it for you.
+              </p>
+            {% endif %}
+          {% endif %}
+        </div>
+        <!-- Instructions Section -->
+        <div class="mt-6 pt-6 border-t border-gray-300 dark:border-gray-700">
+          <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-4">📜 How to Fetch Your NFT Badge</h2>
+          <p class="text-gray-600 dark:text-gray-400">
+            You can view your NFT badge on the Amoy Testnet using any of the methods below.
+          </p>
+          <!-- MetaMask Instructions -->
+          <div class="mt-4 bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+            <h3 class="font-medium text-lg text-gray-900 dark:text-white">🦊 Using MetaMask</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300">To view your NFT in your wallet:</p>
+            <ul class="mt-2 space-y-1 text-sm text-gray-600 dark:text-gray-300">
+              <li>
+                1️⃣ Open <strong>MetaMask</strong> and switch to the <strong>Amoy Testnet</strong>.
+              </li>
+              <li>2️⃣ Click "Import Tokens" in your wallet.</li>
+              <li>
+                3️⃣ Enter the contract address as <strong>{{ achievement.nft_badge.contract_address }}</strong> and token ID: <strong>{{ achievement.nft_badge.token_id }}</strong>.
+              </li>
+              <li>4️⃣ Your NFT badge should now be visible.</li>
+            </ul>
+          </div>
+          <!-- Amoy Testnet Scanner -->
+          <div class="mt-4 bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+            <h3 class="font-medium text-lg text-gray-900 dark:text-white">🔎 Using Amoy Testnet Scanner</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300">Check your NFT on the blockchain:</p>
+            <p class="mt-2">
+              <a href="https://amoy.etherscan.io/tx/{{ achievement.nft_badge.transaction_hash }}"
+                 target="_blank"
+                 class="text-blue-500 hover:underline">View NFT on Amoy Testnet Scanner</a>
+            </p>
+          </div>
+          <!-- OKLink Explorer -->
+          <div class="mt-4 bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
+            <h3 class="font-medium text-lg text-gray-900 dark:text-white">🔗 Using OKLink Explorer</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-300">Use OKLink to view your NFT:</p>
+            <p class="mt-2">
+              <a href="https://www.oklink.com/amoy/tx/{{ achievement.nft_badge.transaction_hash }}"
+                 target="_blank"
+                 class="text-blue-500 hover:underline">View NFT on OKLink Explorer</a>
+            </p>
+          </div>
+        </div>
+        <!-- Share Section -->
+        <div class="mt-6">
+          <p class="font-medium mb-2">📢 Share your achievement:</p>
+          <div class="flex space-x-3">
+            <a href="https://twitter.com/intent/tweet?text=I%20earned%20the%20badge%20'{{ achievement.title|urlencode }}'%20on%20AlphaOneLabs!&url={{ request.build_absolute_uri|urlencode }}"
+               target="_blank"
+               class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition text-sm">
+              <i class="fab fa-twitter mr-1"></i> Twitter
+            </a>
+            <a href="https://www.linkedin.com/sharing/share-offsite/?url={{ request.build_absolute_uri|urlencode }}"
+               target="_blank"
+               class="px-4 py-2 bg-blue-700 text-white rounded-lg hover:bg-blue-800 transition text-sm">
+              <i class="fab fa-linkedin mr-1"></i> LinkedIn
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}

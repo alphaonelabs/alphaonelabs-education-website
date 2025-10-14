@@ -1971,3 +1971,20 @@ class SurveyForm(forms.ModelForm):
         if len(title) < 5:
             raise forms.ValidationError(_("Title too short"), code="invalid_length", params={"min_length": 5})
         return title
+
+
+class NFTBadgeForm(forms.ModelForm):
+    class Meta:
+        model = Achievement
+        fields = ["title", "description", "achievement_type", "badge_icon", "course"]
+        widgets = {
+            "course": forms.Select(attrs={"class": "form-select"}),
+        }
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.badge_type = "nft"
+        if commit:
+            instance.save()
+        return instance
+
