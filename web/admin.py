@@ -505,7 +505,7 @@ class CourseMaterialAdmin(admin.ModelAdmin):
     search_fields = ("title", "description", "course__title", "session__title")
     ordering = ("course", "order", "created_at")
     raw_id_fields = ("course", "session")
-    
+
     fieldsets = (
         (None, {
             "fields": ("course", "session", "title", "description", "material_type", "file", "external_url")
@@ -912,7 +912,7 @@ class ShareUnlockAdmin(admin.ModelAdmin):
     search_fields = ("user__username", "material__title", "share_token")
     raw_id_fields = ("user", "material")
     readonly_fields = ("share_token", "shared_at", "verified_at")
-    
+
     fieldsets = (
         (None, {
             "fields": ("user", "material", "platform")

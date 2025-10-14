@@ -869,7 +869,7 @@ def course_detail(request, slug):
     discount_relative = reverse("apply_discount_via_referrer")
     discount_params = urlencode({"course_id": course.id})
     discount_url = request.build_absolute_uri(f"{discount_relative}?{discount_params}")
-    
+
     # Get material unlock status for the current user
     material_unlock_status = {}
     if request.user.is_authenticated:
@@ -883,7 +883,7 @@ def course_detail(request, slug):
                     "shares_count": verified_shares,
                     "shares_required": material.shares_required,
                 }
-    
+
     context = {
         "course": course,
         "sessions": sessions,
@@ -956,33 +956,33 @@ def enroll_course(request, course_slug):
 def create_material_share_token(request, material_id):
     """Create a share token for unlocking material."""
     material = get_object_or_404(CourseMaterial, id=material_id)
-    
+
     # Check if user is enrolled or is the teacher
     is_enrolled = request.user.enrollments.filter(course=material.course).exists()
     is_teacher = request.user == material.course.teacher
-    
+
     if not is_enrolled and not is_teacher:
         return JsonResponse({"success": False, "error": "You must be enrolled to share this material"}, status=403)
-    
+
     # Check if material requires sharing to unlock
     if not material.unlock_by_sharing:
         return JsonResponse({"success": False, "error": "This material does not require sharing"}, status=400)
-    
+
     # Create or get existing share token
     share_unlock, created = ShareUnlock.objects.get_or_create(
         user=request.user,
         material=material,
         defaults={"platform": request.POST.get("platform", "twitter")}
     )
-    
+
     # Generate share URL
     share_url = request.build_absolute_uri(
         reverse("verify_material_share", kwargs={"share_token": share_unlock.share_token})
     )
-    
+
     # Generate share text
     share_text = f"Check out this awesome course material: {material.title} from {material.course.title}!"
-    
+
     return JsonResponse({
         "success": True,
         "share_token": share_unlock.share_token,
@@ -995,16 +995,16 @@ def create_material_share_token(request, material_id):
 def verify_material_share(request, share_token):
     """Verify a share and unlock material for the user."""
     share_unlock = get_object_or_404(ShareUnlock, share_token=share_token)
-    
+
     # Mark as verified
     if not share_unlock.is_verified:
         share_unlock.is_verified = True
         share_unlock.verified_at = timezone.now()
         share_unlock.save()
-    
+
     # Redirect to the course detail page
     messages.success(
-        request, 
+        request,
         f"Thank you for sharing! You've unlocked: {share_unlock.material.title}"
     )
     return redirect("course_detail", slug=share_unlock.material.course.slug)

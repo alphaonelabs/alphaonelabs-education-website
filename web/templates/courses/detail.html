@@ -1670,7 +1670,7 @@
       function shareMaterial(materialId, materialTitle) {
           // Get CSRF token
           const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-          
+
           // Create share token
           fetch(`/material/${materialId}/create-share-token/`, {
               method: 'POST',
@@ -1690,10 +1690,10 @@
                   const shareUrl = data.share_url;
                   const tweetText = `${shareText}\n\nUnlock it here: ${shareUrl}`;
                   const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}`;
-                  
+
                   // Open Twitter share dialog
                   const shareWindow = window.open(twitterUrl, 'Share on Twitter', 'width=600,height=400');
-                  
+
                   // Poll to check if window is closed
                   const pollTimer = setInterval(() => {
                       if (shareWindow.closed) {
