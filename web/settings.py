@@ -21,6 +21,9 @@ env_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__
 MESSAGE_ENCRYPTION_KEY = env.str("MESSAGE_ENCRYPTION_KEY", default=Fernet.generate_key()).strip()
 SECURE_MESSAGE_KEY = MESSAGE_ENCRYPTION_KEY
 
+# Configure encryption for model fields
+FIELD_ENCRYPTION_KEY = SECURE_MESSAGE_KEY
+
 if os.path.exists(env_file):
     environ.Env.read_env(env_file)
 else:
@@ -144,6 +147,7 @@ INSTALLED_APPS = [
     "allauth.account",
     "captcha",
     "markdownx",
+    "encrypted_model_fields",
     "web",
     "web.virtual_lab.apps.VirtualLabConfig",
 ]
