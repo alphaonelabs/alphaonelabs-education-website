@@ -55,6 +55,7 @@ from .models import (
     SuccessStory,
     UserBadge,
     UserMembership,
+    VideoRequest,
     WaitingRoom,
     WebRequest,
 )
@@ -908,3 +909,8 @@ class SelfCheckinAdmin(admin.ModelAdmin):
     list_filter = ("created_at", "session__course", "pre_rating", "post_rating")
     search_fields = ("student__username", "session__title", "notes")
     raw_id_fields = ("student", "session")
+@admin.register(VideoRequest)
+class VideoRequestAdmin(admin.ModelAdmin):
+    list_display = ("title", "status", "category", "requester", "created_at")
+    list_filter = ("status", "category")
+    search_fields = ("title", "description", "requester__username")
