@@ -12,7 +12,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
-from django.db import IntegrityError
+from django.db import IntegrityError, models
 from django.forms.widgets import URLInput
 from django.utils import timezone
 from django.utils.crypto import get_random_string
@@ -2022,7 +2022,10 @@ class LessonSummaryForm(forms.ModelForm):
             "course": TailwindSelect(),
             "session": TailwindSelect(),
             "key_learnings": TailwindTextarea(
-                attrs={"rows": 6, "placeholder": "Enter key learnings (one per line):\n• Learning point 1\n• Learning point 2"}
+                attrs={
+                    "rows": 6,
+                    "placeholder": "Enter key learnings (one per line):\n• Learning point 1\n• Learning point 2",
+                }
             ),
             "additional_notes": TailwindTextarea(attrs={"rows": 3, "placeholder": "Any additional thoughts or notes?"}),
             "background_style": TailwindSelect(),
