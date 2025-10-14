@@ -528,12 +528,12 @@
               <p class="text-sm text-gray-600 dark:text-gray-300 mb-3">
                 {% if user.is_authenticated %}
                   {% if user.profile.is_teacher %}
-                    Get your first student and receive a $5 bonus! Share your unique referral link:
+                    Earn rewards for every successful referral! Share your unique link and unlock milestones:
                   {% else %}
-                    Get $5 when someone you refer enrolls in their first course! Share your unique referral link:
+                    Earn rewards for every successful referral! Share your unique link and unlock milestones:
                   {% endif %}
                 {% else %}
-                  Join our community and start earning rewards through our referral program!
+                  Join our community and start earning rewards through our referral program with exciting milestones!
                 {% endif %}
               </p>
               {% if user.is_authenticated %}
@@ -554,6 +554,11 @@
                     <i class="fas fa-info-circle mr-1"></i>
                     Your total referral earnings: ${{ user.profile.referral_earnings|default:"0" }}
                   </p>
+                  <a href="{% url 'referral_dashboard' %}"
+                     class="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium">
+                    <i class="fas fa-chart-line mr-1"></i>
+                    View Dashboard
+                  </a>
                 </div>
               {% else %}
                 <a href="{% url 'account_signup' %}"
