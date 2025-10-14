@@ -44,7 +44,6 @@ from .models import (
     QuizQuestion,
     Review,
     Session,
-    SessionInvite,
     Storefront,
     StudyGroup,
     Subject,

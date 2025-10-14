@@ -3085,9 +3085,7 @@ def invite_to_session(request, session_id):
                     pass
 
                 # Generate session URL
-                session_url = request.build_absolute_uri(
-                    reverse("session_detail", kwargs={"pk": session.id})
-                )
+                session_url = request.build_absolute_uri(reverse("session_detail", kwargs={"pk": session.id}))
 
                 # Send invitation email
                 context = {
@@ -3106,7 +3104,11 @@ Message from {request.user.get_full_name() or request.user.username}:
 Session: {session.title}
 Course: {session.course.title}
 Date: {session.start_time.strftime('%B %d, %Y at %I:%M %p')}
-{'Virtual Meeting: ' + session.meeting_link if session.is_virtual and session.meeting_link else 'Location: ' + session.location}
+{
+    'Virtual Meeting: ' + session.meeting_link
+    if session.is_virtual and session.meeting_link
+    else 'Location: ' + session.location
+}
 
 Click here to view the session: {session_url}
 """
