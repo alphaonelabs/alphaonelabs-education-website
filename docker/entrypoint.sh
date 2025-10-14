@@ -4,6 +4,7 @@ set -euo pipefail
 # Wait for database to be ready with retry loop
 attempts=0
 max_attempts="${DB_MAX_ATTEMPTS:-30}"
+sleep_seconds="${DB_RETRY_SLEEP:-2}"
 until python manage.py migrate --noinput; do
   attempts=$((attempts+1))
   if [ "$attempts" -ge "$max_attempts" ]; then
@@ -11,7 +12,7 @@ until python manage.py migrate --noinput; do
     exit 1
   fi
   echo "Waiting for database... attempt $attempts/$max_attempts"
-  sleep 2
+  sleep "$sleep_seconds"
 done
 
 # Optional: seed test data if desired at runtime
