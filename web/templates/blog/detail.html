@@ -4,9 +4,12 @@
 {% load markdown_filters %}
 {% load string_filters %}
 
-{% block title %}
-  {{ post.title }}
-{% endblock title %}
+{% block title %}{{ post.title }} - Blog{% endblock title %}
+{% block meta_description %}{{ post.content|striptags|truncatewords:30 }}{% endblock meta_description %}
+{% block og_title %}{{ post.title }}{% endblock og_title %}
+{% block og_type %}article{% endblock og_type %}
+{% block og_image %}{% if post.featured_image %}{{ post.featured_image.url }}{% else %}{% static 'images/logo.png' %}{% endif %}{% endblock og_image %}
+
 {% block content %}
   <div class="container mx-auto px-4 py-8">
     <nav class="text-gray-600 dark:text-gray-300 text-sm mb-4">

@@ -2,7 +2,12 @@
 
 {% load static %}
 
-{% block title %}{{ success_story.title }}{% endblock %}
+{% block title %}{{ success_story.title }} - Success Stories{% endblock title %}
+{% block meta_description %}{{ success_story.content|striptags|truncatewords:30 }}{% endblock meta_description %}
+{% block og_title %}{{ success_story.title }} - Success Story{% endblock og_title %}
+{% block og_type %}article{% endblock og_type %}
+{% block og_image %}{% if success_story.featured_image %}{{ success_story.featured_image.url }}{% else %}{% static 'images/logo.png' %}{% endif %}{% endblock og_image %}
+
 {% block content %}
   <main class="flex-1 w-full max-w-7xl mx-auto px-4 md:px-6 py-8">
     <article class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">

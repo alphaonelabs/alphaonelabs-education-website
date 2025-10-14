@@ -5,9 +5,12 @@
 {% load markdown_filters %}
 {% load session_filters %}
 
-{% block title %}
-  {{ course.title }} - Course Details
-{% endblock title %}
+{% block title %}{{ course.title }} - Course Details{% endblock title %}
+{% block meta_description %}{{ course.description|striptags|truncatewords:30 }}{% endblock meta_description %}
+{% block og_title %}{{ course.title }}{% endblock og_title %}
+{% block og_type %}article{% endblock og_type %}
+{% block og_image %}{% if course.image %}{{ course.image.url }}{% else %}{% static 'images/default-course.jpg' %}{% endif %}{% endblock og_image %}
+
 {% block extra_head %}
   <!-- Share dropdown -->
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>

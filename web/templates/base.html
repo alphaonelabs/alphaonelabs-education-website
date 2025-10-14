@@ -6,18 +6,33 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description"
-          content="Alpha One Labs - Open Source Education Platform" />
-    <meta name="keywords"
-          content="education, open source, courses, learning, Alpha One Labs" />
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="{% block meta_description %}Alpha One Labs - Open Source Education Platform for hands-on learning in tech, science, and engineering. Join our community of learners and educators.{% endblock meta_description %}" />
+    <meta name="keywords" content="{% block meta_keywords %}education, open source, courses, learning, Alpha One Labs, STEM, online education, programming, science{% endblock meta_keywords %}" />
+    <meta name="author" content="Alpha One Labs" />
+    
+    <!-- Open Graph / Facebook Meta Tags -->
+    <meta property="og:type" content="{% block og_type %}website{% endblock og_type %}" />
+    <meta property="og:url" content="{% block og_url %}{{ request.build_absolute_uri }}{% endblock og_url %}" />
+    <meta property="og:title" content="{% block og_title %}{% block title %}Alpha One Labs - Open Source Education Platform{% endblock title %}{% endblock og_title %}" />
+    <meta property="og:description" content="{% block og_description %}{% block meta_description_og %}Alpha One Labs - Open Source Education Platform for hands-on learning in tech, science, and engineering. Join our community of learners and educators.{% endblock meta_description_og %}{% endblock og_description %}" />
+    <meta property="og:image" content="{% block og_image %}{% static 'images/logo.png' %}{% endblock og_image %}" />
+    <meta property="og:site_name" content="Alpha One Labs" />
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="{% block twitter_card %}summary_large_image{% endblock twitter_card %}" />
+    <meta name="twitter:url" content="{% block twitter_url %}{{ request.build_absolute_uri }}{% endblock twitter_url %}" />
+    <meta name="twitter:title" content="{% block twitter_title %}{% block title_twitter %}Alpha One Labs - Open Source Education Platform{% endblock title_twitter %}{% endblock twitter_title %}" />
+    <meta name="twitter:description" content="{% block twitter_description %}{% block meta_description_twitter %}Alpha One Labs - Open Source Education Platform for hands-on learning in tech, science, and engineering. Join our community of learners and educators.{% endblock meta_description_twitter %}{% endblock twitter_description %}" />
+    <meta name="twitter:image" content="{% block twitter_image %}{% static 'images/logo.png' %}{% endblock twitter_image %}" />
+    
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="{% static 'images/logo.png' %}" />
     <link rel="apple-touch-icon" href="{% static 'images/logo.png' %}" />
-    <title>
-      {% block title %}
-        Alpha One Labs - Open Source Education Platform
-      {% endblock title %}
-    </title>
+    
+    <!-- Page Title -->
+    <title>{% block page_title %}{% block head_title %}Alpha One Labs - Open Source Education Platform{% endblock head_title %}{% endblock page_title %}</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://js-de.sentry-cdn.com/ca8bad7e1a5a3012bccae7d9bd4f6d3d.min.js"
