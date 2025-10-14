@@ -12,12 +12,12 @@ def encrypt_user_pii(apps, schema_editor):
     """
     from django.conf import settings
 
-    User = apps.get_model('auth', 'User')
+    User = apps.get_model("auth", "User")
 
     # Get encryption key
     key = settings.FIELD_ENCRYPTION_KEY
     if isinstance(key, str):
-        key = key.encode('utf-8')
+        key = key.encode("utf-8")
     fernet = Fernet(key)
 
     users = User.objects.all()
@@ -30,29 +30,29 @@ def encrypt_user_pii(apps, schema_editor):
         if user.first_name:
             try:
                 # Try to decrypt - if it succeeds, it's already encrypted
-                fernet.decrypt(user.first_name.encode('utf-8'))
+                fernet.decrypt(user.first_name.encode("utf-8"))
             except Exception:
                 # Not encrypted yet, encrypt it
-                encrypted = fernet.encrypt(user.first_name.encode('utf-8'))
-                user.first_name = encrypted.decode('utf-8')
+                encrypted = fernet.encrypt(user.first_name.encode("utf-8"))
+                user.first_name = encrypted.decode("utf-8")
                 updated = True
 
         # Encrypt last_name if not already encrypted
         if user.last_name:
             try:
-                fernet.decrypt(user.last_name.encode('utf-8'))
+                fernet.decrypt(user.last_name.encode("utf-8"))
             except Exception:
-                encrypted = fernet.encrypt(user.last_name.encode('utf-8'))
-                user.last_name = encrypted.decode('utf-8')
+                encrypted = fernet.encrypt(user.last_name.encode("utf-8"))
+                user.last_name = encrypted.decode("utf-8")
                 updated = True
 
         # Encrypt email if not already encrypted
         if user.email:
             try:
-                fernet.decrypt(user.email.encode('utf-8'))
+                fernet.decrypt(user.email.encode("utf-8"))
             except Exception:
-                encrypted = fernet.encrypt(user.email.encode('utf-8'))
-                user.email = encrypted.decode('utf-8')
+                encrypted = fernet.encrypt(user.email.encode("utf-8"))
+                user.email = encrypted.decode("utf-8")
                 updated = True
 
         if updated:
@@ -68,12 +68,12 @@ def decrypt_user_pii(apps, schema_editor):
     """
     from django.conf import settings
 
-    User = apps.get_model('auth', 'User')
+    User = apps.get_model("auth", "User")
 
     # Get encryption key
     key = settings.FIELD_ENCRYPTION_KEY
     if isinstance(key, str):
-        key = key.encode('utf-8')
+        key = key.encode("utf-8")
     fernet = Fernet(key)
 
     users = User.objects.all()
@@ -85,8 +85,8 @@ def decrypt_user_pii(apps, schema_editor):
         # Decrypt first_name if encrypted
         if user.first_name:
             try:
-                decrypted = fernet.decrypt(user.first_name.encode('utf-8'))
-                user.first_name = decrypted.decode('utf-8')
+                decrypted = fernet.decrypt(user.first_name.encode("utf-8"))
+                user.first_name = decrypted.decode("utf-8")
                 updated = True
             except Exception:
                 # Already plaintext
@@ -95,8 +95,8 @@ def decrypt_user_pii(apps, schema_editor):
         # Decrypt last_name if encrypted
         if user.last_name:
             try:
-                decrypted = fernet.decrypt(user.last_name.encode('utf-8'))
-                user.last_name = decrypted.decode('utf-8')
+                decrypted = fernet.decrypt(user.last_name.encode("utf-8"))
+                user.last_name = decrypted.decode("utf-8")
                 updated = True
             except Exception:
                 pass
@@ -104,8 +104,8 @@ def decrypt_user_pii(apps, schema_editor):
         # Decrypt email if encrypted
         if user.email:
             try:
-                decrypted = fernet.decrypt(user.email.encode('utf-8'))
-                user.email = decrypted.decode('utf-8')
+                decrypted = fernet.decrypt(user.email.encode("utf-8"))
+                user.email = decrypted.decode("utf-8")
                 updated = True
             except Exception:
                 pass
@@ -120,50 +120,56 @@ def decrypt_user_pii(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('web', '0062_update_waitingroom_for_sessions'),
+        ("web", "0062_update_waitingroom_for_sessions"),
     ]
 
     operations = [
         # Update model fields to use encrypted fields
         migrations.AlterField(
-            model_name='donation',
-            name='email',
+            model_name="donation",
+            name="email",
             field=encrypted_model_fields.fields.EncryptedEmailField(),
         ),
         migrations.AlterField(
-            model_name='featurevote',
-            name='ip_address',
+            model_name="featurevote",
+            name="ip_address",
             field=encrypted_model_fields.fields.EncryptedCharField(blank=True, null=True),
         ),
         migrations.AlterField(
-            model_name='order',
-            name='shipping_address',
-            field=web.encryption.CustomEncryptedJSONField(blank=True, help_text='Structured shipping details', null=True),
+            model_name="order",
+            name="shipping_address",
+            field=web.encryption.CustomEncryptedJSONField(
+                blank=True, help_text="Structured shipping details", null=True
+            ),
         ),
         migrations.AlterField(
-            model_name='profile',
-            name='discord_username',
-            field=encrypted_model_fields.fields.EncryptedCharField(blank=True, help_text='Your Discord username (e.g., User#1234)'),
+            model_name="profile",
+            name="discord_username",
+            field=encrypted_model_fields.fields.EncryptedCharField(
+                blank=True, help_text="Your Discord username (e.g., User#1234)"
+            ),
         ),
         migrations.AlterField(
-            model_name='profile',
-            name='github_username',
-            field=encrypted_model_fields.fields.EncryptedCharField(blank=True, help_text='Your GitHub username (without @)'),
+            model_name="profile",
+            name="github_username",
+            field=encrypted_model_fields.fields.EncryptedCharField(
+                blank=True, help_text="Your GitHub username (without @)"
+            ),
         ),
         migrations.AlterField(
-            model_name='profile',
-            name='slack_username',
-            field=encrypted_model_fields.fields.EncryptedCharField(blank=True, help_text='Your Slack username'),
+            model_name="profile",
+            name="slack_username",
+            field=encrypted_model_fields.fields.EncryptedCharField(blank=True, help_text="Your Slack username"),
         ),
         migrations.AlterField(
-            model_name='profile',
-            name='stripe_account_id',
+            model_name="profile",
+            name="stripe_account_id",
             field=encrypted_model_fields.fields.EncryptedCharField(blank=True),
         ),
         migrations.AlterField(
-            model_name='webrequest',
-            name='ip_address',
-            field=encrypted_model_fields.fields.EncryptedCharField(blank=True, default=''),
+            model_name="webrequest",
+            name="ip_address",
+            field=encrypted_model_fields.fields.EncryptedCharField(blank=True, default=""),
         ),
         # Encrypt User PII data in-place in the auth_user table
         migrations.RunPython(encrypt_user_pii, decrypt_user_pii),

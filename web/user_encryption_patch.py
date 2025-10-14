@@ -14,7 +14,7 @@ def get_fernet():
     """Get Fernet cipher instance."""
     key = settings.FIELD_ENCRYPTION_KEY
     if isinstance(key, str):
-        key = key.encode('utf-8')
+        key = key.encode("utf-8")
     return Fernet(key)
 
 
@@ -29,18 +29,18 @@ def encrypt_user_field(value):
         Encrypted value as string, or empty string if value is empty
     """
     if not value:
-        return ''
+        return ""
 
     try:
         fernet = get_fernet()
         # Check if already encrypted
         try:
-            fernet.decrypt(value.encode('utf-8'))
+            fernet.decrypt(value.encode("utf-8"))
             return value  # Already encrypted
         except Exception:
             # Not encrypted, encrypt it
-            encrypted = fernet.encrypt(value.encode('utf-8'))
-            return encrypted.decode('utf-8')
+            encrypted = fernet.encrypt(value.encode("utf-8"))
+            return encrypted.decode("utf-8")
     except Exception:
         # If encryption fails, return as-is
         return value
@@ -57,12 +57,12 @@ def decrypt_user_field(value):
         Decrypted value as string, or the original value if not encrypted
     """
     if not value:
-        return ''
+        return ""
 
     try:
         fernet = get_fernet()
-        decrypted = fernet.decrypt(value.encode('utf-8'))
-        return decrypted.decode('utf-8')
+        decrypted = fernet.decrypt(value.encode("utf-8"))
+        return decrypted.decode("utf-8")
     except Exception:
         # If decryption fails, return as-is (backward compatibility)
         return value

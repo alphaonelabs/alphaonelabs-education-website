@@ -86,11 +86,7 @@ class Command(BaseCommand):
                 user.save()
                 stats["user_pii"] += 1
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Processed {stats['user_pii']} User records with encrypted PII"
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(f"Processed {stats['user_pii']} User records with encrypted PII"))
 
         # Encrypt Profile data
         self.stdout.write("Processing Profile records...")
@@ -132,11 +128,7 @@ class Command(BaseCommand):
                 profile.save()
                 stats["profile"] += 1
 
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Processed {stats['profile']} Profile records"
-            )
-        )
+        self.stdout.write(self.style.SUCCESS(f"Processed {stats['profile']} Profile records"))
 
         # Encrypt WebRequest data
         self.stdout.write("Processing WebRequest records...")

@@ -67,9 +67,7 @@ class Profile(models.Model):
         max_length=255, blank=True, help_text="Your Discord username (e.g., User#1234)"
     )
     slack_username = CustomEncryptedCharField(max_length=255, blank=True, help_text="Your Slack username")
-    github_username = CustomEncryptedCharField(
-        max_length=255, blank=True, help_text="Your GitHub username (without @)"
-    )
+    github_username = CustomEncryptedCharField(max_length=255, blank=True, help_text="Your GitHub username (without @)")
     referral_code = models.CharField(max_length=20, unique=True, blank=True)
     referred_by = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="referrals")
     referral_earnings = models.DecimalField(max_digits=10, decimal_places=2, default=0)
