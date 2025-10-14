@@ -1,0 +1,91 @@
+name: Label PR by files changed
+
+# Uses pull_request_target so it runs with base repo permissions for forked PRs.
+# SECURITY: We do NOT check out or execute PR code. We only use the GitHub API.
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, ready_for_review, edited]
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: write  # required to add/remove labels
+
+jobs:
+  label:
+    name: Apply fN label
+    runs-on: ubuntu-latest
+    steps:
+      - name: Compute file count and update label
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.info('No pull_request in context. Skipping.');
+              return;
+            }
+
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const pull_number = pr.number;
+
+            // Get all files (with pagination) and count them
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner,
+              repo,
+              pull_number,
+              per_page: 100,
+            });
+            const count = files.length;
+            const newLabel = `f${count}`;
+
+            // Get current labels on the PR
+            const { data: current } = await github.rest.issues.listLabelsOnIssue({ owner, repo, issue_number: pull_number, per_page: 100 });
+            const currentNames = new Set(current.map(l => l.name));
+
+            // Remove any existing f* numeric labels (e.g., f1, f23)
+            const fLabelRegex = /^f\d+$/i;
+            for (const name of currentNames) {
+              if (fLabelRegex.test(name) && name !== newLabel) {
+                try {
+                  await github.rest.issues.removeLabel({ owner, repo, issue_number: pull_number, name });
+                } catch (err) {
+                  core.warning(`Failed to remove label ${name}: ${err.message}`);
+                }
+              }
+            }
+
+            // Ensure the new label exists (create if missing)
+            async function ensureLabelExists(labelName) {
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name: labelName });
+              } catch (e) {
+                if (e.status === 404) {
+                  // Create with a readable teal-ish color; description explains purpose
+                  await github.rest.issues.createLabel({
+                    owner,
+                    repo,
+                    name: labelName,
+                    color: '36b3a8',
+                    description: 'Number of files changed in PR',
+                  });
+                } else {
+                  throw e;
+                }
+              }
+            }
+
+            await ensureLabelExists(newLabel);
+
+            // Add the label if it isn't already present
+            if (!currentNames.has(newLabel)) {
+              await github.rest.issues.addLabels({ owner, repo, issue_number: pull_number, labels: [newLabel] });
+              core.info(`Applied label ${newLabel} to PR #${pull_number}`);
+            } else {
+              core.info(`Label ${newLabel} already present on PR #${pull_number}`);
+            }
+
+            // Optional: log the count for transparency
+            core.info(`PR #${pull_number} has ${count} changed file(s).`);
