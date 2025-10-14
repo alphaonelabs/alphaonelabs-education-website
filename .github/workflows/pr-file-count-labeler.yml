@@ -8,7 +8,7 @@ on:
 
 permissions:
   contents: write  # required to create labels
-  pull-requests: read
+  pull-requests: write  # required to add/remove labels on PRs
   issues: write  # required to add/remove labels
 
 jobs:
