@@ -2,10 +2,15 @@
 
 {% load static %}
 
-{% block title %}Home - Alpha One Labs{% endblock title %}
-{% block meta_description %}Welcome to Alpha One Labs - Your hub for hands-on learning in tech, science, and engineering. Explore courses, join our community, and start your learning journey today.{% endblock meta_description %}
-{% block og_title %}Alpha One Labs - Open Source Education Platform{% endblock og_title %}
-
+{% block title %}
+  Home - Alpha One Labs
+{% endblock title %}
+{% block meta_description %}
+  Welcome to Alpha One Labs - Your hub for hands-on learning in tech, science, and engineering. Explore courses, join our community, and start your learning journey today.
+{% endblock meta_description %}
+{% block og_title %}
+  Alpha One Labs - Open Source Education Platform
+{% endblock og_title %}
 {% block content %}
   <main class="flex-1 w-full max-w-[90rem] mx-auto mt-6 px-4 md:px-6">
     {% if is_debug %}

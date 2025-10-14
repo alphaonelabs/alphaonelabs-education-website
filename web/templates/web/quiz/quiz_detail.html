@@ -3,8 +3,14 @@
 {% load static %}
 
 {% block title %}
-  {{ quiz.title }} | Quiz Details
+  {{ quiz.title }} - Quiz Details
 {% endblock title %}
+{% block meta_description %}
+  {{ quiz.description|default:"Take this quiz to test your knowledge and track your learning progress." }}
+{% endblock meta_description %}
+{% block og_title %}
+  {{ quiz.title }} - Quiz
+{% endblock og_title %}
 {% block extra_head %}
   <!-- For clipboard copy functionality -->
   <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>

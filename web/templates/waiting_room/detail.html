@@ -1,9 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}{{ waiting_room.title }} - Waiting Room{% endblock title %}
-{% block meta_description %}{{ waiting_room.description }} Join the waiting list for this upcoming course at Alpha One Labs.{% endblock meta_description %}
-{% block og_title %}{{ waiting_room.title }} - Join Waiting List{% endblock og_title %}
-
+{% block title %}
+  {{ waiting_room.title }} - Waiting Room
+{% endblock title %}
+{% block meta_description %}
+  {{ waiting_room.description }} Join the waiting list for this upcoming course at Alpha One Labs.
+{% endblock meta_description %}
+{% block og_title %}
+  {{ waiting_room.title }} - Join Waiting List
+{% endblock og_title %}
 {% block content %}
   <div class="container mx-auto px-4 py-8 max-w-4xl">
     <div class="mb-6">
