@@ -138,4 +138,3 @@ def set_user_last_name(user, last_name):
         last_name: Last name to encrypt and set
     """
     user.last_name = encrypt_user_field(last_name)
-
