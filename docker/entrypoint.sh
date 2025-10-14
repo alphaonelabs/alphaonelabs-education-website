@@ -1,7 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-python manage.py migrate
+# Wait for database to be ready with retry loop
+attempts=0
+max_attempts="${DB_MAX_ATTEMPTS:-30}"
+until python manage.py migrate --noinput; do
+  attempts=$((attempts+1))
+  if [ "$attempts" -ge "$max_attempts" ]; then
+    echo "Database not ready after $max_attempts attempts. Exiting."
+    exit 1
+  fi
+  echo "Waiting for database... attempt $attempts/$max_attempts"
+  sleep 2
+done
 
 # Optional: seed test data if desired at runtime
 if [[ "${CREATE_TEST_DATA:-0}" == "1" ]]; then
