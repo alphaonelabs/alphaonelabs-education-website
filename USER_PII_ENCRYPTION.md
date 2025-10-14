@@ -144,7 +144,7 @@ python manage.py test web.tests.test_encryption
 
 ### User Table Encryption
 
-Migration 0064 encrypts User PII data directly in the `auth_user` table:
+Migration 0063 encrypts User PII data directly in the `auth_user` table:
 
 - No schema changes required
 - Existing columns (first_name, last_name, email) remain

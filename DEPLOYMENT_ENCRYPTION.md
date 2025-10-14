@@ -74,7 +74,7 @@ pip install -r requirements.txt
 # This updates the schema to use encrypted field types
 poetry run python manage.py migrate
 
-# The migration is: 0063_add_encryption_to_personal_data
+# The migration is: 0063_add_encryption_to_personal_data (includes User PII encryption)
 ```
 
 **What this does:**

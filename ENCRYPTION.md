@@ -70,7 +70,7 @@ Located in `web/encryption.py`:
 The implementation is designed for seamless migration:
 
 1. **Schema Migration**: Run `python manage.py migrate` to update field types
-   - The migration file is: `web/migrations/0063_add_encryption_to_personal_data.py`
+   - The migration file is: `web/migrations/0063_add_encryption_to_personal_data.py` (includes all encryption including User PII)
 
 2. **Data Migration**: Existing plaintext data is automatically encrypted on first save
    - No manual data migration needed for most cases
