@@ -41,7 +41,7 @@ class NavigationTemplateTests(TestCase):
 
     def test_authenticated_user_navigation(self):
         """Test navigation for authenticated users."""
-        user = User.objects.create_user(username="testuser", password="testpass")
+        User.objects.create_user(username="testuser", password="testpass")
         self.client.login(username="testuser", password="testpass")
 
         response = self.client.get(reverse("index"))
