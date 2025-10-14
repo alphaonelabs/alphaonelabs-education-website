@@ -24,7 +24,7 @@
             {% if competition.image %}
               <img src="{{ competition.image.url }}"
                    alt="{{ competition.title }}"
-                   class="w-full h-48 object-cover">
+                   class="w-full h-48 object-cover" />
             {% else %}
               <div class="w-full h-48 bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center">
                 <i class="fas fa-trophy text-6xl text-white opacity-50"></i>
@@ -50,7 +50,8 @@
                 </div>
                 <div>
                   <i class="fas fa-users"></i>
-                  {{ competition.participant_count }}{% if competition.max_participants %}/{{ competition.max_participants }}{% endif %}
+                  {{ competition.participant_count }}
+                  {% if competition.max_participants %}/{{ competition.max_participants }}{% endif %}
                 </div>
               </div>
               <a href="{% url 'competition_detail' competition.id %}"

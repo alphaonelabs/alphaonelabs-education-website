@@ -121,7 +121,6 @@ from .models import (
     Choice,
     Competition,
     CompetitionParticipant,
-    CompetitionReward,
     Course,
     CourseMaterial,
     CourseProgress,
@@ -3826,9 +3825,7 @@ def competition_detail(request, competition_id):
     # Check if user is participating
     user_participant = None
     if request.user.is_authenticated:
-        user_participant = CompetitionParticipant.objects.filter(
-            competition=competition, user=request.user
-        ).first()
+        user_participant = CompetitionParticipant.objects.filter(competition=competition, user=request.user).first()
 
     # Get challenges in this competition
     challenges = competition.challenges.all()
@@ -3881,7 +3878,7 @@ def competition_join(request, competition_id):
         )
 
     # Create participant
-    participant = CompetitionParticipant.objects.create(competition=competition, user=request.user)
+    CompetitionParticipant.objects.create(competition=competition, user=request.user)
 
     messages.success(request, f"You have successfully joined {competition.title}!")
     return redirect("competition_detail", competition_id=competition_id)

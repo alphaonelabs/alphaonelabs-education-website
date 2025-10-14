@@ -55,7 +55,7 @@ class CompetitionModelTests(TestCase):
             end_date=timezone.now() + timedelta(days=30),
             status="active",
         )
-        expected_str = f"Test Competition (Active)"
+        expected_str = "Test Competition (Active)"
         self.assertEqual(str(competition), expected_str)
 
     def test_competition_date_validation(self):

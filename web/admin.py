@@ -890,7 +890,17 @@ class PointsAdmin(admin.ModelAdmin):
 class CompetitionRewardInline(admin.TabularInline):
     model = CompetitionReward
     extra = 1
-    fields = ("reward_type", "name", "position", "quantity", "value", "points_amount", "subscription_months", "goods_item", "is_awarded")
+    fields = (
+        "reward_type",
+        "name",
+        "position",
+        "quantity",
+        "value",
+        "points_amount",
+        "subscription_months",
+        "goods_item",
+        "is_awarded",
+    )
     raw_id_fields = ("goods_item",)
 
 

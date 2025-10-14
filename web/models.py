@@ -1822,9 +1822,7 @@ class CompetitionParticipant(models.Model):
     def update_rank(self):
         """Update participant's rank based on current score."""
         # Count participants with higher score in the same competition
-        higher_ranks = CompetitionParticipant.objects.filter(
-            competition=self.competition, score__gt=self.score
-        ).count()
+        higher_ranks = CompetitionParticipant.objects.filter(competition=self.competition, score__gt=self.score).count()
 
         self.rank = higher_ranks + 1
         self.save(update_fields=["rank"])
