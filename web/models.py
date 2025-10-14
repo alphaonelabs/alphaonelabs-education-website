@@ -1533,6 +1533,25 @@ class ChallengeSubmission(models.Model):
                     logger = logging.getLogger(__name__)
                     logger.error(f"Error calculating streak for user {self.user.id}: {e}")
 
+                # Update competition participant scores if this challenge is part of any active competition
+                try:
+                    competitions = self.challenge.competitions.filter(status__in=["active", "upcoming"])
+                    for competition in competitions:
+                        participant = CompetitionParticipant.objects.filter(
+                            competition=competition, user=self.user
+                        ).first()
+                        if participant:
+                            participant.update_score()
+                            participant.update_rank()
+                            participant.last_submission_at = timezone.now()
+                            participant.save(update_fields=["last_submission_at"])
+                except Exception as e:
+                    # Log the error but don't prevent submission from being saved
+                    import logging
+
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Error updating competition scores for user {self.user.id}: {e}")
+
 
 class Points(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="points")
@@ -1658,6 +1677,49 @@ class Competition(models.Model):
     def total_participants(self):
         """Get total number of participants."""
         return self.participants.count()
+
+    def update_all_ranks(self):
+        """Update ranks for all participants in this competition."""
+        participants = self.participants.order_by("-score", "joined_at")
+        for rank, participant in enumerate(participants, start=1):
+            participant.rank = rank
+            participant.save(update_fields=["rank"])
+
+    def award_rewards(self):
+        """Award rewards to participants based on their final rankings."""
+        if self.status != "ended":
+            return
+
+        # Update all ranks first
+        self.update_all_ranks()
+
+        # Get all rewards for this competition
+        rewards = self.rewards.filter(is_awarded=False).order_by("position")
+
+        for reward in rewards:
+            # Get participants at this position
+            participants_at_position = self.participants.filter(rank=reward.position)[: reward.quantity]
+
+            for participant in participants_at_position:
+                # Award the reward based on type
+                if reward.reward_type == "points" and reward.points_amount:
+                    Points.objects.create(
+                        user=participant.user,
+                        amount=reward.points_amount,
+                        reason=f"Reward for {self.title} - Position #{reward.position}",
+                        point_type="bonus",
+                    )
+                elif reward.reward_type == "badge":
+                    # Badge awarding logic would go here
+                    pass
+
+                # Mark participant as having received this reward
+                participant.rewards_claimed.add(reward)
+
+            # Mark reward as awarded if all quantities have been distributed
+            if participants_at_position.count() >= reward.quantity:
+                reward.is_awarded = True
+                reward.save(update_fields=["is_awarded"])
 
 
 class CompetitionReward(models.Model):
