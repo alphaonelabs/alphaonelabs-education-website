@@ -1595,6 +1595,180 @@ class Points(models.Model):
         return query.aggregate(total=Sum("amount"))["total"] or 0
 
 
+class Competition(models.Model):
+    """Model for competitions that can contain multiple challenges with rewards."""
+
+    STATUS_CHOICES = [
+        ("upcoming", "Upcoming"),
+        ("active", "Active"),
+        ("ended", "Ended"),
+        ("archived", "Archived"),
+    ]
+
+    title = models.CharField(max_length=200, help_text="Competition title")
+    description = models.TextField(help_text="Detailed description of the competition")
+    start_date = models.DateTimeField(help_text="When the competition starts")
+    end_date = models.DateTimeField(help_text="When the competition ends")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="upcoming")
+    challenges = models.ManyToManyField(
+        "Challenge", related_name="competitions", blank=True, help_text="Challenges included in this competition"
+    )
+    max_participants = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Maximum number of participants (leave blank for unlimited)"
+    )
+    entry_fee_points = models.PositiveIntegerField(
+        default=0, help_text="Points required to enter the competition (0 for free)"
+    )
+    image = models.ImageField(
+        upload_to="competition_images/", blank=True, null=True, help_text="Competition banner image"
+    )
+    rules = models.TextField(blank=True, help_text="Competition rules and guidelines")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-start_date"]
+        indexes = [
+            models.Index(fields=["status", "start_date"]),
+            models.Index(fields=["end_date"]),
+        ]
+
+    def __str__(self):
+        return f"{self.title} ({self.get_status_display()})"
+
+    def clean(self):
+        super().clean()
+        if self.start_date and self.end_date and self.start_date >= self.end_date:
+            raise ValidationError({"end_date": "End date must be after start date."})
+
+    @property
+    def is_active(self):
+        """Check if competition is currently active."""
+        now = timezone.now()
+        return self.start_date <= now <= self.end_date and self.status == "active"
+
+    @property
+    def is_full(self):
+        """Check if competition has reached maximum participants."""
+        if not self.max_participants:
+            return False
+        return self.participants.count() >= self.max_participants
+
+    @property
+    def total_participants(self):
+        """Get total number of participants."""
+        return self.participants.count()
+
+
+class CompetitionReward(models.Model):
+    """Model for rewards that can be won in competitions."""
+
+    REWARD_TYPE_CHOICES = [
+        ("scholarship", "Scholarship"),
+        ("premium_subscription", "Premium Subscription"),
+        ("merchandise", "Merchandise"),
+        ("points", "Points"),
+        ("badge", "Badge"),
+        ("certificate", "Certificate"),
+        ("goods", "Store Goods"),
+    ]
+
+    competition = models.ForeignKey(Competition, on_delete=models.CASCADE, related_name="rewards")
+    reward_type = models.CharField(max_length=25, choices=REWARD_TYPE_CHOICES)
+    name = models.CharField(max_length=200, help_text="Reward name (e.g., '$500 Scholarship')")
+    description = models.TextField(help_text="Detailed description of the reward")
+    position = models.PositiveIntegerField(help_text="Required position/rank to win this reward (1 for 1st place)")
+    quantity = models.PositiveIntegerField(default=1, help_text="Number of this reward available")
+    value = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True, help_text="Monetary value (for scholarships)"
+    )
+    points_amount = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Number of points awarded (for point rewards)"
+    )
+    subscription_months = models.PositiveIntegerField(
+        null=True, blank=True, help_text="Subscription duration in months (for premium subscriptions)"
+    )
+    goods_item = models.ForeignKey(
+        Goods, on_delete=models.SET_NULL, null=True, blank=True, help_text="Store item to award (for merchandise)"
+    )
+    is_awarded = models.BooleanField(default=False, help_text="Whether this reward has been awarded")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["position", "competition"]
+        unique_together = ["competition", "position"]
+
+    def __str__(self):
+        return f"{self.name} - Position {self.position} in {self.competition.title}"
+
+    def clean(self):
+        super().clean()
+        # Validate required fields based on reward type
+        if self.reward_type == "scholarship" and not self.value:
+            raise ValidationError({"value": "Scholarship rewards require a monetary value."})
+        if self.reward_type == "premium_subscription" and not self.subscription_months:
+            raise ValidationError({"subscription_months": "Subscription rewards require a duration in months."})
+        if self.reward_type == "points" and not self.points_amount:
+            raise ValidationError({"points_amount": "Point rewards require a points amount."})
+        if self.reward_type == "goods" and not self.goods_item:
+            raise ValidationError({"goods_item": "Merchandise rewards require a store item."})
+
+
+class CompetitionParticipant(models.Model):
+    """Model for tracking competition participants and their scores."""
+
+    competition = models.ForeignKey(Competition, on_delete=models.CASCADE, related_name="participants")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="competition_participations")
+    score = models.PositiveIntegerField(default=0, help_text="Cumulative score in this competition")
+    rank = models.PositiveIntegerField(null=True, blank=True, help_text="Current rank in the competition")
+    joined_at = models.DateTimeField(auto_now_add=True)
+    last_submission_at = models.DateTimeField(null=True, blank=True, help_text="Last time user submitted a challenge")
+    rewards_claimed = models.ManyToManyField(
+        CompetitionReward, blank=True, related_name="recipients", help_text="Rewards this participant has claimed"
+    )
+
+    class Meta:
+        unique_together = ["competition", "user"]
+        ordering = ["-score", "joined_at"]
+        indexes = [
+            models.Index(fields=["competition", "-score"]),
+            models.Index(fields=["user", "-joined_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.user.username} in {self.competition.title} - Score: {self.score}"
+
+    def update_score(self):
+        """Calculate total score from all challenge submissions in this competition."""
+        from django.db.models import Sum
+
+        # Get all challenges in this competition
+        challenge_ids = self.competition.challenges.values_list("id", flat=True)
+
+        # Sum points from user's submissions for these challenges
+        total = (
+            ChallengeSubmission.objects.filter(user=self.user, challenge_id__in=challenge_ids).aggregate(
+                total=Sum("points_awarded")
+            )["total"]
+            or 0
+        )
+
+        self.score = total
+        self.save(update_fields=["score"])
+        return self.score
+
+    def update_rank(self):
+        """Update participant's rank based on current score."""
+        # Count participants with higher score in the same competition
+        higher_ranks = CompetitionParticipant.objects.filter(
+            competition=self.competition, score__gt=self.score
+        ).count()
+
+        self.rank = higher_ranks + 1
+        self.save(update_fields=["rank"])
+        return self.rank
+
+
 class ProductImage(models.Model):
     goods = models.ForeignKey(Goods, on_delete=models.CASCADE, related_name="goods_images")
     image = models.ImageField(upload_to="goods_images/", help_text="Product display image")
