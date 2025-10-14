@@ -277,7 +277,7 @@
           const linkInput = document.getElementById('referralLink');
           linkInput.select();
           linkInput.setSelectionRange(0, 99999); // For mobile devices
-          
+
           // Use modern clipboard API if available
           if (navigator.clipboard && window.isSecureContext) {
               navigator.clipboard.writeText(linkInput.value).then(() => {
@@ -293,14 +293,14 @@
               showCopySuccess();
           }
       }
-      
+
       function showCopySuccess() {
           // Create a temporary toast notification
           const toast = document.createElement('div');
           toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 flex items-center';
           toast.innerHTML = '<i class="fas fa-check mr-2"></i>Referral link copied to clipboard!';
           document.body.appendChild(toast);
-          
+
           setTimeout(() => {
               toast.remove();
           }, 3000);
