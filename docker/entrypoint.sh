@@ -5,7 +5,11 @@ python manage.py migrate
 
 # Optional: seed test data if desired at runtime
 if [[ "${CREATE_TEST_DATA:-0}" == "1" ]]; then
-  python manage.py create_test_data
+  if python manage.py help | grep -qE '^\s*create_test_data\s'; then
+    python manage.py create_test_data
+  else
+    echo "Skipping test data: management command 'create_test_data' not found."
+  fi
 fi
 
 if [[ -n "${DJANGO_SUPERUSER_USERNAME:-}" && -n "${DJANGO_SUPERUSER_EMAIL:-}" && -n "${DJANGO_SUPERUSER_PASSWORD:-}" ]]; then
