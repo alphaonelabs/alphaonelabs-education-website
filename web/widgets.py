@@ -284,11 +284,11 @@ class TailwindJSONWidget(forms.Widget):
                         items.forEach(item => {{
                             const handle = item.querySelector('.drag-handle');
                             // Add ARIA attributes for accessibility
-                            item.setAttribute('role', 'listitem');  # noqa: F821
+                            item.setAttribute('role', 'listitem');  // noqa: F821
                             item.setAttribute(
                                 'aria-label',
                                 `Feature item ${parseInt(item.dataset.index) + 1}`
-                            );  # noqa: F821
+                            );  // noqa: F821
                             handle.setAttribute('aria-label', 'Drag handle');
 
                             // Mouse drag functionality
