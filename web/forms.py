@@ -110,6 +110,8 @@ __all__ = [
     "LinkGradeForm",
     "AwardAchievementForm",
     "SurveyForm",
+    "InfographicForm",
+    "LessonSummaryForm",
 ]
 
 fernet = Fernet(settings.SECURE_MESSAGE_KEY)
