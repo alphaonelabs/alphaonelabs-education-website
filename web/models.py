@@ -3085,3 +3085,141 @@ class Response(models.Model):
 
     def __str__(self):
         return f"Response by {self.user.username} to {self.question.text}"
+
+
+# Virtual Classroom Models
+
+
+class VirtualClassroom(models.Model):
+    """Model for virtual classroom instances linked to sessions."""
+
+    session = models.OneToOneField(Session, on_delete=models.CASCADE, related_name="virtual_classroom")
+    max_rows = models.IntegerField(default=4, validators=[MinValueValidator(1), MaxValueValidator(10)])
+    max_cols = models.IntegerField(default=6, validators=[MinValueValidator(1), MaxValueValidator(10)])
+    is_active = models.BooleanField(default=False, help_text="Whether the classroom is currently active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Virtual Classroom for {self.session}"
+
+    @property
+    def total_seats(self):
+        return self.max_rows * self.max_cols
+
+
+class ClassroomSeat(models.Model):
+    """Model for individual seats in the virtual classroom."""
+
+    classroom = models.ForeignKey(VirtualClassroom, on_delete=models.CASCADE, related_name="seats")
+    row = models.IntegerField(validators=[MinValueValidator(0)])
+    col = models.IntegerField(validators=[MinValueValidator(0)])
+    student = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="classroom_seats"
+    )
+    is_speaking = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [["classroom", "row", "col"]]
+        ordering = ["row", "col"]
+
+    def __str__(self):
+        student_name = self.student.username if self.student else "Empty"
+        return f"Seat ({self.row}, {self.col}) - {student_name}"
+
+
+class HandRaiseQueue(models.Model):
+    """Model for tracking students who have raised their hands."""
+
+    classroom = models.ForeignKey(VirtualClassroom, on_delete=models.CASCADE, related_name="hand_raises")
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="hand_raises")
+    raised_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True)
+    selected_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["raised_at"]
+        unique_together = [["classroom", "student", "is_active"]]
+
+    def __str__(self):
+        return f"{self.student.username} raised hand at {self.raised_at}"
+
+    def select_for_speaking(self):
+        """Mark this student as selected to speak."""
+        self.selected_at = timezone.now()
+        self.is_active = False
+        self.save()
+
+
+class StudentLaptop(models.Model):
+    """Model for tracking student laptop content (screenshots, screen shares)."""
+
+    classroom = models.ForeignKey(VirtualClassroom, on_delete=models.CASCADE, related_name="laptops")
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="laptop_content")
+    screenshot = models.ImageField(upload_to="classroom_screenshots/", blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    is_shared = models.BooleanField(default=False, help_text="Whether the content is currently shared")
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-uploaded_at"]
+
+    def __str__(self):
+        return f"{self.student.username}'s laptop in {self.classroom}"
+
+
+class UpdateRound(models.Model):
+    """Model for managing timed update rounds where students share progress."""
+
+    classroom = models.ForeignKey(VirtualClassroom, on_delete=models.CASCADE, related_name="update_rounds")
+    started_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="started_update_rounds")
+    duration_seconds = models.IntegerField(default=120, validators=[MinValueValidator(30), MaxValueValidator(600)])
+    current_speaker = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="current_speaking_rounds"
+    )
+    is_active = models.BooleanField(default=True)
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-started_at"]
+
+    def __str__(self):
+        return f"Update Round in {self.classroom} - {self.started_at}"
+
+    def complete(self):
+        """Mark the update round as completed."""
+        self.is_active = False
+        self.completed_at = timezone.now()
+        self.save()
+
+
+class UpdateRoundParticipant(models.Model):
+    """Model for tracking individual participants in update rounds."""
+
+    update_round = models.ForeignKey(UpdateRound, on_delete=models.CASCADE, related_name="participants")
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="update_round_participations")
+    order = models.IntegerField(default=0)
+    has_spoken = models.BooleanField(default=False)
+    spoken_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        unique_together = [["update_round", "student"]]
+        ordering = ["order"]
+
+    def __str__(self):
+        return f"{self.student.username} in {self.update_round}"
+
+    def mark_as_spoken(self):
+        """Mark this participant as having spoken."""
+        self.has_spoken = True
+        self.spoken_at = timezone.now()
+        self.save()
+
+    def mark_as_completed(self):
+        """Mark this participant as having completed their update."""
+        self.completed_at = timezone.now()
+        self.save()
