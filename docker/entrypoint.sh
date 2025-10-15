@@ -25,7 +25,7 @@ if [[ "${CREATE_TEST_DATA:-0}" == "1" ]]; then
 fi
 
 if [[ -n "${DJANGO_SUPERUSER_USERNAME:-}" && -n "${DJANGO_SUPERUSER_EMAIL:-}" && -n "${DJANGO_SUPERUSER_PASSWORD:-}" ]]; then
-  python manage.py shell - <<'PY'
+  python manage.py shell <<'PY'
 import os
 from django.contrib.auth import get_user_model
 User = get_user_model()
