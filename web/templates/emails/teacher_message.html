@@ -36,9 +36,19 @@
     </div>
     <div class="message-box">{{ message|linebreaks }}</div>
     
-    <div class="my-8 text-center">
-      <a href="{{ inbox_url }}" class="inline-block px-6 py-3 mx-2 bg-teal-300 hover:bg-teal-400 text-white font-bold rounded-lg transition duration-200 focus:ring-2 focus:ring-teal-500 focus:outline-none dark:bg-teal-600 dark:hover:bg-teal-700">View in Inbox</a>
-      <a href="{{ messaging_dashboard_url }}" class="inline-block px-6 py-3 mx-2 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg transition duration-200 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-700 dark:hover:bg-gray-800">Messaging Dashboard</a>
+    <div class="container mx-auto px-4 my-6 text-center space-x-3">
+      {% if inbox_url %}
+      <a href="{{ inbox_url }}" aria-label="View this message in your inbox"
+         class="inline-block bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
+         View in Inbox
+      </a>
+      {% endif %}
+      {% if messaging_dashboard_url %}
+      <a href="{{ messaging_dashboard_url }}" aria-label="Open messaging dashboard"
+         class="inline-block bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-6 py-2 rounded-lg transition duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400">
+         Messaging Dashboard
+      </a>
+      {% endif %}
     </div>
     
     <div class="mt-8 pt-5 border-t border-gray-200 dark:border-gray-700">
