@@ -26,7 +26,6 @@ from django.contrib import messages
 from django.contrib.admin.utils import NestedObjects
 from django.contrib.auth import get_user_model, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.urls import reverse
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
 from django.contrib.auth.models import User
 from django.core.cache import cache
