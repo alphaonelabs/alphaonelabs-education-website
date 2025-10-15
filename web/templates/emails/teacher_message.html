@@ -23,6 +23,43 @@
             margin-bottom: 20px;
             color: #666;
         }
+
+        .action-buttons {
+            margin: 30px 0;
+            text-align: center;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            margin: 0 10px;
+            background-color: #3b82f6;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #2563eb;
+        }
+
+        .btn-secondary {
+            background-color: #6b7280;
+        }
+
+        .btn-secondary:hover {
+            background-color: #4b5563;
+        }
+
+        .footer-note {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            color: #666;
+            font-size: 14px;
+        }
     </style>
   </head>
   <body>
@@ -33,6 +70,14 @@
       </p>
     </div>
     <div class="message-box">{{ message|linebreaks }}</div>
-    <p>You can reply to this message by directly responding to this email.</p>
+    
+    <div class="action-buttons">
+      <a href="{{ inbox_url }}" class="btn">View in Inbox</a>
+      <a href="{{ messaging_dashboard_url }}" class="btn btn-secondary">Messaging Dashboard</a>
+    </div>
+    
+    <div class="footer-note">
+      <p>You can reply to this message by directly responding to this email, or click the buttons above to view it in your account.</p>
+    </div>
   </body>
 </html>
