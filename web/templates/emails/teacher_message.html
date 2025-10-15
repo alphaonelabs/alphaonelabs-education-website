@@ -24,42 +24,7 @@
             color: #666;
         }
 
-        .action-buttons {
-            margin: 30px 0;
-            text-align: center;
-        }
-
-        .btn {
-            display: inline-block;
-            padding: 12px 24px;
-            margin: 0 10px;
-            background-color: #3b82f6;
-            color: white;
-            text-decoration: none;
-            border-radius: 6px;
-            font-weight: bold;
-            transition: background-color 0.3s ease;
-        }
-
-        .btn:hover {
-            background-color: #2563eb;
-        }
-
-        .btn-secondary {
-            background-color: #6b7280;
-        }
-
-        .btn-secondary:hover {
-            background-color: #4b5563;
-        }
-
-        .footer-note {
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e5e7eb;
-            color: #666;
-            font-size: 14px;
-        }
+        /* TODO: Remove custom CSS and use Tailwind utilities in markup per coding guidelines */
     </style>
   </head>
   <body>
@@ -71,13 +36,13 @@
     </div>
     <div class="message-box">{{ message|linebreaks }}</div>
     
-    <div class="action-buttons">
-      <a href="{{ inbox_url }}" class="btn">View in Inbox</a>
-      <a href="{{ messaging_dashboard_url }}" class="btn btn-secondary">Messaging Dashboard</a>
+    <div class="my-8 text-center">
+      <a href="{{ inbox_url }}" class="inline-block px-6 py-3 mx-2 bg-teal-300 hover:bg-teal-400 text-white font-bold rounded-lg transition duration-200 focus:ring-2 focus:ring-teal-500 focus:outline-none dark:bg-teal-600 dark:hover:bg-teal-700">View in Inbox</a>
+      <a href="{{ messaging_dashboard_url }}" class="inline-block px-6 py-3 mx-2 bg-gray-600 hover:bg-gray-700 text-white font-bold rounded-lg transition duration-200 focus:ring-2 focus:ring-gray-500 focus:outline-none dark:bg-gray-700 dark:hover:bg-gray-800">Messaging Dashboard</a>
     </div>
     
-    <div class="footer-note">
-      <p>You can reply to this message by directly responding to this email, or click the buttons above to view it in your account.</p>
+    <div class="mt-8 pt-5 border-t border-gray-200 dark:border-gray-700">
+      <p class="text-gray-600 dark:text-gray-300 text-sm">You can reply to this message by directly responding to this email, or click the buttons above to view it in your account.</p>
     </div>
   </body>
 </html>
