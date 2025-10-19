@@ -69,10 +69,10 @@ jobs:
 
           # Copy dependency manifests & install via Poetry
           COPY pyproject.toml poetry.lock* ./
+          # Install only dependencies (skip installing the project itself until after sources copied)
           RUN python -m pip install --upgrade pip wheel setuptools && \
               pip install poetry==1.8.3 && \
               poetry config virtualenvs.create false --local || true && \
-              # Install only dependencies (skip installing the project itself until after sources copied)
               poetry install --only main --no-root --no-interaction --no-ansi
 
           # Copy project files
@@ -155,4 +155,8 @@ jobs:
 
       - name: Stop Docker container
         if: always()
-        run: docker stop education-app
+        run: docker stop education-app || true
+
+      - name: Remove Docker container
+        if: always()
+        run: docker rm education-app || true

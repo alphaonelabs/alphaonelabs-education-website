@@ -876,10 +876,17 @@ class EducationalVideoForm(forms.ModelForm):
 
         # YouTube validation
         if host == "youtube.com" or host == "www.youtube.com":
+            # Standard YouTube URLs with ?v= parameter
             qs = parse_qs(parsed.query)
             vid = qs.get("v", [""])[0]
             if len(vid) == 11 and re.match(r"^[A-Za-z0-9_-]{11}$", vid):
                 return url
+
+            # YouTube embed URLs like /embed/VIDEO_ID
+            if parsed.path.startswith("/embed/"):
+                vid = parsed.path[7:]  # Remove "/embed/"
+                if len(vid) == 11 and re.match(r"^[A-Za-z0-9_-]{11}$", vid):
+                    return url
 
         # YouTube short URL validation
         if host == "youtu.be":
@@ -889,7 +896,10 @@ class EducationalVideoForm(forms.ModelForm):
 
         # Vimeo validation
         if host == "vimeo.com" or host == "www.vimeo.com":
-            vid = parsed.path.lstrip("/").split("/")[0]
+            path_parts = parsed.path.lstrip("/").split("/")
+            vid = path_parts[-1]  # Get the last part of the path
+
+            # Handle both /VIDEO_ID and /video/VIDEO_ID formats
             if vid.isdigit() and len(vid) >= 8:
                 return url
 
