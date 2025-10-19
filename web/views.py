@@ -6391,8 +6391,8 @@ def teacher_update_student_attendance(request, classroom_id):
         if classroom.course:
             is_enrolled = classroom.course.enrollments.filter(student=student, status="approved").exists()
         else:
-            # For classrooms without a course, everyone is "enrolled"
-            is_enrolled = True
+            # For classrooms without a course, check VirtualClassroomParticipant table
+            is_enrolled = VirtualClassroomParticipant.objects.filter(classroom=classroom, user=student).exists()
 
         if not is_enrolled:
             return JsonResponse({"success": False, "message": "You are not enrolled in this class"}, status=403)
@@ -6403,27 +6403,30 @@ def teacher_update_student_attendance(request, classroom_id):
         today_end = timezone.make_aware(datetime.combine(today, datetime.max.time()))
 
         if classroom.course:
-            session, created = Session.objects.get_or_create(
+            session = Session.objects.filter(
                 course=classroom.course,
                 start_time__range=(today_start, today_end),
-                defaults={
-                    "title": f"Class on {today.strftime('%Y-%m-%d')}",
-                    "start_time": today_start,
-                    "end_time": today_end,
-                    "course": classroom.course,  # Make sure to set the course
-                },
-            )
+            ).first()
+            if not session:
+                session = Session.objects.create(
+                    course=classroom.course,
+                    title=f"Class on {today.strftime('%Y-%m-%d')}",
+                    start_time=today_start,
+                    end_time=today_end,
+                )
         else:
-            # For classrooms without a course, create a standalone session
-            session, created = Session.objects.get_or_create(
+            session = Session.objects.filter(
                 title=f"Class on {today.strftime('%Y-%m-%d')}",
                 start_time__range=(today_start, today_end),
-                defaults={
-                    "start_time": today_start,
-                    "end_time": today_end,
-                    "course": None,  # Explicitly set course to None for standalone sessions
-                },
-            )
+                course__isnull=True,
+            ).first()
+            if not session:
+                session = Session.objects.create(
+                    title=f"Class on {today.strftime('%Y-%m-%d')}",
+                    start_time=today_start,
+                    end_time=today_end,
+                    course=None,
+                )
 
         # Mark attendance
         attendance, created = SessionAttendance.objects.get_or_create(

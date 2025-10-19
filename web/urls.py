@@ -504,7 +504,7 @@ urlpatterns += i18n_patterns(
     ),
     path(
         "test-sentry-error/",
-        lambda request: 1 / 0,
+        lambda _request: 1 / 0,
         name="test_sentry",
     ),
     # Virtual Classroom URLs
