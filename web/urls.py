@@ -4,6 +4,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
+from django.views.generic.base import RedirectView
 
 from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar, views_whiteboard
 from .secure_messaging import (
@@ -434,7 +435,7 @@ urlpatterns += i18n_patterns(
     ),
     path(
         "update_student_attendance/<int:classroom_id>/",
-        views.update_student_attendance,
+        RedirectView.as_view(pattern_name="update_student_attendance", permanent=False),
         name="update_student_attendance_legacy",
     ),
     path(
@@ -471,35 +472,113 @@ urlpatterns += i18n_patterns(
         views.create_membership_subscription,
         name="create_membership_subscription",
     ),
-    path("membership/success/", views.membership_success, name="membership_success"),
-    path("membership/settings/", views.membership_settings, name="membership_settings"),
-    path("membership/cancel/", views.cancel_membership, name="cancel_membership"),
-    path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
-    path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
-    path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
-    path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
+    path(
+        "membership/success/",
+        views.membership_success,
+        name="membership_success",
+    ),
+    path(
+        "membership/settings/",
+        views.membership_settings,
+        name="membership_settings",
+    ),
+    path(
+        "membership/cancel/",
+        views.cancel_membership,
+        name="cancel_membership",
+    ),
+    path(
+        "membership/reactivate/",
+        views.reactivate_membership,
+        name="reactivate_membership",
+    ),
+    path(
+        "membership/update-payment-method/",
+        views.update_payment_method,
+        name="update_payment_method",
+    ),
+    path(
+        "membership/update-payment-method/api/",
+        views.update_payment_method_api,
+        name="update_payment_method_api",
+    ),
+    path(
+        "test-sentry-error/",
+        lambda request: 1 / 0,
+        name="test_sentry",
+    ),
     # Virtual Classroom URLs
-    path("virtual-classroom/", views.virtual_classroom_list, name="virtual_classroom_list"),
-    path("virtual-classroom/create/", views.virtual_classroom_create, name="virtual_classroom_create"),
-    path("virtual-classroom/<int:classroom_id>/", views.virtual_classroom_detail, name="virtual_classroom_detail"),
-    path("virtual-classroom/<int:classroom_id>/edit/", views.virtual_classroom_edit, name="virtual_classroom_edit"),
+    path(
+        "virtual-classroom/",
+        login_required(views.virtual_classroom_list),
+        name="virtual_classroom_list",
+    ),
+    path(
+        "virtual-classroom/create/",
+        login_required(views.virtual_classroom_create),
+        name="virtual_classroom_create",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/",
+        login_required(views.virtual_classroom_detail),
+        name="virtual_classroom_detail",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/edit/",
+        login_required(views.virtual_classroom_edit),
+        name="virtual_classroom_edit",
+    ),
     path(
         "virtual-classroom/<int:classroom_id>/customize/",
-        views.virtual_classroom_customize,
+        login_required(views.virtual_classroom_customize),
         name="virtual_classroom_customize",
     ),
     path(
-        "virtual-classroom/<int:classroom_id>/delete/", views.virtual_classroom_delete, name="virtual_classroom_delete"
+        "virtual-classroom/<int:classroom_id>/delete/",
+        login_required(views.virtual_classroom_delete),
+        name="virtual_classroom_delete",
     ),
-    path("virtual-classroom/<int:classroom_id>/blackboard/", views.classroom_blackboard, name="classroom_blackboard"),
-    path("virtual-classroom/<int:classroom_id>/attendance/", classroom_attendance, name="classroom_attendance"),
-    path("attendance/<int:classroom_id>/update/", update_student_attendance, name="update_student_attendance"),
-    path("virtual-classroom/<int:classroom_id>/reset-attendance/", views.reset_attendance, name="reset_attendance"),
+    path(
+        "virtual-classroom/<int:classroom_id>/blackboard/",
+        login_required(views.classroom_blackboard),
+        name="classroom_blackboard",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/attendance/",
+        login_required(classroom_attendance),
+        name="classroom_attendance",
+    ),
+    path(
+        "attendance/<int:classroom_id>/update/",
+        login_required(update_student_attendance),
+        name="update_student_attendance",
+    ),
+    path(
+        "virtual-classroom/<int:classroom_id>/reset-attendance/",
+        login_required(views.reset_attendance),
+        name="reset_attendance",
+    ),
     # Whiteboard URLs
-    path("whiteboard/<int:classroom_id>/", views_whiteboard.classroom_whiteboard, name="classroom_whiteboard"),
-    path("whiteboard/<int:classroom_id>/data/", views_whiteboard.get_whiteboard_data, name="get_whiteboard_data"),
-    path("whiteboard/<int:classroom_id>/save/", views_whiteboard.save_whiteboard_data, name="save_whiteboard_data"),
-    path("whiteboard/<int:classroom_id>/clear/", views_whiteboard.clear_whiteboard, name="clear_whiteboard"),
+    path(
+        "whiteboard/<int:classroom_id>/",
+        login_required(views_whiteboard.classroom_whiteboard),
+        name="classroom_whiteboard",
+    ),
+    path(
+        "whiteboard/<int:classroom_id>/data/",
+        login_required(views_whiteboard.get_whiteboard_data),
+        name="get_whiteboard_data",
+    ),
+    path(
+        "whiteboard/<int:classroom_id>/save/",
+        login_required(views_whiteboard.save_whiteboard_data),
+        name="save_whiteboard_data",
+    ),
+    path(
+        "whiteboard/<int:classroom_id>/clear/",
+        login_required(views_whiteboard.clear_whiteboard),
+        name="clear_whiteboard",
+    ),
     prefix_default_language=True,
 )
 

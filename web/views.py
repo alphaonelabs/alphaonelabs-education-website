@@ -174,6 +174,7 @@ from .models import (
     VideoRequest,
     VirtualClassroom,
     VirtualClassroomCustomization,
+    VirtualClassroomParticipant,
     WaitingRoom,
     WebRequest,
     default_valid_until,
@@ -4986,11 +4987,17 @@ def classroom_attendance(request, classroom_id):
     else:
         # For classrooms without a course, everyone is "enrolled"
         is_enrolled = True
+        # Get users who are participants in this classroom (excluding teacher)
+        participant_user_ids = VirtualClassroomParticipant.objects.filter(classroom=classroom).values_list(
+            "user_id", flat=True
+        )
+
         enrolled_students = (
-            User.objects.filter(virtualclassroom=classroom)
+            User.objects.filter(id__in=participant_user_ids)
             .exclude(id=classroom.teacher.id)
             .select_related("profile")
             .order_by("first_name", "last_name")
+            .distinct()
         )
 
     if not (is_teacher or is_enrolled):
