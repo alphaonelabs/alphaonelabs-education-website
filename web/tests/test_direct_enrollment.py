@@ -64,7 +64,7 @@ class DirectEnrollmentTest(TestCase):
         data = {"first_name": "New", "last_name": "Student", "email": self.student.email}
         response = self.client.post(url, data)
         # Verify that the error message is shown for duplicate enrollment.
-        self.assertContains(response, "A user with this email already exists.")
+        self.assertContains(response, "This student is already enrolled in the course.")
 
     def test_form_validation(self):
         # Test that a required field (email) is validated.

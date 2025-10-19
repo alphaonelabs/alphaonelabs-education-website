@@ -1002,14 +1002,7 @@ def delete_course(request, slug):
 @csrf_exempt
 def github_update(request):
     """GitHub webhook endpoint to trigger a lightweight deploy.
-        current_time = time.time()
-        os.utime(settings.PA_WSGI, (current_time, current_time))
-        send_slack_message("Repository updated successfully")
-        return HttpResponse("Repository updated successfully")
-    except Exception:
-        logger.error("Deploy error occurred", exc_info=True)
-        send_slack_message("Deploy error occurred - check logs for details")
-        return HttpResponse("Deploy error occurred. Please check logs.", status=500)
+
     Hardening applied:
     - Require POST.
     - Validate X-Hub-Signature-256 using shared secret env var GITHUB_WEBHOOK_SECRET.
@@ -4763,6 +4756,25 @@ def virtual_classroom_create(request):
             classroom.teacher = request.user
             classroom.save()
 
+            # Create default customization settings
+            VirtualClassroomCustomization.objects.get_or_create(
+                classroom=classroom,
+                defaults={
+                    "wall_color": "#E6E2D7",
+                    "floor_color": "#C7B299",
+                    "desk_color": "#8B4513",
+                    "chair_color": "#4B0082",
+                    "board_color": "#005C53",
+                    "number_of_rows": 5,
+                    "desks_per_row": 6,
+                    "has_plants": True,
+                    "has_windows": True,
+                    "has_bookshelf": True,
+                    "has_clock": True,
+                    "has_carpet": True,
+                },
+            )
+
             messages.success(request, "Virtual classroom created successfully!")
             return redirect("virtual_classroom_customize", classroom_id=classroom.id)
     else:
@@ -4806,13 +4818,31 @@ def virtual_classroom_detail(request, classroom_id):
         messages.error(request, "You do not have access to this virtual classroom.")
         return redirect("course_detail", slug=classroom.course.slug if classroom.course else "course_search")
 
+    # Get or create customization settings to prevent DoesNotExist errors
+    customization, created = VirtualClassroomCustomization.objects.get_or_create(
+        classroom=classroom,
+        defaults={
+            "wall_color": "#E6E2D7",
+            "floor_color": "#C7B299",
+            "desk_color": "#8B4513",
+            "chair_color": "#4B0082",
+            "board_color": "#005C53",
+            "number_of_rows": 5,
+            "desks_per_row": 6,
+            "has_plants": True,
+            "has_windows": True,
+            "has_bookshelf": True,
+            "has_clock": True,
+            "has_carpet": True,
+        },
+    )
+
     if request.method == "POST" and request.headers.get("X-Requested-With") == "XMLHttpRequest":
         if not is_teacher:  # Only teachers can customize
             return JsonResponse({"status": "error", "message": "Only teachers can customize the classroom"}, status=403)
 
         try:
             data = json.loads(request.body.decode("utf-8") or "{}")
-            customization = classroom.customization_settings
 
             # Update customization settings
             customization.wall_color = data.get("wall_color", customization.wall_color)
@@ -4832,9 +4862,9 @@ def virtual_classroom_detail(request, classroom_id):
             return JsonResponse({"status": "success"})
         except json.JSONDecodeError:
             return JsonResponse({"status": "error", "message": "Invalid JSON data"}, status=400)
-        except Exception as e:
+        except Exception:
             # Log the detailed exception for debugging
-            logger.exception("Error in virtual_classroom_detail customization: %s", str(e))
+            logger.exception("Error in virtual_classroom_detail customization")
             return JsonResponse({"status": "error", "message": "An internal error occurred"}, status=500)
 
     return render(
@@ -4842,7 +4872,7 @@ def virtual_classroom_detail(request, classroom_id):
         "virtual_classroom/index.html",
         {
             "classroom": classroom,
-            "customization": classroom.customization_settings,
+            "customization": customization,
             "is_teacher": is_teacher,
             "is_enrolled": is_enrolled,
         },
@@ -5070,7 +5100,7 @@ def update_student_attendance(request, classroom_id):
                 status = "present"
 
             # Validate status value
-            allowed_status = {"present", "absent", "late"}
+            allowed_status = {"present", "absent", "late", "excused"}
             if status not in allowed_status:
                 return JsonResponse({"status": "error", "message": "Invalid status value"}, status=400)
 
@@ -5133,9 +5163,9 @@ def update_student_attendance(request, classroom_id):
             return redirect("classroom_attendance", classroom_id=classroom_id)
         except json.JSONDecodeError:
             return JsonResponse({"status": "error", "message": "Invalid JSON data"}, status=400)
-        except Exception as e:
+        except Exception:
             # Log the detailed exception for debugging
-            logger.exception("Error in update_student_attendance: %s", str(e))
+            logger.exception("Error in update_student_attendance")
             return JsonResponse({"status": "error", "message": "An internal error occurred"}, status=500)
 
     return JsonResponse({"status": "error", "message": "Invalid request method"}, status=400)
@@ -5166,7 +5196,7 @@ def add_student_to_course(request, slug):
             if student:
                 # Check if student is already enrolled
                 if Enrollment.objects.filter(course=course, student=student).exists():
-                    form.add_error(None, "A user with this email already exists.")
+                    form.add_error(None, "This student is already enrolled in the course.")
                 else:
                     # Enroll existing student
                     enrollment = Enrollment.objects.create(course=course, student=student, status="approved")
@@ -7662,7 +7692,7 @@ def membership_settings(request) -> HttpResponse:
 
         context = {
             "membership": membership,
-            "invoices": invoices.data if invoices.data else [],
+            "invoices": invoices.data if hasattr(invoices, "data") and invoices.data else [],
             "events": events,
         }
         return render(request, "membership_settings.html", context)
@@ -7687,13 +7717,13 @@ def cancel_membership(request) -> HttpResponse:
         else:
             messages.error(request, result["error"])
 
-    except stripe.error.StripeError as e:
-        logger.error("Stripe error in cancel_membership: %s", str(e))
+    except stripe.error.StripeError:
+        logger.exception("Stripe error in cancel_membership")
         messages.error(request, "An internal error occurred")
     except ObjectDoesNotExist:
         messages.error(request, "No membership found for your account.")
-    except Exception as e:
-        logger.error("Unexpected error in cancel_membership: %s", str(e))
+    except Exception:
+        logger.exception("Unexpected error in cancel_membership")
         messages.error(request, "An internal error occurred")
 
     return redirect("membership_settings")
@@ -8241,7 +8271,6 @@ def video_request_list(request):
     return render(request, "videos/request_list.html", context)
 
 
-@login_required
 @login_required
 def submit_video_request(request: HttpRequest) -> HttpResponse:
     """View for submitting a new video request."""

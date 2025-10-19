@@ -17,10 +17,10 @@ import os
 
 import django
 
-# Initialize Django before importing anything that requires ORM
+# Set Django settings module before any Django imports
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "web.settings")
-django.setup()
 
+# Initialize Django before importing anything that requires ORM
 django.setup()
 
 # noqa annotations silence E402 (module level import not at top of file)

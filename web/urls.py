@@ -558,26 +558,47 @@ urlpatterns += i18n_patterns(
         login_required(views.reset_attendance),
         name="reset_attendance",
     ),
-    # Whiteboard URLs
+    # Whiteboard URLs (nested under virtual-classroom)
     path(
-        "whiteboard/<int:classroom_id>/",
+        "virtual-classroom/<int:classroom_id>/whiteboard/",
         login_required(views_whiteboard.classroom_whiteboard),
         name="classroom_whiteboard",
     ),
     path(
-        "whiteboard/<int:classroom_id>/data/",
+        "virtual-classroom/<int:classroom_id>/whiteboard/data/",
         login_required(views_whiteboard.get_whiteboard_data),
         name="get_whiteboard_data",
     ),
     path(
-        "whiteboard/<int:classroom_id>/save/",
+        "virtual-classroom/<int:classroom_id>/whiteboard/save/",
         login_required(views_whiteboard.save_whiteboard_data),
         name="save_whiteboard_data",
     ),
     path(
-        "whiteboard/<int:classroom_id>/clear/",
+        "virtual-classroom/<int:classroom_id>/whiteboard/clear/",
         login_required(views_whiteboard.clear_whiteboard),
         name="clear_whiteboard",
+    ),
+    # Legacy whiteboard URL redirects (temporary)
+    path(
+        "whiteboard/<int:classroom_id>/",
+        RedirectView.as_view(pattern_name="classroom_whiteboard", permanent=False),
+        name="classroom_whiteboard_legacy",
+    ),
+    path(
+        "whiteboard/<int:classroom_id>/data/",
+        RedirectView.as_view(pattern_name="get_whiteboard_data", permanent=False),
+        name="get_whiteboard_data_legacy",
+    ),
+    path(
+        "whiteboard/<int:classroom_id>/save/",
+        RedirectView.as_view(pattern_name="save_whiteboard_data", permanent=False),
+        name="save_whiteboard_data_legacy",
+    ),
+    path(
+        "whiteboard/<int:classroom_id>/clear/",
+        RedirectView.as_view(pattern_name="clear_whiteboard", permanent=False),
+        name="clear_whiteboard_legacy",
     ),
     prefix_default_language=True,
 )
