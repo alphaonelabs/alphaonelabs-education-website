@@ -37,3 +37,33 @@ application = ProtocolTypeRouter(
         "websocket": AuthMiddlewareStack(URLRouter(websocket_urlpatterns)),
     }
 )
+
+# Wrap the entire router so both HTTP and WebSocket errors reach Sentry
+channels_application = SentryAsgiMiddleware(channels_application)
+
+
+async def application(
+    scope: Dict[str, Any],
+    receive: Callable[[], Awaitable[Dict[str, Any]]],
+    send: Callable[[Dict[str, Any]], Awaitable[None]],
+) -> None:
+    """Unified ASGI application with optional Channels + lifespan handling.
+
+    Provides:
+    - Lifespan scope acknowledgement to prevent Django ValueError noise.
+    - Optional Channels (websocket) support when dependencies and routes exist.
+    - Delegates all other scopes to either Channels router or plain Django.
+    """
+    scope_type = scope.get("type")
+
+    if scope_type == "lifespan":
+        while True:
+            message = await receive()
+            msg_type = message.get("type")
+            if msg_type == "lifespan.startup":
+                await send({"type": "lifespan.startup.complete"})
+            elif msg_type == "lifespan.shutdown":
+                await send({"type": "lifespan.shutdown.complete"})
+                return
+    else:
+        await channels_application(scope, receive, send)

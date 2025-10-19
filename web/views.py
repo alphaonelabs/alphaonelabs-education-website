@@ -302,8 +302,8 @@ def index(request):
     # Get current user's profile if authenticated
     profile = request.user.profile if request.user.is_authenticated else None
 
-    # Get featured courses
-    featured_courses = Course.objects.filter(status="published", is_featured=True).order_by("-created_at")[:3]
+    # Get recent courses
+    featured_courses = Course.objects.filter(status="published").order_by("-created_at")[:6]
 
     # Get featured goods
     featured_goods = Goods.objects.filter(featured=True, is_available=True).order_by("-created_at")[:3]
@@ -852,6 +852,21 @@ def course_detail(request, slug):
     for item in rating_counts:
         rating_distribution[item["rating"]] = item["count"]
 
+    # Get next session for waiting room functionality
+    next_session = None
+    user_in_session_waiting_room = False
+
+    if request.user.is_authenticated:
+        # Get the next upcoming session for this course
+        next_session = course.sessions.filter(start_time__gt=timezone.now()).order_by("start_time").first()
+
+        # Check if user is in the session waiting room
+        try:
+            session_waiting_room = WaitingRoom.objects.get(course=course, status="open")
+            user_in_session_waiting_room = request.user in session_waiting_room.participants.all()
+        except WaitingRoom.DoesNotExist:
+            user_in_session_waiting_room = False
+
     # Build the absolute discount URL using the discount view's URL name.
     from urllib.parse import urlencode
 
@@ -885,6 +900,8 @@ def course_detail(request, slug):
         "reviews_num": reviews_num,
         "discount_url": discount_url,
         "virtual_classroom": virtual_classroom,
+        "next_session": next_session,
+        "user_in_session_waiting_room": user_in_session_waiting_room,
     }
 
     return render(request, "courses/detail.html", context)
@@ -2449,10 +2466,27 @@ def session_detail(request, session_id):
         ):
             return HttpResponseForbidden("You don't have access to this session")
 
+        # Get next session for waiting room functionality
+        next_session = None
+        user_in_session_waiting_room = False
+
+        if request.user.is_authenticated:
+            # Get the next upcoming session for this course
+            next_session = session.course.sessions.filter(start_time__gt=timezone.now()).order_by("start_time").first()
+
+            # Check if user is in the session waiting room
+            try:
+                session_waiting_room = WaitingRoom.objects.get(course=session.course, status="open")
+                user_in_session_waiting_room = request.user in session_waiting_room.participants.all()
+            except WaitingRoom.DoesNotExist:
+                user_in_session_waiting_room = False
+
         context = {
             "session": session,
             "is_teacher": request.user == session.course.teacher,
             "now": timezone.now(),
+            "next_session": next_session,
+            "user_in_session_waiting_room": user_in_session_waiting_room,
         }
 
         return render(request, "web/study/session_detail.html", context)
@@ -8529,3 +8563,62 @@ class SurveyDeleteView(LoginRequiredMixin, DeleteView):
     def handle_no_permission(self):
         messages.error(self.request, "You can only delete surveys that you created.")
         return redirect("surveys")
+
+
+@login_required
+def join_session_waiting_room(request, course_slug):
+    """View for joining a session waiting room for the next session of a course."""
+    course = get_object_or_404(Course, slug=course_slug)
+
+    # Get or create the session waiting room for this course
+    session_waiting_room, created = WaitingRoom.objects.get_or_create(
+        course=course, status="open", defaults={"status": "open"}
+    )
+
+    # Check if the waiting room is open
+    if session_waiting_room.status != "open":
+        messages.error(request, "This session waiting room is no longer open for joining.")
+        return redirect("course_detail", slug=course_slug)
+
+    # Add the user to participants if not already in
+    if request.user not in session_waiting_room.participants.all():
+        session_waiting_room.participants.add(request.user)
+        next_session = session_waiting_room.get_next_session()
+        if next_session:
+            next_session_date = next_session.start_time.strftime("%B %d, %Y at %I:%M %p")
+            messages.success(
+                request,
+                f"You have joined the waiting room for the next session of {course.title}. "
+                f"Next session is on {next_session_date}.",
+            )
+        else:
+            messages.success(
+                request,
+                f"You have joined the waiting room for the next session of {course.title}. "
+                f"You'll be notified when a new session is scheduled.",
+            )
+    else:
+        messages.info(request, "You are already in the waiting room for the next session of this course.")
+
+    return redirect("course_detail", slug=course_slug)
+
+
+@login_required
+def leave_session_waiting_room(request, course_slug):
+    """View for leaving a session waiting room."""
+    course = get_object_or_404(Course, slug=course_slug)
+
+    try:
+        session_waiting_room = WaitingRoom.objects.get(course=course, status="open")
+    except WaitingRoom.DoesNotExist:
+        messages.info(request, "No session waiting room found for this course.")
+        return redirect("course_detail", slug=course_slug)
+
+    # Remove the user from participants
+    if request.user in session_waiting_room.participants.all():
+        session_waiting_room.participants.remove(request.user)
+        messages.success(request, f"You have left the session waiting room for {course.title}")
+    else:
+        messages.info(request, "You are not in the session waiting room for this course.")
+
+    return redirect("course_detail", slug=course_slug)
