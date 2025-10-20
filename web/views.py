@@ -4845,12 +4845,20 @@ def virtual_classroom_detail(request, classroom_id):
     # Check if user is teacher or enrolled student
     is_teacher = request.user == classroom.teacher
     is_enrolled = False
+
     if classroom.course:
+        # For classrooms with a course, check course enrollments
         is_enrolled = classroom.course.enrollments.filter(student=request.user, status="approved").exists()
+    else:
+        # For standalone classrooms, check VirtualClassroomParticipant table
+        is_enrolled = VirtualClassroomParticipant.objects.filter(classroom=classroom, user=request.user).exists()
 
     if not (is_teacher or is_enrolled):
         messages.error(request, "You do not have access to this virtual classroom.")
-        return redirect("course_detail", slug=classroom.course.slug if classroom.course else "course_search")
+        if classroom.course:
+            return redirect("course_detail", slug=classroom.course.slug)
+        else:
+            return redirect("virtual_classroom_list")
 
     # Get or create customization settings to prevent DoesNotExist errors
     customization, created = VirtualClassroomCustomization.objects.get_or_create(
