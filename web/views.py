@@ -5118,6 +5118,11 @@ def update_student_attendance(request, classroom_id):
     is_enrolled = False
     if classroom.course:
         is_enrolled = classroom.course.enrollments.filter(student=request.user, status="approved").exists()
+    else:
+        is_enrolled = VirtualClassroomParticipant.objects.filter(
+            classroom=classroom,
+            user=request.user,
+        ).exists()
 
     if not (is_teacher or is_enrolled):
         messages.error(request, "You do not have access to this virtual classroom.")
@@ -5149,13 +5154,18 @@ def update_student_attendance(request, classroom_id):
             student = get_object_or_404(User, id=student_id)
 
             # Check if student is enrolled in the classroom
-            if (
-                classroom.course
-                and not classroom.course.enrollments.filter(student=student, status="approved").exists()
-            ):
-                return JsonResponse(
-                    {"status": "error", "message": "Student is not enrolled in this classroom"}, status=400
-                )
+            if classroom.course:
+                if not classroom.course.enrollments.filter(student=student, status="approved").exists():
+                    return JsonResponse(
+                        {"status": "error", "message": "Student is not enrolled in this classroom"},
+                        status=400,
+                    )
+            else:
+                if not VirtualClassroomParticipant.objects.filter(classroom=classroom, user=student).exists():
+                    return JsonResponse(
+                        {"status": "error", "message": "Student is not enrolled in this classroom"},
+                        status=400,
+                    )
 
             # Get today's session
             today = timezone.now().date()
