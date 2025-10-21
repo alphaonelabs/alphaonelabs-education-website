@@ -1978,14 +1978,13 @@ class SurveyForm(forms.ModelForm):
 
 
 class VirtualClassroomForm(forms.ModelForm):
+class VirtualClassroomForm(forms.ModelForm):
     """Form for creating and editing virtual classrooms."""
-
-    def __init__(self, *args, **kwargs):
-        user = kwargs.pop("user", None)
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if user:
-            self.fields["course"].queryset = Course.objects.filter(teacher=user)
-
+            self.fields['course'].queryset = Course.objects.filter(teacher=user)
     class Meta:
         model = VirtualClassroom
         fields = ["name", "course", "max_students"]
