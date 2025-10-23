@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.utils import timezone
 from django.utils.text import slugify
@@ -77,7 +78,9 @@ class Hypothesis(models.Model):
     rationale = models.TextField(blank=True, help_text="Reasoning behind this hypothesis")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="proposed")
     confidence_score = models.FloatField(
-        default=0.0, help_text="AI confidence in this hypothesis (0-1)", validators=[models.MaxValue(1.0)]
+        default=0.0,
+        help_text="AI confidence in this hypothesis (0-1)",
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
     )
     is_ai_generated = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
