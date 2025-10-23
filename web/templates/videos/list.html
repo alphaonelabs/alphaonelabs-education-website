@@ -217,7 +217,7 @@
                            alt="{{ video.title }} thumbnail"
                            class="w-full h-full object-cover" />
                       <a href="javascript:void(0)"
-                         onclick="openVideoModal('{{ video.video_url }}', '{{ video.title|escapejs }}')"
+                         onclick="openVideoModal('{{ video.video_url }}', '{{ video.title|escapejs }}', event)"
                          class="video-link absolute inset-0 flex items-center justify-center bg-black bg-opacity-25 hover:bg-opacity-0 transition-opacity">
                         <i class="fas fa-play text-white text-4xl"></i>
                       </a>
@@ -232,7 +232,7 @@
                 <div class="p-4">
                   <h3 class="text-lg font-semibold mb-2 line-clamp-2">
                     <a href="javascript:void(0)"
-                       onclick="openVideoModal('{{ video.video_url }}', '{{ video.title|escapejs }}')"
+                       onclick="openVideoModal('{{ video.video_url }}', '{{ video.title|escapejs }}', event)"
                        class="video-link hover:text-orange-500 transition-colors cursor-pointer">{{ video.title }}</a>
                   </h3>
                   <div class="flex items-center text-sm text-gray-500 dark:text-gray-400 mb-2">
@@ -443,6 +443,9 @@
     const videoModalIframe = document.getElementById('videoModalIframe');
     const videoModalClose = document.getElementById('videoModalClose');
 
+    // Store reference to the element that opened the modal for proper focus restoration
+    let triggeringElement = null;
+
     // Function to extract YouTube video ID
     function getYouTubeVideoId(url) {
       const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
@@ -458,7 +461,10 @@
     }
 
     // Function to open video modal
-    function openVideoModal(videoUrl, videoTitle) {
+    function openVideoModal(videoUrl, videoTitle, event) {
+      // Capture the element that triggered the modal for proper focus restoration
+      triggeringElement = event?.target || document.activeElement;
+      
       let embedUrl = '';
       const youtubeId = getYouTubeVideoId(videoUrl);
       const vimeoId = getVimeoVideoId(videoUrl);
@@ -510,10 +516,13 @@
         videoModalIframe.src = '';
         document.body.style.overflow = '';
         
-        // Return focus to the video link that opened the modal
-        if (document.activeElement && document.activeElement.classList.contains('video-link')) {
-          document.activeElement.focus();
+        // Restore focus to the element that opened the modal
+        if (triggeringElement && document.contains(triggeringElement)) {
+          triggeringElement.focus();
         }
+        
+        // Clear the reference
+        triggeringElement = null;
       }, 300);
     }
 
