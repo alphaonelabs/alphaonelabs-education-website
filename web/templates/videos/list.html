@@ -417,7 +417,7 @@
   <dialog id="videoModal" class="video-modal" role="dialog" aria-labelledby="videoModalTitle" aria-modal="true">
     <div class="video-modal-content">
       <header class="video-modal-header">
-        <h2 id="videoModalTitle" class="video-modal-title"></h2>
+        <h2 id="videoModalTitle" class="video-modal-title" tabindex="0"></h2>
         <button id="videoModalClose" class="video-modal-close" aria-label="Close video player" type="button">
           <span class="sr-only">Close</span>
           <i class="fas fa-times" aria-hidden="true"></i>
@@ -499,8 +499,8 @@
       // Set iframe source
       videoModalIframe.src = embedUrl;
       
-      // Focus management for accessibility
-      videoModalClose.focus();
+      // Focus management for accessibility - focus title first for screen readers
+      videoModalTitle.focus();
     }
 
     // Function to close video modal
@@ -541,21 +541,32 @@
       if (videoModal.classList.contains('show')) {
         if (e.key === 'Escape') {
           closeVideoModal();
+          return;
         }
-        
+
         // Tab trapping for accessibility
         if (e.key === 'Tab') {
-          const focusableElements = videoModal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+          const focusableElements = videoModal.querySelectorAll(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          );
+          
+          if (focusableElements.length === 0) {
+            // No focusable elements; prevent tab escape
+            e.preventDefault();
+            return;
+          }
+          
           const firstElement = focusableElements[0];
           const lastElement = focusableElements[focusableElements.length - 1];
-          
+          const activeEl = document.activeElement;
+
           if (e.shiftKey) {
-            if (document.activeElement === firstElement) {
+            if (activeEl === firstElement) {
               lastElement.focus();
               e.preventDefault();
             }
           } else {
-            if (document.activeElement === lastElement) {
+            if (activeEl === lastElement) {
               firstElement.focus();
               e.preventDefault();
             }
