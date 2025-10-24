@@ -3,7 +3,7 @@ from django.core.cache import cache
 from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
 
-from .models import CourseProgress, Enrollment, LearningStreak, Session, SessionAttendance
+from .models import CourseProgress, Enrollment, LearningStreak, Profile, Session, SessionAttendance
 from .utils import send_slack_message
 
 
@@ -67,3 +67,35 @@ def invalidate_session_cache(sender, instance, **kwargs):
     enrollments = Enrollment.objects.filter(course=instance.course)
     for enrollment in enrollments:
         invalidate_progress_cache(enrollment.student)
+
+
+@receiver(post_save, sender=Profile)
+def sync_profile_encrypted_fields(sender, instance, created, **kwargs):
+    """
+    Automatically sync encrypted fields from User model when Profile is saved.
+    This ensures encrypted fields stay in sync with User model.
+    """
+    # Prevent recursion - only sync if we're not already in a save operation
+    if not hasattr(instance, "_syncing_encrypted_fields"):
+        instance._syncing_encrypted_fields = True
+        try:
+            # Sync encrypted fields from user
+            needs_save = False
+            if instance.user.email and instance.encrypted_email != instance.user.email:
+                instance.encrypted_email = instance.user.email
+                needs_save = True
+            if instance.user.first_name and instance.encrypted_first_name != instance.user.first_name:
+                instance.encrypted_first_name = instance.user.first_name
+                needs_save = True
+            if instance.user.last_name and instance.encrypted_last_name != instance.user.last_name:
+                instance.encrypted_last_name = instance.user.last_name
+                needs_save = True
+
+            if needs_save:
+                Profile.objects.filter(pk=instance.pk).update(
+                    encrypted_email=instance.encrypted_email,
+                    encrypted_first_name=instance.encrypted_first_name,
+                    encrypted_last_name=instance.encrypted_last_name,
+                )
+        finally:
+            delattr(instance, "_syncing_encrypted_fields")

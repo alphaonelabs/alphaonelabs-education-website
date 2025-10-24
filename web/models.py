@@ -25,6 +25,7 @@ from django.utils.translation import gettext_lazy as _
 from markdownx.models import MarkdownxField
 from PIL import Image
 
+from web.fields import EncryptedCharField, EncryptedEmailField
 from web.utils import calculate_and_update_user_streak
 
 
@@ -94,6 +95,10 @@ class Profile(models.Model):
     how_did_you_hear_about_us = models.TextField(
         blank=True, help_text="How did you hear about us? You can enter text or a link."
     )
+    # Encrypted user PII fields - store User model sensitive data encrypted
+    encrypted_email = EncryptedEmailField(blank=True, help_text="Encrypted copy of user email")
+    encrypted_first_name = EncryptedCharField(max_length=150, blank=True, help_text="Encrypted copy of user first name")
+    encrypted_last_name = EncryptedCharField(max_length=150, blank=True, help_text="Encrypted copy of user last name")
 
     def __str__(self):
         visibility = "Public" if self.is_profile_public else "Private"
@@ -134,6 +139,27 @@ class Profile(models.Model):
     @property
     def can_receive_payments(self):
         return self.is_teacher and self.stripe_account_id and self.stripe_account_status == "verified"
+
+    def sync_encrypted_fields_from_user(self):
+        """
+        Sync encrypted fields from the User model.
+        This should be called whenever User fields are updated.
+        """
+        self.encrypted_email = self.user.email
+        self.encrypted_first_name = self.user.first_name
+        self.encrypted_last_name = self.user.last_name
+
+    def sync_user_fields_from_encrypted(self):
+        """
+        Sync User model fields from encrypted fields.
+        This can be used to restore User data from encrypted Profile fields.
+        """
+        if self.encrypted_email:
+            self.user.email = self.encrypted_email
+        if self.encrypted_first_name:
+            self.user.first_name = self.encrypted_first_name
+        if self.encrypted_last_name:
+            self.user.last_name = self.encrypted_last_name
 
 
 class Avatar(models.Model):
