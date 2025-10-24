@@ -34,15 +34,15 @@ sys.path.insert(0, str(project_root))
 
 # Setup Django
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "web.settings")
-import django
+import django  # noqa: E402
 
 django.setup()
 
-from django.conf import settings
-from django.contrib.auth.models import User
-from django.db import transaction
+from django.conf import settings  # noqa: E402
+from django.contrib.auth.models import User  # noqa: E402
+from django.db import transaction  # noqa: E402
 
-from web.models import Profile
+from web.models import Profile  # noqa: E402
 
 
 def check_encryption_key():
@@ -56,8 +56,8 @@ def check_encryption_key():
 
 def check_migrations():
     """Verify required migrations are applied."""
-    from django.db.migrations.executor import MigrationExecutor
     from django.db import connections
+    from django.db.migrations.executor import MigrationExecutor
 
     connection = connections["default"]
     executor = MigrationExecutor(connection)
@@ -71,7 +71,7 @@ def check_migrations():
     for app, migration in required_migrations:
         if (app, migration) not in applied:
             print(f"❌ ERROR: Migration {app}.{migration} not applied")
-            print(f"   Run: python manage.py migrate web")
+            print("   Run: python manage.py migrate web")
             sys.exit(1)
 
     print("✓ Required migrations are applied")
@@ -95,7 +95,7 @@ def encrypt_user_data():
     total_users = User.objects.count()
     total_profiles = Profile.objects.count()
 
-    print(f"Database Statistics:")
+    print("Database Statistics:")
     print(f"  Total Users: {total_users}")
     print(f"  Total Profiles: {total_profiles}")
     print()
