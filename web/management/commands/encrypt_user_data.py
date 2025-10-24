@@ -21,7 +21,10 @@ logger = logging.getLogger(__name__)
 
 
 class Command(BaseCommand):
-    help = 'Encrypt existing user data using UserEncryption model'
+    help = (
+        'Encrypt existing user data using UserEncryption model. '
+        'Use staged rollout: 1) --dry-run, 2) encrypt only, 3) --redact-original'
+    )
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -41,15 +44,29 @@ class Command(BaseCommand):
             default=['first_name', 'last_name', 'email'],
             help='Fields to encrypt (default: first_name, last_name, email)',
         )
+        parser.add_argument(
+            '--redact-original',
+            action='store_true',
+            help='After encrypting into UserEncryption, blank the original User fields',
+        )
 
     def handle(self, *args, **options):
         dry_run = options['dry_run']
         batch_size = options['batch_size']
         fields_to_encrypt = options['fields']
+        redact_original = options['redact_original']
 
         if dry_run:
             self.stdout.write(
                 self.style.WARNING('DRY RUN MODE - No changes will be made')
+            )
+
+        if redact_original:
+            self.stdout.write(
+                self.style.WARNING(
+                    'REDACTION ENABLED - Original User fields will be blanked '
+                    'after encryption!'
+                )
             )
 
         # Validate fields
@@ -83,7 +100,9 @@ class Command(BaseCommand):
             for user in batch_users:
                 try:
                     if not dry_run:
-                        self._encrypt_user_fields(user, fields_to_encrypt)
+                        self._encrypt_user_fields(
+                            user, fields_to_encrypt, redact_original=redact_original
+                        )
                     else:
                         self._show_user_encryption(user, fields_to_encrypt)
 
@@ -124,7 +143,7 @@ class Command(BaseCommand):
                     )
                 )
 
-    def _encrypt_user_fields(self, user, fields_to_encrypt):
+    def _encrypt_user_fields(self, user, fields_to_encrypt, *, redact_original=False):
         """Encrypt specified fields for a user using UserEncryption model."""
         with transaction.atomic():
             # Get or create UserEncryption instance
@@ -160,6 +179,16 @@ class Command(BaseCommand):
                             raise
 
             user_encryption.save()
+
+            # Optionally blank originals on auth_user after successful encryption
+            if redact_original:
+                updated_fields = []
+                for field_name in fields_to_encrypt:
+                    if hasattr(user, field_name) and getattr(user, field_name):
+                        setattr(user, field_name, '')
+                        updated_fields.append(field_name)
+                if updated_fields:
+                    user.save(update_fields=updated_fields)
 
     def _show_user_encryption(self, user, fields_to_encrypt):
         """Show what would be encrypted for a user (dry run)."""
