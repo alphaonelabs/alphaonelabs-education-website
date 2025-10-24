@@ -11,7 +11,7 @@ Usage:
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 from django.contrib.auth import get_user_model
-from web.encryption_fields import encrypt_value
+# encrypt_value no longer needed - EncryptedTextField handles encryption automatically
 from web.models import UserEncryption
 import logging
 
@@ -160,17 +160,20 @@ class Command(BaseCommand):
                 if hasattr(user, field_name):
                     current_value = getattr(user, field_name)
 
-                    # Only encrypt if the value is not empty and not already encrypted
+                    # Only persist if non-empty and not already present (idempotent)
                     if current_value and not self._is_encrypted(current_value):
+                        # Skip when decrypted value already exists
+                        already_set = getattr(
+                            user_encryption, field_name, ''
+                        )  # property returns decrypted
+                        if already_set:
+                            continue
                         try:
                             # EncryptedTextField handles encryption automatically
-                            # Store in UserEncryption model
-                            if field_name == 'first_name':
-                                user_encryption.encrypted_first_name = current_value
-                            elif field_name == 'last_name':
-                                user_encryption.encrypted_last_name = current_value
-                            elif field_name == 'email':
-                                user_encryption.encrypted_email = current_value
+                            encrypted_field_name = f'encrypted_{field_name}'
+                            setattr(
+                                user_encryption, encrypted_field_name, current_value
+                            )
                         except Exception as e:
                             logger.error(
                                 f'Failed to encrypt {field_name} for user '
