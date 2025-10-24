@@ -144,14 +144,14 @@ class Command(BaseCommand):
                     # Only encrypt if the value is not empty and not already encrypted
                     if current_value and not self._is_encrypted(current_value):
                         try:
-                            encrypted_value = encrypt_value(current_value)
+                            # EncryptedTextField handles encryption automatically
                             # Store in UserEncryption model
                             if field_name == 'first_name':
-                                user_encryption.encrypted_first_name = encrypted_value
+                                user_encryption.encrypted_first_name = current_value
                             elif field_name == 'last_name':
-                                user_encryption.encrypted_last_name = encrypted_value
+                                user_encryption.encrypted_last_name = current_value
                             elif field_name == 'email':
-                                user_encryption.encrypted_email = encrypted_value
+                                user_encryption.encrypted_email = current_value
                         except Exception as e:
                             logger.error(
                                 f'Failed to encrypt {field_name} for user '
