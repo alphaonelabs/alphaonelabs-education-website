@@ -9,6 +9,9 @@ from cryptography.fernet import Fernet
 from django.conf import settings
 from django.db import models
 from django.core.exceptions import ValidationError
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class EncryptedTextField(models.TextField):
@@ -32,9 +35,9 @@ class EncryptedTextField(models.TextField):
             return self._fernet.decrypt(
                 value.encode('utf-8')
             ).decode('utf-8')
-        except Exception:
-            # If decryption fails, return the raw value (for migration compatibility)
-            return value
+        except Exception as e:
+            logger.error(f"Decryption failed for field {self.name}: {e}")
+            raise ValidationError(f"Failed to decrypt field: {e}") from e
 
     def to_python(self, value):
         """Convert the value to Python object."""
@@ -82,9 +85,9 @@ class EncryptedCharField(models.CharField):
             return self._fernet.decrypt(
                 value.encode('utf-8')
             ).decode('utf-8')
-        except Exception:
-            # If decryption fails, return the raw value (for migration compatibility)
-            return value
+        except Exception as e:
+            logger.error(f"Decryption failed for field {self.name}: {e}")
+            raise ValidationError(f"Failed to decrypt field: {e}") from e
 
     def to_python(self, value):
         """Convert the value to Python object."""
