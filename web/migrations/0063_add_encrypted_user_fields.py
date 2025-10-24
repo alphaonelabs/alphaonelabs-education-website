@@ -14,9 +14,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="profile",
             name="encrypted_email",
-            field=web.fields.EncryptedEmailField(
-                blank=True, help_text="Encrypted copy of user email", max_length=500
-            ),
+            field=web.fields.EncryptedEmailField(blank=True, help_text="Encrypted copy of user email", max_length=500),
         ),
         migrations.AddField(
             model_name="profile",
