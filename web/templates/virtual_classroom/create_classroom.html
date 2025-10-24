@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Create Virtual Classroom{% endblock %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8 max-w-2xl">
+    <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-6">Create Virtual Classroom</h1>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <form method="post" action="{% url 'create_virtual_classroom' %}">
+        {% csrf_token %}
+        <div class="mb-4">
+          <label for="title" class="block text-gray-700 dark:text-gray-300 font-semibold mb-2">Classroom Title *</label>
+          <input type="text" id="title" name="title" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-300" placeholder="e.g., Morning Session - Python Basics">
+        </div>
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <label for="rows" class="block text-gray-700 dark:text-gray-300 font-semibold mb-2">Number of Rows *</label>
+            <input type="number" id="rows" name="rows" value="5" min="2" max="10" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-300">
+          </div>
+          <div>
+            <label for="columns" class="block text-gray-700 dark:text-gray-300 font-semibold mb-2">Number of Columns *</label>
+            <input type="number" id="columns" name="columns" value="6" min="2" max="10" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-300">
+          </div>
+        </div>
+        <div class="mb-6">
+          <label for="session_id" class="block text-gray-700 dark:text-gray-300 font-semibold mb-2">Link to Session (Optional)</label>
+          <select id="session_id" name="session_id" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-300">
+            <option value="">-- No Session --</option>
+            {% for session in sessions %}
+              <option value="{{ session.id }}">{{ session.title }} - {{ session.date }}</option>
+            {% endfor %}
+          </select>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Optionally link this classroom to a specific session</p>
+        </div>
+        <div class="bg-blue-50 dark:bg-blue-900 rounded-lg p-4 mb-6">
+          <p class="text-sm text-gray-700 dark:text-gray-300">
+            <strong>Preview:</strong> This will create a classroom with <span id="preview-seats">30</span> seats (
+            <span id="preview-rows">5</span> rows ×
+            <span id="preview-cols">6</span> columns)
+          </p>
+        </div>
+        <div class="flex gap-3">
+          <button type="submit" class="flex-1 bg-teal-300 hover:bg-teal-400 text-white px-6 py-3 rounded-lg font-semibold transition duration-200">
+            Create Classroom
+          </button>
+          <a href="{% url 'virtual_classroom_list' %}" class="flex-1 text-center bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition duration-200">
+            Cancel
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script>
+    // Update preview
+    function updatePreview() {
+        const rows = parseInt(document.getElementById('rows').value) || 0;
+        const cols = parseInt(document.getElementById('columns').value) || 0;
+        const total = rows * cols;
+        
+        document.getElementById('preview-rows').textContent = rows;
+        document.getElementById('preview-cols').textContent = cols;
+        document.getElementById('preview-seats').textContent = total;
+    }
+
+    document.getElementById('rows').addEventListener('input', updatePreview);
+    document.getElementById('columns').addEventListener('input', updatePreview);
+  </script>
+{% endblock %}

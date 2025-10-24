@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Screenshot - {{ screenshot.title|default:"Untitled" }}{% endblock %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8 max-w-4xl">
+    <div class="mb-4">
+      <a href="{% url 'virtual_classroom_detail' classroom.id %}" class="text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300">
+        ← Back to Classroom
+      </a>
+    </div>
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <div class="mb-4">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">{{ screenshot.title|default:"Screenshot" }}</h1>
+        <p class="text-gray-600 dark:text-gray-300">
+          <strong>Shared by:</strong> {{ screenshot.student.username }}
+        </p>
+        <p class="text-gray-600 dark:text-gray-300">
+          <strong>Shared:</strong> {{ screenshot.created_at|date:"M d, Y H:i" }}
+        </p>
+      </div>
+      {% if screenshot.description %}
+        <div class="mb-6">
+          <h3 class="font-semibold text-gray-900 dark:text-white mb-2">Description</h3>
+          <p class="text-gray-700 dark:text-gray-300">{{ screenshot.description }}</p>
+        </div>
+      {% endif %}
+      <div class="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+        <img src="{{ screenshot.screenshot.url }}" alt="{{ screenshot.title|default:'Screenshot' }}" class="max-w-full h-auto rounded-lg shadow-md mx-auto">
+      </div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,502 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ classroom.title }} - Virtual Classroom{% endblock %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <!-- Classroom Header -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+      <div class="flex justify-between items-center">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 dark:text-white">{{ classroom.title }}</h1>
+          <p class="text-gray-600 dark:text-gray-300">Teacher: {{ classroom.teacher.username }}</p>
+        </div>
+        {% if is_teacher %}
+          <div class="flex gap-2">
+            <button id="start-update-round-btn" class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+              Start Update Round
+            </button>
+            <form method="post" action="{% url 'end_classroom' classroom.id %}" class="inline">
+              {% csrf_token %}
+              <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition duration-200" onclick="return confirm('Are you sure you want to end this classroom?')">
+                End Classroom
+              </button>
+            </form>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <!-- Main Classroom View -->
+      <div class="lg:col-span-3">
+        <!-- Teacher Position -->
+        <div class="bg-teal-300 dark:bg-teal-700 rounded-lg p-4 mb-6 text-center">
+          <div class="flex items-center justify-center">
+            <svg class="w-12 h-12 text-white mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+            </svg>
+            <span class="text-xl font-bold text-white">{{ classroom.teacher.username }} (Teacher)</span>
+          </div>
+        </div>
+        <!-- Classroom Seating Grid -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <h2 class="text-2xl font-bold text-gray-900 dark:text-white mb-4">Classroom Seating</h2>
+          <div id="seating-grid" class="space-y-3">
+            {% for row_num, seats in seats_by_row.items %}
+              <div class="flex gap-3 justify-center">
+                {% for seat in seats %}
+                  <div class="seat-container relative" data-row="{{ seat.row }}" data-column="{{ seat.column }}" data-seat-id="{{ seat.id }}">
+                    <button class="seat-btn w-20 h-20 rounded-lg border-2 transition-all duration-200 
+                                                         {% if seat.is_speaking %}
+                                                           border-yellow-500 bg-yellow-100 dark:bg-yellow-900 animate-pulse
+                                                         {% elif seat.is_occupied %}
+                                                           border-teal-300 bg-teal-50 dark:bg-teal-900 cursor-not-allowed
+                                                         {% else %}
+                                                           border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 hover:border-teal-300 hover:bg-teal-50 dark:hover:bg-teal-900 cursor-pointer
+                                                         {% endif %}" {% if seat.is_occupied and seat.student != request.user %}disabled{% endif %}>
+                      {% if seat.is_occupied %}
+                        <svg class="w-10 h-10 mx-auto text-teal-600 dark:text-teal-300" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
+                        </svg>
+                        <p class="text-xs mt-1 text-gray-700 dark:text-gray-300">{{ seat.student.username }}</p>
+                      {% else %}
+                        <svg class="w-10 h-10 mx-auto text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4z" />
+                        </svg>
+                        <p class="text-xs mt-1 text-gray-500">Empty</p>
+                      {% endif %}
+                    </button>
+                    <!-- Raised Hand Indicator -->
+                    <div class="hand-indicator hidden absolute -top-2 -right-2 text-yellow-500 text-3xl" data-student-id="{{ seat.student.id|default:'' }}">
+                      ✋
+                    </div>
+                    <!-- Mini Laptop Icon -->
+                    {% if seat.is_occupied %}
+                      <button class="laptop-btn absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-gray-700 dark:bg-gray-600 text-white rounded p-1 text-xs hover:bg-gray-600 dark:hover:bg-gray-500" data-seat-id="{{ seat.id }}">
+                        💻
+                      </button>
+                    {% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        <!-- Update Round Timer -->
+        <div id="update-round-timer" class="hidden bg-blue-100 dark:bg-blue-900 rounded-lg p-4 mt-6">
+          <div class="flex justify-between items-center">
+            <div>
+              <h3 class="text-lg font-bold text-gray-900 dark:text-white">Update Round in Progress</h3>
+              <p class="text-gray-600 dark:text-gray-300">Current Speaker: <span id="current-speaker-name">-</span></p>
+            </div>
+            <div class="text-center">
+              <div id="timer-display" class="text-4xl font-bold text-blue-600 dark:text-blue-300">2:00</div>
+              {% if not is_teacher %}
+                <button id="done-speaking-btn" class="hidden mt-2 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition duration-200">
+                  I'm Done
+                </button>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Sidebar -->
+      <div class="lg:col-span-1">
+        <!-- User Actions -->
+        {% if user_seat %}
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-4">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">Your Seat</h3>
+            <p class="text-gray-600 dark:text-gray-300 mb-3">Row {{ user_seat.row }}, Col {{ user_seat.column }}</p>
+            <button id="raise-hand-btn" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg transition duration-200 mb-2">
+              ✋ Raise Hand
+            </button>
+            <button id="lower-hand-btn" class="hidden w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition duration-200 mb-2">
+              Lower Hand
+            </button>
+            <button id="upload-screenshot-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
+              📸 Upload Screenshot
+            </button>
+          </div>
+        {% endif %}
+        <!-- Raised Hands Queue -->
+        {% if is_teacher %}
+          <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4 mb-4">
+            <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">Raised Hands</h3>
+            <div id="raised-hands-list" class="space-y-2">
+              {% for hand in raised_hands %}
+                <div class="flex justify-between items-center p-2 bg-yellow-50 dark:bg-yellow-900 rounded" data-student-id="{{ hand.student.id }}">
+                  <span class="text-gray-900 dark:text-white">{{ hand.student.username }}</span>
+                  <button class="select-speaker-btn bg-teal-300 hover:bg-teal-400 text-white px-3 py-1 rounded text-sm" data-student-id="{{ hand.student.id }}">
+                    Select
+                  </button>
+                </div>
+              {% empty %}
+                <p class="text-gray-500 dark:text-gray-400 text-sm">No hands raised</p>
+              {% endfor %}
+            </div>
+          </div>
+        {% endif %}
+        <!-- Recent Screen Shares -->
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-4">
+          <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-3">Recent Uploads</h3>
+          <div id="screen-shares-list" class="space-y-2">
+            {% for share in screen_shares %}
+              <a href="{% url 'view_screenshot' share.id %}" class="block p-2 bg-gray-50 dark:bg-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-600">
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ share.student.username }}</p>
+                <p class="text-xs text-gray-600 dark:text-gray-300">{{ share.title|default:"Screenshot" }}</p>
+              </a>
+            {% empty %}
+              <p class="text-gray-500 dark:text-gray-400 text-sm">No uploads yet</p>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Screenshot Upload Modal -->
+  <div id="screenshot-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+      <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Upload Screenshot</h3>
+      <form id="screenshot-upload-form" method="post" action="{% url 'upload_screenshot' classroom.id %}" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="mb-4">
+          <label class="block text-gray-700 dark:text-gray-300 mb-2">Title (Optional)</label>
+          <input type="text" name="title" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="e.g., My Code Progress">
+        </div>
+        <div class="mb-4">
+          <label class="block text-gray-700 dark:text-gray-300 mb-2">Description (Optional)</label>
+          <textarea name="description" rows="3" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white" placeholder="Brief description..."></textarea>
+        </div>
+        <div class="mb-4">
+          <label class="block text-gray-700 dark:text-gray-300 mb-2">Screenshot *</label>
+          <input type="file" name="screenshot" accept="image/*" required class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+        </div>
+        <div class="flex gap-2">
+          <button type="submit" class="flex-1 bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200">
+            Upload
+          </button>
+          <button type="button" id="close-modal-btn" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition duration-200">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <!-- Start Update Round Modal -->
+  <div id="update-round-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+      <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4">Start Update Round</h3>
+      <form id="update-round-form">
+        <div class="mb-4">
+          <label class="block text-gray-700 dark:text-gray-300 mb-2">Duration per student (seconds)</label>
+          <input type="number" id="round-duration" name="duration" value="120" min="30" max="600" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white">
+        </div>
+        <div class="flex gap-2">
+          <button type="submit" class="flex-1 bg-teal-300 hover:bg-teal-400 text-white px-4 py-2 rounded-lg transition duration-200">
+            Start
+          </button>
+          <button type="button" id="close-round-modal-btn" class="flex-1 bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition duration-200">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+  <script>
+    // WebSocket connection
+    const classroomId = {{ classroom.id }};
+    const isTeacher = {{ is_teacher|yesno:"true,false" }};
+    const userId = {{ request.user.id }};
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const ws = new WebSocket(`${protocol}//${window.location.host}/ws/classroom/${classroomId}/`);
+    let currentRoundId = null;
+    let timerInterval = null;
+    let timeRemaining = 0;
+
+    ws.onopen = function(e) {
+        console.log('WebSocket connected');
+    };
+
+    ws.onmessage = function(e) {
+        const message = JSON.parse(e.data);
+        console.log('WebSocket message:', message);
+
+        switch(message.type) {
+            case 'classroom_state':
+                handleClassroomState(message.data);
+                break;
+            case 'seat_update':
+                handleSeatUpdate(message.data);
+                break;
+            case 'hand_raised':
+                handleHandRaised(message.data);
+                break;
+            case 'hand_lowered':
+                handleHandLowered(message.data);
+                break;
+            case 'speaker_selected':
+                handleSpeakerSelected(message.data);
+                break;
+            case 'update_round_started':
+                handleUpdateRoundStarted(message.data);
+                break;
+            case 'next_speaker_update':
+                handleNextSpeaker(message.data);
+                break;
+            case 'error':
+                alert(message.message);
+                break;
+        }
+    };
+
+    ws.onerror = function(error) {
+        console.error('WebSocket error:', error);
+    };
+
+    ws.onclose = function(e) {
+        console.log('WebSocket disconnected');
+    };
+
+    // Event Listeners
+    document.querySelectorAll('.seat-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (!this.disabled) {
+                const container = this.closest('.seat-container');
+                const row = parseInt(container.dataset.row);
+                const column = parseInt(container.dataset.column);
+                selectSeat(row, column);
+            }
+        });
+    });
+
+    document.getElementById('raise-hand-btn')?.addEventListener('click', function() {
+        ws.send(JSON.stringify({type: 'raise_hand'}));
+        this.classList.add('hidden');
+        document.getElementById('lower-hand-btn').classList.remove('hidden');
+    });
+
+    document.getElementById('lower-hand-btn')?.addEventListener('click', function() {
+        ws.send(JSON.stringify({type: 'lower_hand'}));
+        this.classList.add('hidden');
+        document.getElementById('raise-hand-btn').classList.remove('hidden');
+    });
+
+    document.getElementById('upload-screenshot-btn')?.addEventListener('click', function() {
+        document.getElementById('screenshot-modal').classList.remove('hidden');
+    });
+
+    document.getElementById('close-modal-btn')?.addEventListener('click', function() {
+        document.getElementById('screenshot-modal').classList.add('hidden');
+    });
+
+    document.getElementById('start-update-round-btn')?.addEventListener('click', function() {
+        document.getElementById('update-round-modal').classList.remove('hidden');
+    });
+
+    document.getElementById('close-round-modal-btn')?.addEventListener('click', function() {
+        document.getElementById('update-round-modal').classList.add('hidden');
+    });
+
+    document.getElementById('update-round-form')?.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const duration = parseInt(document.getElementById('round-duration').value);
+        ws.send(JSON.stringify({type: 'start_update_round', duration: duration}));
+        document.getElementById('update-round-modal').classList.add('hidden');
+    });
+
+    document.getElementById('done-speaking-btn')?.addEventListener('click', function() {
+        if (currentRoundId) {
+            ws.send(JSON.stringify({type: 'complete_speaking', round_id: currentRoundId}));
+        }
+    });
+
+    document.querySelectorAll('.select-speaker-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const studentId = parseInt(this.dataset.studentId);
+            ws.send(JSON.stringify({type: 'select_speaker', student_id: studentId}));
+        });
+    });
+
+    // WebSocket Handlers
+    function selectSeat(row, column) {
+        ws.send(JSON.stringify({type: 'select_seat', row: row, column: column}));
+    }
+
+    function handleClassroomState(data) {
+        // Initialize classroom state
+        data.seats.forEach(seat => {
+            updateSeatDisplay(seat);
+        });
+
+        data.raised_hands.forEach(hand => {
+            showHandIndicator(hand.student__id);
+        });
+
+        if (data.active_round) {
+            currentRoundId = data.active_round.id;
+            showUpdateRoundTimer(data.active_round);
+        }
+    }
+
+    function handleSeatUpdate(data) {
+        const container = document.querySelector(`[data-row="${data.row}"][data-column="${data.column}"]`);
+        if (container) {
+            const btn = container.querySelector('.seat-btn');
+            if (data.is_occupied) {
+                btn.classList.remove('border-gray-300', 'bg-gray-50', 'hover:border-teal-300');
+                btn.classList.add('border-teal-300', 'bg-teal-50', 'cursor-not-allowed');
+                btn.disabled = true;
+                btn.innerHTML = `
+                    <svg class="w-10 h-10 mx-auto text-teal-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                    </svg>
+                    <p class="text-xs mt-1 text-gray-700">${data.student}</p>
+                `;
+                // Add laptop button
+                const laptopBtn = document.createElement('button');
+                laptopBtn.className = 'laptop-btn absolute -bottom-2 left-1/2 transform -translate-x-1/2 bg-gray-700 text-white rounded p-1 text-xs hover:bg-gray-600';
+                laptopBtn.textContent = '💻';
+                container.appendChild(laptopBtn);
+            }
+        }
+    }
+
+    function handleHandRaised(data) {
+        showHandIndicator(data.student_id);
+
+        if (isTeacher) {
+            const list = document.getElementById('raised-hands-list');
+            const handDiv = document.createElement('div');
+            handDiv.className = 'flex justify-between items-center p-2 bg-yellow-50 dark:bg-yellow-900 rounded';
+            handDiv.dataset.studentId = data.student_id;
+            handDiv.innerHTML = `
+                <span class="text-gray-900 dark:text-white">${data.student}</span>
+                <button class="select-speaker-btn bg-teal-300 hover:bg-teal-400 text-white px-3 py-1 rounded text-sm" data-student-id="${data.student_id}">
+                    Select
+                </button>
+            `;
+            list.appendChild(handDiv);
+
+            handDiv.querySelector('.select-speaker-btn').addEventListener('click', function() {
+                ws.send(JSON.stringify({type: 'select_speaker', student_id: data.student_id}));
+            });
+        }
+    }
+
+    function handleHandLowered(data) {
+        hideHandIndicator(data.student_id);
+
+        if (isTeacher) {
+            const handElement = document.querySelector(`#raised-hands-list [data-student-id="${data.student_id}"]`);
+            if (handElement) {
+                handElement.remove();
+            }
+        }
+    }
+
+    function handleSpeakerSelected(data) {
+        // Clear all speaking states
+        document.querySelectorAll('.seat-btn').forEach(btn => {
+            btn.classList.remove('border-yellow-500', 'bg-yellow-100', 'animate-pulse');
+        });
+
+        // Highlight selected speaker's seat
+        const speakerSeat = document.querySelector(`[data-student-id="${data.student_id}"]`)?.closest('.seat-container');
+        if (speakerSeat) {
+            const btn = speakerSeat.querySelector('.seat-btn');
+            btn.classList.add('border-yellow-500', 'bg-yellow-100', 'animate-pulse');
+        }
+
+        hideHandIndicator(data.student_id);
+    }
+
+    function handleUpdateRoundStarted(data) {
+        currentRoundId = data.round_id;
+        showUpdateRoundTimer(data);
+        startTimer(data.duration);
+    }
+
+    function handleNextSpeaker(data) {
+        if (data.is_complete) {
+            hideUpdateRoundTimer();
+            stopTimer();
+            currentRoundId = null;
+        } else {
+            document.getElementById('current-speaker-name').textContent = data.current_speaker || '-';
+            startTimer(120); // Reset timer for new speaker
+
+            // Show "I'm Done" button if user is current speaker
+            if (data.current_speaker_id === userId) {
+                document.getElementById('done-speaking-btn').classList.remove('hidden');
+            } else {
+                document.getElementById('done-speaking-btn').classList.add('hidden');
+            }
+        }
+    }
+
+    function showHandIndicator(studentId) {
+        const indicator = document.querySelector(`.hand-indicator[data-student-id="${studentId}"]`);
+        if (indicator) {
+            indicator.classList.remove('hidden');
+        }
+    }
+
+    function hideHandIndicator(studentId) {
+        const indicator = document.querySelector(`.hand-indicator[data-student-id="${studentId}"]`);
+        if (indicator) {
+            indicator.classList.add('hidden');
+        }
+    }
+
+    function showUpdateRoundTimer(data) {
+        document.getElementById('update-round-timer').classList.remove('hidden');
+        document.getElementById('current-speaker-name').textContent = data.current_speaker || '-';
+
+        if (data.current_speaker_id === userId) {
+            document.getElementById('done-speaking-btn').classList.remove('hidden');
+        }
+    }
+
+    function hideUpdateRoundTimer() {
+        document.getElementById('update-round-timer').classList.add('hidden');
+        document.getElementById('done-speaking-btn').classList.add('hidden');
+    }
+
+    function startTimer(duration) {
+        stopTimer();
+        timeRemaining = duration;
+        updateTimerDisplay();
+
+        timerInterval = setInterval(() => {
+            timeRemaining--;
+            updateTimerDisplay();
+
+            if (timeRemaining <= 0) {
+                stopTimer();
+            }
+        }, 1000);
+    }
+
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+    }
+
+    function updateTimerDisplay() {
+        const minutes = Math.floor(timeRemaining / 60);
+        const seconds = timeRemaining % 60;
+        document.getElementById('timer-display').textContent = 
+            `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function updateSeatDisplay(seat) {
+        // Helper function to update seat visuals from WebSocket data
+        const container = document.querySelector(`[data-seat-id="${seat.id}"]`);
+        if (container && seat.is_speaking) {
+            const btn = container.querySelector('.seat-btn');
+            btn.classList.add('border-yellow-500', 'bg-yellow-100', 'animate-pulse');
+        }
+    }
+  </script>
+{% endblock %}

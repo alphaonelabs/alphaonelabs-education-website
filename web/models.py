@@ -3085,3 +3085,137 @@ class Response(models.Model):
 
     def __str__(self):
         return f"Response by {self.user.username} to {self.question.text}"
+
+
+class VirtualClassroom(models.Model):
+    """Model for a virtual classroom session."""
+
+    title = models.CharField(max_length=200, help_text="Classroom session title")
+    teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name="taught_virtual_classrooms")
+    session = models.ForeignKey("Session", on_delete=models.CASCADE, related_name="virtual_classrooms", null=True, blank=True)
+    rows = models.PositiveIntegerField(default=5, help_text="Number of rows in the classroom")
+    columns = models.PositiveIntegerField(default=6, help_text="Number of columns in the classroom")
+    is_active = models.BooleanField(default=True, help_text="Whether the classroom is currently active")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Virtual Classroom"
+        verbose_name_plural = "Virtual Classrooms"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.title} - {self.teacher.username}"
+
+    def total_seats(self):
+        return self.rows * self.columns
+
+    def occupied_seats_count(self):
+        return self.seats.filter(is_occupied=True).count()
+
+
+class ClassroomSeat(models.Model):
+    """Model for individual seats in the virtual classroom."""
+
+    classroom = models.ForeignKey(VirtualClassroom, on_delete=models.CASCADE, related_name="seats")
+    row = models.PositiveIntegerField()
+    column = models.PositiveIntegerField()
+    student = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="classroom_seats")
+    is_occupied = models.BooleanField(default=False)
+    is_speaking = models.BooleanField(default=False, help_text="Whether this student is currently speaking")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Classroom Seat"
+        verbose_name_plural = "Classroom Seats"
+        unique_together = [["classroom", "row", "column"]]
+        ordering = ["classroom", "row", "column"]
+
+    def __str__(self):
+        student_name = self.student.username if self.student else "Empty"
+        return f"{self.classroom.title} - Row {self.row}, Col {self.column} ({student_name})"
+
+
+class RaisedHand(models.Model):
+    """Model for tracking raised hands in the classroom."""
+
+    classroom = models.ForeignKey(VirtualClassroom, on_delete=models.CASCADE, related_name="raised_hands")
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="raised_hands")
+    seat = models.ForeignKey(ClassroomSeat, on_delete=models.CASCADE, related_name="raised_hands")
+    is_active = models.BooleanField(default=True, help_text="Whether the hand is still raised")
+    selected_at = models.DateTimeField(null=True, blank=True, help_text="When teacher selected this student to speak")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Raised Hand"
+        verbose_name_plural = "Raised Hands"
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"{self.student.username} in {self.classroom.title}"
+
+
+class UpdateRound(models.Model):
+    """Model for managing timed update rounds where students share progress."""
+
+    classroom = models.ForeignKey(VirtualClassroom, on_delete=models.CASCADE, related_name="update_rounds")
+    title = models.CharField(max_length=200, default="Daily Update Round")
+    duration_seconds = models.PositiveIntegerField(default=120, help_text="Duration for each student update in seconds")
+    current_speaker = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="current_update_rounds"
+    )
+    is_active = models.BooleanField(default=False, help_text="Whether the round is currently running")
+    started_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Update Round"
+        verbose_name_plural = "Update Rounds"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.title} - {self.classroom.title}"
+
+
+class UpdateRoundParticipant(models.Model):
+    """Model for tracking participants in an update round."""
+
+    update_round = models.ForeignKey(UpdateRound, on_delete=models.CASCADE, related_name="participants")
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="update_round_participations")
+    has_spoken = models.BooleanField(default=False)
+    spoken_at = models.DateTimeField(null=True, blank=True)
+    order = models.PositiveIntegerField(default=0, help_text="Speaking order")
+
+    class Meta:
+        verbose_name = "Update Round Participant"
+        verbose_name_plural = "Update Round Participants"
+        unique_together = [["update_round", "student"]]
+        ordering = ["order"]
+
+    def __str__(self):
+        return f"{self.student.username} - {self.update_round.title}"
+
+
+class ScreenShare(models.Model):
+    """Model for uploaded screenshots and shared content."""
+
+    classroom = models.ForeignKey(VirtualClassroom, on_delete=models.CASCADE, related_name="screen_shares")
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name="screen_shares")
+    seat = models.ForeignKey(ClassroomSeat, on_delete=models.CASCADE, related_name="screen_shares")
+    title = models.CharField(max_length=200, blank=True)
+    screenshot = models.ImageField(upload_to="classroom_screenshots/%Y/%m/%d/", help_text="Uploaded screenshot")
+    description = models.TextField(blank=True)
+    is_visible_to_teacher = models.BooleanField(
+        default=True, help_text="Whether the teacher can see this screen share"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Screen Share"
+        verbose_name_plural = "Screen Shares"
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.student.username} - {self.title or 'Screenshot'}"

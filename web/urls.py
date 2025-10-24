@@ -5,7 +5,7 @@ from django.contrib import admin
 from django.contrib.auth.decorators import login_required
 from django.urls import include, path
 
-from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar
+from . import admin_views, peer_challenge_views, quiz_views, views, views_avatar, virtual_classroom_views
 from .secure_messaging import (
     compose_message,
     download_message,
@@ -485,6 +485,43 @@ urlpatterns += i18n_patterns(
     path("membership/reactivate/", views.reactivate_membership, name="reactivate_membership"),
     path("membership/update-payment-method/", views.update_payment_method, name="update_payment_method"),
     path("membership/update-payment-method/api/", views.update_payment_method_api, name="update_payment_method_api"),
+    # Virtual Classroom URLs
+    path("virtual-classrooms/", virtual_classroom_views.virtual_classroom_list, name="virtual_classroom_list"),
+    path(
+        "virtual-classrooms/create/",
+        virtual_classroom_views.create_virtual_classroom,
+        name="create_virtual_classroom",
+    ),
+    path(
+        "virtual-classrooms/<int:classroom_id>/",
+        virtual_classroom_views.virtual_classroom_detail,
+        name="virtual_classroom_detail",
+    ),
+    path(
+        "virtual-classrooms/<int:classroom_id>/upload-screenshot/",
+        virtual_classroom_views.upload_screenshot,
+        name="upload_screenshot",
+    ),
+    path(
+        "virtual-classrooms/screenshot/<int:screenshot_id>/",
+        virtual_classroom_views.view_screenshot,
+        name="view_screenshot",
+    ),
+    path(
+        "virtual-classrooms/<int:classroom_id>/start-update-round/",
+        virtual_classroom_views.start_update_round_view,
+        name="start_update_round",
+    ),
+    path(
+        "virtual-classrooms/<int:classroom_id>/end/",
+        virtual_classroom_views.end_classroom,
+        name="end_classroom",
+    ),
+    path(
+        "virtual-classrooms/<int:classroom_id>/raised-hands/",
+        virtual_classroom_views.get_raised_hands,
+        name="get_raised_hands",
+    ),
     path("test-sentry-error/", lambda request: 1 / 0, name="test_sentry"),
     prefix_default_language=True,
 )

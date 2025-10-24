@@ -18,6 +18,7 @@ from .models import (
     CartItem,
     Challenge,
     ChallengeSubmission,
+    ClassroomSeat,
     Course,
     CourseMaterial,
     CourseProgress,
@@ -43,16 +44,21 @@ from .models import (
     Quiz,
     QuizOption,
     QuizQuestion,
+    RaisedHand,
     Review,
+    ScreenShare,
     SearchLog,
     Session,
     SessionAttendance,
     Storefront,
     Subject,
     SuccessStory,
+    UpdateRound,
+    UpdateRoundParticipant,
     UserBadge,
     UserMembership,
     VideoRequest,
+    VirtualClassroom,
     WaitingRoom,
     WebRequest,
 )
@@ -889,3 +895,80 @@ class VideoRequestAdmin(admin.ModelAdmin):
     list_display = ("title", "status", "category", "requester", "created_at")
     list_filter = ("status", "category")
     search_fields = ("title", "description", "requester__username")
+
+
+# Virtual Classroom Admin
+
+
+class ClassroomSeatInline(admin.TabularInline):
+    model = ClassroomSeat
+    extra = 0
+    readonly_fields = ("row", "column", "student", "is_occupied", "is_speaking")
+    can_delete = False
+
+
+@admin.register(VirtualClassroom)
+class VirtualClassroomAdmin(admin.ModelAdmin):
+    list_display = ("title", "teacher", "rows", "columns", "is_active", "created_at")
+    list_filter = ("is_active", "created_at")
+    search_fields = ("title", "teacher__username")
+    raw_id_fields = ("teacher", "session")
+    readonly_fields = ("created_at", "updated_at", "total_seats", "occupied_seats_count")
+    inlines = []
+    fieldsets = (
+        (None, {"fields": ("title", "teacher", "session")}),
+        ("Configuration", {"fields": ("rows", "columns", "is_active")}),
+        ("Info", {"fields": ("total_seats", "occupied_seats_count")}),
+        ("Timestamps", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
+    )
+
+
+@admin.register(ClassroomSeat)
+class ClassroomSeatAdmin(admin.ModelAdmin):
+    list_display = ("classroom", "row", "column", "student", "is_occupied", "is_speaking")
+    list_filter = ("is_occupied", "is_speaking", "classroom")
+    search_fields = ("classroom__title", "student__username")
+    raw_id_fields = ("classroom", "student")
+    readonly_fields = ("created_at", "updated_at")
+
+
+@admin.register(RaisedHand)
+class RaisedHandAdmin(admin.ModelAdmin):
+    list_display = ("student", "classroom", "is_active", "created_at", "selected_at")
+    list_filter = ("is_active", "created_at")
+    search_fields = ("student__username", "classroom__title")
+    raw_id_fields = ("classroom", "student", "seat")
+    readonly_fields = ("created_at",)
+
+
+class UpdateRoundParticipantInline(admin.TabularInline):
+    model = UpdateRoundParticipant
+    extra = 0
+    readonly_fields = ("student", "has_spoken", "spoken_at", "order")
+
+
+@admin.register(UpdateRound)
+class UpdateRoundAdmin(admin.ModelAdmin):
+    list_display = ("title", "classroom", "is_active", "duration_seconds", "current_speaker", "started_at")
+    list_filter = ("is_active", "started_at")
+    search_fields = ("title", "classroom__title")
+    raw_id_fields = ("classroom", "current_speaker")
+    readonly_fields = ("created_at",)
+    inlines = [UpdateRoundParticipantInline]
+
+
+@admin.register(UpdateRoundParticipant)
+class UpdateRoundParticipantAdmin(admin.ModelAdmin):
+    list_display = ("student", "update_round", "has_spoken", "order", "spoken_at")
+    list_filter = ("has_spoken",)
+    search_fields = ("student__username", "update_round__title")
+    raw_id_fields = ("update_round", "student")
+
+
+@admin.register(ScreenShare)
+class ScreenShareAdmin(admin.ModelAdmin):
+    list_display = ("student", "classroom", "title", "is_visible_to_teacher", "created_at")
+    list_filter = ("is_visible_to_teacher", "created_at")
+    search_fields = ("student__username", "classroom__title", "title")
+    raw_id_fields = ("classroom", "student", "seat")
+    readonly_fields = ("created_at",)

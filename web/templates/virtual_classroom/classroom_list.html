@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Virtual Classrooms{% endblock %}
+{% block content %}
+  <div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-3xl font-bold text-gray-900 dark:text-white">Virtual Classrooms</h1>
+      {% if is_teacher %}
+        <a href="{% url 'create_virtual_classroom' %}" class="bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+          + Create Classroom
+        </a>
+      {% endif %}
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for classroom in classrooms %}
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 hover:shadow-xl transition duration-200">
+          <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-2">{{ classroom.title }}</h3>
+          <p class="text-gray-600 dark:text-gray-300 mb-1">
+            <strong>Teacher:</strong> {{ classroom.teacher.username }}
+          </p>
+          <p class="text-gray-600 dark:text-gray-300 mb-1">
+            <strong>Capacity:</strong> {{ classroom.occupied_seats_count }} / {{ classroom.total_seats }}
+          </p>
+          <p class="text-gray-600 dark:text-gray-300 mb-4">
+            <strong>Status:</strong>
+            {% if classroom.is_active %}
+              <span class="text-green-600 dark:text-green-400">Active</span>
+            {% else %}
+              <span class="text-red-600 dark:text-red-400">Ended</span>
+            {% endif %}
+          </p>
+          <a href="{% url 'virtual_classroom_detail' classroom.id %}" class="block w-full text-center bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition duration-200">
+            Enter Classroom
+          </a>
+        </div>
+      {% empty %}
+        <div class="col-span-full text-center py-12">
+          <p class="text-gray-500 dark:text-gray-400 text-lg">No classrooms available.</p>
+          {% if is_teacher %}
+            <a href="{% url 'create_virtual_classroom' %}" class="mt-4 inline-block bg-teal-300 hover:bg-teal-400 text-white px-6 py-2 rounded-lg transition duration-200">
+              Create Your First Classroom
+            </a>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+{% endblock %}
