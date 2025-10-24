@@ -33,6 +33,7 @@ Alpha One Labs is an education platform designed to facilitate both learning and
 ### Technical Features
 
 - 🔒 Secure authentication system
+- 🔐 **User PII encryption** (email, first_name, last_name encrypted at rest)
 - 🌐 Internationalization support
 - 🚀 Performance optimized
 - 📦 Modular architecture
@@ -199,6 +200,26 @@ poetry run pre-commit run --all-files
 ```
 
 See [PRE-COMMIT-README.md](PRE-COMMIT-README.md) for detailed information about our pre-commit workflow and configuration.
+
+### Security & Encryption
+
+The platform implements encryption for sensitive user data:
+
+- **User PII Encryption**: Email addresses, first names, and last names are encrypted at rest using Fernet symmetric encryption
+- **Encryption Key**: Configure `MESSAGE_ENCRYPTION_KEY` in your `.env` file
+- **Migration**: See [ENCRYPTION_MIGRATION.md](ENCRYPTION_MIGRATION.md) for production deployment guide
+- **Quick Start**: See [QUICKSTART_ENCRYPTION.md](QUICKSTART_ENCRYPTION.md) for developer guide
+
+To generate an encryption key:
+
+```bash
+python web/master_key.py
+```
+
+For more details, see:
+- [ENCRYPTION_MIGRATION.md](ENCRYPTION_MIGRATION.md) - Production migration guide
+- [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) - Technical architecture
+- [QUICKSTART_ENCRYPTION.md](QUICKSTART_ENCRYPTION.md) - Developer quick start
 
 ### Documentation
 
