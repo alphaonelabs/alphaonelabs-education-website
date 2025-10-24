@@ -26,6 +26,59 @@ from markdownx.models import MarkdownxField
 from PIL import Image
 
 from web.utils import calculate_and_update_user_streak
+from web.encryption_fields import EncryptedTextField
+
+
+class UserEncryption(models.Model):
+    """
+    Stores encrypted versions of sensitive User fields.
+    
+    This model maintains a 1:1 relationship with Django's built-in User model
+    and stores encrypted versions of first_name, last_name, and email.
+    """
+    user = models.OneToOneField('auth.User', on_delete=models.CASCADE, related_name='encryption')
+    encrypted_first_name = EncryptedTextField(blank=True, help_text="Encrypted first name")
+    encrypted_last_name = EncryptedTextField(blank=True, help_text="Encrypted last name") 
+    encrypted_email = EncryptedTextField(blank=True, help_text="Encrypted email address")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'User Encryption'
+        verbose_name_plural = 'User Encryptions'
+    
+    def __str__(self):
+        return f"Encryption for {self.user.username}"
+    
+    @property
+    def first_name(self):
+        """Get decrypted first name"""
+        return self.encrypted_first_name
+    
+    @first_name.setter
+    def first_name(self, value):
+        """Set encrypted first name"""
+        self.encrypted_first_name = value
+    
+    @property
+    def last_name(self):
+        """Get decrypted last name"""
+        return self.encrypted_last_name
+    
+    @last_name.setter
+    def last_name(self, value):
+        """Set encrypted last name"""
+        self.encrypted_last_name = value
+    
+    @property
+    def email(self):
+        """Get decrypted email"""
+        return self.encrypted_email
+    
+    @email.setter
+    def email(self, value):
+        """Set encrypted email"""
+        self.encrypted_email = value
 
 
 class Notification(models.Model):
