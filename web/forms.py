@@ -1978,13 +1978,14 @@ class SurveyForm(forms.ModelForm):
 
 
 class VirtualClassroomForm(forms.ModelForm):
-class VirtualClassroomForm(forms.ModelForm):
     """Form for creating and editing virtual classrooms."""
+
     def __init__(self, *args: object, **kwargs: object) -> None:
-        user = kwargs.pop('user', None)
+        user = kwargs.pop("user", None)
         super().__init__(*args, **kwargs)
         if user:
-            self.fields['course'].queryset = Course.objects.filter(teacher=user)
+            self.fields["course"].queryset = Course.objects.filter(teacher=user)
+
     class Meta:
         model = VirtualClassroom
         fields = ["name", "course", "max_students"]
@@ -2071,3 +2072,15 @@ class VirtualClassroomCustomizationForm(forms.ModelForm):
                 attrs={"class": "w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"}
             ),
         }
+
+    def clean_number_of_rows(self):
+        value = self.cleaned_data.get("number_of_rows")
+        if value is None or value < 1 or value > 10:
+            raise forms.ValidationError("Number of rows must be between 1 and 10.")
+        return value
+
+    def clean_desks_per_row(self):
+        value = self.cleaned_data.get("desks_per_row")
+        if value is None or value < 1 or value > 8:
+            raise forms.ValidationError("Desks per row must be between 1 and 8.")
+        return value

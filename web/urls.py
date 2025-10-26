@@ -454,6 +454,11 @@ urlpatterns += i18n_patterns(
         update_session_attendance,
         name="update_session_attendance",
     ),
+    path(
+        "get_student_attendance/",
+        views.get_student_attendance,
+        name="get_student_attendance",
+    ),
     # Student Management URLs
     path(
         "enrollment/<int:enrollment_id>/update-progress/",

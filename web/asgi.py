@@ -14,35 +14,35 @@ rest of Django's ASGI behaviour unchanged.
 from __future__ import annotations
 
 import os
+from typing import Any, Awaitable, Callable, Dict
 
 import django
+from channels.auth import AuthMiddlewareStack  # type: ignore
+from channels.routing import ProtocolTypeRouter, URLRouter  # type: ignore
+from django.core.asgi import get_asgi_application
+from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 
-# Set Django settings module before any Django imports
+# Initialize Django settings
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "web.settings")
-
-# Initialize Django before importing anything that requires ORM
 django.setup()
 
-from typing import Any, Awaitable, Callable, Dict  # noqa: E402
+try:  # Import websocket URL patterns (must exist when Channels is assumed installed)
+    from web.routing import websocket_urlpatterns  # type: ignore
+except Exception:  # pragma: no cover - fail safe with empty list
+    websocket_urlpatterns = []  # type: ignore
 
-# noqa annotations silence E402 (module level import not at top of file)
-from channels.auth import AuthMiddlewareStack  # noqa: E402
-from channels.routing import ProtocolTypeRouter, URLRouter  # noqa: E402
-from django.core.asgi import get_asgi_application  # noqa: E402
-from sentry_sdk.integrations.asgi import SentryAsgiMiddleware  # noqa: E402
+django_asgi_app = get_asgi_application()
 
-# Local import must happen after Django setup
-from web.routing import websocket_urlpatterns  # noqa: E402
 
-_channels_router = ProtocolTypeRouter(
+channels_application = ProtocolTypeRouter(  # type: ignore
     {
-        "http": get_asgi_application(),
-        "websocket": AuthMiddlewareStack(URLRouter(websocket_urlpatterns)),
+        "http": django_asgi_app,
+        "websocket": AuthMiddlewareStack(URLRouter(websocket_urlpatterns)),  # type: ignore
     }
 )
 
 # Wrap the entire router so both HTTP and WebSocket errors reach Sentry
-channels_application = SentryAsgiMiddleware(_channels_router)
+channels_application = SentryAsgiMiddleware(channels_application)
 
 
 async def application(
