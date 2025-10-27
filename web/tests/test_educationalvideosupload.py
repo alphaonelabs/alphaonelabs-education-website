@@ -84,3 +84,72 @@ class EducationalVideoUploadTests(TestCase):
         payload = json.loads(resp.content)
         self.assertTrue(payload["success"])
         self.assertTrue(EducationalVideo.objects.filter(title="Good Quick").exists())
+
+    def test_youtube_embed_url_validation(self):
+        """YouTube embed URLs should be valid."""
+        self.client.login(username="tester", password="password")
+        data = {
+            "title": "Embed Video",
+            "video_url": "https://www.youtube.com/embed/dQw4w9WgXcQ",
+            "description": "Test embed URL",
+            "category": self.math.id,
+        }
+        resp = self.client.post(self.upload_url, data)
+        self.assertRedirects(resp, reverse("educational_videos_list"))
+        self.assertTrue(EducationalVideo.objects.filter(title="Embed Video").exists())
+
+    def test_youtube_embed_url_no_www_validation(self):
+        """YouTube embed URLs without www should be valid."""
+        self.client.login(username="tester", password="password")
+        data = {
+            "title": "Embed Video No WWW",
+            "video_url": "https://youtube.com/embed/dQw4w9WgXcQ",
+            "description": "Test embed URL without www",
+            "category": self.math.id,
+        }
+        resp = self.client.post(self.upload_url, data)
+        self.assertRedirects(resp, reverse("educational_videos_list"))
+        self.assertTrue(EducationalVideo.objects.filter(title="Embed Video No WWW").exists())
+
+    def test_vimeo_video_path_url_validation(self):
+        """Vimeo URLs with /video/ path should be valid."""
+        self.client.login(username="tester", password="password")
+        data = {
+            "title": "Vimeo Video Path",
+            "video_url": "https://vimeo.com/video/123456789",
+            "description": "Test Vimeo video path URL",
+            "category": self.bio.id,
+        }
+        resp = self.client.post(self.upload_url, data)
+        self.assertRedirects(resp, reverse("educational_videos_list"))
+        self.assertTrue(EducationalVideo.objects.filter(title="Vimeo Video Path").exists())
+
+    def test_invalid_youtube_embed_short_id(self):
+        """YouTube embed URLs with invalid video ID should be rejected."""
+        self.client.login(username="tester", password="password")
+        data = {
+            "title": "Invalid Embed",
+            "video_url": "https://www.youtube.com/embed/shortid",
+            "description": "Test invalid embed URL",
+            "category": self.math.id,
+        }
+        resp = self.client.post(self.upload_url, data, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+        self.assertEqual(resp.status_code, 400)
+        payload = json.loads(resp.content)
+        self.assertFalse(payload["success"])
+        self.assertIn("video_url", payload["error"])
+
+    def test_invalid_vimeo_short_id(self):
+        """Vimeo URLs with short video ID should be rejected."""
+        self.client.login(username="tester", password="password")
+        data = {
+            "title": "Invalid Vimeo",
+            "video_url": "https://vimeo.com/video/1234567",  # 7 digits, need 8+
+            "description": "Test invalid Vimeo URL",
+            "category": self.bio.id,
+        }
+        resp = self.client.post(self.upload_url, data, HTTP_X_REQUESTED_WITH="XMLHttpRequest")
+        self.assertEqual(resp.status_code, 400)
+        payload = json.loads(resp.content)
+        self.assertFalse(payload["success"])
+        self.assertIn("video_url", payload["error"])

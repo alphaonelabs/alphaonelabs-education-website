@@ -1,7 +1,27 @@
+---
 name: Deploy to Production
+
+# This workflow deploys the application to the production server and
+# automatically creates a new GitHub release with incremented version number.
+#
+# Features:
+# - Deploys code to production server via SSH
+# - Runs migrations and collects static files
+# - Verifies deployment by checking service status
+# - Automatically increments version (e.g., v1.0 -> v1.1)
+# - Creates GitHub release with commit history since last release
+# - Tags the deployed commit with the new version
+#
+# Version Scheme:
+# - Uses semantic versioning (vMAJOR.MINOR)
+# - Automatically increments minor version on each deploy
+# - Default starting version is v0.0 if no previous releases exist
 
 on:
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   deploy:
@@ -9,6 +29,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - name: Install sshpass
         run: |
           sudo apt-get update
@@ -34,7 +58,8 @@ jobs:
           EOF
 
           # Deploy via SSH
-          sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" << 'ENDSSH'
+          sshpass -p "$SERVER_PASSWORD" ssh \
+            -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" << 'ENDSSH'
             set -e
 
             # Navigate to project directory
@@ -79,7 +104,8 @@ jobs:
           SERVER_PASSWORD: ${{ secrets.PRODUCTION_SERVER_PASSWORD }}
         run: |
           echo "Verifying deployment..."
-          sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" << 'ENDSSH'
+          sshpass -p "$SERVER_PASSWORD" ssh \
+            -o StrictHostKeyChecking=no "$SERVER_USER@$SERVER_IP" << 'ENDSSH'
             # Check if service is running
             sudo systemctl status education-website --no-pager || true
 
@@ -88,3 +114,83 @@ jobs:
           ENDSSH
 
           echo "Deployment verification completed!"
+
+      - name: Get latest release tag
+        id: get_latest_tag
+        run: |
+          # Get the latest release tag
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null \
+            || echo "v0.0")
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
+
+      - name: Increment version
+        id: increment_version
+        run: |
+          LATEST_TAG="${{ steps.get_latest_tag.outputs.latest_tag }}"
+
+          # Remove 'v' prefix and split version
+          VERSION=${LATEST_TAG#v}
+
+          # Split into major.minor (assuming format v1.0, v1.1, etc.)
+          MAJOR=$(echo $VERSION | cut -d. -f1)
+          MINOR=$(echo $VERSION | cut -d. -f2)
+
+          # Increment minor version
+          MINOR=$((MINOR + 1))
+
+          NEW_VERSION="v${MAJOR}.${MINOR}"
+          echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
+
+      - name: Generate release notes
+        id: generate_notes
+        run: |
+          LATEST_TAG="${{ steps.get_latest_tag.outputs.latest_tag }}"
+          NEW_VERSION="${{ steps.increment_version.outputs.new_version }}"
+          DEPLOY_DATE=$(date -u '+%Y-%m-%d %H:%M:%S UTC')
+
+          # Get commits since last tag
+          if git rev-parse "$LATEST_TAG" >/dev/null 2>&1; then
+            COMMITS=$(git log ${LATEST_TAG}..HEAD \
+              --pretty=format:"- %s (%h)" --no-merges)
+          else
+            COMMITS=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          fi
+
+          # Create release notes
+          {
+            echo "## Production Deployment - ${NEW_VERSION}"
+            echo ""
+            echo "**Deployment Date:** ${DEPLOY_DATE}"
+            echo ""
+            echo "### Changes in this release:"
+            echo ""
+            echo "$COMMITS"
+            echo ""
+            echo "---"
+            echo "_This release was automatically created by the"
+            echo "production deployment workflow._"
+          } > /tmp/release_notes.md
+
+          echo "Release notes generated successfully"
+          cat /tmp/release_notes.md
+
+      - name: Create GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          NEW_VERSION="${{ steps.increment_version.outputs.new_version }}"
+
+          # Configure git
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Create and push the tag
+          git tag "$NEW_VERSION"
+          git push origin "$NEW_VERSION"
+
+          # Create the release using GitHub CLI
+          gh release create "$NEW_VERSION" \
+            --title "$NEW_VERSION" \
+            --notes-file /tmp/release_notes.md
