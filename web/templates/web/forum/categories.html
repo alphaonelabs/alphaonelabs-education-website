@@ -113,7 +113,7 @@
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6 divide-y divide-gray-200 dark:divide-gray-700">
             {% for category in categories %}
               {% for topic in category.topics.all|slice:":3" %}
-                <div class="p-4 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors duration-150">
+                <div class="group p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-150">
                   <div class="flex items-start">
                     <!-- User Avatar -->
                     <div class="mr-4 hidden sm:block">
@@ -132,13 +132,13 @@
                     <!-- Topic Content -->
                     <div class="flex-1 min-w-0">
                       <div class="flex items-baseline justify-between mb-1">
-                        <div class="flex items-center text-xs text-gray-500 dark:text-gray-400">
-                          <span class="font-medium text-gray-700 dark:text-gray-300">{{ topic.author.username }}</span>
+                        <div class="flex items-center text-xs text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300">
+                          <span class="font-medium text-gray-700 dark:text-gray-300 dark:group-hover:text-gray-100">{{ topic.author.username }}</span>
                           <span class="mx-2">•</span>
                           <span class="whitespace-nowrap">{{ topic.created_at|timesince }} ago</span>
                           <span class="mx-2">•</span>
                           <a href="{% url 'forum_category' slug=category.slug %}"
-                             class="text-teal-300 hover:text-teal-400 font-medium">{{ category.name }}</a>
+                             class="text-teal-600 hover:text-teal-700 dark:text-teal-400 dark:hover:text-teal-300 font-medium">{{ category.name }}</a>
                         </div>
                         {% if user.is_superuser %}
                           <div class="flex space-x-2">
@@ -159,16 +159,18 @@
                       </div>
                       <h3 class="text-base font-semibold mb-1 truncate">
                         <a href="{% url 'forum_topic' category.slug topic.id %}"
-                           class="text-gray-800 dark:text-gray-100 hover:text-teal-300 transition duration-150">
-                          {% if topic.is_pinned %}<i class="fas fa-thumbtack text-gray-500 dark:text-gray-400 mr-1"></i>{% endif %}
+                           class="text-gray-800 dark:text-gray-100 dark:group-hover:text-white hover:text-teal-600 dark:hover:text-teal-400 transition duration-150">
+                          {% if topic.is_pinned %}
+                            <i class="fas fa-thumbtack text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300 mr-1"></i>
+                          {% endif %}
                           {{ topic.title }}
                         </a>
                       </h3>
-                      <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 mb-2">
+                      <p class="text-sm text-gray-600 dark:text-gray-400 dark:group-hover:text-gray-300 line-clamp-2 mb-2">
                         {{ topic.content|striptags|truncatechars:150 }}
                       </p>
                       <!-- Engagement Metrics -->
-                      <div class="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                      <div class="flex items-center space-x-4 text-xs text-gray-500 dark:text-gray-400 dark:group-hover:text-gray-300">
                         <span class="flex items-center">
                           <i class="fa-solid fa-eye mr-1"></i>
                           {{ topic.views }} views
@@ -178,11 +180,11 @@
                           {{ topic.replies.count }} replies
                         </span>
                         <span class="flex items-center">
-                          <i class="fa-solid fa-arrow-up text-teal-300 mr-1"></i>
+                          <i class="fa-solid fa-arrow-up text-teal-500 dark:text-teal-400 mr-1"></i>
                           {{ topic.upvote_count }} upvotes
                         </span>
                         <span class="flex items-center">
-                          <i class="fa-solid fa-arrow-down text-red-300 mr-1"></i>
+                          <i class="fa-solid fa-arrow-down text-red-500 dark:text-red-400 mr-1"></i>
                           {{ topic.downvote_count }} downvotes
                         </span>
                         {% if topic.replies.count > 0 %}
