@@ -320,7 +320,7 @@
         state: link
         owner: "{{ vps_user }}"
         group: "{{ vps_user }}"
-        force: yes
+        force: true
 
     - name: Configure nginx
       template:
