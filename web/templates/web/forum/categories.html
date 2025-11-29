@@ -109,7 +109,7 @@
             </div>
           </div>
           <!-- Recent Topics from All Categories -->
-          <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-100 ">Recent Discussions</h2>
+          <h2 class="text-xl font-bold mb-4 text-gray-800 dark:text-gray-100">Recent Discussions</h2>
           <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm mb-6 divide-y divide-gray-200 dark:divide-gray-700">
             {% for category in categories %}
               {% for topic in category.topics.all|slice:":3" %}
